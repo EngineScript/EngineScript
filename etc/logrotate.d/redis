@@ -1,0 +1,9 @@
+/var/log/redis/*.log {
+  weekly
+  missingok
+  rotate 5
+  compress
+  delaycompress
+  notifempty
+  create 775 redis redis
+}
