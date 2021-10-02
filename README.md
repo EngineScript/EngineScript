@@ -19,7 +19,7 @@ If you'd like to test EngineScript for yourself, just enter the command below in
 
 ### Install EngineScript
 ```shell
-wget https://raw.githubusercontent.com/EngineScript/EngineScript//master/setup.sh && chmod 0700 setup.sh | setup.sh
+wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && chmod 0700 setup.sh | setup.sh
 ```
 
 ----------
