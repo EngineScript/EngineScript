@@ -15,12 +15,11 @@ As this is a pre-release version, things might be totally broken day-to-day as w
 - **Cloudflare** *(free or paid)*
 - **30 minutes of your time**
 
-
 If you'd like to test EngineScript for yourself, just enter the command below into your favorite SSH client. This should be done on a fresh server with no current Nginx, PHP, or MySQL clients currently installed.
 
 ### Install EngineScript
 ```shell
-wget https://raw.githubusercontent.com/VisiStruct/EngineScript/master/setup.sh && chmod 0700 setup.sh | setup.sh
+wget https://raw.githubusercontent.com/EngineScript/EngineScript//master/setup.sh && chmod 0700 setup.sh | setup.sh
 ```
 
 ----------
@@ -31,18 +30,10 @@ After EngineScript is fully installed, type `enginescript` or `es.menu` in conso
 Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database / user/ password, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
 
 #### Tuning MySQL
-Our default settings are built to accommodate a VPS with 1GB RAM. However, you'll definitely want to adjust the values within php.ini and my.cnf if you're building on a server with more memory.
-
-As a reminder, you can locate your MySQL root login credentials in `/home/EngineScript/`
 
 **Run MySQLTuner:**
 ```shell
 perl /usr/local/bin/mysqltuner/mysqltuner.pl
-```
-
-**Run Tuning-Primer:**
-```shell
-/usr/local/bin/tuning-primer/tuning-primer.sh
 ```
 
 ### EngineScript Information
@@ -76,17 +67,6 @@ perl /usr/local/bin/mysqltuner/mysqltuner.pl
 |**`ng.stop`**      |`ng.test && systemctl stop nginx` |
 |**`ng.reload`**    |`ng.test && systemctl reload nginx` |
 |                   |                                |
-
-### Helpful Tutorials
-
-### Helpful Resources
-
-#### Security
-***placeholder*** - https://www.owasp.org/index.php/OWASP_Secure_Headers_Project#tab=Headers
-# https://scotthelme.co.uk/a-new-security-header-referrer-policy/
-# https://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
-# https://yoast.com/x-robots-tag-play/
-# Content-Security-Policy: https://developers.google.com/web/fundamentals/security/csp/
 
 ### Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
