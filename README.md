@@ -22,7 +22,7 @@ If you'd like to test EngineScript for yourself, just enter the command below in
 wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && chmod +0777 setup.sh | bash setup.sh
 ```
 After the initial setup script has run, you'll need to alter the install options file before continuing.
-Edit the following file: `home/EngineScript/enginescript-install-options.txt`
+Edit the following file: **home/EngineScript/enginescript-install-options.txt**
 You can edit the file directly from the console using the following command:
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
