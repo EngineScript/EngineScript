@@ -3,7 +3,7 @@
 # EngineScript - High-Performance WordPress LEMP Server
 #----------------------------------------------------------------------------
 # Website:      https://EngineScript.com
-# GitHub:       https://github.com/VisiStruct/EngineScript
+# GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
 # OS:           Ubuntu 20.04 (focal)
@@ -51,7 +51,7 @@ fi
 # generates and stores many passwords for you, this includes storing mysql database credentials.
 #
 # Finally, EngineScript is very experimental in nature. We use a lot of bleeding-edge
-# technology, this includes using Nginx Mainline instead of Stable. We also use a number
+# technology. This includes using Nginx Mainline branch instead of Stable branch. We also use a number
 # of PPAs from developers that supply packages outside of the standard Ubuntu repositories.
 # Some of these packages include backports, some of them are just more up-to-date.
 # If you're looking for the most secure server environment possible, EngineScript
@@ -65,7 +65,7 @@ apt dist-upgrade -y
 
 # EngineScript Git Clone
 rm -rf /usr/local/bin/enginescript
-git clone --depth 1 https://github.com/VisiStruct/EngineScript.git -b master /usr/local/bin/enginescript
+git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;

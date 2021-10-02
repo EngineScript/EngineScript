@@ -3,7 +3,7 @@
 # EngineScript - High-Performance WordPress LEMP Server
 #----------------------------------------------------------------------------
 # Website:      https://EngineScript.com
-# GitHub:       https://github.com/VisiStruct/EngineScript
+# GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
 # OS:           Ubuntu 20.04 (focal)
@@ -38,7 +38,7 @@ while true
     echo "EngineScript is an automated, high-performance WordPress LEMP server installation tool."
     echo ""
     echo "To learn more about EngineScript, visit:"
-    echo "https://github.com/VisiStruct/EngineScript"
+    echo "https://github.com/Enginescript/EngineScript"
     echo ""
     echo "EngineScript Requires:"
     echo "  - Ubuntu 20.04 focal"

@@ -3,7 +3,7 @@
 # EngineScript - High-Performance WordPress LEMP Server
 #----------------------------------------------------------------------------
 # Website:      https://EngineScript.com
-# GitHub:       https://github.com/VisiStruct/EngineScript
+# GitHub:       https://github.com/Enginescript/EngineScript
 # Author:       Peter Downey
 # Company:      VisiStruct
 # License:      GPL v3.0

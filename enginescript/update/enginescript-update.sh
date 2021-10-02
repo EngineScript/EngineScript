@@ -3,7 +3,7 @@
 # EngineScript - High-Performance WordPress LEMP Server
 #----------------------------------------------------------------------------
 # Website:      https://EngineScript.com
-# GitHub:       https://github.com/VisiStruct/EngineScript
+# GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
 # OS:           Ubuntu 20.04 (focal)
@@ -26,7 +26,7 @@ fi
 
 # EngineScript Git Clone
 rm -rf /usr/local/bin/enginescript
-git clone --depth 1 https://github.com/VisiStruct/EngineScript.git -b master /usr/local/bin/enginescript
+git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript/ -type d,f -exec chmod 755 {} \;
