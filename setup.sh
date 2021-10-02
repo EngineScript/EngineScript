@@ -79,6 +79,13 @@ mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
 
+apt update
+apt full-upgrade -y
+apt dist-upgrade -y
+apt clean -y
+apt autoremove --purge -y
+apt autoclean -y
+
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
   then
     echo ""
@@ -88,6 +95,7 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo ""
     echo "After changing options file, run \"bash /usr/local/bin/enginescript/enginescript.sh\""
+    echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""
     echo ""
   else
@@ -99,22 +107,12 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo ""
     echo "After changing options file, run \"bash /usr/local/bin/enginescript/enginescript.sh\""
+    echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""
     echo ""
 fi
 
-apt update
-apt full-upgrade -y
-apt dist-upgrade -y
-apt clean -y
-apt autoremove --purge -y
-apt autoclean -y
-
 echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2
-echo "Server will restart in 30 seconds"
-sleep 10
-echo "Server will restart in 20 seconds"
-sleep 10
 echo "Server will restart in 10 seconds"
 sleep 10
 echo "Restarting..."
