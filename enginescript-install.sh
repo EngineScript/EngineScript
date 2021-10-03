@@ -20,6 +20,14 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# dos2unix
+# We do this in-case the user is a novice and uploaded the options file using a basic Windows text editor.
+dos2unix /home/EngineScript/enginescript-install-options.txt
+
+# EngineScript Variables
+source /usr/local/bin/enginescript/enginescript-variables.txt
+source /home/EngineScript/enginescript-install-options.txt
+
 # Reboot Warning
 echo -e "ATTENTION\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
@@ -42,10 +50,6 @@ dpkg-reconfigure unattended-upgrades
 
 # HWE
 apt install --install-recommends linux-generic-hwe-20.04 -y
-
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
 
 sleep 3
 # Add User

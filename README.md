@@ -30,8 +30,8 @@ You can edit the file directly from the console using the following command:
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
 ```
-If you choose to download the file via FTP and edit it on a Windows machine, depending on your text editor settings and/or Linux experience, you may need to convert the uploaded file using dos2unix. We've already installed that for you in the previous step. Run command `dos2unix /home/EngineScript/enginescript-install-options.txt` to convert the options file once it has been uploaded.
 
+#### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
 ```shell
 bash /usr/local/bin/enginescript/enginescript-install.sh
