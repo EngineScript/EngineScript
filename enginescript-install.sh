@@ -308,14 +308,9 @@ fi
 # Server Reboot
 clear
 
-echo -e "${BOLD}Server needs to reboot.${NORMAL}\n\nEnter command ${BOLD}es.menu${NORMAL} after reboot to continue." | boxes -a c -d shell -p a1l2
-sleep 2
+echo -e "${BOLD}Server needs to reboot.${NORMAL}\n\nEnter command ${BOLD}es.menu${NORMAL} after reboot to continue.\n" | boxes -a c -d shell -p a1l2
+sleep 15
+clear
 
-echo "${BOLD}Server will reboot in 10 seconds...${NORMAL}" | boxes -a c -d shell -p a1l2
-sleep 5
-
-echo "Server will reboot in 5 seconds..." | boxes -a c -d shell -p a1l2
-sleep 5
-
-echo -e "Server rebooting now...\n\n${NORMAL}When reconnected, use command ${BOLD}es.menu${NORMAL} to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds." | boxes -a c -d shell -p a1l2
+echo -e "Server rebooting now...\n\n${NORMAL}When reconnected, use command ${BOLD}es.menu${NORMAL} to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2
 shutdown -r now
