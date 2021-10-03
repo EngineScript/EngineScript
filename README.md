@@ -4,7 +4,7 @@ EngineScript automates the process of building a high-performance LEMP server. W
 
 EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful.
 
-As this is a pre-release version, things might be totally broken day-to-day as we test different methods of building the server.
+As this is a pre-release version, so things might be totally broken day-to-day as things are developed.
 
 #### Features
 
@@ -15,27 +15,34 @@ As this is a pre-release version, things might be totally broken day-to-day as w
 - **Cloudflare** *(free or paid)*
 - **30 minutes of your time**
 
-If you'd like to test EngineScript for yourself, just enter the command below into your favorite SSH client. This should be done on a fresh server with no current Nginx, PHP, or MySQL clients currently installed.
-
 ### Install EngineScript
+#### Step 1 - Initial Install
+Run the following command
 ```shell
 wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && bash setup.sh
 ```
+#### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
+
 Edit the following file: **home/EngineScript/enginescript-install-options.txt**.
 
 You can edit the file directly from the console using the following command:
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
 ```
-Once you've altered the enginescript-install-options.txt file, run `bash /usr/local/bin/enginescript/enginescript-install.sh` to continue with the installation process.
+If you choose to download the file via FTP and edit it on a Windows machine, depending on your text editor settings and/or Linux experience, you may need to convert the uploaded file using dos2unix. We've already installed that for you in the previous step. Run command `dos2unix /home/EngineScript/enginescript-install-options.txt` to convert the options file once it has been uploaded.
+
+Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
+```shell
+bash /usr/local/bin/enginescript/enginescript-install.sh
+```
 
 ----------
 
 #### Domain Creation
-After EngineScript is fully installed, type `enginescript` or `es.menu` in console to bring up the EngineScript menu. Choose option 2 to create a new domain.
+After EngineScript is fully installed, type `enginescript` or `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
 
-Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database / user/ password, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
+Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
 
 #### Tuning MySQL
 

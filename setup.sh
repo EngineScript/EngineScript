@@ -59,7 +59,7 @@ fi
 
 # Install Required Packages for Script
 apt update
-apt install -y boxes git nano pwgen software-properties-common tzdata unattended-upgrades
+apt install -y boxes dos2unix git nano pwgen software-properties-common tzdata unattended-upgrades
 apt full-upgrade -y
 apt dist-upgrade -y
 
