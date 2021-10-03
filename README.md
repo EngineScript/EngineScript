@@ -29,6 +29,7 @@ You can edit the file directly from the console using the following command:
 nano /home/EngineScript/enginescript-install-options.txt
 ```
 Once you've altered the enginescript-install-options.txt file, run `bash /usr/local/bin/enginescript/enginescript-install.sh` to continue with the installation process.
+
 ----------
 
 #### Domain Creation
