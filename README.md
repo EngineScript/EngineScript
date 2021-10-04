@@ -26,7 +26,7 @@ After the initial setup script has run, you'll need to alter the install options
 
 Edit the following file: **home/EngineScript/enginescript-install-options.txt**.
 
-You can edit the file directly from the console using the following command:
+Download the file via FTP and edit it using your favorite text editor. You may also edit the file directly from the console using the following command:
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
 ```
