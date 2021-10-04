@@ -26,6 +26,15 @@ fi
 
 # Webmin
 
+# Create Logs
+mkdir -p /var/log/webmin
+touch /var/log/opcache/miniserv.log
+touch /var/log/opcache/miniserv.error.log
+chmod 775 /var/log/webmin
+
+# Logrotate
+cp -p /usr/local/bin/enginescript/etc/logrotate.d/webmin /etc/logrotate.d/webmin
+
 # Set Webmin Config
 cp -p /usr/local/bin/enginescript/etc/webmin/config /etc/webmin/config
 cp -p /usr/local/bin/enginescript/etc/webmin/miniserv.conf /etc/webmin/miniserv.conf
