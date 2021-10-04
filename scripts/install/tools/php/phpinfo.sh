@@ -24,6 +24,26 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# PHPinfo.php
+mkdir -p /var/www/admin/enginescript/phpinfo
+echo "<?php phpinfo(); ?>" > /var/www/admin/enginescript/phpinfo/index.php
+
+# Set Permissions
+find /var/www/admin/enginescript/phpinfo -type d -exec chmod 755 {} \;
+find /var/www/admin/enginescript/phpinfo -type f -exec chmod 644 {} \;
+chown -hR www-data:www-data /var/www/admin/enginescript/phpinfo
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}phpinfo.php installed.${NORMAL}"
+echo ""
+echo "Point your browser to:"
+echo "https://${IP_ADDRESS}/enginescript/phpinfo"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

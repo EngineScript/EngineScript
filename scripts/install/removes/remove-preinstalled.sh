@@ -24,6 +24,7 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Remove Previous Installations
+apt-get remove --purge 'apache2.*' mysql-client mysql-common mysql-server nginx nginx-common nginx-core nginx-doc nginx-extras nginx-full nginx-light -y
+apt autoremove -y
+systemctl daemon-reload

@@ -13,17 +13,8 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Update WP-CLI
+echo "y" | wp cli update --stable --allow-root
+echo "y" | wp package update --allow-root

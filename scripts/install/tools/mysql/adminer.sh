@@ -24,6 +24,26 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Adminer
+mkdir /var/www/admin/enginescript/adminer
+wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/index.php
+
+# Set Permissons
+chown -R www-data:www-data /var/www/admin/enginescript/adminer
+find /var/www/admin/enginescript/adminer/ -type d -exec chmod 755 {} \;
+find /var/www/admin/enginescript/adminer/ -type f -exec chmod 644 {} \;
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}Adminer installed.${NORMAL}"
+echo ""
+echo "Point your browser to:"
+echo "https://${IP_ADDRESS}/enginescript/adminer"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

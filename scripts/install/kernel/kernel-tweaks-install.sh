@@ -24,6 +24,11 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Kernel Tweaks
+cp -p /usr/local/bin/enginescript/etc/sysctl.d/60-enginescript.conf /etc/sysctl.d/60-enginescript.conf
+chown root:root /etc/sysctl.d/60-enginescript.conf
+chmod 0664 /etc/sysctl.d/60-enginescript.conf
+
+# Enable Kernel Tweaks
+sysctl -e -p /etc/sysctl.d/60-enginescript.conf
+sysctl --system

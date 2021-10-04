@@ -21,9 +21,11 @@ if [ "${EUID}" != 0 ];
     exit
 fi
 
+
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+git clone --depth 1 https://github.com/axboe/liburing -b master /usr/src/liburing
+cd /usr/src/liburing
+make -j${CPU_COUNT}
+make install

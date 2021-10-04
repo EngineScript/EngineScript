@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+##!/usr/bin/env bash
 #----------------------------------------------------------------------------
 # EngineScript - High-Performance WordPress LEMP Server
 #----------------------------------------------------------------------------
@@ -24,6 +24,20 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Create Nginx Directories
+mkdir -p /etc/nginx/globals
+mkdir -p /etc/nginx/restricted-access
+mkdir -p /etc/nginx/sites-available
+mkdir -p /etc/nginx/sites-enabled
+mkdir -p /etc/nginx/ssl/cloudflare
+mkdir -p /etc/nginx/ssl/dhe
+mkdir -p /etc/nginx/ssl/localhost
+mkdir -p /usr/lib/nginx/modules
+mkdir -p /tmp/nginx_proxy
+mkdir -p /var/cache/nginx
+mkdir -p /var/lib/nginx/body
+mkdir -p /var/lib/nginx/fastcgi
+mkdir -p /var/lib/nginx/proxy
+mkdir -p /var/log/domains
+mkdir -p /var/www/admin/enginescript
+mkdir -p /var/www/sites

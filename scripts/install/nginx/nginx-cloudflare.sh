@@ -24,6 +24,21 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Run Cloudflare Script and Write .conf File
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-ip-updater.sh
+
+# Create Cloudflare Origin Pull Cert
+#/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-origin-cert.sh
+
+# Cloudflare Origin Pull Certificate Note
+echo ""
+echo ""
+echo "Please note, Cloudflare's Origin Pull Certificate has an expiration date."
+#echo "We've set a monthly cronjob to retrive the latest certificate."
+echo ""
+echo "Current Certificate expiration:"
+echo "$(openssl x509 -startdate -enddate -noout -in /etc/nginx/ssl/cloudflare/origin-pull-ca.pem)"
+echo ""
+echo ""
+
+sleep 5

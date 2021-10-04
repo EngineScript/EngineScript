@@ -24,6 +24,6 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Custom Nginx Error Pages
+rm -rf /var/www/error
+git clone --depth 1 https://github.com/alexphelps/server-error-pages.git /var/www/error

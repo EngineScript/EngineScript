@@ -24,6 +24,20 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# nxgtop
+pip3 install ngxtop
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "  ${BOLD}ngxtop installed.${NORMAL}"
+echo ""
+echo "  Scan your logs:"
+echo "  ngxtop"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 3

@@ -24,6 +24,10 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Nginx Service
+rm -rf /usr/lib/systemd/system/nginx.service
+cp -p /usr/local/bin/enginescript/etc/systemd/system/nginx.service /etc/systemd/system/nginx.service
+chmod 644 /etc/systemd/system/nginx.service
+systemctl daemon-reload
+systemctl enable nginx
+systemctl start nginx

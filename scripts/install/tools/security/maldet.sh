@@ -24,6 +24,24 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Maldet Install
+cd /usr/local/src
+wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+tar -xvf maldetect-current.tar.gz
+cd maldetect-1.6.4/
+./install.sh
+echo "/sys" >> /usr/local/maldetect/ignore_paths
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}ClamAV Anti-Virus installed.${NORMAL}"
+echo ""
+echo "Use command ${BOLD}es.virus${NORMAL} to scan your /var/www/sites directory"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

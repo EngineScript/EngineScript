@@ -24,6 +24,20 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Install Redis
+apt install redis-server redis-tools --no-install-recommends
+
+# Setup Redis
+mkdir -p /run/redis
+mkdir -p /var/log/redis
+touch /var/log/redis/redis.log
+chmod 775 /var/log/redis/redis.log
+chmod 775 /etc/redis/redis.conf
+chmod 775 /run/redis
+chown redis:redis /run/redis
+chown redis:redis /var/log/redis/redis.log
+
+cp -p /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
+sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_07}|g" /etc/redis/redis.conf
+chown -hR redis:redis /etc/redis/redis.conf
+service redis-server restart

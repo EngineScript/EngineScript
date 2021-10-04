@@ -24,6 +24,11 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Set UFW Global Rules
+/usr/local/bin/enginescript/scripts/install/ufw/ufw-rules.sh
+
+# Set UFW Cloudflare Rules
+/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
+
+# Enable UFW
+echo "y" | ufw enable

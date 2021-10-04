@@ -24,6 +24,25 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Tuning-Primer
+mkdir -p /usr/local/bin/tuning-primer
+wget https://raw.githubusercontent.com/BMDan/tuning-primer.sh/master/tuning-primer.sh -O /usr/local/bin/tuning-primer/tuning-primer.sh
+
+# Set Permissions
+chmod 755 /usr/local/bin/tuning-primer/tuning-primer.sh
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}Tuning-Primer installed.${NORMAL}"
+echo ""
+echo "To run Tuning-Primer:"
+echo "/usr/local/bin/tuning-primer/tuning-primer.sh"
+echo ""
+echo "Retrieve your MySQL login details by entering ES.MYSQL in console prior to running Tuning-Primer"
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

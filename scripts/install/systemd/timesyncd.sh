@@ -24,6 +24,10 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Network Time Protocol (NTP)
+cp -p /usr/local/bin/enginescript/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
+chmod 644 /etc/systemd/timesyncd.conf
+timedatectl set-ntp true
+systemctl restart systemd-timedated
+systemctl restart systemd-timesyncd
+#systemctl status systemd-timesyncd

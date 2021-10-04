@@ -95,7 +95,7 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""
-    echo "After changing options file, run \"bash /usr/local/bin/enginescript/enginescript-install.sh\""
+    echo "After changing options file, run \"bash /usr/local/bin/enginescript/scripts-install.sh\""
     echo ""
     echo ""
   else
@@ -107,7 +107,7 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""
-    echo "After changing options file, run \"bash /usr/local/bin/enginescript/enginescript-install.sh\""
+    echo "After changing options file, run \"bash /usr/local/bin/enginescript/scripts-install.sh\""
     echo ""
     echo ""
 fi

@@ -24,6 +24,23 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Webmin
+
+# Set Webmin Config
+cp -p /usr/local/bin/enginescript/etc/webmin/config /etc/webmin/config
+cp -p /usr/local/bin/enginescript/etc/webmin/miniserv.conf /etc/webmin/miniserv.conf
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}Webmin installed.${NORMAL}"
+echo ""
+echo "Point your browser to:"
+echo "https://${IP_ADDRESS}/enginescript/webmin"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

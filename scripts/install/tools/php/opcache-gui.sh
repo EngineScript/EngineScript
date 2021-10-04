@@ -24,6 +24,6 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# OpCache-GUI
+rm -rf /var/www/admin/enginescript/opcache-gui
+git clone https://github.com/amnuts/opcache-gui.git /var/www/admin/enginescript/opcache-gui

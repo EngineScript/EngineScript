@@ -24,6 +24,19 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Notes on ACME.sh
+# ACME.sh is currently in the process of switching to ZeroSSL.
+# For the moment, we'll continue to use Let's Encrypt.
+# Things may need to change in the future.
+# https://github.com/acmesh-official/acme.sh/wiki/Server
+# https://github.com/acmesh-official/acme.sh/wiki/Change-default-CA-to-ZeroSSL
+# https://github.com/acmesh-official/acme.sh/issues/3556
+
+# ACME.sh Install
+curl https://get.acme.sh | sh
+
+# Cloudflare Keys
+export CF_Key="${CF_GLOBAL_API_KEY}"
+export CF_Email="${CF_ACCOUNT_EMAIL}"
+
+/root/.acme.sh/acme.sh --upgrade --auto-upgrade

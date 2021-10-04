@@ -24,6 +24,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Disable Transparent Huge Pages
+cp -p /usr/local/bin/enginescript/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
+chmod 644 /etc/systemd/system/disable-thp.service
+systemctl daemon-reload
+systemctl enable disable-thp
+systemctl start disable-thp

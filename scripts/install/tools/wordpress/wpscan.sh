@@ -24,6 +24,20 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# WPScan
+gem install wpscan
+
+echo ""
+echo ""
+echo "============================================================"
+echo ""
+echo "${BOLD}WPScan installed.${NORMAL}"
+echo ""
+echo "To run a scan of your site:"
+echo "wpscan --url https://yourdomain.com --enumerate"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

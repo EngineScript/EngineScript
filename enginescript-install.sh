@@ -25,7 +25,7 @@ fi
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
+source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Reboot Warning
@@ -72,7 +72,7 @@ if [ "${REPOS}" = 1 ];
   then
     echo "REPOS script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/repositories/repositories-install.sh
+    /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh
     echo "REPOS=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -81,7 +81,7 @@ if [ "${BLOCK}" = 1 ];
   then
     echo "BLOCK script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/block/package-block.sh
+    /usr/local/bin/enginescript/scripts/install/block/package-block.sh
     echo "BLOCK=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -95,7 +95,7 @@ if [ "${REMOVES}" = 1 ];
   then
     echo "REMOVES script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/removes/remove-preinstalled.sh
+    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh
     echo "REMOVES=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -104,7 +104,7 @@ if [ "${DEPENDS}" = 1 ];
   then
     echo "DEPENDS script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/depends/depends-install.sh
+    /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh
     echo "DEPENDS=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -113,7 +113,7 @@ if [ "${ALIAS}" = 1 ];
   then
     echo "ALIAS script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/alias/enginescript-alias-install.sh
+    /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
     echo "ALIAS=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -122,7 +122,7 @@ if [ "${ACME}" = 1 ];
   then
     echo "ACME.sh script has already run"
   else
-    /usr/local/bin/enginescript/enginescript/install/acme/acme-install.sh
+    /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh
     echo "ACME=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -131,7 +131,7 @@ fi
 #  then
 #    echo "GCC script has already run."
 #  else
-#    /usr/local/bin/enginescript/enginescript/install/gcc/gcc-install.sh
+#    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh
 #    echo "GCC=1" >> /home/EngineScript/install-log.txt
 #fi
 
@@ -140,7 +140,7 @@ if [ "${JEMALLOC}" = 1 ];
   then
     echo "JEMALLOC script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/jemalloc/jemalloc-install.sh
+    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
     echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -149,7 +149,7 @@ if [ "${SWAP}" = 1 ];
   then
     echo "SWAP script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/swap/swap-install.sh
+    /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh
     echo "SWAP=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -158,7 +158,7 @@ if [ "${KERNEL_TWEAKS}" = 1 ];
   then
     echo "KERNEL TWEAKS script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/kernel/kernel-tweaks-install.sh
+    /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh
     echo "KERNEL_TWEAKS=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -167,7 +167,7 @@ if [ "${KSM}" = 1 ];
   then
     echo "KSM script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/kernel/ksm.sh
+    /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh
     echo "KSM=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -176,7 +176,7 @@ fi
 #  then
 #    echo "KERNEL UPDATE script has already run."
 #  else
-#    /usr/local/bin/enginescript/enginescript/install/kernel/kernel-update.sh
+#    /usr/local/bin/enginescript/scripts/install/kernel/kernel-update.sh
 #    echo "KERNEL_UPDATE=1" >> /home/EngineScript/install-log.txt
 #fi
 
@@ -185,7 +185,7 @@ if [ "${NTP}" = 1 ];
   then
     echo "NTP script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/systemd/timesyncd.sh
+    /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh
     echo "NTP=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -194,7 +194,7 @@ if [ "${THP}" = 1 ];
   then
     echo "THP script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/systemd/thp.sh
+    /usr/local/bin/enginescript/scripts/install/systemd/thp.sh
     echo "THP=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -203,7 +203,7 @@ if [ "${PYTHON}" = 1 ];
   then
     echo "PYTHON script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/python/python-install.sh
+    /usr/local/bin/enginescript/scripts/install/python/python-install.sh
     echo "PYTHON=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -212,7 +212,7 @@ if [ "${PCRE}" = 1 ];
   then
     echo "PCRE script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/pcre/pcre-install.sh
+    /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
     echo "PCRE=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -221,7 +221,7 @@ if [ "${ZLIB}" = 1 ];
   then
     echo "ZLIB script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/zlib/zlib-install.sh
+    /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
     echo "ZLIB=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -230,7 +230,7 @@ if [ "${LIBDEFLATE}" = 1 ];
   then
     echo "LIBDEFLATE script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/libdeflate/libdeflate-install.sh
+    /usr/local/bin/enginescript/scripts/install/libdeflate/libdeflate-install.sh
     echo "LIBDEFLATE=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -239,7 +239,7 @@ if [ "${LIBURING}" = 1 ];
   then
     echo "LIBURING script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/liburing/liburing-install.sh
+    /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
     echo "LIBURING=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -248,7 +248,7 @@ if [ "${UFW}" = 1 ];
   then
     echo "UFW script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/ufw/ufw-install.sh
+    /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh
     echo "UFW=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -257,7 +257,7 @@ if [ "${CRON}" = 1 ];
   then
     echo "CRON script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/cron/cron-install.sh
+    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh
     echo "CRON=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -266,7 +266,7 @@ if [ "${PHP}" = 1 ];
   then
     echo "PHP script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/php/php-install.sh
+    /usr/local/bin/enginescript/scripts/install/php/php-install.sh
     echo "PHP=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -275,7 +275,7 @@ if [ "${REDIS}" = 1 ];
   then
     echo "REDIS script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/redis/redis-install.sh
+    /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh
     echo "REDIS=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -284,7 +284,7 @@ if [ "${NGINX}" = 1 ];
   then
     echo "NGINX script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/nginx/nginx-install.sh
+    /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh
     echo "NGINX=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -293,7 +293,7 @@ if [ "${MARIADB}" = 1 ];
   then
     echo "MARIADB script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/mariadb/mariadb-install.sh
+    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh
     echo "MARIADB=1" >> /home/EngineScript/install-log.txt
 fi
 
@@ -302,12 +302,12 @@ if [ "${TOOLS}" = 1 ];
   then
     echo "TOOLS script has already run."
   else
-    /usr/local/bin/enginescript/enginescript/install/tools/tools-install.sh
+    /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh
     echo "TOOLS=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Cleanup
-/usr/local/bin/enginescript/enginescript/functions/enginescript-cleanup.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 # Server Reboot
 clear

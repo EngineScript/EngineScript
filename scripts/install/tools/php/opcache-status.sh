@@ -24,6 +24,7 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# OpCache-Status
+rm -rf /var/www/admin/enginescript/opcache-status
+git clone https://github.com/wp-cloud/opcache-status.git /var/www/admin/enginescript/opcache-status
+cp -p /var/www/admin/enginescript/opcache-status/opcache.php /var/www/admin/enginescript/opcache-status/index.php

@@ -24,6 +24,10 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+source /home/EngineScript/mysql-credentials/mysqlrp.txt
+echo ""
+echo "MySQL Root Login Credentials"
+echo "User: ${BOLD}root${NORMAL}"
+echo "Pass: ${BOLD}${MARIADB_ADMIN_PASSWORD}${NORMAL}"
+echo "Your password is stored in /home/EngineScript/mysql-credentials/mysqlrp.txt"
+echo ""

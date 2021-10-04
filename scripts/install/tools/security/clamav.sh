@@ -24,6 +24,22 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# ClamAV Install
+apt install clamav -y --no-install-recommends
+
+# Set ClamAV Config
+cp -p /usr/local/bin/enginescript/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}ClamAV Anti-Virus installed.${NORMAL}"
+echo ""
+echo "Use command ${BOLD}es.virus${NORMAL} to scan your /var/www/sites directory"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

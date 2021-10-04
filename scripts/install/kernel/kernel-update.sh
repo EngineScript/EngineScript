@@ -24,6 +24,11 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Retrive mainline kernal update script
+wget -O /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kernel.sh https://raw.githubusercontent.com/pimlie/ubuntu-mainline-kernel.sh/master/ubuntu-mainline-kernel.sh
+
+# Permissions
+chmod +x /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kernel.sh
+
+# Install latest kernel
+bash /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kernel.sh -i --yes

@@ -21,9 +21,11 @@ if [ "${EUID}" != 0 ];
     exit
 fi
 
+
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Install zImageOptimizer
+rm -rf /usr/local/bin/zimageoptimizer
+git clone --depth 1 https://github.com/zevilz/zImageOptimizer.git -b master /usr/local/bin/zimageoptimizer
+find /usr/local/bin/zimageoptimizer -type d,f -exec chmod 755 {} \;

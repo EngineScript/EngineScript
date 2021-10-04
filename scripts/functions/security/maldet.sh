@@ -24,6 +24,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Update Maldet
+maldet -d
+maldet -u
+
+# Scan
+maldet --scan-recent / 30

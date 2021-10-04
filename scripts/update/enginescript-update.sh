@@ -24,6 +24,23 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# EngineScript Git Clone
+rm -rf /usr/local/bin/enginescript
+git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
+
+# EngineScript Permissions
+find /usr/local/bin/enginescript/ -type d,f -exec chmod 755 {} \;
+chown -hR root:root /usr/local/bin/enginescript/
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}EngineScript has been updated.${NORMAL}"
+echo ""
+echo "This update includes:"
+echo "    - EngineScript"
+echo ""
+echo "============================================================="
+echo ""
+echo ""

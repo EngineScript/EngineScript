@@ -24,6 +24,8 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Brotli
+rm -rf /usr/src/ngx_brotli
+git clone https://github.com/google/ngx_brotli.git -b master /usr/src/ngx_brotli
+cd /usr/src/ngx_brotli
+git submodule update --init

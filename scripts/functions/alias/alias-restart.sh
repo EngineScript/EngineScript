@@ -24,6 +24,6 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+service nginx restart
+service php${PHP_VER}-fpm restart
+service redis-server restart

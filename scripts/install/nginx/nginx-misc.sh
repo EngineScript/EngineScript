@@ -24,6 +24,18 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Retrieve EngineScript Nginx Configuration
+cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
+
+# Assign Permissions
+chown -hR www-data:www-data /etc/nginx
+chown -hR www-data:www-data /usr/lib/nginx/modules
+chown -hR www-data:www-data /var/cache/nginx
+chown -hR www-data:www-data /var/lib/nginx
+chown -hR www-data:www-data /var/log/domains
+chown -hR www-data:www-data /var/www
+
+# Logrotate - Nginx and Domains
+cp -p /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx
+cp -p /usr/local/bin/enginescript/etc/logrotate.d/domains /etc/logrotate.d/domains
+find /etc/logrotate.d -type f -exec chmod 644 {} \;

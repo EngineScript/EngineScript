@@ -23,7 +23,7 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# This has changed. Cloudflare is now hiding this file
+# https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull#zone-level--cloudflare-certificates
+# Retrieve Cloudflare Origin Certificate
+#wget -O /etc/nginx/ssl/cloudflare/origin-pull-ca.pem https://support.cloudflare.com/hc/en-us/article_attachments/360044928032/origin-pull-ca.pem

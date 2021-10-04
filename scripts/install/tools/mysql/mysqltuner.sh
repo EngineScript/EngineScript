@@ -24,6 +24,24 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# MYSQLTuner
+mkdir -p /usr/local/bin/mysqltuner
+wget -O /usr/local/bin/mysqltuner/mysqltuner.pl https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl
+wget -O /usr/local/bin/mysqltuner/basic_passwords.txt https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt
+wget -O /usr/local/bin/mysqltuner/vulnerabilities.csv https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv
+chmod +x /usr/local/bin/mysqltuner/mysqltuner.pl
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}MySQLTuner installed.${NORMAL}"
+echo ""
+echo "To run MySQLTuner:"
+echo "perl /usr/local/bin/mysqltuner/mysqltuner.pl"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

@@ -24,6 +24,8 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Update Pip
+python3 -m pip install --upgrade pip
+
+# Install Python Stuff
+pip3 install --no-cache-dir gixy ngxtop wapiti3

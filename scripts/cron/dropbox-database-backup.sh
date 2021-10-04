@@ -13,17 +13,16 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
+# Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Include config
+source /home/EngineScript/sites-list/sites.sh
+
+for i in "${SITES[@]}"
+do
+	cd "$ROOT/$i/html"
+
+	# Send Database to Dropbox
+	/usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/wp-database/ /$i
+done

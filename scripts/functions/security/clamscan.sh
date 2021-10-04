@@ -24,6 +24,5 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+echo "Clam Antivirus is running. Scan may take a long time, be patient. Standby for results."
+sudo clamscan --infected --recursive --leave-temps --exclude-dir="^/sys" /

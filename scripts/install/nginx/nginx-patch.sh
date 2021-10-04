@@ -24,6 +24,12 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# These patches will change based on release. Don't assume they will work with a release other than the version they are intended for.
+
+# Patch Nginx
+cd /usr/src/nginx-${NGINX_VER}
+patch -p1 < /usr/local/bin/enginescript/scripts/patches/nginx.patch
+patch -p1 < /usr/local/bin/enginescript/scripts/patches/nginx_io_uring.patch
+
+# Patch OpenSSL
+#cd /usr/src/openssl-${OPENSSL_VER}

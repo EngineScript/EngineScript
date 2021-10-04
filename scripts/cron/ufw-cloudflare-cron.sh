@@ -13,17 +13,10 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Set UFW Cloudflare Rules
+/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
+
+# Enable UFW
+echo "y" | ufw enable

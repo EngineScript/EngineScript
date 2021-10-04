@@ -24,6 +24,11 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Generate self-signed SSL certificate for localhost.
+# This allows you to connect to your server's IP address with SSL enabled.
+# Ignore browser errors related to certificate validity.
+
+# Create Self-Signed SSL Certificate
+openssl req -new -newkey rsa:2048 -days 36500 -nodes -x509 \
+  -subj "/C=US/ST=Florida/L=Orlando/O=EngineScript/CN=${IP_ADDRESS}" \
+  -keyout /etc/nginx/ssl/localhost/localhost.key  -out /etc/nginx/ssl/localhost/localhost.crt

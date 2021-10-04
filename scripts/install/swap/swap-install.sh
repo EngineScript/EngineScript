@@ -24,6 +24,17 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Create Swap File
+fallocate -l 2G /swapfile
+mkswap /swapfile
+echo "Setting correct swapfile permissions: cmod 0600"
+sudo chmod 0600 /swapfile
+swapon /swapfile
+
+# Backup Previous Config
+cp -p /etc/fstab /etc/fstab.bak
+
+# Enable Swap File During Restart
+echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+echo "Ignore any swap errors listed above."
+echo "Swap file will be enabled once the server has restarted."

@@ -24,6 +24,7 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Jemalloc
+touch /etc/ld.so.preload
+echo "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2" | tee --append /etc/ld.so.preload
+ldconfig

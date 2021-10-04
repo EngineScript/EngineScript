@@ -24,6 +24,28 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# phpMyAdmin
+sh -c 'apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install phpmyadmin'
+ln -s /usr/share/phpmyadmin/ /var/www/admin/enginescript
+
+# Login Credentials
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
+
+# Post-Install Cleanup
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}phpMyAdmin installed.${NORMAL}"
+echo ""
+echo "Point your browser to:"
+echo "https://${IP_ADDRESS}/enginescript/phpmyadmin"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5

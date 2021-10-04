@@ -13,17 +13,12 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
+# Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Directory where individual site directories reside
+ROOT=/var/www/sites
+
+# Tasks to be performed on the following sites
+SITES=(
+)

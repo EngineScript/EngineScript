@@ -24,6 +24,10 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Optimized Libdeflate Download
+rm -rf /usr/src/libdeflate
+git clone --depth 1 https://github.com/ebiggers/libdeflate -b master /usr/src/libdeflate
+cd /usr/src/libdeflate
+make clean
+make -j${CPU_COUNT}
+make install

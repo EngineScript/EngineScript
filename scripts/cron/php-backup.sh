@@ -13,17 +13,14 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Filenames
+NOW=$(date +%m-%d-%Y-%H%M)
+PHP_FILE="${NOW}-php.tar.gz";
+
+# Backup PHP Config
+tar -zcf "/home/EngineScript/config-backups/php/$PHP_FILE" /etc/php
+
+# Remove Old PHP Backups
+find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR

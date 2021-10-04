@@ -13,17 +13,14 @@
 source /usr/local/bin/enginescript/scripts-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit
-fi
-
 #----------------------------------------------------------------------------
-# Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Filenames
+NOW=$(date +%m-%d-%Y-%H%M)
+NGINX_FILE="${NOW}-nginx.tar.gz";
+
+# Backup Nginx Config
+tar -zcf "/home/EngineScript/config-backups/nginx/$NGINX_FILE" /etc/nginx
+
+# Remove Old Nginx Backups
+find /home/EngineScript/config-backups/nginx -type f -mtime +15 | xargs rm -fR

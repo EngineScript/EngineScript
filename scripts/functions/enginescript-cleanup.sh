@@ -24,6 +24,16 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Cleanup
+
+# Remove Apache and old PHP installations
+apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' -y
+
+# Remove old downloads
+rm -rf /usr/src/*.tar.gz*
+
+# Remove old packages
+apt autoremove --purge -y
+apt autoclean -y
+
+systemctl daemon-reload

@@ -24,6 +24,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+cd /usr/src
+rm -rf /usr/src/nginx-${NGINX_VER}
+wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz -O /usr/src/nginx-${NGINX_VER}.tar.gz && tar -xzvf /usr/src/nginx-${NGINX_VER}.tar.gz
+wget https://github.com/openresty/headers-more-nginx-module/archive/v${NGINX_HEADER_VER}.tar.gz -O /usr/src/v${NGINX_HEADER_VER}.tar.gz && tar -xzf /usr/src/v${NGINX_HEADER_VER}.tar.gz
+wget https://github.com/nginx-modules/ngx_cache_purge/archive/${NGINX_PURGE_VER}.tar.gz -O /usr/src/${NGINX_PURGE_VER}.tar.gz && tar -xzf /usr/src/${NGINX_PURGE_VER}.tar.gz
+wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz -O /usr/src/openssl-${OPENSSL_VER}.tar.gz && tar -xzf /usr/src/openssl-${OPENSSL_VER}.tar.gz

@@ -24,6 +24,13 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Backup existing PHP config
+cp -r /etc/php/${PHP_VER}/fpm/php.ini /home/EngineScript/config-backups/php/php.ini
+cp -r /etc/php/${PHP_VER}/fpm/php-fpm.conf /home/EngineScript/config-backups/php/php-fpm.conf
+cp -r /etc/php/${PHP_VER}/fpm/pool.d/www.conf /home/EngineScript/config-backups/php/www.conf
+
+echo ""
+echo "Backing up existing php config. Backup can be found in /home/EngineScript/config-backups/php"
+echo ""
+
+sleep 2

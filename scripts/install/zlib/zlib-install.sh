@@ -24,6 +24,30 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Netdata memory tweak
-echo 1 >/sys/kernel/mm/ksm/run
-echo 1000 >/sys/kernel/mm/ksm/sleep_millisecs
+# Cloudflare zlib Download
+rm -rf /usr/src/zlib-cf
+git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 /usr/src/zlib-cf
+cd /usr/src/zlib-cf
+make -f Makefile.in distclean
+./configure \
+  --static \
+  --64
+
+#make
+#make install
+#ldconfig
+
+# zlib-ng download
+rm -rf /usr/src/zlib-ng
+git clone --depth 1 https://github.com/Dead2/zlib-ng -b develop /usr/src/zlib-ng
+cd /usr/src/zlib-ng
+./configure \
+  --zlib-compat
+
+make -j${CPU_COUNT}
+make install
+ldconfig
+
+# Official zlib Download
+wget -O /usr/src/zlib-${ZLIB_VER}.tar.gz https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz
+tar xzvf /usr/src/zlib-${ZLIB_VER}.tar.gz
