@@ -34,8 +34,8 @@ sudo mv wp-cli.phar /usr/local/bin/wp
 wp package install markri/wp-sec --allow-root
 wp package install pantheon-systems/wp_launch_check --allow-root
 wp package install wearerequired/wp-cli-clear-opcache --allow-root
-wp package install git@github.com:johnbillion/ext.git --allow-root
-wp package install git@github.com:wp-cli/cron-command.git --allow-root
+wp package install johnbillion/ext --allow-root
+wp package install wp-cli/cron-command --allow-root
 wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
 
 echo ""
