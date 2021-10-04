@@ -24,7 +24,7 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 #### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
 
-Edit the following file: **home/EngineScript/enginescript-install-options.txt**.
+Edit the following file: **/home/EngineScript/enginescript-install-options.txt**.
 
 Download the file via FTP and edit it using your favorite text editor. You may also edit the file directly from the console using the following command:
 ```shell
