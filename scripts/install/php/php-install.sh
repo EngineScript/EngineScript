@@ -47,6 +47,8 @@ touch /var/log/php/fpm-php.www.log
 touch /var/log/php/php.log
 
 chmod 775 /var/cache/opcache
+chmod 775 /var/log/opcache
+chmod 775 /var/log/php
 chmod 775 /var/log/opcache/opcache.log
 chmod 775 /var/log/php/fpm-php.www.log
 chmod 775 /var/log/php/php.log
