@@ -34,7 +34,7 @@ nano /home/EngineScript/enginescript-install-options.txt
 #### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
 ```shell
-bash /usr/local/bin/enginescript/scripts-install.sh
+bash /usr/local/bin/enginescript/enginescript-install.sh
 ```
 
 ----------
