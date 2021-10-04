@@ -62,7 +62,7 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Configure New Domain" "Update EngineScript" "Update Existing Domain Vhost File" "Update Nginx" "Update PHP" "Update MariaDB" "Update Server Management Tools" "Exit EngineScript")
+    options=("Configure New Domain" "Update EngineScript" "Security Scanners" "Change EngineScript Install Options" "Update Existing Domain Vhost File" "Update Nginx" "Update PHP" "Update MariaDB" "Update Server Management Tools" "Exit EngineScript")
     select opt in "${options[@]}"
     do
       case $opt in
@@ -72,6 +72,15 @@ while true
           ;;
         "Update EngineScript")
           /usr/local/bin/enginescript/enginescript/update/enginescript-update.sh
+          break
+          ;;
+        "Security Scanners")
+          /usr/local/bin/enginescript/enginescript/menu/security-tools-menu.sh
+          break
+          ;;
+        "Change EngineScript Install Options")
+          nano /home/enginescript-install-options.txt
+          sleep 3
           break
           ;;
         "Update Existing Domain Vhost File")
@@ -101,11 +110,6 @@ while true
           ;;
         "Change EngineScript Software Versions")
           nano /usr/local/bin/enginescript/enginescript-variables.txt
-          sleep 3
-          break
-          ;;
-        "Change EngineScript User-Specific Variables")
-          nano /home/enginescript-install-options.txt
           sleep 3
           break
           ;;

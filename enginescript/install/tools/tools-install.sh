@@ -74,6 +74,9 @@ fi
 # ClamAV
 /usr/local/bin/enginescript/enginescript/install/tools/security/clamav.sh
 
+# Maldet
+/usr/local/bin/enginescript/enginescript/install/tools/security/maldet.sh
+
 # PHP Malware Finder
 /usr/local/bin/enginescript/enginescript/install/tools/security/php-malware-finder.sh
 
@@ -87,7 +90,7 @@ if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
     echo "Installing Dropbox Uploader"
     echo "Please follow the instructions in the script that is about to run."
     sleep 5
-    /usr/local/bin/enginescript/enginescript/install/tools/system/dropbox_uploader.sh
+    /usr/local/bin/enginescript/enginescript/install/tools/system/dropbox-uploader.sh
   else
     echo "Skipping Dropbox Uploader install"
 fi

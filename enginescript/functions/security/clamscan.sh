@@ -24,8 +24,5 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-cd /var/www/sites
-printf "Please select the site you want to scan for vulnerabilities:\n"
-select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
-cd "$d"html && echo "Clam Antivirus is running. Scan may take a bit, standby for results."
-clamscan -ir /wp-content
+echo "Clam Antivirus is running. Scan may take a long time, be patient. Standby for results."
+sudo clamscan --infected --recursive --leave-temps --exclude-dir="^/sys" /

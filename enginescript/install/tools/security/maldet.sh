@@ -24,9 +24,24 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Update Maldet
-maldet -d
-maldet -u
+# Maldet Install
+cd /usr/local/src
+wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+tar -xvf maldetect-current.tar.gz
+cd maldetect-1.6.4/
+./install.sh
+echo "/sys" >> /usr/local/maldetect/ignore_paths
 
-# Scan
-maldet --scan-recent / 30
+echo ""
+echo ""
+echo "============================================================="
+echo ""
+echo "${BOLD}ClamAV Anti-Virus installed.${NORMAL}"
+echo ""
+echo "Use command ${BOLD}es.virus${NORMAL} to scan your /var/www/sites directory"
+echo ""
+echo "============================================================="
+echo ""
+echo ""
+
+sleep 5
