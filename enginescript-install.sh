@@ -38,6 +38,7 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ];
     echo "It is recommended that a server running EngineScript has at least 2GB total memory."
     echo "EngineScript will attempt to configure memory settings that will work for a 1GB server, but performance is not guaranteed."
     echo "You may need to manually change memory limits in PHP and MariaDB."
+    sleep 10
   else
     echo "80% of total server memory: ${SERVER_MEMORY_TOTAL_80}"
 fi
