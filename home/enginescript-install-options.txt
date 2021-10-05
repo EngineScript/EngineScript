@@ -26,9 +26,8 @@ CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
 # Webmin
-ADMIN_EMAIL="PLACEHOLDER@P@PLACEHOLDER.com"
-ADMIN_USERNAME="PLACEHOLDER"
-ADMIN_PASSWORD="PLACEHOLDER"
+WEBMIN_USERNAME="PLACEHOLDER"
+WEBMIN_PASSWORD="PLACEHOLDER"
 
 # Nginx Password Protection
 # This adds a second layer of security to the admin areas on the server such as webmin and phpmyadmin.
