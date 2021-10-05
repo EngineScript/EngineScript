@@ -30,7 +30,7 @@ apt install php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-common php${PHP_VER
 
 # Logrotate
 cp -p /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
-cp -p /usr/local/bin/enginescript/etc/logrotate.d/php8.0 /etc/logrotate.d/php8.0
+cp -p /usr/local/bin/enginescript/etc/logrotate.d/php8.0-fpm /etc/logrotate.d/php8.0-fpm
 
 # Backup PHP config
 /usr/local/bin/enginescript/scripts/cron/php-backup.sh
