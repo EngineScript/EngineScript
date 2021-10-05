@@ -10,7 +10,7 @@
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/scripts-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 #----------------------------------------------------------------------------

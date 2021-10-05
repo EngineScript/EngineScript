@@ -25,7 +25,7 @@ fi
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/scripts-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Reboot Warning
@@ -53,15 +53,15 @@ apt install --install-recommends linux-generic-hwe-20.04 -y
 
 sleep 3
 # Add User
-useradd -m -s /bin/bash -c "Administrative User" ${ADMIN_USERNAME} ; echo -e "${ADMIN_PASSWORD}\n${ADMIN_PASSWORD}" | passwd ${ADMIN_USERNAME}
+useradd -m -s /bin/bash -c "Administrative User" ${WEBMIN_USERNAME} ; echo -e "${WEBMIN_PASSWORD}\n${WEBMIN_PASSWORD}" | passwd ${WEBMIN_USERNAME}
 
 # Remove Password Expiration
 chage -I -1 -m 0 -M 99999 -E -1 root
-chage -I -1 -m 0 -M 99999 -E -1 ${ADMIN_USERNAME}
+chage -I -1 -m 0 -M 99999 -E -1 ${WEBMIN_USERNAME}
 
 # Set Sudo
-usermod -aG sudo "${ADMIN_USERNAME}"
-echo "User account ${BOLD}${ADMIN_USERNAME}${NORMAL} has been created." | boxes -a c -d shell -p a1l2
+usermod -aG sudo "${WEBMIN_USERNAME}"
+echo "User account ${BOLD}${WEBMIN_USERNAME}${NORMAL} has been created." | boxes -a c -d shell -p a1l2
 
 # Install Check
 touch /home/EngineScript/install-log.txt
