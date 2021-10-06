@@ -10,7 +10,7 @@
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/scripts-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Check current user's ID. If user is not 0 (root), exit.
@@ -25,8 +25,16 @@ fi
 # Start Main Script
 
 # phpMyAdmin
-sh -c 'apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install phpmyadmin'
-ln -s /usr/share/phpmyadmin/ /var/www/admin/enginescript
+wget -O /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
+unzip /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
+mv phpMyAdmin-${PHPMYADMIN_VER}-all-languages phpmyadmin
+mv phpmyadmin /var/www/admin/enginescript
+sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
+mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
+chown -hR www-data:www-data /var/www/admin/enginescript/phpmyadmin/tmp
+mysql -u root -p$MARIADB_ADMIN_PASSWORD < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER 'pma'@'localhost' IDENTIFIED BY 'pmapass';"
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'pma'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
 # Login Credentials
 mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"

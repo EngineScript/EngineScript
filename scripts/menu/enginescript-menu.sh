@@ -10,7 +10,7 @@
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/scripts-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Check current user's ID. If user is not 0 (root), exit.
@@ -30,29 +30,19 @@ while true
     clear
 
     echo ""
-    echo ""
     echo "==============================================================="
     echo "EngineScript - Advanced WordPress LEMP Server Installation"
     echo "==============================================================="
     echo ""
-    echo "EngineScript is an automated, high-performance WordPress LEMP server installation tool."
-    echo ""
-    echo "To learn more about EngineScript, visit:"
-    echo "https://github.com/Enginescript/EngineScript"
-    echo ""
-    echo "EngineScript Requires:"
-    echo "  - Ubuntu 20.04 focal"
-    echo "  - Cloudflare"
-    echo "  - 30 minutes of your time"
-    echo ""
-    echo "Ready to get started?"
-    echo ""
-    echo "EngineScript is installed and active."
-    echo ""
-    echo "Helpful commands:"
+    echo "Admin Control Panels:"
+    echo "Webmin - https://${IP_ADDRESS}:32792"
+    echo "PHPSysInfo - https://${IP_ADDRESS}/enginescript/phpsysinfo"
+    echo "PHPInfo - https://${IP_ADDRESS}/enginescript/phpinfo"
+    echo "Adminer - https://${IP_ADDRESS}/enginescript/adminer"
+    echo "PHPMyAdmin - https://${IP_ADDRESS}/enginescript/phpmyadmin"
+    echo "Helpful Commands:"
     echo ""
     echo "es.menu - open EngineScript menu"
-    echo "es.mysql - display your MySQL root password (username is root)"
     echo "es.restart - Restart Nginx and PHP-FPM"
     echo "es.update - update and upgrade your server using APT"
     echo ""
@@ -109,7 +99,7 @@ while true
           break
           ;;
         "Change EngineScript Software Versions")
-          nano /usr/local/bin/enginescript/scripts-variables.txt
+          nano /usr/local/bin/enginescript/enginescript-variables.txt
           sleep 3
           break
           ;;
