@@ -147,6 +147,7 @@ cd /var/www/sites/${SITE_URL}/html
 
 # Domain Logs
 mkdir -p /var/log/domains/${SITE_URL}
+touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
 chown -hR www-data:www-data /var/log/domains/${SITE_URL}
 
 # Download WordPress using WP-CLI
