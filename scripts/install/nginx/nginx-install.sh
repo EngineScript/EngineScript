@@ -42,9 +42,6 @@ fi
 # Create Nginx Directories
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-create-directories.sh
 
-# Custom Nginx Error Pages
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-error-pages.sh
-
 # Misc Nginx Stuff
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh
 
