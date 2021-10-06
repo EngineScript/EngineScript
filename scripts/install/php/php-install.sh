@@ -53,12 +53,12 @@ chmod 775 /var/log/opcache/opcache.log
 chmod 775 /var/log/php/fpm-php.www.log
 chmod 775 /var/log/php/php.log
 
-chown www-data:www-data /var/cache/opcache
-chown www-data:www-data /var/log/opcache
-chown www-data:www-data /var/log/php
-chown www-data:www-data /var/log/opcache/opcache.log
-chown www-data:www-data /var/log/php/fpm-php.www.log
-chown www-data:www-data /var/log/php/php.log
+chown -hR www-data:www-data /var/cache/opcache
+chown -hR www-data:www-data /var/log/opcache
+chown -hR www-data:www-data /var/log/php
+chown -hR www-data:www-data /var/log/opcache/opcache.log
+chown -hR www-data:www-data /var/log/php/fpm-php.www.log
+chown -hR www-data:www-data /var/log/php/php.log
 
 # Restart PHP
 service php${PHP_VER}-fpm restart

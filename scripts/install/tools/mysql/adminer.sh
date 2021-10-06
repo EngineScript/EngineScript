@@ -29,7 +29,7 @@ mkdir /var/www/admin/enginescript/adminer
 wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/index.php
 
 # Set Permissons
-chown -R www-data:www-data /var/www/admin/enginescript/adminer
+chown -hR www-data:www-data /var/www/admin/enginescript/adminer
 find /var/www/admin/enginescript/adminer/ -type d -exec chmod 755 {} \;
 find /var/www/admin/enginescript/adminer/ -type f -exec chmod 644 {} \;
 
