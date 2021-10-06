@@ -30,3 +30,10 @@ maldet -u
 
 # Scan
 maldet --scan-recent / 30
+
+# Ask user to acknowledge that the scan has completed before moving on
+echo ""
+echo ""
+read -n 1 -s -r -p "Press any key to continue"
+echo ""
+echo ""
