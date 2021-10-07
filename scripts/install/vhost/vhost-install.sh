@@ -183,9 +183,9 @@ cp -p /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 
 # WP File Permissions
-find /var/www/sites/${SITE_URL}/html/ -type d -exec chmod 755 {} \;
-find /var/www/sites/${SITE_URL}/html/ -type f -exec chmod 644 {} \;
-chown -hR www-data:www-data /var/www/sites/${SITE_URL}/html/
+find /var/www/sites/${SITE_URL}/ -type d -exec chmod 755 {} \;
+find /var/www/sites/${SITE_URL}/ -type f -exec chmod 644 {} \;
+chown -hR www-data:www-data /var/www/sites/${SITE_URL}/
 chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
 
