@@ -42,7 +42,8 @@ bash /usr/local/bin/enginescript/enginescript-install.sh
 #### Domain Creation
 After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
 
-Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
+Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download WordPress, and assign the applicable data to your wp-config.php file within WordPress.
+
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to finalize your installation:
 
 ##### Go to the Cloudflare Dashboard
@@ -54,7 +55,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 
 ##### Click on the Edge Certificates section
 1. Set Always Use HTTPS to Off (this can cause error loops).
-2. We recommend enabling HSTS. Turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
+2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
 3. Set Minimum TLS Version to TLS 1.2.
 4. Enable Opportunistic Encryption.
 5. Enable TLS 1.3.
@@ -65,14 +66,14 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 
 ##### Click on the Network tab
 1. Enable HTTP/2.
-2. Enable HTTP/3 (with QUIC).
-3. Enable 0-RTT Connection Resumption.
-4. Enable IPv6 Compatibility.
-5. Enable gRPC.
-6. Enable WebSockets.
-7. Enable Onion Routing.
-8. Enable Pseudo IPv4.
-9. Enable IP Geolocation.
+2. Enable HTTP/3 (with QUIC). *(Optional)*
+3. Enable 0-RTT Connection Resumption. *(Optional)*
+4. Enable IPv6 Compatibility. *(Optional)*
+5. Enable gRPC. *(Optional)*
+6. Enable WebSockets. *(Optional)*
+7. Enable Onion Routing. *(Optional)*
+8. Enable Pseudo IPv4. *(Optional)*
+9. Enable IP Geolocation. *(Optional)*
 
 ### EngineScript Information
 #### EngineScript Location Reference
