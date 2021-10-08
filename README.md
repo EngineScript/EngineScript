@@ -4,7 +4,7 @@ EngineScript automates the process of building a high-performance LEMP server. W
 
 EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful.
 
-As this is a pre-release version, so things might be totally broken day-to-day as things are developed.
+As this is a pre-release version.
 
 #### Features
 
@@ -43,13 +43,36 @@ bash /usr/local/bin/enginescript/enginescript-install.sh
 After EngineScript is fully installed, type `enginescript` or `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
 
 Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
+Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to finalize your installation:
 
-#### Tuning MySQL
+##### Go to the Cloudflare Dashboard
+1. Select your site.
+2. Click on the SSL/TLS tab.
 
-**Run MySQLTuner:**
-```shell
-perl /usr/local/bin/mysqltuner/mysqltuner.pl
-```
+##### Click on the Overview section
+1. Set the SSL mode to Full (Strict).
+
+##### Click on the Edge Certificates section
+1. Set Always Use HTTPS to Off (this can cause error loops).
+2. We recommend enabling HSTS. Turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
+3. Set Minimum TLS Version to TLS 1.2.
+4. Enable Opportunistic Encryption.
+5. Enable TLS 1.3.
+6. Enable Automatic HTTPS Rewrites
+
+##### Click on the Origin Server section
+1. Set Authenticated Origin Pulls to On.
+
+##### Click on the Network tab
+1. Enable HTTP/2.
+2. Enable HTTP/3 (with QUIC).
+3. Enable 0-RTT Connection Resumption.
+4. Enable IPv6 Compatibility.
+5. Enable gRPC.
+6. Enable WebSockets.
+7. Enable Onion Routing.
+8. Enable Pseudo IPv4.
+9. Enable IP Geolocation.
 
 ### EngineScript Information
 #### EngineScript Location Reference
@@ -71,15 +94,12 @@ perl /usr/local/bin/mysqltuner/mysqltuner.pl
 #### EngineScript Commands
 |Command            |Function                       |
 |-------------------|-------------------------------|
-|**`es.compress`**  |Compresses /var/www/sites directories with Brotli and GZIP |
+|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis |
+|**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory (server-wide) |
 |**`es.menu`**	    |EngineScript menu |
 |**`es.mysql`**     |Prints MySQL root login credentials|
 |**`es.restart`**   |Restarts Nginx and PHP |
 |**`es.update`**    |Updates EngineScript, performs apt full-upgrade |
-|**`es.virus`**     |Virus scans /var/www/sites directories with ClamAV |
-|**`ng.test`**      |`nginx -t -c /etc/nginx/nginx.conf` |
-|**`ng.stop`**      |`ng.test && systemctl stop nginx` |
-|**`ng.reload`**    |`ng.test && systemctl reload nginx` |
 |                   |                                |
 
 ### Support EngineScript
