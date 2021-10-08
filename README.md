@@ -40,7 +40,7 @@ bash /usr/local/bin/enginescript/enginescript-install.sh
 ----------
 
 #### Domain Creation
-After EngineScript is fully installed, type `enginescript` or `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
+After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
 
 Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download the latest WordPress release, and assign the applicable data to your wp-config.php file within WordPress.
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to finalize your installation:
@@ -97,7 +97,6 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis |
 |**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory (server-wide) |
 |**`es.menu`**	    |EngineScript menu |
-|**`es.mysql`**     |Prints MySQL root login credentials|
 |**`es.restart`**   |Restarts Nginx and PHP |
 |**`es.update`**    |Updates EngineScript, performs apt full-upgrade |
 |                   |                                |
