@@ -87,7 +87,6 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 |**/usr/local/bin/enginescript** |EngineScript source |
 |**/var/lib/mysql**              |MySQL database |
 |**/var/log**                    |Server logs |
-|**/var/www/admin**              |Admin Panel root |
 |**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
 |**/var/www/sites/yourdomain.com/html**|Root directory for your WordPress installation |
 |                                |                |
