@@ -26,4 +26,4 @@ fi
 
 # OpCache-GUI
 rm -rf /var/www/admin/enginescript/opcache-gui
-git clone https://github.com/amnuts/opcache-gui.git /var/www/admin/enginescript/opcache-gui
+git clone --depth 1 https://github.com/amnuts/opcache-gui.git /var/www/admin/enginescript/opcache-gui
