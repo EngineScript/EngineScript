@@ -47,9 +47,6 @@ fi
 # phpMyAdmin
 /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh
 
-# Tuning-Primer
-#/usr/local/bin/enginescript/scripts/install/tools/mysql/tuning-primer.sh
-
 #------------------------------------------------
 # Nginx Tools
 #------------------------------------------------
@@ -60,9 +57,6 @@ fi
 
 # OpCache-GUI
 /usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
-
-# OpCache-Status
-/usr/local/bin/enginescript/scripts/install/tools/php/opcache-status.sh
 
 # PHPinfo.php
 /usr/local/bin/enginescript/scripts/install/tools/php/phpinfo.sh

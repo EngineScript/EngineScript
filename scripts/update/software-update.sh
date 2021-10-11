@@ -41,17 +41,11 @@ fi
 # Update OpCache-GUI
 /usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
 
-# Update OpCache-Status
-/usr/local/bin/enginescript/scripts/install/tools/php/opcache-status.sh
-
 # Update PHP Malware Finder
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
 
 # Update Python
 /usr/local/bin/enginescript/scripts/update/python-update.sh
-
-# Update Tuning-Primer
-/usr/local/bin/enginescript/scripts/install/tools/mysql/tuning-primer.sh
 
 # Update WP-CLI
 echo "y" | wp cli update --stable --allow-root
@@ -81,10 +75,8 @@ echo "    - Adminer"
 echo "    - libdeflate"
 echo "    - MYSQLTuner"
 echo "    - OpCache-GUI"
-echo "    - OpCache-Status"
 echo "    - PHP Malware Finder"
 echo "    - Python Packages"
-echo "    - Tuning-Primer"
 echo "    - WP-CLI"
 echo "      - WP-CLI Packages"
 echo "    - WP-Scan"
