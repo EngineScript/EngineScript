@@ -57,13 +57,6 @@ cp -p /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
 sed -i "s|SEDMYSQL60PERCENT|${SERVER_MEMORY_TOTAL_60}|g" /etc/mysql/mariadb.cnf
 systemctl start mariadb.service
 
-# MySQL Login Details Display
-#echo ""
-#/usr/local/bin/enginescript/scripts/functions/alias/alias-mysql-pass.sh
-#echo ""
-#echo "Use command ${BOLD}es.mysql${NORMAL} to view these details in the future."
-#sleep 5
-
 echo ""
 echo "============================================================="
 echo ""

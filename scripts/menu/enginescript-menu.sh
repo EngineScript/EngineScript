@@ -99,11 +99,6 @@ while true
           sleep 3
           break
           ;;
-        "Change EngineScript Software Versions")
-          nano /usr/local/bin/enginescript/enginescript-variables.txt
-          sleep 3
-          break
-          ;;
         "Exit EngineScript")
           exit
           ;;
