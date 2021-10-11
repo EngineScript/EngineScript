@@ -34,6 +34,7 @@ ufw allow 80 comment 'HTTP'
 ufw allow out 123/udp 'NTP'
 ufw allow 443 comment 'HTTPS'
 ufw allow 1022 comment 'Backup SSH port during dist upgrade'
+ufw allow 2048 comment 'RAILGUN'
 ufw allow 32792 comment 'WEBMIN'
 
 # UFW Reject Rules
