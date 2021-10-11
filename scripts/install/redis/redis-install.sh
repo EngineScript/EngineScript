@@ -31,11 +31,11 @@ apt install redis-server redis-tools --no-install-recommends
 mkdir -p /run/redis
 mkdir -p /var/log/redis
 touch /var/log/redis/redis.log
-chmod 775 /var/log/redis/redis.log
+find /var/log/redis -type d,f -exec chmod 755 {} \;
 chmod 775 /etc/redis/redis.conf
 chmod 775 /run/redis
 chown -hR redis:redis /run/redis
-chown -hR redis:redis /var/log/redis/redis.log
+chown -hR redis:redis /var/log/redis
 
 cp -p /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_07}|g" /etc/redis/redis.conf

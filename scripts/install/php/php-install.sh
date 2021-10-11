@@ -47,18 +47,12 @@ touch /var/log/php/fpm-php.www.log
 touch /var/log/php/php.log
 
 chmod 775 /var/cache/opcache
-chmod 775 /var/log/opcache
-chmod 775 /var/log/php
-chmod 775 /var/log/opcache/opcache.log
-chmod 775 /var/log/php/fpm-php.www.log
-chmod 775 /var/log/php/php.log
+find /var/log/php -type d,f -exec chmod 755 {} \;
+find /var/log/opcache -type d,f -exec chmod 755 {} \;
 
 chown -hR www-data:www-data /var/cache/opcache
 chown -hR www-data:www-data /var/log/opcache
 chown -hR www-data:www-data /var/log/php
-chown -hR www-data:www-data /var/log/opcache/opcache.log
-chown -hR www-data:www-data /var/log/php/fpm-php.www.log
-chown -hR www-data:www-data /var/log/php/php.log
 
 # Restart PHP
 service php${PHP_VER}-fpm restart
