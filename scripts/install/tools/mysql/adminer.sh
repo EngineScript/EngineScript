@@ -30,8 +30,8 @@ wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/i
 
 # Set Permissons
 chown -hR www-data:www-data /var/www/admin/enginescript/adminer
-find /var/www/admin/enginescript/adminer/ -type d -exec chmod 755 {} \;
-find /var/www/admin/enginescript/adminer/ -type f -exec chmod 644 {} \;
+find /var/www/admin/enginescript/adminer -type d -exec chmod 755 {} \;
+find /var/www/admin/enginescript/adminer -type f -exec chmod 644 {} \;
 
 echo ""
 echo ""
