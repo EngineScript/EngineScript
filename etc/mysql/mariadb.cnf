@@ -113,7 +113,6 @@ innodb_open_files	= 400
 innodb_io_capacity = 400
 innodb_flush_method	= O_DIRECT
 
-
 # * Security Features
 # chroot = /var/lib/mysql/
 
@@ -121,7 +120,6 @@ innodb_flush_method	= O_DIRECT
 # ssl-ca=/etc/mysql/cacert.pem
 # ssl-cert=/etc/mysql/server-cert.pem
 # ssl-key=/etc/mysql/server-key.pem
-
 
 # * Galera-related settings
 [galera]

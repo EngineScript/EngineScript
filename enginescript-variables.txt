@@ -6,7 +6,7 @@
 #-#-#-#-#-#-#         Edit These At Your Own Risk         #-#-#-#-#-#-
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
-# Variables date: 10/11/21
+# Variables date: 10/12/21
 
 # Software Versions
 MARIADB_VER="10.6"
@@ -36,7 +36,7 @@ SERVER_MEMORY_TOTAL_02="$(free -m | awk 'NR==2{printf "%d", $2*0.02 }')"
 SERVER_MEMORY_TOTAL_06="$(free -m | awk 'NR==2{printf "%d", $2*0.06 }')"
 SERVER_MEMORY_TOTAL_07="$(free -m | awk 'NR==2{printf "%d", $2*0.07 }')"
 SERVER_MEMORY_TOTAL_12="$(free -m | awk 'NR==2{printf "%d", $2*0.12 }')"
-SERVER_MEMORY_TOTAL_60="$(free -m | awk 'NR==2{printf "%d", $2*0.60 }')"
+SERVER_MEMORY_TOTAL_55="$(free -m | awk 'NR==2{printf "%d", $2*0.55 }')"
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 UBUNTU_CODENAME="$(lsb_release -sc)"
 UBUNTU_VER="$(lsb_release -sr)"
