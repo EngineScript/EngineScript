@@ -55,7 +55,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 1. Set the SSL mode to Full (Strict).
 
 ##### Click on the Edge Certificates section
-1. Set Always Use HTTPS to Off (this can cause error loops).
+1. Set Always Use HTTPS to Off *(Important: This can cause redirect loops)*.
 2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
 3. Set Minimum TLS Version to TLS 1.2.
 4. Enable Opportunistic Encryption.
