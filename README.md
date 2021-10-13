@@ -98,7 +98,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 |**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory (server-wide) |
 |**`es.menu`**	    |EngineScript menu |
 |**`es.restart`**   |Restarts Nginx and PHP |
-|**`es.update`**    |Updates EngineScript, performs apt full-upgrade |
+|**`es.update`**    |Updates EngineScript |
 |                   |                                |
 
 ### Support EngineScript
