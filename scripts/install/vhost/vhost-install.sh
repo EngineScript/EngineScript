@@ -72,7 +72,7 @@ echo "Click on the Overview section."
 echo "  1. Set the SSL mode to Full (Strict)"
 echo ""
 echo "Still in the SSL/TLS tab, click on the Edge Certificates section."
-echo "  1.  Set Always Use HTTPS to Off (this can cause error loops)."
+echo "  1.  Set Always Use HTTPS to Off (Important: This can cause redirect loops)."
 echo "  2.  We recommend enabling HSTS. Turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever."
 echo "  3.  Set Minimum TLS Version to TLS 1.2."
 echo "  4.  Enable Opportunistic Encryption"
@@ -118,7 +118,7 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 --key-file /etc/nginx/ssl/${DOMAIN}/key.pem \
 --fullchain-file /etc/nginx/ssl/${DOMAIN}/fullchain.pem \
 --ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem \
---reloadcmd "systemctl restart nginx.service"
+--reloadcmd "date"
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"
@@ -159,7 +159,7 @@ cd /var/www/sites/${SITE_URL}/html
 # Domain Logs
 mkdir -p /var/log/domains/${SITE_URL}
 touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
-chown -hR www-data:www-data /var/log/domains/${SITE_URL}
+chown -R www-data:www-data /var/log/domains/${SITE_URL}
 
 # Download WordPress using WP-CLI
 wp core download --allow-root
@@ -196,7 +196,7 @@ sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 # WP File Permissions
 find /var/www/sites/${SITE_URL} -type d -exec chmod 755 {} \;
 find /var/www/sites/${SITE_URL} -type f -exec chmod 644 {} \;
-chown -hR www-data:www-data /var/www/sites/${SITE_URL}
+chown -R www-data:www-data /var/www/sites/${SITE_URL}
 chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
 
@@ -247,6 +247,16 @@ wp redis enable --allow-root
 # WP-CLI set permalink structure for FastCGI Cache
 wp option get permalink_structure --allow-root
 wp option update permalink_structure '/%category%/%postname%/' --allow-root
+
+# Setting Permissions Again
+# For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
+# the ownership of the /uploads, /upgrade, and plugin directories to root:root.
+cd /var/www/sites/${SITE_URL}
+chown -R www-data:www-data /var/www/sites/${SITE_URL}
+chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
+find . -type d -exec chmod 0755 {} \;
+find . -type f -exec chmod 0644 {} \;
+chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
 
 clear
 
