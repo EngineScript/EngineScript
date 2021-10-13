@@ -43,7 +43,7 @@ bash /usr/local/bin/enginescript/enginescript-install.sh
 #### Domain Creation
 After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
 
-Domain creation is almost entirely automated, requiring only a few lines entered by the user. During this automated domain creation process, we'll create a unique Nginx vhost file, create new MySQL database, download WordPress, and assign the applicable data to your wp-config.php file within WordPress.
+Domain creation is almost entirely automated, requiring you to only enter the domain name you wish to create. During this automated process, we'll create a unique Nginx vhost file, create new MySQL database, request a new SSL certificate from Cloudflare, download WordPress, install and activate plugins, and assign the applicable data to your wp-config.php.
 
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to finalize your installation:
 
@@ -55,7 +55,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 1. Set the SSL mode to Full (Strict).
 
 ##### Click on the Edge Certificates section
-1. Set Always Use HTTPS to Off *(Important: This can cause redirect loops)*.
+1. Set Always Use HTTPS to Off. *(Important: This can cause redirect loops)*
 2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
 3. Set Minimum TLS Version to TLS 1.2.
 4. Enable Opportunistic Encryption.
@@ -95,11 +95,11 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 #### EngineScript Commands
 |Command            |Function                       |
 |-------------------|-------------------------------|
-|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis |
-|**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory (server-wide) |
+|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
+|**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
 |**`es.menu`**	    |EngineScript menu |
-|**`es.restart`**   |Restarts Nginx and PHP |
-|**`es.update`**    |Updates EngineScript |
+|**`es.restart`**   |Restart Nginx and PHP |
+|**`es.update`**    |Update EngineScript |
 |                   |                                |
 
 ### Support EngineScript
