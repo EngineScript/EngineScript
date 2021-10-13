@@ -32,23 +32,23 @@ do
 	chmod 600 wp-config.php
 
 	# Ownership
-	chown -hR www-data:www-data *
+	chown -R www-data:www-data *
 
   # Make wp-cron executable
   chmod +x wp-cron.php
 done
 
 # Assign Nginx Permissions
-chown -hR www-data:www-data /etc/nginx
-chown -hR www-data:www-data /usr/lib/nginx/modules
-chown -hR www-data:www-data /var/cache/nginx
-chown -hR www-data:www-data /var/lib/nginx
-chown -hR www-data:www-data /var/log/domains
-chown -hR www-data:www-data /var/www
+chown -R www-data:www-data /etc/nginx
+chown -R www-data:www-data /usr/lib/nginx/modules
+chown -R www-data:www-data /var/cache/nginx
+chown -R www-data:www-data /var/lib/nginx
+chown -R www-data:www-data /var/log/domains
+chown -R www-data:www-data /var/www
 
 # Assign PHP Opcache Permissions
-chown -hR www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/cache/opcache
 
 # Assign EngineScript Permissions
 chmod -R 755 /usr/local/bin/enginescript
-chown -hR root:root /usr/local/bin/enginescript
+chown -R root:root /usr/local/bin/enginescript

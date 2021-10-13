@@ -31,7 +31,7 @@ mv phpMyAdmin-${PHPMYADMIN_VER}-all-languages phpmyadmin
 mv phpmyadmin /var/www/admin/enginescript
 sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
 mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
-chown -hR www-data:www-data /var/www/admin/enginescript/phpmyadmin
+chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
 mysql -u root -p$MARIADB_ADMIN_PASSWORD < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
 mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER 'pma'@'localhost' IDENTIFIED BY 'pmapass';"
 mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'pma'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"

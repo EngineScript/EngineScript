@@ -32,7 +32,7 @@ cp -p /usr/local/bin/enginescript/var/www/admin/phpsysinfo/phpsysinfo.ini /var/w
 # Set Permissions
 find /var/www/admin/enginescript/phpsysinfo -type d -exec chmod 755 {} \;
 find /var/www/admin/enginescript/phpsysinfo -type f -exec chmod 644 {} \;
-chown -hR www-data:www-data /var/www/admin/enginescript/phpsysinfo
+chown -R www-data:www-data /var/www/admin/enginescript/phpsysinfo
 
 echo ""
 echo ""

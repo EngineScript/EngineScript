@@ -31,7 +31,7 @@ echo "<?php phpinfo(); ?>" > /var/www/admin/enginescript/phpinfo/index.php
 # Set Permissions
 find /var/www/admin/enginescript/phpinfo -type d -exec chmod 755 {} \;
 find /var/www/admin/enginescript/phpinfo -type f -exec chmod 644 {} \;
-chown -hR www-data:www-data /var/www/admin/enginescript/phpinfo
+chown -R www-data:www-data /var/www/admin/enginescript/phpinfo
 
 echo ""
 echo ""

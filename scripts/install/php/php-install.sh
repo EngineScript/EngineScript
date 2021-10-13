@@ -50,9 +50,9 @@ chmod 775 /var/cache/opcache
 find /var/log/php -type d,f -exec chmod 755 {} \;
 find /var/log/opcache -type d,f -exec chmod 755 {} \;
 
-chown -hR www-data:www-data /var/cache/opcache
-chown -hR www-data:www-data /var/log/opcache
-chown -hR www-data:www-data /var/log/php
+chown -R www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/log/opcache
+chown -R www-data:www-data /var/log/php
 
 # Restart PHP
 service php${PHP_VER}-fpm restart

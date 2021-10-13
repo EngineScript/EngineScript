@@ -28,12 +28,12 @@ fi
 cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
 
 # Assign Permissions
-chown -hR www-data:www-data /etc/nginx
-chown -hR www-data:www-data /usr/lib/nginx/modules
-chown -hR www-data:www-data /var/cache/nginx
-chown -hR www-data:www-data /var/lib/nginx
-chown -hR www-data:www-data /var/log/domains
-chown -hR www-data:www-data /var/www
+chown -R www-data:www-data /etc/nginx
+chown -R www-data:www-data /usr/lib/nginx/modules
+chown -R www-data:www-data /var/cache/nginx
+chown -R www-data:www-data /var/lib/nginx
+chown -R www-data:www-data /var/log/domains
+chown -R www-data:www-data /var/www
 
 # Logrotate - Nginx and Domains
 cp -p /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx

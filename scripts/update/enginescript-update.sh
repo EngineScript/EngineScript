@@ -30,7 +30,7 @@ git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
-chown -hR root:root /usr/local/bin/enginescript
+chown -R root:root /usr/local/bin/enginescript
 
 echo ""
 echo ""
