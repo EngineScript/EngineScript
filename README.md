@@ -9,6 +9,7 @@ As this is a pre-release version.
 #### Features
 
 #### Requirements
+- **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
 - **Ubuntu 20.04**
 - **64-Bit OS**
 - **Minimum 1GB RAM** *(2GB+ recommended)*
