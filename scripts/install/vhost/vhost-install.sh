@@ -118,7 +118,7 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 --key-file /etc/nginx/ssl/${DOMAIN}/key.pem \
 --fullchain-file /etc/nginx/ssl/${DOMAIN}/fullchain.pem \
 --ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem \
---reloadcmd "date"
+--reloadcmd "echo "EngineScript Date: ${VARIABLES_DATE}" && echo "System Date: `date`""
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"

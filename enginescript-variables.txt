@@ -6,7 +6,8 @@
 #-#-#-#-#-#-#         Edit These At Your Own Risk         #-#-#-#-#-#-
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
-# Variables date: 10/12/21
+# EngineScript Version
+VARIABLES_DATE="OCTOBER 12 2021"
 
 # Software Versions
 MARIADB_VER="10.6"
