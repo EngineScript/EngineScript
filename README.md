@@ -73,7 +73,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 5. Enable gRPC. *(Optional)*
 6. Enable WebSockets. *(Optional)*
 7. Enable Onion Routing. *(Optional)*
-8. Enable Pseudo IPv4. *(Optional)*
+8. Set Pseudo IPv4 to Add Header. *(Optional)*
 9. Enable IP Geolocation. *(Optional)*
 
 ### EngineScript Information

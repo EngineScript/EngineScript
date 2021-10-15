@@ -90,7 +90,7 @@ echo "  4.  Enable IPv6 Compatibility"
 echo "  5.  Enable gRPC"
 echo "  6.  Enable WebSockets"
 echo "  7.  Enable Onion Routing"
-echo "  8.  Enable Pseudo IPv4"
+echo "  8.  Set Pseudo IPv4 to Add Header"
 echo "  9.  Enable IP Geolocation"
 echo ""
 
@@ -117,8 +117,11 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 --cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \
 --key-file /etc/nginx/ssl/${DOMAIN}/key.pem \
 --fullchain-file /etc/nginx/ssl/${DOMAIN}/fullchain.pem \
---ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem \
---reloadcmd "echo "EngineScript Date: ${VARIABLES_DATE}" && echo "System Date: `date`""
+--ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem
+
+# Print verion and date for logs
+echo "EngineScript Date: ${VARIABLES_DATE}"
+echo "System Date: `date`"
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"
