@@ -77,7 +77,7 @@ add-apt-repository -yn universe
 
 # Utilities
 add-apt-repository -yn ppa:savoury1/utilities
-add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
+#add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
 
 # Webmin
 wget -q http://www.webmin.com/jcameron-key.asc -O- | sudo apt-key add -
