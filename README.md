@@ -1,4 +1,4 @@
-## **EngineScript - An Automated High-Performance WordPress LEMP Server**
+## **EngineScript - An Automated High-Performance WordPress Server**
 
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
@@ -22,6 +22,7 @@ Run the following command
 ```shell
 wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && bash setup.sh
 ```
+
 #### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
 
