@@ -69,7 +69,6 @@ git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
-
 chown -R root:root /usr/local/bin/enginescript
 
 # Create EngineScript Home Directory
