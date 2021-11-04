@@ -28,8 +28,8 @@ fi
 
 # Patch Nginx
 cd /usr/src/nginx-${NGINX_VER}
-patch -p1 < /usr/local/bin/enginescript/scripts/patches/nginx.patch
-patch -p1 < /usr/local/bin/enginescript/scripts/patches/nginx_io_uring.patch
+patch -p1 < /usr/local/bin/enginescript/patches/nginx.patch
+patch -p1 < /usr/local/bin/enginescript/patches/nginx_io_uring.patch
 
 # Patch OpenSSL
 #cd /usr/src/openssl-${OPENSSL_VER}
