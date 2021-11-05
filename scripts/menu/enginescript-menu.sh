@@ -71,7 +71,6 @@ while true
           ;;
         "Change EngineScript Install Options")
           nano /home/enginescript-install-options.txt
-          sleep 3
           break
           ;;
         "Update Existing Domain Vhost File")
@@ -81,7 +80,6 @@ while true
           ;;
         "Update Nginx")
           /usr/local/bin/enginescript/scripts/update/nginx-update.sh
-          sleep 3
           break
           ;;
         "Update PHP")
@@ -94,9 +92,8 @@ while true
           sleep 3
           break
           ;;
-        "Update Server Management Tools")
-          echo "Option coming soon"
-          sleep 3
+        "Update Server Tools")
+          /usr/local/bin/enginescript/scripts/update/software-update.sh
           break
           ;;
         "Exit EngineScript")

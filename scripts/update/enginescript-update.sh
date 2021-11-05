@@ -26,7 +26,9 @@ fi
 
 # EngineScript Git Clone
 rm -rf /usr/local/bin/enginescript
+sleep 2
 git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
+sleep 2
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
