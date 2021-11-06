@@ -45,9 +45,11 @@ chown -R www-data:www-data /var/cache/nginx
 chown -R www-data:www-data /var/lib/nginx
 chown -R www-data:www-data /var/log/domains
 chown -R www-data:www-data /var/www
+chmod 775 /var/cache/nginx
 
 # Assign PHP Opcache Permissions
 chown -R www-data:www-data /var/cache/opcache
+chmod 775 /var/cache/opcache
 
 # Assign EngineScript Permissions
 chmod -R 755 /usr/local/bin/enginescript

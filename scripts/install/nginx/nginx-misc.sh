@@ -34,6 +34,7 @@ chown -R www-data:www-data /var/cache/nginx
 chown -R www-data:www-data /var/lib/nginx
 chown -R www-data:www-data /var/log/domains
 chown -R www-data:www-data /var/www
+chmod 775 /var/cache/nginx
 
 # Logrotate - Nginx and Domains
 cp -p /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx
