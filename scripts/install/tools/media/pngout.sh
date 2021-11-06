@@ -28,7 +28,7 @@ fi
 
 # Retrieve Latest Version
 cd /usr/src
-wget http://static.jonof.id.au/dl/kenutils/pngout-20150319-linux.tar.gz
+wget https://static.jonof.id.au/dl/kenutils/pngout-20150319-linux.tar.gz
 tar -xf pngout-20150319-linux.tar.gz
 
 # Install 32-BIT or 64-BIT

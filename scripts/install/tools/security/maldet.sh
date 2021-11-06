@@ -26,7 +26,7 @@ fi
 
 # Maldet Install
 cd /usr/local/src
-wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+wget https://www.rfxn.com/downloads/maldetect-current.tar.gz
 tar -xvf maldetect-current.tar.gz
 cd maldetect-1.6.4/
 ./install.sh
