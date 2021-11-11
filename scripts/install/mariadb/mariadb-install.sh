@@ -54,7 +54,7 @@ EOF
 systemctl stop mariadb.service
 mv /var/lib/mysql/ib_log* /root
 cp -p /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL60PERCENT|${SERVER_MEMORY_TOTAL_55}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL55PERCENT|${SERVER_MEMORY_TOTAL_55}|g" /etc/mysql/mariadb.cnf
 systemctl start mariadb.service
 
 echo ""
