@@ -26,7 +26,7 @@ fi
 
 # PCRE
 cd /usr/src
-wget https://ftp.pcre.org/pub/pcre/pcre-${PCRE_VER}.tar.gz && tar xzvf pcre-${PCRE_VER}.tar.gz
+wget https://phoenixnap.dl.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz && tar xzvf pcre-${PCRE_VER}.tar.gz
 
 # Uncomment below if you want to use the latest PCRE for the entire server.
 # Not guaranteed to work properly.
