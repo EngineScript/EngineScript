@@ -25,8 +25,8 @@ fi
 # Start Main Script
 
 cd /usr/local/bin/enginescript
-git reset --hard HEAD
-git pull
+git fetch --all
+git reset --hard origin/master
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
