@@ -24,11 +24,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# EngineScript Git Clone
-rm -rf /usr/local/bin/enginescript
-sleep 2
-git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
-sleep 2
+cd /usr/local/bin/enginescript
+git reset --hard HEAD
+git pull
 
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;

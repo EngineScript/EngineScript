@@ -33,12 +33,6 @@ cp -p /usr/local/bin/enginescript/scripts/cron/sites.sh /home/EngineScript/sites
 # WordPress Cron Ping (every 36 minutes)
 (crontab -l 2>/dev/null; echo "*/36 * * * * cd /usr/local/bin/enginescript/scripts/cron; bash wp-cron.sh >/dev/null 2>&1") | crontab -
 
-# EngineScript Cleanup (daily)
-(crontab -l 2>/dev/null; echo "0 1 * * * cd /usr/local/bin/enginescript/scripts/functions; bash enginescript-cleanup.sh >/dev/null 2>&1") | crontab -
-
-# Static File Brotli & GZip Compression Cron (monthly)
-#(crontab -l 2>/dev/null; echo "0 2 1 * * cd /usr/local/bin/enginescript/scripts/cron; bash compression-cron.sh >/dev/null 2>&1") | crontab -
-
 # Lossless Image Optimization on Web Directories
 # (Only runs on new images since last run) (every 5 days)
 if [ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" = 1 ];
@@ -58,9 +52,6 @@ fi
 
 # Retrive Cloudflare Server IP Ranges for UFW (monthly)
 (crontab -l 2>/dev/null; echo "2 3 1 * * cd /usr/local/bin/enginescript/scripts/cron; bash ufw-cloudflare-cron.sh >/dev/null 2>&1") | crontab -
-
-# Update EngineScript & Related Software (Excluding Nginx, PHP, and MariaDB) (monthly)
-(crontab -l 2>/dev/null; echo "6 3 1 * * cd /usr/local/bin/enginescript/scripts/update; bash software-update.sh >/dev/null 2>&1") | crontab -
 
 # Backup WordPress Databases & Upload Directories (daily)
 (crontab -l 2>/dev/null; echo "0 4 * * * cd /usr/local/bin/enginescript/scripts/cron; bash backups.sh >/dev/null 2>&1") | crontab -
