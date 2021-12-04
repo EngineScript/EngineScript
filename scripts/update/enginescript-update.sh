@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 cd /usr/local/bin/enginescript
-git fetch --all
+git fetch origin master
 git reset --hard origin/master
 
 # EngineScript Permissions
