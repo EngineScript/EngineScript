@@ -24,10 +24,8 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# EngineScript Update
-/usr/local/bin/enginescript/scripts/update/enginescript-update.sh
-
 # Update System Software and Tools
+
 # Update Adminer
 /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
 
