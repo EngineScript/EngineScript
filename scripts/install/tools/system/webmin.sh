@@ -28,12 +28,10 @@ fi
 
 # Add Webmin Repository
 wget -qO - https://download.webmin.com/jcameron-key.asc | sudo apt-key add -
-cd /usr/local/src
-wget https://download.webmin.com/jcameron-key.asc
-apt-key add jcameron-key.asc
 sudo sh -c 'echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list'
 
 # Install
+apt update
 apt install webmin
 
 # Create Logs
