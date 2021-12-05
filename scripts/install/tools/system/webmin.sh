@@ -32,7 +32,7 @@ sudo sh -c 'echo "deb https://download.webmin.com/download/repository sarge cont
 
 # Install
 apt update
-apt install webmin
+apt install -qy webmin
 
 # Create Logs
 mkdir -p /var/log/webmin
