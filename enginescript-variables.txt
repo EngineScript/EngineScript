@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="NOVEMBER 02 2021"
+VARIABLES_DATE="DECEMBER 05 2021"
 
 # Software Versions
 MARIADB_VER="10.6"
@@ -19,6 +19,9 @@ PCRE_VER="8.45"
 PHP_VER="8.0"
 PHPMYADMIN_VER="5.1.1"
 ZLIB_VER="1.2.11"
+
+# Old Software Versions
+OLDPHP="8.0"
 
 # EngineScript Variables
 BIT_TYPE="$(uname -m)"
@@ -34,10 +37,12 @@ RAND_CHAR24="$(date +%s | sha256sum | base64 | head -c 24)"
 RAND_CHAR32="$(pwgen -1Bcns 32)"
 SERVER_MEMORY_TOTAL_01="$(free -m | awk 'NR==2{printf "%d", $2*0.01 }')"
 SERVER_MEMORY_TOTAL_02="$(free -m | awk 'NR==2{printf "%d", $2*0.02 }')"
+SERVER_MEMORY_TOTAL_03="$(free -m | awk 'NR==2{printf "%d", $2*0.03 }')"
+SERVER_MEMORY_TOTAL_05="$(free -m | awk 'NR==2{printf "%d", $2*0.05 }')"
 SERVER_MEMORY_TOTAL_06="$(free -m | awk 'NR==2{printf "%d", $2*0.06 }')"
 SERVER_MEMORY_TOTAL_07="$(free -m | awk 'NR==2{printf "%d", $2*0.07 }')"
 SERVER_MEMORY_TOTAL_12="$(free -m | awk 'NR==2{printf "%d", $2*0.12 }')"
-SERVER_MEMORY_TOTAL_55="$(free -m | awk 'NR==2{printf "%d", $2*0.55 }')"
+SERVER_MEMORY_TOTAL_50="$(free -m | awk 'NR==2{printf "%d", $2*0.50 }')"
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 UBUNTU_CODENAME="$(lsb_release -sc)"
 UBUNTU_VER="$(lsb_release -sr)"

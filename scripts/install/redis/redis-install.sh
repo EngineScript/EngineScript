@@ -38,7 +38,7 @@ chown -R redis:redis /run/redis
 chown -R redis:redis /var/log/redis
 
 cp -rf /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
-sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_07}|g" /etc/redis/redis.conf
+sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
 chown -R redis:redis /etc/redis/redis.conf
 service redis-server restart
 sudo systemctl enable redis-server

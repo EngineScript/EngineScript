@@ -27,6 +27,10 @@ fi
 # Retrieve EngineScript Nginx Configuration
 cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
 
+# Tune FastCGI Cache
+sed -i "s|SEDSERVERMEM03|${SERVER_MEMORY_TOTAL_03}|g" /etc/nginx/nginx.conf
+sed -i "s|SEDSERVERMEM05|${SERVER_MEMORY_TOTAL_05}|g" /etc/nginx/nginx.conf
+
 # Assign Permissions
 chown -R www-data:www-data /etc/nginx
 chown -R www-data:www-data /usr/lib/nginx/modules

@@ -49,12 +49,12 @@ y
 EOF
 
 # Copy my.cnf file.
-# innodb_buffer_pool_size is set to use 55% of total server memory.
+# innodb_buffer_pool_size is set to use 50% of total server memory.
 # If you wish to dedicate more, change it in /etc/mysql/my.cnf
 systemctl stop mariadb.service
 mv /var/lib/mysql/ib_log* /root
 cp -rf /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL55PERCENT|${SERVER_MEMORY_TOTAL_55}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL50PERCENT|${SERVER_MEMORY_TOTAL_50}|g" /etc/mysql/mariadb.cnf
 systemctl start mariadb.service
 
 echo ""
