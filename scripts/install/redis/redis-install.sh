@@ -37,7 +37,7 @@ chmod 775 /run/redis
 chown -R redis:redis /run/redis
 chown -R redis:redis /var/log/redis
 
-cp -p /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
+cp -rf /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_07}|g" /etc/redis/redis.conf
 chown -R redis:redis /etc/redis/redis.conf
 service redis-server restart

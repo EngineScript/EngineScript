@@ -32,7 +32,7 @@ sudo chmod 0600 /swapfile
 swapon /swapfile
 
 # Backup Previous Config
-cp -p /etc/fstab /etc/fstab.bak
+cp -rf /etc/fstab /etc/fstab.bak
 
 # Enable Swap File During Restart
 echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab

@@ -85,6 +85,10 @@ apt clean -y
 apt autoremove --purge -y
 apt autoclean -y
 
+cd /usr/local/src
+wget https://download.webmin.com/jcameron-key.asc
+apt-key add jcameron-key.asc
+
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
   then
     echo ""
@@ -98,7 +102,7 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo ""
     echo ""
   else
-    cp -p /usr/local/bin/enginescript/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
+    cp -rf /usr/local/bin/enginescript/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
     echo ""
     echo ""
     echo ""

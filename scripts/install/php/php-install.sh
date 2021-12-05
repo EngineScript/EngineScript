@@ -29,8 +29,8 @@ apt update && apt full-upgrade -y
 apt install php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-msgpack php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-soap php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip -y
 
 # Logrotate
-cp -p /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
-cp -p /usr/local/bin/enginescript/etc/logrotate.d/php8.0-fpm /etc/logrotate.d/php8.0-fpm
+cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
+cp -rf /usr/local/bin/enginescript/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
 
 # Backup PHP config
 /usr/local/bin/enginescript/scripts/cron/php-backup.sh
@@ -49,10 +49,12 @@ touch /var/log/php/php.log
 chmod 775 /var/cache/opcache
 find /var/log/php -type d,f -exec chmod 755 {} \;
 find /var/log/opcache -type d,f -exec chmod 755 {} \;
+find /etc/php/${PHP_VER}/fpm -type d,f -exec chmod 755 {} \;
 
 chown -R www-data:www-data /var/cache/opcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
+chown -R www-data:www-data /etc/php/${PHP_VER}/fpm
 
 # Restart PHP
 service php${PHP_VER}-fpm restart

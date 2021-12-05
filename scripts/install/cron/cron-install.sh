@@ -26,7 +26,7 @@ fi
 # Start Main Script
 
 # Copy Sites.sh
-cp -p /usr/local/bin/enginescript/scripts/cron/sites.sh /home/EngineScript/sites-list/sites.sh
+cp -rf /usr/local/bin/enginescript/scripts/cron/sites.sh /home/EngineScript/sites-list/sites.sh
 
 # Set Cron Jobs
 

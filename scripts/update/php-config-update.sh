@@ -25,8 +25,8 @@ fi
 # Start Main Script
 
 # Update PHP config
-cp -p /usr/local/bin/enginescript/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
-cp -p /usr/local/bin/enginescript/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
-cp -p /usr/local/bin/enginescript/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+cp -rf /usr/local/bin/enginescript/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
+cp -rf /usr/local/bin/enginescript/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
+cp -rf /usr/local/bin/enginescript/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
 sed -i "s|SEDOPCACHEJITMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/php/${PHP_VER}/fpm/php.ini
 sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_12}|g" /etc/php/${PHP_VER}/fpm/php.ini

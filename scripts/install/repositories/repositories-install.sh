@@ -78,7 +78,3 @@ add-apt-repository -yn universe
 # Utilities
 add-apt-repository -yn ppa:savoury1/utilities
 #add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
-
-# Webmin
-wget -qO - https://download.webmin.com/jcameron-key.asc | sudo apt-key add -
-sudo sh -c 'echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list'

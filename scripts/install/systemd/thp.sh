@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # Disable Transparent Huge Pages
-cp -p /usr/local/bin/enginescript/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
+cp -rf /usr/local/bin/enginescript/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
 chmod 644 /etc/systemd/system/disable-thp.service
 systemctl daemon-reload
 systemctl enable disable-thp

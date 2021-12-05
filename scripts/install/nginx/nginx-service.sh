@@ -26,7 +26,7 @@ fi
 
 # Nginx Service
 rm -rf /usr/lib/systemd/system/nginx.service
-cp -p /usr/local/bin/enginescript/etc/systemd/system/nginx.service /etc/systemd/system/nginx.service
+cp -rf /usr/local/bin/enginescript/etc/systemd/system/nginx.service /etc/systemd/system/nginx.service
 chmod 644 /etc/systemd/system/nginx.service
 systemctl daemon-reload
 systemctl enable nginx

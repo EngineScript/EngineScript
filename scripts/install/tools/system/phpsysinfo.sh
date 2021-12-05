@@ -27,7 +27,7 @@ fi
 # phpSysinfo
 rm -rf /var/www/admin/enginescript/phpsysinfo
 git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/enginescript/phpsysinfo
-cp -p /usr/local/bin/enginescript/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
+cp -rf /usr/local/bin/enginescript/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
 
 # Set Permissions
 find /var/www/admin/enginescript/phpsysinfo -type d -exec chmod 755 {} \;

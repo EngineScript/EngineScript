@@ -45,7 +45,7 @@ echo ""
 read -p "Enter Domain name: " DOMAIN
 echo ""
 echo "You entered:  ${DOMAIN}"
-echo "SITE_URL=${DOMAIN}" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "SITE_URL=\"${DOMAIN}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 echo ""
 echo ""
 
@@ -54,7 +54,7 @@ sed -i "\/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -p /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
 sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
 # Create Origin Certificate
@@ -130,10 +130,9 @@ SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
 # Domain Database Credentials
-echo "DB=${SDB}" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "USR=${SUSR}" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "PSWD=${SPS}" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo ""
+echo "DB=\"${SDB}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "USR=\"${SUSR}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "PSWD=\"${SPS}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 
 sleep 2
 
@@ -144,9 +143,9 @@ echo ""
 
 sleep 2
 
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER ${USR}@'localhost' IDENTIFIED BY '${PSWD}';"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT index, select, insert, delete, update, create, drop, alter, create temporary tables, execute, lock tables, create view, show view, create routine, alter routine, trigger ON ${DB}.* TO ${USR}@'localhost'; FLUSH PRIVILEGES;"
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
+mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
@@ -177,7 +176,7 @@ rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
 #mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads
 
 # Create wp-config.php
-cp -p /usr/local/bin/enginescript/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
+cp -rf /usr/local/bin/enginescript/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPDB|${DB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPUSER|${USR}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPPASS|${PSWD}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
@@ -193,7 +192,7 @@ printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s /var/www/sites/${SITE_URL}/htm
 sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # Create robots.txt
-cp -p /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
+cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 
 # WP File Permissions
