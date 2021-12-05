@@ -78,17 +78,6 @@ fi
 # System Tools
 #------------------------------------------------
 
-# Dropbox_uploader
-if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
-  then
-    echo "Installing Dropbox Uploader"
-    echo "Please follow the instructions in the script that is about to run."
-    sleep 5
-    /usr/local/bin/enginescript/scripts/install/tools/system/dropbox-uploader.sh
-  else
-    echo "Skipping Dropbox Uploader install"
-fi
-
 # phpSysinfo
 /usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
 
@@ -104,3 +93,21 @@ fi
 
 # WPScan
 /usr/local/bin/enginescript/scripts/install/tools/wordpress/wpscan.sh
+
+#------------------------------------------------
+# Dropbox Uploader
+
+# We're doing this at the end because it requires user input and we don't
+# want to stop the install from finalizing
+#------------------------------------------------
+
+# Dropbox_uploader
+if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
+  then
+    echo "Installing Dropbox Uploader"
+    echo "Please follow the instructions in the script that is about to run."
+    sleep 5
+    /usr/local/bin/enginescript/scripts/install/tools/system/dropbox-uploader.sh
+  else
+    echo "Skipping Dropbox Uploader install"
+fi
