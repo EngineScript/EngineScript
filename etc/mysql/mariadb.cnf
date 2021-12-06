@@ -40,7 +40,7 @@ bind-address = 127.0.0.1
 # * Fine Tuning
 max_connections	= 151
 connect_timeout	= 20
-wait_timeout = 666
+wait_timeout = 120
 max_allowed_packet = 64M
 thread_cache_size = 128
 sort_buffer_size = 4m
