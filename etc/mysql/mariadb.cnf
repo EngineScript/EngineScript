@@ -43,12 +43,12 @@ connect_timeout	= 20
 wait_timeout = 120
 max_allowed_packet = 64M
 thread_cache_size = 128
-sort_buffer_size = 4m
+sort_buffer_size = 4M
 bulk_insert_buffer_size	= 16M
 tmp_table_size = 48M
 max_heap_table_size	= 48M
 max_connect_errors = 100000
-interactive_timeout = 666
+interactive_timeout = 120
 
 # * MyISAM
 myisam_recover_options = BACKUP

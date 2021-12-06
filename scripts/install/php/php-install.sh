@@ -43,18 +43,19 @@ mkdir -p /var/log/opcache
 mkdir -p /var/log/php
 
 touch /var/log/opcache/opcache.log
-touch /var/log/php/fpm-php.www.log
 touch /var/log/php/php.log
+touch /var/log/php/php-www.log
+touch /var/log/php/php-fpm.log
 
 chmod 775 /var/cache/opcache
-find /var/log/php -type d,f -exec chmod 755 {} \;
-find /var/log/opcache -type d,f -exec chmod 755 {} \;
-find /etc/php/${PHP_VER}/fpm -type d,f -exec chmod 755 {} \;
+find /var/log/php -type d,f -exec chmod 775 {} \;
+find /var/log/opcache -type d,f -exec chmod 775 {} \;
+find /etc/php -type d,f -exec chmod 775 {} \;
 
 chown -R www-data:www-data /var/cache/opcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
-chown -R www-data:www-data /etc/php/${PHP_VER}/fpm
+chown -R www-data:www-data /etc/php
 
 # Restart PHP
 service php${PHP_VER}-fpm restart

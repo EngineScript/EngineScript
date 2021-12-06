@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="DECEMBER 05 2021"
+VARIABLES_DATE="DECEMBER 06 2021"
 
 # Software Versions
 MARIADB_VER="10.6"
@@ -41,7 +41,7 @@ SERVER_MEMORY_TOTAL_03="$(free -m | awk 'NR==2{printf "%d", $2*0.03 }')"
 SERVER_MEMORY_TOTAL_05="$(free -m | awk 'NR==2{printf "%d", $2*0.05 }')"
 SERVER_MEMORY_TOTAL_06="$(free -m | awk 'NR==2{printf "%d", $2*0.06 }')"
 SERVER_MEMORY_TOTAL_07="$(free -m | awk 'NR==2{printf "%d", $2*0.07 }')"
-SERVER_MEMORY_TOTAL_12="$(free -m | awk 'NR==2{printf "%d", $2*0.12 }')"
+SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 SERVER_MEMORY_TOTAL_50="$(free -m | awk 'NR==2{printf "%d", $2*0.50 }')"
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 UBUNTU_CODENAME="$(lsb_release -sc)"

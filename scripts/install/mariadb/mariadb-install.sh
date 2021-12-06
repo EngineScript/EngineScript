@@ -48,9 +48,7 @@ y
 y
 EOF
 
-# Copy my.cnf file.
-# innodb_buffer_pool_size is set to use 50% of total server memory.
-# If you wish to dedicate more, change it in /etc/mysql/my.cnf
+# Copy Config
 systemctl stop mariadb.service
 mv /var/lib/mysql/ib_log* /root
 cp -rf /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
