@@ -38,7 +38,7 @@ cp -rf /usr/local/bin/enginescript/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrot
 # Update PHP config
 /usr/local/bin/enginescript/scripts/update/php-config-update.sh
 
-mkdir -p /var/cache/opcache
+mkdir -p /var/cache/.opcache
 mkdir -p /var/log/opcache
 mkdir -p /var/log/php
 
@@ -47,12 +47,12 @@ touch /var/log/php/php.log
 touch /var/log/php/php-www.log
 touch /var/log/php/php-fpm.log
 
-chmod 775 /var/cache/opcache
+chmod 775 /var/cache/.opcache
 find /var/log/php -type d,f -exec chmod 775 {} \;
 find /var/log/opcache -type d,f -exec chmod 775 {} \;
 find /etc/php -type d,f -exec chmod 775 {} \;
 
-chown -R www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/cache/.opcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
