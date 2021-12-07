@@ -36,8 +36,8 @@ apt install -qy webmin
 
 # Create Logs
 mkdir -p /var/log/webmin
-touch /var/log/opcache/miniserv.log
-touch /var/log/opcache/miniserv.error.log
+touch /var/log/webmin/miniserv.log
+touch /var/log/webmin/miniserv.error.log
 chmod 775 /var/log/webmin
 
 # Logrotate
