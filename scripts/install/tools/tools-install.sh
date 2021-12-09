@@ -79,7 +79,7 @@ fi
 #------------------------------------------------
 
 # phpSysinfo
-/usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
+#/usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
 
 # Webmin
 /usr/local/bin/enginescript/scripts/install/tools/system/webmin.sh
