@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # Install Redis
-apt install redis-server redis-tools --no-install-recommends
+apt install -qy redis-server redis-tools --no-install-recommends
 
 # Setup Redis
 mkdir -p /run/redis

@@ -79,8 +79,7 @@ while true
           break
           ;;
         "Update PHP")
-          echo "Option coming soon"
-          sleep 3
+          /usr/local/bin/enginescript/scripts/update/php-8.1-update.sh
           break
           ;;
         "Update MariaDB")

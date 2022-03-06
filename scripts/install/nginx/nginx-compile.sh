@@ -49,7 +49,7 @@ cd /usr/src/nginx-${NGINX_VER}
   --with-libatomic \
   --with-file-aio \
   --with-threads \
-  --with-pcre=/usr/src/pcre-${PCRE_VER} \
+  --with-pcre=/usr/src/pcre2-${PCRE2_VER} \
   --with-pcre-jit \
   --with-zlib=/usr/src/zlib-cf \
   --with-http_ssl_module \
@@ -78,6 +78,7 @@ cd /usr/src/nginx-${NGINX_VER}
 
   make -j${CPU_COUNT}
   #strip --strip-unneeded /usr/src/nginx/objs/nginx
+  #make test
   make install
 
   # Remove .default Files

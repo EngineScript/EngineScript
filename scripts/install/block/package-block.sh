@@ -53,3 +53,6 @@ echo -e "Package: php7.3*\nPin: release *\nPin-Priority: -1" > php73-block
 
 # Block PHP 7.4 from APT
 echo -e "Package: php7.4*\nPin: release *\nPin-Priority: -1" > php74-block
+
+# Block PHP 8.0 from APT
+echo -e "Package: php8.0*\nPin: release *\nPin-Priority: -1" > php80-block

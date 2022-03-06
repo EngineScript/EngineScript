@@ -18,7 +18,7 @@ if [ "${EUID}" != 0 ];
 fi
 
 # Install
-apt-get install ksmtuned --no-install-recommends
+apt-get install -qy ksmtuned --no-install-recommends
 sudo systemctl enable --now ksm.service
 mkdir -p /opt/kernel-samepage-merging/
 cp -rf /usr/local/bin/enginescript/etc/systemd/system/ksm.service /etc/systemd/system/ksm.service

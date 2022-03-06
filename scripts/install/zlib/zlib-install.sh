@@ -34,6 +34,7 @@ make -f Makefile.in distclean
   --64
 
 #make
+#make test
 #make install
 #ldconfig
 
@@ -45,6 +46,7 @@ cd /usr/src/zlib-ng
   --zlib-compat
 
 make -j${CPU_COUNT}
+#make test
 make install
 ldconfig
 

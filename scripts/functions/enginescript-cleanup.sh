@@ -27,7 +27,7 @@ fi
 # Cleanup
 
 # Remove Apache and old PHP installations
-apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' -y
+apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y
 
 # Remove old downloads
 rm -rf /usr/src/*.tar.gz*

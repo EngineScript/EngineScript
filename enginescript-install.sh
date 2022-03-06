@@ -24,6 +24,11 @@ fi
 # We do this in-case the user is a novice and uploaded the options file using a basic Windows text editor.
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
+# Permissions
+# Just in case you changed any files and changed Permissions
+find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+chown -R root:root /usr/local/bin/enginescript
+
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
@@ -128,13 +133,22 @@ if [ "${ACME}" = 1 ];
 fi
 
 # GCC
-#if [ "${GCC}" = 1 ];
-#  then
-#    echo "GCC script has already run."
-#  else
-#    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh
-#    echo "GCC=1" >> /home/EngineScript/install-log.txt
-#fi
+if [ "${GCC}" = 1 ];
+  then
+    echo "GCC script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh
+    echo "GCC=1" >> /home/EngineScript/install-log.txt
+fi
+
+# OpenSSL
+if [ "${OPENSSL}" = 1 ];
+  then
+    echo "OPENSSL script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh
+    echo "OPENSSL=1" >> /home/EngineScript/install-log.txt
+fi
 
 # Jemalloc
 if [ "${JEMALLOC}" = 1 ];
@@ -262,6 +276,15 @@ if [ "${CRON}" = 1 ];
     echo "CRON=1" >> /home/EngineScript/install-log.txt
 fi
 
+# MariaDB
+if [ "${MARIADB}" = 1 ];
+  then
+    echo "MARIADB script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh
+    echo "MARIADB=1" >> /home/EngineScript/install-log.txt
+fi
+
 # PHP
 if [ "${PHP}" = 1 ];
   then
@@ -287,15 +310,6 @@ if [ "${NGINX}" = 1 ];
   else
     /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh
     echo "NGINX=1" >> /home/EngineScript/install-log.txt
-fi
-
-# MariaDB
-if [ "${MARIADB}" = 1 ];
-  then
-    echo "MARIADB script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh
-    echo "MARIADB=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Tools

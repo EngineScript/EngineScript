@@ -30,4 +30,5 @@ git clone --depth 1 https://github.com/ebiggers/libdeflate -b master /usr/src/li
 cd /usr/src/libdeflate
 make clean
 make -j${CPU_COUNT}
+#make test
 make install

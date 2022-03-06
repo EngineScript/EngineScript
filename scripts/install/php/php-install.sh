@@ -26,7 +26,7 @@ fi
 
 # Install PHP
 apt update && apt full-upgrade -y
-apt install php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-msgpack php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-soap php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip -y
+apt install -qy php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-msgpack php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-soap php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip
 
 # Logrotate
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache

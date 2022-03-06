@@ -51,9 +51,9 @@ chmod 775 /var/cache/nginx
 find /var/log/php -type d,f -exec chmod 755 {} \;
 find /var/log/opcache -type d,f -exec chmod 755 {} \;
 find /etc/php -type d,f -exec chmod 755 {} \;
-chmod 775 /var/cache/opcache
+chmod 775 /var/cache/.opcache
 
-chown -R www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/cache/.opcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
