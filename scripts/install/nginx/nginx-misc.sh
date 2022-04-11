@@ -33,6 +33,7 @@ sed -i "s|SEDSERVERMEM05|${SERVER_MEMORY_TOTAL_05}|g" /etc/nginx/nginx.conf
 
 # Assign Permissions
 chown -R www-data:www-data /etc/nginx
+chown -R www-data:www-data /tmp/nginx_proxy
 chown -R www-data:www-data /usr/lib/nginx/modules
 chown -R www-data:www-data /var/cache/nginx
 chown -R www-data:www-data /var/lib/nginx

@@ -40,6 +40,7 @@ done
 
 # Assign Nginx Permissions
 chown -R www-data:www-data /etc/nginx
+chown -R www-data:www-data /tmp/nginx_proxy
 chown -R www-data:www-data /usr/lib/nginx/modules
 chown -R www-data:www-data /var/cache/nginx
 chown -R www-data:www-data /var/lib/nginx
@@ -52,7 +53,6 @@ find /var/log/php -type d,f -exec chmod 755 {} \;
 find /var/log/opcache -type d,f -exec chmod 755 {} \;
 find /etc/php -type d,f -exec chmod 755 {} \;
 chmod 775 /var/cache/.opcache
-
 chown -R www-data:www-data /var/cache/.opcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
