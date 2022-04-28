@@ -27,7 +27,6 @@ fi
 # Download OpenSSL
 cd /usr/src
 wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
-apt remove openssl -y
 tar -xvzf openssl-${OPENSSL_VER}.tar.gz
 cd openssl-${OPENSSL_VER}
 
@@ -45,11 +44,7 @@ ldconfig
 ln -s /usr/local/bin/openssl /usr/bin/
 openssl version
 
-# Reinstall Dependencies
-# A few packages were uninstalled when we removed OpenSSL. Let's add them back.
-apt install -qy ca-certificates libruby2.7 python-pip-whl python3-certifi python3-docker python3-influxdb python3-pip python3-requests python3-requests-unixsocket rake ruby ruby-dev ruby2.7 ruby2.7-dev rubygems-integration software-properties-common
-
-# OpenSSL Installation Completed
+# OpenSSL Update Completed
 echo ""
 echo ""
 echo "============================================================="
