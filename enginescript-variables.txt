@@ -7,22 +7,22 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="MARCH 04 2022"
+VARIABLES_DATE="APRIL 04 2022"
 
 # Software Versions
 MARIADB_VER="10.7"
 NGINX_HEADER_VER="0.33"
 NGINX_PURGE_VER="2.5.1"
 NGINX_VER="1.21.6"
-OPENSSL_VER="3.0.1"
+OPENSSL_VER="3.0.2"
 PCRE2_VER="10.39"
 PHP_VER="8.1"
 PHPMYADMIN_VER="5.1.3"
-ZLIB_VER="1.2.11"
+ZLIB_VER="1.2.12"
 
 # Old Software Versions
 OLDPHP="8.0"
-PCRE_VER="8.45"
+OLDPCRE="8.45"
 
 # EngineScript Variables
 BIT_TYPE="$(uname -m)"
