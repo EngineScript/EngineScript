@@ -33,6 +33,9 @@ fi
 # Retrive Latest Cloudflare Zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
 
+# Retrive Latest PCRE2
+/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
+
 # Patch Nginx
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh
 
