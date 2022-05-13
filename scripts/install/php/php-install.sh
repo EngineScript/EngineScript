@@ -43,9 +43,10 @@ mkdir -p /var/log/opcache
 mkdir -p /var/log/php
 
 touch /var/log/opcache/opcache.log
-touch /var/log/php/php.log
-touch /var/log/php/php-www.log
-touch /var/log/php/php-fpm.log
+touch /var/log/php/php${PHP_VER}-fpm.log
+#touch /var/log/php/php.log
+#touch /var/log/php/php-www.log
+#touch /var/log/php/php-fpm.log
 
 chmod 775 /var/cache/.opcache
 find /var/log/php -type d,f -exec chmod 775 {} \;
