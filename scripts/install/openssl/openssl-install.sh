@@ -27,37 +27,37 @@ fi
 # Download OpenSSL
 cd /usr/src
 wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
-apt remove openssl -y
+#apt remove openssl -y
 tar -xvzf openssl-${OPENSSL_VER}.tar.gz
-cd openssl-${OPENSSL_VER}
 
 # Compile OpenSSL
-chmod +x ./config
-./Configure
-make -j${CPU_COUNT}
+#cd openssl-${OPENSSL_VER}
+#chmod +x ./config
+#./Configure
+#make -j${CPU_COUNT}
 #make test
-make install
+#make install
 
 # Link OpenSSL
-sudo touch /etc/ld.so.conf.d/openssl.conf
-echo "/usr/local/lib64" >> /etc/ld.so.conf.d/openssl.conf
-ldconfig
-ln -s /usr/local/bin/openssl /usr/bin/
-openssl version
+#sudo touch /etc/ld.so.conf.d/openssl.conf
+#echo "/usr/local/lib64" >> /etc/ld.so.conf.d/openssl.conf
+#ldconfig
+#ln -s /usr/local/bin/openssl /usr/bin/
+#openssl version
 
 # Reinstall Dependencies
 # A few packages were uninstalled when we removed OpenSSL. Let's add them back.
-apt install -qy ca-certificates libruby2.7 python-pip-whl python3-certifi python3-docker python3-influxdb python3-pip python3-requests python3-requests-unixsocket rake ruby ruby-dev ruby2.7 ruby2.7-dev rubygems-integration software-properties-common
+#apt install -qy ca-certificates libruby3.0 python2-pip-whl python3-certifi python3-docker python3-httplib2 python3-influxdb python3-launchpadlib python3-lazr.restfulclient python3-pip python3-requests python3-requests-unixsocket python3-software-properties rake ruby ruby-dev ruby-rubygems ruby3.0 ruby3.0-dev rubygems-integration software-properties-common
 
 # OpenSSL Installation Completed
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}OpenSSL ${OPENSSL_VER} installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
+#echo ""
+#echo ""
+#echo "============================================================="
+#echo ""
+#echo "${BOLD}OpenSSL ${OPENSSL_VER} installed.${NORMAL}"
+#echo ""
+#echo "============================================================="
+#echo ""
+#echo ""
 
 sleep 5

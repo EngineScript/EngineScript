@@ -31,7 +31,7 @@ fi
 #add-apt-repository -yn ppa:savoury1/build-tools
 
 # Canonical Partners
-add-apt-repository "deb http://archive.canonical.com/ubuntu $(lsb_release -sc) partner"
+add-apt-repository -yn "deb http://archive.canonical.com/ubuntu $(lsb_release -sc) partner"
 
 # Curl
 #add-apt-repository -yn ppa:savoury1/curl34
