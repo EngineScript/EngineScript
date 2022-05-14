@@ -59,8 +59,8 @@ add-apt-repository -yn ppa:maxmind/ppa
 #add-apt-repository -yn ppa:savoury1/multimedia
 
 # PHP
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
-add-apt-repository -yn ppa:ondrej/php
+#apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
+#add-apt-repository -yn ppa:ondrej/php
 
 # phpMyAdmin
 add-apt-repository -yn ppa:phpmyadmin/ppa
