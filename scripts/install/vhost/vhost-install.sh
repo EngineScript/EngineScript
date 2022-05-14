@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -143,9 +143,9 @@ echo ""
 
 sleep 2
 
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
+mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx

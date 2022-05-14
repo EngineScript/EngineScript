@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # Add MariaDB repository
-curl -sSL https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=mariadb-${MARIADB_VER} --skip-maxscale
+#curl -sSL https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=mariadb-${MARIADB_VER} --skip-maxscale
 
 # Install MariaDB
 apt update

@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
