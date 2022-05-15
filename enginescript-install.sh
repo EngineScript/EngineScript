@@ -151,13 +151,13 @@ if [ "${OPENSSL}" = 1 ];
 fi
 
 # Jemalloc
-if [ "${JEMALLOC}" = 1 ];
-  then
-    echo "JEMALLOC script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
-    echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
-fi
+#if [ "${JEMALLOC}" = 1 ];
+#  then
+#    echo "JEMALLOC script has already run."
+#  else
+#    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
+#    echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
+#fi
 
 # Swap
 if [ "${SWAP}" = 1 ];
