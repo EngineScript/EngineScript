@@ -56,7 +56,7 @@ fi
 #------------------------------------------------
 
 # OpCache-GUI
-/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
+#/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
 
 # PHPinfo.php
 /usr/local/bin/enginescript/scripts/install/tools/php/phpinfo.sh
