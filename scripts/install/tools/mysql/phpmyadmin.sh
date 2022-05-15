@@ -32,13 +32,13 @@ mv phpmyadmin /var/www/admin/enginescript
 sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
 mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
-mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
-mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER 'pma'@'localhost' IDENTIFIED BY 'pmapass';"
-mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'pma'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER 'pma'@'localhost' IDENTIFIED BY 'pmapass';"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'pma'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
 # Login Credentials
-mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
-mysql -u root -mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
 
 # Post-Install Cleanup
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh

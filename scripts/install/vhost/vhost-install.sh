@@ -144,9 +144,9 @@ echo ""
 
 sleep 2
 
-sudo mysql -u root -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -u root -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-sudo mysql -u root -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
