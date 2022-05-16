@@ -24,17 +24,15 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# WPScan
-gem install wpscan
+cd /var/www/sites
+printf "Please select the site you want to scan for vulnerabilities:\n"
+select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
+cd "$d"html && echo "WP-Sec Vulnerability Scan"
+wp wp-sec check --allow-root --type=all --output=user --api=v3 --cached --token=${WPSCANAPI}
 
+# Ask user to acknowledge that the scan has completed before moving on
 echo ""
 echo ""
-echo "============================================================"
-echo ""
-echo "${BOLD}WPScan installed.${NORMAL}"
-echo ""
-echo "============================================================="
+read -n 1 -s -r -p "Press any key to continue"
 echo ""
 echo ""
-
-sleep 5
