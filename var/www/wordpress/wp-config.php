@@ -7,9 +7,9 @@
 define('DB_NAME',	'SEDWPDB');
 define('DB_USER',	'SEDWPUSER');
 define('DB_PASSWORD',	'SEDWPPASS');
-define('DB_CHARSET',	'utf8mb4');
+define('DB_CHARSET', 'utf8mb4');
 define('DB_HOST',	'localhost');
-define('DB_COLLATE',	'');
+define('DB_COLLATE', '');
 
 /* MySQL database table prefix. */
 $table_prefix = 'SEDPREFIX_';
