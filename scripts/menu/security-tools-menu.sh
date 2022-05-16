@@ -32,7 +32,7 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("WP-CLI Vulnerability Scanner (site scanner)" "PHP Malware Finder (site scanner)" "WP-Sec Vulnerability Scan (site scanner)" "WPScan Vulnerability Scan (site scanner)" "Linux Malware Detect (server scanner)" "Clam Antivirus (server scanner)" "Exit Security Tools")
+    secoptions=("10up WP-CLI Vulnerability Scanner (site scanner)" "PHP Malware Finder (site scanner)" "WP-Sec Vulnerability Scan (site scanner)" "WPScan Vulnerability Scan (site scanner)" "Linux Malware Detect (server scanner)" "Clam Antivirus (server scanner)" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
