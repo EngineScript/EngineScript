@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="MAY 14 2022"
+VARIABLES_DATE="MAY 15 2022"
 
 # Software Versions
 MARIADB_VER="10.6"
@@ -30,7 +30,7 @@ CPU_COUNT="$(nproc --all)"
 DT="$(date +"%m-%d-%y")"
 IP_ADDRESS="$(ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')"
 LINUX_TYPE="$(lsb_release -si)"
-RAND_CHAR2="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2 | head -n 1)"
+RAND_CHAR2="$(pwgen -A01 2)"
 RAND_CHAR4="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1)"
 RAND_CHAR8="$(pwgen -1Bcns 8)"
 RAND_CHAR16="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)"
