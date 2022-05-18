@@ -27,4 +27,3 @@ fi
 # Remove Previous Installations
 apt-get remove --purge 'apache2.*' mysql-client mysql-common mysql-server nginx nginx-common nginx-core nginx-doc nginx-extras nginx-full nginx-light -y
 apt autoremove -y
-systemctl daemon-reload

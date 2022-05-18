@@ -35,5 +35,3 @@ rm -rf /usr/src/*.tar.gz*
 # Remove old packages
 apt autoremove --purge -y
 apt autoclean -y
-
-systemctl daemon-reload

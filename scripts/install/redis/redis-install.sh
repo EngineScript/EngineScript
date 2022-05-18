@@ -44,4 +44,5 @@ sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
 chown -R redis:redis /etc/redis/redis.conf
 chmod 775 /etc/redis/redis.conf
 service redis-server restart
+systemctl daemon-reload
 sudo systemctl enable redis-server

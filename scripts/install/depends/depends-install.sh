@@ -36,5 +36,3 @@ curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
 # Cheat.sh
 #curl https://cht.sh/:cht.sh | sudo tee /usr/local/bin/cht.sh
 #chmod +x /usr/local/bin/cht.sh
-
-systemctl daemon-reload
