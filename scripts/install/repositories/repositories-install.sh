@@ -47,6 +47,9 @@ add-apt-repository -yn "deb http://archive.canonical.com/ubuntu $(lsb_release -s
 # GeoIP
 add-apt-repository -yn ppa:maxmind/ppa
 
+# Git
+add-apt-repository -yn ppa:git-core/ppa
+
 # GPG
 #add-apt-repository -yn ppa:savoury1/gpg
 
