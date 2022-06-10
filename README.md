@@ -33,6 +33,9 @@ Download the file via FTP and edit it using your favorite text editor. You may a
 nano /home/EngineScript/enginescript-install-options.txt
 ```
 
+Retrive your Cloudflare Global API Key at # Retrive your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+
+
 #### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
 ```shell
@@ -58,7 +61,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 ##### Click on the Edge Certificates section
 1. Set Always Use HTTPS to Off. *(Important: This can cause redirect loops)*
 2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
-3. Set Minimum TLS Version to TLS 1.2.
+3. Set Minimum TLS Version to TLS 1.3.
 4. Enable Opportunistic Encryption.
 5. Enable TLS 1.3.
 6. Enable Automatic HTTPS Rewrites
