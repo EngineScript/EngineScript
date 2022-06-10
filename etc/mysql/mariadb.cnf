@@ -38,11 +38,11 @@ skip-name-resolve
 bind-address = 127.0.0.1
 
 # * Fine Tuning
-max_connections	= 151
+max_connections	= SEDMYSQL02PERCENT
 connect_timeout	= 20
 wait_timeout = 120
 max_allowed_packet = 64M
-thread_cache_size = 128
+thread_cache_size = SEDTCS
 sort_buffer_size = 4M
 bulk_insert_buffer_size	= 16M
 tmp_table_size = 48M
@@ -54,15 +54,15 @@ interactive_timeout = 120
 myisam_recover_options = BACKUP
 key_buffer_size = 16M
 open-files-limit	= 500000
-table_open_cache = 300
-myisam_sort_buffer_size	= 128M
+table_open_cache = SEDMYSQL80PERCENT
+myisam_sort_buffer_size	= SEDMYSQL02PERCENTM
 concurrent_insert	= 2
-read_buffer_size = 2m
+read_buffer_size = 2M
 read_rnd_buffer_size = 1M
 
 # * Query Cache Configuration
 # Cache only tiny result sets, so we can fit more in the query cache.
-query_cache_limit	= 256k
+query_cache_limit	= 256K
 query_cache_min_res_unit = 1K
 query_cache_size = 0
 query_cache_type = 0
@@ -105,9 +105,9 @@ max_binlog_size = 100M
 # InnoDB is enabled by default with a 10MB datafile in /var/lib/mysql/.
 default_storage_engine = InnoDB
 # you can't just change log file size, requires special procedure
-innodb_log_file_size = 128M
+innodb_log_file_size = SEDMYSQL13PERCENTM
 innodb_buffer_pool_size	= SEDMYSQL50PERCENTM
-innodb_log_buffer_size = 64M
+innodb_log_buffer_size = SEDLBSM
 innodb_file_per_table	= 1
 innodb_open_files	= 400
 innodb_io_capacity = 400

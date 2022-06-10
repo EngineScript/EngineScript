@@ -48,13 +48,33 @@ y
 y
 EOF
 
-# Copy Config
+# Copy MariaDB Config
 systemctl stop mariadb.service
 mv /var/lib/mysql/ib_log* /root
 cp -rf /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL50PERCENT|${SERVER_MEMORY_TOTAL_50}|g" /etc/mysql/mariadb.cnf
-systemctl start mariadb.service
 
+# Tune MariaDB
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 3000 ];
+  then
+    sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/mariadb.cnf
+  else
+    sed -i "s|SEDTCS|256|g" /etc/mysql/mariadb.cnf
+fi
+
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 3000 ];
+  then
+    sed -i "s|SEDLBS|32|g" /etc/mysql/mariadb.cnf
+  else
+    sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
+fi
+
+sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL50PERCENT|${SERVER_MEMORY_TOTAL_50}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/mariadb.cnf
+systemctl start mariadb.service
+SEDLBS
 echo ""
 echo "============================================================="
 echo ""
