@@ -58,7 +58,7 @@ table_open_cache = SEDMYSQL80PERCENT
 myisam_sort_buffer_size = SEDMYSQL02PERCENTM
 concurrent_insert = 2
 #read_buffer_size = 2M
-read_rnd_buffer_size = 1M
+read_rnd_buffer_size = 265K
 
 # * Query Cache Configuration
 # Cache only tiny result sets, so we can fit more in the query cache.
