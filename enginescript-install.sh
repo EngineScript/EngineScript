@@ -186,6 +186,15 @@ if [ "${KSM}" = 1 ];
     echo "KSM=1" >> /home/EngineScript/install-log.txt
 fi
 
+# Raising System File Limits
+if [ "${SFL}" = 1 ];
+  then
+    echo "SSTEM FILE LIMITS script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh
+    echo "SFL=1" >> /home/EngineScript/install-log.txt
+fi
+
 # Kernel Update
 #if [ "${KERNEL_UPDATE}" = 1 ];
 #  then
