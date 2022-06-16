@@ -102,6 +102,22 @@ define('WP_ALLOW_REPAIR', false);	// https://SEDURL/wp-admin/maint/repair.php - 
 define('WP_DEBUG_DISPLAY', false);	// Displays logs within browser on site. Not for production environments.
 define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
 
+/* Theme Check Plugin */
+// https://wordpress.org/plugins/theme-check/
+// WP_DEBUG should also be set to true if you want to use this
+//define( 'TC_PRE', 'Theme Review:[[br]]
+//- Themes should be reviewed using "define(\'WP_DEBUG\', true);" in wp-config.php[[br]]
+//- Themes should be reviewed using the test data from the Theme Checklists (TC)
+//-----
+//' );
+
+//define( 'TC_POST', 'Feel free to make use of the contact details below if you have any questions,
+//comments, or feedback:[[br]]
+//[[br]]
+//* Leave a comment on this ticket[[br]]
+//* Send an email to the Theme Review email list[[br]]
+//* Use the #wordpress-themes IRC channel on Freenode.' );
+
 /* Compression */
 // Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
 //define('COMPRESS_CSS',	true);
