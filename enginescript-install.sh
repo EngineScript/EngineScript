@@ -189,7 +189,7 @@ fi
 # Raising System File Limits
 if [ "${SFL}" = 1 ];
   then
-    echo "SSTEM FILE LIMITS script has already run."
+    echo "SYSTEM FILE LIMITS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh
     echo "SFL=1" >> /home/EngineScript/install-log.txt
