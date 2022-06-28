@@ -30,6 +30,7 @@ fi
 cd /usr/src/nginx-${NGINX_VER}
 patch -p1 < /usr/local/bin/enginescript/patches/nginx.patch
 patch -p1 < /usr/local/bin/enginescript/patches/nginx_io_uring.patch
+patch -p1 < /usr/local/bin/enginescript/patches/nginx_headers_more.patch
 
 # Patch OpenSSL
 #cd /usr/src/openssl-${OPENSSL_VER}
