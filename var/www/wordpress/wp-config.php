@@ -81,7 +81,7 @@ define('EMPTY_TRASH_DAYS', 14);	// Setting to 0 causes all deletions skip the tr
 define('IMAGE_EDIT_OVERWRITE', true);
 define('MEDIA_TRASH', true);
 define('WP_POST_REVISIONS', 2);	// Can also be set to false
-define('ALLOW_UNFILTERED_UPLOADS', false);	// Allows admins to upload files that would normally be filtered by WordPress by default.
+define('ALLOW_UNFILTERED_UPLOADS', false);	// Allows admins to upload files that would normally be filtered by WordPress by default such as .CSV and .TXT.
 
 /* Disable Nag Notices */
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
