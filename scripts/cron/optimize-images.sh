@@ -19,16 +19,6 @@ source /home/EngineScript/enginescript-install-options.txt
 # Include config
 source /home/EngineScript/sites-list/sites.sh
 
-NOW=$(date +%m-%d-%Y-%H%M)
-
-# Filenames
-DATABASE_FILE="${NOW}-database.sql";
-NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
-SSL_FILE="${NOW}-ssl-keys.gz";
-UPLOADS_FILE="${NOW}-uploads.tar.gz";
-WPCONFIG_FILE="${NOW}-wp-config.gz";
-
-
 for i in "${SITES[@]}"
 do
 	cd "$ROOT/$i/html"
