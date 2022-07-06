@@ -32,6 +32,9 @@ sudo mv wp-cli.phar /usr/local/bin/wp
 mkdir -p /tmp/wp-cli-phar
 chown -R www-data:www-data /tmp/wp-cli-phar
 chmod 775 /tmp/wp-cli-phar
+mkdir -p .wp-cli/cache
+chown -R www-data:www-data .wp-cli/cache
+chmod 775 .wp-cli/cache
 
 # Install WP-CLI Extensions
 wp package install markri/wp-sec --allow-root
