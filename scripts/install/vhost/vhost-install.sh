@@ -96,7 +96,7 @@ echo ""
 
 while true;
   do
-    read -p "When finished, enter y to continue to the next step: " y
+    read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
       case $y in
         [Yy]* )
           echo "Let's continue";
