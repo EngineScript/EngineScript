@@ -28,7 +28,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-ip-updater.sh
 
 # Create Cloudflare Origin Pull Cert
-#/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-origin-cert.sh
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-origin-cert.sh
 
 # Cloudflare Origin Pull Certificate Note
 echo ""
