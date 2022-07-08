@@ -90,6 +90,10 @@ define('ALLOW_UNFILTERED_UPLOADS', false);	// Allows admins to upload files that
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
 define('DISABLE_NAG_NOTICES', true);
 
+/* The SEO Framework Headless Mode */
+// https://kb.theseoframework.com/kb/headless-mode/
+define( 'THE_SEO_FRAMEWORK_HEADLESS', false );
+
 /* WP-CLI 10Up Vulnerability Scanner */
 // Register for an account at https://wpscan.com/api
 define('VULN_API_TOKEN', 'SEDWPSCANAPI');
