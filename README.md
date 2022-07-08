@@ -26,15 +26,14 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 #### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
 
+First, retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens.
+
 Edit the following file: **/home/EngineScript/enginescript-install-options.txt**.
 
 Download the file via FTP and edit it using your favorite text editor. You may also edit the file directly from the console using the following command:
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
 ```
-
-Retrieve  your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
-
 
 #### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
