@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
@@ -55,7 +55,7 @@ dpkg-reconfigure tzdata
 dpkg-reconfigure unattended-upgrades
 
 # HWE
-apt install --install-recommends linux-generic-hwe-20.04 -y
+apt install --install-recommends linux-generic-hwe-22.04 -y
 
 sleep 3
 # Add User
@@ -151,13 +151,13 @@ if [ "${OPENSSL}" = 1 ];
 fi
 
 # Jemalloc
-if [ "${JEMALLOC}" = 1 ];
-  then
-    echo "JEMALLOC script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
-    echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
-fi
+#if [ "${JEMALLOC}" = 1 ];
+#  then
+#    echo "JEMALLOC script has already run."
+#  else
+#    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
+#    echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
+#fi
 
 # Swap
 if [ "${SWAP}" = 1 ];
@@ -184,6 +184,15 @@ if [ "${KSM}" = 1 ];
   else
     /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh
     echo "KSM=1" >> /home/EngineScript/install-log.txt
+fi
+
+# Raising System File Limits
+if [ "${SFL}" = 1 ];
+  then
+    echo "SYSTEM FILE LIMITS script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh
+    echo "SFL=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Kernel Update

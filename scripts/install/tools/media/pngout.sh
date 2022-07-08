@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -28,15 +28,15 @@ fi
 
 # Retrieve Latest Version
 cd /usr/src
-wget https://static.jonof.id.au/dl/kenutils/pngout-20150319-linux.tar.gz
-tar -xf pngout-20150319-linux.tar.gz
+wget https://static.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz
+tar -xf pngout-${PNGOUT_VER}-linux.tar.gz
 
 # Install 32-BIT or 64-BIT
 if [ ${BIT_TYPE} == 'x86_64' ];
   then
     # 64-bit
-    cp pngout-20150319-linux/x86_64/pngout /bin/pngout
+    cp pngout-${PNGOUT_VER}-linux/x86_64/pngout /bin/pngout
   else
     # 32-bit
-    cp pngout-20150319-linux/i686/pngout /bin/pngout
+    cp pngout-${PNGOUT_VER}-linux/i686/pngout /bin/pngout
 fi

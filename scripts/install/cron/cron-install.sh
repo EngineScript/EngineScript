@@ -7,7 +7,7 @@
 # Author:       Peter Downey
 # Company:      VisiStruct
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -44,8 +44,7 @@ if [ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" = 1 ];
 fi
 
 # Retrieve Cloudflare Origin Certificate for Authenticated Pulls With Nginx (monthly)
-# Cloudflare recently changed the certificate link. It can no longer be retrieved via a command. This may change in the future. For now, we use an existing cert.
-#(crontab -l 2>/dev/null; echo "0 3 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-origin-cert.sh >/dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 3 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-origin-cert.sh >/dev/null 2>&1") | crontab -
 
 # Retrive Cloudflare Server IP Ranges for Nginx (monthly)
 (crontab -l 2>/dev/null; echo "1 3 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-ip-updater.sh >/dev/null 2>&1") | crontab -

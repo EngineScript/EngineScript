@@ -13,10 +13,19 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
+# Start Main Script
 
-# Set UFW Cloudflare Rules
-/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
-
-# Enable UFW
-echo "y" | ufw enable
+echo "* hard nofile 60666" >> /etc/security/limits.conf
+echo "* soft nofile 60666" >> /etc/security/limits.conf
+echo "root hard nofile 60666" >> /etc/security/limits.conf
+echo "root soft nofile 60666" >> /etc/security/limits.conf
+echo "session required pam_limits.so" >> /etc/pam.d/common-session

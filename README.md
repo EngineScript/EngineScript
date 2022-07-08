@@ -10,7 +10,7 @@ As this is a pre-release version.
 
 #### Requirements
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
-- **Ubuntu 20.04**
+- **Ubuntu 22.04**
 - **64-Bit OS**
 - **Minimum 1GB RAM** *(2GB+ recommended)*
 - **Cloudflare** *(free or paid)*
@@ -32,6 +32,9 @@ Download the file via FTP and edit it using your favorite text editor. You may a
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
 ```
+
+Retrive your Cloudflare Global API Key at # Retrive your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+
 
 #### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
@@ -58,7 +61,7 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 ##### Click on the Edge Certificates section
 1. Set Always Use HTTPS to Off. *(Important: This can cause redirect loops)*
 2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
-3. Set Minimum TLS Version to TLS 1.2.
+3. Set Minimum TLS Version to TLS 1.3.
 4. Enable Opportunistic Encryption.
 5. Enable TLS 1.3.
 6. Enable Automatic HTTPS Rewrites

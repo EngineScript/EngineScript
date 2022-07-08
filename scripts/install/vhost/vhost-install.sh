@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -74,7 +74,7 @@ echo ""
 echo "Still in the SSL/TLS tab, click on the Edge Certificates section."
 echo "  1.  Set Always Use HTTPS to Off (Important: This can cause redirect loops)."
 echo "  2.  We recommend enabling HSTS. Turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever."
-echo "  3.  Set Minimum TLS Version to TLS 1.2."
+echo "  3.  Set Minimum TLS Version to TLS 1.3."
 echo "  4.  Enable Opportunistic Encryption"
 echo "  5.  Enable TLS 1.3"
 echo "  6.  Enable Automatic HTTPS Rewrites"
@@ -96,7 +96,7 @@ echo ""
 
 while true;
   do
-    read -p "When finished, enter y to continue to the next step: " y
+    read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
       case $y in
         [Yy]* )
           echo "Let's continue";
@@ -125,7 +125,7 @@ echo "System Date: `date`"
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"
-SDB="ES${RAND_CHAR8}"
+sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="ES${SANDOMAIN}_${RAND_CHAR4}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
@@ -133,6 +133,7 @@ SPS="${RAND_CHAR32}"
 echo "DB=\"${SDB}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 echo "USR=\"${SUSR}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 echo "PSWD=\"${SPS}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 
 sleep 2
 
@@ -143,9 +144,9 @@ echo ""
 
 sleep 2
 
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-mysql -u root -p$MARIADB_ADMIN_PASSWORD -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx

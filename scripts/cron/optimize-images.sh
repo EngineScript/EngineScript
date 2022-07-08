@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -18,16 +18,6 @@ source /home/EngineScript/enginescript-install-options.txt
 
 # Include config
 source /home/EngineScript/sites-list/sites.sh
-
-NOW=$(date +%m-%d-%Y-%H%M)
-
-# Filenames
-DATABASE_FILE="${NOW}-database.sql";
-NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
-SSL_FILE="${NOW}-ssl-keys.gz";
-UPLOADS_FILE="${NOW}-uploads.tar.gz";
-WPCONFIG_FILE="${NOW}-wp-config.gz";
-
 
 for i in "${SITES[@]}"
 do

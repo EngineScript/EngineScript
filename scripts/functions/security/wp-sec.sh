@@ -13,10 +13,26 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
+# Start Main Script
 
-# Set UFW Cloudflare Rules
-/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
+cd /var/www/sites
+printf "Please select the site you want to scan for vulnerabilities:\n"
+select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
+cd "$d"html && echo "WP-Sec Vulnerability Scan"
+wp wp-sec check --allow-root --type=all --output=user --api=v3 --cached --token=${WPSCANAPI}
 
-# Enable UFW
-echo "y" | ufw enable
+# Ask user to acknowledge that the scan has completed before moving on
+echo ""
+echo ""
+read -n 1 -s -r -p "Press any key to continue"
+echo ""
+echo ""

@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -32,9 +32,6 @@ echo ""
 echo "============================================================"
 echo ""
 echo "${BOLD}WPScan installed.${NORMAL}"
-echo ""
-echo "To run a scan of your site:"
-echo "wpscan --url https://yourdomain.com --enumerate"
 echo ""
 echo "============================================================="
 echo ""

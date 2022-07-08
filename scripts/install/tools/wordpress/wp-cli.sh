@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -29,6 +29,12 @@ cd /usr/local/src
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x wp-cli.phar
 sudo mv wp-cli.phar /usr/local/bin/wp
+mkdir -p /tmp/wp-cli-phar
+chown -R www-data:www-data /tmp/wp-cli-phar
+chmod 775 /tmp/wp-cli-phar
+mkdir -p .wp-cli/cache
+chown -R www-data:www-data .wp-cli/cache
+chmod 775 .wp-cli/cache
 
 # Install WP-CLI Extensions
 wp package install markri/wp-sec --allow-root

@@ -22,6 +22,7 @@ SECURITY_SCANNER=0
 
 # User Credentials
 # Cloudflare
+# Retrive your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
 CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 

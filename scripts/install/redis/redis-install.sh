@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -44,4 +44,5 @@ sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
 chown -R redis:redis /etc/redis/redis.conf
 chmod 775 /etc/redis/redis.conf
 service redis-server restart
+systemctl daemon-reload
 sudo systemctl enable redis-server

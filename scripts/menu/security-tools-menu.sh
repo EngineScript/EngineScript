@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -32,16 +32,24 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("WP-CLI Vulnerability Scanner (site scanner)" "PHP Malware Finder (site scanner)" "Linux Malware Detect (server scanner)" "Clam Antivirus (server scanner)" "Exit Security Tools")
+    secoptions=("10up WP-CLI Vulnerability Scanner (site scanner)" "PHP Malware Finder (site scanner)" "WP-Sec Vulnerability Scan (site scanner)" "WPScan Vulnerability Scan (site scanner)" "Linux Malware Detect (server scanner)" "Clam Antivirus (server scanner)" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "WP-CLI Vulnerability Scanner (site scanner)")
+        "10up WP-CLI Vulnerability Scanner (site scanner)")
           /usr/local/bin/enginescript/scripts/functions/security/10up-vuln-scanner.sh
           break
           ;;
         "PHP Malware Finder (site scanner)")
           /usr/local/bin/enginescript/scripts/functions/security/php-malware-finder.sh
+          break
+          ;;
+        "WP-Sec Vulnerability Scan (site scanner)")
+          /usr/local/bin/enginescript/scripts/functions/security/wp-sec.sh
+          break
+          ;;
+        "WPScan Vulnerability Scan (site scanner)")
+          /usr/local/bin/enginescript/scripts/functions/security/wpscan.sh
           break
           ;;
         "Linux Malware Detect (server scanner)")

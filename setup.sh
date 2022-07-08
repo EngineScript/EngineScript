@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
@@ -17,13 +17,13 @@ if [ "${EUID}" != 0 ];
     exit
 fi
 
-# Check if Ubuntu is 20.04. If not, exit.
+# Check if Ubuntu is 22.04. If not, exit.
 UBUNTU_CODENAME="$(lsb_release -sc)"
 
-if [ "${UBUNTU_CODENAME}" != focal ];
+if [ "${UBUNTU_CODENAME}" != jammy ];
   then
     echo "ALERT:"
-    echo "EngineScript does not support Ubuntu ${UBUNTU_CODENAME}. We recommend using 20.04 focal"
+    echo "EngineScript does not support Ubuntu ${UBUNTU_CODENAME}. We recommend using 22.04 jammy"
     exit
 fi
 

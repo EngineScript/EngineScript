@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -35,5 +35,3 @@ rm -rf /usr/src/*.tar.gz*
 # Remove old packages
 apt autoremove --purge -y
 apt autoclean -y
-
-systemctl daemon-reload

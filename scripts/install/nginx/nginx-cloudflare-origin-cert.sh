@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -23,7 +23,7 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-# This has changed. Cloudflare is now hiding this file
-# https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull#zone-level--cloudflare-certificates
+# https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/set-up/
+
 # Retrieve Cloudflare Origin Certificate
-#wget -O /etc/nginx/ssl/cloudflare/origin-pull-ca.pem https://support.cloudflare.com/hc/en-us/article_attachments/360044928032/origin-pull-ca.pem
+wget -O /etc/nginx/ssl/cloudflare/origin-pull-ca.pem https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem

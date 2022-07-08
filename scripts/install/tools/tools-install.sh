@@ -6,7 +6,7 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 20.04 (focal)
+# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -56,7 +56,7 @@ fi
 #------------------------------------------------
 
 # OpCache-GUI
-/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
+#/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
 
 # PHPinfo.php
 /usr/local/bin/enginescript/scripts/install/tools/php/phpinfo.sh
