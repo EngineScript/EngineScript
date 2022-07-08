@@ -33,7 +33,7 @@ Download the file via FTP and edit it using your favorite text editor. You may a
 nano /home/EngineScript/enginescript-install-options.txt
 ```
 
-Retrive your Cloudflare Global API Key at # Retrive your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+Retrieve  your Cloudflare Global API Key at # Retrieve  your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
 
 
 #### Step 3 - Main Install Process

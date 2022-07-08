@@ -24,7 +24,7 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Retrive mainline kernal update script
+# Retrieve  mainline kernal update script
 wget -O /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kernel.sh https://raw.githubusercontent.com/pimlie/ubuntu-mainline-kernel.sh/master/ubuntu-mainline-kernel.sh
 
 # Permissions

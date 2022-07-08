@@ -30,10 +30,10 @@ fi
 # Brotli
 #/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
 
-# Retrive Latest Cloudflare Zlib
+# Retrieve  Latest Cloudflare Zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
 
-# Retrive Latest PCRE2
+# Retrieve  Latest PCRE2
 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
 
 # Patch Nginx

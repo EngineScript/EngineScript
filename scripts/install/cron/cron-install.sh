@@ -46,10 +46,10 @@ fi
 # Retrieve Cloudflare Origin Certificate for Authenticated Pulls With Nginx (monthly)
 (crontab -l 2>/dev/null; echo "0 3 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-origin-cert.sh >/dev/null 2>&1") | crontab -
 
-# Retrive Cloudflare Server IP Ranges for Nginx (monthly)
+# Retrieve  Cloudflare Server IP Ranges for Nginx (monthly)
 (crontab -l 2>/dev/null; echo "1 3 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-ip-updater.sh >/dev/null 2>&1") | crontab -
 
-# Retrive Cloudflare Server IP Ranges for UFW (monthly)
+# Retrieve  Cloudflare Server IP Ranges for UFW (monthly)
 (crontab -l 2>/dev/null; echo "2 3 1 * * cd /usr/local/bin/enginescript/scripts/cron; bash ufw-cloudflare-cron.sh >/dev/null 2>&1") | crontab -
 
 # Backup WordPress Databases & Upload Directories (daily)
