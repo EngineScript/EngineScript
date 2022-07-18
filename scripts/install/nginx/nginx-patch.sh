@@ -31,8 +31,8 @@ cd /usr/src/nginx-${NGINX_VER}
 patch -p1 < /usr/local/bin/enginescript/patches/nginx.patch
 patch -p1 < /usr/local/bin/enginescript/patches/nginx_io_uring.patch
 
-cd /usr/src/headers-more-nginx-module-0.33
-patch -p1 < /usr/local/bin/enginescript/patches/nginx_headers_more.patch
+#cd /usr/src/headers-more-nginx-module-0.33
+#patch -p1 < /usr/local/bin/enginescript/patches/nginx_headers_more.patch
 
 # Patch OpenSSL
 #cd /usr/src/openssl-${OPENSSL_VER}
