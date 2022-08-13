@@ -100,6 +100,16 @@ define('VULN_API_TOKEN', 'SEDWPSCANAPI');
 define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
 define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
+/* Sentry.io */
+// https://sentry.io/welcome/
+//define('WP_SENTRY_PHP_DSN', 'PHP_DSN');
+//define('WP_SENTRY_ERROR_TYPES', E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_USER_DEPRECATED);
+//define('WP_SENTRY_SEND_DEFAULT_PII', true);
+//define('WP_SENTRY_BROWSER_DSN', 'JS_DSN');
+//define('WP_SENTRY_BROWSER_TRACES_SAMPLE_RATE', 0.3);
+//define('WP_SENTRY_VERSION', 'v5.2.0');
+//define('WP_SENTRY_ENV', 'production');
+
 /* Debug */
 define('WP_DEBUG', false);	// Set to true if you want to debug
 define('CONCATENATE_SCRIPTS', true);	// Setting to false may fix java issues in dashboard only
