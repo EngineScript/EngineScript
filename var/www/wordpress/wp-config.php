@@ -86,6 +86,10 @@ define('MEDIA_TRASH', true);
 define('WP_POST_REVISIONS', 2);	// Can also be set to false
 define('ALLOW_UNFILTERED_UPLOADS', false);	// Allows admins to upload files that would normally be filtered by WordPress by default such as .CSV and .TXT.
 
+/* Jetpack Brute Force Attack Protection */
+// https://jetpack.com/support/protect/
+define('JETPACK_IP_ADDRESS_OK', 'X.X.X.X');
+
 /* Disable Nag Notices */
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
 define('DISABLE_NAG_NOTICES', true);
