@@ -139,6 +139,7 @@ innodb_flush_method = O_DIRECT
 #innodb_flush_log_at_trx_commit=0
 
 [mysqldump]
+default-character-set = utf8mb4
 quick
 quote-names
 max_allowed_packet = 666M
