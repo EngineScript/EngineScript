@@ -26,6 +26,7 @@ fi
 
 # Update Pip
 python3 -m pip install --upgrade pip
+python3 -m pip install -U distro
 
 # Install Python Stuff
 pip3 install --no-cache-dir gixy ngxtop wapiti3
