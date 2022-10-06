@@ -27,6 +27,7 @@ NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
 SSL_FILE="${NOW}-ssl-keys.gz";
 UPLOADS_FILE="${NOW}-uploads.tar.gz";
 WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 for i in "${SITES[@]}"
 do
@@ -39,7 +40,10 @@ do
 	gzip -f "/home/EngineScript/site-backups/$i/wp-database/$DATABASE_FILE"
 
 	# Backup uploads directory
-	tar -zcf "/home/EngineScript/site-backups/$i/wp-uploads/$UPLOADS_FILE" wp-content/uploads
+	#tar -zcf "/home/EngineScript/site-backups/$i/wp-uploads/$UPLOADS_FILE" wp-content/uploads
+
+	# Backup uploads, themes, and plugins
+	tar -zcf "/home/EngineScript/site-backups/$i/wp-content/$WPCONTENT_FILE" wp-content
 
   # Nginx vhost backup
   gzip -cf "/etc/nginx/sites-enabled/$i.conf" > /home/EngineScript/site-backups/$i/nginx/$NGINX_FILE
@@ -54,6 +58,7 @@ do
   find /home/EngineScript/site-backups/$i/nginx -type f -mtime +7 | xargs rm -fR
   find /home/EngineScript/site-backups/$i/ssl-keys -type f -mtime +7 | xargs rm -fR
   find /home/EngineScript/site-backups/$i/wp-config -type f -mtime +7 | xargs rm -fR
+  find /home/EngineScript/site-backups/$i/wp-content -type f -mtime +7 | xargs rm -fR
 	find /home/EngineScript/site-backups/$i/wp-database -type f -mtime +7 | xargs rm -fR
   find /home/EngineScript/site-backups/$i/wp-uploads -type f -mtime +7  | xargs rm -fR
 done

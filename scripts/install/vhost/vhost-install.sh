@@ -152,6 +152,7 @@ sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL ON ${DB}.* TO '${US
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/ssl-keys
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-config
+mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-content
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-database
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-uploads
 
