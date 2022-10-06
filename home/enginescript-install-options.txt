@@ -14,10 +14,12 @@
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
 
 # Install Options
-# 0 = no. 1 = yes.
+# 0 = disabled
+# 1 = enabled
+AUTOMATIC_LOCAL_BACKUPS=0
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
-INSTALL_DROPBOX_BACKUP=0
-INSTALL_S3_BACKUP=0
+INSTALL_DROPBOX_BACKUP=0 # Requires local backup to be enabled
+INSTALL_S3_BACKUP=0 # Requires local backup to be enabled
 SECURITY_SCANNER=0
 
 # User Credentials
