@@ -66,10 +66,10 @@ fi
 #------------------------------------------------
 
 # ClamAV
-/usr/local/bin/enginescript/scripts/install/tools/security/clamav.sh
+#/usr/local/bin/enginescript/scripts/install/tools/security/clamav.sh
 
 # Maldet
-/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
+#/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
 
 # PHP Malware Finder
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
