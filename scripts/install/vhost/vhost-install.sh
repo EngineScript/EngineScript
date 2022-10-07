@@ -169,14 +169,6 @@ chown -R www-data:www-data /var/log/domains/${SITE_URL}
 wp core download --allow-root
 rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
 
-# Download WordPress (old method)
-#wget https://wordpress.org/latest.tar.gz
-#tar -xzvf latest.tar.gz
-#mv wordpress/* .
-#rmdir /var/www/sites/${SITE_URL}/html/wordpress
-#rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
-#mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads
-
 # Create wp-config.php
 cp -rf /usr/local/bin/enginescript/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPDB|${DB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
@@ -233,7 +225,6 @@ wp plugin install autodescription --allow-root
 wp plugin install cloudflare --allow-root
 wp plugin install flush-opcache --allow-root
 wp plugin install nginx-helper --allow-root
-#wp plugin install opcache-manager --allow-root
 wp plugin install redis-cache --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
@@ -241,7 +232,6 @@ wp plugin install wp-mail-smtp --allow-root
 wp plugin activate cloudflare --allow-root
 wp plugin activate flush-opcache --allow-root
 wp plugin activate nginx-helper --allow-root
-#wp plugin activate opcache-manager --allow-root
 wp plugin activate redis-cache --allow-root
 wp plugin activate wp-mail-smtp --allow-root
 
@@ -305,7 +295,7 @@ clear
 
 echo ""
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
-echo "|${BOLD}Backups${NORMAL}:                                             |"
+echo "|${BOLD}Backups${NORMAL}:                             |"
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo "For your records:"
 echo "-------------------------------------------------------"
