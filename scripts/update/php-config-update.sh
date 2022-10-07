@@ -30,3 +30,4 @@ cp -rf /usr/local/bin/enginescript/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/
 cp -rf /usr/local/bin/enginescript/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
 sed -i "s|SEDOPCACHEJITBUFFER|${SERVER_MEMORY_TOTAL_03}|g" /etc/php/${PHP_VER}/fpm/php.ini
 sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_13}|g" /etc/php/${PHP_VER}/fpm/php.ini
+sed -i "s|SEDOPCACHEINTBUF|${SERVER_MEMORY_TOTAL_017}|g" /etc/php/${PHP_VER}/fpm/php.ini
