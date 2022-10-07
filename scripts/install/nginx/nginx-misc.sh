@@ -38,6 +38,7 @@ chown -R www-data:www-data /usr/lib/nginx/modules
 chown -R www-data:www-data /var/cache/nginx
 chown -R www-data:www-data /var/lib/nginx
 chown -R www-data:www-data /var/log/domains
+chown -R www-data:www-data /var/log/nginx
 chown -R www-data:www-data /var/www
 chmod 775 /var/cache/nginx
 
