@@ -35,6 +35,7 @@ touch /var/log/redis/redis.log
 find /var/log/redis -type d,f -exec chmod 775 {} \;
 chmod 775 /run/redis
 chmod 775 /var/lib/redis
+chmod 775 /var/log/redis
 chown -R redis:redis /run/redis
 chown -R redis:redis /var/lib/redis
 chown -R redis:redis /var/log/redis
