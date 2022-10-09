@@ -4,11 +4,11 @@
 // https://EngineScript.com
 
 /* MySQL settings - You can get this info from your web host */
-define('DB_NAME',	'SEDWPDB');
-define('DB_USER',	'SEDWPUSER');
-define('DB_PASSWORD',	'SEDWPPASS');
+define('DB_NAME', 'SEDWPDB');
+define('DB_USER', 'SEDWPUSER');
+define('DB_PASSWORD', 'SEDWPPASS');
 define('DB_CHARSET', 'utf8mb4');
-define('DB_HOST',	'localhost');
+define('DB_HOST', 'localhost');
 define('DB_COLLATE', '');
 
 /* MySQL database table prefix. */
@@ -41,18 +41,18 @@ define('FORCE_SSL_LOGIN', true);
 /* Multisite */
 define('WP_ALLOW_MULTISITE', false);
 
-/* Redis Object Cache	*/
+/* Redis Object Cache */
 define('WP_CACHE', true);
-define('WP_CACHE_KEY_SALT',	'SEDURL');
-define('WP_REDIS_DISABLE_BANNERS',	'true');
-define('WP_REDIS_IGBINARY',	'true');
-define('WP_REDIS_MAXTTL',	'300');
-//define('WP_REDIS_PATH',	'/run/redis/redis-server.sock');
-//define('WP_REDIS_PREFIX',	'SEDURL');
+define('WP_CACHE_KEY_SALT', 'SEDURL');
+define('WP_REDIS_DISABLE_BANNERS', 'true');
+define('WP_REDIS_IGBINARY', 'true');
+define('WP_REDIS_MAXTTL', '300');
+//define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
+//define('WP_REDIS_PREFIX', 'SEDURL');
 //define('WP_REDIS_SCHEME', 'unix');
 define('WP_REDIS_SELECTIVE_FLUSH', 'true');
 
-/* Nginx Helper FastCGI Cache Path	*/
+/* Nginx Helper FastCGI Cache Path */
 define('RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/');
 
 /* Performance */
@@ -80,12 +80,12 @@ define('FS_CHMOD_DIR', 0755);
 define('FS_CHMOD_FILE', 0644);
 
 /* Content */
-define('AUTOSAVE_INTERVAL', 60);	// Time in seconds
-define('EMPTY_TRASH_DAYS', 14);	// Setting to 0 causes all deletions skip the trash folder and are permanent.
+define('AUTOSAVE_INTERVAL', 60); // Time in seconds
+define('EMPTY_TRASH_DAYS', 14); // Setting to 0 causes all deletions skip the trash folder and are permanent.
 define('IMAGE_EDIT_OVERWRITE', true);
 define('MEDIA_TRASH', true);
-define('WP_POST_REVISIONS', 2);	// Can also be set to false
-define('ALLOW_UNFILTERED_UPLOADS', false);	// Allows admins to upload files that would normally be filtered by WordPress by default such as .CSV and .TXT.
+define('WP_POST_REVISIONS', 2); // Can also be set to false
+define('ALLOW_UNFILTERED_UPLOADS', false); // Allows admins to upload files that would normally be filtered by WordPress by default such as .CSV and .TXT.
 
 /* Jetpack Brute Force Attack Protection */
 // https://jetpack.com/support/protect/
@@ -116,12 +116,12 @@ define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 //define('WP_SENTRY_ENV', 'production');
 
 /* Debug */
-define('WP_DEBUG', false);	// Set to true if you want to debug
-define('CONCATENATE_SCRIPTS', true);	// Setting to false may fix java issues in dashboard only
-define('SAVEQUERIES', false);	// https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
-define('SCRIPT_DEBUG', false);	// Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
-define('WP_ALLOW_REPAIR', false);	// https://SEDURL/wp-admin/maint/repair.php - Make sure to disable this once you're done. Anyone can trigger this.
-define('WP_DEBUG_DISPLAY', false);	// Displays logs within browser on site. Not for production environments.
+define('WP_DEBUG', false); // Set to true if you want to debug
+define('CONCATENATE_SCRIPTS', true); // Setting to false may fix java issues in dashboard only
+define('SAVEQUERIES', false); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
+define('SCRIPT_DEBUG', false); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
+define('WP_ALLOW_REPAIR', false); // https://SEDURL/wp-admin/maint/repair.php - Make sure to disable this once you're done. Anyone can trigger this.
+define('WP_DEBUG_DISPLAY', false); // Displays logs within browser on site. Not for production environments.
 define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
 
 /* Theme Check Plugin */
@@ -142,9 +142,9 @@ define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only 
 
 /* Compression */
 // Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
-//define('COMPRESS_CSS',	true);
-//define('COMPRESS_SCRIPTS',	true);
-//define('ENFORCE_GZIP',	true);
+//define('COMPRESS_CSS', true);
+//define('COMPRESS_SCRIPTS', true);
+//define('ENFORCE_GZIP', true);
 
 /* Security Headers */
 // Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
@@ -157,7 +157,7 @@ define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only 
 // Don't change things below this line
 /* Absolute path to the WordPress directory. */
 if ( !defined('ABSPATH') )
-	define('ABSPATH', dirname(__FILE__) . '/');
+ define('ABSPATH', dirname(__FILE__) . '/');
 
 /* Sets up WordPress vars and included files. */
 require_once(ABSPATH . 'wp-settings.php');
