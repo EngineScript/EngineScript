@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+#----------------------------------------------------------------------------
+# EngineScript - High-Performance WordPress LEMP Server
+#----------------------------------------------------------------------------
+# Website:      https://EngineScript.com
+# GitHub:       https://github.com/Enginescript/EngineScript
+# Company:      VisiStruct / EngineScript
+# License:      GPL v3.0
+# OS:           Ubuntu 22.04 (jammy)
+#----------------------------------------------------------------------------
+
+# EngineScript Variables
+source /usr/local/bin/enginescript/enginescript-variables.txt
+source /home/EngineScript/enginescript-install-options.txt
+
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
+#----------------------------------------------------------------------------
+# Start Main Script
+
+# Main Menu
+while true
+  do
+    clear
+    echo -e "Server Logs | boxes -a c -d shell -p a1l2"
+    echo ""
+    echo "Select an option to view the last 20 lines of logs."
+    echo ""
+    PS3='Please enter your choice: '
+    secoptions=("Domains" "Nginx" "PHP" "Redis" "Syslog" "Exit Server Logs")
+    select secopt in "${secoptions[@]}"
+    do
+      case $secopt in
+        "Domains")
+          /usr/local/bin/enginescript/scripts/functions/logs/domain-logs.sh
+          break
+          ;;
+        "Nginx")
+          clear
+          echo "${BOLD}Showing last 20 lines of Nginx error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n20 /var/log/nginx/nginx.error.log && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
+        "PHP")
+          clear
+          echo "${BOLD}Showing last 20 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n20 /var/log/php/php${PHP_VER}-fpm.log && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
+        "Redis")
+          clear
+          echo "${BOLD}Showing last 20 lines of Redis error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n20 /var/log/redis/redis.log && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
+        "Syslog")
+          clear
+          echo "${BOLD}Showing last 20 lines of Syslog.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n20 /var/log/syslog && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
+        "Exit Server Logs")
+          exit
+          ;;
+        *) echo invalid option;;
+      esac
+    done
+  done
