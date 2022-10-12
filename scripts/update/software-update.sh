@@ -27,7 +27,13 @@ fi
 # Update System Software and Tools
 
 # Update Adminer
-/usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+if [ "${INSTALL_ADMINER}" = 1 ];
+  then
+    echo "Updating Adminer"
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+  else
+    echo "Skipping Adminer update"
+fi
 
 # Update libdeflate
 /usr/local/bin/enginescript/scripts/install/libdeflate/libdeflate-install.sh
@@ -35,11 +41,17 @@ fi
 # Update MYSQLTuner
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
-# Update OpCache-GUI
-/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
-
 # Update PHP Malware Finder
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
+
+# Update phpMyAdmin
+if [ "${INSTALL_PHYMYADMIN}" = 1 ];
+  then
+    echo "Updating phpMyAdmin"
+    /usr/local/bin/enginescript/scripts/install/tools/security/phpmyadmin-update.sh
+  else
+    echo "Skipping phpMyAdmin update"
+fi
 
 # Update Python
 /usr/local/bin/enginescript/scripts/update/python-update.sh
@@ -61,24 +73,22 @@ gem update wpscan
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 echo ""
-echo ""
 echo "============================================================="
 echo ""
 echo "${BOLD}EngineScript has been updated.${NORMAL}"
 echo ""
 echo "This update includes:"
-echo "    - Adminer"
-echo "    - libdeflate"
-echo "    - MYSQLTuner"
-echo "    - OpCache-GUI"
-echo "    - PHP Malware Finder"
-echo "    - Python Packages"
-echo "    - WP-CLI"
-echo "      - WP-CLI Packages"
-echo "    - WP-Scan"
-echo "    - zImageOptimizer"
-echo "    - zlib"
+echo "  - Adminer (if enabled)"
+echo "  - libdeflate"
+echo "  - MYSQLTuner"
+echo "  - PHP Malware Finder"
+echo "  - phpMyAdmin (if enabled)"
+echo "  - Python Packages"
+echo "  - WP-CLI"
+echo "    - WP-CLI Packages"
+echo "  - WP-Scan"
+echo "  - zImageOptimizer"
+echo "  - zlib"
 echo ""
 echo "============================================================="
-echo ""
 echo ""
