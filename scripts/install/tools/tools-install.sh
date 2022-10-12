@@ -39,13 +39,25 @@ fi
 #------------------------------------------------
 
 # Adminer
-/usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+if [ "${INSTALL_ADMINER}" = 1 ];
+  then
+    echo "Installing Adminer"
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+  else
+    echo "Skipping Adminer install"
+fi
 
 # MYSQLTuner
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
 # phpMyAdmin
-/usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh
+if [ "${INSTALL_PHYMYADMIN}" = 1 ];
+  then
+    echo "Installing phpMyAdmin"
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh
+  else
+    echo "Skipping phpMyAdmin install"
+fi
 
 #------------------------------------------------
 # Nginx Tools
