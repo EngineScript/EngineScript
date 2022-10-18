@@ -23,7 +23,8 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-
+rm -r /var/cache/nginx/*
+rm -r /var/cache/opcache/*
 service nginx restart
 service php${PHP_VER}-fpm restart
 service redis-server restart
