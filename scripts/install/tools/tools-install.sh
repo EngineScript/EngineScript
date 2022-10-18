@@ -94,7 +94,13 @@ fi
 #/usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
 
 # Webmin
-/usr/local/bin/enginescript/scripts/install/tools/system/webmin.sh
+if [ "${INSTALL_WEBMIN}" = 1 ];
+  then
+    echo "Installing Webmin"
+    /usr/local/bin/enginescript/scripts/install/tools/system/webmin.sh
+  else
+    echo "Skipping Webmin install"
+fi
 
 #------------------------------------------------
 # WordPress Tools
