@@ -38,26 +38,27 @@ skip-name-resolve
 bind-address = 127.0.0.1
 
 # * Fine Tuning
-max_connections = SEDMYSQL02PERCENT
+max_connections = SEDMYSQL016PERCENT
 connect_timeout = 20
-wait_timeout = 120
-max_allowed_packet = 64M
+wait_timeout = 60
+max_allowed_packet = 32M
 thread_cache_size = SEDTCS
-sort_buffer_size = 1M
+sort_buffer_size = 2M
 bulk_insert_buffer_size = 16M
-tmp_table_size = 48M
-max_heap_table_size = 48M
+tmp_table_size = 16M
+max_heap_table_size = 16M
 max_connect_errors = 100000
 interactive_timeout = 120
+table_definition_cache = 1024
 
 # * MyISAM
 myisam_recover_options = BACKUP
 key_buffer_size = 16M
 open_files_limit = 10000
 table_open_cache = SEDMYSQL80PERCENT
-myisam_sort_buffer_size = SEDMYSQL02PERCENTM
+myisam_sort_buffer_size = 128M
 concurrent_insert = 2
-#read_buffer_size = 2M
+#read_buffer_size = 128K
 read_rnd_buffer_size = 265K
 
 # * Query Cache Configuration
@@ -72,6 +73,7 @@ query_cache_type = 0
 #general_log = 1
 
 # Error logging goes to syslog due to /etc/mysql/conf.d/mysqld_safe_syslog.cnf.
+log_error = /var/log/mysql/mysql-error.log
 log_warnings = 2
 # Enable the slow query log to see queries with especially long duration
 #slow_query_log[={0|1}]
@@ -109,7 +111,7 @@ innodb_log_file_size = SEDMYSQL13PERCENTM
 innodb_buffer_pool_size = SEDMYSQL50PERCENTM
 innodb_log_buffer_size = SEDLBSM
 innodb_file_per_table = 1
-innodb_open_files = 400
+innodb_open_files = 2000
 innodb_io_capacity = 400
 innodb_flush_method = O_DIRECT
 
@@ -139,7 +141,6 @@ innodb_flush_method = O_DIRECT
 #innodb_flush_log_at_trx_commit=0
 
 [mysqldump]
-default-character-set = utf8mb4
 quick
 quote-names
 max_allowed_packet = 666M
