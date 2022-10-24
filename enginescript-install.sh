@@ -21,11 +21,11 @@ fi
 # Start Main Script
 
 # dos2unix
-# We do this in-case the user is a novice and uploaded the options file using a basic Windows text editor.
+# In-case you uploaded the options file using a basic Windows text editor
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
 # Permissions
-# Just in case you changed any files and changed Permissions
+# In-case you changed any files and changed Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
 chown -R root:root /usr/local/bin/enginescript
 
