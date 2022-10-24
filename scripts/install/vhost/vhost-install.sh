@@ -135,14 +135,10 @@ echo "USR=\"${SUSR}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 echo "PSWD=\"${SPS}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 echo "" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 
-sleep 2
-
 source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 
 echo "Randomly generated MySQL database credentials for ${SITE_URL}."
 echo ""
-
-sleep 2
 
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
