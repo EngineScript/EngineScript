@@ -27,7 +27,7 @@ fi
 # Calculate PHP FPM tune depending on RAM
 calculate_php() {
 AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
-AVERAGE_PHP_MEMORY_REQ=50
+AVERAGE_PHP_MEMORY_REQ=80
 CPU_COUNT="$(nproc --all)"
 PHP_FPM_MAX_CHILDREN_ALT=$((AVAILABLE_MEMORY/AVERAGE_PHP_MEMORY_REQ))
 PHP_FPM_MAX_CHILDREN=$(( "$(free -m | awk 'NR==2{printf "%d", $2/65 }')" ))
