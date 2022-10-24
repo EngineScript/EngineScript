@@ -47,16 +47,16 @@ define('WP_CACHE_KEY_SALT', 'SEDURL');
 define('WP_REDIS_DISABLE_BANNERS', 'true');
 define('WP_REDIS_IGBINARY', 'true');
 define('WP_REDIS_MAXTTL', '300');
-//define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
+define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
 //define('WP_REDIS_PREFIX', 'SEDURL');
-//define('WP_REDIS_SCHEME', 'unix');
+define('WP_REDIS_SCHEME', 'unix');
 define('WP_REDIS_SELECTIVE_FLUSH', 'true');
 
 /* Nginx Helper FastCGI Cache Path */
 define('RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/');
 
 /* Performance */
-define('WP_MAX_MEMORY_LIMIT', '300M');
+define('WP_MAX_MEMORY_LIMIT', '256M');
 define('WP_MEMORY_LIMIT', '256M');
 
 /* WP-Cron */
