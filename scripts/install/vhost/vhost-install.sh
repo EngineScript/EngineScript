@@ -125,7 +125,7 @@ echo "System Date: `date`"
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"
-sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="ES${SANDOMAIN}_${RAND_CHAR4}"
+sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="ES_${SANDOMAIN}_${RAND_CHAR4}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
