@@ -45,7 +45,7 @@ fi
 # Dropbox Backups (daily)
 if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
   then
-    (crontab -l 2>/dev/null; echo "0 4 * * * cd /usr/local/bin/enginescript/scripts/cron; bash backups.sh >/dev/null 2>&1") | crontab -
+    (crontab -l 2>/dev/null; echo "0 4 * * * cd /usr/local/bin/enginescript/scripts/cron; bash dropbox-database-backup.sh >/dev/null 2>&1") | crontab -
   else
     # Do nothing!
     echo "Skipping Dropbox Uploader cron install"
