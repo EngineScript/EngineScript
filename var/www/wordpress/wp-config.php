@@ -43,12 +43,11 @@ define('WP_ALLOW_MULTISITE', false);
 
 /* Redis Object Cache */
 define('WP_CACHE', true);
-define('WP_CACHE_KEY_SALT', 'SEDURL');
 define('WP_REDIS_DISABLE_BANNERS', 'true');
 define('WP_REDIS_IGBINARY', 'true');
 define('WP_REDIS_MAXTTL', '300');
 define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
-//define('WP_REDIS_PREFIX', 'SEDURL');
+define('WP_REDIS_PREFIX', 'SEDURL');
 define('WP_REDIS_SCHEME', 'unix');
 define('WP_REDIS_SELECTIVE_FLUSH', 'true');
 
@@ -97,7 +96,7 @@ define('DISABLE_NAG_NOTICES', true);
 
 /* The SEO Framework Headless Mode */
 // https://kb.theseoframework.com/kb/headless-mode/
-define( 'THE_SEO_FRAMEWORK_HEADLESS', false );
+define('THE_SEO_FRAMEWORK_HEADLESS', false);
 
 /* WP-CLI 10Up Vulnerability Scanner */
 // Register for an account at https://wpscan.com/api
@@ -115,6 +114,9 @@ define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 //define('WP_SENTRY_VERSION', 'v5.2.0');
 //define('WP_SENTRY_ENV', 'production');
 
+/* Environment Type */
+define('WP_ENVIRONMENT_TYPE', 'production');
+
 /* Debug */
 define('WP_DEBUG', false); // Set to true if you want to debug
 define('CONCATENATE_SCRIPTS', true); // Setting to false may fix java issues in dashboard only
@@ -122,7 +124,7 @@ define('SAVEQUERIES', false); // https://codex.wordpress.org/Editing_wp-config.p
 define('SCRIPT_DEBUG', false); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
 define('WP_ALLOW_REPAIR', false); // https://SEDURL/wp-admin/maint/repair.php - Make sure to disable this once you're done. Anyone can trigger this.
 define('WP_DEBUG_DISPLAY', false); // Displays logs within browser on site. Not for production environments.
-define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
+define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log'); // Only writes log if WP_DEBUG is set to true.
 
 /* Theme Check Plugin */
 // https://wordpress.org/plugins/theme-check/
