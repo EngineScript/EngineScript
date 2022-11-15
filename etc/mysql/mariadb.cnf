@@ -38,7 +38,7 @@ skip-name-resolve
 bind-address = 127.0.0.1
 
 # * Fine Tuning
-max_connections = SEDMYSQL016PERCENT
+max_connections = SEDMAXCON
 connect_timeout = 20
 wait_timeout = 60
 max_allowed_packet = 32M
@@ -53,9 +53,9 @@ table_definition_cache = 1024
 
 # * MyISAM
 myisam_recover_options = BACKUP
-key_buffer_size = 16M
+key_buffer_size = 64k
 open_files_limit = 10000
-table_open_cache = SEDMYSQL80PERCENT
+table_open_cache = SEDTOC
 myisam_sort_buffer_size = 128M
 concurrent_insert = 2
 #read_buffer_size = 128K
@@ -108,7 +108,7 @@ max_binlog_size = 100M
 default_storage_engine = InnoDB
 # you can't just change log file size, requires special procedure
 innodb_log_file_size = SEDMYSQL13PERCENTM
-innodb_buffer_pool_size = SEDMYSQL50PERCENTM
+innodb_buffer_pool_size = SEDMYSQL45PERCENTM
 innodb_log_buffer_size = SEDLBSM
 innodb_file_per_table = 1
 innodb_open_files = 2000
