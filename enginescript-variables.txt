@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="NOV 12 2022"
+VARIABLES_DATE="NOV 14 2022"
 
 # Software Versions
 MARIADB_VER="10.6"
@@ -47,7 +47,7 @@ SERVER_MEMORY_TOTAL_08="$(free -m | awk 'NR==2{printf "%d", $2*0.08 }')"
 SERVER_MEMORY_TOTAL_09="$(free -m | awk 'NR==2{printf "%d", $2*0.09 }')"
 SERVER_MEMORY_TOTAL_10="$(free -m | awk 'NR==2{printf "%d", $2*0.10 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
-SERVER_MEMORY_TOTAL_50="$(free -m | awk 'NR==2{printf "%d", $2*0.50 }')"
+SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 UBUNTU_CODENAME="$(lsb_release -sc)"
 UBUNTU_VER="$(lsb_release -sr)"
