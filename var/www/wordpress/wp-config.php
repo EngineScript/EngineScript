@@ -96,13 +96,17 @@ define('DISABLE_NAG_NOTICES', true);
 
 /* The SEO Framework Headless Mode */
 // https://kb.theseoframework.com/kb/headless-mode/
-define('THE_SEO_FRAMEWORK_HEADLESS', false);
+//define('THE_SEO_FRAMEWORK_HEADLESS', false);
 
 /* WP-CLI 10Up Vulnerability Scanner */
 // Register for an account at https://wpscan.com/api
 define('VULN_API_TOKEN', 'SEDWPSCANAPI');
 define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
 define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
+
+/* Super Page Cache for Cloudflare */
+// Enable this if you need to run custom Cloudflare worker code. Make sure to change the directory to match where you're placing your worker code.
+//define('SWCFPC_CF_WOKER_FULL_PATH', '/home/some-site/public/wp-content/themes/your-theme/assets/js/my-custom-cf-worker.js');
 
 /* Sentry.io */
 // https://sentry.io/welcome/

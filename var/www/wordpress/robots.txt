@@ -4,4 +4,4 @@ Allow: /wp-content/
 Allow: /wp-admin/admin-ajax.php
 Host: SEDURL
 
-Sitemap: https://SEDURL/sitemap_index.xml
+Sitemap: https://SEDURL/sitemap.xml
