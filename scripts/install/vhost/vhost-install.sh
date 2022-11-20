@@ -219,13 +219,13 @@ wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PA
 # WP-CLI Install Plugins
 wp plugin install autodescription --allow-root
 wp plugin install cloudflare --allow-root
+wp plugin install wp-cloudflare-page-cache --allow-root
 wp plugin install flush-opcache --allow-root
 wp plugin install nginx-helper --allow-root
 wp plugin install redis-cache --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
-wp plugin activate cloudflare --allow-root
 wp plugin activate flush-opcache --allow-root
 wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root
@@ -255,6 +255,7 @@ echo "We've downloaded some recommended plugins for you."
 echo ""
 echo "${BOLD}Downloaded:${NORMAL}"
 echo "  - Cloudflare"
+echo "  - Super Page Cache for Cloudflare"
 echo "  - Nginx Helper"
 echo "  - Redis Object Cache"
 echo "  - The SEO Framework"
@@ -266,14 +267,13 @@ echo ""
 echo "These plugins have been activated. You'll still need to configure them in WordPress."
 echo ""
 echo "${BOLD}Activated:${NORMAL}"
-echo "  - Cloudflare"
 echo "  - Nginx Helper"
 echo "  - WP Mail SMTP by WPForms"
-echo "  - WP Opcache"
+echo "  - WP OPcache"
 echo ""
 echo "------------------------------------------------------------------------------"
 echo ""
-echo "These plugins have been fully configured and enabled. No additional configuration is needed."
+echo "These plugins have been activated and fully configured. No additional configuration is needed."
 echo ""
 echo "${BOLD}Fully Configured and Enabled:${NORMAL}"
 echo "  - Redis Object Cache"
