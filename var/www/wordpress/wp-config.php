@@ -44,7 +44,7 @@ define('WP_ALLOW_MULTISITE', false);
 /* Redis Object Cache */
 define('WP_CACHE', true);
 define('WP_REDIS_DISABLE_BANNERS', 'true');
-define('WP_REDIS_IGBINARY', 'true');
+//define('WP_REDIS_IGBINARY', 'true');
 define('WP_REDIS_MAXTTL', '300');
 define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
 define('WP_REDIS_PREFIX', 'SEDURL');
