@@ -64,9 +64,9 @@ fi
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-service.sh
 
 # Hide EngineScript Header
-if [ "${SHOW_ENGINESCRIPT_HEADER}" = 0 ];
+if [ "${SHOW_ENGINESCRIPT_HEADER}" = 1 ];
   then
-    sed -i "s|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|g" /etc/nginx/globals/responseheaders.conf
+    sed -i "s|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|g" /etc/nginx/globals/responseheaders.conf
   else
     echo ""
 fi
