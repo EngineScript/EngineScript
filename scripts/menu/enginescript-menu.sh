@@ -81,8 +81,8 @@ while true
           break
           ;;
         "Update MariaDB")
-          echo "Option coming soon"
-          sleep 3
+          echo "Currently disabled as it's not needed."
+          sleep 5
           break
           ;;
         "Update Nginx")
@@ -94,7 +94,9 @@ while true
           break
           ;;
         "Update OpenSSL")
-          /usr/local/bin/enginescript/scripts/update/openssl-update.sh
+          echo "Currently disabled as it's not needed."
+          sleep 5
+          #/usr/local/bin/enginescript/scripts/update/openssl-update.sh
           break
           ;;
         "Update Server Tools")
