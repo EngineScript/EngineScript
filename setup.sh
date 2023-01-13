@@ -86,7 +86,7 @@ apt autoremove --purge -y
 apt autoclean -y
 
 cd /usr/local/src
-wget https://download.webmin.com/jcameron-key.asc
+wget https://download.webmin.com/jcameron-key.asc --no-check-certificate
 apt-key add jcameron-key.asc
 
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]

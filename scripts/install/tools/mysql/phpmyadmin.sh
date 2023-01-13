@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # phpMyAdmin
-wget -O /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
+wget -O /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
 unzip /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
 mv phpMyAdmin-${PHPMYADMIN_VER}-all-languages phpmyadmin
 mv phpmyadmin /var/www/admin/enginescript

@@ -26,7 +26,7 @@ fi
 
 # Download OpenSSL
 cd /usr/src
-wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
+wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz --no-check-certificate
 #apt remove openssl -y
 tar -xvzf openssl-${OPENSSL_VER}.tar.gz
 

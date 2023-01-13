@@ -51,5 +51,5 @@ make install
 ldconfig
 
 # Official zlib Download
-wget -O /usr/src/zlib-${ZLIB_VER}.tar.gz https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz
+wget -O /usr/src/zlib-${ZLIB_VER}.tar.gz https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz --no-check-certificate
 tar xzvf /usr/src/zlib-${ZLIB_VER}.tar.gz

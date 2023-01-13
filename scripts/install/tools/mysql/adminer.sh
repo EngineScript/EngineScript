@@ -26,7 +26,7 @@ fi
 
 # Adminer
 mkdir /var/www/admin/enginescript/adminer
-wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/index.php
+wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/index.php --no-check-certificate
 
 # Set Permissons
 chown -R www-data:www-data /var/www/admin/enginescript/adminer
