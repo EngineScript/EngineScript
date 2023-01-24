@@ -54,7 +54,7 @@ if [ "${INSTALL_PHYMYADMIN}" = 1 ];
 fi
 
 # Update Python
-/usr/local/bin/enginescript/scripts/update/python-update.sh
+#/usr/local/bin/enginescript/scripts/update/python-update.sh
 
 # Update WP-CLI
 echo "y" | wp cli update --stable --allow-root

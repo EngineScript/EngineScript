@@ -223,13 +223,13 @@ if [ "${THP}" = 1 ];
 fi
 
 # Python
-if [ "${PYTHON}" = 1 ];
-  then
-    echo "PYTHON script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/python/python-install.sh
-    echo "PYTHON=1" >> /home/EngineScript/install-log.txt
-fi
+#if [ "${PYTHON}" = 1 ];
+#  then
+#    echo "PYTHON script has already run."
+#  else
+#    /usr/local/bin/enginescript/scripts/install/python/python-install.sh
+#    echo "PYTHON=1" >> /home/EngineScript/install-log.txt
+#fi
 
 # PCRE
 if [ "${PCRE}" = 1 ];
