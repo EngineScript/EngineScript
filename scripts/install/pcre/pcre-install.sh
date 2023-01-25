@@ -26,7 +26,7 @@ fi
 
 # PCRE
 cd /usr/src
-wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz && tar xzvf pcre2-${PCRE2_VER}.tar.gz --no-check-certificate
+wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz --no-check-certificate && tar -xzvf pcre2-${PCRE2_VER}.tar.gz
 
 # Uncomment below if you want to use the latest PCRE for the entire server.
 # Not guaranteed to work properly.
