@@ -97,7 +97,7 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 1. In WordPress, go to Settings >> Super Page Cache for Cloudflare.
 
 ##### General tab
-1. Retrieve your Cloudflare API key at https://dash.cloudflare.com/profile/api-tokens.
+1. Retrieve your Cloudflare API key at **https://dash.cloudflare.com/profile/api-tokens**.
 2. Authentication mode: A**PI Key.**
 3. Cloudflare email: **Your email.**
 4. Cloudflare API Key: **Your API Key.**
@@ -110,22 +110,24 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 3. Automatically purge the Cloudflare's cache when something changes on the website: **Purge cache for related pages only**
 4. Don't cache the following dynamic contents: **Check all boxes marked as recommended and then also check "Pages with query args" and "WP JSON endpoints"**
 5. Don't cache the following static contents: **Check all boxes marked as recommended**
-6. Prevent the following URIs to be cached: **Enter the folowing:** ```/*ao_noptirocket*
-/*jetpack=comms*
-/*kinsta-monitor*
-*ao_speedup_cachebuster*
-/*removed_item*
-/my-account*
-/wc-api/*
-/edd-api/*
-/wp-json*
-/checkout/*
-/cart/*
-/certificate/*
-/my-courses/*
-*XMLHttpRequest*
-add-to-cart*
-add_to_cart*```
+6. Prevent the following URIs to be cached: **Enter the folowing:**
+   ```/*ao_noptirocket*
+    /*jetpack=comms*
+    /*kinsta-monitor*
+    *ao_speedup_cachebuster*
+    /*removed_item*
+    /my-account*
+    /wc-api/*
+    /edd-api/*
+    /wp-json*
+    /checkout/*
+    /cart/*
+    /certificate/*
+    /my-courses/*
+    *XMLHttpRequest*
+    add-to-cart*
+    add_to_cart*
+    ```
 7. Strip response cookies on pages that should be cached: **No**
 8. Automatically purge single post cache when a new comment is inserted into the database or when a comment is approved or deleted: **Yes**
 9. Automatically purge the cache when the upgrader process is complete: **Yes**
@@ -165,7 +167,7 @@ Most of these are not used, so just scroll past the ones that say Inactive Plugi
 
 
 ##### Finalize Cloudflare Cache Settings
-Follow this tutorial exactly: https://gist.github.com/isaumya/af10e4855ac83156cc210b7148135fa2. Things will not work correctly if you skip this part. 
+Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156cc210b7148135fa2**. Things will not work correctly if you skip this part.
 
 ## EngineScript Information Reference
 ### EngineScript Locations
