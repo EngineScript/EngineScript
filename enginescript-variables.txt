@@ -55,16 +55,3 @@ UBUNTU_VER="$(lsb_release -sr)"
 # Shell text
 BOLD="$(tput bold)"
 NORMAL="$(tput sgr0)"
-
-###################################################################
-######################## Software Found At ########################
-# MARIADB - https://mariadb.org/download/
-# NGINX HEADERS MORE - https://github.com/openresty/headers-more-nginx-module
-# NGINX CACHE PURGE - https://github.com/nginx-modules/ngx_cache_purge
-# NGINX MAINLINE - https://nginx.org/en/download.html
-# OPENSSL - https://www.openssl.org/source/
-# PCRE2 - https://github.com/PCRE2Project/pcre2/releases
-# PHP - https://launchpad.net/~ondrej/+archive/ubuntu/php
-# PHPMYADMIN - https://www.phpmyadmin.net/downloads/
-# PNGOUT - http://www.jonof.id.au/kenutils.html
-# ZLIB - https://github.com/madler/zlib

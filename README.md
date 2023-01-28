@@ -28,9 +28,9 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 ### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
 
-First, retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens.
+First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**.
 
-Edit the following file: **/home/EngineScript/enginescript-install-options.txt**.
+Edit: **/home/EngineScript/enginescript-install-options.txt**.
 
 ```shell
 nano /home/EngineScript/enginescript-install-options.txt
@@ -98,7 +98,7 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 
 ##### General tab
 1. Retrieve your Cloudflare API key at **https://dash.cloudflare.com/profile/api-tokens**.
-2. Authentication mode: A**PI Key.**
+2. Authentication mode: **API Key.**
 3. Cloudflare email: **Your email.**
 4. Cloudflare API Key: **Your API Key.**
 5. Log mode: **Whatever you prefer.**
@@ -145,7 +145,7 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 1. Enable preloader: **Yes**
 2. Automatically preload the pages you have purged from Cloudflare cache with this plugin: **Yes**
 3. Preloader operation: **Choose what content you want the preloader to grab. I do all menus and sidebars.**
-4. Preload all URLs into the following sitemaps: Enter ```/sitemap.xml```
+4. Preload all URLs into the following sitemaps: Enter ```/sitemap.xml```. This assumes you're using The SEO Framework plugin that we automatically installed for you. If you use a different SEO plugin, your sitemap filename may be different.
 5. Varnish Support: **No**
 6. Automatically purge the OPcache when Cloudflare cache is purged: **Yes**
 7. Automatically purge the object cache when Cloudflare cache is purged: **Yes**
@@ -164,7 +164,6 @@ Most of these are not used, so just scroll past the ones that say Inactive Plugi
 ##### Other tab
 ###### Other Settings section
 1. Remove Cache Buster Query Parameter: **Yes**
-
 
 ##### Finalize Cloudflare Cache Settings
 Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156cc210b7148135fa2**. Things will not work correctly if you skip this part.
@@ -196,7 +195,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |                   |                                |
 
 ### Software EngineScript Utilizes:
-- MARIADB - [https://mariadb.org/download/] (https://mariadb.org/download/)
+- MARIADB - [https://mariadb.org/download/](https://mariadb.org/download/)
 - NGINX HEADERS MORE - [https://github.com/openresty/headers-more-nginx-module](https://github.com/openresty/headers-more-nginx-module)
 - NGINX CACHE PURGE - [https://github.com/nginx-modules/ngx_cache_purge](https://github.com/nginx-modules/ngx_cache_purge)
 - NGINX MAINLINE - [https://nginx.org/en/download.html](https://nginx.org/en/download.html)
@@ -205,7 +204,8 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 - PHP - [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
 - PHPMYADMIN - [https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/)
 - PNGOUT - [http://www.jonof.id.au/kenutils.html](http://www.jonof.id.au/kenutils.html)
-- ZLIB - [https://github.com/madler/zlib](https://github.com/madler/zlib)
+- ZLIB-Cloudflare - [https://github.com/cloudflare/zlib](https://github.com/cloudflare/zlib)
+- ZLIB-NG [https://github.com/zlib-ng/zlib-ng](https://github.com/zlib-ng/zlib-ng)
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
