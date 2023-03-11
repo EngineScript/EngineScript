@@ -49,6 +49,8 @@ NGINX_PASSWORD="PLACEHOLDER"
 
 # MariaDB
 # We've set MariaDB to always use root as the username.
+# Password Recommendation:
+# 26 characters: A-Z, a-z, 0-9.
 MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 
 # phpMyAdmin
