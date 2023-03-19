@@ -96,7 +96,7 @@ define('DISABLE_NAG_NOTICES', true);
 
 /* The SEO Framework Headless Mode */
 // https://kb.theseoframework.com/kb/headless-mode/
-//define('THE_SEO_FRAMEWORK_HEADLESS', false);
+//define('THE_SEO_FRAMEWORK_HEADLESS', true);
 
 /* WP-CLI 10Up Vulnerability Scanner */
 // Register for an account at https://wpscan.com/api
