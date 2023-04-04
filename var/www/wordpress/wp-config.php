@@ -55,7 +55,7 @@ define('WP_REDIS_SELECTIVE_FLUSH', 'true');
 define('RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/');
 
 /* Performance */
-define('WP_MAX_MEMORY_LIMIT', '256M');
+define('WP_MAX_MEMORY_LIMIT', '512M');
 define('WP_MEMORY_LIMIT', '256M');
 
 /* WP-Cron */
