@@ -31,7 +31,6 @@ INSTALL_SECURITY_SCANNER=0
 INSTALL_WEBMIN=0
 SHOW_ENGINESCRIPT_HEADER=0 # Shows Nginx from adding "X-Powered-By : EngineScript" header
 
-
 # User Credentials
 # Cloudflare
 # Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
@@ -50,7 +49,7 @@ NGINX_PASSWORD="PLACEHOLDER"
 # MariaDB
 # We've set MariaDB to always use root as the username.
 # Password Recommendation:
-# 26 characters: A-Z, a-z, 0-9.
+# 26 characters: A-Z, a-z, 0-9
 MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 
 # phpMyAdmin
