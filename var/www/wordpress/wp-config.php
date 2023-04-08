@@ -99,8 +99,6 @@ define('DISABLE_NAG_NOTICES', true);
 //define('THE_SEO_FRAMEWORK_HEADLESS', true);
 
 /* WP-CLI */
-// Register for an account at https://wpscan.com/api
-define('VULN_API_TOKEN', 'SEDWPSCANAPI');
 define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
 define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
@@ -115,8 +113,6 @@ define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 //define('VULN_API_PROVIDER', 'patchstack');
 define('VULN_API_PROVIDER', 'wordfence');
 //define('VULN_API_PROVIDER', 'wpscan');
-define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
-define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
 /* Super Page Cache for Cloudflare */
 // Enable this if you need to run custom Cloudflare worker code. Make sure to change the directory to match where you're placing your worker code.
