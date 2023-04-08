@@ -42,7 +42,7 @@ define('FORCE_SSL_LOGIN', true);
 define('WP_ALLOW_MULTISITE', false);
 
 /* Redis Object Cache */
-define('WP_CACHE', true);
+define('WP_CACHE', false);
 define('WP_REDIS_DISABLE_BANNERS', 'true');
 //define('WP_REDIS_IGBINARY', 'true');
 define('WP_REDIS_MAXTTL', '300');
@@ -98,9 +98,23 @@ define('DISABLE_NAG_NOTICES', true);
 // https://kb.theseoframework.com/kb/headless-mode/
 //define('THE_SEO_FRAMEWORK_HEADLESS', true);
 
-/* WP-CLI 10Up Vulnerability Scanner */
+/* WP-CLI */
 // Register for an account at https://wpscan.com/api
 define('VULN_API_TOKEN', 'SEDWPSCANAPI');
+define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
+define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
+
+/* WP-CLI 10Up Vulnerability Scanner */
+// We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
+// 
+// Register for an account at
+//	- https://wpscan.com/api
+//	- https://www.wordfence.com/threat-intel/
+//	- https://patchstack.com/
+//define('VULN_API_TOKEN', 'PUT-API-HERE');
+//define( 'VULN_API_PROVIDER', 'patchstack' );
+define( 'VULN_API_PROVIDER', 'wordfence' );
+//define( 'VULN_API_PROVIDER', 'wpscan' );
 define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
 define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
