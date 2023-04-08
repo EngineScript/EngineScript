@@ -106,15 +106,15 @@ define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
 /* WP-CLI 10Up Vulnerability Scanner */
 // We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
-// 
+//
 // Register for an account at
 //	- https://wpscan.com/api
 //	- https://www.wordfence.com/threat-intel/
 //	- https://patchstack.com/
 //define('VULN_API_TOKEN', 'PUT-API-HERE');
-//define( 'VULN_API_PROVIDER', 'patchstack' );
-define( 'VULN_API_PROVIDER', 'wordfence' );
-//define( 'VULN_API_PROVIDER', 'wpscan' );
+//define('VULN_API_PROVIDER', 'patchstack');
+define('VULN_API_PROVIDER', 'wordfence');
+//define('VULN_API_PROVIDER', 'wpscan');
 define('WP_CLI_BIN_DIR', '/tmp/wp-cli-phar');
 define('WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml');
 
