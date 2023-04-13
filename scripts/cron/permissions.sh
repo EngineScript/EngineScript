@@ -22,11 +22,12 @@ source /home/EngineScript/sites-list/sites.sh
 for i in "${SITES[@]}"
 do
 	cd "$ROOT/$i/html"
-	# Files
-	find . -type f -exec chmod 644 {} +
 
 	# Directories
-	find . -type d -exec chmod 755 {} +
+	find . -type d -print0 | sudo xargs -0 chmod 0755
+
+	# Files
+	find . -type f -print0 | sudo xargs -0 chmod 0644
 
 	# wp-config.php
 	chmod 600 wp-config.php

@@ -29,8 +29,8 @@ mkdir -p /var/www/admin/enginescript/phpinfo
 echo "<?php phpinfo(); ?>" > /var/www/admin/enginescript/phpinfo/index.php
 
 # Set Permissions
-find /var/www/admin/enginescript/phpinfo -type d -exec chmod 755 {} \;
-find /var/www/admin/enginescript/phpinfo -type f -exec chmod 644 {} \;
+find /var/www/admin/enginescript/phpinfo -type d -print0 | sudo xargs -0 chmod 0755
+find /var/www/admin/enginescript/phpinfo -type f -print0 | sudo xargs -0 chmod 0644
 chown -R www-data:www-data /var/www/admin/enginescript/phpinfo
 
 echo ""

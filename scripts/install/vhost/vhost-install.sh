@@ -186,8 +186,9 @@ cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/$
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 
 # WP File Permissions
-find /var/www/sites/${SITE_URL} -type d -exec chmod 755 {} \;
-find /var/www/sites/${SITE_URL} -type f -exec chmod 644 {} \;
+find /var/www/sites/${SITE_URL} -type d -print0 | sudo xargs -0 chmod 0755
+find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
+
 chown -R www-data:www-data /var/www/sites/${SITE_URL}
 chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
@@ -244,8 +245,8 @@ wp option update permalink_structure '/%category%/%postname%/' --allow-root
 cd /var/www/sites/${SITE_URL}
 chown -R www-data:www-data /var/www/sites/${SITE_URL}
 chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
-find . -type d -exec chmod 0755 {} \;
-find . -type f -exec chmod 0644 {} \;
+find /var/www/sites/${SITE_URL} -type d -print0 | sudo xargs -0 chmod 0755
+find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
 
 clear

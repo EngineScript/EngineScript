@@ -30,8 +30,8 @@ git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/
 cp -rf /usr/local/bin/enginescript/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
 
 # Set Permissions
-find /var/www/admin/enginescript/phpsysinfo -type d -exec chmod 755 {} \;
-find /var/www/admin/enginescript/phpsysinfo -type f -exec chmod 644 {} \;
+find /var/www/admin/enginescript/phpsysinfo -type d -print0 | sudo xargs -0 chmod 0755
+find /var/www/admin/enginescript/phpsysinfo -type f -print0 | sudo xargs -0 chmod 0644
 chown -R www-data:www-data /var/www/admin/enginescript/phpsysinfo
 
 echo ""

@@ -45,4 +45,4 @@ chmod 775 /var/cache/nginx
 # Logrotate - Nginx and Domains
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/domains /etc/logrotate.d/domains
-find /etc/logrotate.d -type f -exec chmod 644 {} \;
+find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
