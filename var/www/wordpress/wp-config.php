@@ -156,6 +156,8 @@ define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log'); // Only w
 //* Send an email to the Theme Review email list[[br]]
 //* Use the #wordpress-themes IRC channel on Freenode.' );
 
+//add_filter( 'tc_skip_development_directories', '__return_true' );
+
 /* Compression */
 // Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
 //define('COMPRESS_CSS', true);
