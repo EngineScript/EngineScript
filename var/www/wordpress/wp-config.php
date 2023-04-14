@@ -139,6 +139,8 @@ define('SCRIPT_DEBUG', false); // Use dev versions of core JS and CSS files (onl
 define('WP_ALLOW_REPAIR', false); // https://SEDURL/wp-admin/maint/repair.php - Make sure to disable this once you're done. Anyone can trigger this.
 define('WP_DEBUG_DISPLAY', false); // Displays logs within browser on site. Not for production environments.
 define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log'); // Only writes log if WP_DEBUG is set to true.
+//define( 'WP_SANDBOX_SCRAPING', true ); // Turn off WSOD Protection (and don't send email notification)
+//define( 'RECOVERY_MODE_EMAIL', 'mike@example.com' ); // Set a recovery mode email.
 
 /* Theme Check Plugin */
 // https://wordpress.org/plugins/theme-check/
