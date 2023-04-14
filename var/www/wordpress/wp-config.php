@@ -72,7 +72,7 @@ define('WP_AUTO_UPDATE_CORE', 'minor');
 /* Editing */
 define('DISALLOW_FILE_EDIT', true);
 define('DISALLOW_FILE_MODS', false); // Careful, this disabled plugin and theme updates.
-define('DISALLOW_UNFILTERED_HTML', false);
+define('DISALLOW_UNFILTERED_HTML', true);
 
 /* File Permissions */
 define('FS_CHMOD_DIR', 0755);
@@ -115,7 +115,8 @@ define('VULN_API_PROVIDER', 'wordfence');
 //define('VULN_API_PROVIDER', 'wpscan');
 
 /* Super Page Cache for Cloudflare */
-// Enable this if you need to run custom Cloudflare worker code. Make sure to change the directory to match where you're placing your worker code.
+// Enable this if you need to run custom Cloudflare worker code.
+// Make sure to change the directory to match where you're placing the worker code.
 //define('SWCFPC_CF_WOKER_FULL_PATH', '/home/some-site/public/wp-content/themes/your-theme/assets/js/my-custom-cf-worker.js');
 
 /* Sentry.io */
@@ -136,7 +137,7 @@ define('WP_DEBUG', false); // Set to true if you want to debug
 define('CONCATENATE_SCRIPTS', true); // Setting to false may fix java issues in dashboard only
 define('SAVEQUERIES', false); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
 define('SCRIPT_DEBUG', false); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
-define('WP_ALLOW_REPAIR', false); // https://SEDURL/wp-admin/maint/repair.php - Make sure to disable this once you're done. Anyone can trigger this.
+define('WP_ALLOW_REPAIR', false); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.
 define('WP_DEBUG_DISPLAY', false); // Displays logs within browser on site. Not for production environments.
 define('WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log'); // Only writes log if WP_DEBUG is set to true.
 //define( 'WP_SANDBOX_SCRAPING', true ); // Turn off WSOD Protection (and don't send email notification)
