@@ -49,7 +49,7 @@ define('WP_REDIS_MAXTTL', '300');
 define('WP_REDIS_PATH', '/run/redis/redis-server.sock');
 define('WP_REDIS_PREFIX', 'SEDURL');
 define('WP_REDIS_SCHEME', 'unix');
-define('WP_REDIS_SELECTIVE_FLUSH', 'true');
+//define('WP_REDIS_SELECTIVE_FLUSH', 'true');
 
 /* Nginx Helper FastCGI Cache Path */
 define('RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/');
