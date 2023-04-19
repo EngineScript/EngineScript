@@ -42,7 +42,6 @@ define('FORCE_SSL_LOGIN', true);
 define('WP_ALLOW_MULTISITE', false);
 
 /* Redis Object Cache */
-define('WP_CACHE', false);
 define('WP_REDIS_DISABLE_BANNERS', 'true');
 //define('WP_REDIS_IGBINARY', 'true');
 define('WP_REDIS_MAXTTL', '300');
