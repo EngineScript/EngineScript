@@ -24,21 +24,20 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Retrieve EngineScript Nginx Configuration
-cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
+# Tune FastCGI Cache
+sed -i "s|SEDSERVERMEM03|${SERVER_MEMORY_TOTAL_03}|g" /etc/nginx/nginx.conf
+sed -i "s|SEDSERVERMEM05|${SERVER_MEMORY_TOTAL_05}|g" /etc/nginx/nginx.conf
 
-# Assign Permissions
-chown -R www-data:www-data /etc/nginx
-chown -R www-data:www-data /tmp/nginx_proxy
-chown -R www-data:www-data /usr/lib/nginx/modules
-chown -R www-data:www-data /var/cache/nginx
-chown -R www-data:www-data /var/lib/nginx
-chown -R www-data:www-data /var/log/domains
-chown -R www-data:www-data /var/log/nginx
-chown -R www-data:www-data /var/www
-chmod 775 /var/cache/nginx
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
+  then
+    sed -i "s|SEDFCGIBUFFERS|16 16k|g" /etc/nginx/nginx.conf
+  else
+    sed -i "s|SEDFCGIBUFFERS|32 16k|g" /etc/nginx/nginx.conf
+fi
 
-# Logrotate - Nginx and Domains
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/domains /etc/logrotate.d/domains
-find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
+  then
+    sed -i "s|SEDFCGIBUSYBUFFERS|48k|g" /etc/nginx/nginx.conf
+  else
+    sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
+fi

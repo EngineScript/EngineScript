@@ -48,6 +48,9 @@ fi
 # Misc Nginx Stuff
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh
 
+# Tune Nginx FastCGI
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh
+
 # Backup Nginx
 /usr/local/bin/enginescript/scripts/cron/nginx-backup.sh
 
