@@ -205,7 +205,6 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 - PHPMYADMIN - [https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/)
 - PNGOUT - [http://www.jonof.id.au/kenutils.html](http://www.jonof.id.au/kenutils.html)
 - ZLIB-Cloudflare - [https://github.com/cloudflare/zlib](https://github.com/cloudflare/zlib)
-- ZLIB-NG [https://github.com/zlib-ng/zlib-ng](https://github.com/zlib-ng/zlib-ng)
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)

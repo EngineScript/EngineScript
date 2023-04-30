@@ -38,17 +38,17 @@ make -f Makefile.in distclean
 #make install
 #ldconfig
 
-# zlib-ng download
-rm -rf /usr/src/zlib-ng
-git clone --depth 1 https://github.com/Dead2/zlib-ng -b develop /usr/src/zlib-ng
-cd /usr/src/zlib-ng
-./configure \
-  --zlib-compat
+## zlib-ng download
+#rm -rf /usr/src/zlib-ng
+#git clone --depth 1 https://github.com/Dead2/zlib-ng -b develop /usr/src/zlib-ng
+#cd /usr/src/zlib-ng
+#./configure \
+#  --zlib-compat
 
-make -j${CPU_COUNT}
+#make -j${CPU_COUNT}
 #make test
-make install
-ldconfig
+#make install
+#ldconfig
 
 # Official zlib Download
 wget -O /usr/src/zlib-${ZLIB_VER}.tar.gz https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz --no-check-certificate
