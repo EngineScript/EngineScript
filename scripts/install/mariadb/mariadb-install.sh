@@ -50,13 +50,15 @@ EOF
 
 # Copy MariaDB Config
 systemctl stop mariadb.service
-mv /var/lib/mysql/ib_log* /root
 cp -rf /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
 
 # Create Logs
 touch /var/log/mysql/mysql-error.log
 touch /var/log/mysql/mariadb-slow.log
 touch /var/log/mysql/mysql.log
+chown -R mysql:adm /var/log/mysql/mysql-error.log
+chown -R mysql:adm /var/log/mysql/mariadb-slow.log
+chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
 SERVER_MEMORY_TOTAL_017=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.017 }')" ))
@@ -68,7 +70,7 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
     sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
 fi
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 3000 ];
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2500 ];
   then
     sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_017}|g" /etc/mysql/mariadb.cnf
   else
