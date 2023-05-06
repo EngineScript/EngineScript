@@ -30,7 +30,7 @@ AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
 AVERAGE_PHP_MEMORY_REQ=80
 CPU_COUNT="$(nproc --all)"
 PHP_FPM_MAX_CHILDREN_ALT=$((AVAILABLE_MEMORY/AVERAGE_PHP_MEMORY_REQ))
-PHP_FPM_MAX_CHILDREN=$(( "$(free -m | awk 'NR==2{printf "%d", $2/65 }')" ))
+PHP_FPM_MAX_CHILDREN=$(( "$(free -m | awk 'NR==2{printf "%d", $2/80 }')" ))
 PHP_FPM_SPARE_SERVERS=$(( "$(nproc --all)" * 2 ))
 PHP_FPM_START_SERVERS=$(( "$(nproc --all)" * 4 ))
 SERVER_MEMORY_TOTAL_01="$(free -m | awk 'NR==2{printf "%d", $2*0.01 }')"
