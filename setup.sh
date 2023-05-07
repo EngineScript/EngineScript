@@ -81,9 +81,9 @@ mkdir -p /home/EngineScript/sites-list
 apt update
 apt full-upgrade -y
 apt dist-upgrade -y
-apt clean -y
-apt autoremove --purge -y
-apt autoclean -y
+
+# Cleanup
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 cd /usr/local/src
 wget https://download.webmin.com/jcameron-key.asc --no-check-certificate

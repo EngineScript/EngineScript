@@ -54,5 +54,6 @@ sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/${PHP_VER}/fpm/pool.d/w
 # Block old PHP from APT
 echo -e "Package: php${OLDPHP}*\nPin: release *\nPin-Priority: -1" > php${OLDPHP}-block
 
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 /usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh

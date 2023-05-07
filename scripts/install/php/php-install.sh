@@ -72,4 +72,5 @@ echo ""
 sleep 5
 
 # Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh

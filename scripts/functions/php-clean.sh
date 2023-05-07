@@ -24,8 +24,7 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Remove Previous Installations
-apt-get remove --purge 'apache2.*' mysql-client mysql-common mysql-server nginx nginx-common nginx-core nginx-doc nginx-extras nginx-full nginx-light -y
-
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+
+# Remove Apache and old PHP installations
+apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y

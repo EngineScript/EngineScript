@@ -32,9 +32,9 @@ apt update
 sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
 apt full-upgrade -y
 apt dist-upgrade -y
-apt clean -y
-apt autoremove --purge -y
-apt autoclean -y
+
+# Cleanup
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 # MySQL Secure Installation Automated
 mysql_secure_installation <<EOF

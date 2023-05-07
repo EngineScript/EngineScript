@@ -331,6 +331,7 @@ if [ "${TOOLS}" = 1 ];
 fi
 
 # Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 # Server Reboot

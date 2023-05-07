@@ -35,6 +35,7 @@ mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
 
 # Post-Install Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 echo ""

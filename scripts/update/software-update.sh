@@ -70,6 +70,7 @@ gem update wpscan
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
 
 # Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 echo ""
