@@ -30,6 +30,9 @@ curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -
 # Install MariaDB
 apt update
 sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
+
+# Update
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 apt full-upgrade -y
 apt dist-upgrade -y
 

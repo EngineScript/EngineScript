@@ -78,9 +78,8 @@ mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
 
-apt update
-apt full-upgrade -y
-apt dist-upgrade -y
+# Update & Upgrade
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh

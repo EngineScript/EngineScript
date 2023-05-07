@@ -92,9 +92,7 @@ if [ "${BLOCK}" = 1 ];
 fi
 
 # Update & Upgrade
-apt update
-apt full-upgrade -y
-apt dist-upgrade -y
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Remove Preinstalled Software
 if [ "${REMOVES}" = 1 ];
