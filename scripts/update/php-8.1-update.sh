@@ -33,12 +33,15 @@ apt install php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-c
 # Update PHP config
 /usr/local/bin/enginescript/scripts/update/php-config-update.sh
 
+find /var/log/php -type d,f -exec chmod 775 {} \;
+find /var/log/opcache -type d,f -exec chmod 775 {} \;
+find /etc/php -type d,f -exec chmod 775 {} \;
 chmod 775 /var/cache/opcache
-find /var/log/php -type d,f -exec chmod 755 {} \;
-find /var/log/opcache -type d,f -exec chmod 755 {} \;
-find /etc/php -type d,f -exec chmod 755 {} \;
-
+chmod 775 /var/cache/php-sessions
+chmod 775 /var/cache/wsdlcache
 chown -R www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/cache/php-sessions
+chown -R www-data:www-data /var/cache/wsdlcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php

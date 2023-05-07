@@ -49,16 +49,20 @@ chown -R www-data:www-data /var/log/domains
 chown -R www-data:www-data /var/www
 chmod 775 /var/cache/nginx
 
-# Assign PHP Opcache Permissions
-find /var/log/php -type d,f -exec chmod 755 {} \;
-find /var/log/opcache -type d,f -exec chmod 755 {} \;
-find /etc/php -type d,f -exec chmod 755 {} \;
+# Assign PHP Permissions
+find /var/log/php -type d,f -exec chmod 775 {} \;
+find /var/log/opcache -type d,f -exec chmod 775 {} \;
+find /etc/php -type d,f -exec chmod 775 {} \;
 chmod 775 /var/cache/opcache
+chmod 775 /var/cache/php-sessions
+chmod 775 /var/cache/wsdlcache
 chown -R www-data:www-data /var/cache/opcache
+chown -R www-data:www-data /var/cache/php-sessions
+chown -R www-data:www-data /var/cache/wsdlcache
 chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
 # Assign EngineScript Permissions
-chmod -R 755 /usr/local/bin/enginescript
+chmod -R 775 /usr/local/bin/enginescript
 chown -R root:root /usr/local/bin/enginescript
