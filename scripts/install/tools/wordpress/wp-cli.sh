@@ -37,11 +37,13 @@ chown -R www-data:www-data .wp-cli/cache
 chmod 775 .wp-cli/cache
 
 # Install WP-CLI Extensions
+wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
+wp package install johnbillion/ext --allow-root
 wp package install markri/wp-sec --allow-root
 wp package install pantheon-systems/wp_launch_check --allow-root
 wp package install wearerequired/wp-cli-clear-opcache --allow-root
-wp package install johnbillion/ext --allow-root
 wp package install wp-cli/cron-command --allow-root
+wp package install wp-cli/doctor-command:@stable --allow-root
 wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
 
 echo ""

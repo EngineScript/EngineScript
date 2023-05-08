@@ -64,7 +64,7 @@ while true
           break
           ;;
         "Server & Site Tools")
-          /usr/local/bin/enginescript/scripts/menu/security-tools-menu.sh
+          /usr/local/bin/enginescript/scripts/menu/server-site-tools-menu.sh
           break
           ;;
         "Update Software")
