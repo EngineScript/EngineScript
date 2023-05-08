@@ -33,7 +33,7 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Update EngineScript" "Update MariaDB" "Update Nginx" "Update OpenSSL" "Update PHP" "Update Server Tools" "Update Ubuntu Distribution (apt full-upgrade)" "Update Ubuntu Software (apt upgrade)" "Update Software Menu")
+    options=("Update EngineScript" "Update MariaDB" "Update Nginx" "Update OpenSSL" "Update PHP" "Update Server Tools" "Update Ubuntu Distribution (apt full-upgrade)" "Update Ubuntu Software (apt upgrade)" "Exit Update Software Menu")
     select opt in "${options[@]}"
     do
       case $opt in
