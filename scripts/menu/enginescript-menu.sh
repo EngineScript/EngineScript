@@ -51,7 +51,7 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Configure New Domain" "Update Domain Vhost File" "Security Scanners" "View Server Logs" "View/Edit EngineScript Install Options File" "Update EngineScript" "Update MariaDB" "Update Nginx" "Update PHP" "Update OpenSSL" "Update Server Tools" "Exit EngineScript")
+    options=("Configure New Domain" "Security Tools" "Server & Site Tools" "Update Software" "Exit EngineScript")
     select opt in "${options[@]}"
     do
       case $opt in
@@ -59,48 +59,16 @@ while true
           /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
-        "Update Domain Vhost File")
-          echo "Option coming soon"
-          sleep 3
-          break
-          ;;
-        "Security Scanners")
+        "Security Tools")
           /usr/local/bin/enginescript/scripts/menu/security-tools-menu.sh
           break
           ;;
-        "View Server Logs")
-          /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
+        "Server & Site Tools")
+          /usr/local/bin/enginescript/scripts/menu/security-tools-menu.sh
           break
           ;;
-        "View/Edit EngineScript Install Options File")
-          nano /home/EngineScript/enginescript-install-options.txt
-          break
-          ;;
-        "Update EngineScript")
-          /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
-          break
-          ;;
-        "Update MariaDB")
-          echo "Currently disabled as it's not needed."
-          sleep 5
-          break
-          ;;
-        "Update Nginx")
-          /usr/local/bin/enginescript/scripts/update/nginx-update.sh
-          break
-          ;;
-        "Update PHP")
-          /usr/local/bin/enginescript/scripts/update/php-8.1-update.sh
-          break
-          ;;
-        "Update OpenSSL")
-          echo "Currently disabled as it's not needed."
-          sleep 5
-          #/usr/local/bin/enginescript/scripts/update/openssl-update.sh
-          break
-          ;;
-        "Update Server Tools")
-          /usr/local/bin/enginescript/scripts/update/software-update.sh
+        "Update Software")
+          /usr/local/bin/enginescript/scripts/menu/update-menu.sh
           break
           ;;
         "Exit EngineScript")

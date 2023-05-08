@@ -28,39 +28,36 @@ fi
 while true
   do
     clear
-    echo -e "Security Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Server & Site Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("10up WP-CLI Vulnerability Scanner (site scanner)" "PHP Malware Finder (site scanner)" "WP-Sec Vulnerability Scan (site scanner)" "WPScan Vulnerability Scan (site scanner)" "Exit Security Tools")
+    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "View Server Logs" "WP-CLI Doctor" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "10up WP-CLI Vulnerability Scanner (site scanner)")
-          /usr/local/bin/enginescript/scripts/functions/security/10up-vuln-scanner.sh
+        "Configure New Domain")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
-        "PHP Malware Finder (site scanner)")
-          /usr/local/bin/enginescript/scripts/functions/security/php-malware-finder.sh
+        "Update Domain Vhost File")
+          echo "Option coming soon"
+          sleep 3
           break
           ;;
-        "WP-Sec Vulnerability Scan (site scanner)")
-          /usr/local/bin/enginescript/scripts/functions/security/wp-sec.sh
+        "View/Edit EngineScript Install Options File")
+          nano /home/EngineScript/enginescript-install-options.txt
           break
           ;;
-        "WPScan Vulnerability Scan (site scanner)")
-          /usr/local/bin/enginescript/scripts/functions/security/wpscan.sh
+        "View Server Logs")
+          /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
           break
           ;;
-        #"Linux Malware Detect (server scanner)")
-        #  /usr/local/bin/enginescript/scripts/functions/security/maldet.sh
-        #  break
-        #  ;;
-        #"Clam Antivirus (server scanner)")
-        #  /usr/local/bin/enginescript/scripts/functions/security/clamscan.sh
-        #  break
-        #  ;;
-        "Exit Security Tools")
+        "WP-CLI Doctor")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/wp-cli-doctor.sh
+          break
+          ;;
+        "Exit Server & Site Tools")
           exit
           ;;
         *) echo invalid option;;
