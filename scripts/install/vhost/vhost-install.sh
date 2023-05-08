@@ -172,7 +172,7 @@ sed -i "s|SEDWPUSER|${USR}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPPASS|${PSWD}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDPREFIX|${PREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
-REDISPREFIX=$(echo ${DOMAIN::5}) && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+REDISPREFIX="$(echo ${DOMAIN::5})" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # WP Salt Creation
 SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
