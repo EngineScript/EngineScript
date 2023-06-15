@@ -220,6 +220,7 @@ wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PA
 
 # WP-CLI Install Plugins
 wp plugin install autodescription --allow-root
+wp plugin install mariadb-health-checks --allow-root
 wp plugin install nginx-helper --allow-root
 wp plugin install php-compatibility-checker --allow-root
 wp plugin install redis-cache --allow-root
