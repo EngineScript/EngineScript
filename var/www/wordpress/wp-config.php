@@ -71,9 +71,6 @@ define( 'WP_MEMORY_LIMIT', '256M' );
 /* WP-Cron */
 define( 'WP_CRON_LOCK_TIMEOUT', 60 );
 
-/* Cloudflare Plugin HTTP2 Server Push */
-//define( 'CLOUDFLARE_HTTP2_SERVER_PUSH_ACTIVE', true );
-
 /* Updates */
 define( 'AUTOMATIC_UPDATER_DISABLED', false );
 define( 'CORE_UPGRADE_SKIP_NEW_BUNDLED', false );

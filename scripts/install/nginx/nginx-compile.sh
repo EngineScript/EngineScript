@@ -54,7 +54,6 @@ cd /usr/src/nginx-${NGINX_VER}
   --with-zlib=/usr/src/zlib-cf \
   --with-http_ssl_module \
   --with-http_v2_module \
-  --with-http_v2_hpack_enc \
   --with-http_gunzip_module \
   --with-http_realip_module \
   --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
