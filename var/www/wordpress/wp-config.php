@@ -40,7 +40,7 @@ define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
 //define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
 //define( 'WP_REDIS_DISABLE_METRICS', 'true' );
 //define( 'WP_REDIS_DISABLED', 'true' ); // Emergency Disable Method
-//define( 'WP_REDIS_IGBINARY', 'true' );
+//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression for lower memory usage, slower
 //define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' );
 define( 'WP_REDIS_MAXTTL', '300' );
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
@@ -97,6 +97,9 @@ define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files th
 // https://jetpack.com/support/protect/
 define( 'JETPACK_IP_ADDRESS_OK', 'X.X.X.X' );
 
+/* Performance Lab */
+define('PERFLAB_DISABLE_OBJECT_CACHE_DROPIN', true);
+
 /* Disable Nag Notices */
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
 define( 'DISABLE_NAG_NOTICES', true );
@@ -108,6 +111,12 @@ define( 'DISABLE_NAG_NOTICES', true );
 /* WP-CLI */
 define( 'WP_CLI_BIN_DIR', '/tmp/wp-cli-phar' );
 define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
+
+/* Contact Form 7 */
+//define( 'WPCF7_UPLOADS_TMP_DIR', '/var/www/sites/SEDURL/wp-content/uploads/wpcf7_uploads' );
+
+/* Gravity Forms */
+//define( 'GF_LICENSE_KEY', 'PLACEHOLDER_KEY' );
 
 /* WP-CLI 10Up Vulnerability Scanner */
 // We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
@@ -135,9 +144,6 @@ define( 'VULN_API_PROVIDER', 'wordfence' );
 //define( 'WP_SENTRY_BROWSER_TRACES_SAMPLE_RATE', 0.3 );
 //define( 'WP_SENTRY_VERSION', 'v5.2.0' );
 //define( 'WP_SENTRY_ENV', 'production' );
-
-
-define( 'WPCF7_UPLOADS_TMP_DIR', '/var/www/sites/SEDURL/wp-content/uploads/wpcf7_uploads' );
 
 /* Debug */
 define( 'WP_DEBUG', false ); // Set to true if you want to debug
