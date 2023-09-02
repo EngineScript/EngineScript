@@ -57,6 +57,8 @@ fi
 # If you're looking for the most secure server environment possible, EngineScript
 # is probably not what you're looking for.
 
+sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
+
 # Install Required Packages for Script
 apt update
 apt install -y boxes dos2unix git nano pwgen software-properties-common tzdata unattended-upgrades
