@@ -31,7 +31,8 @@ cd /usr/local/src
 wget https://github.com/wordfence/wordfence-cli/releases/download/v${WORDFENCE_CLI_VER}/wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz --no-check-certificate
 tar xvzf wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz
 mkdir -p /home/EngineScript/wordfence-scan-results
-touch ~/.cache/wordfence
+mkdir -p ~/.cache/wordfence
+mkdir -p ~/.config/wordfence
 touch ~/.config/wordfence/wordfence-cli.ini
 
 # Configuration

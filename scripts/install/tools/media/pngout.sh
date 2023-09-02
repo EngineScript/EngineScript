@@ -30,13 +30,14 @@ fi
 cd /usr/src
 wget https://static.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz --no-check-certificate
 tar -xf pngout-${PNGOUT_VER}-linux.tar.gz
+mkdir -p /bin/pngout
 
 # Install 32-BIT or 64-BIT
 if [ ${BIT_TYPE} == 'x86_64' ];
   then
     # 64-bit
-    cp pngout-${PNGOUT_VER}-linux/x86_64/pngout /bin/pngout
+    cp /usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout /bin/pngout
   else
     # 32-bit
-    cp pngout-${PNGOUT_VER}-linux/i686/pngout /bin/pngout
+    cp /usr/src/pngout-${PNGOUT_VER}-linux/i686/pngout /bin/pngout
 fi
