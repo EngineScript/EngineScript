@@ -118,6 +118,11 @@ define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
 /* Gravity Forms */
 //define( 'GF_LICENSE_KEY', 'PLACEHOLDER_KEY' );
 
+/* Super Page Cache for Cloudflare */
+// Enable this if you need to run custom Cloudflare worker code.
+// Make sure to change the directory to match where you're placing the worker code.
+//define( 'SWCFPC_CF_WOKER_FULL_PATH', '/home/some-site/public/wp-content/themes/your-theme/assets/js/my-custom-cf-worker.js' );
+
 /* WP-CLI 10Up Vulnerability Scanner */
 // We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
 //
@@ -129,11 +134,6 @@ define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
 //define( 'VULN_API_PROVIDER', 'patchstack' );
 define( 'VULN_API_PROVIDER', 'wordfence' );
 //define( 'VULN_API_PROVIDER', 'wpscan' );
-
-/* Super Page Cache for Cloudflare */
-// Enable this if you need to run custom Cloudflare worker code.
-// Make sure to change the directory to match where you're placing the worker code.
-//define( 'SWCFPC_CF_WOKER_FULL_PATH', '/home/some-site/public/wp-content/themes/your-theme/assets/js/my-custom-cf-worker.js' );
 
 /* Sentry.io */
 // https://sentry.io/welcome/
