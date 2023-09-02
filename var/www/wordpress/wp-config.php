@@ -95,7 +95,7 @@ define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files th
 
 /* Jetpack Brute Force Attack Protection */
 // https://jetpack.com/support/protect/
-define( 'JETPACK_IP_ADDRESS_OK', 'X.X.X.X' );
+//define( 'JETPACK_IP_ADDRESS_OK', 'X.X.X.X' );
 
 /* Performance Lab */
 define('PERFLAB_DISABLE_OBJECT_CACHE_DROPIN', true);
@@ -131,9 +131,7 @@ define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
 //	- https://www.wordfence.com/threat-intel/
 //	- https://patchstack.com/
 //define( 'VULN_API_TOKEN', 'PUT-API-HERE' );
-//define( 'VULN_API_PROVIDER', 'patchstack' );
-define( 'VULN_API_PROVIDER', 'wordfence' );
-//define( 'VULN_API_PROVIDER', 'wpscan' );
+define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, wpscan
 
 /* Sentry.io */
 // https://sentry.io/welcome/

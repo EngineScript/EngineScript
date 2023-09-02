@@ -79,11 +79,21 @@ mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
 
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
+apt update
+apt upgrade -y
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y
 
+# Remove old downloads
+rm -rf /usr/src/*.tar.gz*
+
+# Remove old packages
+apt clean -y
+apt autoremove --purge -y
+apt autoclean -y
+
+# Webmin Key
 cd /usr/local/src
 wget https://download.webmin.com/jcameron-key.asc --no-check-certificate
 apt-key add jcameron-key.asc
