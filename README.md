@@ -196,14 +196,15 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 
 ### Software EngineScript Utilizes:
 - MARIADB - [https://mariadb.org/download/](https://mariadb.org/download/)
-- NGINX HEADERS MORE - [https://github.com/openresty/headers-more-nginx-module](https://github.com/openresty/headers-more-nginx-module)
 - NGINX CACHE PURGE - [https://github.com/nginx-modules/ngx_cache_purge](https://github.com/nginx-modules/ngx_cache_purge)
+- NGINX HEADERS MORE - [https://github.com/openresty/headers-more-nginx-module](https://github.com/openresty/headers-more-nginx-module)
 - NGINX MAINLINE - [https://nginx.org/en/download.html](https://nginx.org/en/download.html)
 - OPENSSL - [https://www.openssl.org/source/](https://www.openssl.org/source/)
 - PCRE2 - [https://github.com/PCRE2Project/pcre2/releases](https://github.com/PCRE2Project/pcre2/releases)
 - PHP - [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
 - PHPMYADMIN - [https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/)
 - PNGOUT - [http://www.jonof.id.au/kenutils.html](http://www.jonof.id.au/kenutils.html)
+- WORDFENCE CLI - [https://github.com/wordfence/wordfence-cli/releases](https://github.com/wordfence/wordfence-cli/releases)
 - ZLIB-Cloudflare - [https://github.com/cloudflare/zlib](https://github.com/cloudflare/zlib)
 
 ## Support EngineScript

@@ -86,6 +86,12 @@ fi
 # PHP Malware Finder
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
 
+# Wordfence CLI Malware Scanner
+/usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh
+
+# WPScan
+/usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh
+
 #------------------------------------------------
 # System Tools
 #------------------------------------------------
@@ -108,9 +114,6 @@ fi
 
 # WP-CLI
 /usr/local/bin/enginescript/scripts/install/tools/wordpress/wp-cli.sh
-
-# WPScan
-/usr/local/bin/enginescript/scripts/install/tools/wordpress/wpscan.sh
 
 #------------------------------------------------
 # Dropbox Uploader

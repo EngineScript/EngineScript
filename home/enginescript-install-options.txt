@@ -16,20 +16,21 @@
 # Install Options
 # 0 = disabled
 # 1 = enabled
-AUTOMATIC_LOCAL_BACKUPS=0
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 INSTALL_ADMINER=0
 INSTALL_CLOUDFLARE_SUPER_PAGE_CACHE=1
-INSTALL_DROPBOX_DATABASE_BACKUP=0 # Requires local backup to be enabled
-INSTALL_DROPBOX_UPLOADS_BACKUP=0 # Requires local backup to be enabled
-INSTALL_GOOGLEDRIVE_DATABASE_BACKUP=0 # Requires local backup to be enabled
-INSTALL_GOOGLEDRIVE_UPLOADS_BACKUP=0 # Requires local backup to be enabled
 INSTALL_PHYMYADMIN=1
-INSTALL_S3_DATABASE_BACKUP=0 # Requires local backup to be enabled
-INSTALL_S3_UPLOADS_BACKUP=0 # Requires local backup to be enabled
 INSTALL_SECURITY_SCANNER=0
 INSTALL_WEBMIN=0
 SHOW_ENGINESCRIPT_HEADER=0 # Shows Nginx from adding "X-Powered-By : EngineScript" header
+AUTOMATIC_LOCAL_BACKUPS=0
+INSTALL_DROPBOX_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_DROPBOX_DATABASE_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_DROPBOX_UPLOADS_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_GOOGLEDRIVE_DATABASE_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_GOOGLEDRIVE_UPLOADS_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_S3_DATABASE_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
+INSTALL_S3_UPLOADS_BACKUP=0 # Requires AUTOMATIC_LOCAL_BACKUPS=1
 
 # User Credentials
 # Cloudflare
@@ -66,6 +67,13 @@ WP_ADMIN_PASSWORD="PLACEHOLDER"
 # If you don't want to use it, leave this alone.
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"
+
+# Wordfence CLI Malware Scanner
+# This is used to scan WordPress for known vulnerabilities.
+# If you don't want to use it, leave this alone.
+# Free for personal use.
+# Create your token at https://www.wordfence.com/products/wordfence-cli/
+WORDFENCE_CLI_TOKEN="PLACEHOLDER"
 
 # WP Scan
 # This is used to scan WordPress for known vulnerabilities.
