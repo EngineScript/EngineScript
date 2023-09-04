@@ -31,7 +31,7 @@ cd /var/www/sites
 echo ""
 echo ""
 echo "scan results will be located at:"
-echo: "/home/EngineScript/wordfence-scan-results/wordfence-cli-scan-results.csv"
+echo "/home/EngineScript/wordfence-scan-results/wordfence-cli-scan-results.csv"
 echo ""
 read -n 1 -s -r -p "Press any key to continue"
 echo ""

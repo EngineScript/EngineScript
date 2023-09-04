@@ -33,6 +33,7 @@ tar xvzf wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz
 mkdir -p /home/EngineScript/wordfence-scan-results
 mkdir -p ~/.cache/wordfence
 mkdir -p ~/.config/wordfence
+chmod 775 ~/.cache/wordfence
 touch ~/.config/wordfence/wordfence-cli.ini
 
 # Configuration
