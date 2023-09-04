@@ -93,7 +93,6 @@ echo ""
 echo "You entered:  ${DOMAIN}"
 
 # Check to see if this site is already configured
-read -p "Enter Domain name: " DOMAIN
 if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
 then
     echo -e "\n\n${BOLD}Installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain from the installed site list at /home/EngineScript/sites-list/sites.sh\n\n"
