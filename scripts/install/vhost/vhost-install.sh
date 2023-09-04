@@ -24,6 +24,52 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Check if services are running
+# MariaDB Service Check
+STATUS="$(systemctl is-active mariadb)"
+if [ "${STATUS}" = "active" ]; then
+    echo "MariaDB is running. Continuing the installation process."
+else
+    echo "MariaDB not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
+# MySQL Service Check
+STATUS="$(systemctl is-active mysql)"
+if [ "${STATUS}" = "active" ]; then
+    echo "MySQL is running. Continuing the installation process."
+else
+    echo "MySQL not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
+# Nginx Service Check
+STATUS="$(systemctl is-active nginx)"
+if [ "${STATUS}" = "active" ]; then
+    echo "Nginx is running. Continuing the installation process."
+else
+    echo "Nginx not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
+# PHP Service Check
+STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
+if [ "${STATUS}" = "active" ]; then
+    echo "PHP ${PHP_VER} is running. Continuing the installation process."
+else
+    echo "PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
+# Redis Service Check
+STATUS="$(systemctl is-active redis)"
+if [ "${STATUS}" = "active" ]; then
+    echo "Redis is running. Continuing the installation process."
+else
+    echo "Redis not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
 # Intro Warning
 echo ""
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"

@@ -68,6 +68,16 @@ chown -R www-data:www-data /etc/php
 # Restart PHP
 service php${PHP_VER}-fpm restart
 
+# PHP Service Check
+STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
+if [ "${STATUS}" = "active" ]; then
+    echo "PHP ${PHP_VER} is running. Continuing the installation process."
+    echo "PHP=1" >> /home/EngineScript/install-log.txt
+else
+    echo "PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
 echo ""
 echo "============================================================="
 echo ""

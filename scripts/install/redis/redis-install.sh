@@ -47,3 +47,13 @@ chmod 775 /etc/redis/redis.conf
 service redis-server restart
 systemctl daemon-reload
 sudo systemctl enable redis-server
+
+# Redis Service Check
+STATUS="$(systemctl is-active redis)"
+if [ "${STATUS}" = "active" ]; then
+    echo "Redis is running. Continuing the installation process."
+    echo "REDIS=1" >> /home/EngineScript/install-log.txt
+else
+    echo "Redis not running. Please diagnose this issue before proceeding"
+    exit 1
+fi

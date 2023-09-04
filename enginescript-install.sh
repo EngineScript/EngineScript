@@ -289,7 +289,6 @@ if [ "${MARIADB}" = 1 ];
     echo "MARIADB script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh
-    echo "MARIADB=1" >> /home/EngineScript/install-log.txt
 fi
 
 # PHP
@@ -298,7 +297,6 @@ if [ "${PHP}" = 1 ];
     echo "PHP script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/php/php-install.sh
-    echo "PHP=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Redis
@@ -307,7 +305,6 @@ if [ "${REDIS}" = 1 ];
     echo "REDIS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh
-    echo "REDIS=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Nginx
@@ -316,7 +313,6 @@ if [ "${NGINX}" = 1 ];
     echo "NGINX script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh
-    echo "NGINX=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Tools

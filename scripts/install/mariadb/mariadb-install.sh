@@ -102,6 +102,26 @@ sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/mariadb.cnf
 sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/mariadb.cnf
 systemctl start mariadb.service
 
+# Check if services are running
+# MariaDB Service Check
+STATUS="$(systemctl is-active mariadb)"
+if [ "${STATUS}" = "active" ]; then
+    echo "MariaDB is running. Continuing the installation process."
+else
+    echo "MariaDB not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
+# MySQL Service Check
+STATUS="$(systemctl is-active mysql)"
+if [ "${STATUS}" = "active" ]; then
+    echo "MySQL is running. Continuing the installation process."
+    echo "MARIADB=1" >> /home/EngineScript/install-log.txt
+else
+    echo "MySQL not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
 echo ""
 echo "============================================================="
 echo ""

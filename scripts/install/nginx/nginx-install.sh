@@ -74,6 +74,16 @@ if [ "${SHOW_ENGINESCRIPT_HEADER}" = 1 ];
     echo ""
 fi
 
+# Nginx Service Check
+STATUS="$(systemctl is-active nginx)"
+if [ "${STATUS}" = "active" ]; then
+    echo "Nginx is running. Continuing the installation process."
+    echo "NGINX=1" >> /home/EngineScript/install-log.txt
+else
+    echo "Nginx not running. Please diagnose this issue before proceeding"
+    exit 1
+fi
+
 # Nginx Installation Completed
 echo ""
 echo ""
