@@ -23,8 +23,8 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-rm -r /var/cache/nginx/*
-rm -r /var/cache/opcache/*
+rm -rf /var/cache/nginx/*
+rm -rf /var/cache/opcache/*
 redis-cli FLUSHALL ASYNC
 service nginx restart
 service php${PHP_VER}-fpm restart

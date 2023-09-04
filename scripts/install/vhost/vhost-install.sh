@@ -95,10 +95,10 @@ echo "You entered:  ${DOMAIN}"
 # Check to see if this site is already configured
 if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
 then
-    echo -e "\n\n${BOLD}Installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain from the installed site list at /home/EngineScript/sites-list/sites.sh\n\n"
-    exit 1
+  echo -e "\n\n${BOLD}Preinstallation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain with the es.menu command under the option: Server & Site Tools\n\n"
+  exit 1
 else
-    echo "${BOLD}Installation Check: Passed${NORMAL}"
+  echo "${BOLD}Preinstallation Check: Passed${NORMAL}"
 fi
 
 # Continue the installation
@@ -289,7 +289,7 @@ wp plugin install wp-mail-smtp --allow-root
 # WP-CLI Activate Plugins
 wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root
-wp plugin install wp-cloudflare-page-cache --allow-root
+wp plugin activate wp-cloudflare-page-cache --allow-root
 wp plugin activate wp-mail-smtp --allow-root
 
 # WP-CLI Enable Plugins

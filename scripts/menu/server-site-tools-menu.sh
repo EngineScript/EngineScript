@@ -32,7 +32,7 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "View Server Logs" "WP-CLI Doctor" "Exit Server & Site Tools")
+    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "View Server Logs" "WP-CLI Doctor" "Remove Domain (DANGER)" "Exit Server & Site Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -55,6 +55,10 @@ while true
           ;;
         "WP-CLI Doctor")
           /usr/local/bin/enginescript/scripts/functions/server-tools/wp-cli-doctor.sh
+          break
+          ;;
+        "Remove Domain (DANGER)")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
         "Exit Server & Site Tools")
