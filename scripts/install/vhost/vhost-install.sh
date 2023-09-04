@@ -95,7 +95,7 @@ echo "You entered:  ${DOMAIN}"
 # Check to see if this site is already configured
 if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
 then
-  echo -e "\n\n${BOLD}Preinstallation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain with the es.menu command under the option: Server & Site Tools\n\n"
+  echo -e "\n\n${BOLD}Preinstallation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
 else
   echo "${BOLD}Preinstallation Check: Passed${NORMAL}"
