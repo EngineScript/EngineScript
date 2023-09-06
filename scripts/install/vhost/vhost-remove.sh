@@ -34,7 +34,7 @@ echo -e "WARNING: This script will remove a site from your installation.\n\n${BO
 sleep 1
 
 while true; do
-  read -p "Do you wish to install this program? Please type Yes or No: " yn
+  read -p "Are you sure you want to remove a domain from your server? Please type Yes or No: " yn
     case $yn in
       [Yy][Ee][Ss] ) echo "Continuing"; break;;
       [Nn][Oo] ) echo "Exiting"; exit 1;;
