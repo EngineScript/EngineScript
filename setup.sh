@@ -117,10 +117,12 @@ apt-key add jcameron-key.asc
 
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
   then
+    clear
     echo ""
     echo ""
     echo ""
     echo "Initial setup is complete."
+    echo ""
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""
@@ -129,10 +131,12 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo ""
   else
     cp -rf /usr/local/bin/enginescript/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
+    clear
     echo ""
     echo ""
     echo ""
     echo "Initial setup is complete."
+    echo ""
     echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
     echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
     echo ""

@@ -31,7 +31,6 @@ apt install -qy advancecomp apt-listchanges apt-show-versions apt-transport-http
 
 # Nano
 update-alternatives --set editor /bin/nano
-curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
 
 # Cheat.sh
 #curl https://cht.sh/:cht.sh | sudo tee /usr/local/bin/cht.sh

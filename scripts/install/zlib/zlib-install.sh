@@ -25,13 +25,14 @@ fi
 # Start Main Script
 
 # Cloudflare zlib Download
+cd /usr/src
 rm -rf /usr/src/zlib-cf
 git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 /usr/src/zlib-cf
 cd /usr/src/zlib-cf
-make -f Makefile.in distclean
-./configure \
+sudo ./configure --prefix=path \
   --static \
   --64
+make -f Makefile.in distclean
 
 #make
 #make test

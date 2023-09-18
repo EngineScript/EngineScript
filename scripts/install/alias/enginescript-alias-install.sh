@@ -27,7 +27,7 @@ fi
 cat <<EOT >> /root/.bashrc
 alias enginescript="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 alias es.backup="/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
-alias es.cache=/usr/local/bin/enginescript/scripts/functions/alias/alias-virus-scan.sh"
+alias es.cache="/usr/local/bin/enginescript/scripts/functions/alias/alias-virus-scan.sh"
 #alias es.compress="/usr/local/bin/enginescript/scripts/functions/cron/compression-cron.sh"
 alias es.config="nano /home/EngineScript/enginescript-install-options.txt"
 alias es.images="/usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh"
