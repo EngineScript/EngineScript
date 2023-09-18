@@ -32,7 +32,7 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("10up WP-CLI Vulnerability Scanner" "PHP Malware Finder" "Wordfence CLI Malware Scan" "WP-Sec Vulnerability Scan" "WPScan Vulnerability Scan" "Exit Security Tools")
+    secoptions=("10up WP-CLI Vulnerability Scanner" "PHP Malware Finder" "Wordfence CLI Malware Scan" "WPScan Vulnerability Scan" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -46,10 +46,6 @@ while true
           ;;
         "Wordfence CLI Malware Scan")
           /usr/local/bin/enginescript/scripts/functions/security/wordfence-cli.sh
-          break
-          ;;
-        "WP-Sec Vulnerability Scan")
-          /usr/local/bin/enginescript/scripts/functions/security/wp-sec.sh
           break
           ;;
         "WPScan Vulnerability Scan")

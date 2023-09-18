@@ -39,7 +39,6 @@ chmod 775 .wp-cli/cache
 # Install WP-CLI Extensions
 /usr/local/src/wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
 /usr/local/src/wp package install johnbillion/ext --allow-root
-/usr/local/src/wp package install markri/wp-sec --allow-root
 /usr/local/src/wp package install pantheon-systems/wp_launch_check --allow-root
 /usr/local/src/wp package install wearerequired/wp-cli-clear-opcache --allow-root
 /usr/local/src/wp package install wp-cli/cron-command --allow-root
@@ -54,13 +53,6 @@ echo "${BOLD}WP-CLI installed.${NORMAL}"
 echo ""
 echo "Learn about WP-CLI"
 echo "https://make.wordpress.org/cli/handbook/"
-echo ""
-echo ""
-echo "${BOLD}WP-CLI WP-Sec extension installed${NORMAL}"
-echo ""
-echo "To use WP-Sec:"
-echo "cd /var/www/sites/yourdomain.com/html"
-echo "/usr/local/src/wp wp-sec check --allow-root"
 echo ""
 echo "============================================================="
 echo ""

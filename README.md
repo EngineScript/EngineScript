@@ -187,7 +187,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 ### EngineScript Commands
 |Command            |Function                       |
 |-------------------|-------------------------------|
-|**`es.backup`**    |Runs the backup script to backup all domains locally and in the cloud (optional) |
+|**`es.backup`**    |Runs the backup script to backup all domains locally and in the cloud *(optional)* |
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
 |**`es.config`**    |Opens the configuration file in the Nano text editor |
 |**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
