@@ -58,7 +58,7 @@ while true
           break
           ;;
         "Remove Domain (DANGER)")
-          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-remove.sh
           break
           ;;
         "Exit Server & Site Tools")

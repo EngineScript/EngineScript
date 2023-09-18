@@ -28,7 +28,7 @@ cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
 select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 cd "$d"html && echo "WP-Sec Vulnerability Scan"
-wp wp-sec check --allow-root --type=all --output=user --api=v3 --cached --token=${WPSCANAPI}
+/usr/local/src/wp wp-sec check --allow-root --type=all --output=user --api=v3 --cached --token=${10UPAPI}
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

@@ -13,12 +13,19 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
-# Forked from https://github.com/A5hleyRich/simple-automated-tasks
+# Start Main Script
 
-# Directory where individual site directories reside
-ROOT=/var/www/sites
+#----------------------------------------------------------------------------
 
-# Tasks to be performed on the following sites
-SITES=(
-)
+# Update WP-CLI
+echo "y" | /usr/local/src/wp cli update --stable --allow-root
+echo "y" | /usr/local/src/wp package update --allow-root

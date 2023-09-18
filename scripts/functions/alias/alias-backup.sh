@@ -13,14 +13,16 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
+# Start Main Script
 
-# Filenames
-NOW=$(date +%m-%d-%Y-%H%M)
-PHP_FILE="${NOW}-php.tar.gz";
-
-# Backup PHP Config
-tar -zcf "/home/EngineScript/config-backups/php/$PHP_FILE" /etc/php
-
-# Remove Old PHP Backups
-find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR
+/usr/local/bin/enginescript/scripts/functions/cron/daily-database-backup.sh
+/usr/local/bin/enginescript/scripts/functions/cron/weekly-wp-content-backup.sh

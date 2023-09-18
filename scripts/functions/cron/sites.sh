@@ -13,19 +13,20 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
-#
-# Scan the entire /var/www/sites directory, which will include all WordPress sites installed on your server.
-# When the filetypes match (html,css,js,json,xml,svg), brotli and gzip will compress using the strongest compression.
-# This pre-compression allows the broli and gzip static functions to work within Nginx
-#
+# Start Main Script
 
-# Brotli Compression
-#find /var/www/sites -type f -a \( -name '*.html' -o -name '*.css' -o -name '*.js' \
-#-o -name '*.json' -o -name '*.xml' -o -name '*.svg' \) \
-#-exec brotli -kfZ {} \+
+#----------------------------------------------------------------------------
+# Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
-# GZip Compression
-find /var/www/sites -type f -a \( -name '*.html' -o -name '*.css' -o -name '*.js' \
--o -name '*.json' -o -name '*.xml' -o -name '*.svg' \) \
--exec gzip -f --best -k {} \+
+# Tasks to be performed on the following sites
+SITES=(
+)

@@ -13,6 +13,17 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
+#----------------------------------------------------------------------------
+# Start Main Script
+
 #----------------------------------------------------------------------------
 # Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
@@ -21,7 +32,7 @@ source /home/EngineScript/sites-list/sites.sh
 
 for i in "${SITES[@]}"
 do
-	cd "$ROOT/$i/html"
+	cd "/var/www/sites/$i/html"
 
 	# Directories
 	find . -type d -print0 | sudo xargs -0 chmod 0755
@@ -66,3 +77,4 @@ chown -R www-data:www-data /etc/php
 # Assign EngineScript Permissions
 chmod -R 775 /usr/local/bin/enginescript
 chown -R root:root /usr/local/bin/enginescript
+find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;

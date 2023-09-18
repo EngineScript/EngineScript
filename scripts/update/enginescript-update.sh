@@ -31,6 +31,7 @@ git reset --hard origin/master
 # EngineScript Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 775 {} \;
 chown -R root:root /usr/local/bin/enginescript
+find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 echo ""
 echo ""

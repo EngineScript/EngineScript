@@ -26,11 +26,14 @@ fi
 
 cat <<EOT >> /root/.bashrc
 alias enginescript="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
-alias es.compress="/usr/local/bin/enginescript/scripts/cron/compression-cron.sh"
-alias es.images="/usr/local/bin/enginescript/scripts/cron/optimize-images.sh"
+alias es.backup="/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
+alias es.cache=/usr/local/bin/enginescript/scripts/functions/alias/alias-virus-scan.sh"
+#alias es.compress="/usr/local/bin/enginescript/scripts/functions/cron/compression-cron.sh"
+alias es.config="nano /home/EngineScript/enginescript-install-options.txt"
+alias es.images="/usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh"
 alias es.menu="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 alias es.mysql="/usr/local/bin/enginescript/scripts/functions/alias/alias-mysql-pass.sh"
-alias es.permissions="/usr/local/bin/enginescript/scripts/cron/permissions.sh"
+alias es.permissions="/usr/local/bin/enginescript/scripts/functions/cron/permissions.sh"
 alias es.restart="/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh"
 alias es.update="/usr/local/bin/enginescript/scripts/update/enginescript-update.sh"
 alias es.virus="/usr/local/bin/enginescript/scripts/functions/alias/alias-virus-scan.sh"

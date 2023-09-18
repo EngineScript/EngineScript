@@ -25,6 +25,8 @@ fi
 # Start Main Script
 
 # Check if services are running
+echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
+
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
 if [ "${STATUS}" = "active" ]; then
@@ -203,11 +205,13 @@ sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localho
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
+mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database
+mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/daily
+mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/hourly
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/ssl-keys
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-config
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-content
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-database
 mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-uploads
 
 # Site Root
@@ -220,7 +224,7 @@ touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
 chown -R www-data:www-data /var/log/domains/${SITE_URL}
 
 # Download WordPress using WP-CLI
-wp core download --allow-root
+/usr/local/src/wp core download --allow-root
 rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
 
 # Create wp-config.php
@@ -238,7 +242,7 @@ STRING='put your unique phrase here'
 printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # WP Scan API Token
-sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+sed -i "s|SED10UPAPI|${10UPAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # Create robots.txt
 cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
@@ -274,30 +278,30 @@ echo "============================================="
 
 # WP-CLI Install WordPress
 cd /var/www/sites/${SITE_URL}/html
-wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
+/usr/local/src/wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
-wp plugin install autodescription --allow-root
-wp plugin install mariadb-health-checks --allow-root
-wp plugin install nginx-helper --allow-root
-wp plugin install php-compatibility-checker --allow-root
-wp plugin install redis-cache --allow-root
-wp plugin install theme-check --allow-root
-wp plugin install wp-cloudflare-page-cache --allow-root
-wp plugin install wp-mail-smtp --allow-root
+/usr/local/src/wp plugin install autodescription --allow-root
+/usr/local/src/wp plugin install mariadb-health-checks --allow-root
+/usr/local/src/wp plugin install nginx-helper --allow-root
+/usr/local/src/wp plugin install php-compatibility-checker --allow-root
+/usr/local/src/wp plugin install redis-cache --allow-root
+/usr/local/src/wp plugin install theme-check --allow-root
+/usr/local/src/wp plugin install wp-cloudflare-page-cache --allow-root
+/usr/local/src/wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
-wp plugin activate nginx-helper --allow-root
-wp plugin activate redis-cache --allow-root
-wp plugin activate wp-cloudflare-page-cache --allow-root
-wp plugin activate wp-mail-smtp --allow-root
+/usr/local/src/wp plugin activate nginx-helper --allow-root
+/usr/local/src/wp plugin activate redis-cache --allow-root
+/usr/local/src/wp plugin activate wp-cloudflare-page-cache --allow-root
+/usr/local/src/wp plugin activate wp-mail-smtp --allow-root
 
 # WP-CLI Enable Plugins
-wp redis enable --allow-root
+/usr/local/src/wp redis enable --allow-root
 
 # WP-CLI set permalink structure for FastCGI Cache
-wp option get permalink_structure --allow-root
-wp option update permalink_structure '/%category%/%postname%/' --allow-root
+/usr/local/src/wp option get permalink_structure --allow-root
+/usr/local/src/wp option update permalink_structure '/%category%/%postname%/' --allow-root
 
 # Setting Permissions Again
 # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
@@ -346,7 +350,51 @@ sleep 10
 echo ""
 echo "Backup script will now run for all sites on this server."
 echo ""
-/usr/local/bin/enginescript/scripts/cron/backups.sh
+
+# Date
+NOW=$(date +%m-%d-%Y-%H)
+
+# Filenames
+DATABASE_FILE="${NOW}-database.sql";
+NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
+PHP_FILE="${NOW}-php.tar.gz";
+SSL_FILE="${NOW}-ssl-keys.gz";
+UPLOADS_FILE="${NOW}-uploads.tar.gz";
+VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
+WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
+
+cd "/var/www/sites/${SITE_URL}/html"
+
+# Backup database
+/usr/local/src/wp db export "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
+
+# Compress database file
+gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE"
+
+# Backup uploads directory
+#tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads/$UPLOADS_FILE" wp-content/uploads
+
+# Backup uploads, themes, and plugins
+tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
+
+# Nginx vhost backup
+gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > /home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE
+
+# SSL keys backup
+tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" /etc/nginx/ssl/${SITE_URL}
+
+# wp-config.php backup
+gzip -cf "/var/www/sites/${SITE_URL}/html/wp-config.php" > /home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE
+
+# Remove old backups
+find /home/EngineScript/site-backups/${SITE_URL}/database/daily -type f -mtime +7 | xargs rm -fR
+find /home/EngineScript/site-backups/${SITE_URL}/nginx -type f -mtime +7 | xargs rm -fR
+find /home/EngineScript/site-backups/${SITE_URL}/ssl-keys -type f -mtime +7 | xargs rm -fR
+find /home/EngineScript/site-backups/${SITE_URL}/wp-config -type f -mtime +7 | xargs rm -fR
+find /home/EngineScript/site-backups/${SITE_URL}/wp-content -type f -mtime +15 | xargs rm -fR
+find /home/EngineScript/site-backups/${SITE_URL}/wp-uploads -type f -mtime +15  | xargs rm -fR
+
 echo "Backup: Complete"
 clear
 

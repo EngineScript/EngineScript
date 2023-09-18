@@ -28,7 +28,7 @@ fi
 cd /usr/local/src
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x wp-cli.phar
-sudo mv wp-cli.phar /usr/local/bin/wp
+sudo mv wp-cli.phar wp
 mkdir -p /tmp/wp-cli-phar
 chown -R www-data:www-data /tmp/wp-cli-phar
 chmod 775 /tmp/wp-cli-phar
@@ -37,14 +37,14 @@ chown -R www-data:www-data .wp-cli/cache
 chmod 775 .wp-cli/cache
 
 # Install WP-CLI Extensions
-wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
-wp package install johnbillion/ext --allow-root
-wp package install markri/wp-sec --allow-root
-wp package install pantheon-systems/wp_launch_check --allow-root
-wp package install wearerequired/wp-cli-clear-opcache --allow-root
-wp package install wp-cli/cron-command --allow-root
-wp package install wp-cli/doctor-command:@stable --allow-root
-wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
+/usr/local/src/wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
+/usr/local/src/wp package install johnbillion/ext --allow-root
+/usr/local/src/wp package install markri/wp-sec --allow-root
+/usr/local/src/wp package install pantheon-systems/wp_launch_check --allow-root
+/usr/local/src/wp package install wearerequired/wp-cli-clear-opcache --allow-root
+/usr/local/src/wp package install wp-cli/cron-command --allow-root
+/usr/local/src/wp package install wp-cli/doctor-command:@stable --allow-root
+/usr/local/src/wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
 
 echo ""
 echo ""
@@ -60,7 +60,7 @@ echo "${BOLD}WP-CLI WP-Sec extension installed${NORMAL}"
 echo ""
 echo "To use WP-Sec:"
 echo "cd /var/www/sites/yourdomain.com/html"
-echo "wp wp-sec check --allow-root"
+echo "/usr/local/src/wp wp-sec check --allow-root"
 echo ""
 echo "============================================================="
 echo ""

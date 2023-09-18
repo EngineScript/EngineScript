@@ -3,7 +3,7 @@
 // Created automatically with Enginescript
 // https://EngineScript.com
 
-/* MySQL settings - You can get this info from your web host */
+/* MySQL settings */
 define( 'DB_NAME', 'SEDWPDB' );
 define( 'DB_USER', 'SEDWPUSER' );
 define( 'DB_PASSWORD', 'SEDWPPASS' );
@@ -11,7 +11,7 @@ define( 'DB_CHARSET', 'utf8mb4' );
 define( 'DB_HOST', 'localhost' );
 define( 'DB_COLLATE', '' );
 
-/* MySQL database table prefix. */
+/* MySQL Database Table Prefix */
 $table_prefix = 'SEDPREFIX_';
 
 /* Site Details */
@@ -39,8 +39,8 @@ define( 'WP_REDIS_DATABASE', 0 ); // 0-15
 define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
 //define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
 //define( 'WP_REDIS_DISABLE_METRICS', 'true' );
-//define( 'WP_REDIS_DISABLED', 'true' ); // Emergency Disable Method
-//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression for lower memory usage, slower
+//define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
+//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
 //define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' );
 define( 'WP_REDIS_MAXTTL', '300' );
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
@@ -78,7 +78,7 @@ define( 'WP_AUTO_UPDATE_CORE', 'minor' );
 
 /* Editing */
 define( 'DISALLOW_FILE_EDIT', true );
-define( 'DISALLOW_FILE_MODS', false ); // Careful, this disabled plugin and theme updates.
+define( 'DISALLOW_FILE_MODS', false ); // Careful: This disables plugin and theme updates.
 define( 'DISALLOW_UNFILTERED_HTML', true ) ;
 
 /* File Permissions */
@@ -87,11 +87,11 @@ define( 'FS_CHMOD_FILE', 0644 );
 
 /* Content */
 define( 'AUTOSAVE_INTERVAL', 60 ); // Time in seconds
-define( 'EMPTY_TRASH_DAYS', 14 ); // Setting to 0 causes all deletions skip the trash folder and are permanent.
+define( 'EMPTY_TRASH_DAYS', 14 ); // Setting to 0 makes all deletions skip the trash folder and be permanent.
 define( 'IMAGE_EDIT_OVERWRITE', true );
 define( 'MEDIA_TRASH', true );
 define( 'WP_POST_REVISIONS', 2 ); // Can also be set to false
-define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files that would normally be filtered by WordPress by default such as .CSV and .TXT.
+define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files that would WordPress would normally filter by default such as .CSV and .TXT.
 
 /* Jetpack Brute Force Attack Protection */
 // https://jetpack.com/support/protect/

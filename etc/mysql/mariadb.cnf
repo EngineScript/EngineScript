@@ -28,7 +28,9 @@ tmpdir = /tmp
 lc_messages_dir = /usr/share/mysql
 lc_messages = en_US
 skip-external-locking
-
+collation-server = utf8mb4_unicode_ci
+init-connect='SET NAMES utf8mb4'
+character-set-server = utf8mb4
 default-storage-engine = InnoDB
 performance_schema = OFF
 
@@ -144,6 +146,7 @@ max_allowed_packet = 666M
 
 [mysql]
 #no-auto-rehash # faster start of mysql but no tab completion
+default-character-set=utf8mb4
 
 [isamchk]
 key_buffer = 16M

@@ -13,8 +13,26 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-#----------------------------------------------------------------------------
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
 
-# Update WP-CLI
-echo "y" | wp cli update --stable --allow-root
-echo "y" | wp package update --allow-root
+#----------------------------------------------------------------------------
+# Start Main Script
+
+for i in "${SITES[@]}"
+do
+	cd "/var/www/sites/$i/html"
+  /usr/local/src/wp transient delete-all --allow-root
+done
+
+rm -rf /var/cache/nginx/*
+rm -rf /var/cache/opcache/*
+redis-cli FLUSHALL ASYNC
+service nginx restart
+service php${PHP_VER}-fpm restart
+service redis-server restart

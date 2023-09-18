@@ -52,7 +52,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh
 
 # Backup Nginx
-/usr/local/bin/enginescript/scripts/cron/nginx-backup.sh
+/usr/local/bin/enginescript/scripts/functions/cron/nginx-backup.sh
 
 # Cloudflare
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare.sh

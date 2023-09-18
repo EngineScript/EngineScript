@@ -8,44 +8,85 @@
 # directory, as any changes will be ignored and overwritten when
 # EngineScript updates.
 
-#vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
-# To edit the correct file, use command:                     #
-# nano /home/EngineScript/enginescript-install-options.txt   #
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
+#|##########################################################|#
+#|                                                          |#
+#|                       IMPORTANT:                         |#
+#|                                                          |#
+#|           To edit the correct file, use command:         |#
+#|                       es.config                          |#
+#|                           or                             |#
+#| nano /home/EngineScript/enginescript-install-options.txt |#
+#|                                                          |#
+#|##########################################################|#
 
-# Install Options
+###################
+# Install Options #
+###################
+
 # 0 = disabled
 # 1 = enabled
+AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 INSTALL_ADMINER=0
 INSTALL_PHYMYADMIN=1
-INSTALL_SECURITY_SCANNER=0
 INSTALL_WEBMIN=0
-SHOW_ENGINESCRIPT_HEADER=0 # Shows Nginx from adding "X-Powered-By : EngineScript" header
+SHOW_ENGINESCRIPT_HEADER=0
 
-# Backup Options
-# Dropbox, Google Drive, and S3 all require AUTOMATIC_LOCAL_BACKUPS=1
-AUTOMATIC_LOCAL_BACKUPS=1
+##################
+# Backup Options #
+##################
+# 0 = disabled
+# 1 = enabled
+
+# Amazon S3, Dropbox, and Google Drive backups require the local backups
+# settings below to be enabled. If you want hourly, daily, and weekly
+# backups to the cloud, be sure to set the corresponding local options.
+
+# Local Backup
+DAILY_LOCAL_DATABASE_BACKUP=1
+HOURLY_LOCAL_DATABASE_BACKUP=1
+WEEKLY_LOCAL_WPCONTENT_BACKUP=1
+
+# Amazon S3 Backup
+INSTALL_S3_BACKUP=0
+DAILY_S3_DATABASE_BACKUP=0
+HOURLY_S3_DATABASE_BACKUP=0
+WEEKLY_S3_WPCONTENT_BACKUP=0
+
+# Dropbox Backup
 INSTALL_DROPBOX_BACKUP=0
-INSTALL_DROPBOX_DATABASE_BACKUP=0
-INSTALL_DROPBOX_UPLOADS_BACKUP=0
-INSTALL_GOOGLEDRIVE_DATABASE_BACKUP=0
-INSTALL_GOOGLEDRIVE_UPLOADS_BACKUP=0
-INSTALL_S3_DATABASE_BACKUP=0
-INSTALL_S3_UPLOADS_BACKUP=0
+DAILY_DROPBOX_DATABASE_BACKUP=0
+HOURLY_DROPBOX_DATABASE_BACKUP=0
+WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 
-# User Credentials
+# Google Drive Backup (disabled)
+# Not working currently.
+# The best option for this is broken: https://github.com/odeke-em/drive
+#INSTALL_GOOGLE_DRIVE_BACKUP=0
+#DAILY_GOOGLE_DRIVE_DATABASE_BACKUP=0
+#HOURLY_GOOGLE_DRIVE_DATABASE_BACKUP=0
+#WEEKLY_GOOGLE_DRIVE_WPCONTENT_BACKUP=0
+
+####################
+# User Credentials #
+####################
+
+# Amazon S3
+# User creation:
+# Follow ONLY sections 2 and 3: https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
+# Sections: "Create an IAM User" and "Create Access Keys for the new User"
+#
+# Bucket creation:
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
+S3_BUCKET_NAME="PLACEHOLDER"
+
 # Cloudflare
 # Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
 CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
-# Webmin
-WEBMIN_USERNAME="PLACEHOLDER"
-WEBMIN_PASSWORD="PLACEHOLDER"
-
 # Nginx Password Protection
-# This adds a second layer of security to the admin areas on the server such as webmin and phpmyadmin.
+# This adds a second layer of security to the admin areas on the server such as Webmin and phpMyAdmin.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
 
@@ -59,13 +100,19 @@ MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 PHPMYADMIN_USERNAME="PLACEHOLDER"
 PHPMYADMIN_PASSWORD="PLACEHOLDER"
 
+# Webmin
+# Not installed by default.
+# Leave this alone if you want to use phpMyAdmin instead.
+WEBMIN_USERNAME="PLACEHOLDER"
+WEBMIN_PASSWORD="PLACEHOLDER"
+
 # WordPress Admin
 WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
 
 # Pushbullet
-# This is used for the checksums cron.
+# This is used for the checksums and .php files in the uploads directory crons.
 # If you don't want to use it, leave this alone.
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"

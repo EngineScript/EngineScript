@@ -35,7 +35,7 @@ cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opca
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
 
 # Backup PHP config
-/usr/local/bin/enginescript/scripts/cron/php-backup.sh
+/usr/local/bin/enginescript/scripts/functions/cron/php-backup.sh
 
 # Update PHP config
 /usr/local/bin/enginescript/scripts/update/php-config-update.sh

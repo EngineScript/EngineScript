@@ -13,10 +13,32 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
+# Start Main Script
 
-# Set UFW Cloudflare Rules
-/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
+# Date
+NOW=$(date +%m-%d-%Y-%H)
 
-# Enable UFW
-echo "y" | ufw enable
+# Filenames
+DATABASE_FILE="${NOW}-database.sql";
+NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
+PHP_FILE="${NOW}-php.tar.gz";
+SSL_FILE="${NOW}-ssl-keys.gz";
+UPLOADS_FILE="${NOW}-uploads.tar.gz";
+VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
+WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
+
+# Backup PHP Config
+tar -zcf "/home/EngineScript/config-backups/php/$PHP_FILE" /etc/php
+
+# Remove Old PHP Backups
+find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR

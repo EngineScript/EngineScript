@@ -13,28 +13,34 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
+#----------------------------------------------------------------------------
+# Start Main Script
+
 #----------------------------------------------------------------------------
 # Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
 # Include config
 source /home/EngineScript/sites-list/sites.sh
-source /home/EngineScript/enginescript-install-options.txt
-
-# Pushbullet token
-TOKEN="${PUSHBULLET_TOKEN}"
-
-# Store sites with errors
-ERRORS=""
 
 for i in "${SITES[@]}"
 do
-	cd "$ROOT/$i/html"
-	# Verify checksums
-	if ! /usr/local/bin/wp core verify-checksums --allow-root; then
-		ERRORS="$ERRORS $i"
-	fi
-done
+	cd "/var/www/sites/$i/html"
 
-if [ -n "$ERRORS" ]; then
-	curl -u $TOKEN: https://api.pushbullet.com/v2/pushes -d type=note -d title="Server" -d body="Checksums verification failed for the following sites:$ERRORS"
-fi
+	# zImageCompress
+	# This script will attempt to perform a lossless optimization on images found within your web-facing directories.
+	# Using the -n option, we the script will only attempt to optimize files that are new since last running the script.
+	/usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p /wp-content/uploads -n -q
+
+	# Exiftool
+	# Strips Exif data from images
+	exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg /wp-content
+
+done

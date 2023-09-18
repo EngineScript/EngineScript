@@ -4,8 +4,7 @@
 #----------------------------------------------------------------------------
 # Website:      https://EngineScript.com
 # GitHub:       https://github.com/Enginescript/EngineScript
-# Author:       Peter Downey
-# Company:      VisiStruct
+# Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
 # OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------

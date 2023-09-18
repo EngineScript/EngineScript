@@ -13,18 +13,36 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
+#----------------------------------------------------------------------------
+# Start Main Script
+
 #----------------------------------------------------------------------------
 # Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
 # Include config
 source /home/EngineScript/sites-list/sites.sh
+source /home/EngineScript/enginescript-install-options.txt
+
+# Store sites with errors
+ERRORS=""
 
 for i in "${SITES[@]}"
 do
-	cd "$ROOT/$i/html"
-
-	# Send to S3
-  # If you plan on sending backups to S3, you must also install and configure the AWS CLI tools.
-	/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/$DATABASE_FILE.gz" "s3://$i/backups/" --storage-class REDUCED_REDUNDANCY
-	/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/$UPLOADS_FILE" "s3://$i/backups/" --storage-class REDUCED_REDUNDANCY
+	cd "/var/www/sites/$i/html"
+	# Verify checksums
+	if ! /usr/local/src/wp core verify-checksums --allow-root; then
+		ERRORS="$ERRORS $i"
+	fi
 done
+
+if [ -n "$ERRORS" ]; then
+	curl -u $PUSHBULLET_TOKEN: https://api.pushbullet.com/v2/pushes -d type=note -d title="Server: $IP_ADDRESS" -d body="Checksums verification failed for the following sites: $ERRORS"
+fi

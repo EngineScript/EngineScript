@@ -13,14 +13,21 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
+#----------------------------------------------------------------------------
+# Start Main Script
+
 #----------------------------------------------------------------------------
 
-# Filenames
-NOW=$(date +%m-%d-%Y-%H%M)
-NGINX_FILE="${NOW}-nginx.tar.gz";
+# Set UFW Cloudflare Rules
+/usr/local/bin/enginescript/scripts/install/ufw/ufw-cloudflare.sh
 
-# Backup Nginx Config
-tar -zcf "/home/EngineScript/config-backups/nginx/$NGINX_FILE" /etc/nginx
-
-# Remove Old Nginx Backups
-find /home/EngineScript/config-backups/nginx -type f -mtime +15 | xargs rm -fR
+# Enable UFW
+echo "y" | ufw enable

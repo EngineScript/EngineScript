@@ -25,18 +25,25 @@ fi
 # Start Main Script
 
 # phpMyAdmin
-wget -O /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
-unzip /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
-mv phpMyAdmin-${PHPMYADMIN_VER}-all-languages phpmyadmin
-mv phpmyadmin /var/www/admin/enginescript
-sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
+
+# Download phpMyAdmin
+wget -O /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
+unzip /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip -d /usr/src
+mv /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages /var/www/admin/enginescript/phpmyadmin
 mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER 'pma'@'localhost' IDENTIFIED BY 'pmapass';"
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'pma'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
-# Login Credentials
+# phpMyAdmin Cookie Encryption
+sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
+
+# phpMyAdmin Control User (server)
+sed -i "s|'pma'|'$RAND_CHAR8'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
+sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO '${RAND_CHAR8}'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+# Create phpMyAdmin Tables
+sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
+
+# User Login Credentials
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
 

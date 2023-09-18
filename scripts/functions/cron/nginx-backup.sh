@@ -13,15 +13,32 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Check current user's ID. If user is not 0 (root), exit.
+if [ "${EUID}" != 0 ];
+  then
+    echo "${BOLD}ALERT:${NORMAL}"
+    echo "EngineScript should be executed as the root user."
+    exit
+fi
+
 #----------------------------------------------------------------------------
-# Forked from https://github.com/A5hleyRich/simple-automated-tasks
+# Start Main Script
 
-# Include config
-source /home/EngineScript/sites-list/sites.sh
+# Date
+NOW=$(date +%m-%d-%Y-%H)
 
-for i in "${SITES[@]}"
-do
-	cd "$ROOT/$i/html"
-	#php -q wp-cron.php >/dev/null 2>&1
-	wp cron event run --due-now --allow-root
-done
+# Filenames
+DATABASE_FILE="${NOW}-database.sql";
+NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
+PHP_FILE="${NOW}-php.tar.gz";
+SSL_FILE="${NOW}-ssl-keys.gz";
+UPLOADS_FILE="${NOW}-uploads.tar.gz";
+VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
+WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
+
+# Backup Nginx Config
+tar -zcf "/home/EngineScript/config-backups/nginx/$NGINX_FILE" /etc/nginx
+
+# Remove Old Nginx Backups
+find /home/EngineScript/config-backups/nginx -type f -mtime +15 | xargs rm -fR

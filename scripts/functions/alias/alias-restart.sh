@@ -23,6 +23,7 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
+
 rm -rf /var/cache/nginx/*
 rm -rf /var/cache/opcache/*
 redis-cli FLUSHALL ASYNC

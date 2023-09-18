@@ -28,13 +28,14 @@ dos2unix /home/EngineScript/enginescript-install-options.txt
 # In-case you changed any files and changed Permissions
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
 chown -R root:root /usr/local/bin/enginescript
+find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Reboot Warning
-echo -e "ATTENTION\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
+echo -e "\nATTENTION:\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
 
 if [ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ];
@@ -45,7 +46,140 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ];
     echo "You may need to manually change memory limits in PHP and MariaDB."
     sleep 10
   else
-    echo "80% of total server memory: ${SERVER_MEMORY_TOTAL_80}"
+    echo "Memory Test: 80% of total server memory: ${SERVER_MEMORY_TOTAL_80}"
+fi
+
+# Configuration File Check
+echo -e "${BOLD}\n\n--------------------\nConfiguration Review\n--------------------${NORMAL}"
+echo -e "${BOLD}\nServer Information:${NORMAL}"
+echo "Variables File Date = $VARIABLES_DATE"
+echo "Script Run Date = $DT"
+echo "CPU Count = $CPU_COUNT"
+echo "32bit or 64bit = $BIT_TYPE"
+echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
+echo "IP Address = $IP_ADDRESS"
+echo "Linux Version = $LINUX_TYPE $UBUNTU_VER $UBUNTU_CODENAME"
+echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
+echo -e "${BOLD}\nInstall Options:${NORMAL}"
+echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
+echo "AUTOMATIC_ENGINESCRIPT_UPDATES = $AUTOMATIC_ENGINESCRIPT_UPDATES"
+echo "INSTALL_ADMINER = $INSTALL_ADMINER"
+echo "INSTALL_PHYMYADMIN = $INSTALL_PHYMYADMIN"
+echo "INSTALL_WEBMIN = $INSTALL_WEBMIN"
+echo "SHOW_ENGINESCRIPT_HEADER = $SHOW_ENGINESCRIPT_HEADER"
+echo "DAILY_LOCAL_DATABASE_BACKUP = $DAILY_LOCAL_DATABASE_BACKUP"
+echo "HOURLY_LOCAL_DATABASE_BACKUP = $HOURLY_LOCAL_DATABASE_BACKUP"
+echo "WEEKLY_LOCAL_WPCONTENT_BACKUP = $WEEKLY_LOCAL_WPCONTENT_BACKUP"
+echo "INSTALL_S3_BACKUP = $INSTALL_S3_BACKUP"
+echo "DAILY_S3_DATABASE_BACKUP = $DAILY_S3_DATABASE_BACKUP"
+echo "HOURLY_S3_DATABASE_BACKUP = $HOURLY_S3_DATABASE_BACKUP"
+echo "WEEKLY_S3_WPCONTENT_BACKUP = $WEEKLY_S3_WPCONTENT_BACKUP"
+echo "INSTALL_DROPBOX_BACKUP = $INSTALL_DROPBOX_BACKUP"
+echo "DAILY_DROPBOX_DATABASE_BACKUP = $DAILY_DROPBOX_DATABASE_BACKUP"
+echo "HOURLY_DROPBOX_DATABASE_BACKUP = $HOURLY_DROPBOX_DATABASE_BACKUP"
+echo "WEEKLY_DROPBOX_WPCONTENT_BACKUP = $WEEKLY_DROPBOX_WPCONTENT_BACKUP"
+echo -e "${BOLD}\nUser Credentials:${NORMAL}"
+echo "S3_BUCKET_NAME = $S3_BUCKET_NAME"
+echo "CF_GLOBAL_API_KEY = $CF_GLOBAL_API_KEY"
+echo "CF_ACCOUNT_EMAIL = $CF_ACCOUNT_EMAIL"
+echo "NGINX_USERNAME = $NGINX_USERNAME"
+echo "NGINX_PASSWORD = $NGINX_PASSWORD"
+echo "MARIADB_ADMIN_PASSWORD = $MARIADB_ADMIN_PASSWORD"
+echo "PHPMYADMIN_USERNAME = $PHPMYADMIN_USERNAME"
+echo "PHPMYADMIN_PASSWORD = $PHPMYADMIN_PASSWORD"
+echo "WEBMIN_USERNAME = $WEBMIN_USERNAME"
+echo "WEBMIN_PASSWORD = $WEBMIN_PASSWORD"
+echo "WP_ADMIN_EMAIL = $WP_ADMIN_EMAIL"
+echo "WP_ADMIN_USERNAME = $WP_ADMIN_USERNAME"
+echo "WP_ADMIN_PASSWORD = $WP_ADMIN_PASSWORD"
+echo "PUSHBULLET_TOKEN = $PUSHBULLET_TOKEN"
+echo "WORDFENCE_CLI_TOKEN = $WORDFENCE_CLI_TOKEN"
+echo "WPSCANAPI = $WPSCANAPI"
+echo -e "\n"
+sleep 5
+
+# Check S3 Install
+if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0\n"
+    exit
+fi
+
+# Check S3 Bucket Name
+if [ "$INSTALL_S3_BACKUP" = 0 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=0 but have changed S3_BUCKET_NAME from PLACEHOLDER.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change INSTALL_S3_BACKUP to 1. If this is a mistake, you can avoid this error by setting S3_BUCKET_NAME to PLACEHOLDER\n"
+    exit
+fi
+
+# Check Cloudflare Global API Key
+if [ "$CF_GLOBAL_API_KEY" = PLACEHOLDER ] && [ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nCF_GLOBAL_API_KEY is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_GLOBAL_API_KEY to the correct value.\n"
+    exit
+fi
+
+# Check Cloudflare Account Email
+if [ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nCF_ACCOUNT_EMAIL is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_ACCOUNT_EMAIL to the correct value.\n"
+    exit
+fi
+
+# Check MariaDB Password
+if [ "$MARIADB_ADMIN_PASSWORD" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nMARIADB_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change MARIADB_ADMIN_PASSWORD to something more secure.\n"
+    exit
+fi
+
+# Check Nginx Username
+if [ "$NGINX_USERNAME" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nNGINX_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change NGINX_USERNAME to something more secure.\n"
+    exit
+fi
+
+# Check Nginx Password
+if [ "$NGINX_PASSWORD" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nNGINX_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change NGINX_PASSWORD to something more secure.\n"
+    exit
+fi
+
+# Check phpMyAdmin Username
+if [ "$PHPMYADMIN_USERNAME" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nPHPMYADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_USERNAME to something more secure.\n"
+    exit
+fi
+
+# Check phpMyAdmin Password
+if [ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\nPHPMYADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_PASSWORD to something more secure.\n"
+    exit
+fi
+
+# Check WordPress Admin Email
+if [ "$WP_ADMIN_EMAIL" = PLACEHOLDER@PLACEHOLDER.com ];
+	then
+    echo -e "\nWARNING:\n\nWP_ADMIN_EMAIL is set to PLACEHOLDER@PLACEHOLDER.com. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address.\n"
+    exit
+fi
+
+# Check WordPress Admin Username
+if [ "$WP_ADMIN_USERNAME" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nWP_ADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_USERNAME to something more secure.\n"
+    exit
+fi
+
+# Check WordPress Admin Password
+if [ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nWP_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_PASSWORD to something more secure.\n"
+    exit
 fi
 
 # Set Time Zone
@@ -58,19 +192,8 @@ dpkg-reconfigure unattended-upgrades
 apt install --install-recommends linux-generic-hwe-22.04 -y
 
 sleep 3
-# Add User
-useradd -m -s /bin/bash -c "Administrative User" ${WEBMIN_USERNAME} ; echo -e "${WEBMIN_PASSWORD}\n${WEBMIN_PASSWORD}" | passwd ${WEBMIN_USERNAME}
-
-# Remove Password Expiration
-chage -I -1 -m 0 -M 99999 -E -1 root
-chage -I -1 -m 0 -M 99999 -E -1 ${WEBMIN_USERNAME}
-
-# Set Sudo
-usermod -aG sudo "${WEBMIN_USERNAME}"
-echo "User account ${BOLD}${WEBMIN_USERNAME}${NORMAL} has been created." | boxes -a c -d shell -p a1l2
 
 # Install Check
-touch /home/EngineScript/install-log.txt
 source /home/EngineScript/install-log.txt
 
 # Repositories
@@ -80,6 +203,15 @@ if [ "${REPOS}" = 1 ];
   else
     /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh
     echo "REPOS=1" >> /home/EngineScript/install-log.txt
+fi
+
+# Remove Preinstalled Software
+if [ "${REMOVES}" = 1 ];
+  then
+    echo "REMOVES script has already run"
+  else
+    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh
+    echo "REMOVES=1" >> /home/EngineScript/install-log.txt
 fi
 
 # Block Unwanted Packages
@@ -94,15 +226,6 @@ fi
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
-# Remove Preinstalled Software
-if [ "${REMOVES}" = 1 ];
-  then
-    echo "REMOVES script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh
-    echo "REMOVES=1" >> /home/EngineScript/install-log.txt
-fi
-
 # Install Dependencies
 if [ "${DEPENDS}" = 1 ];
   then
@@ -110,15 +233,6 @@ if [ "${DEPENDS}" = 1 ];
   else
     /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh
     echo "DEPENDS=1" >> /home/EngineScript/install-log.txt
-fi
-
-# Enginescript Aliases
-if [ "${ALIAS}" = 1 ];
-  then
-    echo "ALIAS script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
-    echo "ALIAS=1" >> /home/EngineScript/install-log.txt
 fi
 
 # ACME.sh

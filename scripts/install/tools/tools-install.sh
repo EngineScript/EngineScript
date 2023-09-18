@@ -116,10 +116,10 @@ fi
 /usr/local/bin/enginescript/scripts/install/tools/wordpress/wp-cli.sh
 
 #------------------------------------------------
-# Dropbox Uploader
-
-# We're doing this at the end because it requires user input and we don't
-# want to stop the install from finalizing
+# Cloud Backups
+#
+# We're doing this at the end because it requires a bit of user input
+# and we don't want to stop the rest of the install process.
 #------------------------------------------------
 
 # Dropbox_uploader
@@ -131,4 +131,15 @@ if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/tools/system/dropbox-uploader.sh
   else
     echo "Skipping Dropbox Uploader install"
+fi
+
+# Amazon AWS CLI
+if [ "${INSTALL_S3_BACKUP}" = 1 ];
+  then
+    echo "Installing Amazon CLI"
+    echo "Please follow the instructions in the script that is about to run."
+    sleep 5
+    /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
+  else
+    echo "Skipping Amazon CLI install"
 fi

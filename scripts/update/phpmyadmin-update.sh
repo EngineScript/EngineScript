@@ -25,14 +25,21 @@ fi
 # Start Main Script
 
 # phpMyAdmin
+
+# Store existing config file
+rm -rf /usr/src/config.inc.php
+mv /var/www/admin/enginescript/phpmyadmin/config.inc.php /usr/src/config.inc.php
 rm -rf /var/www/admin/enginescript/phpmyadmin
-wget -O /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
-unzip /usr/local/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip
-mv phpMyAdmin-${PHPMYADMIN_VER}-all-languages phpmyadmin
-mv phpmyadmin /var/www/admin/enginescript
-sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
+
+# Download phpMyAdmin
+wget -O /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
+unzip /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip -d /usr/src
+mv /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages /var/www/admin/enginescript/phpmyadmin
 mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
+
+# Return existing config file
+mv /usr/src/config.inc.php /var/www/admin/enginescript/phpmyadmin/config.inc.php
 
 # Post-Install Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh

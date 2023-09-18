@@ -26,6 +26,31 @@ fi
 
 # Webmin
 
+# Check Webmin Username
+if [ "$WEBMIN_USERNAME" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nWEBMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WEBMIN_USERNAME to something more secure.\n"
+    exit
+fi
+
+# Check Webmin Password
+if [ "$WEBMIN_PASSWORD" = PLACEHOLDER ];
+	then
+    echo -e "\nWARNING:\n\nWEBMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WEBMIN_PASSWORD to something more secure.\n"
+    exit
+fi
+
+# Add User
+useradd -m -s /bin/bash -c "Administrative User" ${WEBMIN_USERNAME} ; echo -e "${WEBMIN_PASSWORD}\n${WEBMIN_PASSWORD}" | passwd ${WEBMIN_USERNAME}
+
+# Remove Password Expiration
+chage -I -1 -m 0 -M 99999 -E -1 root
+chage -I -1 -m 0 -M 99999 -E -1 ${WEBMIN_USERNAME}
+
+# Set Sudo
+usermod -aG sudo "${WEBMIN_USERNAME}"
+echo "User account ${BOLD}${WEBMIN_USERNAME}${NORMAL} has been created." | boxes -a c -d shell -p a1l2
+
 # Add Webmin Repository
 wget -qO - https://download.webmin.com/jcameron-key.asc --no-check-certificate | sudo apt-key add -
 sudo sh -c 'echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list'
