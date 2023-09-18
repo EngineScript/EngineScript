@@ -28,7 +28,14 @@ cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
 select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 echo "WPScan"
-wpscan --url $d -e vp --api-token ${WPSCANAPI}
+
+# Run WPScan
+if [ "${WPSCANAPI}" = PLACEHOLDER ]
+  then
+    wpscan --url $d
+  else
+    wpscan --url $d --api-token ${WPSCANAPI}
+fi
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""
