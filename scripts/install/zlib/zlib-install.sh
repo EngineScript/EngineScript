@@ -43,7 +43,7 @@ make -f Makefile.in distclean
 #rm -rf /usr/src/zlib-ng
 #git clone --depth 1 https://github.com/Dead2/zlib-ng -b develop /usr/src/zlib-ng
 #cd /usr/src/zlib-ng
-#./configure \
+#sudo ./configure --prefix=path \
 #  --zlib-compat
 
 #make -j${CPU_COUNT}

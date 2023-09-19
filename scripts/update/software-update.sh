@@ -35,8 +35,8 @@ if [ "${INSTALL_ADMINER}" = 1 ];
     echo "Skipping Adminer update"
 fi
 
-# Update libdeflate
-/usr/local/bin/enginescript/scripts/install/libdeflate/libdeflate-install.sh
+# Update liburing
+/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
 
 # Update MYSQLTuner
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
@@ -80,7 +80,7 @@ echo "${BOLD}EngineScript has been updated.${NORMAL}"
 echo ""
 echo "This update includes:"
 echo "  - Adminer (if enabled)"
-echo "  - libdeflate"
+echo "  - liburing"
 echo "  - MYSQLTuner"
 echo "  - PHP Malware Finder"
 echo "  - phpMyAdmin (if enabled)"
