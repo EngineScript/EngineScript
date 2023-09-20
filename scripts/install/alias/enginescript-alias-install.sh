@@ -11,7 +11,6 @@
 
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
 
 # Check current user's ID. If user is not 0 (root), exit.
 if [ "${EUID}" != 0 ];
