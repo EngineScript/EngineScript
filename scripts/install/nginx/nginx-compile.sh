@@ -44,7 +44,7 @@ cd /usr/src/nginx-${NGINX_VER}
   --builddir=nginx-${NGINX_VER} \
   --with-cc-opt="-m64 -march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=${CPU_COUNT} -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4 -Wp,-D_FORTIFY_SOURCE=2" \
   --with-ld-opt="-ljemalloc -Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=${CPU_COUNT}" \
-  --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-dtls no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
+  --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
   --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
   --with-libatomic \
   --with-file-aio \

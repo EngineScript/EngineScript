@@ -48,6 +48,9 @@ fi
 # Misc Nginx Stuff
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh
 
+# Tune Nginx
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh
+
 # Remove .default Files
 rm -rf /etc/nginx/*.default
 

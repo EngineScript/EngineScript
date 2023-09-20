@@ -361,15 +361,6 @@ if [ "${ZLIB}" = 1 ];
     echo "ZLIB=1" >> /home/EngineScript/install-log.txt
 fi
 
-# libdeflate
-if [ "${LIBDEFLATE}" = 1 ];
-  then
-    echo "LIBDEFLATE script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/libdeflate/libdeflate-install.sh
-    echo "LIBDEFLATE=1" >> /home/EngineScript/install-log.txt
-fi
-
 # liburing
 if [ "${LIBURING}" = 1 ];
   then
