@@ -20,7 +20,7 @@ As this is a pre-release version.
 
 ## Install EngineScript
 ### Step 1 - Initial Install
-Run the following command
+Run the following command:
 ```shell
 wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && bash setup.sh
 ```
@@ -28,16 +28,17 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 ### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file before continuing.
 
-First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**.
+First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**. Then you'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**.
 
-Edit: **/home/EngineScript/enginescript-install-options.txt**.
-
+Run the following command:
 ```shell
 es.config
 ```
 
 ### Step 3 - Main Install Process
-Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
+Once you've filled out the configuration file with your personal settings, continue with the main installation process.
+
+Run the following command:
 ```shell
 es.install
 ```
