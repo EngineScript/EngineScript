@@ -62,6 +62,4 @@ echo ""
 echo "============================================================="
 echo ""
 echo ""
-exec env --ignore-environment /bin/bash
-export TERM=vt100
 sleep 5

@@ -447,6 +447,4 @@ echo "        Returning to main menu in 5 seconds."
 echo ""
 echo "============================================================="
 echo ""
-exec env --ignore-environment /bin/bash
-export TERM=vt100
 sleep 5
