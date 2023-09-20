@@ -36,6 +36,7 @@ alias es.mysql="/usr/local/bin/enginescript/scripts/functions/alias/alias-mysql-
 alias es.permissions="/usr/local/bin/enginescript/scripts/functions/cron/permissions.sh"
 alias es.restart="/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh"
 alias es.update="/usr/local/bin/enginescript/scripts/update/enginescript-update.sh"
+alias es.variables="nano /usr/local/bin/enginescript/enginescript-variables.txt"
 alias ng.reload="ng.test && systemctl reload nginx"
 alias ng.stop="ng.test && systemctl stop nginx"
 alias ng.test="nginx -t -c /etc/nginx/nginx.conf"

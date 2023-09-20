@@ -189,7 +189,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |-------------------|-------------------------------|
 |**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
-|**`es.config`**    |Opens the configuration file in the Nano text editor |
+|**`es.config`**    |Opens the configuration file in Nano |
 |**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
 |**`es.install`**	  |Runs the main EngineScript installation script |
 |**`es.menu`**	    |EngineScript menu |
@@ -197,6 +197,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
 |**`es.restart`**   |Restart Nginx and PHP |
 |**`es.update`**    |Update EngineScript |
+|**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
 |                   |                                |
 
 ### Software EngineScript Utilizes:
