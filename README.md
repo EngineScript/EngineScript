@@ -33,13 +33,13 @@ First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/
 Edit: **/home/EngineScript/enginescript-install-options.txt**.
 
 ```shell
-nano /home/EngineScript/enginescript-install-options.txt
+es.config
 ```
 
 ### Step 3 - Main Install Process
 Once you've filled out the enginescript-install-options.txt file with your personal settings, run the following command to continue with the installation process:
 ```shell
-bash /usr/local/bin/enginescript/enginescript-install.sh
+es.install
 ```
 
 ----------
@@ -187,11 +187,14 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 ### EngineScript Commands
 |Command            |Function                       |
 |-------------------|-------------------------------|
-|**`es.backup`**    |Runs the backup script to backup all domains locally and in the cloud *(optional)* |
+|**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
 |**`es.config`**    |Opens the configuration file in the Nano text editor |
-|**`es.optimize`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
+|**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
+|**`es.install`**	  |Runs the main EngineScript installation script |
 |**`es.menu`**	    |EngineScript menu |
+|**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
+|**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
 |**`es.restart`**   |Restart Nginx and PHP |
 |**`es.update`**    |Update EngineScript |
 |                   |                                |

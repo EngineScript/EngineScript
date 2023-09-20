@@ -31,6 +31,7 @@ alias es.cache="/usr/local/bin/enginescript/scripts/functions/alias/alias-virus-
 #alias es.compress="/usr/local/bin/enginescript/scripts/functions/cron/compression-cron.sh"
 alias es.config="nano /home/EngineScript/enginescript-install-options.txt"
 alias es.images="/usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh"
+alias es.install="/usr/local/bin/enginescript/enginescript-install.sh"
 alias es.menu="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 alias es.mysql="/usr/local/bin/enginescript/scripts/functions/alias/alias-mysql-pass.sh"
 alias es.permissions="/usr/local/bin/enginescript/scripts/functions/cron/permissions.sh"
