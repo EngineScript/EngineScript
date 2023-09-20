@@ -102,6 +102,18 @@ apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7
 apt update
 apt upgrade -y
 
+# Set Time Zone
+dpkg-reconfigure tzdata
+
+# Set Unattended Upgrades
+dpkg-reconfigure unattended-upgrades
+
+# HWE
+apt install --install-recommends linux-generic-hwe-22.04 -y
+
+apt update
+apt upgrade -y
+
 # Remove old downloads
 rm -rf /usr/src/*.tar.gz*
 

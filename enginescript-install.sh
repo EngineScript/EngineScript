@@ -182,17 +182,6 @@ if [ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ];
     exit
 fi
 
-# Set Time Zone
-dpkg-reconfigure tzdata
-
-# Set Unattended Upgrades
-dpkg-reconfigure unattended-upgrades
-
-# HWE
-apt install --install-recommends linux-generic-hwe-22.04 -y
-
-sleep 3
-
 # Install Check
 source /home/EngineScript/install-log.txt
 
