@@ -51,7 +51,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
 # phpMyAdmin
-if [ "${INSTALL_PHYMYADMIN}" = 1 ];
+if [ "${INSTALL_PHPMYADMIN}" = 1 ];
   then
     echo "Installing phpMyAdmin"
     /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh

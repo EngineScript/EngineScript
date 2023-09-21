@@ -22,25 +22,31 @@
 ###################
 # Install Options #
 ###################
-
+# HTTP3 support is currently experimental.
+# Cloudflare currently does NOT support HTTP3 for origin fetches.
+# So HTTP3 is useless until they do.
+#
 # 0 = disabled
 # 1 = enabled
+
 AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 INSTALL_ADMINER=0
-INSTALL_PHYMYADMIN=1
+INSTALL_HTTP3=0
+#INSTALL_PHP8_2=0
+INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
 SHOW_ENGINESCRIPT_HEADER=0
 
 ##################
 # Backup Options #
 ##################
-# 0 = disabled
-# 1 = enabled
-
 # Amazon S3, Dropbox, and Google Drive backups require the local backups
 # settings below to be enabled. If you want hourly, daily, and weekly
 # backups to the cloud, be sure to set the corresponding local options.
+#
+# 0 = disabled
+# 1 = enabled
 
 # Local Backup
 DAILY_LOCAL_DATABASE_BACKUP=1
@@ -129,3 +135,7 @@ WORDFENCE_CLI_TOKEN="PLACEHOLDER"
 # If you don't want to use it, leave this alone.
 # Create your token at https://wpscan.com/api
 WPSCANAPI="PLACEHOLDER"
+
+# DONE
+# Proceed to: Step 3 - Main Install Process
+# https://github.com/EngineScript/EngineScript#step-3---main-install-process

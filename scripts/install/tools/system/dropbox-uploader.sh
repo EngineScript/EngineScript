@@ -23,7 +23,7 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-
+clear
 # Clone Git
 git clone --depth 1 https://github.com/andreafabrizi/Dropbox-Uploader.git -b master /usr/local/bin/dropbox-uploader
 

@@ -130,31 +130,15 @@ apt-key add jcameron-key.asc
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
   then
     clear
-    echo ""
-    echo ""
-    echo ""
-    echo "Initial setup is complete."
-    echo ""
-    echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
-    echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
-    echo ""
-    echo "After changing options file, run \"bash /usr/local/bin/enginescript/scripts-install.sh\""
-    echo ""
-    echo ""
+    echo -e "\n\n"
+    echo -e "Initial setup is complete.\n\n"
+    echo -e "Proceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"
   else
     cp -rf /usr/local/bin/enginescript/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
     clear
-    echo ""
-    echo ""
-    echo ""
-    echo "Initial setup is complete."
-    echo ""
-    echo "Change the options in /home/EngineScript/enginescript-install-options.txt"
-    echo "Edit the file and upload via FTP or run command \"nano /home/EngineScript/enginescript-install-options.txt\""
-    echo ""
-    echo "After changing options file, run \"bash /usr/local/bin/enginescript/scripts-install.sh\""
-    echo ""
-    echo ""
+    echo -e "\n\n"
+    echo -e "Initial setup is complete.\n\n"
+    echo -e "Proceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"
 fi
 
 echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2

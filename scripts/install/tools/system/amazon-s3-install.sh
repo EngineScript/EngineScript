@@ -23,7 +23,7 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
-
+clear
 # Install Amazon AWS Client
 cd /usr/src
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"

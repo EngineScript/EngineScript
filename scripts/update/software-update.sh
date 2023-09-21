@@ -45,7 +45,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
 
 # Update phpMyAdmin
-if [ "${INSTALL_PHYMYADMIN}" = 1 ];
+if [ "${INSTALL_PHPMYADMIN}" = 1 ];
   then
     echo "Updating phpMyAdmin"
     /usr/local/bin/enginescript/scripts/install/tools/security/phpmyadmin-update.sh
