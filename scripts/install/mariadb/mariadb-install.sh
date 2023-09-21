@@ -106,19 +106,19 @@ systemctl start mariadb.service
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
 if [ "${STATUS}" = "active" ]; then
-    echo "MariaDB is running. Continuing the installation process."
+    echo "PASSED: MariaDB is running."
 else
-    echo "MariaDB not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
 # MySQL Service Check
 STATUS="$(systemctl is-active mysql)"
 if [ "${STATUS}" = "active" ]; then
-    echo "MySQL is running. Continuing the installation process."
+    echo "PASSED: MySQL is running."
     echo "MARIADB=1" >> /home/EngineScript/install-log.txt
 else
-    echo "MySQL not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 

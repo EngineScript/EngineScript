@@ -51,9 +51,9 @@ sudo systemctl enable redis-server
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
 if [ "${STATUS}" = "active" ]; then
-    echo "Redis is running. Continuing the installation process."
+    echo "PASSED: Redis is running."
     echo "REDIS=1" >> /home/EngineScript/install-log.txt
 else
-    echo "Redis not running. Please diagnose this issue before proceeding"
+    echo "FAILED: Redis not running. Please diagnose this issue before proceeding"
     exit 1
 fi

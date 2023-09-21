@@ -30,45 +30,45 @@ echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
 if [ "${STATUS}" = "active" ]; then
-    echo "MariaDB is running. Continuing the installation process."
+    echo "PASSED: MariaDB is running."
 else
-    echo "MariaDB not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
 # MySQL Service Check
 STATUS="$(systemctl is-active mysql)"
 if [ "${STATUS}" = "active" ]; then
-    echo "MySQL is running. Continuing the installation process."
+    echo "PASSED: MySQL is running."
 else
-    echo "MySQL not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
 if [ "${STATUS}" = "active" ]; then
-    echo "Nginx is running. Continuing the installation process."
+    echo "PASSED: Nginx is running."
 else
-    echo "Nginx not running. Please diagnose this issue before proceeding"
+    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
 # PHP Service Check
 STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PHP ${PHP_VER} is running. Continuing the installation process."
+    echo "PASSED: PHP ${PHP_VER} is running."
 else
-    echo "PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
+    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
 if [ "${STATUS}" = "active" ]; then
-    echo "Redis is running. Continuing the installation process."
+    echo "PASSED: Redis is running."
 else
-    echo "Redis not running. Please diagnose this issue before proceeding"
+    echo "FAILED: Redis not running. Please diagnose this issue before proceeding"
     exit 1
 fi
 
