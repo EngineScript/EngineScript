@@ -74,7 +74,7 @@ if [ "${STATUS}" = "active" ]; then
     echo "PASSED: PHP ${PHP_VER} is running."
     echo "PHP=1" >> /home/EngineScript/install-log.txt
 else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
+    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 

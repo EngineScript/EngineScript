@@ -32,7 +32,7 @@ STATUS="$(systemctl is-active mariadb)"
 if [ "${STATUS}" = "active" ]; then
     echo "PASSED: MariaDB is running."
 else
-    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 
@@ -41,7 +41,7 @@ STATUS="$(systemctl is-active mysql)"
 if [ "${STATUS}" = "active" ]; then
     echo "PASSED: MySQL is running."
 else
-    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding"
+    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 
@@ -50,7 +50,7 @@ STATUS="$(systemctl is-active nginx)"
 if [ "${STATUS}" = "active" ]; then
     echo "PASSED: Nginx is running."
 else
-    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding"
+    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 
@@ -59,7 +59,7 @@ STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
 if [ "${STATUS}" = "active" ]; then
     echo "PASSED: PHP ${PHP_VER} is running."
 else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding"
+    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 
@@ -68,7 +68,7 @@ STATUS="$(systemctl is-active redis)"
 if [ "${STATUS}" = "active" ]; then
     echo "PASSED: Redis is running."
 else
-    echo "FAILED: Redis not running. Please diagnose this issue before proceeding"
+    echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 
