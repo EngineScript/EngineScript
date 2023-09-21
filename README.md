@@ -26,9 +26,9 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 ```
 
 ### Step 2 - Edit Options File
-After the initial setup script has run, you'll need to alter the install options file before continuing.
+After the initial setup script has run, you'll need to alter the install options file.
 
-First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**. Then you'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**.
+First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**. Then you'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**. Fill this out completely, making sure to change all options say `PLACEHOLDER`.
 
 Run the following command:
 ```shell

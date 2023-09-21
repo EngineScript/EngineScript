@@ -41,3 +41,36 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
   else
     sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
 fi
+
+if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
+  then
+    sed -i "s|SEDFCGIBUSYBUFFERS|48k|g" /etc/nginx/nginx.conf
+  else
+    sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
+fi
+
+# HTTP3
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#http3 on;|http3 on;|g" /etc/nginx/nginx.conf
+fi
+
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#quic_bpf on|quic_bpf on|g" /etc/nginx/nginx.conf
+fi
+
+if [ "${INSTALL_HTTP3}" = 1 ] && ethtool -k eth0 | grep "tx-gso-robust: on";
+  then
+    sed -i "s|#quic_gso on|quic_gso on|g" /etc/nginx/nginx.conf
+fi
+
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#quic_retry on|quic_retry on|g" /etc/nginx/nginx.conf
+fi
+
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#add_header Alt-Svc|add_header Alt-Svc|g" /etc/nginx/globals/responseheaders.conf
+fi

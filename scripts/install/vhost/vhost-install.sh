@@ -117,6 +117,17 @@ sed -i "\/SITES\=(/a\
 cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
 sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
+# HTTP3
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#listen 443 quic|#listen 443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+fi
+
+if [ "${INSTALL_HTTP3}" = 1 ];
+  then
+    sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+fi
+
 # Create Origin Certificate
 mkdir -p /etc/nginx/ssl/${DOMAIN}
 
