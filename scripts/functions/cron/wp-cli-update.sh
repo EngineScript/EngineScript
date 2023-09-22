@@ -27,5 +27,5 @@ fi
 #----------------------------------------------------------------------------
 
 # Update WP-CLI
-echo "y" | /usr/local/src/wp cli update --stable --allow-root
-echo "y" | /usr/local/src/wp package update --allow-root
+echo "y" | wp cli update --stable --allow-root
+echo "y" | wp package update --allow-root

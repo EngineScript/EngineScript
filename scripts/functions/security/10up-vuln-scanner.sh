@@ -28,7 +28,7 @@ cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
 select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 cd "$d"html && echo "10up Vulnerability Scanner is running. Scan may take a bit, standby for results."
-/usr/local/src/wp vuln status --allow-root
+wp vuln status --allow-root
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

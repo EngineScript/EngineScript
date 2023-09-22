@@ -38,7 +38,7 @@ for i in "${SITES[@]}"
 do
 	cd "/var/www/sites/$i/html"
 	# Verify checksums
-	if ! /usr/local/src/wp core verify-checksums --allow-root; then
+	if ! wp core verify-checksums --allow-root; then
 		ERRORS="$ERRORS $i"
 	fi
 done

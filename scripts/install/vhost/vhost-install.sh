@@ -235,7 +235,7 @@ touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
 chown -R www-data:www-data /var/log/domains/${SITE_URL}
 
 # Download WordPress using WP-CLI
-/usr/local/src/wp core download --allow-root
+wp core download --allow-root
 rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
 
 # Create wp-config.php
@@ -253,7 +253,7 @@ STRING='put your unique phrase here'
 printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # WP Scan API Token
-sed -i "s|SED10UPAPI|${10UPAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # Create robots.txt
 cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
@@ -262,7 +262,6 @@ sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 # WP File Permissions
 find /var/www/sites/${SITE_URL} -type d -print0 | sudo xargs -0 chmod 0755
 find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
-
 chown -R www-data:www-data /var/www/sites/${SITE_URL}
 chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
@@ -289,30 +288,30 @@ echo "============================================="
 
 # WP-CLI Install WordPress
 cd /var/www/sites/${SITE_URL}/html
-/usr/local/src/wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
+wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
-/usr/local/src/wp plugin install autodescription --allow-root
-/usr/local/src/wp plugin install mariadb-health-checks --allow-root
-/usr/local/src/wp plugin install nginx-helper --allow-root
-/usr/local/src/wp plugin install php-compatibility-checker --allow-root
-/usr/local/src/wp plugin install redis-cache --allow-root
-/usr/local/src/wp plugin install theme-check --allow-root
-/usr/local/src/wp plugin install wp-cloudflare-page-cache --allow-root
-/usr/local/src/wp plugin install wp-mail-smtp --allow-root
+wp plugin install autodescription --allow-root
+wp plugin install mariadb-health-checks --allow-root
+wp plugin install nginx-helper --allow-root
+wp plugin install php-compatibility-checker --allow-root
+wp plugin install redis-cache --allow-root
+wp plugin install theme-check --allow-root
+wp plugin install wp-cloudflare-page-cache --allow-root
+wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
-/usr/local/src/wp plugin activate nginx-helper --allow-root
-/usr/local/src/wp plugin activate redis-cache --allow-root
-/usr/local/src/wp plugin activate wp-cloudflare-page-cache --allow-root
-/usr/local/src/wp plugin activate wp-mail-smtp --allow-root
+wp plugin activate nginx-helper --allow-root
+wp plugin activate redis-cache --allow-root
+wp plugin activate wp-cloudflare-page-cache --allow-root
+wp plugin activate wp-mail-smtp --allow-root
 
 # WP-CLI Enable Plugins
-/usr/local/src/wp redis enable --allow-root
+wp redis enable --allow-root
 
 # WP-CLI set permalink structure for FastCGI Cache
-/usr/local/src/wp option get permalink_structure --allow-root
-/usr/local/src/wp option update permalink_structure '/%category%/%postname%/' --allow-root
+wp option get permalink_structure --allow-root
+wp option update permalink_structure '/%category%/%postname%/' --allow-root
 
 # Setting Permissions Again
 # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
@@ -378,7 +377,7 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 cd "/var/www/sites/${SITE_URL}/html"
 
 # Backup database
-/usr/local/src/wp db export "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
+wp db export "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
 
 # Compress database file
 gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE"

@@ -57,8 +57,8 @@ fi
 #/usr/local/bin/enginescript/scripts/update/python-update.sh
 
 # Update WP-CLI
-echo "y" | /usr/local/src/wp cli update --stable --allow-root
-echo "y" | /usr/local/src/wp package update --allow-root
+echo "y" | wp cli update --stable --allow-root
+echo "y" | wp package update --allow-root
 
 # Update WP-Scan
 gem update wpscan

@@ -27,7 +27,7 @@ fi
 for i in "${SITES[@]}"
 do
 	cd "/var/www/sites/$i/html"
-  /usr/local/src/wp transient delete-all --allow-root
+  wp transient delete-all --allow-root
 done
 
 rm -rf /var/cache/nginx/*

@@ -34,5 +34,5 @@ for i in "${SITES[@]}"
 do
 	cd "/var/www/sites/$i/html"
 	#php -q wp-cron.php >/dev/null 2>&1
-	/usr/local/src/wp cron event run --due-now --allow-root
+	wp cron event run --due-now --allow-root
 done

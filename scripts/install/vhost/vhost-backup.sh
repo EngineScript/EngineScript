@@ -45,7 +45,7 @@ do
 	cd "/var/www/sites/$i/html"
 
 	# Backup database
-	/usr/local/src/wp db export "/home/EngineScript/site-backups/$i/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
+	wp db export "/home/EngineScript/site-backups/$i/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
 
 	# Compress database file
 	gzip -f "/home/EngineScript/site-backups/$i/database/daily/$DATABASE_FILE"

@@ -28,7 +28,7 @@ cd /var/www/sites
 printf "Please select the site you want to scan for issues\n"
 select d in */; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 cd "$d"html && echo "WP-CLI Doctor is running. Scan may take a bit, standby for results."
-/usr/local/src/wp doctor check --allow-root
+wp doctor check --allow-root
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""
