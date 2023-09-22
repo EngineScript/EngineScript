@@ -52,7 +52,9 @@ add-apt-repository -yn ppa:phpmyadmin/ppa
 add-apt-repository -yn ppa:deadsnakes/ppa
 
 # Redis
-add-apt-repository -yn ppa:redislabs/redis
+#add-apt-repository -yn ppa:redislabs/redis
+curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
 
 # Rob Savoury Backports
 #add-apt-repository -yn ppa:savoury1/backports

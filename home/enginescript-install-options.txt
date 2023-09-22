@@ -10,11 +10,11 @@
 
 #|##########################################################|#
 #|                                                          |#
-#|                       IMPORTANT:                         |#
+#|                        IMPORTANT:                        |#
 #|                                                          |#
-#|           To edit the correct file, use command:         |#
-#|                       es.config                          |#
-#|                           or                             |#
+#|          To edit the correct file, use command           |#
+#|                        es.config                         |#
+#|                            or                            |#
 #| nano /home/EngineScript/enginescript-install-options.txt |#
 #|                                                          |#
 #|##########################################################|#
