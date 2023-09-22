@@ -6,7 +6,7 @@ EngineScript automates the process of building a high-performance LEMP server. W
 
 EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful.
 
-As this is a pre-release version.
+As this is a pre-release version, things may be broken.
 
 ## Features
 
@@ -182,7 +182,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |**/var/lib/mysql**              |MySQL database |
 |**/var/log**                    |Server logs |
 |**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
-|**/var/www/sites/*yourdomain.com*/html**|Root directory for your WordPress installation |
+|**/var/www/sites/*yourdomain.com*/html** |Root directory for your WordPress installation |
 |                                |                |
 
 ### EngineScript Commands
