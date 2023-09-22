@@ -28,7 +28,7 @@ fi
 cd /usr/local/src
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x wp-cli.phar
-sudo mv wp-cli.phar wp
+sudo mv wp-cli.phar /usr/local/bin/wp
 mkdir -p /tmp/wp-cli-phar
 chown -R www-data:www-data /tmp/wp-cli-phar
 chmod 775 /tmp/wp-cli-phar

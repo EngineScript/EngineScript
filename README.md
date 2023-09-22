@@ -103,7 +103,7 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 3. Cloudflare email: **Your email.**
 4. Cloudflare API Key: **Your API Key.**
 5. Log mode: **Whatever you prefer.**
-6. Cloudflare Domain Name: ****Your domain.**
+6. Cloudflare Domain Name: **Your domain.**
 
 ##### Cache tab
 1. Cloudflare Cache-Control max-age: **31536000**
