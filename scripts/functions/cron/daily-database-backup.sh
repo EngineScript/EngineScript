@@ -45,7 +45,7 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 for i in "${SITES[@]}"
 do
-  echo "Running Backup for ${i}"
+  echo "Running Database Backup for ${i}"
 	cd "/var/www/sites/$i/html"
 
 	# Local Database Backup
