@@ -34,7 +34,7 @@ PHP_FILE="${NOW}-php.tar.gz";
 SSL_FILE="${NOW}-ssl-keys.gz";
 UPLOADS_FILE="${NOW}-uploads.tar.gz";
 VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
-WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONFIG_FILE="${NOW}-wp-config.php.gz";
 WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 # Backup Nginx Config

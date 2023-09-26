@@ -107,7 +107,6 @@ fi
 
 # Store SQL credentials
 echo "SITE_URL=\"${DOMAIN}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo ""
 
 # Add Domain to Site List
 sed -i "\/SITES\=(/a\
@@ -209,7 +208,6 @@ echo "" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 
 echo "Randomly generated MySQL database credentials for ${SITE_URL}."
-echo ""
 
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
@@ -371,7 +369,7 @@ PHP_FILE="${NOW}-php.tar.gz";
 SSL_FILE="${NOW}-ssl-keys.gz";
 UPLOADS_FILE="${NOW}-uploads.tar.gz";
 VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
-WPCONFIG_FILE="${NOW}-wp-config.gz";
+WPCONFIG_FILE="${NOW}-wp-config.php.gz";
 WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 cd "/var/www/sites/${SITE_URL}/html"
