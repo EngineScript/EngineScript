@@ -32,6 +32,7 @@ source /home/EngineScript/sites-list/sites.sh
 
 for i in "${SITES[@]}"
 do
+  echo "Optimizing images for ${i}. This will take a while..."
 	cd "/var/www/sites/$i/html"
 
 	# zImageCompress

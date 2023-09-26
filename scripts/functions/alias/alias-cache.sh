@@ -24,15 +24,24 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+echo -e "\nClearing Caches\n\n"
+
 for i in "${SITES[@]}"
 do
+  echo "Deleting ${i} Transients"
 	cd "/var/www/sites/$i/html"
   wp transient delete-all --allow-root
 done
 
+echo "Clearing Nginx Cache"
 rm -rf /var/cache/nginx/*
+echo "Clearing PHP OpCache"
 rm -rf /var/cache/opcache/*
+echo "Clearing Redis Object Cache"
 redis-cli FLUSHALL ASYNC
+echo "Restarting Nginx"
 service nginx restart
+echo "Restarting PHP-FPM"
 service php${PHP_VER}-fpm restart
+echo "Restarting Redis"
 service redis-server restart
