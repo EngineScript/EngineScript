@@ -62,18 +62,18 @@ do
 	# Amazon S3 Database Backup
 	if [ $INSTALL_S3_BACKUP = 1 ] && [ $S3_BUCKET_NAME != PLACEHOLDER ] && [ $DAILY_S3_DATABASE_BACKUP = 1 ];
 	  then
-      echo "Uploading Database Backup to Amazon S3 Bucket"
+      echo "Uploading Database Backup for ${i} to Amazon S3 Bucket"
 			/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/daily/${NOW}/$DATABASE_FILE.gz" --storage-class STANDARD
-      echo "Uploading WP-Config Backup to Amazon S3 Bucket"
+      echo "Uploading WP-Config Backup for ${i} to Amazon S3 Bucket"
 			/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-config/daily/${NOW}/$WPCONFIG_FILE" --storage-class STANDARD
 	fi
 
 	# Dropbox Database Backup
 	if [ $INSTALL_DROPBOX_BACKUP = 1 ] && [ $DAILY_DROPBOX_DATABASE_BACKUP = 1 ];
 		then
-      echo "Uploading Database Backup to Dropbox"
+      echo "Uploading Database Backup for ${i} to Dropbox"
 			/usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE /$i/backups/database/daily/${NOW}
-      echo "Uploading WP-Config Backup to Dropbox"
+      echo "Uploading WP-Config Backup for ${i} to Dropbox"
       /usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE /$i/backups/wp-config/daily/${NOW}/$WPCONFIG_FILE
 	fi
 
