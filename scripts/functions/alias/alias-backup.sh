@@ -28,3 +28,5 @@ echo -e "\nRunning Backup Script\n"
 
 /usr/local/bin/enginescript/scripts/functions/cron/daily-database-backup.sh
 /usr/local/bin/enginescript/scripts/functions/cron/weekly-wp-content-backup.sh
+
+echo -e "\nBackup Script Done\n"
