@@ -38,7 +38,7 @@ do
 	# zImageCompress
 	# This script will attempt to perform a lossless optimization on images found within your web-facing directories.
 	# Using the -n option, we the script will only attempt to optimize files that are new since last running the script.
-	/usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p /var/www/sites/$i/html/wp-content/uploads -n -q -m /home/EngineScript/zImageOptimizer-time-marker/time-marker
+	/usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p /var/www/sites/$i/html/wp-content/uploads -n -q
 
 	# Exiftool
 	# Strips Exif data from images
