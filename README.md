@@ -200,7 +200,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
 |**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
 |**`es.restart`**   |Restart Nginx and PHP |
-|**`es.server`**    |Displays Server Information |
+|**`es.server`**    |Displays server information |
 |**`es.update`**    |Update EngineScript |
 |**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
 |                   |                                |

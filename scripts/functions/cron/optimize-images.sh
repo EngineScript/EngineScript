@@ -42,6 +42,6 @@ do
 
 	# Exiftool
 	# Strips Exif data from images
-	exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg /var/www/sites/$i/html/wp-content/
+	exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg /var/www/sites/$i/html/wp-content
 
 done
