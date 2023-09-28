@@ -27,12 +27,12 @@ fi
 cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
 select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
-cd "$d"/html && echo "WordPress CLI is running. This scan may take a bit, standby for results."
+cd "$d" && echo "WordPress CLI is running. This scan may take a bit, standby for results."
 echo "When completed, the scan results will be located at:"
 echo "/home/EngineScript/wordfence-scan-results/wordfence-cli-scan-results.csv"
 
 # Scan
-/usr/local/src/Wordfence-CLI/wordfence scan --progress --images --output-path /home/EngineScript/wordfence-scan-results/wordfence-cli-scan-results.csv /var/www/sites
+/usr/local/src/Wordfence-CLI/wordfence scan --images --output-path /home/EngineScript/wordfence-scan-results/wordfence-cli-scan-results.csv /var/www/sites/${d}/html
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""
