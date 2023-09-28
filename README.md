@@ -112,22 +112,24 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 4. Don't cache the following dynamic contents: **Check all boxes marked as recommended and then also check "Pages with query args" and "WP JSON endpoints"**
 5. Don't cache the following static contents: **Check all boxes marked as recommended**
 6. Prevent the following URIs to be cached: **Enter the folowing:**
-   ```/*ao_noptirocket*
-    /*jetpack=comms*
-    /*kinsta-monitor*
-    *ao_speedup_cachebuster*
-    /*removed_item*
-    /my-account*
-    /wc-api/*
-    /edd-api/*
-    /wp-json*
-    /checkout/*
-    /cart/*
-    /certificate/*
-    /my-courses/*
-    *XMLHttpRequest*
-    add-to-cart*
-    add_to_cart*
+   ```*XMLHttpRequest*
+   *ao_speedup_cachebuster*
+   /*jetpack=comms*
+   /*removed_item*
+   /cart/*
+   /certificate/*
+   /checkout/*
+   /edd-api/*
+   /edd-sl/*
+   /feed/*
+   /my-account*
+   /my-courses*
+   /order/*
+   /wc-ajax*
+   /wc-api*
+   /wp-json*
+   add-to-cart*
+   add_to_cart*
     ```
 7. Strip response cookies on pages that should be cached: **No**
 8. Automatically purge single post cache when a new comment is inserted into the database or when a comment is approved or deleted: **Yes**
