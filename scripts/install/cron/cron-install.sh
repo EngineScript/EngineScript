@@ -75,7 +75,10 @@ fi
 (crontab -l 2>/dev/null; echo "51 5 1 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash ufw-cloudflare-cron.sh >/dev/null 2>&1") | crontab -
 
 # Update WP-CLI & Packages (daily)
-(crontab -l 2>/dev/null; echo "52 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cli-update.sh >/dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "52 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash wp-cli-update.sh >/dev/null 2>&1") | crontab -
+
+# Update Wordfence CLI (daily)
+(crontab -l 2>/dev/null; echo "53 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash wordfence-cli-update.sh >/dev/null 2>&1") | crontab -
 
 # Reset Ownership & Permissions for WordPress and EngineScript (daily)
 (crontab -l 2>/dev/null; echo "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash permissions.sh >/dev/null 2>&1") | crontab -

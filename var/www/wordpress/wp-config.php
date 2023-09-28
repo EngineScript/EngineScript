@@ -123,7 +123,7 @@ define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
 // Make sure to change the directory to match where you're placing the worker code.
 //define( 'SWCFPC_CF_WOKER_FULL_PATH', '/home/some-site/public/wp-content/themes/your-theme/assets/js/my-custom-cf-worker.js' );
 
-/* WP-CLI 10Up Vulnerability Scanner */
+/* 10Up Vulnerability Scanner */
 // We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
 //
 // Register for an account at
