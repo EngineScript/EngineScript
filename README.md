@@ -113,6 +113,8 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
 5. Don't cache the following static contents: **Check all boxes marked as recommended**
 6. Prevent the following URIs to be cached: **Enter the folowing:**
    ```*XMLHttpRequest*
+   *add-to-cart*
+   *add_to_cart*
    *ao_speedup_cachebuster*
    /*jetpack=comms*
    /*removed_item*
@@ -128,8 +130,6 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
    /wc-ajax*
    /wc-api*
    /wp-json*
-   add-to-cart*
-   add_to_cart*
     ```
 7. Strip response cookies on pages that should be cached: **No**
 8. Automatically purge single post cache when a new comment is inserted into the database or when a comment is approved or deleted: **Yes**
@@ -166,7 +166,8 @@ Most of these are not used, so just scroll past the ones that say Inactive Plugi
 
 ##### Other tab
 ###### Other Settings section
-1. Remove Cache Buster Query Parameter: **Yes**
+1. SEO redirect **Yes**
+2. Remove Cache Buster Query Parameter: **Yes**
 
 ##### Finalize Cloudflare Cache Settings
 Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156cc210b7148135fa2**. Things will not work correctly if you skip this part.
