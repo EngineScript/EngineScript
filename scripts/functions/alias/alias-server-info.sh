@@ -34,7 +34,7 @@ echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
 echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $LINUX_TYPE $UBUNTU_VER $UBUNTU_CODENAME"
 echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
-echo -e "${BOLD}\nInstall Options:${NORMAL}"
+echo -e "${BOLD}\nEngineScript Install Options:${NORMAL}"
 echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
 echo "AUTOMATIC_ENGINESCRIPT_UPDATES = $AUTOMATIC_ENGINESCRIPT_UPDATES"
 echo "INSTALL_ADMINER = $INSTALL_ADMINER"
@@ -60,3 +60,4 @@ echo -e "${BOLD}\n\n--------------------\nMariaDB Version\n--------------------$
 mariadb -V
 echo -e "${BOLD}\n\n--------------------\nRedis Version\n--------------------${NORMAL}"
 redis-server --version
+echo ""

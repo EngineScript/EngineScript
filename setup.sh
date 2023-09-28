@@ -83,6 +83,7 @@ mkdir -p /home/EngineScript/config-backups/php
 mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
+mkdir -p /home/EngineScript/zImageOptimizer-time-marker
 touch /home/EngineScript/install-log.txt
 
 # Create EngineScript Aliases
