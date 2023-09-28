@@ -29,8 +29,9 @@ fi
 # Install
 mkdir -p /usr/local/src/Wordfence-CLI/
 rm -rf /usr/local/src/Wordfence-CLI/wordfence
+cd /usr/src
 wget -O /usr/src/wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz https://github.com/wordfence/wordfence-cli/releases/download/v${WORDFENCE_CLI_VER}/wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz --no-check-certificate
-tar -xvf /usr/src/wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz
+tar -xvf wordfence_${WORDFENCE_CLI_VER}_amd64_linux_exec.tar.gz
 mv /usr/src/wordfence /usr/local/src/Wordfence-CLI/wordfence
 
 # Make Results Directory
