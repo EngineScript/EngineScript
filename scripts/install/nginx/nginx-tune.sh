@@ -49,6 +49,17 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
     sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
 fi
 
+# Hash Bucket Size
+NGINX_HASH_BUCKET="$(cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size)"
+if [ "${NGINX_HASH_BUCKET}" = 128 ];
+  then
+    sed -i "s|SEDHASHBUCKETSIZE|128|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDHASHMAXSIZE|4096|g" /etc/nginx/nginx.conf
+  else
+    sed -i "s|SEDHASHBUCKETSIZE|64|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDHASHMAXSIZE|2048|g" /etc/nginx/nginx.conf
+fi
+
 # HTTP3
 if [ "${INSTALL_HTTP3}" = 1 ];
   then
