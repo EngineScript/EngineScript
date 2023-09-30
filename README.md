@@ -118,12 +118,11 @@ EngineScript will install the Cloudflare Super Page Cache plugin by default, as 
    *ao_speedup_cachebuster*
    /*jetpack=comms*
    /*removed_item*
-   /cart/*
-   /certificate/*
-   /checkout/*
-   /edd-api/*
-   /edd-sl/*
-   /feed/*
+   /cart*
+   /certificate*
+   /checkout*
+   /edd-*
+   /feed*
    /my-account*
    /my-courses*
    /order/*
