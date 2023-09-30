@@ -77,6 +77,12 @@ WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 # User Credentials #
 ####################
 
+# Ubuntu Pro
+# Optional - Enabled extra application security updates.
+# Sign up for a free account personal use account at:
+# https://ubuntu.com/pro
+UBUNTU_PRO_TOKEN="PLACEHOLDER"
+
 # Amazon S3
 # User creation:
 # Follow ONLY sections 2 and 3: https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user

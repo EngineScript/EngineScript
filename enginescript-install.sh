@@ -212,6 +212,12 @@ if [ "${BLOCK}" = 1 ];
     echo "BLOCK=1" >> /home/EngineScript/install-log.txt
 fi
 
+# Enabled Ubuntu Pro Apt Updates
+if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
+  then
+    pro attach ${UBUNTU_PRO_TOKEN}
+fi
+
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
