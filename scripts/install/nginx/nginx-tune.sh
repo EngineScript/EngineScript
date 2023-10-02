@@ -49,6 +49,35 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
     sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
 fi
 
+# Tuning Worker Connections
+# For Servers with 1GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
+  then
+    sed -i "s|SEDNGINXRLIMIT|1024|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDNGINXWORKERCONNECTIONS|512|g" /etc/nginx/nginx.conf
+fi
+
+# For Servers with 2GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+  then
+    sed -i "s|SEDNGINXRLIMIT|2048|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDNGINXWORKERCONNECTIONS|1024|g" /etc/nginx/nginx.conf
+fi
+
+# For Servers with 4GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
+  then
+    sed -i "s|SEDNGINXRLIMIT|8192|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDNGINXWORKERCONNECTIONS|4096|g" /etc/nginx/nginx.conf
+fi
+
+# For Servers with 8GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ];
+  then
+    sed -i "s|SEDNGINXRLIMIT|10240|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDNGINXWORKERCONNECTIONS|5120|g" /etc/nginx/nginx.conf
+fi
+
 # Hash Bucket Size
 NGINX_HASH_BUCKET="$(cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size)"
 if [ "${NGINX_HASH_BUCKET}" = 128 ];
