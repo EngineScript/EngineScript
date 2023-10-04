@@ -41,7 +41,6 @@ while true
           /usr/local/bin/enginescript/scripts/functions/logs/domain-logs.sh
           break
           ;;
-          /var/log/mysql/mysql-error.log
         "MariaDB")
           clear
           echo "${BOLD}Showing last 30 lines of MariaDB error log.${NORMAL}" | boxes -a c -d shell -p a1l2
