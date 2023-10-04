@@ -24,11 +24,8 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-cd /var/www/sites
-printf "Please select the site you want to scan for issues\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
-cd "$d"/html && echo "WP-CLI Doctor is running. Scan may take a bit, standby for results."
-wp doctor check --all --allow-root
+mariadb-check --auto-repair --check --flush --all-databases
+mariadb-check --auto-repair --check --flush --optimize --all-databases
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

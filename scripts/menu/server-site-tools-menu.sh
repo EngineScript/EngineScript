@@ -40,6 +40,14 @@ while true
           /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
+        "MariaDB-Check Database Optimizer")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh
+          break
+          ;;
+        "MySQLTuner")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
+          break
+          ;;
         "Update Domain Vhost File")
           echo "Option coming soon"
           sleep 3
@@ -51,10 +59,6 @@ while true
           ;;
         "View Server Logs")
           /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
-          break
-          ;;
-        "WP-CLI Doctor")
-          /usr/local/bin/enginescript/scripts/functions/server-tools/wp-cli-doctor.sh
           break
           ;;
         "Remove Domain (DANGER)")
