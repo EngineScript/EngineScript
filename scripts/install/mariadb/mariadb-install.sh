@@ -64,20 +64,20 @@ chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
-SERVER_MEMORY_TOTAL_017=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.017 }')" ))
+SERVER_MEMORY_TOTAL_023=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.023 }')" ))
+
+# tmp_table_size & max_heap_table_size
+sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_023}M|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_023}M|g" /etc/mysql/mariadb.cnf
+
+# Max Connections
+sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_023}|g" /etc/mysql/mariadb.cnf
 
 if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
   then
     sed -i "s|SEDLBS|32|g" /etc/mysql/mariadb.cnf
   else
     sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
-fi
-
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2500 ];
-  then
-    sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_017}|g" /etc/mysql/mariadb.cnf
-  else
-    sed -i "s|SEDMAXCON|151|g" /etc/mysql/mariadb.cnf
 fi
 
 if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
