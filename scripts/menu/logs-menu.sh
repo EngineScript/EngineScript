@@ -33,7 +33,7 @@ while true
     echo "Select an option to view the last 20 lines of logs."
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Domains" "Nginx" "PHP" "Redis" "Syslog" "Exit Server Logs")
+    secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "Exit Server Logs")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -41,28 +41,35 @@ while true
           /usr/local/bin/enginescript/scripts/functions/logs/domain-logs.sh
           break
           ;;
+          /var/log/mysql/mysql-error.log
+        "MariaDB")
+          clear
+          echo "${BOLD}Showing last 30 lines of MariaDB error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/mysql/mysql-error.log && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
         "Nginx")
           clear
-          echo "${BOLD}Showing last 20 lines of Nginx error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n20 /var/log/nginx/nginx.error.log && read -n 1 -s -r -p "Press any key to continue"
+          echo "${BOLD}Showing last 30 lines of Nginx error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/nginx/nginx.error.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "PHP")
           clear
-          echo "${BOLD}Showing last 20 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n20 /var/log/php/php${PHP_VER}-fpm.log && read -n 1 -s -r -p "Press any key to continue"
+          echo "${BOLD}Showing last 30 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/php/php${PHP_VER}-fpm.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Redis")
           clear
-          echo "${BOLD}Showing last 20 lines of Redis error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n20 /var/log/redis/redis.log && read -n 1 -s -r -p "Press any key to continue"
+          echo "${BOLD}Showing last 30 lines of Redis error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/redis/redis.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Syslog")
           clear
-          echo "${BOLD}Showing last 20 lines of Syslog.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n20 /var/log/syslog && read -n 1 -s -r -p "Press any key to continue"
+          echo "${BOLD}Showing last 30 lines of Syslog.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/syslog && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Exit Server Logs")
