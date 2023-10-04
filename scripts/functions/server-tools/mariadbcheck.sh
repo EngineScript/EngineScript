@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 mariadb-check --auto-repair --check --flush --all-databases
-mariadb-check --auto-repair --check --flush --optimize --all-databases
+mariadb-check --auto-repair --flush --optimize --all-databases
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""
