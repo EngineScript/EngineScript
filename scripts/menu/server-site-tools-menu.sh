@@ -28,11 +28,11 @@ fi
 while true
   do
     clear
-    echo -e "Server & Site Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Server Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "View Server Logs" "WP-CLI Doctor" "Remove Domain (DANGER)" "Exit Server & Site Tools")
+    secoptions=("Configure New Domain" "MariaDB-Check Database Optimizer" "MySQLTuner" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -57,15 +57,11 @@ while true
           nano /home/EngineScript/enginescript-install-options.txt
           break
           ;;
-        "View Server Logs")
-          /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
-          break
-          ;;
         "Remove Domain (DANGER)")
           /usr/local/bin/enginescript/scripts/install/vhost/vhost-remove.sh
           break
           ;;
-        "Exit Server & Site Tools")
+        "Exit Server Tools")
           exit
           ;;
         *) echo invalid option;;
