@@ -181,7 +181,7 @@ while true;
 export CF_Key="${CF_GLOBAL_API_KEY}"
 export CF_Email="${CF_ACCOUNT_EMAIL}"
 
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server letsencrypt -d ${DOMAIN} -d *.${DOMAIN} -k ec-384
+/root/.acme.sh/acme.sh --issue --dns dns_cf --server letsencrypt --ocsp -d ${DOMAIN} -d *.${DOMAIN} -k ec-384
 
 /root/.acme.sh/acme.sh --install-cert -d ${DOMAIN} --ecc \
 --cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \
