@@ -32,7 +32,7 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Configure New Domain" "MariaDB-Check Database Optimizer" "MySQLTuner" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit Server Tools")
+    secoptions=("Configure New Domain" "MariaDB-Check Database Optimizer" "MySQLTuner" "Testssl.sh" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -46,6 +46,10 @@ while true
           ;;
         "MySQLTuner")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
+          break
+          ;;
+        "Testssl.sh")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
           break
           ;;
         "Update Domain Vhost File")

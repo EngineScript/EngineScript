@@ -99,6 +99,9 @@ fi
 # phpSysinfo
 #/usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
 
+# Testssl.sh
+/usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
+
 # Webmin
 if [ "${INSTALL_WEBMIN}" = 1 ];
   then
