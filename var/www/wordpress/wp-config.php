@@ -42,7 +42,7 @@ define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
 //define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
 //define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
 //define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' );
-define( 'WP_REDIS_MAXTTL', '300' );
+define( 'WP_REDIS_MAXTTL', '3600' );
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
 define( 'WP_REDIS_PATH', '/run/redis/redis-server.sock' );
 define( 'WP_REDIS_PREFIX', 'SEDREDISPREFIX' );
