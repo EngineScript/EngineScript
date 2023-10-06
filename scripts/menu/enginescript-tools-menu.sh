@@ -32,35 +32,28 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Backup All Domains" "Clear All Caches" "Dispay Server Info" "Fix Permissions" "Optimize All Images" "Testssl.sh" "Exit Server Tools")
+    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Backup All Domains")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
+        "Configure New Domain")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
-        "Clear All Caches")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
+        "Update Domain Vhost File")
+          echo "Option coming soon"
+          sleep 3
           break
           ;;
-        "Dispay Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+        "View/Edit EngineScript Install Options File")
+          nano /home/EngineScript/enginescript-install-options.txt
           break
           ;;
-        "Fix Permissions")
-          /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
+        "Remove Domain (DANGER)")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-remove.sh
           break
           ;;
-        "Optimize All Images")
-          /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
-          break
-          ;;
-        "Testssl.sh")
-          /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
-          break
-          ;;
-        "Exit Server Tools")
+        "Exit EngineScript Tools")
           exit
           ;;
         *) echo invalid option;;

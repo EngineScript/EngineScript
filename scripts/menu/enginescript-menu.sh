@@ -51,12 +51,20 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Configure New Domain" "Security Tools" "Server Tools" "Update Software" "View Server Logs" "Exit EngineScript")
+    options=("Configure New Domain" "Database Tools" "EngineScript Tools" "Security Tools" "Server Tools" "Update Software" "View Server Logs" "Exit EngineScript")
     select opt in "${options[@]}"
     do
       case $opt in
         "Configure New Domain")
           /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
+          break
+          ;;
+        "Database Tools")
+          /usr/local/bin/enginescript/scripts/menu/database-tools-menu.sh
+          break
+          ;;
+        "EngineScript Tools")
+          /usr/local/bin/enginescript/scripts/menu/enginescript-tools-menu.sh
           break
           ;;
         "Security Tools")

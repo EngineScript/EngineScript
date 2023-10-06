@@ -32,32 +32,24 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Backup All Domains" "Clear All Caches" "Dispay Server Info" "Fix Permissions" "Optimize All Images" "Testssl.sh" "Exit Server Tools")
+    secoptions=("Analyze All Tables & Databases" "MariaDB-Check Database Optimizer" "MySQLreport" "MySQLtuner" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Backup All Domains")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
+        "Analyze All Tables & Databases")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/analyze-tables.sh
           break
           ;;
-        "Clear All Caches")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
+        "MariaDB-Check Database Optimizer")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh
           break
           ;;
-        "Dispay Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+        "MySQLreport")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
           break
           ;;
-        "Fix Permissions")
-          /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
-          break
-          ;;
-        "Optimize All Images")
-          /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
-          break
-          ;;
-        "Testssl.sh")
-          /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
+        "MySQLtuner")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
           break
           ;;
         "Exit Server Tools")
