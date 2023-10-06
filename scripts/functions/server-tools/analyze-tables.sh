@@ -47,6 +47,7 @@ mysql ${MYSQL_AUTH} --table < ${RUN_SQL} > ${RUN_LOG} 2>&1
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""
+echo "${BOLD}Done${NORMAL}"
 echo "Analyze Table Log: /tmp/analyze_all_tables.log"
 echo ""
 read -n 1 -s -r -p "Press any key to continue"
