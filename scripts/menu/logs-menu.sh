@@ -62,7 +62,7 @@ while true
         "Redis")
           clear
           echo "${BOLD}Showing last 30 lines of Redis error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/redis/redis.log && read -n 1 -s -r -p "Press any key to continue"
+          tail -n30 /var/log/redis/redis-server.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Syslog")

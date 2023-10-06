@@ -65,6 +65,8 @@ chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
 SERVER_MEMORY_TOTAL_024=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.024 }')" ))
+SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
+SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 
 # tmp_table_size & max_heap_table_size
 sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_024}M|g" /etc/mysql/mariadb.cnf
