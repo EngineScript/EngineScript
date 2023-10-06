@@ -32,7 +32,7 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit Server Tools")
+    secoptions=("Configure New Domain" "Update Domain Vhost File" "View/Edit EngineScript Install Options File" "Remove Domain (DANGER)" "Exit EngineScript Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in

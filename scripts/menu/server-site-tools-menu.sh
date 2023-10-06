@@ -38,10 +38,20 @@ while true
       case $secopt in
         "Backup All Domains")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Clear All Caches")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Dispay Server Info")
@@ -50,14 +60,29 @@ while true
           ;;
         "Fix Permissions")
           /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Optimize All Images")
           /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Testssl.sh")
           /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Exit Server Tools")
