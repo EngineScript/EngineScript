@@ -296,6 +296,7 @@ wp plugin install php-compatibility-checker --allow-root
 wp plugin install redis-cache --allow-root
 wp plugin install theme-check --allow-root
 wp plugin install wp-cloudflare-page-cache --allow-root
+wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
