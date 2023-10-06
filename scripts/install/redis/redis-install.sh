@@ -32,7 +32,7 @@ apt install -qy redis-server redis-tools
 #mkdir -p /var/lib/redis
 #mkdir -p /var/log/redis
 touch /var/log/redis/redis-server.log
-find /var/log/redis -type d,f -exec chmod 775 {} \;
+find /var/lib/redis -type d,f -exec chmod 775 {} \;
 find /var/lib/redis -type d,f -exec chmod 775 {} \;
 chmod 775 /run/redis
 chmod 775 /var/lib/redis

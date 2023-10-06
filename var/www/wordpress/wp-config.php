@@ -104,13 +104,13 @@ define('PERFLAB_DISABLE_OBJECT_CACHE_DROPIN', true);
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
 define( 'DISABLE_NAG_NOTICES', true );
 
-/* The SEO Framework Headless Mode */
-// https://kb.theseoframework.com/kb/headless-mode/
-//define( 'THE_SEO_FRAMEWORK_HEADLESS', true );
-
 /* WP-CLI */
 define( 'WP_CLI_BIN_DIR', '/tmp/wp-cli-phar' );
 define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
+
+/* The SEO Framework Headless Mode */
+// https://kb.theseoframework.com/kb/headless-mode/
+//define( 'THE_SEO_FRAMEWORK_HEADLESS', true );
 
 /* Contact Form 7 */
 //define( 'WPCF7_UPLOADS_TMP_DIR', '/var/www/sites/SEDURL/wp-content/uploads/wpcf7_uploads' );
@@ -146,13 +146,13 @@ define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, 
 /* Debug */
 define( 'WP_DEBUG', false ); // Set to true if you want to debug
 define( 'CONCATENATE_SCRIPTS', true ); // Setting to false may fix java issues in dashboard only
+//define( 'RECOVERY_MODE_EMAIL', 'mike@example.com' ); // Set a recovery mode email.
 define( 'SAVEQUERIES', false ); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
 define( 'SCRIPT_DEBUG', false ); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
 define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.
 define( 'WP_DEBUG_DISPLAY', false ); // Displays logs within browser on site. Not for production environments.
 define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
 //define( 'WP_SANDBOX_SCRAPING', true ); // Turn off WSOD Protection (and don't send email notification)
-//define( 'RECOVERY_MODE_EMAIL', 'mike@example.com' ); // Set a recovery mode email.
 
 /* Theme Check Plugin */
 // https://wordpress.org/plugins/theme-check/
