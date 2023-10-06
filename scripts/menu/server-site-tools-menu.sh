@@ -37,8 +37,10 @@ while true
     do
       case $secopt in
         "Backup All Domains")
+          echo "Backing up all domains..."
           /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
           echo ""
+          echo "Done!"
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
           echo ""
@@ -46,8 +48,10 @@ while true
           break
           ;;
         "Clear All Caches")
+          echo "Clearing all caches..."
           /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
           echo ""
+          echo "Done!"
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
           echo ""
@@ -57,6 +61,7 @@ while true
         "Dispay Server Info")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
           echo ""
+          echo "Done!"
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
           echo ""
@@ -64,8 +69,10 @@ while true
           break
           ;;
         "Fix Permissions")
+          echo "Fixing permissions for all domains..."
           /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
           echo ""
+          echo "Done!"
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
           echo ""
@@ -73,8 +80,10 @@ while true
           break
           ;;
         "Optimize All Images")
+          echo "Optimizing images in /uploads directory for all domains..."
           /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
           echo ""
+          echo "Done!"
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
           echo ""
