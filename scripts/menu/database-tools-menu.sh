@@ -38,24 +38,14 @@ while true
       case $secopt in
         "Analyze All Tables & Databases")
           /usr/local/bin/enginescript/scripts/functions/server-tools/analyze-tables.sh
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
           break
           ;;
         "MariaDB-Check Database Optimizer")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
           break
           ;;
         "MySQLreport")
-          /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
+          mysqlreport
           echo ""
           echo ""
           read -n 1 -s -r -p "Press any key to continue"
@@ -65,11 +55,6 @@ while true
           ;;
         "MySQLtuner")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
           break
           ;;
         "Exit Server Tools")

@@ -56,6 +56,11 @@ while true
           ;;
         "Dispay Server Info")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+          echo ""
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
           break
           ;;
         "Fix Permissions")
