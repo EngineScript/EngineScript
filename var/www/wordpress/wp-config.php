@@ -35,7 +35,7 @@ define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
 define( 'NONCE_SALT',       'put your unique phrase here' );
 
 /* Redis Object Cache */
-define( 'WP_REDIS_DATABASE', 0 ); // 0-15
+define( 'WP_REDIS_DATABASE', 0 ); // EngineScript scales this based on the number of installed domains
 define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
 //define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
 //define( 'WP_REDIS_DISABLE_METRICS', 'true' );

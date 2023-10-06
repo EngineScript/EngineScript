@@ -243,6 +243,26 @@ sed -i "s|SEDWPUSER|${USR}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPPASS|${PSWD}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDPREFIX|${PREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+
+# Redis Config
+# Scale Redis Databases to Number of Installed Domains
+source /home/EngineScript/sites-list/sites.sh
+if [ "${#SITES[@]}" = 1 ];
+  then
+    # If number of installed domains = 1, leave Redis at 1 database and WordPress set to use database 0
+    echo "There is only 1 domain in the site list. Not adding additional Redis databases."
+  else
+    # Raise number of Redis databases to equal number of domains in sites.sh
+    OLDREDISDB=$((${#SITES[@]} - 1))
+    sed -i "s|databases ${OLDREDISDB}|databases ${#SITES[@]}|g" /etc/redis/redis.conf
+    service redis-server restart
+
+    # Set WordPress to use the latest Redis database number.
+    # Redis starts databases at number 0, so we take the total number of domains in sites.sh and reduce by 1. Three installed domains = database 2
+    sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+fi
+
+# Set Redis Prefix
 REDISPREFIX="$(echo ${DOMAIN::5})" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # WP Salt Creation
