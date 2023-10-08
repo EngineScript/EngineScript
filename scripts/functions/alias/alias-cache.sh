@@ -26,6 +26,9 @@ fi
 
 echo -e "\nClearing Caches\n\n"
 
+# Include config
+source /home/EngineScript/sites-list/sites.sh
+
 for i in "${SITES[@]}"
 do
   echo "Deleting ${i} Transients"
