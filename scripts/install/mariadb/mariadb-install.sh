@@ -74,7 +74,7 @@ sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_024}M|g" /etc/mysql/mariadb.cnf
 
 # Max Connections
 # Scales to be near the MariaDB default value on a 4GB server
-sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_04}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/mariadb.cnf
 
 if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
   then

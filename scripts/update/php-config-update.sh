@@ -46,25 +46,25 @@ calculate_php() {
   # For Servers with 1GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
     then
-      sed -i "s|pm.max_children = 10|pm.max_children = 6|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|pm.max_children = 10|pm.max_children = 7|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
   # For Servers with 2GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
     then
-      sed -i "s|pm.max_children = 10|pm.max_children = 12|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|pm.max_children = 10|pm.max_children = 14|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
   # For Servers with 4GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
     then
-      sed -i "s|pm.max_children = 10|pm.max_children = 22|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|pm.max_children = 10|pm.max_children = 28|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
   # For Servers with 8GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ];
     then
-      sed -i "s|pm.max_children = 10|pm.max_children = 44|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|pm.max_children = 10|pm.max_children = 56|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
   # Memory Limit
