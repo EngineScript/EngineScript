@@ -64,13 +64,12 @@ chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
-SERVER_MEMORY_TOTAL_024=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.024 }')" ))
 SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 
 # tmp_table_size & max_heap_table_size
-sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_024}M|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_024}M|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
 
 # Max Connections
 # Scales to be near the MariaDB default value on a 4GB server
@@ -95,6 +94,30 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
     sed -i "s|SEDTOC|2000|g" /etc/mysql/mariadb.cnf
   else
     sed -i "s|SEDTOC|4000|g" /etc/mysql/mariadb.cnf
+fi
+
+# For Servers with 1GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
+  then
+    sed -i "s|SEDINOF|1000|g" /etc/mysql/mariadb.cnf
+fi
+
+# For Servers with 2GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+  then
+    sed -i "s|SEDINOF|2000|g" /etc/mysql/mariadb.cnf
+fi
+
+# For Servers with 4GB RAM
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
+  then
+    sed -i "s|SEDINOF|4000|g" /etc/mysql/mariadb.cnf
+fi
+
+# For Servers with 8GB RAM+
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
+  then
+    sed -i "s|SEDINOF|8000|g" /etc/mysql/mariadb.cnf
 fi
 
 sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/mariadb.cnf

@@ -28,25 +28,18 @@ fi
 sed -i "s|SEDSERVERMEM03|${SERVER_MEMORY_TOTAL_03}|g" /etc/nginx/nginx.conf
 sed -i "s|SEDSERVERMEM05|${SERVER_MEMORY_TOTAL_05}|g" /etc/nginx/nginx.conf
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
   then
-    sed -i "s|SEDFCGIBUFFERS|16 16k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUFFERS|16 32k|g" /etc/nginx/nginx.conf
   else
-    sed -i "s|SEDFCGIBUFFERS|32 16k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUFFERS|32 32k|g" /etc/nginx/nginx.conf
 fi
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
   then
-    sed -i "s|SEDFCGIBUSYBUFFERS|48k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUSYBUFFERS|128k|g" /etc/nginx/nginx.conf
   else
-    sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
-fi
-
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 2800 ];
-  then
-    sed -i "s|SEDFCGIBUSYBUFFERS|48k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGIBUSYBUFFERS|64k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUSYBUFFERS|256k|g" /etc/nginx/nginx.conf
 fi
 
 # Tuning Worker Connections
@@ -71,8 +64,8 @@ if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
     sed -i "s|SEDNGINXWORKERCONNECTIONS|4096|g" /etc/nginx/nginx.conf
 fi
 
-# For Servers with 8GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ];
+# For Servers with 8GB RAM+
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
   then
     sed -i "s|SEDNGINXRLIMIT|10240|g" /etc/nginx/nginx.conf
     sed -i "s|SEDNGINXWORKERCONNECTIONS|5120|g" /etc/nginx/nginx.conf

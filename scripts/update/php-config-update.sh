@@ -61,8 +61,8 @@ calculate_php() {
       sed -i "s|pm.max_children = 10|pm.max_children = 28|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
-  # For Servers with 8GB RAM
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ];
+  # For Servers with 8GB RAM+
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 56|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
@@ -74,8 +74,8 @@ calculate_php() {
       sed -i "s|memory_limit = SEDMEMLM|memory_limit = 265M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
-  # For Servers with 8GB RAM
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ];
+  # For Servers with 8GB RAM+
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
       sed -i "s|memory_limit = SEDMEMLM|memory_limit = 512M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
