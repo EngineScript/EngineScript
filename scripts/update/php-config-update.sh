@@ -89,7 +89,7 @@ calculate_php() {
   fi
 
   sed -i "s|SEDOPCACHEJITBUFFER|${SERVER_MEMORY_TOTAL_03}|g" /etc/php/${PHP_VER}/fpm/php.ini
-  sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_13}|g" /etc/php/${PHP_VER}/fpm/php.ini
+  sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_08}|g" /etc/php/${PHP_VER}/fpm/php.ini
 
 }
 
