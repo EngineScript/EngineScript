@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # Create Swap File
-fallocate -l 2G /swapfile
+fallocate -l 3G /swapfile
 mkswap /swapfile
 echo "Setting correct swapfile permissions: cmod 0600"
 sudo chmod 0600 /swapfile
