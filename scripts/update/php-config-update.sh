@@ -81,11 +81,11 @@ calculate_php() {
   fi
 
 # OpCache Tuning
-  if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
     then
       sed -i "s|SEDOPCACHEINTBUF|16|g" /etc/php/${PHP_VER}/fpm/php.ini
     else
-      sed -i "s|SEDOPCACHEINTBUF|${SERVER_MEMORY_TOTAL_01}|g" /etc/php/${PHP_VER}/fpm/php.ini
+      sed -i "s|SEDOPCACHEINTBUF|64|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   sed -i "s|SEDOPCACHEJITBUFFER|${SERVER_MEMORY_TOTAL_03}|g" /etc/php/${PHP_VER}/fpm/php.ini
