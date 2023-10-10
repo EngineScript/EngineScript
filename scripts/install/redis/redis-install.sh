@@ -43,7 +43,7 @@ chmod 775 /var/log/redis
 
 cp -rf /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
-sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
+#sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
 sed -i "s|--daemonize no|--daemonize yes|g" /lib/systemd/system/redis-server.service
 sed -i "s|ReadWritePaths=-/var/run|ReadWritePaths=-/run|g" /lib/systemd/system/redis-server.service
 chown -R redis:redis /etc/redis/redis.conf
