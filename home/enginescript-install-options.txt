@@ -136,13 +136,6 @@ WP_ADMIN_PASSWORD="PLACEHOLDER"
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"
 
-# Wordfence CLI Malware Scanner
-# Optional - If you don't want to use Wordfence CLI Malware Scanner, leave this alone.
-# Free for personal use.
-# This is used to scan WordPress for known vulnerabilities.
-# Create your token at https://www.wordfence.com/products/wordfence-cli/
-WORDFENCE_CLI_TOKEN="PLACEHOLDER"
-
 # WP Scan
 # Optional - If you don't want to use WP Scan, leave this alone.
 # This is used to scan WordPress for known vulnerabilities.
