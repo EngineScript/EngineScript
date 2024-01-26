@@ -7,14 +7,14 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="OCTOBER 6TH 2023"
+VARIABLES_DATE="JANUARY 26TH 2024"
 
 # Software Versions
 MARIADB_VER="10.11"
-NGINX_HEADER_VER="0.34"
+NGINX_HEADER_VER="0.37"
 NGINX_PURGE_VER="2.5.3"
-NGINX_VER="1.25.2"
-OPENSSL_VER="3.1.3"
+NGINX_VER="1.25.3"
+OPENSSL_VER="3.2.0"
 PCRE2_VER="10.42"
 PHP_VER="8.1"
 PHPMYADMIN_VER="5.2.1"
