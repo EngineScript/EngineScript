@@ -194,6 +194,7 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
 |**`es.config`**    |Opens the configuration file in Nano |
 |**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
+|**`es.info`**    |Displays server information |
 |**`es.install`**	  |Runs the main EngineScript installation script |
 |**`es.menu`**	    |EngineScript menu |
 |**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
