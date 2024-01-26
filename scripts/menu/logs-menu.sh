@@ -28,7 +28,7 @@ fi
 while true
   do
     clear
-    echo -e "Server Logs | boxes -a c -d shell -p a1l2"
+    echo -e "Server Logs" | boxes -a c -d shell -p a1l2
     echo ""
     echo "Select an option to view the last 20 lines of logs."
     echo ""
