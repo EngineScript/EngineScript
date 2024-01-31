@@ -29,6 +29,7 @@ NOW=$(date +%m-%d-%Y-%H)
 
 # Filenames
 DATABASE_FILE="${NOW}-database.sql";
+FULLWPFILES="${NOW}-wordpress-files.gz";
 NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
 PHP_FILE="${NOW}-php.tar.gz";
 SSL_FILE="${NOW}-ssl-keys.gz";
