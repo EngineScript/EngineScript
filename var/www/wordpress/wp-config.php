@@ -34,21 +34,22 @@ define( 'SECURE_AUTH_SALT', 'put your unique phrase here' );
 define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
 define( 'NONCE_SALT',       'put your unique phrase here' );
 
-/* Redis Object Cache */
+/* Redis Object Cache Plugin */
 define( 'WP_REDIS_DATABASE', 0 ); // EngineScript scales this based on the number of installed domains
 define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
+//define( 'WP_REDIS_FLUSH_TIMEOUT', 5 ); // Experimental
 //define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
 //define( 'WP_REDIS_DISABLE_METRICS', 'true' );
 //define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
 //define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
-//define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' );
+//define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' ); // Unsupported / SLOW
 define( 'WP_REDIS_MAXTTL', '43200' ); // 43200 seconds = 12 hours
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
 define( 'WP_REDIS_PATH', '/run/redis/redis-server.sock' );
 define( 'WP_REDIS_PREFIX', 'SEDREDISPREFIX' );
 define( 'WP_REDIS_READ_TIMEOUT', 1 );
 define( 'WP_REDIS_SCHEME', 'unix' );
-//define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported Feature
+//define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported / SLOW
 define( 'WP_REDIS_TIMEOUT', 1 );
 
 /* Nginx Helper FastCGI Cache Plugin */
@@ -182,7 +183,6 @@ define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only
 /* Security Headers */
 // Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
 //header( 'X-Frame-Options: SAMEORIGIN' );
-//header( 'X-XSS-Protection: 1; mode=block' );
 //header( 'X-Content-Type-Options: nosniff' );
 //header( 'Referrer-Policy: no-referrer' );
 //header( 'Expect-CT enforce; max-age=3600' );
