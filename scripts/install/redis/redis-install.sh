@@ -41,13 +41,36 @@ chmod 775 /var/log/redis
 #chown -R redis:redis /var/lib/redis
 #chown -R redis:redis /var/log/redis
 
+# Copy Redis Config File
 cp -rf /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
+
+# Redis Tuning
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
+
+if [[ "${CPU_COUNT}" -ge '16' ]]; then
+  sed -i "s|^# io-threads 4|io-threads 8|" /etc/redis/redis.conf
+  sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
+  elif [[ "${CPU_COUNT}" -ge '12' && "${CPU_COUNT}" -le '15' ]]; then
+    sed -i "s|^# io-threads 4|io-threads 6|" /etc/redis/redis.conf
+    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
+  elif [[ "${CPU_COUNT}" -ge '7' && "${CPU_COUNT}" -le '11' ]]; then
+    sed -i "s|^# io-threads 4|io-threads 4|" /etc/redis/redis.conf
+    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
+  elif [[ "${CPU_COUNT}" -ge '4' && "${CPU_COUNT}" -le '6' ]]; then
+    sed -i "s|^# io-threads 4|io-threads 2|" /etc/redis/redis.conf
+    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
+  fi
+
+# Redis Service
 #sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
 sed -i "s|--daemonize no|--daemonize yes|g" /lib/systemd/system/redis-server.service
 sed -i "s|ReadWritePaths=-/var/run|ReadWritePaths=-/run|g" /lib/systemd/system/redis-server.service
+
+# Permissions
 chown -R redis:redis /etc/redis/redis.conf
 chmod 775 /etc/redis/redis.conf
+
+# Finalize Redis Install
 systemctl daemon-reload
 service redis-server restart
 sudo systemctl enable redis-server
@@ -55,9 +78,9 @@ sudo systemctl enable redis-server
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: Redis is running."
-    echo "REDIS=1" >> /home/EngineScript/install-log.txt
+  echo "PASSED: Redis is running."
+  echo "REDIS=1" >> /home/EngineScript/install-log.txt
 else
-    echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
