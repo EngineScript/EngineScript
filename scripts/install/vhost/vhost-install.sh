@@ -30,46 +30,46 @@ echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: MariaDB is running."
+  echo "PASSED: MariaDB is running."
 else
-    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 # MySQL Service Check
 STATUS="$(systemctl is-active mysql)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: MySQL is running."
+  echo "PASSED: MySQL is running."
 else
-    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: Nginx is running."
+  echo "PASSED: Nginx is running."
 else
-    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 # PHP Service Check
 STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: PHP ${PHP_VER} is running."
+  echo "PASSED: PHP ${PHP_VER} is running."
 else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: Redis is running."
+  echo "PASSED: Redis is running."
 else
-    echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 # Intro Warning
@@ -231,6 +231,7 @@ cd /var/www/sites/${SITE_URL}/html
 # Domain Logs
 mkdir -p /var/log/domains/${SITE_URL}
 touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
+touch /var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log
 chown -R www-data:www-data /var/log/domains/${SITE_URL}
 
 # Download WordPress using WP-CLI

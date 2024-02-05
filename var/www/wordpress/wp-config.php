@@ -51,8 +51,9 @@ define( 'WP_REDIS_SCHEME', 'unix' );
 //define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported Feature
 define( 'WP_REDIS_TIMEOUT', 1 );
 
-/* Nginx Helper FastCGI Cache Path */
+/* Nginx Helper FastCGI Cache Plugin */
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );
+define( 'NGINX_HELPER_LOG','/var/log/domains/SEDURL/SEDURL-nginx-helper.log' );
 
 /* SSL */
 define( 'FORCE_SSL_ADMIN', true );
