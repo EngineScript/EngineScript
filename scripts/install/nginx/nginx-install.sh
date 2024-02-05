@@ -77,10 +77,10 @@ fi
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: Nginx is running."
-    echo "NGINX=1" >> /home/EngineScript/install-log.txt
+  echo "PASSED: Nginx is running."
+  echo "NGINX=1" >> /home/EngineScript/install-log.txt
 else
-    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
+  echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
     exit 1
 fi
 

@@ -71,11 +71,11 @@ service php${PHP_VER}-fpm restart
 # PHP Service Check
 STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
 if [ "${STATUS}" = "active" ]; then
-    echo "PASSED: PHP ${PHP_VER} is running."
-    echo "PHP=1" >> /home/EngineScript/install-log.txt
+  echo "PASSED: PHP ${PHP_VER} is running."
+  echo "PHP=1" >> /home/EngineScript/install-log.txt
 else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
-    exit 1
+  echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
+  exit 1
 fi
 
 echo ""
