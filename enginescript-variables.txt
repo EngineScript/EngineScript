@@ -7,23 +7,22 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="JANUARY 30TH 2024"
+VARIABLES_DATE="MARCH 1ST 2024"
 
 # Software Versions
 MARIADB_VER="10.11"
 NGINX_HEADER_VER="0.37"
 NGINX_PURGE_VER="2.5.3"
-NGINX_VER="1.25.3"
-OPENSSL_VER="3.2.0"
-PCRE2_VER="10.42"
+NGINX_VER="1.25.4"
+OPENSSL_VER="3.2.1"
+PCRE2_VER="10.43"
 PHP_VER="8.1"
 PHPMYADMIN_VER="5.2.1"
 PNGOUT_VER="20200115"
-WORDFENCE_CLI_VER="3.0.1"
-ZLIB_VER="1.3"
+ZLIB_VER="1.3.1"
 
 # No Longer Used
-WORDFENCE_CLI_VER="3.0.1"
+WORDFENCE_CLI_VER="3.0.2"
 
 # Old Software Versions
 OLDPHP="8.0"
