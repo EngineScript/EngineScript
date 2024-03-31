@@ -25,6 +25,8 @@ fi
 # Start Main Script
 
 # Create Nginx Directories
+mkdir -p /etc/nginx/custom-global-directives
+mkdir -p /etc/nginx/custom-single-domain-directives
 mkdir -p /etc/nginx/globals
 mkdir -p /etc/nginx/restricted-access
 mkdir -p /etc/nginx/sites-available

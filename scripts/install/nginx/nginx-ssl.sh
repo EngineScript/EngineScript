@@ -29,6 +29,7 @@ fi
 # Ignore browser errors related to certificate validity.
 
 # Create Self-Signed SSL Certificate
-openssl req -new -newkey rsa:2048 -days 36500 -nodes -x509 \
-  -subj "/C=US/ST=Florida/L=Orlando/O=EngineScript/CN=${IP_ADDRESS}" \
-  -keyout /etc/nginx/ssl/localhost/localhost.key  -out /etc/nginx/ssl/localhost/localhost.crt
+openssl req -new -newkey -x509 rsa:4096 -sha256 -days 36500 -nodes \
+-keyout /etc/nginx/ssl/localhost/localhost.key -out /etc/nginx/ssl/localhost/localhost.crt \
+-subj "/C=US/ST=Florida/L=Orlando/O=EngineScript/CN=localhost" \
+-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
