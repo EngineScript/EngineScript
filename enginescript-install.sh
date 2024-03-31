@@ -311,15 +311,6 @@ if [ "${SFL}" = 1 ];
     echo "SFL=1" >> /home/EngineScript/install-log.txt
 fi
 
-# Kernel Update
-#if [ "${KERNEL_UPDATE}" = 1 ];
-#  then
-#    echo "KERNEL UPDATE script has already run."
-#  else
-#    /usr/local/bin/enginescript/scripts/install/kernel/kernel-update.sh
-#    echo "KERNEL_UPDATE=1" >> /home/EngineScript/install-log.txt
-#fi
-
 # NTP
 if [ "${NTP}" = 1 ];
   then

@@ -33,12 +33,16 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Update EngineScript" "Update MariaDB" "Update Nginx" "Update OpenSSL" "Update PHP" "Update Server Tools" "Update Ubuntu Distribution (apt full-upgrade)" "Update Ubuntu Software (apt upgrade)" "Exit Update Software Menu")
+    options=("Update EngineScript" "Update Kernel (experimental)" "Update MariaDB" "Update Nginx" "Update OpenSSL" "Update PHP" "Update Server Tools" "Update Ubuntu Distribution (apt full-upgrade)" "Update Ubuntu Software (apt upgrade)" "Exit Update Software Menu")
     select opt in "${options[@]}"
     do
       case $opt in
         "Update EngineScript")
           /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
+          break
+          ;;
+        "Update Kernel (experimental)")
+          /usr/local/bin/enginescript/scripts/install/kernel/kernel-update.sh
           break
           ;;
         "Update MariaDB")
