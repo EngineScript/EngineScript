@@ -25,7 +25,7 @@ fi
 # Start Main Script
 
 # Install Redis
-apt install -qy redis-server redis-tools
+apt install -qy redis redis-server redis-tools
 
 # Setup Redis
 #mkdir -p /run/redis
@@ -63,7 +63,7 @@ if [[ "${CPU_COUNT}" -ge '16' ]]; then
 
 # Redis Service
 #sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
-sed -i "s|--daemonize no|--daemonize yes|g" /lib/systemd/system/redis-server.service
+#sed -i "s|--daemonize no|--daemonize yes|g" /lib/systemd/system/redis-server.service
 sed -i "s|ReadWritePaths=-/var/run|ReadWritePaths=-/run|g" /lib/systemd/system/redis-server.service
 
 # Permissions
