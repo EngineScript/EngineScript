@@ -107,3 +107,6 @@ if [ "${INSTALL_HTTP3}" = 1 ];
   then
     sed -i "s|#add_header Alt-Svc|add_header Alt-Svc|g" /etc/nginx/globals/responseheaders.conf
 fi
+
+# References:
+# https://www.cloudbees.com/blog/tuning-nginx
