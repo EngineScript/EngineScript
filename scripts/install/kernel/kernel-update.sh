@@ -32,3 +32,4 @@ chmod +x /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kern
 
 # Install latest kernel
 bash /usr/local/bin/enginescript/scripts/install/kernel/ubuntu-mainline-kernel.sh -i --yes
+sudo apt install linux-headers-$(uname -r)
