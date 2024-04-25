@@ -28,8 +28,15 @@ fi
 cp -rf /usr/local/bin/enginescript/scripts/functions/cron/sites.sh /home/EngineScript/sites-list/sites.sh
 
 # Set Cron Jobs
+
 # Currently disabled:
 #   - compression-cron.sh
+
+# EngineScripts Emergency Updates (hourly)
+# This pulls and runs the latest version of the the emergency upgrade script from GitHub.
+# This allows EngineScript to self-heal in the event of a serious bug that would cause your server to not run correctly.
+# This file won't be used regularly.
+(crontab -l 2>/dev/null; echo "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1") | crontab -
 
 # WordPress Cron Ping (every 15 minutes)
 (crontab -l 2>/dev/null; echo "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1") | crontab -

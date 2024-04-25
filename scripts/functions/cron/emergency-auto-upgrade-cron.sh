@@ -24,28 +24,6 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-cd /usr/local/bin/enginescript
-git fetch origin master
-git reset --hard origin/master
-
-# EngineScript Permissions
-find /usr/local/bin/enginescript -type d,f -exec chmod 775 {} \;
-chown -R root:root /usr/local/bin/enginescript
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
-
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}EngineScript has been updated.${NORMAL}"
-echo ""
-echo "This update includes:"
-echo "    - EngineScript"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-
-# Updating files from previous versions
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh
+# Get Latest Version
+wget -O /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh https://raw.githubusercontent.com/EngineScript/EngineScript/master/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh --no-check-certificate
+sudo bash /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh

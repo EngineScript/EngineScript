@@ -7,7 +7,7 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="MARCH 1ST 2024"
+VARIABLES_DATE="APRIL 25 2024"
 
 # Software Versions
 MARIADB_VER="10.11"
