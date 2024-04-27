@@ -168,6 +168,12 @@ if [ "$WP_ADMIN_EMAIL" = PLACEHOLDER@PLACEHOLDER.com ];
     exit
 fi
 
+# Check/fix WordPress Recovery Email
+if [ "$WP_RECOVERY_EMAIL" = PLACEHOLDER@PLACEHOLDER.com ];
+	then
+    sed -i "s|PLACEHOLDER@PLACEHOLDER\.com|${WP_ADMIN_EMAIL}|g" /home/EngineScript/enginescript-install-options.txt
+fi
+
 # Check WordPress Admin Username
 if [ "$WP_ADMIN_USERNAME" = PLACEHOLDER ];
 	then

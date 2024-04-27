@@ -126,9 +126,11 @@ WEBMIN_USERNAME="PLACEHOLDER"
 WEBMIN_PASSWORD="PLACEHOLDER"
 
 # WordPress Admin
+# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
 WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
+WP_RECOVERY_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 
 # Pushbullet
 # Optional - If you don't want to use Pushbullet, leave this alone.

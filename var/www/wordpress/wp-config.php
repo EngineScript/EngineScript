@@ -56,6 +56,9 @@ define( 'WP_REDIS_TIMEOUT', 1 );
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );
 define( 'NGINX_HELPER_LOG','/var/log/domains/SEDURL/SEDURL-nginx-helper.log' );
 
+/* WordPress Cache */
+define( 'WP_CACHE', false ); // Leave this disabled since we use Nginx FastCGI Cache
+
 /* SSL */
 define( 'FORCE_SSL_ADMIN', true );
 define( 'FORCE_SSL_LOGIN', true );
@@ -148,7 +151,7 @@ define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, 
 /* Debug */
 define( 'WP_DEBUG', false ); // Set to true if you want to debug
 define( 'CONCATENATE_SCRIPTS', true ); // Setting to false may fix java issues in dashboard only
-//define( 'RECOVERY_MODE_EMAIL', 'mike@example.com' ); // Set a recovery mode email.
+define( 'RECOVERY_MODE_EMAIL', 'SEDWPRECOVERYEMAIL' ); // When any site visitor attempts loading your site and encounters a fatal error, WordPress will send an email outlining the error details.
 define( 'SAVEQUERIES', false ); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
 define( 'SCRIPT_DEBUG', false ); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
 define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.

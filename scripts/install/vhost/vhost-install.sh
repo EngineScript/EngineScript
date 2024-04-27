@@ -275,6 +275,9 @@ printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s /var/www/sites/${SITE_URL}/htm
 # WP Scan API Token
 sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
+# WP Recovery Email
+sed -i "s|SEDWPRECOVERYEMAIL|${WP_RECOVERY_EMAIL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+
 # Create robots.txt
 cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
