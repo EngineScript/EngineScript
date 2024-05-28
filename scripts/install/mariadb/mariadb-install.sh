@@ -28,7 +28,7 @@ fi
 curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=${MARIADB_VER} --skip-maxscale
 
 # Install MariaDB
-apt update
+apt update --allow-releaseinfo-change -y
 sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
 
 # Update

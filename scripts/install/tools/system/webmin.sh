@@ -56,7 +56,7 @@ wget -qO - https://download.webmin.com/jcameron-key.asc --no-check-certificate |
 sudo sh -c 'echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list'
 
 # Install
-apt update
+apt update --allow-releaseinfo-change -y
 apt install -qy webmin
 
 # Create Logs

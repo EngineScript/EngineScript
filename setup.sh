@@ -63,7 +63,7 @@ fi
 sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
 
 # Install Required Packages for Script
-apt update
+apt update --allow-releaseinfo-change -y
 apt install -y boxes dos2unix git nano pwgen software-properties-common tzdata unattended-upgrades
 apt full-upgrade -y
 apt dist-upgrade -y
@@ -100,7 +100,7 @@ fi
 apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y
 
 # Update & Upgrade
-apt update
+apt update --allow-releaseinfo-change -y
 apt upgrade -y
 
 # Set Time Zone
@@ -112,7 +112,7 @@ dpkg-reconfigure unattended-upgrades
 # HWE
 apt install --install-recommends linux-generic-hwe-22.04 -y
 
-apt update
+apt update --allow-releaseinfo-change -y
 apt upgrade -y
 
 # Remove old downloads

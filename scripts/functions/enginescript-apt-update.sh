@@ -25,5 +25,5 @@ fi
 # Start Main Script
 
 # Update & Upgrade
-apt update
+apt update --allow-releaseinfo-change -y
 apt upgrade -y
