@@ -6,7 +6,6 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
@@ -34,14 +33,15 @@ ufw allow 123/udp comment 'NTP'
 ufw allow 443 comment 'HTTPS'
 ufw allow 1022 comment 'Backup SSH port during dist upgrade'
 ufw allow 2048 comment 'RAILGUN'
-ufw allow 53682 comment 'RCLONE'
 ufw allow 32792 comment 'WEBMIN'
+ufw allow 53682 comment 'RCLONE'
+
 
 # UFW Reject Rules
 ufw reject 23 comment 'Unencrypted traffic not allowed'
 ufw reject 1194 comment 'VPN traffic not allowed'
 
 # UFW General Rules
-ufw logging low
 ufw default allow outgoing
 ufw default deny incoming
+ufw logging low

@@ -6,7 +6,6 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # EngineScript Variables
