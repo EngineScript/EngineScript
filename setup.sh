@@ -6,7 +6,6 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # Company:      VisiStruct / EngineScript
 # License:      GPL v3.0
-# OS:           Ubuntu 22.04 (jammy)
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
@@ -17,14 +16,30 @@ if [ "${EUID}" != 0 ];
     exit
 fi
 
-# Check if Ubuntu is 22.04. If not, exit.
-UBUNTU_CODENAME="$(lsb_release -sc)"
+LINUX_TYPE=`echo $(lsb_release -i | cut -d':' -f 2)`
+UBUNTU_RELEASE=`echo $(lsb_release -c | cut -d':' -f 2)`
+# Testing alternate verification method
+#if [[ ${LINUX_TYPE} != "Ubuntu" ]] || ! [[ $osver =~ ^(jammy|noble)$ ]];
 
-if [ "${UBUNTU_CODENAME}" != jammy ];
+if [ ${LINUX_TYPE} != "Ubuntu" ]
+  then
+    echo "EngineScript does not support ${LINUX_TYPE}. Please use Ubuntu 22.04 or 24.04"
+  else
+	   echo "$LINUX_TYPE"
+  fi
+
+# Check if Ubuntu is LTS Release (22.04 or 24.04). If not, exit.
+UBUNTU_VERSION="$(lsb_release -sr)"
+Jammy=22.04
+Noble=24.04
+
+if (( $(bc <<<"$UBUNTU_VERSION != $Jammy && $UBUNTU_VERSION != $Noble") ));
   then
     echo "ALERT:"
-    echo "EngineScript does not support Ubuntu ${UBUNTU_CODENAME}. We recommend using 22.04 jammy"
+    echo "EngineScript does not support Ubuntu ${UBUNTU_VERSION}. We recommend using an Ubuntu LTS release (version 22.04 or 24.04)"
     exit
+  else
+    echo "Current Ubuntu Version: ${UBUNTU_VERSION}"
 fi
 
 #----------------------------------------------------------------------------
@@ -110,7 +125,7 @@ dpkg-reconfigure tzdata
 dpkg-reconfigure unattended-upgrades
 
 # HWE
-apt install --install-recommends linux-generic-hwe-22.04 -y
+apt install --install-recommends linux-generic-hwe-{$UBUNTU_VERSION} -y
 
 apt update --allow-releaseinfo-change -y
 apt upgrade -y

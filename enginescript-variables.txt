@@ -7,15 +7,15 @@
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 # EngineScript Version
-VARIABLES_DATE="APRIL 25 2024"
+VARIABLES_DATE="SEPTEMBER 19 2024"
 
 # Software Versions
 MARIADB_VER="10.11"
 NGINX_HEADER_VER="0.37"
-NGINX_PURGE_VER="2.5.3"
-NGINX_VER="1.25.5"
-OPENSSL_VER="3.2.1"
-PCRE2_VER="10.43"
+NGINX_PURGE_VER="2.5.5"
+NGINX_VER="1.27.1"
+OPENSSL_VER="3.3.2"
+PCRE2_VER="10.44"
 PHP_VER="8.1"
 PHPMYADMIN_VER="5.2.1"
 PNGOUT_VER="20200115"
@@ -33,7 +33,7 @@ BIT_TYPE="$(uname -m)"
 CPU_COUNT="$(nproc --all)"
 DT="$(date +"%m-%d-%y")"
 IP_ADDRESS="$(ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')"
-LINUX_TYPE="$(lsb_release -si)"
+UBUNTU_TYPE="$(lsb_release -si)"
 RAND_CHAR2="$(pwgen -A01 2)"
 RAND_CHAR4="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1)"
 RAND_CHAR8="$(pwgen -1Bcns 8)"
@@ -53,7 +53,7 @@ SERVER_MEMORY_TOTAL_10="$(free -m | awk 'NR==2{printf "%d", $2*0.10 }')"
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"
 UBUNTU_CODENAME="$(lsb_release -sc)"
-UBUNTU_VER="$(lsb_release -sr)"
+UBUNTU_VERSION="$(lsb_release -sr)"
 
 # Shell text
 BOLD="$(tput bold)"
