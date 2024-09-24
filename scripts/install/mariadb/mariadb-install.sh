@@ -32,8 +32,7 @@ sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-cli
 
 # Update
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
-apt full-upgrade -y
-apt dist-upgrade -y
+apt upgrade -y
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
