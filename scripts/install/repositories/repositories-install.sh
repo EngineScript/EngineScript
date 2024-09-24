@@ -23,12 +23,6 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Canonical Partners
-add-apt-repository -yn "deb http://archive.canonical.com/ubuntu $(lsb_release -sc) partner"
-
-# Canonical Server Team Backports
-add-apt-repository -yn ppa:canonical-server/server-backports
-
 # GeoIP
 add-apt-repository -yn ppa:maxmind/ppa
 
@@ -43,9 +37,6 @@ add-apt-repository -yn ppa:git-core/ppa
 # PHP
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
 add-apt-repository -yn ppa:ondrej/php
-
-# phpMyAdmin
-add-apt-repository -yn ppa:phpmyadmin/ppa
 
 # Python
 add-apt-repository -yn ppa:deadsnakes/ppa
@@ -71,5 +62,20 @@ echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://pack
 # Universe
 add-apt-repository -yn universe
 
+UBUNTU_VERSION="$(lsb_release -sr)"
+if [ "${UBUNTU_VERSION}" = 22.04 ];
+  then
+    # Canonical Server Team Backports
+    add-apt-repository -yn ppa:canonical-server/server-backports
+
+    # phpMyAdmin
+    #add-apt-repository -yn ppa:phpmyadmin/ppa
+
+  else
+    echo "Skipping repos that don't support Ubuntu Noble 24.04"
+fi
+
 # Utilities
 #add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
+
+echo "Repo install completed on ${VARIABLES_DATE}"
