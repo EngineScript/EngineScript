@@ -125,7 +125,7 @@ dpkg-reconfigure tzdata
 dpkg-reconfigure unattended-upgrades
 
 # HWE
-apt install --install-recommends linux-generic-hwe-{$UBUNTU_VERSION} -y
+apt install --install-recommends linux-generic-hwe-${UBUNTU_VERSION} -y
 
 apt update --allow-releaseinfo-change -y
 apt upgrade -y
