@@ -45,8 +45,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-m64 -march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4 -Wp,-D_FORTIFY_SOURCE=2" \
-      --with-ld-opt="-ljemalloc -Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
+      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
@@ -61,6 +61,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-http_gunzip_module \
       --with-http_realip_module \
       --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
+      --add-module=/usr/src/ngx_brotli \
       --add-module=/usr/src/ngx_cache_purge-${NGINX_PURGE_VER} \
       --without-http_browser_module \
       --without-http_empty_gif_module \
@@ -74,6 +75,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --without-mail_smtp_module \
 
   else
+
+    # HTTP2
     ./configure \
       --prefix=/etc/nginx \
       --conf-path=/etc/nginx/nginx.conf \
@@ -90,8 +93,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-m64 -march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4 -Wp,-D_FORTIFY_SOURCE=2" \
-      --with-ld-opt="-ljemalloc -Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
+      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
@@ -105,6 +108,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-http_gunzip_module \
       --with-http_realip_module \
       --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
+      --add-module=/usr/src/ngx_brotli \
       --add-module=/usr/src/ngx_cache_purge-${NGINX_PURGE_VER} \
       --without-http_browser_module \
       --without-http_empty_gif_module \
@@ -119,12 +123,6 @@ if [ "${INSTALL_HTTP3}" = 1 ];
 
 fi
 
-  # Removed modules
-  # Brotli has a constantly changing codebase that does not issue stable releases, and thus could add instability to your server.
-  # Gzip static requires some mechanism to recreate new zip files for each static resource. This can be extremly problematic for a wordpress site with code that updates frequently.
-  # --add-module=/usr/src/ngx_brotli \
-  # --with-http_gzip_static_module \
-
   make -j${CPU_COUNT}
   #strip --strip-unneeded /usr/src/nginx/objs/nginx
   #make test
@@ -135,3 +133,5 @@ fi
 
   # Remove debug symbols
   strip -s /usr/sbin/nginx
+
+  checksec --format=json --file=/usr/sbin/nginx --extended | jq -r

@@ -27,7 +27,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh
 
 # Brotli
-#/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
 
 # Retrieve Latest Cloudflare Zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh

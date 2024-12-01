@@ -41,6 +41,28 @@ if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
     sed -i "s|SEDFCGIBUSYBUFFERS|256k|g" /etc/nginx/nginx.conf
 fi
 
+# Tune Nginx Threads and variables_hash_bucket_size
+# Note: Nginx Threads tuning not implemented yet
+
+# Get CPU information using lscpu and store it in a variable
+CPU_INFO=$(lscpu)
+
+# Extract specific information from the output
+CPU_MODEL=$(echo "$CPU_INFO" | grep "Model name:" | awk '{print $3,$4,$5,$6,$7,$8,$9}')
+CPU_CORES=$(echo "$CPU_INFO" | grep "CPU(s):" | awk '{print $2}')
+CPU_THREADS=$(echo "$CPU_INFO" | grep "Thread(s) per core:" | awk '{print $4}')
+CPU_CACHE=$(echo "$CPU_INFO" | grep "L1d cache:" | awk '{print $3}')
+
+# Print the extracted information
+echo "CPU Model: $CPU_MODEL"
+echo "Number of Cores: $CPU_CORES"
+echo "Threads per Core: $CPU_THREADS"
+echo "L3 Cache: $CPU_CACHE"
+
+# Calculate variables_hash_bucket_size
+# variables_hash_bucket_size should be 2x the CPU level 1 cache value
+sed -i "s|SEDHBS|$(lscpu | grep "L1d cache:" | awk '{print $3 * 2}')|g" /etc/nginx/nginx.conf
+
 # Tuning Worker Connections
 # For Servers with 1GB RAM
 if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
