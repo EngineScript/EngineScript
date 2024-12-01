@@ -46,54 +46,64 @@ calculate_php() {
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 7|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDOPCACHEJITBUFFER|64M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # For Servers with 2GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 14|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDOPCACHEJITBUFFER|64M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # For Servers with 4GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 28|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDOPCACHEJITBUFFER|96M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # For Servers with 8GB RAM+
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 56|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDOPCACHEJITBUFFER|128M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # Memory Limit
   # For Servers with 2GB RAM or less
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
     then
-      sed -i "s|memory_limit = SEDMEMLM|memory_limit = 265M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|memory_limit = SEDPHPVERMEMLIMIT|memory_limit = 265M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
   # For Servers with 8GB RAM+
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
-      sed -i "s|memory_limit = SEDMEMLM|memory_limit = 512M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|memory_limit = SEDPHPVERMEMLIMIT|memory_limit = 512M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   fi
 
-# OpCache Tuning
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
-    then
-      sed -i "s|SEDOPCACHEINTBUF|16|g" /etc/php/${PHP_VER}/fpm/php.ini
-    else
-      sed -i "s|SEDOPCACHEINTBUF|64|g" /etc/php/${PHP_VER}/fpm/php.ini
-  fi
+  # OpCache Tuning
+    if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+      then
+        sed -i "s|SEDOPCACHEINTBUF|16|g" /etc/php/${PHP_VER}/fpm/php.ini
+      else
+        sed -i "s|SEDOPCACHEINTBUF|64|g" /etc/php/${PHP_VER}/fpm/php.ini
+    fi
 
-  sed -i "s|SEDOPCACHEJITBUFFER|${SERVER_MEMORY_TOTAL_03}|g" /etc/php/${PHP_VER}/fpm/php.ini
-  sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_08}|g" /etc/php/${PHP_VER}/fpm/php.ini
+    sed -i "s|SEDOPCACHEMEM|${SERVER_MEMORY_TOTAL_08}|g" /etc/php/${PHP_VER}/fpm/php.ini
 
 }
 
 # Update PHP config
 cp -rf /usr/local/bin/enginescript/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php.ini
+
 cp -rf /usr/local/bin/enginescript/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf
+
 cp -rf /usr/local/bin/enginescript/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+
+# Tune PHP Configuration
 calculate_php

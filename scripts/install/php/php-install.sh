@@ -31,7 +31,7 @@ apt install -qy php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VE
 
 # Logrotate
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
+sed -i "s|rotate 12|rotate 5|g" /etc/logrotate.d/php${PHP_VER}-fpm
 
 # Backup PHP config
 /usr/local/bin/enginescript/scripts/functions/cron/php-backup.sh

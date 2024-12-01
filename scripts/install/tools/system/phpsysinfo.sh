@@ -27,6 +27,7 @@ fi
 rm -rf /var/www/admin/enginescript/phpsysinfo
 git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/enginescript/phpsysinfo
 cp -rf /usr/local/bin/enginescript/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
 
 # Set Permissions
 find /var/www/admin/enginescript/phpsysinfo -type d -print0 | sudo xargs -0 chmod 0755
