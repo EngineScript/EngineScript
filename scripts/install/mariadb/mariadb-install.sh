@@ -61,6 +61,9 @@ chown -R mysql:adm /var/log/mysql/mysql-error.log
 chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
+# Open Files Limit
+sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60666|g" /usr/lib/systemd/system/mariadb.service
+
 # Tune MariaDB
 SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
@@ -124,6 +127,9 @@ sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/mariadb.cnf
 sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/mariadb.cnf
 sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/mariadb.cnf
 sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/mariadb.cnf
+
+# Restart Service
+systemctl daemon-reload
 systemctl start mariadb.service
 
 # Check if services are running
