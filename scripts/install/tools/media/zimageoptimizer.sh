@@ -23,7 +23,13 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
 # Install zImageOptimizer
 rm -rf /usr/local/bin/zimageoptimizer
 git clone --depth 1 https://github.com/zevilz/zImageOptimizer.git -b master /usr/local/bin/zimageoptimizer
 find /usr/local/bin/zimageoptimizer -type d,f -exec chmod 755 {} \;
+
+# Return to /usr/src
+cd /usr/src

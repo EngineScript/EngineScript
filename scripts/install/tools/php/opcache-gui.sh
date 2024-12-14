@@ -23,6 +23,12 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
 # OpCache-GUI
 rm -rf /var/www/admin/enginescript/opcache-gui
 git clone --depth 1 https://github.com/amnuts/opcache-gui.git /var/www/admin/enginescript/opcache-gui
+
+# Return to /usr/src
+cd /usr/src

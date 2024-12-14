@@ -22,9 +22,16 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
+
+# Return to /usr/src
+cd /usr/src
+
 rm -rf /usr/src/liburing
 git clone --depth 1 https://github.com/axboe/liburing -b master /usr/src/liburing
 cd /usr/src/liburing
 make -j${CPU_COUNT}
 #make test
 make install
+
+# Return to /usr/src
+cd /usr/src

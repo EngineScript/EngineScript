@@ -23,8 +23,10 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Cloudflare zlib Download
+# Return to /usr/src
 cd /usr/src
+
+# Cloudflare zlib Download
 rm -rf /usr/src/zlib-cf
 git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 /usr/src/zlib-cf
 cd /usr/src/zlib-cf
@@ -53,3 +55,6 @@ make -f Makefile.in distclean
 # Official zlib Download
 wget -O /usr/src/zlib-${ZLIB_VER}.tar.gz https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz --no-check-certificate
 tar -xzvf /usr/src/zlib-${ZLIB_VER}.tar.gz
+
+# Return to /usr/src
+cd /usr/src

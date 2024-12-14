@@ -22,7 +22,12 @@ fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
+
+# Return to /usr/src
+cd /usr/src
+
 clear
+
 # Clone Git
 git clone --depth 1 https://github.com/andreafabrizi/Dropbox-Uploader.git -b master /usr/local/bin/dropbox-uploader
 
@@ -36,3 +41,6 @@ echo "We've sent the dropbox_uploader.sh script to your Dropbox folder. If it di
 /usr/local/bin/dropbox-uploader/dropbox_uploader.sh -k upload /usr/local/bin/dropbox-uploader/dropbox_uploader.sh .
 
 echo "Check your Dropbox"
+
+# Return to /usr/src
+cd /usr/src

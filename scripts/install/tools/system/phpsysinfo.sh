@@ -23,6 +23,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
 # phpSysinfo
 rm -rf /var/www/admin/enginescript/phpsysinfo
 git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/enginescript/phpsysinfo
@@ -48,3 +51,6 @@ echo ""
 echo ""
 
 sleep 5
+
+# Return to /usr/src
+cd /usr/src

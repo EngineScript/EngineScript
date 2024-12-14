@@ -23,6 +23,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
 # Remove Old Version
 rm -rf /usr/local/bin/testssl.sh
 
@@ -33,3 +36,6 @@ git clone https://github.com/drwetter/testssl.sh.git /usr/local/bin/testssl.sh
 find /usr/local/bin/testssl.sh -type d,f -exec chmod 755 {} \;
 chown -R root:root /usr/local/bin/testssl.sh
 find /usr/local/bin/testssl.sh -type f -iname "*.sh" -exec chmod +x {} \;
+
+# Return to /usr/src
+cd /usr/src
