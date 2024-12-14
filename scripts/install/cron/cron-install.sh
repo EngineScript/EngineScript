@@ -52,6 +52,9 @@ if [ "${HOURLY_LOCAL_DATABASE_BACKUP}" = 1 ];
     (crontab -l 2>/dev/null; echo "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash hourly-database-backup.sh >/dev/null 2>&1") | crontab -
 fi
 
+# System Cleanup (hourly)
+    (crontab -l 2>/dev/null; echo "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1") | crontab -
+
 # WP-Content Backup (weekly)
 if [ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" = 1 ];
   then
