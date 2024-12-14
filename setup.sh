@@ -16,6 +16,13 @@ if [ "${EUID}" != 0 ];
     exit
 fi
 
+if [ ${BIT_TYPE} != 'x86_64' ];
+  then
+    echo "EngineScript requires a 64-bit environment to run optimally."
+    exit
+fi
+
+
 LINUX_TYPE=`echo $(lsb_release -i | cut -d':' -f 2)`
 UBUNTU_RELEASE=`echo $(lsb_release -c | cut -d':' -f 2)`
 # Testing alternate verification method
@@ -83,6 +90,9 @@ apt install -y boxes dos2unix git nano pwgen software-properties-common tzdata u
 apt full-upgrade -y
 apt dist-upgrade -y
 
+# Return to /usr/src
+cd /usr/src
+
 # EngineScript Git Clone
 rm -rf /usr/local/bin/enginescript
 git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
@@ -100,6 +110,9 @@ mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
 #mkdir -p /home/EngineScript/zImageOptimizer-time-marker
 touch /home/EngineScript/install-log.txt
+
+# Return to /usr/src
+cd /usr/src
 
 # Create EngineScript Aliases
 source /home/EngineScript/install-log.txt
