@@ -53,6 +53,7 @@ echo "HOURLY_DROPBOX_DATABASE_BACKUP = $HOURLY_DROPBOX_DATABASE_BACKUP"
 echo "WEEKLY_DROPBOX_WPCONTENT_BACKUP = $WEEKLY_DROPBOX_WPCONTENT_BACKUP"
 echo -e "${BOLD}\n--------------------\nNginx Version\n--------------------${NORMAL}"
 nginx -Vv
+checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
 echo -e "${BOLD}\n\n--------------------\nPHP Version\n--------------------${NORMAL}"
 php -version
 echo -e "${BOLD}\n\n--------------------\nMariaDB Version\n--------------------${NORMAL}"

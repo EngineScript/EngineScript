@@ -25,14 +25,16 @@ fi
 
 # Return to /usr/src
 cd /usr/src
+
 # Brotli
 
-# Old Git Method
+# Git Clone
 rm -rf /usr/src/ngx_brotli
 git clone --recurse-submodules --remote-submodules https://github.com/google/ngx_brotli.git /usr/src/ngx_brotli
 cd /usr/src/ngx_brotli
 git submodule update --init
 
+# Compile Dependencies
 cd /usr/src/ngx_brotli/deps/brotli
 mkdir out && cd out
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-Ofast -m64 -march=native -mtune=native -flto -funroll-loops -ffunction-sections -fdata-sections -Wl,--gc-sections" -DCMAKE_CXX_FLAGS="-Ofast -m64 -march=native -mtune=native -flto -funroll-loops -ffunction-sections -fdata-sections -Wl,--gc-sections" -DCMAKE_INSTALL_PREFIX=./installed ..
