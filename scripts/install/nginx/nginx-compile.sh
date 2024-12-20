@@ -46,8 +46,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
-      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \
@@ -58,7 +58,6 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_v3_module \
-      --with-http_gunzip_module \
       --with-http_realip_module \
       --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
       --add-module=/usr/src/ngx_brotli \
@@ -75,7 +74,6 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --without-mail_smtp_module \
 
   else
-
     # HTTP2
     ./configure \
       --prefix=/etc/nginx \
@@ -94,8 +92,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
-      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -fPIC -flto=auto" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_3 no-deprecated no-nextprotoneg no-psk no-srp no-ssl3-method no-tests no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \
@@ -105,7 +103,6 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-zlib=/usr/src/zlib-cf \
       --with-http_ssl_module \
       --with-http_v2_module \
-      --with-http_gunzip_module \
       --with-http_realip_module \
       --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
       --add-module=/usr/src/ngx_brotli \
@@ -123,15 +120,17 @@ if [ "${INSTALL_HTTP3}" = 1 ];
 
 fi
 
-  make -j${CPU_COUNT}
-  #strip --strip-unneeded /usr/src/nginx/objs/nginx
-  #make test
-  make install
+make -j${CPU_COUNT}
+find /usr/src/nginx-${NGINX_VER} | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
+make install
 
-  # Remove .default Files
-  rm -rf /etc/nginx/{*.default,*.dpkg-dist}
+# Remove .default Files
+rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 
-  # Remove debug symbols
-  strip -s /usr/sbin/nginx
+# Remove debug symbols
+strip -s /usr/sbin/nginx
 
-  checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
+checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
+
+# Return to /usr/src
+cd /usr/src
