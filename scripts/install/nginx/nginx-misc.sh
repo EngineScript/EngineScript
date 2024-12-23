@@ -25,6 +25,7 @@ fi
 
 # Retrieve EngineScript Nginx Configuration
 cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php.conf
 
 # Assign Permissions
 chown -R www-data:www-data /etc/nginx

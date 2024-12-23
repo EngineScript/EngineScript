@@ -29,14 +29,14 @@ fi
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh
 
-# Retrieve  Latest Cloudflare Zlib
+# Brotli
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
+
+# Retrieve Latest Cloudflare Zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
 
-# Retrieve  Latest PCRE2
+# Retrieve Latest PCRE2
 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
-
-# Brotli
-#/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
 
 # Patch Nginx
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh
@@ -49,6 +49,9 @@ fi
 
 # Tune Nginx
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh
+
+# Cloudflare
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare.sh
 
 # Remove .default Files
 rm -rf /etc/nginx/*.default
