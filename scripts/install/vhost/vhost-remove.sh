@@ -66,8 +66,8 @@ if test -f /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 then
   echo -e "${BOLD}MySQL Credentials Removal Check: Passed\n\n${NORMAL}Removing MySQL credentials for ${DOMAIN}...\n\n"
   source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-  sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "DROP DATABASE ${DB};"
-  sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "DROP USER '${USR}'@'localhost';"
+  sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "DROP DATABASE ${DB};"
+  sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "DROP USER '${USR}'@'localhost';"
   rm -f /home/EngineScript/mysql-credentials/${DOMAIN}.txt
 else
   echo -e "${BOLD}MySQL Credentials Check: Failed\n\n${NORMAL}${DOMAIN} did not have MySQL credentials.\n\n"

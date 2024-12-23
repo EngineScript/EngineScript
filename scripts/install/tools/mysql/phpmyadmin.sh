@@ -36,15 +36,15 @@ chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
 sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/enginescript/phpmyadmin/config.sample.inc.php > /var/www/admin/enginescript/phpmyadmin/config.inc.php
 
 # phpMyAdmin Control User (server)
-sed -i "s|'pma'|'$RAND_CHAR8'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
-sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO '${RAND_CHAR8}'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+sed -i "s|'pma'|'$RAND_CHAR8'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "CREATE USER '${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
+sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO '${RAND_CHAR8}'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
 # Create phpMyAdmin Tables
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
+sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
 
 # User Login Credentials
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
-sudo mysql -u root -p${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
+sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
+sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
 
 # Post-Install Cleanup
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
