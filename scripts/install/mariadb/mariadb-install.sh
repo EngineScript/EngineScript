@@ -45,17 +45,14 @@ sudo debconf-set-selections <<< "mysql-server mysql-server/root_password passwor
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MARIADB_ADMIN_PASSWORD}" # repeat password for the MySQL root user
 
 # Manually Perform Secure Installation
-sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} -e "UPDATE mysql.global_priv SET priv=json_set(priv, '$.plugin', 'mysql_native_password', '$.authentication_string', PASSWORD('$MARIADB_ADMIN_PASSWORD')) WHERE User='root'";
-sudo mariadb --user=root --password=${MARIADB_ADMIN_PASSWORD} << EOFMYSQLSECURE
+sudo mariadb -e "UPDATE mysql.global_priv SET priv=json_set(priv, '$.plugin', 'mysql_native_password', '$.authentication_string', PASSWORD('$MARIADB_ADMIN_PASSWORD')) WHERE User='root'";
+sudo mariadb << EOFMYSQLSECURE
 DELETE FROM mysql.global_priv WHERE User='';
 DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 EOFMYSQLSECURE
-
-# Note down this password. Else you will lose it and you may have to reset the admin password in mySQL
-echo -e "SUCCESS! MySQL password is: ${MARIADB_ADMIN_PASSWORD}"
 
 # Old MariaDB Secure Method
 # MySQL Secure Installation Automated
