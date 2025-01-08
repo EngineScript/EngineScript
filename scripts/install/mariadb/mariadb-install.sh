@@ -44,6 +44,9 @@ apt upgrade -y
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${MARIADB_ADMIN_PASSWORD}" # new password for the MySQL root user
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MARIADB_ADMIN_PASSWORD}" # repeat password for the MySQL root user
 
+# Remote Connection to Database
+sudo mariadb -e "ALTER USER root@localhost IDENTIFIED VIA unix_socket OR mysql_native_password USING PASSWORD('${MARIADB_ADMIN_PASSWORD}');"
+
 # Manually Perform Secure Installation
 sudo mariadb -e "UPDATE mysql.global_priv SET priv=json_set(priv, '$.plugin', 'mysql_native_password', '$.authentication_string', PASSWORD('$MARIADB_ADMIN_PASSWORD')) WHERE User='root'";
 sudo mariadb << EOFMYSQLSECURE
