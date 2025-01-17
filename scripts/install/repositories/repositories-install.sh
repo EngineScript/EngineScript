@@ -29,6 +29,9 @@ add-apt-repository -yn ppa:maxmind/ppa
 # Git
 add-apt-repository -yn ppa:git-core/ppa
 
+# Hurl
+add-apt-repository -yn ppa:lepapareil/hurl
+
 # Kernel Updates
 # may be temporary
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline
