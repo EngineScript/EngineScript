@@ -55,6 +55,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-pcre=/usr/src/pcre2-${PCRE2_VER} \
       --with-pcre-jit \
       --with-zlib=/usr/src/zlib-cf \
+      --with-zlib-opt=-fPIC \
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_v3_module \
@@ -101,6 +102,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --with-pcre=/usr/src/pcre2-${PCRE2_VER} \
       --with-pcre-jit \
       --with-zlib=/usr/src/zlib-cf \
+      --with-zlib-opt=-fPIC \
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_realip_module \

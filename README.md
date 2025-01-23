@@ -54,36 +54,60 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 
 ### Cloudflare
 #### Go to the Cloudflare Dashboard
-1. Select your site.
-2. Click on the SSL/TLS tab.
+1. Select your site
 
-#### Click on the Overview section
-1. Set the SSL mode to Full (Strict).
+#### SSL/TLS Tab
+##### Overview Section
+1. Click **Configure** button
+2. Under Custom SSL/TLS, click **Select** button
+3. Set the SSL mode to **Full (Strict)**
 
-#### Click on the Edge Certificates section
-1. Set Always Use HTTPS to Off. *(Important: This can cause redirect loops)*
-2. Enable HSTS. *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
-3. Set Minimum TLS Version to TLS 1.3.
-4. Enable Opportunistic Encryption.
-5. Enable TLS 1.3.
-6. Enable Automatic HTTPS Rewrites
+##### Edge Certificates Section
+1. Always Use HTTPS: **Off** *(Important: This can cause redirect loops)*
+2. HSTS: **On** *(Optional)* We recommend enabling HSTS. However, turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever.
+3. Minimum TLS Version: **TLS 1.2**
+4. Opportunistic Encryption: **On**
+5. TLS 1.3: **On**
+6. Automatic HTTPS Rewrites: **On**
+7. Certificate Transparency Monitoring: **Optional**
 
-#### Click on the Origin Server section
-1. Set Authenticated Origin Pulls to On.
+##### Origin Server Section
+1. Authenticated Origin Pulls: **On**
 
-#### Click on the Network tab
-1. Enable HTTP/2.
-2. Enable HTTP/3 (with QUIC). *(Optional)*
-3. Enable 0-RTT Connection Resumption. *(Optional)*
-4. Enable IPv6 Compatibility. *(Optional)*
-5. Enable gRPC. *(Optional)*
-6. Enable WebSockets. *(Optional)*
-7. Enable Onion Routing. *(Optional)*
-8. Set Pseudo IPv4 to Add Header. *(Optional)*
-9. Enable IP Geolocation. *(Optional)*
+#### Speed Tab
+##### Optimization Section
+Go through each optimization tab and select the following:
+1. Speed Brain: **On**
+2. Cloudflare Fonts **On**
+3. Early Hints: **On**
+4. Rocket Loaders: **Optional** *Test this on your site, it can cause issues with some plugins*
+5. HTTP/2: **On**
+6. HTTP/2 to Origin: **On**
+7. HTTP/3 (with QUIC): **On** *Cloudflare does not currently support HTTP/3 to Origin
+8. Enhanced HTTP/2 Prioritization **On** *Only available if you have Cloudflare Pro*
+9. 0-RTT Connection Resumption: **On**
+10. AMP Real URL: **Optional**
+
+#### Caching Tab
+##### Configuration Section
+1. Caching Level: **Standard**
+2. Browser Cache TTL: **Respect Existing Headers**
+3. Crawler Hints: **On**
+4. Always Online: **On**
+
+##### Tiered Cache Section
+1. Tiered Cache Topology: **Smart Tiered Caching Topology**
+
+#### Network Tab
+1. IPv6 Compatibility: **On**
+2. WebSockets: **On**
+3. Pseudo IPv4: **Add Header**
+4. IP Geolocation: **On**
+5. Network Error Logging: **On**
+6. Onion Routing: **On**
+7. gRPC: **On**
 
 ### WordPress Plugins
-
 #### Nginx Helper
 1. In WordPress, go to Settings >> Nginx Helper
 2. Check Enable Purge.
@@ -91,85 +115,6 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 4. Select "Using a GET request to PURGE/url (Default option)" for Purging Method.
 5. Check all of the boxes under Purging Conditions.
 6. Save Changes.
-
-#### Super Page Cache for Cloudflare
-EngineScript will install the Cloudflare Super Page Cache plugin by default, as it super charges your domain's performance by utlizing the Cloudflare network. We still utilize Nginx FastCGI Cache where applicable as well. This plugin also has some added benefits that apply to EngineScript because it also works with the Nginx Helper plugin, Redis Object Cache, and PHP OpCache to clear out stale caches when the Cloudflare network's cache has been cleared. Use of this plugin is highly recommended for most applications. We've done all of the configuration work within Nginx to get things up and running quickly, but you'll need to follow the steps below before Cloudflare Super Page Cache is up and running.
-
-1. In WordPress, go to Settings >> Super Page Cache for Cloudflare.
-
-##### General tab
-1. Retrieve your Cloudflare API key at **https://dash.cloudflare.com/profile/api-tokens**.
-2. Authentication mode: **API Key.**
-3. Cloudflare email: **Your email.**
-4. Cloudflare API Key: **Your API Key.**
-5. Log mode: **Whatever you prefer.**
-6. Cloudflare Domain Name: **Your domain.**
-
-##### Cache tab
-1. Cloudflare Cache-Control max-age: **31536000**
-2. Browser Cache-Control max-age: **60**
-3. Automatically purge the Cloudflare's cache when something changes on the website: **Purge cache for related pages only**
-4. Don't cache the following dynamic contents: **Check all boxes marked as recommended and then also check "Pages with query args" and "WP JSON endpoints"**
-5. Don't cache the following static contents: **Check all boxes marked as recommended**
-6. Prevent the following URIs to be cached: **Enter the folowing:**
-   ```*XMLHttpRequest*
-   *add-to-cart*
-   *add_to_cart*
-   *ao_speedup_cachebuster*
-   /*jetpack=comms*
-   /*removed_item*
-   /cart*
-   /certificate*
-   /checkout*
-   /edd-*
-   /feed*
-   /my-account*
-   /my-courses*
-   /order/*
-   /wc-ajax*
-   /wc-api*
-   /wp-json*
-    ```
-7. Strip response cookies on pages that should be cached: **No**
-8. Automatically purge single post cache when a new comment is inserted into the database or when a comment is approved or deleted: **Yes**
-9. Automatically purge the cache when the upgrader process is complete: **Yes**
-10. Posts per page: **10** (or whatever you would prefer)
-11. Overwrite the cache-control header for Wordpress's pages using web server rules: **Yes**
-12. Force cache bypassing for backend with an additional Cloudflare page rule: **Disabled**
-13. Purge HTML pages only: **No**
-14. Disable cache purging using queue: **No**
-15. Worker mode: **Disabled**
-16. Enable fallback page cache: **No**
-17. Add browser caching rules for static assets: **Yes**
-18. Save
-
-##### Advanced tab
-1. Enable preloader: **Yes**
-2. Automatically preload the pages you have purged from Cloudflare cache with this plugin: **Yes**
-3. Preloader operation: **Choose what content you want the preloader to grab. I do all menus and sidebars.**
-4. Preload all URLs into the following sitemaps: Enter ```/sitemap.xml```. This assumes you're using The SEO Framework plugin that we automatically installed for you. If you use a different SEO plugin, your sitemap filename may be different.
-5. Varnish Support: **No**
-6. Automatically purge the OPcache when Cloudflare cache is purged: **Yes**
-7. Automatically purge the object cache when Cloudflare cache is purged: **Yes**
-
-##### Third Party tab
-Most of these are not used, so just scroll past the ones that say Inactive Plugin.
-
-###### WooCommerce section
-1. Don't cache the following WooCommerce page types: **Check all recommended boxes and anything else you want**
-2. Automatically purge cache for product page and related categories when stock quantity changes: **Yes**
-3. Automatically purge cache for scheduled sales: **Yes**
-
-###### Nginx Helper section
-1. Automatically purge the cache when Nginx Helper flushs the cache: **Yes**
-
-##### Other tab
-###### Other Settings section
-1. SEO redirect **Yes**
-2. Remove Cache Buster Query Parameter: **Yes**
-
-##### Finalize Cloudflare Cache Settings
-Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156cc210b7148135fa2**. Things will not work correctly if you skip this part.
 
 ## EngineScript Information Reference
 ### EngineScript Locations
@@ -206,18 +151,34 @@ Follow this tutorial exactly: **https://gist.github.com/isaumya/af10e4855ac83156
 |                   |                                |
 
 ### Software EngineScript Utilizes:
-- MARIADB - [https://mariadb.org/download/](https://mariadb.org/download/)
-- NGINX CACHE PURGE - [https://github.com/nginx-modules/ngx_cache_purge](https://github.com/nginx-modules/ngx_cache_purge)
-- NGINX HEADERS MORE - [https://github.com/openresty/headers-more-nginx-module](https://github.com/openresty/headers-more-nginx-module)
-- NGINX MAINLINE - [https://nginx.org/en/download.html](https://nginx.org/en/download.html)
-- OPENSSL - [https://www.openssl.org/source/](https://www.openssl.org/source/)
-- PCRE2 - [https://github.com/PCRE2Project/pcre2/releases](https://github.com/PCRE2Project/pcre2/releases)
-- PHP - [https://launchpad.net/~ondrej/+archive/ubuntu/php](https://launchpad.net/~ondrej/+archive/ubuntu/php)
-- PHPMYADMIN - [https://www.phpmyadmin.net/downloads/](https://www.phpmyadmin.net/downloads/)
-- PNGOUT - [http://www.jonof.id.au/kenutils.html](http://www.jonof.id.au/kenutils.html)
-- WORDFENCE CLI - [https://github.com/wordfence/wordfence-cli/releases](https://github.com/wordfence/wordfence-cli/releases)
-- ZLIB-Cloudflare - [https://github.com/cloudflare/zlib](https://github.com/cloudflare/zlib)
-- ZLIB - [https://github.com/madler/zlib](https://github.com/madler/zlib)
+
+#### Web Server ####
+- NGINX MAINLINE - [Link](https://nginx.org/en/download.html)
+- NGINX CACHE PURGE - [Link](https://github.com/nginx-modules/ngx_cache_purge)
+- NGINX HEADERS MORE - [Link](https://github.com/openresty/headers-more-nginx-module)
+- OPENSSL - [Link](https://www.openssl.org/source/)
+- PCRE2 - [Link](https://github.com/PCRE2Project/pcre2/releases)
+- ZLIB-Cloudflare - [Link](https://github.com/cloudflare/zlib)
+- ZLIB - [Link](https://github.com/madler/zlib)
+
+#### Script Processing ####
+- PHP - [Link](https://launchpad.net/~ondrej/+archive/ubuntu/php)
+
+#### MySQL Database ####
+- MARIADB - [Link](https://mariadb.org/download/)
+- PHPMYADMIN - [Link](https://www.phpmyadmin.net/downloads/)
+
+#### Content Management System (CMS) ####
+- WordPress - [Link](https://wordpress.org)
+
+#### Security ####
+- WORDFENCE CLI - [Link](https://github.com/wordfence/wordfence-cli/releases)
+
+#### Web Development Tools ####
+- PNGOUT - [Link](http://www.jonof.id.au/kenutils.html)
+
+#### Backup Software Supported ####
+
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
