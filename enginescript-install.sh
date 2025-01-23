@@ -326,13 +326,14 @@ if [ "${NTP}" = 1 ];
 fi
 
 # THP
-if [ "${THP}" = 1 ];
-  then
-    echo "THP script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/systemd/thp.sh
-    echo "THP=1" >> /home/EngineScript/install-log.txt
-fi
+# https://stackoverflow.com/a/53470169
+#if [ "${THP}" = 1 ];
+  #then
+    #echo "THP script has already run."
+  #else
+    #/usr/local/bin/enginescript/scripts/install/systemd/thp.sh
+    #echo "THP=1" >> /home/EngineScript/install-log.txt
+#fi
 
 # Python
 #if [ "${PYTHON}" = 1 ];
