@@ -313,20 +313,20 @@ cd /var/www/sites/${SITE_URL}/html
 wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
+wp plugin install app-for-cf --allow-root
 wp plugin install autodescription --allow-root
 wp plugin install mariadb-health-checks --allow-root
 wp plugin install nginx-helper --allow-root
 wp plugin install php-compatibility-checker --allow-root
 wp plugin install redis-cache --allow-root
 wp plugin install theme-check --allow-root
-wp plugin install wp-cloudflare-page-cache --allow-root
 wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
+wp plugin install mariadb-health-checks --allow-root
 wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root
-wp plugin activate wp-cloudflare-page-cache --allow-root
 wp plugin activate wp-mail-smtp --allow-root
 
 # WP-CLI Enable Plugins
@@ -347,37 +347,6 @@ find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
 chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
 
 clear
-
-# Display Plugin Notes
-echo ""
-echo ""
-echo "We've downloaded some recommended plugins for you."
-echo ""
-echo "${BOLD}Downloaded (Not activated or configured):${NORMAL}"
-echo "  - MariaDB Health Checks"
-echo "  - PHP Compatibility Checker"
-echo "  - The SEO Framework"
-echo "  - Theme Check"
-echo ""
-echo "------------------------------------------------------------------------------"
-echo ""
-echo "These plugins have been activated. You'll still need to configure them in WordPress."
-echo ""
-echo "${BOLD}Downloaded (Activated but require additional configuration):${NORMAL}"
-echo "  - Nginx Helper"
-echo "  - Super Page Cache for Cloudflare"
-echo "  - WP Mail SMTP by WPForms"
-echo "  - WP OPcache"
-echo ""
-echo "------------------------------------------------------------------------------"
-echo ""
-echo "These plugins have been activated and fully configured. No additional configuration is needed."
-echo ""
-echo "${BOLD}Downloaded (Activated and fully configured):${NORMAL}"
-echo "  - Redis Object Cache"
-echo ""
-
-sleep 10
 
 # Backup
 echo ""
@@ -464,7 +433,7 @@ echo "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo ""
 
-sleep 5
+sleep 3
 
 # Restart Services
 /usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
@@ -481,4 +450,4 @@ echo "        Returning to main menu in 5 seconds."
 echo ""
 echo "============================================================="
 echo ""
-sleep 5
+sleep 3
