@@ -73,6 +73,13 @@ if [ "${SHOW_ENGINESCRIPT_HEADER}" = 1 ];
     echo ""
 fi
 
+if [ "${NGINX_SECURE_ADMIN}" = 1 ];
+  then
+    sed -i "s|#include /etc/nginx/globals/adminsecure.conf|include /etc/nginx/globals/adminsecure.conf|g" /etc/nginx/globals/default.conf
+  else
+    echo ""
+fi
+
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
 if [ "${STATUS}" = "active" ]; then

@@ -36,9 +36,33 @@ AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 INSTALL_ADMINER=0
 INSTALL_HTTP3=0
-#INSTALL_PHP8_2=0
 INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
+
+#######################
+# Server Tool Options #
+#######################
+# Choose whether to install various server tools.
+#
+# How to Enable and Disable Features:
+# 0 = disabled
+# 1 = enabled
+
+####################
+# Security Options #
+####################
+# How to Enable and Disable Features:
+# 0 = disabled
+# 1 = enabled
+
+# Secure Admin Location:
+# When set to 1, this will enable a primary password protection layer that prompts
+# visitors to your admin pages such as phpMyAdmin.
+# Recommended: 1
+NGINX_SECURE_ADMIN=1
+
+# Enable if you want to show off that your server is running EngineScript
+Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
 
 ##################
