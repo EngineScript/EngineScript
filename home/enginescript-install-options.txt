@@ -15,8 +15,6 @@
 #|          To edit the correct file, use command           |#
 #|                                                          |#
 #|                        es.config                         |#
-#|                            or                            |#
-#| nano /home/EngineScript/enginescript-install-options.txt |#
 #|                                                          |#
 #|##########################################################|#
 
@@ -61,7 +59,7 @@ INSTALL_WEBMIN=0
 # Recommended: 1
 NGINX_SECURE_ADMIN=1
 
-# Enable if you want to show off that your server is running EngineScript
+# Enable if you want to show off that your server is running EngineScript.
 Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
 
@@ -115,7 +113,8 @@ UBUNTU_PRO_TOKEN="PLACEHOLDER"
 # Optional - If you don't want to use Amazon S3 Cloud Backup, leave this alone.
 #
 # User creation:
-# Follow ONLY sections 2 and 3: https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
+# Follow ONLY sections 2 and 3:
+# https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
 # Sections: "Create an IAM User" and "Create Access Keys for the new User"
 #
 # Bucket creation:
@@ -128,7 +127,8 @@ CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
 # Nginx Password Protection
-# This adds a second layer of security to the admin areas on the server such as Webmin and phpMyAdmin.
+# This adds a second layer of security to the admin areas on the server such as
+# Webmin and phpMyAdmin.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
 
@@ -150,7 +150,8 @@ WEBMIN_USERNAME="PLACEHOLDER"
 WEBMIN_PASSWORD="PLACEHOLDER"
 
 # WordPress Admin
-# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
+# Admin and Recovery email do not need to match. Recovery mode will email with
+# details any time a visitor encounters a fatal error.
 WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
