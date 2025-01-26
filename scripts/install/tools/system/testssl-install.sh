@@ -30,7 +30,7 @@ cd /usr/src
 rm -rf /usr/local/bin/testssl.sh
 
 # Install Testssl.sh
-git clone https://github.com/drwetter/testssl.sh.git /usr/local/bin/testssl.sh
+git clone https://github.com/testssl/testssl.sh.git /usr/local/bin/testssl.sh
 
 # Permissions
 find /usr/local/bin/testssl.sh -type d,f -exec chmod 755 {} \;
