@@ -21,46 +21,44 @@
 ###################
 # Install Options #
 ###################
-# Notes on Experiment Features:
-# HTTP3 support is currently experimental.
-# Cloudflare currently does NOT support HTTP3 for origin fetches.
-# So HTTP3 is useless until they do.
-#
-# How to Enable and Disable Features:
 # 0 = disabled
 # 1 = enabled
-
 AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 INSTALL_ADMINER=0
-INSTALL_HTTP3=0
 INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
+
+#########################
+# Experimental Features #
+#########################
+# 0 = disabled
+# 1 = enabled
+
+## NGINX HTTP3 Support ##
+# Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
+INSTALL_HTTP3=0
 
 #######################
 # Server Tool Options #
 #######################
-# Choose whether to install various server tools.
-#
-# How to Enable and Disable Features:
 # 0 = disabled
 # 1 = enabled
 
 ####################
 # Security Options #
 ####################
-# How to Enable and Disable Features:
 # 0 = disabled
 # 1 = enabled
 
-# Secure Admin Location:
+## Secure Admin Location ##
 # When set to 1, this will enable a primary password protection layer that prompts
 # visitors to your admin pages such as phpMyAdmin.
 # Recommended: 1
 NGINX_SECURE_ADMIN=1
 
 # Enable if you want to show off that your server is running EngineScript.
-Recommended: 0
+# Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
 
 ##################
@@ -70,28 +68,27 @@ SHOW_ENGINESCRIPT_HEADER=0
 # settings below to be enabled. If you want hourly, daily, and weekly
 # backups to the cloud, be sure to set the corresponding local options.
 #
-# How to Enable and Disable Features:
 # 0 = disabled
 # 1 = enabled
 
-# Local Backup
+## Local Backup ##
 DAILY_LOCAL_DATABASE_BACKUP=1
 HOURLY_LOCAL_DATABASE_BACKUP=1
 WEEKLY_LOCAL_WPCONTENT_BACKUP=1
 
-# Amazon S3 Backup
+## Amazon S3 Backup ##
 INSTALL_S3_BACKUP=0
 DAILY_S3_DATABASE_BACKUP=0
 HOURLY_S3_DATABASE_BACKUP=0
 WEEKLY_S3_WPCONTENT_BACKUP=0
 
-# Dropbox Backup
+## Dropbox Backup ##
 INSTALL_DROPBOX_BACKUP=0
 DAILY_DROPBOX_DATABASE_BACKUP=0
 HOURLY_DROPBOX_DATABASE_BACKUP=0
 WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 
-# Google Drive Backup (disabled)
+## Google Drive Backup (disabled) ##
 # Not working currently.
 # The best option for this is broken: https://github.com/odeke-em/drive
 #INSTALL_GOOGLE_DRIVE_BACKUP=0
@@ -103,68 +100,66 @@ WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 # User Credentials #
 ####################
 
-# Ubuntu Pro
-# Optional - Enables extra application security updates.
+## Ubuntu Pro (Optional) ##
+# Enables extra application security updates.
+#
 # Sign up for a free account personal use account at:
 # https://ubuntu.com/pro
 UBUNTU_PRO_TOKEN="PLACEHOLDER"
 
-# Amazon S3 Cloud Backup
-# Optional - If you don't want to use Amazon S3 Cloud Backup, leave this alone.
+## Amazon S3 Cloud Backup (Optional) ##
 #
-# User creation:
-# Follow ONLY sections 2 and 3:
-# https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
-# Sections: "Create an IAM User" and "Create Access Keys for the new User"
+# Instructions:
+#   User creation:
+#     Follow ONLY sections 2 and 3:
+#     https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
+#     Sections: "Create an IAM User" and "Create Access Keys for the new User"
 #
-# Bucket creation:
-# https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
+#   Bucket creation:
+#     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
 S3_BUCKET_NAME="PLACEHOLDER"
 
-# Cloudflare
-# Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+## Cloudflare ##
+# Instructions:
+#   Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
 CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
-# Nginx Password Protection
-# This adds a second layer of security to the admin areas on the server such as
-# Webmin and phpMyAdmin.
+## Nginx Password Protection ##
+# This adds a second layer of security to the admin areas on the server such as Webmin and phpMyAdmin.
+# Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
 
-# MariaDB
+## MariaDB ##
 # We've set MariaDB to always use root as the username.
 # Password Recommendation:
 # 26 characters: A-Z, a-z, 0-9
 MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 
-# phpMyAdmin
+## phpMyAdmin (Recommended) ##
 PHPMYADMIN_USERNAME="PLACEHOLDER"
 PHPMYADMIN_PASSWORD="PLACEHOLDER"
 
-# Webmin
+## Webmin (Optional)##
 # Optional - If you don't want to use Webmin, leave this alone.
-# Not installed by default.
 # Leave this alone if you want to use phpMyAdmin instead.
 WEBMIN_USERNAME="PLACEHOLDER"
 WEBMIN_PASSWORD="PLACEHOLDER"
 
-# WordPress Admin
-# Admin and Recovery email do not need to match. Recovery mode will email with
-# details any time a visitor encounters a fatal error.
+## WordPress Admin ##
+# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
 WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
 
-# Pushbullet
-# Optional - If you don't want to use Pushbullet, leave this alone.
+## Pushbullet (Optional) ##
 # This is used for the checksums and .php files in the uploads directory crons.
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"
 
-# WP Scan
-# Optional - If you don't want to use WP Scan, leave this alone.
+## WP Scan (Optional) ##
 # This is used to scan WordPress for known vulnerabilities.
 # Create your token at https://wpscan.com/api
 WPSCANAPI="PLACEHOLDER"
