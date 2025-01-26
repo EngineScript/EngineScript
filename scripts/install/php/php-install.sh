@@ -27,7 +27,14 @@ fi
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Install PHP
-apt install -qy php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-msgpack php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-soap php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip
+# Define the PHP packages to install
+php_packages="php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip"
+
+# Install the packages with error checking
+apt install -qy $php_packages || {
+    echo "Error: Unable to install one or more packages. Exiting..."
+    exit 1
+}
 
 # Logrotate
 cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
@@ -90,3 +97,6 @@ sleep 5
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+
+# References:
+# https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions
