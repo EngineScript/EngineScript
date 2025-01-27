@@ -39,6 +39,11 @@ INSTALL_WEBMIN=0
 # Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
 INSTALL_HTTP3=0
 
+## Expanded PHP Extensions Support ##
+# Adds the following extensions to the standard PHP configuration:
+# Igbinary, Readline, SOAP, SQLite3
+INSTALL_EXPANDED_PHP=0
+
 #######################
 # Server Tool Options #
 #######################
@@ -57,6 +62,7 @@ INSTALL_HTTP3=0
 # Recommended: 1
 NGINX_SECURE_ADMIN=1
 
+## Show EngineScript Header ##
 # Enable if you want to show off that your server is running EngineScript.
 # Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
