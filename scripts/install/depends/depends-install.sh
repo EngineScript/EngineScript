@@ -31,8 +31,8 @@ packages="advancecomp apt-listchanges apt-show-versions apt-transport-https apt-
 
 # Install the packages with error checking
 apt install -qy $packages || {
-    echo "Error: Unable to install one or more packages. Exiting..."
-    exit 1
+  echo "Error: Unable to install one or more packages. Exiting..."
+  exit 1
 }
 
 # Nano

@@ -28,6 +28,9 @@ cp -rf /usr/local/bin/enginescript/etc/sysctl.d/60-enginescript.conf /etc/sysctl
 chown -R root:root /etc/sysctl.d/60-enginescript.conf
 chmod 0664 /etc/sysctl.d/60-enginescript.conf
 
+# KTLS (testing)
+echo tls >/etc/modules-load.d/tls.conf
+
 # Enable Kernel Tweaks
 sysctl -e -p /etc/sysctl.d/60-enginescript.conf
 sysctl --system
