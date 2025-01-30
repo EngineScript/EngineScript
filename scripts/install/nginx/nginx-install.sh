@@ -75,7 +75,9 @@ fi
 
 if [ "${NGINX_SECURE_ADMIN}" = 1 ];
   then
-    sed -i "s|#include /etc/nginx/globals/adminsecure.conf|include /etc/nginx/globals/adminsecure.conf|g" /etc/nginx/globals/default.conf
+    sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/globals/default.conf
+    sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/globals/default.conf
+    sed -i "s|#allow |allow |g" /etc/nginx/globals/default.conf
   else
     echo ""
 fi
