@@ -26,8 +26,4 @@ fi
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Update wpsecure.conf
-cp -a /usr/local/bin/enginescript/etc/nginx/globals/wpsecure.conf /etc/nginx/globals/wpsecure.conf
-
-# Restart Services
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
+# Start Normal Automatic Upgrade
