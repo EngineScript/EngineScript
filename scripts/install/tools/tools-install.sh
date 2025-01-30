@@ -27,6 +27,9 @@ fi
 # Media Tools
 #------------------------------------------------
 
+# Return to /usr/src
+cd /usr/src
+
 # pngout
 /usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh
 
@@ -145,3 +148,6 @@ if [ "${INSTALL_S3_BACKUP}" = 1 ];
   else
     echo "Skipping Amazon CLI install"
 fi
+
+# Return to /usr/src
+cd /usr/src

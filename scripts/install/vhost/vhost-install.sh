@@ -132,36 +132,9 @@ mkdir -p /etc/nginx/ssl/${DOMAIN}
 # Final Cloudflare SSL Steps
 clear
 
-echo ""
-echo "Go to the Cloudflare Dashboard."
-echo "  1. Select your site."
-echo "  2. Click on the SSL/TLS tab."
-echo ""
-echo "Click on the Overview section."
-echo "  1. Set the SSL mode to Full (Strict)"
-echo ""
-echo "Still in the SSL/TLS tab, click on the Edge Certificates section."
-echo "  1.  Set Always Use HTTPS to Off (Important: This can cause redirect loops)."
-echo "  2.  We recommend enabling HSTS. Turning off HSTS will make your site unreachable until the Max-Age time expires. This is a setting you want to set once and leave on forever."
-echo "  3.  Set Minimum TLS Version to TLS 1.3."
-echo "  4.  Enable Opportunistic Encryption"
-echo "  5.  Enable TLS 1.3"
-echo "  6.  Enable Automatic HTTPS Rewrites"
-echo ""
-echo "Still in the SSL/TLS tab, click on the Origin Server section."
-echo "  1.  Set Authenticated Origin Pulls to On."
-echo ""
-echo "Click on the Network tab."
-echo "  1.  Enable HTTP/2"
-echo "  2.  Enable HTTP/3 (with QUIC)"
-echo "  3.  Enable 0-RTT Connection Resumption"
-echo "  4.  Enable IPv6 Compatibility"
-echo "  5.  Enable gRPC"
-echo "  6.  Enable WebSockets"
-echo "  7.  Enable Onion Routing"
-echo "  8.  Set Pseudo IPv4 to Add Header"
-echo "  9.  Enable IP Geolocation"
-echo ""
+echo "Your site must be fully configured in Cloudflare before continuing."
+echo "Visit: https://github.com/EngineScript/EngineScript/tree/master?tab=readme-ov-file#cloudflare"
+echo -e "\n\n"
 
 while true;
   do
@@ -236,6 +209,10 @@ chown -R www-data:www-data /var/log/domains/${SITE_URL}
 # Download WordPress using WP-CLI
 wp core download --allow-root
 rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
+
+# Create Fonts Directories
+mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/fonts
+mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts
 
 # Create wp-config.php
 cp -rf /usr/local/bin/enginescript/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php

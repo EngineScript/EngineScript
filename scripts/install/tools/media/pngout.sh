@@ -23,6 +23,9 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
 # Install pngout
 
 # Retrieve Latest Version
@@ -38,3 +41,6 @@ if [ ${BIT_TYPE} == 'x86_64' ];
     # 32-bit
     cp /usr/src/pngout-${PNGOUT_VER}-linux/i686/pngout /bin
 fi
+
+# Return to /usr/src
+cd /usr/src

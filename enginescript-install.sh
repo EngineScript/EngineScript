@@ -58,7 +58,6 @@ echo "32bit or 64bit = $BIT_TYPE"
 echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
 echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $UBUNTU_TYPE $UBUNTU_VERSION $UBUNTU_CODENAME"
-echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
 echo -e "${BOLD}\nEngineScript Install Options:${NORMAL}"
 echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
 echo "AUTOMATIC_ENGINESCRIPT_UPDATES = $AUTOMATIC_ENGINESCRIPT_UPDATES"
@@ -101,13 +100,6 @@ sleep 5
 if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" = PLACEHOLDER ];
 	then
     echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0\n"
-    exit
-fi
-
-# Check S3 Bucket Name
-if [ "$INSTALL_S3_BACKUP" = 0 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ];
-	then
-    echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=0 but have changed S3_BUCKET_NAME from PLACEHOLDER.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change INSTALL_S3_BACKUP to 1. If this is a mistake, you can avoid this error by setting S3_BUCKET_NAME to PLACEHOLDER\n"
     exit
 fi
 
@@ -428,8 +420,12 @@ fi
 # Server Reboot
 clear
 
+# Display Install Info
+/usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+
+# Reboot Notice
 echo -e "${BOLD}Server needs to reboot.${NORMAL}\n\nEnter command ${BOLD}es.menu${NORMAL} after reboot to continue.\n" | boxes -a c -d shell -p a1l2
-sleep 15
+sleep 10
 clear
 
 echo -e "Server rebooting now...\n\n${NORMAL}When reconnected, use command ${BOLD}es.menu${NORMAL} to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2

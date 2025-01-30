@@ -40,7 +40,7 @@ wp package install 10up/wpcli-vulnerability-scanner:dev-develop --allow-root
 wp package install pantheon-systems/wp_launch_check --allow-root
 wp package install wearerequired/wp-cli-clear-opcache --allow-root
 wp package install wp-cli/cron-command --allow-root
-wp package install wp-cli/doctor-command:@stable --allow-root
+wp package install wp-cli/doctor-command --allow-root
 
 echo ""
 echo ""
