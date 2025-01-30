@@ -4,17 +4,29 @@
 
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
-EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful.
+EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful. Things will definitely break if you run this script on a VPS that has already been configured as a webserver.
 
 As this is a pre-release version, things may be broken.
 
 ## Features
+### Default EngineScript Configuration ###
+The standard EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
+
+|Function        |Software    |
+|----------------|------------|
+|SSL Certificate Management | Cloudflare |
+|CDN | Cloudflare |
+|Web Server | Nginx | FastCGI Cache | OpenSSL | Cloudflare ZLib | Performance Patches |
+|Script Processing | PHP | PHP OPCACHE |
+|MySQL Database | MariaDB |
+|Object Cache | Redis |
+|CMS | WordPress |
+|Firewall | UFW |
 
 ## Requirements
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
-- **Ubuntu 22.04**
-- **64-Bit OS**
-- **Minimum 1GB RAM** *(2GB+ recommended)*
+- **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
+- **2GB RAM**
 - **Cloudflare** *(free or paid)*
 - **30 minutes of your time**
 
@@ -117,6 +129,98 @@ Go through each optimization tab and select the following:
 6. Save Changes.
 
 ## EngineScript Information Reference
+
+### Software EngineScript Utilizes:
+#### Domain SSL Certificate Management ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|ACME.sh|Latest|https://get.acme.sh |
+
+#### Web Server ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|NGINX MAINLINE|1.27.3|https://nginx.org/en/download.html |
+|NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
+|NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
+|NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
+|GIXY|Latest|https://github.com/yandex/gixy |
+|OPENSSL|3.4.0|https://www.openssl.org/source/ |
+|PCRE2|10.44|https://github.com/PCRE2Project/pcre2/releases |
+|ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib |
+|ZLIB|1.3.1|https://github.com/madler/zlib |
+
+#### Script Processing ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php |
+
+#### MySQL Database ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|MARIADB|11.4.4|https://mariadb.org/download/ |
+|MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
+
+#### Database Management ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|ADMINER|| |
+|PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/ |
+
+#### Caching & Performance ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|REDIS|Latest|https://redis.io/ |
+|LIBURING|2.8|https://github.com/axboe/liburing|
+
+#### Content Management System (CMS) ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|WORDPRESS | Latest |https://wordpress.org |
+|WP-CLI | Latest |https://github.com/wp-cli/wp-cli |
+|WP-CLI: Clear OPcache | Latest |https://github.com/wearerequired/wp-cli-clear-opcache|
+|WP-CLI: cron-command | Latest |https://github.com/wp-cli/cron-command |
+|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command|
+|WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
+|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
+|PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
+|PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/ |
+|PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/ |
+|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
+|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |
+|PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/ |
+|PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/ |
+|PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/ |
+
+#### Security ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|MALDETECT|Latest|https://www.rfxn.com/projects/linux-malware-detect/ |
+|PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder |
+|UNCOMPLICATED FIREWALL (UFW) | - | Bundled with Ubuntu |
+|WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases |
+|WPSCAN|Latest|https://wpscan.com/|
+
+#### Web Development Tools ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html|
+|ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer |
+
+#### Backup Software Supported ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|LOCAL BACKUPS| - | Bash Scripts |
+|DROPBOX UPLOADER|Latest|https://github.com/andreafabrizi/Dropbox-Uploader |
+|AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/ |
+
+#### Network Tools ####
+|Software        |Version|Source                    |
+|----------------|-------|--------------------------|
+|TESTSSL.SH|Latest|https://github.com/testssl/testssl.sh |
+||||
+||||
+||||
+
 ### EngineScript Locations
 |Location        |Usage                          |
 |----------------|-------------------------------|
@@ -130,7 +234,6 @@ Go through each optimization tab and select the following:
 |**/var/log**                    |Server logs |
 |**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
 |**/var/www/sites/*yourdomain.com*/html** |Root directory for your WordPress installation |
-|                                |                |
 
 ### EngineScript Commands
 |Command            |Function                       |
@@ -148,37 +251,6 @@ Go through each optimization tab and select the following:
 |**`es.server`**    |Displays server information |
 |**`es.update`**    |Update EngineScript |
 |**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
-|                   |                                |
-
-### Software EngineScript Utilizes:
-
-#### Web Server ####
-- NGINX MAINLINE - [Link](https://nginx.org/en/download.html)
-- NGINX CACHE PURGE - [Link](https://github.com/nginx-modules/ngx_cache_purge)
-- NGINX HEADERS MORE - [Link](https://github.com/openresty/headers-more-nginx-module)
-- OPENSSL - [Link](https://www.openssl.org/source/)
-- PCRE2 - [Link](https://github.com/PCRE2Project/pcre2/releases)
-- ZLIB-Cloudflare - [Link](https://github.com/cloudflare/zlib)
-- ZLIB - [Link](https://github.com/madler/zlib)
-
-#### Script Processing ####
-- PHP - [Link](https://launchpad.net/~ondrej/+archive/ubuntu/php)
-
-#### MySQL Database ####
-- MARIADB - [Link](https://mariadb.org/download/)
-- PHPMYADMIN - [Link](https://www.phpmyadmin.net/downloads/)
-
-#### Content Management System (CMS) ####
-- WordPress - [Link](https://wordpress.org)
-
-#### Security ####
-- WORDFENCE CLI - [Link](https://github.com/wordfence/wordfence-cli/releases)
-
-#### Web Development Tools ####
-- PNGOUT - [Link](http://www.jonof.id.au/kenutils.html)
-
-#### Backup Software Supported ####
-
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
