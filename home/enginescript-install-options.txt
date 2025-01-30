@@ -29,9 +29,9 @@ INSTALL_ADMINER=0
 INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
 
-#########################
-# Experimental Features #
-#########################
+#####################
+# Expanded Features #
+#####################
 # 0 = disabled
 # 1 = enabled
 
@@ -41,14 +41,8 @@ INSTALL_HTTP3=0
 
 ## Expanded PHP Extensions Support ##
 # Adds the following extensions to the standard PHP configuration:
-# Igbinary, Readline, SOAP, SQLite3
+# SOAP, SQLite3
 INSTALL_EXPANDED_PHP=0
-
-#######################
-# Server Tool Options #
-#######################
-# 0 = disabled
-# 1 = enabled
 
 ####################
 # Security Options #

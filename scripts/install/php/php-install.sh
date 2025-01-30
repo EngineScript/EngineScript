@@ -38,7 +38,7 @@ apt install -qy $php_packages || {
 
 if [ "$INSTALL_EXPANDED_PHP" = 1 ];
 	then
-    expanded_php_packages="php${PHP_VER}-igbinary php${PHP_VER}-readline php${PHP_VER}-soap php${PHP_VER}-sqlite3"
+    expanded_php_packages="php${PHP_VER}-soap php${PHP_VER}-sqlite3"
 
     # Install the packages with error checking
     apt install -qy $expanded_php_packages || {
