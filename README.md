@@ -1,16 +1,10 @@
 # EngineScript
-
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
-
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
-EngineScript is meant to be run as root user on a fresh VPS. Initial setup will remove existing Apache, Nginx, PHP, and MySQL installations, so be careful. Things will definitely break if you run this script on a VPS that has already been configured as a webserver.
+**Note:** EngineScript is currently in pre-release
 
-## Features
-
-**EngineScript is currently in pre-release**
-
-### Default EngineScript Configuration ###
+## Default Configuration ##
 The standard EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
 
 |Function|Software|
@@ -25,6 +19,8 @@ The standard EngineScript configuration utilizes the simplified stack below. Add
 |Firewall | UFW |
 
 ## Requirements
+EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
+
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
 - **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
 - **2GB RAM**
@@ -32,6 +28,7 @@ The standard EngineScript configuration utilizes the simplified stack below. Add
 - **30 minutes of your time**
 
 ## Install EngineScript
+
 ### Step 1 - Initial Install
 Run the following command:
 ```shell
@@ -67,15 +64,18 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 
 ### Cloudflare
 #### Go to the Cloudflare Dashboard
+
 1. Select your site
 
 #### SSL/TLS Tab
 ##### Overview Section
+
 1. Click **Configure** button
 2. Under Custom SSL/TLS, click **Select** button
 3. Set the SSL mode to **Full (Strict)**
 
 ##### Edge Certificates Section
+
 1. Always Use HTTPS: **Off** *(Important: This can cause redirect loops)*
 2. HSTS: **On** *(Optional)*
 3. Minimum TLS Version: **TLS 1.2**
@@ -85,11 +85,13 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 7. Certificate Transparency Monitoring: **Optional**
 
 ##### Origin Server Section
+
 1. Authenticated Origin Pulls: **On**
 
 #### Speed Tab
 ##### Optimization Section
 Go through each optimization tab and select the following:
+
 1. Speed Brain: **On**
 2. Cloudflare Fonts **On**
 3. Early Hints: **On**
@@ -103,15 +105,18 @@ Go through each optimization tab and select the following:
 
 #### Caching Tab
 ##### Configuration Section
+
 1. Caching Level: **Standard**
 2. Browser Cache TTL: **Respect Existing Headers**
 3. Crawler Hints: **On**
 4. Always Online: **On**
 
 ##### Tiered Cache Section
+
 1. Tiered Cache Topology: **Smart Tiered Caching Topology**
 
 #### Network Tab
+
 1. IPv6 Compatibility: **On**
 2. WebSockets: **On**
 3. Pseudo IPv4: **Add Header**
@@ -122,6 +127,7 @@ Go through each optimization tab and select the following:
 
 ### WordPress Plugins
 #### Nginx Helper
+
 1. In WordPress, go to Settings >> Nginx Helper
 2. Check Enable Purge.
 3. Select "nginx Fastcgi cache" for Caching Method
@@ -132,13 +138,14 @@ Go through each optimization tab and select the following:
 ## EngineScript Information Reference
 
 ### Software EngineScript Utilizes:
-#### Domain SSL Certificate Management ####
+
 |Software|Version|Source|
 |-|-|-|
 | 	**Certificate Management**		|
 |ACME.sh|Latest|https://get.acme.sh |
 ||
-|**Web Server** |
+||
+|**Web Server**|
 |NGINX MAINLINE|1.27.3|https://nginx.org/en/download.html |
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
 |NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
@@ -150,15 +157,19 @@ Go through each optimization tab and select the following:
 |**Script Processing**|
 |PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php |
 ||
+||
 |**MySQL Database**|
 |MARIADB|11.4.4|https://mariadb.org/download/ |
+||
 ||
 |**Database Management**|
 |ADMINER|||
 |PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/ |
 ||
+||
 |**Object Cache**|
 |REDIS|Latest|https://redis.io/ |
+||
 ||
 |**Content Management System (CMS)**|
 |WORDPRESS | Latest |https://wordpress.org |
@@ -177,6 +188,7 @@ Go through each optimization tab and select the following:
 |PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/ |
 |PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/ |
 ||
+||
 |**Security**|
 |MALDETECT|Latest|https://www.rfxn.com/projects/linux-malware-detect/ |
 |PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder |
@@ -184,14 +196,17 @@ Go through each optimization tab and select the following:
 |WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases |
 |WPSCAN|Latest|https://wpscan.com/|
 ||
+||
 |**Development Tools**|
 |PNGOUT|20200115|http://www.jonof.id.au/kenutils.html|
 |ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer |
+||
 ||
 |**Backup Software**|
 |LOCAL BACKUPS|| Bash Scripts |
 |DROPBOX UPLOADER|Latest|https://github.com/andreafabrizi/Dropbox-Uploader |
 |AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/ |
+||
 ||
 |**Misc Supplemental Software**|
 |GIXY|Latest|https://github.com/yandex/gixy |
@@ -199,9 +214,8 @@ Go through each optimization tab and select the following:
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
 
-
-
 ### EngineScript Locations
+
 |Location|Usage|
 |-|-|
 |**/etc/mysql**                  |MySQL (MariaDB) config |
@@ -216,6 +230,7 @@ Go through each optimization tab and select the following:
 |**/var/www/sites/*yourdomain.com*/html** |Root directory for your WordPress installation |
 
 ### EngineScript Commands
+
 |Command|Function|
 |-|-|
 |**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
