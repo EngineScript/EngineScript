@@ -54,7 +54,7 @@ define( 'WP_REDIS_TIMEOUT', 1 );
 
 /* Nginx Helper FastCGI Cache Plugin */
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );
-define( 'NGINX_HELPER_LOG','/var/log/domains/SEDURL/SEDURL-nginx-helper.log' );
+define( 'NGINX_HELPER_LOG','true' );
 
 /* WordPress Cache */
 define( 'WP_CACHE', false ); // Leave this disabled since we use Nginx FastCGI Cache
