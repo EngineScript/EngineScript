@@ -31,33 +31,24 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Dispay Server Info" "Update EngineScript" "View/Edit EngineScript Install Configuration File" "View/Edit EngineScript Variables File" "Exit EngineScript Tools")
+    secoptions=("Add Domain" "Update Domain Vhost File" "Remove Domain (DANGER)" "Exit Domain Configuration Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Dispay Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
-          echo ""
-          echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+        "Add Domain")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
           break
           ;;
-        "Update EngineScript")
-          /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
+        "Update Domain Vhost File")
+          echo "Option coming soon"
+          sleep 3
           break
           ;;
-        "View/Edit EngineScript Install Configuration File")
-          nano /home/EngineScript/enginescript-install-options.txt
+        "Remove Domain (DANGER)")
+          /usr/local/bin/enginescript/scripts/install/vhost/vhost-remove.sh
           break
           ;;
-        "View/Edit EngineScript Variables File")
-          nano /usr/local/bin/enginescript/enginescript-variables.txt
-          break
-          ;;
-        "Exit EngineScript Tools")
+        "Exit Domain Configuration Tools")
           exit
           ;;
         *) echo invalid option;;

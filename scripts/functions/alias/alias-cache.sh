@@ -28,6 +28,7 @@ echo -e "\nClearing Caches\n\n"
 # Include config
 source /home/EngineScript/sites-list/sites.sh
 
+# Clear Transients on all sites
 for i in "${SITES[@]}"
 do
   echo "Deleting ${i} Transients"
@@ -35,12 +36,25 @@ do
   wp transient delete-all --allow-root
 done
 
+# Clear Nginx fastCGI cache
 echo "Clearing Nginx Cache"
+for i in "${SITES[@]}"
+do
+  echo "Deleting ${i} Transients"
+	cd "/var/www/sites/$i/html"
+  wp nginx-helper purge-all --allow-root
+done
 rm -rf /var/cache/nginx/*
+
+# Clear PHP OpCache
 echo "Clearing PHP OpCache"
 rm -rf /var/cache/opcache/*
+
+# Clear Redis object cache
 echo "Clearing Redis Object Cache"
 redis-cli FLUSHALL ASYNC
+
+# Restart services
 echo "Restarting Nginx"
 service nginx restart
 echo "Restarting PHP-FPM"

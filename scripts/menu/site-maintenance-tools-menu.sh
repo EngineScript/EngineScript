@@ -27,15 +27,15 @@ fi
 while true
   do
     clear
-    echo -e "Server Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Site Maintenance Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Backup All Domains" "Clear All Caches" "Dispay Server Info" "Fix Permissions" "Optimize All Images" "Testssl.sh" "Exit Server Tools")
+    secoptions=("Backup (All Domains)" "Clear Caches (All Domains)" "Clear Caches (All Domains)" "Optimize Images (All Domains)" "SSL Capabilities Test (Single Domain)" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Backup All Domains")
+        "Backup (All Domains)")
           echo "Backing up all domains..."
           /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
           echo ""
@@ -46,7 +46,7 @@ while true
           echo ""
           break
           ;;
-        "Clear All Caches")
+        "Clear Caches (All Domains)")
           echo "Clearing all caches..."
           /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
           echo ""
@@ -57,17 +57,7 @@ while true
           echo ""
           break
           ;;
-        "Dispay Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
-          echo ""
-          echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
-          break
-          ;;
-        "Fix Permissions")
+        "Clear Caches (All Domains)")
           echo "Fixing permissions for all domains..."
           /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
           echo ""
@@ -78,7 +68,7 @@ while true
           echo ""
           break
           ;;
-        "Optimize All Images")
+        "Optimize Images (All Domains)")
           echo "Optimizing images in /uploads directory for all domains..."
           /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
           echo ""
@@ -89,7 +79,7 @@ while true
           echo ""
           break
           ;;
-        "Testssl.sh")
+        "SSL Capabilities Test (Single Domain)")
           /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
           echo ""
           echo ""

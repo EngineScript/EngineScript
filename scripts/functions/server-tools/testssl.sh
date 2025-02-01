@@ -23,14 +23,22 @@ fi
 #----------------------------------------------------------------------------
 # Start Main Script
 
-echo "Select a domain to scan:"
-echo "Enter only the domain without https:// or trailing /"
-echo ""
-echo "Examples:    yourdomain.com"
-echo "             yourdomain.net"
-echo ""
-read -p "Enter Domain name: " DOMAIN
-echo ""
-echo "You entered:  ${DOMAIN}"
+# Retrieve Domains
+cd /var/www/sites
+printf "Please select the site you want to run an SSL capabilities check on:\n"
+select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 
-/usr/local/bin/testssl.sh/testssl.sh -S -h -e -E -s -f -p -g -U ${DOMAIN}
+# Run command
+echo "testssl.sh is running. Scan may take a bit, standby for results."
+echo "Scanning: $d"
+/usr/local/bin/testssl.sh/testssl.sh -S -h -e -E -s -f -p -g -U "${d}"
+
+# Ask user to acknowledge that the command has completed
+echo ""
+echo ""
+read -n 1 -s -r -p "Press any key to continue"
+echo ""
+echo ""
+
+# Return to somewhere other than the domain directory
+cd /root

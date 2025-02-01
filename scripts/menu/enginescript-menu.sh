@@ -50,36 +50,36 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Configure New Domain" "Database Tools" "EngineScript Tools" "Security Tools" "Server Tools" "Update Software" "View Server Logs" "Exit EngineScript")
+    options=("Domain Configuration Tools" "Site Maintenance Tools" "View Server Logs" "Database Tools" "Security Tools" "Server Tools" "EngineScript Tools" "Update Software" "Exit EngineScript")
     select opt in "${options[@]}"
     do
       case $opt in
-        "Configure New Domain")
-          /usr/local/bin/enginescript/scripts/install/vhost/vhost-install.sh
+        "Domain Configuration Tools")
+          /usr/local/bin/enginescript/scripts/menu/domain-configuration-tools-menu.sh
+          break
+          ;;
+        "Site Maintenance Tools")
+          /usr/local/bin/enginescript/scripts/menu/site-maintenance-tools-menu.sh
+          break
+          ;;
+        "View Server Logs")
+          /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
           break
           ;;
         "Database Tools")
           /usr/local/bin/enginescript/scripts/menu/database-tools-menu.sh
           break
           ;;
-        "EngineScript Tools")
-          /usr/local/bin/enginescript/scripts/menu/enginescript-tools-menu.sh
-          break
-          ;;
         "Security Tools")
           /usr/local/bin/enginescript/scripts/menu/security-tools-menu.sh
           break
           ;;
-        "Server Tools")
-          /usr/local/bin/enginescript/scripts/menu/server-site-tools-menu.sh
+        "EngineScript Tools")
+          /usr/local/bin/enginescript/scripts/menu/enginescript-tools-menu.sh
           break
           ;;
         "Update Software")
           /usr/local/bin/enginescript/scripts/menu/update-menu.sh
-          break
-          ;;
-        "View Server Logs")
-          /usr/local/bin/enginescript/scripts/menu/logs-menu.sh
           break
           ;;
         "Exit EngineScript")
