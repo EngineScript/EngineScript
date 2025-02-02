@@ -22,7 +22,6 @@ if [ ${BIT_TYPE} != 'x86_64' ];
     exit
 fi
 
-
 LINUX_TYPE=`echo $(lsb_release -i | cut -d':' -f 2)`
 UBUNTU_RELEASE=`echo $(lsb_release -c | cut -d':' -f 2)`
 # Testing alternate verification method

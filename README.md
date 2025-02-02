@@ -5,18 +5,18 @@ EngineScript automates the process of building a high-performance LEMP server. W
 **Note:** EngineScript is currently in pre-release
 
 ## Default Configuration ##
-The standard EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
+The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
 
 |Function|Software|
 |-|-|
-|SSL Certificate Management | Cloudflare |
-|CDN | Cloudflare |
-|Web Server | Nginx | FastCGI Cache | OpenSSL | Cloudflare ZLib | Performance Patches |
-|Script Processing | PHP | PHP OPCACHE |
-|MySQL Database | MariaDB |
-|Object Cache | Redis |
-|CMS | WordPress |
-|Firewall | UFW |
+|**SSL Certificate Management** | Cloudflare |
+|**CDN** | Cloudflare |
+|**Web Server** | Nginx | FastCGI Cache | OpenSSL | Cloudflare ZLib | Performance Patches |
+|**Script Processing** | PHP | PHP OPCACHE |
+|**MySQL Database** | MariaDB |
+|**Object Cache** | Redis |
+|**CMS** | WordPress |
+|**Firewall** | UFW |
 
 ## Requirements
 EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
@@ -56,7 +56,7 @@ es.install
 ----------
 
 ## Domain Creation
-After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose option **1** to create a new domain.
+After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Configure New Domain**, then select **1) Add Domain** to create a new domain installation on your server.
 
 Domain creation is almost entirely automated, requiring you to only enter the domain name you wish to create. During this automated process, we'll create a unique Nginx vhost file, create new MySQL database, request a new SSL certificate from Cloudflare, download WordPress, install and activate plugins, and assign the applicable data to wp-config.php.
 
@@ -174,9 +174,8 @@ Go through each optimization tab and select the following:
 |**Content Management System (CMS)**|
 |WORDPRESS | Latest |https://wordpress.org |
 |WP-CLI | Latest |https://github.com/wp-cli/wp-cli |
-|WP-CLI: Clear OPcache | Latest |https://github.com/wearerequired/wp-cli-clear-opcache|
 |WP-CLI: cron-command | Latest |https://github.com/wp-cli/cron-command |
-|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command|
+|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command |
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
@@ -194,11 +193,11 @@ Go through each optimization tab and select the following:
 |PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder |
 |UNCOMPLICATED FIREWALL (UFW) || Bundled with Ubuntu |
 |WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases |
-|WPSCAN|Latest|https://wpscan.com/|
+|WPSCAN|Latest|https://wpscan.com/ |
 ||
 ||
 |**Development Tools**|
-|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html|
+|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html |
 |ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer |
 ||
 ||
@@ -210,7 +209,7 @@ Go through each optimization tab and select the following:
 ||
 |**Misc Supplemental Software**|
 |GIXY|Latest|https://github.com/yandex/gixy |
-|LIBURING|2.8|https://github.com/axboe/liburing|
+|LIBURING|2.8|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
 

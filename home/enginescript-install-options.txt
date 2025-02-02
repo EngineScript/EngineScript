@@ -2,21 +2,14 @@
 # # # # # # # # # # # # EngineScript Variables # # # # # # # # # # # #
 ######################################################################
 
-# This file is copied into the /home/EngineScript directory.
-# Scripts will look there for any user-specific information.
-# Do not alter this file from the /usr/local/bin/enginescript
-# directory, as any changes will be ignored and overwritten when
-# EngineScript updates.
-
-#|##########################################################|#
-#|                                                          |#
-#|                        IMPORTANT:                        |#
-#|                                                          |#
-#|          To edit the correct file, use command           |#
-#|                                                          |#
-#|                        es.config                         |#
-#|                                                          |#
-#|##########################################################|#
+#| IMPORTANT:
+#|
+#| How to edit your configuration file:
+#| Choose one of the methods below:
+#|
+#| At console, type: es.config
+#| At console, type: es.menu and select option 7, then option 3
+#| At console, type /home/EngineScript/enginescript-install-options.txt
 
 ###################
 # Install Options #

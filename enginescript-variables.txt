@@ -1,13 +1,12 @@
 ######################################################################
 # # # # # # # # # # # # EngineScript Variables # # # # # # # # # # # #
 ######################################################################
+# Note: This file resets whenever EngineScript is updated.
 
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
-#-#-#-#-#-#-#         Edit These At Your Own Risk         #-#-#-#-#-#-
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+#-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="JAN2525"
+VARIABLES_DATE="FEB0125"
 
 # Software Versions
 LIBURING_VER="2.8"
