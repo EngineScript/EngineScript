@@ -115,6 +115,28 @@ sed -i "\/SITES\=(/a\
 cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
 sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
+# Create Admin Subdomain Vhost File
+cp -rf /usr/local/bin/enginescript/etc/nginx/admin/admin.yourdomain.com.conf /etc/nginx/admin/admin.${DOMAIN}.conf
+sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+
+# Enable Admin Subdomain Vhost File
+if [ "${DOMAIN_ADMIN_SECTION}" = 1 ];
+  then
+    sed -i "s|#include /etc/nginx/admin/admin.;|include /etc/nginx/admin/admin.;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+  else
+    echo ""
+fi
+
+# Secure Admin Subdomain
+if [ "${NGINX_SECURE_ADMIN}" = 1 ];
+  then
+    sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+    sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+    sed -i "s|#allow |allow |g" /etc/nginx/admin/admin.${DOMAIN}.conf
+  else
+    echo ""
+fi
+
 # HTTP3
 if [ "${INSTALL_HTTP3}" = 1 ];
   then
@@ -153,7 +175,7 @@ while true;
 export CF_Key="${CF_GLOBAL_API_KEY}"
 export CF_Email="${CF_ACCOUNT_EMAIL}"
 
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server letsencrypt --ocsp -d ${DOMAIN} -d *.${DOMAIN} -k ec-384
+/root/.acme.sh/acme.sh --issue --dns dns_cf --server letsencrypt -oscp -d ${DOMAIN} -d *.${DOMAIN} -k ec-384
 
 /root/.acme.sh/acme.sh --install-cert -d ${DOMAIN} --ecc \
 --cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \

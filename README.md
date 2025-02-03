@@ -65,14 +65,17 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 ### Cloudflare
 #### Go to the Cloudflare Dashboard
 
-1. Select your site
+1. Select your domain
 
-#### SSL/TLS Tab
+#### DNS Tab
 ##### Overview Section
 
-1. Click **Configure** button
-2. Under Custom SSL/TLS, click **Select** button
-3. Set the SSL mode to **Full (Strict)**
+#### SSL/TLS Tab
+##### Records Section
+First, we need to add a new CNAME record for admin.*yourdomain.com*. This will allow you to access the admin subdomain on your site. You can also reach the admin section via IP address instead if you prefer.
+
+1. Click **Add record** button
+2. **Type:** CNAME | **Name:** admin | **Target:** (your domain) *example: yourdomain.com*
 
 ##### Edge Certificates Section
 

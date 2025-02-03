@@ -18,6 +18,7 @@
 # 1 = enabled
 AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
+DOMAIN_ADMIN_SECTION=1
 INSTALL_ADMINER=0
 INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
@@ -119,7 +120,7 @@ CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
 ## Nginx Password Protection ##
-# This adds a second layer of security to the admin areas on the server such as Webmin and phpMyAdmin.
+# This adds a second layer of security to the admin panel on the server such as Webmin and phpMyAdmin.
 # Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
