@@ -16,9 +16,9 @@
 ###################
 # 0 = disabled
 # 1 = enabled
+ADMIN_SUBDOMAIN=1
 AUTOMATIC_ENGINESCRIPT_UPDATES=1
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
-DOMAIN_ADMIN_SECTION=1
 INSTALL_ADMINER=0
 INSTALL_PHPMYADMIN=1
 INSTALL_WEBMIN=0
@@ -44,9 +44,8 @@ INSTALL_EXPANDED_PHP=0
 # 0 = disabled
 # 1 = enabled
 
-## Secure Admin Location ##
-# When set to 1, this will enable a primary password protection layer that prompts
-# visitors to your admin pages such as phpMyAdmin.
+## Secure Admin Panel ##
+# When set to 1, this will enable a primary password protection layer that prompts visitors to your admin pages such as phpMyAdmin.
 # Recommended: 1
 NGINX_SECURE_ADMIN=1
 
@@ -90,9 +89,20 @@ WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 #HOURLY_GOOGLE_DRIVE_DATABASE_BACKUP=0
 #WEEKLY_GOOGLE_DRIVE_WPCONTENT_BACKUP=0
 
-####################
-# User Credentials #
-####################
+############
+# API KEYS #
+############
+
+## Cloudflare (Required) ##
+# Instructions:
+#   Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+CF_GLOBAL_API_KEY="PLACEHOLDER"
+CF_ACCOUNT_EMAIL="PLACEHOLDER"
+
+## Pushbullet (Optional) ##
+# This is used for the checksums and .php files in the uploads directory crons.
+# Create your token at https://www.pushbullet.com/#settings/account
+PUSHBULLET_TOKEN="PLACEHOLDER"
 
 ## Ubuntu Pro (Optional) ##
 # Enables extra application security updates.
@@ -100,6 +110,43 @@ WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
 # Sign up for a free account personal use account at:
 # https://ubuntu.com/pro
 UBUNTU_PRO_TOKEN="PLACEHOLDER"
+
+## WP Scan (Optional) ##
+# This is used to scan WordPress for known vulnerabilities.
+# Create your token at https://wpscan.com/api
+WPSCANAPI="PLACEHOLDER"
+
+####################
+# User Credentials #
+####################
+
+## WordPress Admin (Required) ##
+# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
+WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
+WP_ADMIN_USERNAME="PLACEHOLDER"
+WP_ADMIN_PASSWORD="PLACEHOLDER"
+WP_RECOVERY_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
+
+## Nginx Password Protection (Recommended) ##
+# This adds a second layer of security to the admin panel on the server such as Webmin and phpMyAdmin.
+# Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
+NGINX_USERNAME="PLACEHOLDER"
+NGINX_PASSWORD="PLACEHOLDER"
+
+## MariaDB (Required) ##
+# We've set MariaDB to always use root as the username.
+# Password Recommendation:
+# 26 characters: A-Z, a-z, 0-9
+MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
+
+## phpMyAdmin (Recommended) ##
+PHPMYADMIN_USERNAME="PLACEHOLDER"
+PHPMYADMIN_PASSWORD="PLACEHOLDER"
+
+## Webmin (Optional)##
+# Optional - If you don't want to use Webmin, leave this alone.
+WEBMIN_USERNAME="PLACEHOLDER"
+WEBMIN_PASSWORD="PLACEHOLDER"
 
 ## Amazon S3 Cloud Backup (Optional) ##
 #
@@ -112,51 +159,6 @@ UBUNTU_PRO_TOKEN="PLACEHOLDER"
 #   Bucket creation:
 #     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
 S3_BUCKET_NAME="PLACEHOLDER"
-
-## Cloudflare ##
-# Instructions:
-#   Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
-CF_GLOBAL_API_KEY="PLACEHOLDER"
-CF_ACCOUNT_EMAIL="PLACEHOLDER"
-
-## Nginx Password Protection ##
-# This adds a second layer of security to the admin panel on the server such as Webmin and phpMyAdmin.
-# Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
-NGINX_USERNAME="PLACEHOLDER"
-NGINX_PASSWORD="PLACEHOLDER"
-
-## MariaDB ##
-# We've set MariaDB to always use root as the username.
-# Password Recommendation:
-# 26 characters: A-Z, a-z, 0-9
-MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
-
-## phpMyAdmin (Recommended) ##
-PHPMYADMIN_USERNAME="PLACEHOLDER"
-PHPMYADMIN_PASSWORD="PLACEHOLDER"
-
-## Webmin (Optional)##
-# Optional - If you don't want to use Webmin, leave this alone.
-# Leave this alone if you want to use phpMyAdmin instead.
-WEBMIN_USERNAME="PLACEHOLDER"
-WEBMIN_PASSWORD="PLACEHOLDER"
-
-## WordPress Admin ##
-# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
-WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
-WP_ADMIN_USERNAME="PLACEHOLDER"
-WP_ADMIN_PASSWORD="PLACEHOLDER"
-WP_RECOVERY_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
-
-## Pushbullet (Optional) ##
-# This is used for the checksums and .php files in the uploads directory crons.
-# Create your token at https://www.pushbullet.com/#settings/account
-PUSHBULLET_TOKEN="PLACEHOLDER"
-
-## WP Scan (Optional) ##
-# This is used to scan WordPress for known vulnerabilities.
-# Create your token at https://wpscan.com/api
-WPSCANAPI="PLACEHOLDER"
 
 # DONE
 # Proceed to: Step 3 - Main Install Process

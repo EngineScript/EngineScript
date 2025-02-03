@@ -24,7 +24,7 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
 - **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
 - **2GB RAM**
-- **Cloudflare** *(free or paid)*
+- **Cloudflare** *(Free or Paid)*
 - **30 minutes of your time**
 
 ## Install EngineScript
@@ -38,12 +38,12 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 ### Step 2 - Edit Options File
 After the initial setup script has run, you'll need to alter the install options file.
 
-First, retrieve your Cloudflare Global API Key at **https://dash.cloudflare.com/profile/api-tokens**. Then you'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
-
 Run the following command:
 ```shell
 es.config
 ```
+
+You'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
 
 ### Step 3 - Main Install Process
 Once you've filled out the configuration file with your personal settings, continue with the main installation process.

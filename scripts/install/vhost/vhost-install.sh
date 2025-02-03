@@ -120,7 +120,7 @@ cp -rf /usr/local/bin/enginescript/etc/nginx/admin/admin.yourdomain.com.conf /et
 sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
 
 # Enable Admin Subdomain Vhost File
-if [ "${DOMAIN_ADMIN_SECTION}" = 1 ];
+if [ "${ADMIN_SUBDOMAIN}" = 1 ];
   then
     sed -i "s|#include /etc/nginx/admin/admin.;|include /etc/nginx/admin/admin.;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
   else
@@ -175,7 +175,7 @@ while true;
 export CF_Key="${CF_GLOBAL_API_KEY}"
 export CF_Email="${CF_ACCOUNT_EMAIL}"
 
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server letsencrypt -oscp -d ${DOMAIN} -d *.${DOMAIN} -k ec-384
+/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d ${DOMAIN} -d admin.${DOMAIN} -d *.${DOMAIN} -k ec-384
 
 /root/.acme.sh/acme.sh --install-cert -d ${DOMAIN} --ecc \
 --cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \

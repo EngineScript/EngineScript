@@ -124,20 +124,6 @@ if [ "$MARIADB_ADMIN_PASSWORD" = PLACEHOLDER ];
     exit
 fi
 
-# Check Nginx Username
-if [ "$NGINX_USERNAME" = PLACEHOLDER ];
-	then
-    echo -e "\nWARNING:\n\nNGINX_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change NGINX_USERNAME to something more secure.\n"
-    exit
-fi
-
-# Check Nginx Password
-if [ "$NGINX_PASSWORD" = PLACEHOLDER ];
-	then
-    echo -e "\nWARNING:\n\nNGINX_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change NGINX_PASSWORD to something more secure.\n"
-    exit
-fi
-
 # Check phpMyAdmin Username
 if [ "$PHPMYADMIN_USERNAME" = PLACEHOLDER ];
 	then
