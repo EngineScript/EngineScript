@@ -86,8 +86,8 @@ sleep 1
 echo "For domain name, enter only the domain without https:// or trailing /"
 echo "note:   lowercase text only"
 echo ""
-echo "Examples:    yourdomain.com"
-echo "             yourdomain.net"
+echo "Examples:    wordpresstesting.com"
+echo "             wordpresstesting.net"
 echo ""
 read -p "Enter Domain name: " DOMAIN
 echo ""
@@ -112,12 +112,12 @@ sed -i "\/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.com.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
-sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
 # Create Admin Subdomain Vhost File
-cp -rf /usr/local/bin/enginescript/etc/nginx/admin/admin.yourdomain.com.conf /etc/nginx/admin/admin.${DOMAIN}.conf
-sed -i "s|yourdomain.com|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/etc/nginx/admin/admin.yourdomain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
 
 # Enable Admin Subdomain Vhost File
 if [ "${ADMIN_SUBDOMAIN}" = 1 ];

@@ -72,10 +72,10 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 
 #### SSL/TLS Tab
 ##### Records Section
-First, we need to add a new CNAME record for admin.*yourdomain.com*. This will allow you to access the admin subdomain on your site. You can also reach the admin section via IP address instead if you prefer.
+First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow you to access the admin subdomain on your site. You can also reach the admin section via IP address instead if you prefer.
 
 1. Click **Add record** button
-2. **Type:** CNAME | **Name:** admin | **Target:** (your domain) *example: yourdomain.com*
+2. **Type:** CNAME | **Name:** admin | **Target:** (your domain) *example: YOURDOMAIN*
 
 ##### Edge Certificates Section
 
@@ -229,7 +229,7 @@ Go through each optimization tab and select the following:
 |**/var/lib/mysql**              |MySQL database |
 |**/var/log**                    |Server logs |
 |**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
-|**/var/www/sites/*yourdomain.com*/html** |Root directory for your WordPress installation |
+|**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
 
 ### EngineScript Commands
 

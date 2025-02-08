@@ -45,8 +45,8 @@ done
 echo "For domain name, enter only the domain without https:// or trailing /"
 echo "note:   lowercase text only"
 echo ""
-echo "Examples:    yourdomain.com"
-echo "             yourdomain.net"
+echo "Examples:    wordpresstesting.com"
+echo "             wordpresstesting.net"
 echo ""
 read -p "Enter Domain name: " DOMAIN
 echo ""
