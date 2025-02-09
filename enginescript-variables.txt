@@ -6,14 +6,14 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="FEB0125"
+VARIABLES_DATE="FEB0825"
 
 # Software Versions
 LIBURING_VER="2.8"
 MARIADB_VER="11.4.4"
 NGINX_HEADER_VER="0.38"
 NGINX_PURGE_VER="2.5.3"
-NGINX_VER="1.27.3"
+NGINX_VER="1.27.4"
 OPENSSL_VER="3.4.0"
 PCRE2_VER="10.44"
 PHP_VER="8.3"

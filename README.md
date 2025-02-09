@@ -68,19 +68,17 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 1. Select your domain
 
 #### DNS Tab
-##### Overview Section
-
-#### SSL/TLS Tab
 ##### Records Section
 First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow you to access the admin subdomain on your site. You can also reach the admin section via IP address instead if you prefer.
 
 1. Click **Add record** button
-2. **Type:** CNAME | **Name:** admin | **Target:** (your domain) *example: YOURDOMAIN*
+2. **Type:** CNAME | **Name:** admin | **Target:** (your domain)
 
+#### SSL/TLS Tab
 ##### Edge Certificates Section
 
-1. Always Use HTTPS: **Off** *(Important: This can cause redirect loops)*
-2. HSTS: **On** *(Optional)*
+1. Always Use HTTPS: **Off** - *(Important: This can cause redirect loops)*
+2. HSTS: **On** - *(Optional)*
 3. Minimum TLS Version: **TLS 1.2**
 4. Opportunistic Encryption: **On**
 5. TLS 1.3: **On**
@@ -98,11 +96,11 @@ Go through each optimization tab and select the following:
 1. Speed Brain: **On**
 2. Cloudflare Fonts **On**
 3. Early Hints: **On**
-4. Rocket Loaders: **Optional** *Test this on your site, it can cause issues with some plugins*
+4. Rocket Loader: **Optional** - *(Test this on your site, it can cause issues with some plugins)*
 5. HTTP/2: **On**
 6. HTTP/2 to Origin: **On**
-7. HTTP/3 (with QUIC): **On** *Note: Cloudflare does not currently support HTTP/3 to Origin*
-8. Enhanced HTTP/2 Prioritization **On** *Only available if you have Cloudflare Pro*
+7. HTTP/3 (with QUIC): **On** - *(Note: Cloudflare does not currently support HTTP/3 to Origin)*
+8. Enhanced HTTP/2 Prioritization **On** - *(Only available if you have Cloudflare Pro)*
 9. 0-RTT Connection Resumption: **On**
 10. AMP Real URL: **Optional**
 
@@ -149,13 +147,14 @@ Go through each optimization tab and select the following:
 ||
 ||
 |**Web Server**|
-|NGINX MAINLINE|1.27.3|https://nginx.org/en/download.html |
+|NGINX MAINLINE|1.27.4|https://nginx.org/en/download.html |
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
 |NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
 |NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
 |OPENSSL|3.4.0|https://www.openssl.org/source/ |
 |PCRE2|10.44|https://github.com/PCRE2Project/pcre2/releases |
 |ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib |
+||
 ||
 |**Script Processing**|
 |PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php |
