@@ -35,7 +35,16 @@ cp -rf /usr/local/bin/enginescript/scripts/functions/cron/sites.sh /home/EngineS
 # This pulls and runs the latest version of the the emergency upgrade script from GitHub.
 # This allows EngineScript to self-heal in the event of a serious bug that would cause your server to not run correctly.
 # This file won't be used regularly.
-(crontab -l 2>/dev/null; echo "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1") | crontab -
+if [ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" = 1 ];
+  then
+    (crontab -l 2>/dev/null; echo "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1") | crontab -
+fi
+
+# EngineScript Automatic Updates (daily)
+if [ "${ENGINESCRIPT_AUTO_UPDATE}" = 1 ];
+  then
+    (crontab -l 2>/dev/null; echo "55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1") | crontab -
+fi
 
 # WordPress Cron Ping (every 15 minutes)
 (crontab -l 2>/dev/null; echo "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1") | crontab -
@@ -91,12 +100,6 @@ fi
 
 # Reset Ownership & Permissions for WordPress and EngineScript (daily)
 (crontab -l 2>/dev/null; echo "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash permissions.sh >/dev/null 2>&1") | crontab -
-
-# EngineScript Automatic Updates (daily)
-if [ "${AUTOMATIC_ENGINESCRIPT_UPDATES}" = 1 ];
-  then
-    (crontab -l 2>/dev/null; echo "55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1") | crontab -
-fi
 
 # Scan Uploads Directory for Potentially Unwanted .php Files (daily)
 if [ "$PUSHBULLET_TOKEN" != PLACEHOLDER ];
