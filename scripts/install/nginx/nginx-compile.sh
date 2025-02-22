@@ -130,7 +130,7 @@ make install
 rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 
 # Remove debug symbols
-strip -s /usr/sbin/nginx
+strip -s /usr/sbin/nginx*
 
 checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
 

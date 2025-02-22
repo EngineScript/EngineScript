@@ -29,9 +29,9 @@ sed -i "s|SEDSERVERMEM05|${SERVER_MEMORY_TOTAL_05}|g" /etc/nginx/nginx.conf
 
 if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
   then
-    sed -i "s|SEDFCGIBUFFERS|16 32k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUFFERS|8 32k|g" /etc/nginx/nginx.conf
   else
-    sed -i "s|SEDFCGIBUFFERS|32 32k|g" /etc/nginx/nginx.conf
+    sed -i "s|SEDFCGIBUFFERS|16 32k|g" /etc/nginx/nginx.conf
 fi
 
 if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
@@ -39,6 +39,13 @@ if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
     sed -i "s|SEDFCGIBUSYBUFFERS|128k|g" /etc/nginx/nginx.conf
   else
     sed -i "s|SEDFCGIBUSYBUFFERS|256k|g" /etc/nginx/nginx.conf
+fi
+
+if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2800 ];
+  then
+    sed -i "s|SEDFCGITEMPFILEWRITESIZE|128k|g" /etc/nginx/nginx.conf
+  else
+    sed -i "s|SEDFCGITEMPFILEWRITESIZE|256k|g" /etc/nginx/nginx.conf
 fi
 
 # Tune Nginx Threads and variables_hash_bucket_size
