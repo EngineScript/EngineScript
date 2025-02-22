@@ -48,7 +48,7 @@ if [ "$INSTALL_EXPANDED_PHP" = 1 ];
 fi
 
 # Logrotate
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/opcache /etc/logrotate.d/opcache
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/opcache /etc/logrotate.d/opcache
 sed -i "s|rotate 12|rotate 5|g" /etc/logrotate.d/php${PHP_VER}-fpm
 
 # Backup PHP config

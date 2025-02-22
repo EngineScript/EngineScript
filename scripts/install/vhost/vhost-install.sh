@@ -112,11 +112,11 @@ sed -i "\/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -rf /usr/local/bin/enginescript/etc/nginx/sites-available/yourdomain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/config/etc/nginx/sites-available/yourdomain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
 # Create Admin Subdomain Vhost File
-cp -rf /usr/local/bin/enginescript/etc/nginx/admin/admin.yourdomain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/config/etc/nginx/admin/admin.yourdomain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
 
 # Enable Admin Subdomain Vhost File
@@ -237,7 +237,7 @@ mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/fonts
 mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts
 
 # Create wp-config.php
-cp -rf /usr/local/bin/enginescript/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPDB|${DB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPUSER|${USR}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 sed -i "s|SEDWPPASS|${PSWD}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
@@ -277,7 +277,7 @@ sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config
 sed -i "s|SEDWPRECOVERYEMAIL|${WP_RECOVERY_EMAIL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
 
 # Create robots.txt
-cp -rf /usr/local/bin/enginescript/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 
 # WP File Permissions

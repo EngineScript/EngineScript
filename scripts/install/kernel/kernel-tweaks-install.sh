@@ -24,7 +24,7 @@ fi
 # Start Main Script
 
 # Kernel Tweaks
-cp -rf /usr/local/bin/enginescript/etc/sysctl.d/60-enginescript.conf /etc/sysctl.d/60-enginescript.conf
+cp -rf /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf /etc/sysctl.d/60-enginescript.conf
 chown -R root:root /etc/sysctl.d/60-enginescript.conf
 chmod 0664 /etc/sysctl.d/60-enginescript.conf
 

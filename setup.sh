@@ -169,7 +169,7 @@ if [ -f "/home/EngineScript/enginescript-install-options.txt" ]
     echo -e "Initial setup is complete.\n\n"
     echo -e "Proceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"
   else
-    cp -rf /usr/local/bin/enginescript/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
+    cp -rf /usr/local/bin/enginescript/config/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt
     clear
     echo -e "\n\n"
     echo -e "Initial setup is complete.\n\n"

@@ -27,7 +27,7 @@ fi
 apt install -qy clamav --no-install-recommends
 
 # Set ClamAV Config
-cp -rf /usr/local/bin/enginescript/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf
+cp -rf /usr/local/bin/enginescript/config/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf
 
 echo ""
 echo ""

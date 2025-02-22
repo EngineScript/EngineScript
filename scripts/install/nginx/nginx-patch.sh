@@ -27,7 +27,7 @@ fi
 
 # Patch Nginx
 cd /usr/src/nginx-${NGINX_VER}
-patch -p1 < /usr/local/bin/enginescript/patches/nginx.patch
+patch -p1 < /usr/local/bin/enginescript/scripts/patches/nginx.patch
 
 # Patch OpenSSL
 #cd /usr/src/openssl-${OPENSSL_VER}

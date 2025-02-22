@@ -41,7 +41,7 @@ chmod 775 /var/log/redis
 #chown -R redis:redis /var/log/redis
 
 # Copy Redis Config File
-cp -rf /usr/local/bin/enginescript/etc/redis/redis.conf /etc/redis/redis.conf
+cp -rf /usr/local/bin/enginescript/config/etc/redis/redis.conf /etc/redis/redis.conf
 
 # Redis Tuning
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf

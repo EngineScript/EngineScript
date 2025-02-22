@@ -27,8 +27,8 @@ fi
 apt-get install -qy ksmtuned --no-install-recommends
 sudo systemctl enable --now ksm.service
 mkdir -p /opt/kernel-samepage-merging/
-cp -rf /usr/local/bin/enginescript/etc/systemd/system/ksm.service /etc/systemd/system/ksm.service
-cp -rf /usr/local/bin/enginescript/opt/kernel-samepage-merging/ksm-service.sh /opt/kernel-samepage-merging/ksm-service.sh
+cp -rf /usr/local/bin/enginescript/config/etc/systemd/system/ksm.service /etc/systemd/system/ksm.service
+cp -rf /usr/local/bin/enginescript/config/opt/kernel-samepage-merging/ksm-service.sh /opt/kernel-samepage-merging/ksm-service.sh
 echo 'w /sys/kernel/mm/ksm/run - - - - 1' >> /etc/tmpfiles.d/ksm.conf
 
 # Persmissions

@@ -72,7 +72,7 @@ EOFMYSQLSECURE
 
 # Copy MariaDB Config
 systemctl stop mariadb.service
-cp -rf /usr/local/bin/enginescript/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
+cp -rf /usr/local/bin/enginescript/config/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
 
 # Create Logs
 touch /var/log/mysql/mysql-error.log

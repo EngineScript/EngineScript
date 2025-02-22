@@ -46,7 +46,7 @@ chown -R www-data:www-data /etc/php
 
 # Logrotate
 rm -rf /etc/logrotate.d/php${OLDPHP}-fpm
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
 
 sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/nginx/globals/php.conf
 sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf

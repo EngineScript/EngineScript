@@ -65,11 +65,11 @@ touch /var/log/webmin/miniserv.error.log
 chmod 775 /var/log/webmin
 
 # Logrotate
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/webmin /etc/logrotate.d/webmin
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/webmin /etc/logrotate.d/webmin
 
 # Set Webmin Config
-cp -rf /usr/local/bin/enginescript/etc/webmin/config /etc/webmin/config
-cp -rf /usr/local/bin/enginescript/etc/webmin/miniserv.conf /etc/webmin/miniserv.conf
+cp -rf /usr/local/bin/enginescript/config/etc/webmin/config /etc/webmin/config
+cp -rf /usr/local/bin/enginescript/config/etc/webmin/miniserv.conf /etc/webmin/miniserv.conf
 
 echo ""
 echo ""

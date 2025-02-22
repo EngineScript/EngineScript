@@ -96,13 +96,13 @@ calculate_php() {
 }
 
 # Update PHP config
-cp -rf /usr/local/bin/enginescript/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
+cp -rf /usr/local/bin/enginescript/config/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php.ini
 
-cp -rf /usr/local/bin/enginescript/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
+cp -rf /usr/local/bin/enginescript/config/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf
 
-cp -rf /usr/local/bin/enginescript/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+cp -rf /usr/local/bin/enginescript/config/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
 
 # Tune PHP Configuration

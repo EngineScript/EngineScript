@@ -24,7 +24,7 @@ fi
 # Start Main Script
 
 # Network Time Protocol (NTP)
-cp -rf /usr/local/bin/enginescript/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
+cp -rf /usr/local/bin/enginescript/config/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
 chmod 644 /etc/systemd/timesyncd.conf
 timedatectl set-ntp true
 systemctl restart systemd-timedated

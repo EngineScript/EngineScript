@@ -24,7 +24,7 @@ fi
 # Start Main Script
 
 # Retrieve EngineScript Nginx Configuration
-cp -a /usr/local/bin/enginescript/etc/nginx/. /etc/nginx/
+cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php.conf
 
 # Assign Permissions
@@ -39,6 +39,6 @@ chown -R www-data:www-data /var/www
 chmod 775 /var/cache/nginx
 
 # Logrotate - Nginx and Domains
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/nginx /etc/logrotate.d/nginx
-cp -rf /usr/local/bin/enginescript/etc/logrotate.d/domains /etc/logrotate.d/domains
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/nginx /etc/logrotate.d/nginx
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/domains /etc/logrotate.d/domains
 find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
