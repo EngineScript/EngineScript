@@ -314,6 +314,7 @@ wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PA
 # WP-CLI Install Plugins
 wp plugin install app-for-cf --allow-root
 wp plugin install autodescription --allow-root
+wp plugin install flush-opcache --allow-root
 wp plugin install mariadb-health-checks --allow-root
 wp plugin install nginx-helper --allow-root
 wp plugin install php-compatibility-checker --allow-root
@@ -323,6 +324,7 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
+wp plugin install flush-opcache --allow-root
 wp plugin install mariadb-health-checks --allow-root
 wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root

@@ -81,13 +81,20 @@ fi
 # these packages include backports, some of them are just more up-to-date. If you're looking for
 # the most secure server environment possible, EngineScript is probably not what you're looking for.
 
-sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
-
 # Install Required Packages for Script
 apt update --allow-releaseinfo-change -y
-apt install -y boxes dos2unix git nano pwgen software-properties-common tzdata unattended-upgrades
-apt full-upgrade -y
-apt dist-upgrade -y
+
+core_packages="bash boxes cron coreutils curl dos2unix git gzip nano openssl pwgen sed software-properties-common tar tzdata unattended-upgrades unzip zip"
+
+apt install -qy $core_packages || {
+  echo "Error: Unable to install one or more packages. Exiting..."
+  exit 1
+}
+
+sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
+
+# Upgrade Software
+apt upgrade -y
 
 # Return to /usr/src
 cd /usr/src
