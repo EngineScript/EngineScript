@@ -60,7 +60,7 @@ echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $UBUNTU_TYPE $UBUNTU_VERSION $UBUNTU_CODENAME"
 echo -e "${BOLD}\nEngineScript Install Options:${NORMAL}"
 echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
-echo "AUTOMATIC_ENGINESCRIPT_UPDATES = $AUTOMATIC_ENGINESCRIPT_UPDATES"
+echo "ENGINESCRIPT_AUTO_UPDATE = $ENGINESCRIPT_AUTO_UPDATE"
 echo "INSTALL_ADMINER = $INSTALL_ADMINER"
 echo "INSTALL_PHPMYADMIN = $INSTALL_PHPMYADMIN"
 echo "INSTALL_WEBMIN = $INSTALL_WEBMIN"
@@ -139,14 +139,14 @@ if [ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ];
 fi
 
 # Check WordPress Admin Email
-if [ "$WP_ADMIN_EMAIL" = PLACEHOLDER@PLACEHOLDER.com ];
+if [ "$WP_ADMIN_EMAIL" = PLACEHOLDER ];
 	then
-    echo -e "\nWARNING:\n\nWP_ADMIN_EMAIL is set to PLACEHOLDER@PLACEHOLDER.com. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address.\n"
+    echo -e "\nWARNING:\n\nWP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address.\n"
     exit
 fi
 
 # Check/fix WordPress Recovery Email
-if [ "$WP_RECOVERY_EMAIL" = PLACEHOLDER@PLACEHOLDER.com ];
+if [ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ];
 	then
     sed -i "s|PLACEHOLDER@PLACEHOLDER\.com|${WP_ADMIN_EMAIL}|g" /home/EngineScript/enginescript-install-options.txt
 fi

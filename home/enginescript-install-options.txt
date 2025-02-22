@@ -16,16 +16,41 @@
 ###################
 # 0 = disabled
 # 1 = enabled
+
+# Admin Subdomain (Recommended)
+# This will add an admin subdomain (example: admin.wordpresstesting.com) to your site, allowing you to access your server's admin control panel directly from any site installed on your server. You can also access it directly via your server's IP address.
 ADMIN_SUBDOMAIN=1
-AUTOMATIC_ENGINESCRIPT_UPDATES=1
-AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
-INSTALL_ADMINER=0
+
+# phpMyAdmin (Recommended)
+# Access MySQL databases and make changes to them. An essential tool.
 INSTALL_PHPMYADMIN=1
+
+# Adminer
+# Adminer is a phpMyAdmin alternative.
+INSTALL_ADMINER=0
+
+# Webmin
+# Browser-based server tools
 INSTALL_WEBMIN=0
 
-#####################
-# Expanded Features #
-#####################
+########################
+# EngineScript Updates #
+########################
+# 0 = disabled
+# 1 = enabled
+
+# EngineScript Daily Updates
+# Adds a cronjob that pulls the latest EngineScript release and updates your installation to that version.
+ENGINESCRIPT_AUTO_UPDATE=1
+
+# EngineScript Emergency Updates
+# Recommended if you allow EngineScript to auto-update. In the event that a change is pushed live that breaks servers, this emergency-only script will run to attempt a self-heal.
+# This script runs hourly, but will not contain any code unless there is a code issue that warrants emergency measures be taken.
+ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
+
+############################
+# Expanded Server Features #
+############################
 # 0 = disabled
 # 1 = enabled
 
@@ -44,7 +69,7 @@ INSTALL_EXPANDED_PHP=0
 # 0 = disabled
 # 1 = enabled
 
-## Secure Admin Panel ##
+## Secure Admin Control Panel ##
 # When set to 1, this will enable a primary password protection layer that prompts visitors to your admin pages such as phpMyAdmin.
 # Recommended: 1
 NGINX_SECURE_ADMIN=1
@@ -57,12 +82,12 @@ SHOW_ENGINESCRIPT_HEADER=0
 ##################
 # Backup Options #
 ##################
+# 0 = disabled
+# 1 = enabled
+
 # Amazon S3, Dropbox, and Google Drive backups require the local backups
 # settings below to be enabled. If you want hourly, daily, and weekly
 # backups to the cloud, be sure to set the corresponding local options.
-#
-# 0 = disabled
-# 1 = enabled
 
 ## Local Backup ##
 DAILY_LOCAL_DATABASE_BACKUP=1
@@ -74,6 +99,17 @@ INSTALL_S3_BACKUP=0
 DAILY_S3_DATABASE_BACKUP=0
 HOURLY_S3_DATABASE_BACKUP=0
 WEEKLY_S3_WPCONTENT_BACKUP=0
+
+## Amazon S3 Cloud Backup Bucket Name (Optional) ##
+# Instructions:
+#   User creation:
+#     Follow ONLY sections 2 and 3:
+#     https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
+#     Sections: "Create an IAM User" and "Create Access Keys for the new User"
+#
+#   Bucket creation:
+#     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
+S3_BUCKET_NAME="PLACEHOLDER"
 
 ## Dropbox Backup ##
 INSTALL_DROPBOX_BACKUP=0
@@ -122,13 +158,13 @@ WPSCANAPI="PLACEHOLDER"
 
 ## WordPress Admin (Required) ##
 # Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
-WP_ADMIN_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
+WP_ADMIN_EMAIL="PLACEHOLDER"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
-WP_RECOVERY_EMAIL="PLACEHOLDER@PLACEHOLDER.com"
+WP_RECOVERY_EMAIL="PLACEHOLDER"
 
 ## Nginx Password Protection (Recommended) ##
-# This adds a second layer of security to the admin panel on the server such as Webmin and phpMyAdmin.
+# This adds a second layer of security to the Admin Control Panel on the server such as Webmin and phpMyAdmin.
 # Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
@@ -147,18 +183,6 @@ PHPMYADMIN_PASSWORD="PLACEHOLDER"
 # Optional - If you don't want to use Webmin, leave this alone.
 WEBMIN_USERNAME="PLACEHOLDER"
 WEBMIN_PASSWORD="PLACEHOLDER"
-
-## Amazon S3 Cloud Backup (Optional) ##
-#
-# Instructions:
-#   User creation:
-#     Follow ONLY sections 2 and 3:
-#     https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
-#     Sections: "Create an IAM User" and "Create Access Keys for the new User"
-#
-#   Bucket creation:
-#     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
-S3_BUCKET_NAME="PLACEHOLDER"
 
 # DONE
 # Proceed to: Step 3 - Main Install Process
