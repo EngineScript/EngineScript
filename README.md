@@ -152,7 +152,7 @@ Go through each optimization tab and select the following:
 |NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
 |NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
 |OPENSSL|3.4.1|https://www.openssl.org/source/ |
-|PCRE2|10.45s|https://github.com/PCRE2Project/pcre2/releases |
+|PCRE2|10.45|https://github.com/PCRE2Project/pcre2/releases |
 |ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib |
 ||
 ||
