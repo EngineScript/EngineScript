@@ -45,8 +45,7 @@ while true
           break
           ;;
         "Update MariaDB")
-          echo "Currently disabled as it's not needed."
-          sleep 5
+          /usr/local/bin/enginescript/scripts/update/mariadb-update.sh
           break
           ;;
         "Update Nginx")

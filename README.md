@@ -2,7 +2,7 @@
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
-**Note:** EngineScript is currently in pre-release
+EngineScript Release Stage: **Alpha**
 
 ## Default Configuration ##
 The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
@@ -151,8 +151,8 @@ Go through each optimization tab and select the following:
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
 |NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
 |NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
-|OPENSSL|3.4.0|https://www.openssl.org/source/ |
-|PCRE2|10.44|https://github.com/PCRE2Project/pcre2/releases |
+|OPENSSL|3.4.1|https://www.openssl.org/source/ |
+|PCRE2|10.45s|https://github.com/PCRE2Project/pcre2/releases |
 |ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib |
 ||
 ||
@@ -161,7 +161,7 @@ Go through each optimization tab and select the following:
 ||
 ||
 |**MySQL Database**|
-|MARIADB|11.4.4|https://mariadb.org/download/ |
+|MARIADB|11.4.5|https://mariadb.org/download/ |
 ||
 ||
 |**Database Management**|
@@ -211,7 +211,7 @@ Go through each optimization tab and select the following:
 ||
 |**Misc Supplemental Software**|
 |GIXY|Latest|https://github.com/yandex/gixy |
-|LIBURING|2.8|https://github.com/axboe/liburing |
+|LIBURING|2.9|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
 

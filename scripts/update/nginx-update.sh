@@ -29,8 +29,11 @@ fi
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh
 
-# Brotli
+# Retrieve Latest Brotli
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh
+
+# Retrieve Latest OpenSSL
+/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh
 
 # Retrieve Latest Cloudflare Zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
@@ -43,6 +46,9 @@ fi
 
 # Compile Nginx
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh
+
+# Create Directories
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-create-directories.sh
 
 # Misc Nginx Stuff
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh
