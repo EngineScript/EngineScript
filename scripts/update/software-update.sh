@@ -52,9 +52,6 @@ if [ "${INSTALL_PHPMYADMIN}" = 1 ];
     echo "Skipping phpMyAdmin update"
 fi
 
-# Update Python
-#/usr/local/bin/enginescript/scripts/update/python-update.sh
-
 # Update WP-CLI
 echo "y" | wp cli update --stable --allow-root
 echo "y" | wp package update --allow-root
@@ -83,7 +80,6 @@ echo "  - liburing"
 echo "  - MYSQLTuner"
 echo "  - PHP Malware Finder"
 echo "  - phpMyAdmin (if enabled)"
-echo "  - Python Packages"
 echo "  - WP-CLI"
 echo "    - WP-CLI Packages"
 echo "  - WP-Scan"

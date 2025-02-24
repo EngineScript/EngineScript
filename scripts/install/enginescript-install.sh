@@ -241,6 +241,7 @@ if [ "${OPENSSL}" = 1 ];
 fi
 
 # Jemalloc
+# Not currently used
 #if [ "${JEMALLOC}" = 1 ];
 #  then
 #    echo "JEMALLOC script has already run."
@@ -302,15 +303,6 @@ fi
   #else
     #/usr/local/bin/enginescript/scripts/install/systemd/thp.sh
     #echo "THP=1" >> /home/EngineScript/install-log.txt
-#fi
-
-# Python
-#if [ "${PYTHON}" = 1 ];
-#  then
-#    echo "PYTHON script has already run."
-#  else
-#    /usr/local/bin/enginescript/scripts/install/python/python-install.sh
-#    echo "PYTHON=1" >> /home/EngineScript/install-log.txt
 #fi
 
 # PCRE

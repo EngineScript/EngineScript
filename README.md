@@ -176,7 +176,6 @@ Go through each optimization tab and select the following:
 |**Content Management System (CMS)**|
 |WORDPRESS | Latest |https://wordpress.org |
 |WP-CLI | Latest |https://github.com/wp-cli/wp-cli |
-|WP-CLI: cron-command | Latest |https://github.com/wp-cli/cron-command |
 |WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command |
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
@@ -210,7 +209,6 @@ Go through each optimization tab and select the following:
 ||
 ||
 |**Misc Supplemental Software**|
-|GIXY|Latest|https://github.com/yandex/gixy |
 |LIBURING|2.9|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
