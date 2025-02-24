@@ -27,9 +27,3 @@ source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Start Normal Automatic Upgrade
-
-# Remove EngineScript Crons
-crontab -l | grep -v '/usr/local/bin/enginescript/scripts/' | head -1 | crontab -
-
-# Install Updated EngineScript Crons
-/usr/local/bin/enginescript/scripts/install/cron/cron-install.sh
