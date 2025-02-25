@@ -59,10 +59,12 @@ fi
 # Cloudflare
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare.sh
 
+service nginx stop
+
 # Remove .default Files
 rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 
 # Remove debug symbols
 strip -s /usr/sbin/nginx*
 
-service nginx restart
+service nginx start
