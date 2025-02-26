@@ -112,11 +112,11 @@ sed -i "\/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/sites-available/yourdomain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 
 # Create Admin Subdomain Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/admin/admin.yourdomain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
+cp -rf /usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
 
 # Enable Admin Subdomain Vhost File
