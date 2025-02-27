@@ -4,6 +4,15 @@ EngineScript automates the process of building a high-performance LEMP server. W
 
 EngineScript Release Stage: **Alpha**
 
+## Requirements
+EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
+
+- **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
+- **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
+- **2GB RAM**
+- **Cloudflare** *(Free or Paid)*
+- **30 minutes of your time**
+
 ## Default Configuration ##
 The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
 
@@ -17,15 +26,6 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 |**Object Cache** | Redis |
 |**CMS** | WordPress |
 |**Firewall** | UFW |
-
-## Requirements
-EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
-
-- **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
-- **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
-- **2GB RAM**
-- **Cloudflare** *(Free or Paid)*
-- **30 minutes of your time**
 
 ## Install EngineScript
 
@@ -138,6 +138,39 @@ Go through each optimization tab and select the following:
 
 ## EngineScript Information Reference
 
+### EngineScript Locations
+
+|Location|Usage|
+|-|-|
+|**/etc/mysql**                  |MySQL (MariaDB) config |
+|**/etc/nginx**                  |Nginx config |
+|**/etc/php**                    |PHP config |
+|**/etc/redis**                  |Redis config |
+|**/home/EngineScript**          |EngineScript user directories |
+|**/usr/local/bin/enginescript** |EngineScript source |
+|**/var/lib/mysql**              |MySQL database |
+|**/var/log**                    |Server logs |
+|**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
+|**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
+
+### EngineScript Commands
+
+|Command|Function|
+|-|-|
+|**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
+|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
+|**`es.config`**    |Opens the configuration file in Nano |
+|**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
+|**`es.info`**    |Displays server information |
+|**`es.install`**	  |Runs the main EngineScript installation script |
+|**`es.menu`**	    |EngineScript menu |
+|**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
+|**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
+|**`es.restart`**   |Restart Nginx and PHP |
+|**`es.server`**    |Displays server information |
+|**`es.update`**    |Update EngineScript |
+|**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
+
 ### Software EngineScript Utilizes:
 
 |Software|Version|Source|
@@ -212,39 +245,6 @@ Go through each optimization tab and select the following:
 |LIBURING|2.9|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
-
-### EngineScript Locations
-
-|Location|Usage|
-|-|-|
-|**/etc/mysql**                  |MySQL (MariaDB) config |
-|**/etc/nginx**                  |Nginx config |
-|**/etc/php**                    |PHP config |
-|**/etc/redis**                  |Redis config |
-|**/home/EngineScript**          |EngineScript user directories |
-|**/usr/local/bin/enginescript** |EngineScript source |
-|**/var/lib/mysql**              |MySQL database |
-|**/var/log**                    |Server logs |
-|**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
-|**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
-
-### EngineScript Commands
-
-|Command|Function|
-|-|-|
-|**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
-|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
-|**`es.config`**    |Opens the configuration file in Nano |
-|**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
-|**`es.info`**    |Displays server information |
-|**`es.install`**	  |Runs the main EngineScript installation script |
-|**`es.menu`**	    |EngineScript menu |
-|**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
-|**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
-|**`es.restart`**   |Restart Nginx and PHP |
-|**`es.server`**    |Displays server information |
-|**`es.update`**    |Update EngineScript |
-|**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
