@@ -9,11 +9,11 @@
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
+if [ "${EUID}" -ne 0 ];
   then
-    echo "ALERT:"
+    echo "${BOLD}ALERT:${NORMAL}"
     echo "EngineScript should be executed as the root user."
-    exit
+    exit 1
 fi
 
 #----------------------------------------------------------------------------
