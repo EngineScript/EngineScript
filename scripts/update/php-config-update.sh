@@ -34,6 +34,7 @@ calculate_php() {
   SERVER_MEMORY_TOTAL_01="$(free -m | awk 'NR==2{printf "%d", $2*0.01 }')"
   SERVER_MEMORY_TOTAL_03=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.03 }')" ))
   SERVER_MEMORY_TOTAL_13=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')" ))
+  SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2 }')"
 
   #sed -i "s|pm.max_children = 10|pm.max_children = ${PHP_FPM_MAX_CHILDREN}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
   sed -i "s|pm.start_servers = 4|pm.start_servers = ${PHP_FPM_START_SERVERS}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
@@ -42,27 +43,27 @@ calculate_php() {
 
   # Tuning pm.max_children
   # For Servers with 1GB RAM
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1200 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 7|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
       sed -i "s|SEDOPCACHEJITBUFFER|64M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # For Servers with 2GB RAM
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 14|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
       sed -i "s|SEDOPCACHEJITBUFFER|64M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # For Servers with 4GB RAM
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 28|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
       sed -i "s|SEDOPCACHEJITBUFFER|96M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
-  # For Servers with 8GB RAM+
+  # For Servers with over 4GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
       sed -i "s|pm.max_children = 10|pm.max_children = 56|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
@@ -71,19 +72,19 @@ calculate_php() {
 
   # Memory Limit
   # For Servers with 2GB RAM or less
-  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+  if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ];
     then
-      sed -i "s|memory_limit = SEDPHPVERMEMLIMIT|memory_limit = 265M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDPHPMEMLIMIT|265M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
-  # For Servers with 8GB RAM+
+  # For Servers with over 2GB RAM
   if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
     then
-      sed -i "s|memory_limit = SEDPHPVERMEMLIMIT|memory_limit = 512M|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+      sed -i "s|SEDPHPMEMLIMIT|512M|g" /etc/php/${PHP_VER}/fpm/php.ini
   fi
 
   # OpCache Tuning
-    if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+    if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ];
       then
         sed -i "s|SEDOPCACHEINTBUF|16|g" /etc/php/${PHP_VER}/fpm/php.ini
       else

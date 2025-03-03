@@ -22,11 +22,30 @@ fi
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Canonical Server Team Backports
+add-apt-repository -yn ppa:canonical-server/server-backports
+
+# Docker
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+
+# ElasticSearch
+curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+
 # GeoIP
 add-apt-repository -yn ppa:maxmind/ppa
 
 # Git
 add-apt-repository -yn ppa:git-core/ppa
+
+# Google gcloud CLI
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+# Grafana
+curl -fsSL https://packages.grafana.com/gpg.key | sudo apt-key add -
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
 
 # Hurl
 add-apt-repository -yn ppa:lepapareil/hurl
@@ -35,6 +54,9 @@ add-apt-repository -yn ppa:lepapareil/hurl
 # may be temporary
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline-longterm
+
+# Node.js
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 
 # PHP
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
@@ -64,11 +86,18 @@ echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://pack
 # Universe
 add-apt-repository -yn universe
 
+# Utilities
+#add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
+
+# Yarn
+curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+# Version Specific Repositories
 UBUNTU_VERSION="$(lsb_release -sr)"
 if [ "${UBUNTU_VERSION}" = 22.04 ];
   then
     # Canonical Server Team Backports
-    add-apt-repository -yn ppa:canonical-server/server-backports
 
     # phpMyAdmin
     #add-apt-repository -yn ppa:phpmyadmin/ppa
@@ -76,8 +105,5 @@ if [ "${UBUNTU_VERSION}" = 22.04 ];
   else
     echo "Skipping repos that don't support Ubuntu Noble 24.04"
 fi
-
-# Utilities
-#add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
 
 echo "Repo install completed on ${VARIABLES_DATE}"

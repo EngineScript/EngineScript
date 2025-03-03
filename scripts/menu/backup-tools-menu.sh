@@ -26,16 +26,17 @@ fi
 while true
   do
     clear
-    echo -e "Server Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Site Maintenance Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Display Server Info" "Update EngineScript" "View/Edit EngineScript Install Configuration File" "View/Edit EngineScript Variables File" "Exit EngineScript Tools")
+    secoptions=("Backup (All Domains)" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Display Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+        "Backup (All Domains)")
+          echo "Backing up all domains..."
+          /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
           echo ""
           echo "Done!"
           echo ""
@@ -44,19 +45,7 @@ while true
           echo ""
           break
           ;;
-        "Update EngineScript")
-          /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
-          break
-          ;;
-        "View/Edit EngineScript Install Configuration File")
-          nano /home/EngineScript/enginescript-install-options.txt
-          break
-          ;;
-        "View/Edit EngineScript Variables File")
-          nano /usr/local/bin/enginescript/enginescript-variables.txt
-          break
-          ;;
-        "Exit EngineScript Tools")
+        "Exit Server Tools")
           exit
           ;;
         *) echo invalid option;;

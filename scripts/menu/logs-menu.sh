@@ -28,7 +28,7 @@ while true
     clear
     echo -e "Server Logs" | boxes -a c -d shell -p a1l2
     echo ""
-    echo "Select an option to view the last 20 lines of logs."
+    echo "Select an option to view the last 30 lines of logs."
     echo ""
     PS3='Please enter your choice: '
     secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "Exit Server Logs")
