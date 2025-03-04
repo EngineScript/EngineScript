@@ -27,4 +27,4 @@ rm -rf /usr/src/nginx-${NGINX_VER}
 wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz -O /usr/src/nginx-${NGINX_VER}.tar.gz --no-check-certificate && tar -xzvf /usr/src/nginx-${NGINX_VER}.tar.gz
 wget https://github.com/openresty/headers-more-nginx-module/archive/v${NGINX_HEADER_VER}.tar.gz -O /usr/src/v${NGINX_HEADER_VER}.tar.gz --no-check-certificate && tar -xzf /usr/src/v${NGINX_HEADER_VER}.tar.gz
 wget https://github.com/nginx-modules/ngx_cache_purge/archive/${NGINX_PURGE_VER}.tar.gz -O /usr/src/${NGINX_PURGE_VER}.tar.gz --no-check-certificate && tar -xzf /usr/src/${NGINX_PURGE_VER}.tar.gz
-wget https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz /usr/src/openssl-${OPENSSL_VER}.tar.gz --no-check-certificate && tar -xzf /usr/src/openssl-${OPENSSL_VER}.tar.gz
+wget https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz -O /usr/src/openssl-${OPENSSL_VER}.tar.gz --no-check-certificate && tar -xzf /usr/src/openssl-${OPENSSL_VER}.tar.gz

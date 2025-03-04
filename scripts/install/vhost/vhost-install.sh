@@ -323,8 +323,8 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # WP-CLI Activate Plugins
-wp plugin install flush-opcache --allow-root
-wp plugin install mariadb-health-checks --allow-root
+wp plugin activate flush-opcache --allow-root
+wp plugin activate mariadb-health-checks --allow-root
 wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root
 wp plugin activate wp-mail-smtp --allow-root

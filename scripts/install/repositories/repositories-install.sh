@@ -55,9 +55,6 @@ add-apt-repository -yn ppa:lepapareil/hurl
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline-longterm
 
-# Node.js
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
 # PHP
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
 add-apt-repository -yn ppa:ondrej/php
@@ -95,15 +92,10 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 # Version Specific Repositories
 UBUNTU_VERSION="$(lsb_release -sr)"
-if [ "${UBUNTU_VERSION}" = 22.04 ];
-  then
-    # Canonical Server Team Backports
-
-    # phpMyAdmin
-    #add-apt-repository -yn ppa:phpmyadmin/ppa
-
-  else
-    echo "Skipping repos that don't support Ubuntu Noble 24.04"
+if [ "${UBUNTU_VERSION}" = "22.04" ]; then
+  echo "Not adding any additional repositories for Ubuntu Jammy 22.04"
+  # phpMyAdmin
+  #add-apt-repository -yn ppa:phpmyadmin/ppa
+else
+  echo "Skipping repos that don't support Ubuntu Noble 24.04"
 fi
-
-echo "Repo install completed on ${VARIABLES_DATE}"

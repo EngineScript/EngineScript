@@ -18,23 +18,23 @@ if [ "${EUID}" != 0 ];
     exit 1
 fi
 
+# Check if the server is running on a 64-bit environment. If not, exit.
+BIT_TYPE=$(uname -m)
+
 if [ ${BIT_TYPE} != 'x86_64' ];
   then
     echo "EngineScript requires a 64-bit environment to run optimally."
     exit 1
 fi
 
-LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2)
-UBUNTU_RELEASE=$(lsb_release -c | cut -d':' -f 2)
-
-# Testing alternate verification method
-#if [[ ${LINUX_TYPE} != "Ubuntu" ]] || ! [[ $UBUNTU_RELEASE =~ ^(jammy|noble)$ ]];
+# Check if the server is running Ubuntu
+LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
 
 if [ "$LINUX_TYPE" != "Ubuntu" ]; then
   echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 22.04 or 24.04"
   exit 1
 else
-  echo "$LINUX_TYPE"
+  echo "Detected Linux Type: $LINUX_TYPE"
 fi
 
 # Check if Ubuntu is LTS Release (22.04 or 24.04). If not, exit.
