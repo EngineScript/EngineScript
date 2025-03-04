@@ -81,9 +81,6 @@ chown -R mysql:adm /var/log/mysql/mysql-error.log
 chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
-# Open Files Limit
-sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
-
 # Tune MariaDB
 /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
 

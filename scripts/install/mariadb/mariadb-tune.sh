@@ -23,6 +23,12 @@ fi
 # Start Main Script
 
 # Tune MariaDB
+
+# Open Files Limit
+sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
+sed -i "s|LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
+
+# Set Memory Variables
 SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 
