@@ -82,71 +82,10 @@ chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Open Files Limit
-sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60666|g" /usr/lib/systemd/system/mariadb.service
+sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
 
 # Tune MariaDB
-SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
-SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
-
-# tmp_table_size & max_heap_table_size
-sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
-
-# Max Connections
-# Scales to be near the MariaDB default value on a 4GB server
-sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/mariadb.cnf
-
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
-  then
-    sed -i "s|SEDLBS|32|g" /etc/mysql/mariadb.cnf
-  else
-    sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
-fi
-
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
-  then
-    sed -i "s|SEDTCS|256|g" /etc/mysql/mariadb.cnf
-  else
-    sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/mariadb.cnf
-fi
-
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
-  then
-    sed -i "s|SEDTOC|2000|g" /etc/mysql/mariadb.cnf
-  else
-    sed -i "s|SEDTOC|4000|g" /etc/mysql/mariadb.cnf
-fi
-
-# For Servers with 1GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
-  then
-    sed -i "s|SEDINOF|1000|g" /etc/mysql/mariadb.cnf
-fi
-
-# For Servers with 2GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
-  then
-    sed -i "s|SEDINOF|2000|g" /etc/mysql/mariadb.cnf
-fi
-
-# For Servers with 4GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
-  then
-    sed -i "s|SEDINOF|4000|g" /etc/mysql/mariadb.cnf
-fi
-
-# For Servers with 8GB RAM+
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
-  then
-    sed -i "s|SEDINOF|8000|g" /etc/mysql/mariadb.cnf
-fi
-
-sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/mariadb.cnf
+/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
 
 # Restart Service
 systemctl daemon-reload

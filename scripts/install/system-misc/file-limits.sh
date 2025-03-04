@@ -64,6 +64,6 @@ update_file_limits() {
 }
 
 # Update file limits
-update_file_limits 60666
+update_file_limits 60556
 
 echo "File limits updated successfully."
