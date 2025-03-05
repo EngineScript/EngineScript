@@ -112,6 +112,13 @@ max_iops=$(echo "$fio_full_output" | grep "iops" | awk -F',' '{print $2}' | awk 
 avg_iops=$(echo "$avg_iops" | cut -d '.' -f 1 | xargs)
 max_iops=$(echo "$max_iops" | cut -d '.' -f 1 | sed 's/^[ \t]*//;s/[ \t]*$//') # Remove leading/trailing whitespace
 
+# Failsafe: Set avg IOPS to 500 and max IOPS to 1000 if avg IOPS is less than 500 or if extraction failed
+if [ -z "$avg_iops" ] || [ "$avg_iops" -lt 500 ]; then
+    avg_iops=500
+    max_iops=1000
+    echo "Failsafe activated: avg IOPS set to 500 and max IOPS set to 1000."
+fi
+
 # Modify MariaDB config for avg IOPS
 sed -i "s/$IOPS_AVG_VAR/$avg_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
