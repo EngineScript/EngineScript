@@ -121,7 +121,7 @@ sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
 # Enable Admin Subdomain Vhost File
 if [ "${ADMIN_SUBDOMAIN}" = 1 ];
   then
-    sed -i "s|#include /etc/nginx/admin/admin.;|include /etc/nginx/admin/admin.;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+    sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
   else
     echo ""
 fi
