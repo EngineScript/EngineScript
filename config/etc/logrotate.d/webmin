@@ -1,9 +1,0 @@
-/var/log/webmin/*.log {
-  weekly
-  missingok
-  rotate 5
-  compress
-  delaycompress
-  notifempty
-  create 775 root root
-}

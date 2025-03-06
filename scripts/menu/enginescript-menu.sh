@@ -33,7 +33,6 @@ while true
     echo "==============================================================="
     echo ""
     echo "Admin Control Panels:"
-    echo "Webmin - https://${IP_ADDRESS}:32792"
     echo "PHPInfo - https://${IP_ADDRESS}/enginescript/phpinfo"
     echo "Adminer - https://${IP_ADDRESS}/enginescript/adminer"
     echo "phpMyAdmin - https://${IP_ADDRESS}/enginescript/phpmyadmin"

@@ -29,10 +29,6 @@ INSTALL_PHPMYADMIN=1
 # Adminer is a phpMyAdmin alternative.
 INSTALL_ADMINER=0
 
-# Webmin
-# Browser-based server tools
-INSTALL_WEBMIN=0
-
 ########################
 # EngineScript Updates #
 ########################
@@ -164,7 +160,7 @@ WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER"
 
 ## Nginx Password Protection (Recommended) ##
-# This adds a second layer of security to the Admin Control Panel on the server such as Webmin and phpMyAdmin.
+# This adds a second layer of security to the Admin Control Panel on the server such as phpMyAdmin.
 # Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"
@@ -178,11 +174,6 @@ MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 ## phpMyAdmin (Recommended) ##
 PHPMYADMIN_USERNAME="PLACEHOLDER"
 PHPMYADMIN_PASSWORD="PLACEHOLDER"
-
-## Webmin (Optional)##
-# Optional - If you don't want to use Webmin, leave this alone.
-WEBMIN_USERNAME="PLACEHOLDER"
-WEBMIN_PASSWORD="PLACEHOLDER"
 
 # DONE
 # Proceed to: Step 3 - Main Install Process
