@@ -137,11 +137,6 @@ apt clean -y
 apt autoremove --purge -y
 apt autoclean -y
 
-# Webmin Key
-cd /usr/local/src
-wget https://download.webmin.com/jcameron-key.asc --no-check-certificate
-apt-key add jcameron-key.asc
-
 if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
   clear
   echo -e "\n\nInitial setup is complete.\n\nProceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"

@@ -103,15 +103,6 @@ fi
 # Testssl.sh
 /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
 
-# Webmin
-if [ "${INSTALL_WEBMIN}" = 1 ];
-  then
-    echo "Installing Webmin"
-    /usr/local/bin/enginescript/scripts/install/tools/system/webmin.sh
-  else
-    echo "Skipping Webmin install"
-fi
-
 #------------------------------------------------
 # WordPress Tools
 #------------------------------------------------
