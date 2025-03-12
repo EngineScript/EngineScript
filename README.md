@@ -164,7 +164,6 @@ Go through each optimization tab and select the following:
 |**`es.info`**    |Displays server information |
 |**`es.install`**	  |Runs the main EngineScript installation script |
 |**`es.menu`**	    |EngineScript menu |
-|**`es.mysql`**	    |Displays your MySQL login credentials in the terminal |
 |**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
 |**`es.restart`**   |Restart Nginx and PHP |
 |**`es.server`**    |Displays server information |

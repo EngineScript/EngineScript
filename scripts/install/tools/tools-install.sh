@@ -71,9 +71,6 @@ fi
 # OpCache-GUI
 #/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
 
-# PHPinfo.php
-/usr/local/bin/enginescript/scripts/install/tools/php/phpinfo.sh
-
 #------------------------------------------------
 # Security Tools
 #------------------------------------------------
@@ -97,8 +94,8 @@ fi
 # System Tools
 #------------------------------------------------
 
-# phpSysinfo
-#/usr/local/bin/enginescript/scripts/install/tools/system/phpsysinfo.sh
+# Admin Control Panel
+/usr/local/bin/enginescript/scripts/install/tools/system/admin-control-panel.sh
 
 # Testssl.sh
 /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
