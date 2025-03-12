@@ -1,0 +1,363 @@
+body {
+	font: 16px/1.6 "source-sans-pro", sans-serif;
+	color: #333;
+	padding: 0;
+	margin: 0;
+}
+
+/* Global */
+
+section {
+	margin-bottom: 10px;
+	padding-top: 0px;
+}
+
+section.alternate {
+	padding-top: 10px;
+	background-color: #f7f7f7;
+}
+
+section.highlight {
+	padding-top: 40px;
+	background-color: #edfcf7;
+}
+
+.container {
+	max-width: 1200px;
+	width: 80%;
+	margin: auto;
+	overflow: hidden;
+}
+
+.box {
+	float: left;
+	padding: 0 0 10px 0;
+	margin-right: 5%;
+}
+
+.col-1_6 { width: 11.665%;}
+.col-2_6 { width: 28.332%;}
+.col-3_6 { width: 44.99%;}
+.col-4_6 { width: 61.665%;}
+.col-5_6 { width: 78.332%;}
+
+
+h1, h2, h3, h4, h5, h6, ul, ol, p, li, figure {
+	margin: 0 0 10px 0;
+	padding: 0;
+}
+
+h1 {
+	font-size: 36px;
+}
+
+h2 {
+	font-size: 18px;
+	font-weight: 400;
+	letter-spacing: 4px;
+}
+
+h3 {
+	font-size: 22px;
+}
+
+h4 {
+	font-size: 16px;
+}
+
+ul, ol {
+	list-style-type: none;
+	list-style-position: inside;
+	margin: 0;
+}
+
+
+ul.bullets {
+	margin-left: 1em;
+}
+
+ul.bullets li::before {
+  content: "\2022";
+  color: #07d990;
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+
+a {
+	color: #07d990;
+	text-decoration: none;
+}
+
+a:hover {
+	border-bottom: 2px dotted #ccc;
+}
+
+
+img {
+	max-width: 100%;
+}
+
+.img-box img {
+	width: 100%;
+	padding: 0 0 10px 0;
+}
+
+figcaption {
+	font-style: italic;
+}
+
+.right {
+	float: right;
+	margin-right: 0;
+}
+
+.center {
+	margin-right: 0;
+}
+
+span.sep {
+	color: rgba(255,255,255,0.2);
+	padding: 0 5px;
+}
+
+.nowrap {
+	white-space: nowrap;
+}
+
+.clear-both {
+	clear: both;
+}
+
+/* header */
+header {
+	background-size: cover;
+	margin-bottom: 20px;
+	color: #fff;
+	text-align: center;
+}
+
+header div.overlay {
+	background-color: rgba(0,0,0,0.7);
+}
+
+nav {
+	float: right;
+	margin-top: 10px;
+	font-size: 12px;
+}
+
+nav li {
+	float: left;
+	display: inline;
+	padding: 0 20px 0 20px;
+}
+
+nav li:last-child {
+	padding-right: 0;
+}
+
+address {
+	font-size: 12px;
+	font-style: normal;
+}
+
+address img {
+	vertical-align: text-bottom;
+}
+
+
+#icons ul {
+	margin: 40px 0 0 0;
+	padding: 40px 0;
+	list-style-type: none;
+	text-align: center;
+	border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+#icons ul li {
+	display: inline-block;
+	margin: 0;
+	padding: 0 5px;
+}
+
+#icons ul li a {
+	opacity: 1;
+}
+
+#icons ul li a:hover {
+	opacity: 0.8;
+	border: 0;
+}
+
+/* section#main_section */
+
+section#main_section {
+	margin-top: 10px;
+	font-size: 18px;
+}
+
+/* #section_2 */
+
+#section_2 {
+	padding-bottom: 10px;
+}
+
+/* #section_3 */
+
+
+/* #section_5 highlight */
+
+#section_5 ol ul {
+	margin-left: 40px;
+}
+
+section.highlight {
+	margin-bottom: 0;
+}
+
+#map img {
+	border: 3px solid #caf7e7;
+}
+
+#map a:hover {
+	border: none;
+}
+
+
+/* footer */
+
+footer {
+	padding: 20px 0 20px 0;
+	margin-top: 0;
+	font-size: 14px;
+	color: #fff;
+	background-color: #333;
+}
+
+#top_arrow {
+	position: fixed;
+	bottom: 10px;
+	right: 10px;
+}
+
+#top_arrow:hover {
+	border-bottom: 4px solid rgba(0,0,0,0);
+}
+
+
+#cookie {
+	position: fixed;
+	right: 60px;
+	bottom: -130px;
+	width: 220px;
+	padding: 10px;
+	font-size: 12px;
+	color: #fff;
+	background-color: rgba(0,0,0,0.7);
+	border-radius: 10px;
+	animation: moveDown 15s;
+
+}
+
+#cookie img {
+	display: block;
+	float: left;
+	width: 40px;
+}
+
+@keyframes moveDown {
+  0% { bottom: -130px; }
+  2% { bottom: 30px; }
+  50% { bottom: 30px;}
+  100% { bottom: -130px;}
+}
+
+
+/* Media Queries ------------ */
+
+@media only screen and (max-width: 1000px) {
+	.box {
+		float: none;
+		padding: 0;
+		margin-bottom: 20px;
+	}
+
+	.col-1_6, .col-2_6, .col-3_6, .col-4_6, .col-5_6  {
+		width: 100%;
+	}
+
+	.right {
+		float: none;
+	}
+
+	header {
+		text-align: center;
+	}
+
+	header #branding {
+		width: 100%;
+	}
+
+	h1 {
+		font-size: 30px;
+	}
+
+	h2 {
+		font-size: 14px;
+	}
+
+	header nav {
+		width: 100%;
+		text-align: center;
+		margin: 20px 0 20px 0;
+		padding-bottom: 20px;
+		border-bottom: 1px solid rgba(255,255,255,0.2);
+	}
+
+	header nav li {
+		float: none;
+	}
+
+	header nav li:first-child {
+		padding-left: 0;
+	}
+
+	#section_2 /*Szolgaltatasok*/  {
+		text-align: center;
+	}
+
+	#section_2 ul.bullets li::before {
+		content: none;
+	}
+
+	#map {
+		width: 90%;
+		margin-right: 0;
+	}
+
+}
+
+@media only screen and (max-width: 800px) {
+
+
+	h1 {
+		font-size: 24px;
+	}
+
+	h2 {
+		font-size: 12px;
+	}
+
+	span.sep {
+		display: block;
+		opacity: 0;
+	}
+
+	#map {
+		width: 90%;
+	}
+
+}
