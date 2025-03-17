@@ -34,6 +34,11 @@ sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/enginescript/phpsysinfo/phpsysi
 # Admin Control Panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
 
+# Remove Adminer link if INSTALL_ADMINER=0
+if [ "${INSTALL_ADMINER}" -eq 0 ]; then
+    sed -i '/<li><a href="adminer"><strong>Adminer<\/strong><\/a><\/li>/d' /var/www/admin/enginescript/index.html
+fi
+
 # PHPinfo.php
 mkdir -p /var/www/admin/enginescript/phpinfo
 echo "<?php phpinfo(); ?>" > /var/www/admin/enginescript/phpinfo/index.php

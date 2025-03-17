@@ -244,6 +244,7 @@ Go through each optimization tab and select the following:
 |LIBURING|2.9|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
+|Admin Control Panel Template|-|https://github.com/bhjoco/onepage-medium |
 
 ## Support EngineScript
 Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
