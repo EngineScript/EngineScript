@@ -1,10 +1,12 @@
 User-agent: *
-Disallow: /wp-admin/
 Disallow: /cgi-bin/
+Disallow: /readme.html
+Disallow: /refer/
+Disallow: /search
 Disallow: /trackback/
+Disallow: /wp-admin/
 Disallow: /xmlrpc.php
 Disallow: /?s=
-Disallow: /search
 Allow: /wp-admin/admin-ajax.php
 Allow: /wp-content/uploads/
 

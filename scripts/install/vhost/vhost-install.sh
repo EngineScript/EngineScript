@@ -83,7 +83,8 @@ sleep 1
 
 # Initial Cloudflare SSL Steps
 echo -e "\n\n"
-echo "Your site must be fully configured in Cloudflare before continuing."
+echo "Your domain must be added to Cloudflare and fully configured before continuing."
+echo "This includes setting up DNS records and enabling SSL in Cloudflare."
 echo "Visit: https://github.com/EngineScript/EngineScript/tree/master?tab=readme-ov-file#cloudflare"
 echo -e "\n\n"
 
@@ -91,20 +92,33 @@ MAX_RETRIES=5
 RETRY_COUNT=0
 
 while true; do
-  read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
-  case $y in
+  echo "Have you completed the Cloudflare setup for your domain?"
+  echo "Options:"
+  echo "  [y] Yes, I have completed the setup."
+  echo "  [n] No, I need more time."
+  echo "  [e] Exit the script."
+  read -p "Enter your choice (y/n/e): " choice
+
+  case $choice in
     [Yy]* )
-      echo "Let's continue";
-      sleep 1;
+      echo "Great! Let's continue with the setup."
+      sleep 1
       break
       ;;
-    * )
-      echo "Please answer y";
+    [Nn]* )
+      echo "Please complete the Cloudflare setup before proceeding."
       RETRY_COUNT=$((RETRY_COUNT + 1))
       if [ "${RETRY_COUNT}" -ge "${MAX_RETRIES}" ]; then
         echo "Maximum retries reached. Exiting."
         exit 1
       fi
+      ;;
+    [Ee]* )
+      echo "Exiting the script. You can rerun it later when ready."
+      exit 0
+      ;;
+    * )
+      echo "Invalid input. Please enter 'y', 'n', or 'e'."
       ;;
   esac
 done
