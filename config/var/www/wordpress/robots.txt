@@ -1,7 +1,15 @@
 User-agent: *
 Disallow: /wp-admin/
-Allow: /wp-content/
+Disallow: /cgi-bin/
+Disallow: /trackback/
+Disallow: /xmlrpc.php
+Disallow: /?s=
+Disallow: /search
 Allow: /wp-admin/admin-ajax.php
+Allow: /wp-content/uploads/
+
+# Specify the preferred host
 Host: SEDURL
 
+# Sitemap location
 Sitemap: https://SEDURL/sitemap.xml

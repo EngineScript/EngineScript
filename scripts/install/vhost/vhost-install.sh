@@ -81,20 +81,87 @@ echo "If you do, things will break."
 echo ""
 sleep 1
 
-# Domain Input
-echo "For domain name, enter only the domain without https:// or trailing /"
-echo "note:   lowercase text only"
-echo ""
-echo "Examples:    wordpresstesting.com"
-echo "             wordpresstesting.net"
-echo ""
-read -p "Enter Domain name: " DOMAIN
-echo ""
-echo "You entered:  ${DOMAIN}"
+# Initial Cloudflare SSL Steps
+echo -e "\n\n"
+echo "Your site must be fully configured in Cloudflare before continuing."
+echo "Visit: https://github.com/EngineScript/EngineScript/tree/master?tab=readme-ov-file#cloudflare"
+echo -e "\n\n"
 
-# Check to see if this site is already configured
-if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
-then
+MAX_RETRIES=5
+RETRY_COUNT=0
+
+while true; do
+  read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
+  case $y in
+    [Yy]* )
+      echo "Let's continue";
+      sleep 1;
+      break
+      ;;
+    * )
+      echo "Please answer y";
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+      if [ "${RETRY_COUNT}" -ge "${MAX_RETRIES}" ]; then
+        echo "Maximum retries reached. Exiting."
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+# Domain Input
+echo "For the domain name, enter only the domain portion (e.g., 'wordpresstesting')."
+echo "Note: lowercase text only, no spaces or special characters. Do not include https:// or www."
+echo ""
+echo "Then, select a valid TLD from the provided list."
+echo ""
+
+# Prompt for domain name
+while true; do
+  read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9-]+$ ]]; then
+    echo "You entered: ${DOMAIN_NAME}"
+    break
+  else
+    echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed."
+  fi
+done
+
+# Prompt for TLD
+echo ""
+echo "Select a valid TLD from the list below:"
+VALID_TLDS=(
+    # Common gTLDs
+    "com" "net" "org" "info" "biz" "name" "pro" "int"
+
+    # Popular gTLDs
+    "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
+    "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
+    "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
+
+    # Country-code TLDs (ccTLDs)
+    "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
+    "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
+    "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
+    "co.uk"
+)
+select TLD in "${VALID_TLDS[@]}"; do
+  if [[ -n "$TLD" ]]; then
+    echo "You selected: ${TLD}"
+    break
+  else
+    echo "Invalid selection. Please choose a valid TLD from the list."
+  fi
+done
+
+# Combine domain name and TLD
+DOMAIN="${DOMAIN_NAME}.${TLD}"
+echo ""
+echo "Full domain: ${DOMAIN}"
+sleep 2
+
+# Verify if the domain is already configured
+if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh; then
   echo -e "\n\n${BOLD}Preinstallation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
 else
@@ -136,39 +203,14 @@ if [ "${NGINX_SECURE_ADMIN}" = 1 ];
     echo ""
 fi
 
-# HTTP3
-if [ "${INSTALL_HTTP3}" = 1 ];
-  then
-    sed -i "s|#listen 443 quic|#listen 443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
-fi
-
-if [ "${INSTALL_HTTP3}" = 1 ];
-  then
-    sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+# Enable HTTP/3 if configured
+if [ "${INSTALL_HTTP3}" = 1 ]; then
+  sed -i "s|#listen 443 quic|listen 443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
 fi
 
 # Create Origin Certificate
 mkdir -p /etc/nginx/ssl/${DOMAIN}
-
-# Final Cloudflare SSL Steps
-clear
-
-echo "Your site must be fully configured in Cloudflare before continuing."
-echo "Visit: https://github.com/EngineScript/EngineScript/tree/master?tab=readme-ov-file#cloudflare"
-echo -e "\n\n"
-
-while true;
-  do
-    read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
-      case $y in
-        [Yy]* )
-          echo "Let's continue";
-          sleep 1;
-          break
-          ;;
-        * ) echo "Please answer y";;
-      esac
-  done
 
 # Cloudflare Keys
 export CF_Key="${CF_GLOBAL_API_KEY}"
