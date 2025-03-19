@@ -81,7 +81,7 @@ apt upgrade -y
 cd /usr/src
 
 # Remove existing EngineScript directory if it exists
-if [ -d "rm -rf /usr/local/bin/enginescript" ]; then
+if [ -d "/usr/local/bin/enginescript" ]; then
   rm -rf /usr/local/bin/enginescript
 fi
 
