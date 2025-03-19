@@ -80,10 +80,9 @@ apt upgrade -y
 # Return to /usr/src
 cd /usr/src
 
-
 # Remove existing EngineScript directory if it exists
 if [ -d "rm -rf /usr/local/bin/enginescript" ]; then
-  rm -rf rm -rf /usr/local/bin/enginescript
+  rm -rf /usr/local/bin/enginescript
 fi
 
 # EngineScript Git Clone
