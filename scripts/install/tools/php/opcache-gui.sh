@@ -25,8 +25,12 @@ fi
 # Return to /usr/src
 cd /usr/src
 
+# Remove existing OpCache-GUI directory if it exists
+if [ -d "/var/www/admin/enginescript/opcache-gui" ]; then
+  rm -rf /var/www/admin/enginescript/opcache-gui
+fi
+
 # OpCache-GUI
-rm -rf /var/www/admin/enginescript/opcache-gui
 git clone --depth 1 https://github.com/amnuts/opcache-gui.git /var/www/admin/enginescript/opcache-gui
 
 # Return to /usr/src

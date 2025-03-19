@@ -25,8 +25,12 @@ fi
 # Return to /usr/src
 cd /usr/src
 
+# Remove existing zImageOptimizer directory if it exists
+if [ -d "/usr/local/bin/zimageoptimizer" ]; then
+  rm -rf /usr/local/bin/zimageoptimizer
+fi
+
 # Install zImageOptimizer
-rm -rf /usr/local/bin/zimageoptimizer
 git clone --depth 1 https://github.com/zevilz/zImageOptimizer.git -b master /usr/local/bin/zimageoptimizer
 find /usr/local/bin/zimageoptimizer -type d,f -exec chmod 755 {} \;
 

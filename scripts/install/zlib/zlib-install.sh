@@ -26,7 +26,12 @@ fi
 cd /usr/src
 
 # Cloudflare zlib Download
-rm -rf /usr/src/zlib-cf
+# Remove existing Zlib-CF directory if it exists
+if [ -d "/usr/src/zlib-cf" ]; then
+  rm -rf /usr/src/zlib-cf
+fi
+
+# Clone Zlib-CF
 git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 /usr/src/zlib-cf
 cd /usr/src/zlib-cf
 sudo ./configure --prefix=path \
