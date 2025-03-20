@@ -1,0 +1,13 @@
+/var/log/EngineScript/*.log {
+    monthly
+    missingok
+    rotate 6
+    compress
+    delaycompress
+    notifempty
+    create 0644 root root
+    sharedscripts
+
+    postrotate
+    endscript
+}

@@ -99,10 +99,17 @@ mkdir -p /home/EngineScript/config-backups/php
 mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
+
+# EngineScript Logs
+# Create EngineScript log directories
 mkdir -p /var/log/EngineScript
 touch /var/log/EngineScript/install-log.txt
 touch /var/log/EngineScript/vhost-install.log
 touch /var/log/EngineScript/vhost-remove.log
+
+# Logrotate - EngineScript Logs
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
+find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
 
 # Return to /usr/src
 cd /usr/src
