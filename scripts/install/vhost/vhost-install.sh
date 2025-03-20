@@ -182,6 +182,11 @@ else
   echo "${BOLD}Preinstallation Check: Passed${NORMAL}"
 fi
 
+# Logging
+LOG_FILE="/var/log/EngineScript/vhost-install.log"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+echo "Starting domain installation for ${DOMAIN} at $(date)"
+
 # Continue the installation
 
 # Store SQL credentials

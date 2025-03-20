@@ -99,19 +99,22 @@ mkdir -p /home/EngineScript/config-backups/php
 mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
-touch /home/EngineScript/install-log.txt
+mkdir -p /var/log/EngineScript
+touch /var/log/EngineScript/install-log.txt
+touch /var/log/EngineScript/vhost-install.log
+touch /var/log/EngineScript/vhost-remove.log
 
 # Return to /usr/src
 cd /usr/src
 
 # Create EngineScript Aliases
-source /home/EngineScript/install-log.txt
+source /var/log/EngineScript/install-log.txt
 if [ "${ALIAS}" = 1 ];
   then
     echo "ALIAS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
-    echo "ALIAS=1" >> /home/EngineScript/install-log.txt
+    echo "ALIAS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Cleanup

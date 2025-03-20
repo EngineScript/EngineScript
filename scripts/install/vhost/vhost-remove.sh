@@ -41,15 +41,59 @@ while true; do
 done
 
 # Domain Input
-echo "For domain name, enter only the domain without https:// or trailing /"
-echo "note:   lowercase text only"
+echo "For the domain name, enter only the domain portion (e.g., 'wordpresstesting')."
+echo "Note: lowercase text only, no spaces or special characters. Do not include https:// or www."
 echo ""
-echo "Examples:    wordpresstesting.com"
-echo "             wordpresstesting.net"
+echo "Then, select a valid TLD from the provided list."
 echo ""
-read -p "Enter Domain name: " DOMAIN
+
+# Prompt for domain name
+while true; do
+  read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9-]+$ ]]; then
+    echo "You entered: ${DOMAIN_NAME}"
+    break
+  else
+    echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed."
+  fi
+done
+
+# Prompt for TLD
 echo ""
-echo "You entered:  ${DOMAIN}"
+echo "Select a valid TLD from the list below:"
+VALID_TLDS=(
+    # Common gTLDs
+    "com" "net" "org" "info" "biz" "name" "pro" "int"
+
+    # Popular gTLDs
+    "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
+    "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
+    "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
+
+    # Country-code TLDs (ccTLDs)
+    "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
+    "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
+    "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
+    "co.uk"
+)
+select TLD in "${VALID_TLDS[@]}"; do
+  if [[ -n "$TLD" ]]; then
+    echo "You selected: ${TLD}"
+    break
+  else
+    echo "Invalid selection. Please choose a valid TLD from the list."
+  fi
+done
+
+# Combine domain name and TLD
+DOMAIN="${DOMAIN_NAME}.${TLD}"
+echo ""
+echo "Full domain: ${DOMAIN}"
+
+# Logging
+LOG_FILE="/var/log/EngineScript/vhost-remove.log"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+echo "Starting domain removal for ${DOMAIN} at $(date)"
 
 # Remove domain from site list
 if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
@@ -72,14 +116,15 @@ else
   echo -e "${BOLD}MySQL Credentials Check: Failed\n\n${NORMAL}${DOMAIN} did not have MySQL credentials.\n\n"
 fi
 
-# Remove Nginx vhost
-if test -f /etc/nginx/sites-enabled/${DOMAIN}.conf
-then
-  echo -e "${BOLD}Nginx Vhost Removal Check: Passed\n\n${NORMAL}Removing ${DOMAIN} from Nginx...\n\n"
-  rm -rf /etc/nginx/sites-enabled/${DOMAIN}.conf
-else
-  echo -e "${BOLD}Nginx Vhost Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have an Nginx vhost.\n\n"
-fi
+# Remove Nginx vhosts
+for VHOST in "/etc/nginx/sites-enabled/${DOMAIN}.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"; do
+  if test -f "${VHOST}"; then
+    echo -e "${BOLD}Nginx Vhost Removal Check: Passed\n\n${NORMAL}Removing ${VHOST}...\n\n"
+    rm -rf "${VHOST}" || echo "Error: Failed to remove ${VHOST}."
+  else
+    echo -e "${BOLD}Nginx Vhost Removal Check: Failed\n\n${NORMAL}${VHOST} did not exist.\n\n"
+  fi
+done
 
 # Remove SSL certificates
 if [ -d "/etc/nginx/ssl/${DOMAIN}" ];
@@ -122,14 +167,10 @@ echo "Restarting Nginx and PHP"
 /usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
 echo ""
 
-echo ""
-echo "============================================================="
-echo ""
-echo "              Domain removal completed."
-echo ""
-echo "        Returning to main menu in 5 seconds."
-echo ""
-echo "============================================================="
-echo ""
+# Summary
+echo "----------------------------------------------------------"
+echo "Domain removal completed for ${DOMAIN}."
+echo "Please verify that all associated files, directories, and configurations have been removed."
+echo "----------------------------------------------------------"
 
 sleep 5

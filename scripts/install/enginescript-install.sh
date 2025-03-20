@@ -163,7 +163,7 @@ if [ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ];
 fi
 
 # Install Check
-source /home/EngineScript/install-log.txt
+source /var/log/EngineScript/install-log.txt
 
 # Repositories
 if [ "${REPOS}" = 1 ];
@@ -171,7 +171,7 @@ if [ "${REPOS}" = 1 ];
     echo "REPOS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh
-    echo "REPOS=1" >> /home/EngineScript/install-log.txt
+    echo "REPOS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Remove Preinstalled Software
@@ -180,7 +180,7 @@ if [ "${REMOVES}" = 1 ];
     echo "REMOVES script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh
-    echo "REMOVES=1" >> /home/EngineScript/install-log.txt
+    echo "REMOVES=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Block Unwanted Packages
@@ -189,7 +189,7 @@ if [ "${BLOCK}" = 1 ];
     echo "BLOCK script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/block/package-block.sh
-    echo "BLOCK=1" >> /home/EngineScript/install-log.txt
+    echo "BLOCK=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Enabled Ubuntu Pro Apt Updates
@@ -207,7 +207,7 @@ if [ "${DEPENDS}" = 1 ];
     echo "DEPENDS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh
-    echo "DEPENDS=1" >> /home/EngineScript/install-log.txt
+    echo "DEPENDS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # ACME.sh
@@ -216,7 +216,7 @@ if [ "${ACME}" = 1 ];
     echo "ACME.sh script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh
-    echo "ACME=1" >> /home/EngineScript/install-log.txt
+    echo "ACME=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # GCC
@@ -225,7 +225,7 @@ if [ "${GCC}" = 1 ];
     echo "GCC script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh
-    echo "GCC=1" >> /home/EngineScript/install-log.txt
+    echo "GCC=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # OpenSSL
@@ -234,7 +234,7 @@ if [ "${OPENSSL}" = 1 ];
     echo "OPENSSL script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh
-    echo "OPENSSL=1" >> /home/EngineScript/install-log.txt
+    echo "OPENSSL=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Jemalloc
@@ -244,7 +244,7 @@ fi
 #    echo "JEMALLOC script has already run."
 #  else
 #    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
-#    echo "JEMALLOC=1" >> /home/EngineScript/install-log.txt
+#    echo "JEMALLOC=1" >> /var/log/EngineScript/install-log.txt
 #fi
 
 # Swap
@@ -253,7 +253,7 @@ if [ "${SWAP}" = 1 ];
     echo "SWAP script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh
-    echo "SWAP=1" >> /home/EngineScript/install-log.txt
+    echo "SWAP=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Kernel Tweaks
@@ -262,7 +262,7 @@ if [ "${KERNEL_TWEAKS}" = 1 ];
     echo "KERNEL TWEAKS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh
-    echo "KERNEL_TWEAKS=1" >> /home/EngineScript/install-log.txt
+    echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Kernel Samepage Merging
@@ -271,7 +271,7 @@ if [ "${KSM}" = 1 ];
     echo "KSM script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh
-    echo "KSM=1" >> /home/EngineScript/install-log.txt
+    echo "KSM=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Raising System File Limits
@@ -280,7 +280,7 @@ if [ "${SFL}" = 1 ];
     echo "SYSTEM FILE LIMITS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh
-    echo "SFL=1" >> /home/EngineScript/install-log.txt
+    echo "SFL=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # NTP
@@ -289,7 +289,7 @@ if [ "${NTP}" = 1 ];
     echo "NTP script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh
-    echo "NTP=1" >> /home/EngineScript/install-log.txt
+    echo "NTP=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # THP
@@ -299,7 +299,7 @@ fi
     #echo "THP script has already run."
   #else
     #/usr/local/bin/enginescript/scripts/install/systemd/thp.sh
-    #echo "THP=1" >> /home/EngineScript/install-log.txt
+    #echo "THP=1" >> /var/log/EngineScript/install-log.txt
 #fi
 
 # PCRE
@@ -308,7 +308,7 @@ if [ "${PCRE}" = 1 ];
     echo "PCRE script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
-    echo "PCRE=1" >> /home/EngineScript/install-log.txt
+    echo "PCRE=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # zlib
@@ -317,7 +317,7 @@ if [ "${ZLIB}" = 1 ];
     echo "ZLIB script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
-    echo "ZLIB=1" >> /home/EngineScript/install-log.txt
+    echo "ZLIB=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # liburing
@@ -326,7 +326,7 @@ if [ "${LIBURING}" = 1 ];
     echo "LIBURING script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
-    echo "LIBURING=1" >> /home/EngineScript/install-log.txt
+    echo "LIBURING=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # UFW
@@ -335,7 +335,7 @@ if [ "${UFW}" = 1 ];
     echo "UFW script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh
-    echo "UFW=1" >> /home/EngineScript/install-log.txt
+    echo "UFW=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Cron
@@ -344,7 +344,7 @@ if [ "${CRON}" = 1 ];
     echo "CRON script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh
-    echo "CRON=1" >> /home/EngineScript/install-log.txt
+    echo "CRON=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # MariaDB
@@ -385,7 +385,7 @@ if [ "${TOOLS}" = 1 ];
     echo "TOOLS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh
-    echo "TOOLS=1" >> /home/EngineScript/install-log.txt
+    echo "TOOLS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # Cleanup
