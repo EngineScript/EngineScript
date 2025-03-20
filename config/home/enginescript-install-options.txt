@@ -81,7 +81,7 @@ SHOW_ENGINESCRIPT_HEADER=0
 # 0 = disabled
 # 1 = enabled
 
-# Amazon S3, Dropbox, and Google Drive backups require the local backups
+# Amazon S3 backups require the local backups
 # settings below to be enabled. If you want hourly, daily, and weekly
 # backups to the cloud, be sure to set the corresponding local options.
 
@@ -106,20 +106,6 @@ WEEKLY_S3_WPCONTENT_BACKUP=0
 #   Bucket creation:
 #     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
 S3_BUCKET_NAME="PLACEHOLDER"
-
-## Dropbox Backup ##
-INSTALL_DROPBOX_BACKUP=0
-DAILY_DROPBOX_DATABASE_BACKUP=0
-HOURLY_DROPBOX_DATABASE_BACKUP=0
-WEEKLY_DROPBOX_WPCONTENT_BACKUP=0
-
-## Google Drive Backup (disabled) ##
-# Not working currently.
-# The best option for this is broken: https://github.com/odeke-em/drive
-#INSTALL_GOOGLE_DRIVE_BACKUP=0
-#DAILY_GOOGLE_DRIVE_DATABASE_BACKUP=0
-#HOURLY_GOOGLE_DRIVE_DATABASE_BACKUP=0
-#WEEKLY_GOOGLE_DRIVE_WPCONTENT_BACKUP=0
 
 ############
 # API KEYS #

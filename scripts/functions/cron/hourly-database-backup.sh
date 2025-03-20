@@ -59,12 +59,6 @@ do
       /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/$DATABASE_FILE.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/hourly/${NOW}/$DATABASE_FILE.gz" --storage-class STANDARD
 	fi
 
-	# Dropbox Database Backup
-	if [ $INSTALL_DROPBOX_BACKUP = 1 ] && [ $HOURLY_DROPBOX_DATABASE_BACKUP = 1 ];
-		then
-      /usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/database/hourly/${NOW}/$DATABASE_FILE /$i/backups/database/hourly/${NOW}
-	fi
-
   # Remove Old Backups
   find /home/EngineScript/site-backups/$i/database/hourly -type d,f -mtime +1 | xargs rm -fR
 

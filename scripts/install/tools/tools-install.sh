@@ -114,17 +114,6 @@ fi
 # and we don't want to stop the rest of the install process.
 #------------------------------------------------
 
-# Dropbox_uploader
-if [ "${INSTALL_DROPBOX_BACKUP}" = 1 ];
-  then
-    echo "Installing Dropbox Uploader"
-    echo "Please follow the instructions in the script that is about to run."
-    sleep 5
-    /usr/local/bin/enginescript/scripts/install/tools/system/dropbox-uploader.sh
-  else
-    echo "Skipping Dropbox Uploader install"
-fi
-
 # Amazon AWS CLI
 if [ "${INSTALL_S3_BACKUP}" = 1 ];
   then

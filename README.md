@@ -236,7 +236,6 @@ Go through each optimization tab and select the following:
 ||
 |**Backup Software**|
 |LOCAL BACKUPS|| Bash Scripts |
-|DROPBOX UPLOADER|Latest|https://github.com/andreafabrizi/Dropbox-Uploader |
 |AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/ |
 ||
 ||

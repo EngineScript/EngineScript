@@ -110,3 +110,14 @@ sleep 5
 
 # References:
 # https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions
+# https://hub.dakidarts.com/php-fpm-process-managers-ondemand-vs-dynamic-vs-static/
+# https://rhuaridh.co.uk/blog/php-fpm-performance-tuning.html
+# https://chrismoore.ca/2018/10/finding-the-correct-pm-max-children-settings-for-php-fpm/
+# https://tideways.com/tools/fpm-configuration-calculator
+# https://community.webcore.cloud/tutorials/php_fpm_ondemand_process_manager_vs_dynamic/
+# https://php-fpm.gkanev.com/
+# https://spot13.com/pmcalculator/
+# https://linuxblog.io/php-fpm-tuning-using-pm-static-max-performance/
+# https://github.com/littlebizzy/slickstack
+# https://flywp.com/blog/9281/optimize-php-fpm-settings-flywp/
+# https://www.managedserver.eu/introduction-to-php-fpm-tuning/

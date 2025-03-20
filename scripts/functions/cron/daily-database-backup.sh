@@ -67,15 +67,6 @@ do
 			/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-config/daily/${NOW}/$WPCONFIG_FILE" --storage-class STANDARD
 	fi
 
-	# Dropbox Database Backup
-	if [ $INSTALL_DROPBOX_BACKUP = 1 ] && [ $DAILY_DROPBOX_DATABASE_BACKUP = 1 ];
-		then
-      echo "Uploading Database Backup for ${i} to Dropbox"
-			/usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE /$i/backups/database/daily/${NOW}
-      echo "Uploading WP-Config Backup for ${i} to Dropbox"
-      /usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE /$i/backups/wp-config/daily/${NOW}/$WPCONFIG_FILE
-	fi
-
   # Remove Old Backups
 	find /home/EngineScript/site-backups/$i/database/daily -type d,f -mtime +30 | xargs rm -fR
 	find /home/EngineScript/site-backups/$i/wp-config -type d,f -mtime +30 | xargs rm -fR

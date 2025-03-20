@@ -58,13 +58,6 @@ do
 			/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-content/weekly/$WPCONTENT_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-content/weekly/$WPCONTENT_FILE" --storage-class STANDARD
 	fi
 
-	# Dropbox WP-Content Backup
-	if [ $INSTALL_DROPBOX_BACKUP = 1 ] && [ $WEEKLY_DROPBOX_WPCONTENT_BACKUP = 1 ];
-		then
-      echo "Uploading WP-Content Backup for ${i} to Dropbox"
-			/usr/local/bin/dropbox-uploader/dropbox_uploader.sh -kqs upload /home/EngineScript/site-backups/$i/wp-content/weekly/$WPCONTENT_FILE /$i/backups/wp-content/weekly
-	fi
-
   # Remove Old Backups
 	find /home/EngineScript/site-backups/$i/wp-content -type d,f -mtime +7 | xargs rm -fR
 done
