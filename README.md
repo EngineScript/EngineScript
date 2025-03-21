@@ -150,7 +150,7 @@ Go through each optimization tab and select the following:
 |**/usr/local/bin/enginescript** |EngineScript source |
 |**/var/lib/mysql**              |MySQL database |
 |**/var/log**                    |Server logs |
-|**/var/www/admin/enginescript** |Tools that may be accessed via your server's IP address |
+|**/var/www/admin/enginescript** |Tools that may be accessed via server IP address or admin.YOURDOMAIN subdomain |
 |**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
 
 ### EngineScript Commands
@@ -160,6 +160,7 @@ Go through each optimization tab and select the following:
 |**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
 |**`es.config`**    |Opens the configuration file in Nano |
+|**`es.help`**    |Displays EngineScript commands and location |
 |**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
 |**`es.info`**    |Displays server information |
 |**`es.install`**	  |Runs the main EngineScript installation script |
