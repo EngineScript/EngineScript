@@ -96,7 +96,7 @@ Go through each optimization tab and select the following:
 1. Speed Brain: **On**
 2. Cloudflare Fonts **On**
 3. Early Hints: **On**
-4. Rocket Loader: **Optional** - *(Test this on your site, it can cause issues with some plugins)*
+4. Rocket Loader: **Optional** - *When enabled, this will disable Cloudflare's Brotli to Origin functionality. Rocket loader can also cause issues with some plugins.*
 5. HTTP/2: **On**
 6. HTTP/2 to Origin: **On**
 7. HTTP/3 (with QUIC): **On** - *(Note: Cloudflare does not currently support HTTP/3 to Origin)*
@@ -125,6 +125,19 @@ Go through each optimization tab and select the following:
 5. Network Error Logging: **On**
 6. Onion Routing: **On**
 7. gRPC: **On**
+
+#### Brotli and Gzip to Origin
+
+For Cloudflare to support compression to origin, the following features must be disabled:
+
+* Email Obfuscation
+* Rocket Loader
+* Server Side Excludes (SSE)
+* Mirage
+* HTML Minification (JavaScript and CSS can remain enabled)
+* Automatic HTTPS Rewrites
+
+For more information, see [This is Brotli from Origin](https://blog.cloudflare.com/this-is-brotli-from-origin/).
 
 ### WordPress Plugins
 #### Nginx Helper
