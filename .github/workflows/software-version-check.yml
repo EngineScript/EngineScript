@@ -118,4 +118,3 @@ jobs:
           labels: |
             automated
             dependencies
-          template: .github/pull_request_template.md

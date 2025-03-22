@@ -10,6 +10,11 @@ labels: automated, dependencies
 ### Changed Versions
 <!-- List of version changes detected -->
 
+### Version Diff
+```diff
+<!-- Version differences will be shown here -->
+```
+
 ### Verification Checklist
 - [ ] Version numbers are correctly formatted
 - [ ] Version numbers are stable releases (not beta/RC)
