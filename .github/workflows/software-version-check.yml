@@ -1,4 +1,14 @@
-name: Software Version Checker
+name: Software Version Check
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Runs weekly on Sunday at midnight
+  workflow_dispatch:      # Allows manual triggering
+  push:
+    paths:
+      - 'enginescript-variables.txt'  # Run when variables file changes
+    branches:
+      - main  # or your default branch name
 
 jobs:
   check-versions:
