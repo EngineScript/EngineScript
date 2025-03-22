@@ -1,0 +1,71 @@
+name: Software Version Checker
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Software Versions
+        id: version-check
+        run: |
+          # Create temporary file for new versions
+          touch temp_versions.txt
+          
+          # MariaDB (11.4.x series)
+          LATEST_MARIADB=$(curl -sL https://downloads.mariadb.org/mariadb/+releases/ | 
+            grep -oP '11\.4\.[0-9]+(?=/)' | 
+            sort -V | 
+            tail -n1)
+          [ ! -z "$LATEST_MARIADB" ] && echo "MARIADB_VER=\"$LATEST_MARIADB\"" >> temp_versions.txt
+          
+          # PCRE2
+          LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
+            jq -r '.tag_name' | 
+            sed 's/pcre2-//')
+          echo "PCRE2_VER=\"$LATEST_PCRE2\"" >> temp_versions.txt
+          
+          # OpenSSL (3.4.x series)
+          LATEST_OPENSSL=$(curl -s https://openssl-library.org/source/ | 
+            grep -o 'openssl-3\.4\.[0-9]*\.tar\.gz' | 
+            sort -V | 
+            tail -n 1 | 
+            sed 's/openssl-\(.*\)\.tar\.gz/\1/')
+          echo "OPENSSL_VER=\"$LATEST_OPENSSL\"" >> temp_versions.txt
+          
+          # NGINX
+          LATEST_NGINX=$(curl -s https://nginx.org/en/download.html | 
+            grep -o 'nginx-[0-9]\.[0-9]*\.[0-9]*\.tar\.gz' | 
+            head -n 1 | 
+            sed 's/nginx-\(.*\)\.tar\.gz/\1/')
+          echo "NGINX_VER=\"$LATEST_NGINX\"" >> temp_versions.txt
+          
+          # phpMyAdmin
+          LATEST_PMA=$(curl -s https://www.phpmyadmin.net/downloads/ | 
+            grep -oP 'phpMyAdmin-\K[0-9]+\.[0-9]+\.[0-9]+(?=-all-languages\.zip)' | 
+            head -n1)
+          echo "PHPMYADMIN_VER=\"$LATEST_PMA\"" >> temp_versions.txt
+          
+          # Zlib
+          LATEST_ZLIB=$(curl -s https://api.github.com/repos/madler/zlib/tags | 
+            jq -r '.[0].name' | 
+            sed 's/v//')
+          echo "ZLIB_VER=\"$LATEST_ZLIB\"" >> temp_versions.txt
+          
+          # liburing
+          LATEST_LIBURING=$(curl -s https://api.github.com/repos/axboe/liburing/tags | 
+            jq -r '.[0].name' | 
+            sed 's/liburing-//')
+          echo "LIBURING_VER=\"$LATEST_LIBURING\"" >> temp_versions.txt
+          
+          # NGINX Headers More Module
+          LATEST_NGINX_HEADER=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags | 
+            jq -r '.[0].name' | 
+            sed 's/v//')
+          echo "NGINX_HEADER_VER=\"$LATEST_NGINX_HEADER\"" >> temp_versions.txt
+          
+          # NGINX Cache Purge Module
+          LATEST_NGINX_PURGE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags | 
+            jq -r '.[0].name' | 
+            sed 's/[^0-9\.]//g')
+          echo "NGINX_PURGE_VER=\"$LATEST_NGINX_PURGE\"" >> temp_versions.txt
