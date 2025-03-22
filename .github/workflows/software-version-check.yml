@@ -6,9 +6,9 @@ on:
   workflow_dispatch:      # Allows manual triggering
   push:
     paths:
-      - 'enginescript-variables.txt'  # Run when variables file changes
+      - 'enginescript-variables.txt'
     branches:
-      - main  # or your default branch name
+      - main
 
 jobs:
   check-versions:
@@ -79,3 +79,43 @@ jobs:
             jq -r '.[0].name' | 
             sed 's/[^0-9\.]//g')
           echo "NGINX_PURGE_VER=\"$LATEST_NGINX_PURGE\"" >> temp_versions.txt
+
+          # Compare versions and create PR if needed
+          if ! cmp -s "enginescript-variables.txt" "temp_versions.txt"; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Variables File
+        if: steps.version-check.outputs.changes_detected == 'true'
+        run: |
+          # Update the date
+          NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
+          sed -i "s/VARIABLES_DATE=\".*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+          
+          # Update version numbers
+          while IFS= read -r line; do
+            if [[ $line =~ ^[A-Z_]+_VER= ]]; then
+              var_name=$(echo "$line" | cut -d= -f1)
+              sed -i "s/$var_name=\".*\"/$line/" enginescript-variables.txt
+            fi
+          done < temp_versions.txt
+
+      - name: Create Pull Request
+        if: steps.version-check.outputs.changes_detected == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: update software versions"
+          title: "chore: update software versions"
+          body: |
+            Automated software version updates
+            
+            Changes detected in:
+            ```diff
+            $(diff enginescript-variables.txt temp_versions.txt)
+            ```
+          branch: update-software-versions
+          delete-branch: true
+          labels: |
+            automated
+            dependencies
+          template: .github/pull_request_template.md
