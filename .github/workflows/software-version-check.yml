@@ -19,21 +19,21 @@ jobs:
       - name: Check Software Versions
         id: version-check
         run: |
-          # Create temporary file for new versions
-          touch temp_versions.txt
+          # Create temporary file in .github directory
+          touch .github/temp_versions.txt
           
           # MariaDB (11.4.x series)
           LATEST_MARIADB=$(curl -sL https://downloads.mariadb.org/mariadb/+releases/ | 
             grep -oP '11\.4\.[0-9]+(?=/)' | 
             sort -V | 
             tail -n1)
-          [ ! -z "$LATEST_MARIADB" ] && echo "MARIADB_VER=\"$LATEST_MARIADB\"" >> temp_versions.txt
+          [ ! -z "$LATEST_MARIADB" ] && echo "MARIADB_VER=\"$LATEST_MARIADB\"" >> .github/temp_versions.txt
           
           # PCRE2
           LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
             jq -r '.tag_name' | 
             sed 's/pcre2-//')
-          echo "PCRE2_VER=\"$LATEST_PCRE2\"" >> temp_versions.txt
+          echo "PCRE2_VER=\"$LATEST_PCRE2\"" >> .github/temp_versions.txt
           
           # OpenSSL (3.4.x series)
           LATEST_OPENSSL=$(curl -s https://openssl-library.org/source/ | 
@@ -41,64 +41,68 @@ jobs:
             sort -V | 
             tail -n 1 | 
             sed 's/openssl-\(.*\)\.tar\.gz/\1/')
-          echo "OPENSSL_VER=\"$LATEST_OPENSSL\"" >> temp_versions.txt
+          echo "OPENSSL_VER=\"$LATEST_OPENSSL\"" >> .github/temp_versions.txt
           
           # NGINX
           LATEST_NGINX=$(curl -s https://nginx.org/en/download.html | 
             grep -o 'nginx-[0-9]\.[0-9]*\.[0-9]*\.tar\.gz' | 
             head -n 1 | 
             sed 's/nginx-\(.*\)\.tar\.gz/\1/')
-          echo "NGINX_VER=\"$LATEST_NGINX\"" >> temp_versions.txt
+          echo "NGINX_VER=\"$LATEST_NGINX\"" >> .github/temp_versions.txt
           
           # phpMyAdmin
           LATEST_PMA=$(curl -s https://www.phpmyadmin.net/downloads/ | 
             grep -oP 'phpMyAdmin-\K[0-9]+\.[0-9]+\.[0-9]+(?=-all-languages\.zip)' | 
             head -n1)
-          echo "PHPMYADMIN_VER=\"$LATEST_PMA\"" >> temp_versions.txt
+          echo "PHPMYADMIN_VER=\"$LATEST_PMA\"" >> .github/temp_versions.txt
           
           # Zlib
           LATEST_ZLIB=$(curl -s https://api.github.com/repos/madler/zlib/tags | 
             jq -r '.[0].name' | 
             sed 's/v//')
-          echo "ZLIB_VER=\"$LATEST_ZLIB\"" >> temp_versions.txt
+          echo "ZLIB_VER=\"$LATEST_ZLIB\"" >> .github/temp_versions.txt
           
           # liburing
           LATEST_LIBURING=$(curl -s https://api.github.com/repos/axboe/liburing/tags | 
             jq -r '.[0].name' | 
             sed 's/liburing-//')
-          echo "LIBURING_VER=\"$LATEST_LIBURING\"" >> temp_versions.txt
+          echo "LIBURING_VER=\"$LATEST_LIBURING\"" >> .github/temp_versions.txt
           
           # NGINX Headers More Module
           LATEST_NGINX_HEADER=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags | 
             jq -r '.[0].name' | 
             sed 's/v//')
-          echo "NGINX_HEADER_VER=\"$LATEST_NGINX_HEADER\"" >> temp_versions.txt
+          echo "NGINX_HEADER_VER=\"$LATEST_NGINX_HEADER\"" >> .github/temp_versions.txt
           
           # NGINX Cache Purge Module
           LATEST_NGINX_PURGE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags | 
             jq -r '.[0].name' | 
             sed 's/[^0-9\.]//g')
-          echo "NGINX_PURGE_VER=\"$LATEST_NGINX_PURGE\"" >> temp_versions.txt
+          echo "NGINX_PURGE_VER=\"$LATEST_NGINX_PURGE\"" >> .github/temp_versions.txt
 
-          # Compare versions and create PR if needed
-          if ! cmp -s "enginescript-variables.txt" "temp_versions.txt"; then
+          # Compare versions (excluding VARIABLES_DATE) and set output
+          if ! cmp -s <(grep -v VARIABLES_DATE enginescript-variables.txt) <(grep -v VARIABLES_DATE .github/temp_versions.txt); then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
+            # Only update date if versions changed
+            NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
+            echo "VARIABLES_DATE=\"$NEW_DATE\"" >> .github/temp_versions.txt
+          else
+            # No changes, copy existing date
+            grep VARIABLES_DATE enginescript-variables.txt >> .github/temp_versions.txt
           fi
 
       - name: Update Variables File
         if: steps.version-check.outputs.changes_detected == 'true'
         run: |
-          # Update the date
-          NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
-          sed -i "s/VARIABLES_DATE=\".*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
-          
-          # Update version numbers
+          # Update version numbers from temp file
           while IFS= read -r line; do
             if [[ $line =~ ^[A-Z_]+_VER= ]]; then
               var_name=$(echo "$line" | cut -d= -f1)
               sed -i "s/$var_name=\".*\"/$line/" enginescript-variables.txt
+            elif [[ $line =~ ^VARIABLES_DATE= ]]; then
+              sed -i "s/VARIABLES_DATE=\".*\"/$line/" enginescript-variables.txt
             fi
-          done < temp_versions.txt
+          done < .github/temp_versions.txt
 
       - name: Create Pull Request
         if: steps.version-check.outputs.changes_detected == 'true'
@@ -109,9 +113,9 @@ jobs:
           body: |
             Automated software version updates
             
-            Changes detected in:
+            Changes detected:
             ```diff
-            $(diff enginescript-variables.txt temp_versions.txt)
+            $(diff enginescript-variables.txt .github/temp_versions.txt || true)
             ```
           branch: update-software-versions
           delete-branch: true
