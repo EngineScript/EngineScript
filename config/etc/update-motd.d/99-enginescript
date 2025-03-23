@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Shell text formatting
+BOLD="$(tput bold)"
+NORMAL="$(tput sgr0)"
+
+# Get system information
+HOSTNAME=$(hostname)
+IP=$(hostname -I | awk '{print $1}')
+UPTIME=$(uptime -p)
+DISK=$(df -h / | awk 'NR==2 {print $4}')
+MEMORY=$(free -h | awk 'NR==2 {print $7}')
+
+# Print the MOTD
+echo "
+${BOLD}Welcome to EngineScript on ${HOSTNAME}${NORMAL}
+
+${BOLD}System Information:${NORMAL}
+------------------
+${BOLD}IP Address:${NORMAL} ${IP}
+${BOLD}Uptime:${NORMAL} ${UPTIME}
+${BOLD}Disk Space:${NORMAL} ${DISK} available
+${BOLD}Memory:${NORMAL} ${MEMORY} available
+
+${BOLD}EngineScript Commands:${NORMAL}
+--------------------
+${BOLD}es.menu${NORMAL}     - Open EngineScript menu
+${BOLD}es.help${NORMAL}     - Show all available EngineScript commands
+${BOLD}es.info${NORMAL}     - Display server information
+${BOLD}es.backup${NORMAL}   - Run backup
+${BOLD}es.update${NORMAL}   - Update EngineScript
+"

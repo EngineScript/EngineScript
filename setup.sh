@@ -137,9 +137,14 @@ dpkg-reconfigure tzdata
 # Set Unattended Upgrades
 dpkg-reconfigure unattended-upgrades
 
+# Set MOTD
+cp -rf /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript
+chmod +x /etc/update-motd.d/99-enginescript
+
 # HWE
 apt install --install-recommends linux-generic-hwe-${UBUNTU_VERSION} -y
 
+# Update & Upgrade
 apt update --allow-releaseinfo-change -y
 apt upgrade -y
 
