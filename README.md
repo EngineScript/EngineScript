@@ -173,7 +173,7 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 |**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
 |**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
 |**`es.config`**    |Opens the configuration file in Nano |
-|**`es.help`**    |Displays EngineScript commands and location |
+|**`es.help`**    |Displays EngineScript commands and important directories |
 |**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
 |**`es.info`**    |Displays server information |
 |**`es.install`**	  |Runs the main EngineScript installation script |

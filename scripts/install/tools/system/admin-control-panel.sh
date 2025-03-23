@@ -41,7 +41,7 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 
 # Remove Adminer link if INSTALL_ADMINER=0
 if [ "${INSTALL_ADMINER}" -eq 0 ]; then
-    sed -i '/<li><a href="adminer"><strong>Adminer<\/strong><\/a><\/li>/d' /var/www/admin/enginescript/index.html
+    sed -i '/<li><a href="adminer"><strong>Adminer<\/strong><\/a><\/li>/d' "/var/www/admin/enginescript/index.html"
 fi
 
 # PHPinfo.php
