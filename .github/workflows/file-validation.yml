@@ -15,8 +15,13 @@ on:
 jobs:
   fix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Fix Line Endings
       run: |
@@ -40,6 +45,7 @@ jobs:
       if: ${{ success() }}
       uses: peter-evans/create-pull-request@v7
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: "style: fix file formatting issues"
         title: "style: automatic file formatting fixes"
         body: |
