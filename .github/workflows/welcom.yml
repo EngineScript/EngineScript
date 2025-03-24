@@ -1,0 +1,49 @@
+name: Welcome
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            Thanks for opening your first issue in EngineScript! 🚀
+            
+            To help us better understand your issue, please run:
+            ```bash
+            es.debug
+            ```
+            
+            This command will generate a detailed report including:
+            - System information
+            - Software versions
+            - Configuration settings
+            - Service status
+            - Network information
+            
+            ⚠️ **Important Privacy Note**
+            Before sharing the debug output, please review and remove any sensitive information that you don't want to share publicly. This may include:
+            - IP addresses
+            - Hostnames
+            - Domain names
+            
+            The debug report is saved to a file and formatted specifically for GitHub.
+            After reviewing and sanitizing the content, paste it into your issue.
+            
+            We'll review your issue soon!
+
+          pr-message: |
+            Thanks for your first contribution to EngineScript! 🎉
+            
+            If your PR fixes an issue, please consider including the sanitized output 
+            of `es.debug` to show the environment where you tested your changes.
+            Remember to remove any sensitive information before sharing.
+            
+            We'll review your PR soon!

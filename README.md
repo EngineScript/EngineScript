@@ -168,21 +168,23 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 
 ### EngineScript Commands
 
+### EngineScript Commands
+
 |Command|Function|
 |-|-|
-|**`es.backup`**    |Runs the backup script to backup all domains locally and *optionally* in the cloud |
-|**`es.cache`**     |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
-|**`es.config`**    |Opens the configuration file in Nano |
-|**`es.help`**    |Displays EngineScript commands and important directories |
-|**`es.images`**  |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
-|**`es.info`**    |Displays server information |
-|**`es.install`**	  |Runs the main EngineScript installation script |
-|**`es.menu`**	    |EngineScript menu |
+|**`es.backup`**     |Runs the backup script to backup all domains locally and *optionally* in the cloud |
+|**`es.cache`**      |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
+|**`es.config`**     |Opens the configuration file in Nano |
+|**`es.debug`**      |Displays debug information for EngineScript |
+|**`es.help`**       |Displays EngineScript commands and locations |
+|**`es.images`**     |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
+|**`es.info`**       |Displays server information |
+|**`es.install`**    |Runs the main EngineScript installation script |
+|**`es.menu`**       |EngineScript menu |
 |**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
-|**`es.restart`**   |Restart Nginx and PHP |
-|**`es.server`**    |Displays server information |
-|**`es.update`**    |Update EngineScript |
-|**`es.variables`** |Opens the variable file in Nano. This file resets when EngineScript is updated |
+|**`es.restart`**    |Restart Nginx and PHP |
+|**`es.update`**     |Update EngineScript |
+|**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated |
 
 ### Software EngineScript Utilizes:
 
