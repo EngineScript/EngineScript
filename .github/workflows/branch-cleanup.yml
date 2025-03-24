@@ -4,12 +4,42 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Delete merged branch
-        uses: SvanBoxel/delete-merged-branch@main
+        if: github.event.pull_request.merged == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch="${{ github.event.pull_request.head.ref }}"
+          repo="${{ github.repository }}"
+          
+          echo "Checking branch: $branch"
+          
+          # Protected branch check
+          if [[ "$branch" =~ ^(main|master|dev|develop|staging|production)$ ]]; then
+            echo "::warning::Skipping deletion of protected branch: $branch"
+            exit 0
+          fi
+          
+          # Attempt branch deletion
+          echo "Attempting to delete branch: $branch"
+          if git push origin --delete "$branch" 2>/dev/null; then
+            echo "::notice::Successfully deleted branch: $branch"
+          else
+            echo "::error::Failed to delete branch: $branch"
+            exit 1
+          fi
           
