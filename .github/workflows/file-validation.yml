@@ -12,16 +12,21 @@ on:
       - '**.conf'
       - '**.txt'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   fix:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Install dos2unix
+      run: sudo apt-get install -y dos2unix
     
     - name: Fix Line Endings
       run: |
@@ -40,9 +45,16 @@ jobs:
         find . -type f -name "* *" -not -path "./.git/*" -exec bash -c '
           mv "$0" "${0// /_}"
         ' {} \;
+    
+    - name: Check for Changes
+      id: check_changes
+      run: |
+        if [[ -n "$(git status --porcelain)" ]]; then
+          echo "changes_found=true" >> $GITHUB_OUTPUT
+        fi
 
     - name: Create Pull Request if Changes Made
-      if: ${{ success() }}
+      if: steps.check_changes.outputs.changes_found == 'true'
       uses: peter-evans/create-pull-request@v7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,4 +71,3 @@ jobs:
         labels: |
           automated
           style
-          
