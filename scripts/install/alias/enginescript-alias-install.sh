@@ -65,5 +65,5 @@ ${BOLD}EngineScript Locations:${NORMAL}\n\
 /var/lib/mysql              - MySQL database\n\
 /var/log                    - Server logs\n\
 /var/www/admin/enginescript - Tools accessible via server IP address or admin.YOURDOMAIN subdomain\n\
-/var/www/sites/*YOURDOMAIN*/html - Root directory for your WordPress installation\n'
+/var/www/sites/YOURDOMAIN/html - Root directory for your WordPress installation\n'
 EOT
