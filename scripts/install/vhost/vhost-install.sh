@@ -397,6 +397,9 @@ wp redis enable --allow-root
 wp option get permalink_structure --allow-root
 wp option update permalink_structure '/%category%/%postname%/' --allow-root
 
+# Install EngineScript Optimization Plugin
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+
 # Setting Permissions Again
 # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
 # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
