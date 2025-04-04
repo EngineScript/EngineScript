@@ -11,14 +11,6 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit 1
-fi
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
@@ -44,22 +36,30 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 for i in "${SITES[@]}"
 do
+	echo "Running Database Backup for ${i}"
 	cd "/var/www/sites/$i/html"
 
 	# Local Database Backup
-  mkdir -p /home/EngineScript/site-backups/$i/database/hourly/${NOW}
-  wp db export "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/$DATABASE_FILE" --add-drop-table --allow-root
+  	mkdir -p /home/EngineScript/site-backups/$i/database/daily/${NOW}
+	wp db export "/home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE" --add-drop-table --allow-root
 
 	# Compress Database
-  gzip -f "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/$DATABASE_FILE"
+	gzip -f "/home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE"
+
+	# wp-config.php backup
+	mkdir -p /home/EngineScript/site-backups/$i/wp-config/daily/${NOW}
+	gzip -cf "/var/www/sites/$i/html/wp-config.php" > /home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE
 
 	# Amazon S3 Database Backup
-	if [ $INSTALL_S3_BACKUP = 1 ] && [ $S3_BUCKET_NAME != PLACEHOLDER ] && [ $HOURLY_S3_DATABASE_BACKUP = 1 ];
-	  then
-      /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/$DATABASE_FILE.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/hourly/${NOW}/$DATABASE_FILE.gz" --storage-class STANDARD
+	if [ $INSTALL_S3_BACKUP = 1 ] && [ $S3_BUCKET_NAME != PLACEHOLDER ] && [ $DAILY_S3_DATABASE_BACKUP = 1 ];
+	then
+		echo "Uploading Database Backup for ${i} to Amazon S3 Bucket"
+		/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/daily/${NOW}/$DATABASE_FILE.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/daily/${NOW}/$DATABASE_FILE.gz" --storage-class STANDARD
+		echo "Uploading WP-Config Backup for ${i} to Amazon S3 Bucket"
+		/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/$WPCONFIG_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-config/daily/${NOW}/$WPCONFIG_FILE" --storage-class STANDARD
 	fi
 
   # Remove Old Backups
-  find /home/EngineScript/site-backups/$i/database/hourly -type d,f -mtime +1 | xargs rm -fR
-
+	find /home/EngineScript/site-backups/$i/database/daily -type d,f -mtime +30 | xargs rm -fR
+	find /home/EngineScript/site-backups/$i/wp-config -type d,f -mtime +30 | xargs rm -fR
 done

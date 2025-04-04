@@ -11,24 +11,25 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit 1
-fi
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Backup existing PHP config
-cp -rf /etc/php/${PHP_VER}/fpm/php.ini /home/EngineScript/config-backups/php/php.ini
-cp -rf /etc/php/${PHP_VER}/fpm/php-fpm.conf /home/EngineScript/config-backups/php/php-fpm.conf
-cp -rf /etc/php/${PHP_VER}/fpm/pool.d/www.conf /home/EngineScript/config-backups/php/www.conf
+# Date
+NOW=$(date +%m-%d-%Y-%H)
 
-echo ""
-echo "Backing up existing php config. Backup can be found in /home/EngineScript/config-backups/php"
-echo ""
+# Filenames
+DATABASE_FILE="${NOW}-database.sql";
+FULLWPFILES="${NOW}-wordpress-files.gz";
+NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
+PHP_FILE="${NOW}-php.tar.gz";
+SSL_FILE="${NOW}-ssl-keys.gz";
+UPLOADS_FILE="${NOW}-uploads.tar.gz";
+VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
+WPCONFIG_FILE="${NOW}-wp-config.php.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
 
-sleep 2
+# Backup PHP Config
+tar -zcf "/home/EngineScript/config-backups/php/$PHP_FILE" /etc/php
+
+# Remove Old PHP Backups
+find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR

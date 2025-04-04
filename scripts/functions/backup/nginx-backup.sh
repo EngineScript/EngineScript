@@ -11,20 +11,25 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit 1
-fi
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-echo -e "\nRunning Backup Script\n"
+# Date
+NOW=$(date +%m-%d-%Y-%H)
 
-/usr/local/bin/enginescript/scripts/functions/backup/daily-database-backup.sh
-/usr/local/bin/enginescript/scripts/functions/backup/weekly-wp-content-backup.sh
+# Filenames
+DATABASE_FILE="${NOW}-database.sql";
+FULLWPFILES="${NOW}-wordpress-files.gz";
+NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
+PHP_FILE="${NOW}-php.tar.gz";
+SSL_FILE="${NOW}-ssl-keys.gz";
+UPLOADS_FILE="${NOW}-uploads.tar.gz";
+VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
+WPCONFIG_FILE="${NOW}-wp-config.php.gz";
+WPCONTENT_FILE="${NOW}-wp-content.gz";
 
-echo -e "\nBackup Script Done\n"
+# Backup Nginx Config
+tar -zcf "/home/EngineScript/config-backups/nginx/$NGINX_FILE" /etc/nginx
+
+# Remove Old Nginx Backups
+find /home/EngineScript/config-backups/nginx -type f -mtime +15 | xargs rm -fR

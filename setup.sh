@@ -88,9 +88,16 @@ fi
 # EngineScript Git Clone
 git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
 
-# EngineScript Permissions
+# Convert line endings
+dos2unix /usr/local/bin/enginescript/*
+
+# Set directory and file permissions to 755
 find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+
+# Set ownership
 chown -R root:root /usr/local/bin/enginescript
+
+# Make shell scripts executable
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 # Create EngineScript Home Directory

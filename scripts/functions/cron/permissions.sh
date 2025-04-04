@@ -72,7 +72,14 @@ chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
-# Assign EngineScript Permissions
-chmod -R 775 /usr/local/bin/enginescript
+# Convert line endings
+dos2unix /usr/local/bin/enginescript/*
+
+# Set directory and file permissions to 755
+find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+
+# Set ownership
 chown -R root:root /usr/local/bin/enginescript
+
+# Make shell scripts executable
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;

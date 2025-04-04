@@ -11,16 +11,14 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit 1
-fi
-
 #----------------------------------------------------------------------------------
 # Start Main Script
+
+#----------------------------------------------------------------------------
+# Forked from https://github.com/A5hleyRich/simple-automated-tasks
+
+# Include config
+source /home/EngineScript/sites-list/sites.sh
 
 # Date
 NOW=$(date +%m-%d-%Y-%H)
@@ -36,8 +34,22 @@ VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
 WPCONFIG_FILE="${NOW}-wp-config.php.gz";
 WPCONTENT_FILE="${NOW}-wp-content.gz";
 
-# Backup PHP Config
-tar -zcf "/home/EngineScript/config-backups/php/$PHP_FILE" /etc/php
+for i in "${SITES[@]}"
+do
+	echo "Running WP-Content Backup for ${i}"
+	cd "/var/www/sites/$i/html"
 
-# Remove Old PHP Backups
-find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR
+	# Local WP-Content Backup
+	mkdir -p /home/EngineScript/site-backups/$i/wp-content/weekly/${NOW}
+	tar -zcf "/home/EngineScript/site-Sbackups/$i/wp-content/weekly/$WPCONTENT_FILE" wp-content
+
+	# Amazon S3 WP-Content Backup
+	if [ $INSTALL_S3_BACKUP = 1 ] && [ $S3_BUCKET_NAME != PLACEHOLDER ] && [ $WEEKLY_S3_WPCONTENT_BACKUP = 1 ];
+		then
+		echo "Uploading WP-Content Backup for ${i} to Amazon S3 Bucket"
+		/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-content/weekly/$WPCONTENT_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-content/weekly/$WPCONTENT_FILE" --storage-class STANDARD
+	fi
+
+  	# Remove Old Backups
+	find /home/EngineScript/site-backups/$i/wp-content -type d,f -mtime +7 | xargs rm -fR
+done

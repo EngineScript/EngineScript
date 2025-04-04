@@ -26,9 +26,16 @@ cd /usr/local/bin/enginescript
 git fetch origin master
 git reset --hard origin/master
 
-# EngineScript Permissions
-find /usr/local/bin/enginescript -type d,f -exec chmod 775 {} \;
+# Convert line endings
+dos2unix /usr/local/bin/enginescript/*
+
+# Set directory and file permissions to 755
+find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+
+# Set ownership
 chown -R root:root /usr/local/bin/enginescript
+
+# Make shell scripts executable
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 echo ""

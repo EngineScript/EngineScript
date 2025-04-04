@@ -7,107 +7,68 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
+# Load Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
+# Check Root User
+if [ "${EUID}" -ne 0 ]; then
+    echo "${BOLD}ALERT:${NORMAL} EngineScript should be executed as the root user."
     exit 1
 fi
 
+# Copy Sites List Template
+if [ ! -f "/home/EngineScript/sites-list/sites.sh" ]; then
+    cp -rf /usr/local/bin/enginescript/scripts/functions/cron/sites.sh /home/EngineScript/sites-list/sites.sh
+fi
+
 #----------------------------------------------------------------------------------
-# Start Main Script
-
-# Copy Sites.sh
-cp -rf /usr/local/bin/enginescript/scripts/functions/cron/sites.sh /home/EngineScript/sites-list/sites.sh
-
 # Set Cron Jobs
+#----------------------------------------------------------------------------------
 
-# Currently disabled:
-#   - compression-cron.sh
-
-# EngineScripts Emergency Updates (hourly)
-# This pulls and runs the latest version of the the emergency upgrade script from GitHub.
-# This allows EngineScript to self-heal in the event of a serious bug that would cause your server to not run correctly.
-# This file won't be used regularly.
-if [ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" = 1 ];
-  then
+# Security and Updates
+[ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" = 1 ] && \
     (crontab -l 2>/dev/null; echo "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1") | crontab -
-fi
 
-# EngineScript Automatic Updates (daily)
-if [ "${ENGINESCRIPT_AUTO_UPDATE}" = 1 ];
-  then
+[ "${ENGINESCRIPT_AUTO_UPDATE}" = 1 ] && \
     (crontab -l 2>/dev/null; echo "55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1") | crontab -
-fi
 
-# WordPress Cron Ping (every 15 minutes)
+# WordPress Maintenance
 (crontab -l 2>/dev/null; echo "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1") | crontab -
 
-# Database Backup (daily)
-if [ "${DAILY_LOCAL_DATABASE_BACKUP}" = 1 ];
-  then
-    (crontab -l 2>/dev/null; echo "0 1 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash daily-database-backup.sh >/dev/null 2>&1") | crontab -
-fi
+# Backup Tasks
+[ "${DAILY_LOCAL_DATABASE_BACKUP}" = 1 ] && \
+    (crontab -l 2>/dev/null; echo "0 1 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash daily-database-backup.sh >/dev/null 2>&1") | crontab -
 
-# Database Backup (hourly)
-if [ "${HOURLY_LOCAL_DATABASE_BACKUP}" = 1 ];
-  then
-    (crontab -l 2>/dev/null; echo "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash hourly-database-backup.sh >/dev/null 2>&1") | crontab -
-fi
+[ "${HOURLY_LOCAL_DATABASE_BACKUP}" = 1 ] && \
+    (crontab -l 2>/dev/null; echo "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash hourly-database-backup.sh >/dev/null 2>&1") | crontab -
 
-# System Cleanup (hourly)
-    (crontab -l 2>/dev/null; echo "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1") | crontab -
+[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" = 1 ] && \
+    (crontab -l 2>/dev/null; echo "10 1 */7 * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1") | crontab -
 
-# WP-Content Backup (weekly)
-if [ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" = 1 ];
-  then
-    (crontab -l 2>/dev/null; echo "10 1 */7 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash weekly-wp-content-backup.sh >/dev/null 2>&1") | crontab -
-fi
+# System Maintenance
+(crontab -l 2>/dev/null; echo "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1") | crontab -
 
-# Lossless Image Optimization on Web Directories
-# (Only runs on new images since last run) (weekly)
-if [ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" = 1 ];
-  then
+[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" = 1 ] && \
     (crontab -l 2>/dev/null; echo "37 5 */7 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1") | crontab -
-fi
 
-# Backup Nginx Configuration (daily)
-(crontab -l 2>/dev/null; echo "47 6 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash nginx-backup.sh >/dev/null 2>&1") | crontab -
+# Configuration Backups
+(crontab -l 2>/dev/null; echo "47 6 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash nginx-backup.sh >/dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "48 6 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash php-backup.sh >/dev/null 2>&1") | crontab -
 
-# Backup PHP Configuration (daily)
-(crontab -l 2>/dev/null; echo "48 6 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash php-backup.sh >/dev/null 2>&1") | crontab -
-
-# Retrieve Cloudflare Origin Certificate for Authenticated Pulls With Nginx (monthly)
+# Cloudflare Updates
 (crontab -l 2>/dev/null; echo "49 5 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-origin-cert.sh >/dev/null 2>&1") | crontab -
-
-# Retrieve  Cloudflare Server IP Ranges for Nginx (monthly)
 (crontab -l 2>/dev/null; echo "50 5 1 * * cd /usr/local/bin/enginescript/scripts/install/nginx; bash nginx-cloudflare-ip-updater.sh >/dev/null 2>&1") | crontab -
-
-# Retrieve  Cloudflare Server IP Ranges for UFW (monthly)
 (crontab -l 2>/dev/null; echo "51 5 1 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash ufw-cloudflare-cron.sh >/dev/null 2>&1") | crontab -
 
-# Update WP-CLI & Packages (daily)
+# Tool Updates
 (crontab -l 2>/dev/null; echo "52 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash wp-cli-update.sh >/dev/null 2>&1") | crontab -
-
-# Update Wordfence CLI (daily)
 (crontab -l 2>/dev/null; echo "53 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash wordfence-cli-update.sh >/dev/null 2>&1") | crontab -
 
-# Reset Ownership & Permissions for WordPress and EngineScript (daily)
+# Permissions and Security
 (crontab -l 2>/dev/null; echo "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash permissions.sh >/dev/null 2>&1") | crontab -
 
-# Scan Uploads Directory for Potentially Unwanted .php Files (daily)
-if [ "$PUSHBULLET_TOKEN" != PLACEHOLDER ];
-	then
+[ "$PUSHBULLET_TOKEN" != PLACEHOLDER ] && {
     (crontab -l 2>/dev/null; echo "56 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash uploads-php-scan.sh >/dev/null 2>&1") | crontab -
-fi
-
-# Check WordPress Directories Against Checksums (daily)
-if [ "$PUSHBULLET_TOKEN" != PLACEHOLDER ];
-	then
     (crontab -l 2>/dev/null; echo "57 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash checksums.sh >/dev/null 2>&1") | crontab -
-fi
+}
