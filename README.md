@@ -11,7 +11,8 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 - **Ubuntu 24.04 (64-Bit)** *(Ubuntu 22.04 is also supported but is not recommended)*
 - **2GB RAM**
 - **Cloudflare** *(Free or Paid)*
-- **30 minutes of your time**
+
+----------
 
 ## Default Configuration ##
 The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
@@ -27,8 +28,9 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 |**CMS** | WordPress |
 |**Firewall** | UFW |
 
-## Install EngineScript
+----------
 
+## Install EngineScript
 ### Step 1 - Initial Install
 Run the following command:
 ```shell
@@ -36,14 +38,12 @@ wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh
 ```
 
 ### Step 2 - Edit Options File
-After the initial setup script has run, you'll need to alter the install options file.
+After the initial setup script has run, you'll need to alter the install options file. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
 
 Run the following command:
 ```shell
 es.config
 ```
-
-You'll need to edit the configuration file at **/home/EngineScript/enginescript-install-options.txt**. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
 
 ### Step 3 - Main Install Process
 Once you've filled out the configuration file with your personal settings, continue with the main installation process.
@@ -56,23 +56,22 @@ es.install
 ----------
 
 ## Domain Creation
-After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Configure New Domain**, then select **1) Add Domain** to create a new domain installation on your server.
-
-Domain creation is almost entirely automated, requiring you to only enter the domain name you wish to create. During this automated process, we'll create a unique Nginx vhost file, create new MySQL database, request a new SSL certificate from Cloudflare, download WordPress, install and activate plugins, and assign the applicable data to wp-config.php.
-
-Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to finalize your installation:
+### EngineScript Menu
+After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Add Domain** to create a new domain installation on your server.
 
 ### Cloudflare
+Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to configure Cloudflare for your domain.
+
 #### Go to the Cloudflare Dashboard
 
 1. Select your domain
 
 #### DNS Tab
 ##### Records Section
-First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow you to access the admin subdomain on your site. You can also reach the admin section via IP address instead if you prefer.
+First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow you to access the admin subdomain on your site. If you prefer, the admin control panel may also be accessed via IP address instead.
 
 1. Click **Add record** button
-2. **Type:** CNAME | **Name:** admin | **Target:** (your domain)
+2. **Type:** CNAME | **Name:** admin | **Target:** *your domain*
 
 #### SSL/TLS Tab
 ##### Edge Certificates Section
@@ -96,7 +95,7 @@ Go through each optimization tab and select the following:
 1. Speed Brain: **On**
 2. Cloudflare Fonts **On**
 3. Early Hints: **On**
-4. Rocket Loader: **Optional** - *When enabled, this will disable Cloudflare's Brotli to Origin functionality. Rocket loader can also cause issues with some plugins.*
+4. Rocket Loader: **Optional** - *When enabled, this will disable Cloudflare's compression from origin functionality. Rocket loader can also cause issues with some plugins.*
 5. HTTP/2: **On**
 6. HTTP/2 to Origin: **On**
 7. HTTP/3 (with QUIC): **On** - *(Note: Cloudflare does not currently support HTTP/3 to Origin)*
@@ -126,9 +125,9 @@ Go through each optimization tab and select the following:
 6. Onion Routing: **On**
 7. gRPC: **On**
 
-#### Brotli and Gzip to Origin
+#### Brotli and Gzip from Origin
 
-For Cloudflare to support compression to origin, the following features must be disabled:
+For Cloudflare to support compression from origin, the following features must be disabled:
 
 * Email Obfuscation
 * Rocket Loader
@@ -149,8 +148,15 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 5. Check all of the boxes under Purging Conditions.
 6. Save Changes.
 
-## EngineScript Information Reference
+#### Other Plugins
 
+EngineScript installs a number of additional plugins when a domain is added to the server. These plugins are purely optional, but may add some valuable functionality to your site. We only enable plugins that are required, so please take a moment to review all of the plugins to see if there is anything else you'd like to enable.
+
+We've also developed a basic plugin that disables some bloat from the default WordPress experience such as TinyMCE emojis, Jetpack advertisements, and some legacy CSS from widgets and classic themes. There could be some edge-case scenarios where this breaks something specific you're using, but these tweaks are pretty safe in nearly all cases.
+
+----------
+
+## EngineScript Information Reference
 ### EngineScript Locations
 
 |Location|Usage|
@@ -165,8 +171,6 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 |**/var/log**                    |Server logs |
 |**/var/www/admin/enginescript** |Tools that may be accessed via server IP address or admin.YOURDOMAIN subdomain |
 |**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
-
-### EngineScript Commands
 
 ### EngineScript Commands
 
@@ -261,5 +265,13 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 |ZLIB|1.3.1|https://github.com/madler/zlib |
 |Admin Control Panel Template|-|https://github.com/bhjoco/onepage-medium |
 
-## Support EngineScript
-Need a VPS? EngineScript recommends [Digital Ocean](https://m.do.co/c/e57cc8492285)
+----------
+
+## Sponsors:
+EngineScript development is supported by:
+
+Want to support EngineScript? [Sponsor this project](https://github.com/sponsors/EngineScript).
+
+----------
+
+##
