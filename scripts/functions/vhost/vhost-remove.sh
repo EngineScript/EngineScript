@@ -96,10 +96,12 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "Starting domain removal for ${DOMAIN} at $(date)"
 
 # Remove domain from site list
-if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh
+# Check for the domain enclosed in quotes, matching the format in sites.sh
+if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh
 then
   echo -e "${BOLD}Site List Removal Check: Passed\n\n${NORMAL}Removing ${DOMAIN} from site list...\n\n"
-  grep -v "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh > /home/EngineScript/sites-list/sites.sh.old; mv /home/EngineScript/sites-list/sites.sh.old /home/EngineScript/sites-list/sites.sh
+  # Use grep -v to remove the line containing the quoted domain
+  grep -v "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh > /home/EngineScript/sites-list/sites.sh.old && mv /home/EngineScript/sites-list/sites.sh.old /home/EngineScript/sites-list/sites.sh
 else
   echo -e "${BOLD}Site List Removal Check: Failed\n\n${NORMAL}${DOMAIN} was not found on the site list.\n\n"
 fi
@@ -120,7 +122,7 @@ fi
 for VHOST in "/etc/nginx/sites-enabled/${DOMAIN}.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"; do
   if test -f "${VHOST}"; then
     echo -e "${BOLD}Nginx Vhost Removal Check: Passed\n\n${NORMAL}Removing ${VHOST}...\n\n"
-    rm -rf "${VHOST}" || echo "Error: Failed to remove ${VHOST}."
+    rm -rf "${VHOST}"
   else
     echo -e "${BOLD}Nginx Vhost Removal Check: Failed\n\n${NORMAL}${VHOST} did not exist.\n\n"
   fi
@@ -162,9 +164,33 @@ else
   echo -e "${BOLD}Log Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a log directory.\n\n"
 fi
 
-# Restart Services
-echo "Restarting Nginx and PHP"
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
+# --- Update Redis Database Count ---
+echo "Updating Redis database count..."
+# Source the updated site list
+source /home/EngineScript/sites-list/sites.sh
+
+# Get the number of remaining sites
+REMAINING_SITES_COUNT=${#SITES[@]}
+
+# Ensure the database count is at least 1
+if [[ $REMAINING_SITES_COUNT -lt 1 ]]; then
+    EFFECTIVE_DB_COUNT=1
+else
+    EFFECTIVE_DB_COUNT=$REMAINING_SITES_COUNT
+fi
+
+# Update redis.conf if the number needs changing
+CURRENT_DB_COUNT=$(grep -E "^databases\s+[0-9]+" /etc/redis/redis.conf | awk '{print $2}')
+if [[ "$CURRENT_DB_COUNT" != "$EFFECTIVE_DB_COUNT" ]]; then
+    echo "Adjusting Redis databases from ${CURRENT_DB_COUNT} to ${EFFECTIVE_DB_COUNT}..."
+    sed -i "s/^databases\s+[0-9]\+/databases ${EFFECTIVE_DB_COUNT}/" /etc/redis/redis.conf
+else
+    echo "Redis database count (${EFFECTIVE_DB_COUNT}) is already correct."
+fi
+
+# Restart Services (including Redis if needed by alias-restart.sh)
+echo "Restarting Nginx, PHP, and Redis..."
+/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh # This should restart nginx, php-fpm, and redis
 echo ""
 
 # Summary

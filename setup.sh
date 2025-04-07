@@ -106,11 +106,16 @@ mkdir -p /home/EngineScript/config-backups/php
 mkdir -p /home/EngineScript/mysql-credentials
 mkdir -p /home/EngineScript/site-backups
 mkdir -p /home/EngineScript/sites-list
+mkdir -p /home/EngineScript/temp/site-export
+mkdir -p /home/EngineScript/temp/site-import/database-file
+mkdir -p /home/EngineScript/temp/site-import/root-directory
 
 # EngineScript Logs
-# Create EngineScript log directories
+# Create EngineScript logs
 mkdir -p /var/log/EngineScript
 touch /var/log/EngineScript/install-log.txt
+touch /var/log/EngineScript/vhost-export.log
+touch /var/log/EngineScript/vhost-import.log
 touch /var/log/EngineScript/vhost-install.log
 touch /var/log/EngineScript/vhost-remove.log
 

@@ -4,7 +4,7 @@ EngineScript automates the process of building a high-performance LEMP server. W
 
 EngineScript Release Stage: **Beta**
 
-## Requirements
+## Minimum Requirements
 EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
 
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
@@ -57,7 +57,7 @@ es.install
 
 ## Domain Creation
 ### EngineScript Menu
-After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Add Domain** to create a new domain installation on your server.
+After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** get started adding your first site to the server.
 
 ### Cloudflare
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to configure Cloudflare for your domain.
@@ -152,7 +152,14 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 
 EngineScript installs a number of additional plugins when a domain is added to the server. These plugins are purely optional, but may add some valuable functionality to your site. We only enable plugins that are required, so please take a moment to review all of the plugins to see if there is anything else you'd like to enable.
 
-We've also developed a basic plugin that disables some bloat from the default WordPress experience such as TinyMCE emojis, Jetpack advertisements, and some legacy CSS from widgets and classic themes. There could be some edge-case scenarios where this breaks something specific you're using, but these tweaks are pretty safe in nearly all cases.
+We've also developed a basic plugin that disables some bloat from the default WordPress experience such as TinyMCE emojis, Jetpack advertisements, and some legacy CSS from widgets and classic themes. There could be some edge-case scenarios where this breaks something specific you're using, but these tweaks are pretty safe for most users.
+
+----------
+
+## Sponsors:
+EngineScript development is supported by:
+
+Want to support EngineScript? [Sponsor this project](https://github.com/sponsors/EngineScript).
 
 ----------
 
@@ -266,12 +273,3 @@ We've also developed a basic plugin that disables some bloat from the default Wo
 |Admin Control Panel Template|-|https://github.com/bhjoco/onepage-medium |
 
 ----------
-
-## Sponsors:
-EngineScript development is supported by:
-
-Want to support EngineScript? [Sponsor this project](https://github.com/sponsors/EngineScript).
-
-----------
-
-##
