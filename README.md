@@ -19,8 +19,8 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 
 ||||
 |-|-|-|
-|**CDN \ SSL:** Cloudflare||**Web Server:** Nginx|
-|**Script Processing:** PHP||**MySQL Database:** MariaDB|
+|**CDN \ SSL:** Cloudflare||**Web Server:** Nginx Mainline|
+|**Script Processing:** PHP 8.x||**MySQL Database:** MariaDB 11.4.x|
 |**Object Cache:** Redis||**CMS:** WordPress|
 
 ----------
