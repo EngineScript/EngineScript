@@ -14,15 +14,11 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 
 ----------
 
-|Function|Software|||||
-|-|-|-|-|-|-|
-|**SSL / CDN** | Cloudflare |
-|**Web Server** | Nginx Mainline | FastCGI Cache | OpenSSL | Cloudflare ZLib | Performance Patches |
-|**Script Processing** | PHP 8.x | PHP OPCACHE |
-|**MySQL Database** | MariaDB 11.x |
-|**Object Cache** | Redis |
-|**CMS** | WordPress |
-|**Firewall** | UFW |
+||||
+|-|-|-|
+|**CDN \ SSL:** Cloudflare||**Web Server:** Nginx|
+|**Script Processing:** PHP||**MySQL Database:** MariaDB|
+|**Object Cache:** Redis||**CMS:** WordPress|
 
 ----------
 
