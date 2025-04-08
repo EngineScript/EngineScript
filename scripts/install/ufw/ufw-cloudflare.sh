@@ -25,7 +25,14 @@ fi
 # Add UFW Rules for Cloudflare
 # Credit: https://github.com/Paul-Reed/cloudflare-ufw
 
-# Allow all traffic from Cloudflare IPs (no ports restriction)
-for cfip in `curl -sw '\n' https://www.cloudflare.com/ips-v{4,6}`; do ufw allow proto tcp from $cfip comment 'Cloudflare IP'; done
+echo "Adding UFW rules for Cloudflare IPs (TCP & UDP)..."
+# Allow all TCP and UDP traffic from Cloudflare IPs (no ports restriction)
+# Using brace expansion for conciseness
+for cfip in $(curl -s https://www.cloudflare.com/ips-v{4,6}); do
+  ufw allow proto tcp from $cfip comment 'Cloudflare IP (TCP)' > /dev/null
+  ufw allow proto udp from $cfip comment 'Cloudflare IP (UDP)' > /dev/null
+done
 
+echo "Reloading UFW rules..."
 ufw reload > /dev/null
+echo "UFW rules updated for Cloudflare."

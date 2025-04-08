@@ -69,11 +69,12 @@ jobs:
           check_version "PCRE2_VER" "$LATEST_PCRE2"
           
           # OpenSSL (3.4.x series)
-          LATEST_OPENSSL=$(curl -s https://openssl-library.org/source/ | 
-            grep -o 'openssl-3\.4\.[0-9]*\.tar\.gz' | 
+          LATEST_OPENSSL=$(curl -s https://api.github.com/repos/openssl/openssl/releases | 
+            jq -r '.[].tag_name' | 
+            grep '^openssl-3\.4\.[0-9]*$' | 
             sort -V | 
             tail -n 1 | 
-            sed 's/openssl-\(.*\)\.tar\.gz/\1/')
+            sed 's/openssl-//')
           check_version "OPENSSL_VER" "$LATEST_OPENSSL"
           
           # NGINX
@@ -173,4 +174,3 @@ jobs:
           labels: |
             automated
             dependencies
-            

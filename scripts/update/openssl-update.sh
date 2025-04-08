@@ -24,9 +24,10 @@ fi
 
 # Download OpenSSL
 cd /usr/src
-wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz --no-check-certificate
-tar -xvzf openssl-${OPENSSL_VER}.tar.gz
-cd openssl-${OPENSSL_VER}
+# Updated URL structure for GitHub releases
+wget "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" --no-check-certificate
+tar -xvzf "openssl-${OPENSSL_VER}.tar.gz"
+cd "openssl-${OPENSSL_VER}"
 
 # Compile OpenSSL
 chmod +x ./config
