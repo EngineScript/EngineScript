@@ -19,9 +19,9 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 
 |||||
 |-|-|-|-|
-|**CDN \ SSL:** Cloudflare|-|-|**Web Server:** Nginx|
-|**Script Processing:** PHP|-|-|**MySQL Database:** MariaDB|
-|**Object Cache:** Redis|-|-|**CMS:** WordPress|
+|**CDN \ SSL:** Cloudflare|||**Web Server:** Nginx|
+|**Script Processing:** PHP|||**MySQL Database:** MariaDB|
+|**Object Cache:** Redis|||**CMS:** WordPress|
 
 ----------
 
@@ -241,6 +241,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/ |
 |PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/ |
 |PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/ |
+|PLUGIN: WP Optimization (EngineScript)| 1.2.0 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/wp-optimizer-enginescript/wp-optimizer-enginescript.php) |
 ||
 ||
 |**Security**|

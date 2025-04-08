@@ -383,6 +383,9 @@ wp plugin install theme-check --allow-root
 wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
+# Install EngineScript Optimization Plugin
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+
 # WP-CLI Activate Plugins
 wp plugin activate flush-opcache --allow-root
 wp plugin activate mariadb-health-checks --allow-root
@@ -390,15 +393,16 @@ wp plugin activate nginx-helper --allow-root
 wp plugin activate redis-cache --allow-root
 wp plugin activate wp-mail-smtp --allow-root
 
+# WP-CLI Flush Transients
+wp transient delete --all --allow-root
+
 # WP-CLI Enable Plugins
 wp redis enable --allow-root
 
 # WP-CLI set permalink structure for FastCGI Cache
 wp option get permalink_structure --allow-root
 wp option update permalink_structure '/%category%/%postname%/' --allow-root
-
-# Install EngineScript Optimization Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+wp rewrite flush --hard --allow-root
 
 # Setting Permissions Again
 # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns

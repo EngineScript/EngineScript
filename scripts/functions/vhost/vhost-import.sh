@@ -636,6 +636,20 @@ wp plugin install theme-check --allow-root
 wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root --activate # Activate this one
 
+# Copy EngineScript Optimizer Plugin (if it exists in config)
+if [ -d "/usr/local/bin/enginescript/config/var/www/wordpress/wp-content/plugins/enginescript-optimizer" ]; then
+    echo "Copying EngineScript Optimizer plugin..."
+    cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-content/plugins/enginescript-optimizer "${TARGET_WP_PATH}/wp-content/plugins/"
+    # Set ownership after copying
+    chown -R www-data:www-data "${TARGET_WP_PATH}/wp-content/plugins/enginescript-optimizer"
+    echo "EngineScript Optimizer plugin copied."
+else
+    echo "EngineScript Optimizer source not found in config, skipping copy."
+fi
+
+# WP-CLI Flush Transients
+wp transient delete --all --allow-root
+
 # Enable Redis Cache via WP-CLI
 if wp plugin is-active redis-cache --allow-root; then
   echo "Enabling Redis object cache..."
@@ -765,20 +779,52 @@ echo ""
 echo "        Your domain should be available now at:"
 echo "        https://${SITE_URL}"
 echo ""
-echo "        Please verify the site functionality thoroughly."
-echo "        Returning to main menu in 5 seconds."
+echo "        ${BOLD}ACTION REQUIRED:${NORMAL}"
+echo "        Please open your web browser and thoroughly verify the site functionality."
+echo "        Check pages, posts, images, forms, and plugin features."
+echo ""
+echo "        If the site is NOT working correctly:"
+echo "          - Answer 'n' to the prompt below."
+echo "          - The script will exit WITHOUT removing temporary import files."
+echo "          - You can then investigate the issue."
+echo "          - Afterwards, use the main EngineScript menu (es.menu) -> Domain Configuration -> Remove Domain"
+echo "            to clean up the partially imported site."
 echo ""
 echo "============================================================="
 echo ""
 
-# Clean up import directories and extracted files
-echo "Cleaning up temporary import directories and files..."
-rm -f "${WP_ARCHIVE_FILE}" # Remove only the archive file, not the directory
-rm -f "${DB_SOURCE_PATH}" # Remove only the database file, not the directory
-rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
-echo "Cleanup complete."
+# --- Site Verification Step ---
+while true; do
+    read -p "Is the imported site at https://${SITE_URL} working correctly? (y/n): " site_works
+    case $site_works in
+        [Yy]* )
+            echo "Great! Proceeding with cleanup..."
+            # Clean up import directories and extracted files
+            echo "Cleaning up temporary import directories and files..."
+            rm -f "${WP_ARCHIVE_FILE}" # Remove only the archive file, not the directory
+            rm -f "${DB_SOURCE_PATH}" # Remove only the database file, not the directory
+            rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
+            echo "Cleanup complete."
+            sleep 2 # Short pause after cleanup message
+            break # Continue to final exit
+            ;;
+        [Nn]* )
+            echo "Site verification failed by user."
+            echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
+            rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
+            echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
+            echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
+            echo "Exiting script now."
+            exit 1 # Exit without full cleanup
+            ;;
+        * ) echo "Please answer yes (y) or no (n).";;
+    esac
+done
+# --- End Site Verification Step ---
 
+
+echo "Returning to main menu..." # Message if 'y' was chosen
 sleep 5
 
-# Exit cleanly
+# Exit cleanly (only reached if 'y' was chosen)
 exit 0
