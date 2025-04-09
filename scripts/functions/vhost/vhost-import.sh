@@ -29,37 +29,26 @@ WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extra
 echo ""
 echo "${BOLD}Preparing Files for Import:${NORMAL}"
 echo "---------------------------------------------------------------------"
-echo "Before running this script, you need to prepare two files from your existing server:"
+echo "You can use one of the following methods:"
 echo ""
-echo "1. ${BOLD}WordPress Root Directory Archive:${NORMAL}"
-echo "   Compress the entire contents of your WordPress root directory (e.g., /var/www/html)."
-echo "   ${BOLD}Important:${NORMAL} Ensure the archive contains the files/folders directly, not nested inside another folder."
-echo "   Common commands on the source server (run from the directory *above* your WordPress root):"
-echo "     - Using tar (recommended):"
-echo "       \`tar -czvf your_site_files.tar.gz -C /path/to/your/wordpress/root . \`"
-echo "       (Replace /path/to/your/wordpress/root with the actual path)"
-echo "     - Using zip:"
-echo "       \`cd /path/to/your/wordpress/root && zip -r ../your_site_files.zip . -x 'your_site_files.zip'\`"
-echo "       (Replace /path/to/your/wordpress/root with the actual path)"
+echo "${BOLD}Method 1: Single Export File (Recommended - using Simple Site Exporter plugin)${NORMAL}"
+echo "   - Use the 'Simple Site Exporter' plugin within your WordPress site."
+echo "   - This creates a single .zip file containing both WordPress files and the database (.sql)."
+echo "   - Place this single .zip file directly inside the following directory on the EngineScript server:"
+echo "     \`${IMPORT_BASE_DIR}\`"
+echo "     (Ensure only this one .zip file is present in ${IMPORT_BASE_DIR})"
 echo ""
-echo "   Place the resulting .tar.gz or .zip file inside this directory on the EngineScript server:"
-echo "   \`${WP_ARCHIVE_DIR}\`"
-echo ""
-echo "2. ${BOLD}WordPress Database Dump:${NORMAL}"
-echo "   Export your WordPress database to a .sql file (optionally compressed with gzip)."
-echo "   Common commands on the source server:"
-echo "     - Using wp-cli (recommended, run inside WordPress root):"
-echo "       \`wp db export your_database.sql --allow-root\`"
-echo "       (Optional: Compress it: \`gzip your_database.sql\`)"
-echo "     - Using mysqldump:"
-echo "       \`mysqldump -u DB_USER -p DB_NAME > your_database.sql\`"
-echo "       (Replace DB_USER and DB_NAME. You will be prompted for the password.)"
-echo "       (Optional: Compress it: \`gzip your_database.sql\`)"
-echo ""
-echo "   Place the resulting .sql or .sql.gz file inside this directory on the EngineScript server:"
-echo "   \`${DB_IMPORT_DIR}\`"
+echo "${BOLD}Method 2: Separate Files (Manual Export)${NORMAL}"
+echo "   1. ${BOLD}WordPress Root Directory Archive:${NORMAL}"
+echo "      - Compress your WordPress root directory content (.tar.gz or .zip)."
+echo "      - Place the archive file inside:"
+echo "        \`${WP_ARCHIVE_DIR_ORIGINAL}\`"
+echo "   2. ${BOLD}WordPress Database Dump:${NORMAL}"
+echo "      - Export your database (.sql or .sql.gz)."
+echo "      - Place the database file inside:"
+echo "        \`${DB_IMPORT_DIR_ORIGINAL}\`"
 echo "---------------------------------------------------------------------"
-read -p "Press [Enter] to continue once the files are prepared..."
+read -p "Press [Enter] to continue once the file(s) are prepared..."
 # --- End Instructions ---
 
 
@@ -171,44 +160,121 @@ extract_prefix_from_db() {
 # --- Validate Import Paths and Files ---
 echo "Validating import directories and files..."
 
-# Check WordPress archive directory and find the archive file
-if [[ ! -d "${WP_ARCHIVE_DIR}" ]]; then
-    echo "FAILED: WordPress archive directory not found at ${WP_ARCHIVE_DIR}"
+IMPORT_FORMAT="" # "single_zip" or "two_file"
+SINGLE_ZIP_FILE=""
+WP_ARCHIVE_FILE="" # Path to WP files archive (for two_file method)
+DB_SOURCE_PATH=""  # Path to the DB file (set differently for each method)
+
+# Try detecting Single Zip format first
+SINGLE_ZIP_CANDIDATE=$(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip")
+SINGLE_ZIP_COUNT=$(echo "$SINGLE_ZIP_CANDIDATE" | wc -l)
+
+if [[ "$SINGLE_ZIP_COUNT" -eq 1 && ! -d "${WP_ARCHIVE_DIR_ORIGINAL}" && ! -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
+    # Found exactly one zip file in the base dir, and the old dirs don't exist
+    IMPORT_FORMAT="single_zip"
+    SINGLE_ZIP_FILE="$SINGLE_ZIP_CANDIDATE"
+    echo "PASSED: Detected Single Export Zip format: ${SINGLE_ZIP_FILE}"
+elif [[ -d "${WP_ARCHIVE_DIR_ORIGINAL}" && -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
+    # Check the original two-file method
+    # Find WP archive file
+    WP_ARCHIVE_FILE_CANDIDATE=$(find "${WP_ARCHIVE_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \))
+    WP_ARCHIVE_COUNT=$(echo "$WP_ARCHIVE_FILE_CANDIDATE" | wc -l)
+
+    # Find DB file
+    DB_SOURCE_FILE_CANDIDATE=$(find "${DB_IMPORT_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \))
+    DB_SOURCE_COUNT=$(echo "$DB_SOURCE_FILE_CANDIDATE" | wc -l)
+
+    if [[ "$WP_ARCHIVE_COUNT" -eq 1 && "$DB_SOURCE_COUNT" -eq 1 ]]; then
+        IMPORT_FORMAT="two_file"
+        WP_ARCHIVE_FILE="$WP_ARCHIVE_FILE_CANDIDATE"
+        DB_SOURCE_PATH="$DB_SOURCE_FILE_CANDIDATE" # Set DB path directly for this format
+        echo "PASSED: Detected Two-File format."
+        echo "  WordPress archive: ${WP_ARCHIVE_FILE}"
+        echo "  Database file: ${DB_SOURCE_PATH}"
+    fi
+fi
+
+# Validation Failure
+if [[ -z "$IMPORT_FORMAT" ]]; then
+    echo "FAILED: Could not detect a valid import format."
+    echo "Please ensure you have either:"
+    echo "  - Exactly one .zip file in ${IMPORT_BASE_DIR} (and no subdirectories like 'root-directory' or 'database-file')."
+    echo "  - OR Exactly one archive (.zip, .tar.gz, .tgz) in ${WP_ARCHIVE_DIR_ORIGINAL} AND exactly one database file (.sql, .sql.gz) in ${DB_IMPORT_DIR_ORIGINAL}."
     exit 1
 fi
 
-# Find the archive file (assuming only one .zip or .tar.gz/.tgz file)
-WP_ARCHIVE_FILE=$(find "${WP_ARCHIVE_DIR}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \))
-WP_ARCHIVE_COUNT=$(echo "$WP_ARCHIVE_FILE" | wc -l)
+# --- Extraction Step (Conditional) ---
+echo "Extracting content..."
+# Clean up any previous extraction attempt
+rm -rf "${WP_EXTRACTED_PATH}"
+mkdir -p "${WP_EXTRACTED_PATH}"
 
-if [[ -z "$WP_ARCHIVE_FILE" || "$WP_ARCHIVE_COUNT" -ne 1 ]]; then
-    echo "FAILED: Could not find exactly one .zip or .tar.gz/.tgz file in ${WP_ARCHIVE_DIR}"
+EXTRACT_STATUS=1 # Default to failure
+
+if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
+    echo "Extracting single zip file: ${SINGLE_ZIP_FILE}"
+    unzip -q "${SINGLE_ZIP_FILE}" -d "${WP_EXTRACTED_PATH}"
+    EXTRACT_STATUS=$?
+    if [[ $EXTRACT_STATUS -eq 0 ]]; then
+        # Find the .sql file within the extracted content
+        DB_SOURCE_CANDIDATE=$(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql")
+        DB_SOURCE_FOUND_COUNT=$(echo "$DB_SOURCE_CANDIDATE" | wc -l)
+        if [[ "$DB_SOURCE_FOUND_COUNT" -eq 1 ]]; then
+            DB_SOURCE_PATH="$DB_SOURCE_CANDIDATE" # Set DB path for single_zip format
+            echo "PASSED: Found database file within extracted content: ${DB_SOURCE_PATH}"
+        else
+            echo "FAILED: Could not find exactly one .sql file within the extracted single zip content in ${WP_EXTRACTED_PATH}"
+            EXTRACT_STATUS=1 # Mark as failure
+        fi
+    fi
+elif [[ "$IMPORT_FORMAT" == "two_file" ]]; then
+    echo "Extracting WordPress archive file: ${WP_ARCHIVE_FILE}"
+    if [[ "${WP_ARCHIVE_FILE}" == *.zip ]]; then
+        unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
+        EXTRACT_STATUS=$?
+    elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
+        tar xzf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
+        EXTRACT_STATUS=$?
+    else
+        echo "FAILED: Unrecognized archive format for ${WP_ARCHIVE_FILE}"
+        EXTRACT_STATUS=1
+    fi
+    # DB_SOURCE_PATH is already set for two_file format
+fi
+
+# Check Extraction Status
+if [[ $EXTRACT_STATUS -ne 0 ]]; then
+    echo "FAILED: Extraction process failed."
+    rm -rf "${WP_EXTRACTED_PATH}" # Clean up failed extraction
     exit 1
 fi
-echo "PASSED: WordPress archive file found: ${WP_ARCHIVE_FILE}"
 
-# Check Database directory and find the SQL file
-if [[ ! -d "${DB_IMPORT_DIR}" ]]; then
-    echo "FAILED: Database import directory not found at ${DB_IMPORT_DIR}"
+# --- Locate wp-config.php and Determine Source Path (Common Logic) ---
+# This logic should work for both formats as wp-config.php will be inside WP_EXTRACTED_PATH
+WP_CONFIG_REL_PATH=$(find "${WP_EXTRACTED_PATH}" -name "wp-config.php" -printf "%P\n" | head -n 1)
+if [[ -z "$WP_CONFIG_REL_PATH" ]]; then
+    echo "FAILED: wp-config.php not found within the extracted content in ${WP_EXTRACTED_PATH}"
+    rm -rf "${WP_EXTRACTED_PATH}" # Clean up
     exit 1
 fi
 
-# Find the database file (assuming only one .sql or .sql.gz file)
-DB_SOURCE_FILE=$(find "${DB_IMPORT_DIR}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \))
-DB_SOURCE_PATH="$DB_SOURCE_FILE" # Assign the found file path
-DB_SOURCE_COUNT=$(echo "$DB_SOURCE_FILE" | wc -l)
-
-if [[ -z "$DB_SOURCE_FILE" || "$DB_SOURCE_COUNT" -ne 1 ]]; then
-    echo "FAILED: Could not find exactly one .sql or .sql.gz file in ${DB_IMPORT_DIR}"
-    exit 1
+# Determine the actual source path for WP files
+if [[ "$WP_CONFIG_REL_PATH" == "wp-config.php" ]]; then
+    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}"
+else
+    SUBDIR=$(dirname "$WP_CONFIG_REL_PATH")
+    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}/${SUBDIR}"
 fi
-echo "PASSED: Database file found: ${DB_SOURCE_PATH}"
+echo "PASSED: Archive extracted. WordPress source path set to: ${WP_FILES_SOURCE_PATH}"
 
 # --- Extract Table Prefix from Database File ---
+# DB_SOURCE_PATH is now set correctly for both formats
+echo "Extracting table prefix from database file: ${DB_SOURCE_PATH}"
 PREFIX=$(extract_prefix_from_db "$DB_SOURCE_PATH")
 if [[ -z "$PREFIX" ]]; then
     echo "FAILED: Could not automatically determine table prefix from database file: ${DB_SOURCE_PATH}"
     echo "Please ensure the database dump contains standard WordPress tables like 'wp_options' or 'yourprefix_options'."
+    rm -rf "${WP_EXTRACTED_PATH}" # Clean up
     exit 1 # Exit if DB extraction fails
 fi
 echo "PASSED: Determined table prefix from database: ${PREFIX}"

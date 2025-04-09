@@ -52,7 +52,7 @@ es.install
 
 ## Domain Creation
 ### EngineScript Menu
-After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** get started adding your first site to the server.
+After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to get started adding your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function is fairly robust and should help simplify the process quite a bit.
 
 ### Cloudflare
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to configure Cloudflare for your domain.

@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: WP Optimization (EngineScript)
+Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.2.0
+Version: 1.3.0
 Author: EngineScript
 License: GPL v2 or later
 */
