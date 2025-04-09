@@ -232,16 +232,18 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |WP-CLI | Latest |https://github.com/wp-cli/wp-cli |
 |WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command |
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
-|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
+|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
+|PLUGIN: EngineScript: Simple Site Exporter| 1.1.9 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php) |
+|PLUGIN: EngineScript: WP Optimization| 1.3.0 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php) |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
+|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
+|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |
 |PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/ |
 |PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/ |
-|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
-|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |
 |PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/ |
 |PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/ |
 |PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/ |
-|PLUGIN: WP Optimization (EngineScript)| 1.2.0 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/wp-optimizer-enginescript/wp-optimizer-enginescript.php) |
+|PLUGIN: WP OPcache *(recommended)*| Latest | https://wordpress.org/plugins/flush-opcache/ |
 ||
 ||
 |**Security**|
