@@ -21,9 +21,11 @@ fi
 
 # --- Define Fixed Import Paths (Needed for instructions) ---
 IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
-WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the archive
-DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
-WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
+# Directories for the original two-file method (keep variable names consistent)
+WP_ARCHIVE_DIR_ORIGINAL="${IMPORT_BASE_DIR}/root-directory"
+DB_IMPORT_DIR_ORIGINAL="${IMPORT_BASE_DIR}/database-file"
+# Temporary path for extracted files (used by both methods)
+WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root"
 
 # --- Instructions for Preparing Files ---
 echo ""
@@ -32,9 +34,17 @@ echo "---------------------------------------------------------------------"
 echo "You can use one of the following methods:"
 echo ""
 echo "${BOLD}Method 1: Single Export File (Recommended - using Simple Site Exporter plugin)${NORMAL}"
-echo "   - Use the 'Simple Site Exporter' plugin within your WordPress site."
-echo "   - This creates a single .zip file containing both WordPress files and the database (.sql)."
-echo "   - Place this single .zip file directly inside the following directory on the EngineScript server:"
+echo "   - This method uses the 'Simple Site Exporter' plugin to create a single .zip file"
+echo "     containing both WordPress files and the database (.sql)."
+echo "   - ${YELLOW}If you don't have the plugin on your source site:${NORMAL}"
+echo "     1. Download the plugin zip: ${UNDERLINE}https://raw.githubusercontent.com/EngineScript/EngineScript/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript.zip${NORMAL}"
+echo "     2. In your source WordPress admin area, go to 'Plugins' -> 'Add New' -> 'Upload Plugin'."
+echo "     3. Upload the downloaded .zip file and activate the 'EngineScript: Simple Site Exporter' plugin."
+echo "   - Once the plugin is active on your source site:"
+echo "     1. Go to 'Tools' -> 'Site Exporter' in your WordPress admin."
+echo "     2. Click the 'Export Site' button."
+echo "     3. Download the generated .zip file (e.g., site_export_sse_... .zip)."
+echo "   - Place this single downloaded .zip file directly inside the following directory on the EngineScript server:"
 echo "     \`${IMPORT_BASE_DIR}\`"
 echo "     (Ensure only this one .zip file is present in ${IMPORT_BASE_DIR})"
 echo ""
