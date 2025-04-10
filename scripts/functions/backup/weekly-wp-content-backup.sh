@@ -36,20 +36,20 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 for i in "${SITES[@]}"
 do
-	echo "Running WP-Content Backup for ${i}"
-	cd "/var/www/sites/$i/html"
+    echo "Running WP-Content Backup for ${i}"
+    cd "/var/www/sites/$i/html"
 
-	# Local WP-Content Backup
-	mkdir -p /home/EngineScript/site-backups/$i/wp-content/weekly/${NOW}
-	tar -zcf "/home/EngineScript/site-Sbackups/$i/wp-content/weekly/$WPCONTENT_FILE" wp-content
+    # Local WP-Content Backup
+    mkdir -p "/home/EngineScript/site-backups/$i/wp-content/weekly/${NOW}"
+    tar -zcf "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" wp-content
 
-	# Amazon S3 WP-Content Backup
-	if [ $INSTALL_S3_BACKUP = 1 ] && [ $S3_BUCKET_NAME != PLACEHOLDER ] && [ $WEEKLY_S3_WPCONTENT_BACKUP = 1 ];
-		then
-		echo "Uploading WP-Content Backup for ${i} to Amazon S3 Bucket"
-		/usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-content/weekly/$WPCONTENT_FILE" "s3://${S3_BUCKET_NAME}/$i/backups/wp-content/weekly/$WPCONTENT_FILE" --storage-class STANDARD
-	fi
+    # Amazon S3 WP-Content Backup
+    if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ] && [ "$WEEKLY_S3_WPCONTENT_BACKUP" = 1 ];
+        then
+        echo "Uploading WP-Content Backup for ${i} to Amazon S3 Bucket"
+        /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" "s3://${S3_BUCKET_NAME}/$i/backups/wp-content/weekly/${WPCONTENT_FILE}" --storage-class STANDARD
+    fi
 
-  	# Remove Old Backups
-	find /home/EngineScript/site-backups/$i/wp-content -type d,f -mtime +7 | xargs rm -fR
+      # Remove Old Backups
+    find "/home/EngineScript/site-backups/$i/wp-content" -type d,f -mtime +7 | xargs rm -fR
 done

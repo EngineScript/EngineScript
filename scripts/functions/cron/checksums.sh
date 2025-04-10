@@ -34,13 +34,21 @@ ERRORS=""
 
 for i in "${SITES[@]}"
 do
-	cd "/var/www/sites/$i/html"
-	# Verify checksums
-	if ! wp core verify-checksums --allow-root; then
-		ERRORS="$ERRORS $i"
-	fi
+    cd "/var/www/sites/$i/html"
+    # Verify checksums
+    if ! wp core verify-checksums --allow-root; then
+        # Append site name with a leading space for separation
+        ERRORS="${ERRORS} ${i}"
+    fi
 done
 
+# Trim leading space if ERRORS is not empty
+ERRORS=$(echo "$ERRORS" | sed 's/^ *//')
+
 if [ -n "$ERRORS" ]; then
-	curl -u $PUSHBULLET_TOKEN: https://api.pushbullet.com/v2/pushes -d type=note -d title="Server: $IP_ADDRESS" -d body="Checksums verification failed for the following sites: $ERRORS"
+    # Use multiple -d options for clarity and proper quoting
+    curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
+        -d type=note \
+        -d "title=Server: $IP_ADDRESS" \
+        -d "body=Checksums verification failed for the following sites: $ERRORS"
 fi

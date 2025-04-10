@@ -29,7 +29,7 @@ WPCONFIG_FILE="${NOW}-wp-config.php.gz";
 WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 # Backup Nginx Config
-tar -zcf "/home/EngineScript/config-backups/nginx/$NGINX_FILE" /etc/nginx
+tar -zcf "/home/EngineScript/config-backups/nginx/${NGINX_FILE}" /etc/nginx
 
 # Remove Old Nginx Backups
 find /home/EngineScript/config-backups/nginx -type f -mtime +15 | xargs rm -fR

@@ -1,10 +1,13 @@
 # EngineScript
+
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
+
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
 EngineScript Release Stage: **Beta**
 
 ## Minimum Requirements
+
 EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
 
 - **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
@@ -15,6 +18,7 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 ----------
 
 ## Default Configuration ##
+
 The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
 
 |||||
@@ -26,13 +30,16 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 ----------
 
 ## Install EngineScript
+
 ### Step 1 - Initial Install
+
 Run the following command:
 ```shell
 wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && bash setup.sh
 ```
 
 ### Step 2 - Edit Options File
+
 After the initial setup script has run, you'll need to alter the install options file. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
 
 Run the following command:
@@ -41,6 +48,7 @@ es.config
 ```
 
 ### Step 3 - Main Install Process
+
 Once you've filled out the configuration file with your personal settings, continue with the main installation process.
 
 Run the following command:
@@ -51,10 +59,13 @@ es.install
 ----------
 
 ## Domain Creation
+
 ### EngineScript Menu
+
 After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to get started adding your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function is fairly robust and should help simplify the process quite a bit.
 
 ### Cloudflare
+
 Before your site is ready to use, you'll need to go into Cloudflare to configure a number of important settings. Follow the steps below to configure Cloudflare for your domain.
 
 #### Go to the Cloudflare Dashboard
@@ -62,13 +73,16 @@ Before your site is ready to use, you'll need to go into Cloudflare to configure
 1. Select your domain
 
 #### DNS Tab
+
 ##### Records Section
+
 First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow you to access the admin subdomain on your site. If you prefer, the admin control panel may also be accessed via IP address instead.
 
 1. Click **Add record** button
 2. **Type:** CNAME | **Name:** admin | **Target:** *your domain*
 
 #### SSL/TLS Tab
+
 ##### Edge Certificates Section
 
 1. Always Use HTTPS: **Off** - *(Important: This can cause redirect loops)*
@@ -84,7 +98,9 @@ First, we need to add a new CNAME record for admin.*YOURDOMAIN*. This will allow
 1. Authenticated Origin Pulls: **On**
 
 #### Speed Tab
+
 ##### Optimization Section
+
 Go through each optimization tab and select the following:
 
 1. Speed Brain: **On**
@@ -99,6 +115,7 @@ Go through each optimization tab and select the following:
 10. AMP Real URL: **Optional**
 
 #### Caching Tab
+
 ##### Configuration Section
 
 1. Caching Level: **Standard**
@@ -134,6 +151,7 @@ For Cloudflare to support compression from origin, the following features must b
 For more information, see [This is Brotli from Origin](https://blog.cloudflare.com/this-is-brotli-from-origin/).
 
 ### WordPress Plugins
+
 #### Nginx Helper
 
 1. In WordPress, go to Settings >> Nginx Helper
@@ -152,6 +170,7 @@ We've also developed a basic plugin that disables some bloat from the default Wo
 ----------
 
 ## Sponsors:
+
 EngineScript development is supported by:
 
 Want to support EngineScript? [Sponsor this project](https://github.com/sponsors/EngineScript).
@@ -159,6 +178,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 ----------
 
 ## EngineScript Information Reference
+
 ### EngineScript Locations
 
 |Location|Usage|
