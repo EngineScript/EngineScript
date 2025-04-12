@@ -46,13 +46,12 @@ echo -e "\nEngineScript will now create a new database and full file backup for 
 \n/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}\n\n"
 
 # Make backup directory
-mkdir -p /home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}
+mkdir -p "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}"
 
 # Export database
-wp db export --path=/var/www/sites/${d}/html "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${DATABASE_FILE}" --add-drop-table --allow-root
+wp db export --path="/var/www/sites/${d}/html" "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${DATABASE_FILE}" --add-drop-table --allow-root
 
 # Export files locally
-#cd /var/www/sites/${d}/html
 tar -zcvf "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${FULLWPFILES}" html
 
 echo -e "\nBackup completed.
@@ -64,7 +63,7 @@ echo -e "\nStarting the remediate process...
 \n\nThis will take a while.\n\n"
 sleep 3
 
-wordfence remediate /var/www/sites/${d}/html
+wordfence remediate "/var/www/sites/${d}/html"
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

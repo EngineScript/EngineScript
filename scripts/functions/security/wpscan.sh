@@ -30,9 +30,9 @@ echo "WPScan"
 # Run WPScan
 if [ "${WPSCANAPI}" = PLACEHOLDER ]
   then
-    wpscan --url $d
+    wpscan --url "$d"
   else
-    wpscan --url $d --api-token ${WPSCANAPI}
+    wpscan --url "$d" --api-token "${WPSCANAPI}"
 fi
 
 # Ask user to acknowledge that the scan has completed before moving on

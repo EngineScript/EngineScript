@@ -24,18 +24,18 @@ fi
 
 # Function to clear cache
 clear_cache() {
-    local cache_path=$1
+    local cache_path="$1"
     echo "Clearing ${cache_path} Cache"
-    rm -rf ${cache_path}/* || {
+    rm -rf "${cache_path}"/* || {
         echo "Error: Failed to clear ${cache_path} cache."
     }
 }
 
 # Function to restart a service
 restart_service() {
-    local service_name=$1
+    local service_name="$1"
     echo "Restarting ${service_name}"
-    service ${service_name} restart || {
+    service "${service_name}" restart || {
         echo "Error: Failed to restart ${service_name}."
     }
 }
@@ -44,7 +44,7 @@ restart_service() {
 restart_php_fpm() {
     local php_versions=("8.1" "8.2" "8.3" "8.4")
     for version in "${php_versions[@]}"; do
-        if systemctl is-active --quiet php${version}-fpm; then
+        if systemctl is-active --quiet "php${version}-fpm"; then
             restart_service "php${version}-fpm"
             return
         fi

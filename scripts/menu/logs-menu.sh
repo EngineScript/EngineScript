@@ -34,7 +34,7 @@ while true
     secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "Exit Server Logs")
     select secopt in "${secoptions[@]}"
     do
-      case $secopt in
+      case "$secopt" in
         "Domains")
           /usr/local/bin/enginescript/scripts/functions/logs/domain-logs.sh
           break
@@ -54,7 +54,7 @@ while true
         "PHP")
           clear
           echo "${BOLD}Showing last 30 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/php/php${PHP_VER}-fpm.log && read -n 1 -s -r -p "Press any key to continue"
+          tail -n30 "/var/log/php/php${PHP_VER}-fpm.log" && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Redis")

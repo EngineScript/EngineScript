@@ -31,15 +31,15 @@ source /home/EngineScript/sites-list/sites.sh
 for i in "${SITES[@]}"
 do
   echo "Optimizing images for ${i}. This will take a while..."
-	cd "/var/www/sites/$i/html"
+    cd "/var/www/sites/${i}/html"
 
-	# zImageCompress
-	# This script will attempt to perform a lossless optimization on images found within your web-facing directories.
-	# Using the -n option, we the script will only attempt to optimize files that are new since last running the script.
-	/usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p /var/www/sites/$i/html/wp-content/uploads -n -q
+    # zImageCompress
+    # This script will attempt to perform a lossless optimization on images found within your web-facing directories.
+    # Using the -n option, we the script will only attempt to optimize files that are new since last running the script.
+    /usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p "/var/www/sites/${i}/html/wp-content/uploads" -n -q
 
-	# Exiftool
-	# Strips Exif data from images
-	exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg /var/www/sites/$i/html/wp-content
+    # Exiftool
+    # Strips Exif data from images
+    exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg "/var/www/sites/${i}/html/wp-content"
 
 done

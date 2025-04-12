@@ -30,7 +30,7 @@ echo "When completed, the scan results will be located at:"
 echo "/home/EngineScript/wordfence-scan-results/wordfence-cli-vulnerability-scan-results.csv"
 
 # Scan
-wordfence vuln-scan --images --output-path /home/EngineScript/wordfence-scan-results/wordfence-cli-vulnerability-scan-results.csv /var/www/sites/${d}/html
+wordfence vuln-scan --images --output-path /home/EngineScript/wordfence-scan-results/wordfence-cli-vulnerability-scan-results.csv "/var/www/sites/${d}/html"
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

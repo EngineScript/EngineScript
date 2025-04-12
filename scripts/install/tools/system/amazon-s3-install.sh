@@ -42,7 +42,7 @@ echo "- Bucket creation: Follow https://docs.aws.amazon.com/AmazonS3/latest/user
 while true;
   do
     read -p "When finished, enter ${BOLD}y${NORMAL} to continue to the next step: " y
-      case $y in
+      case "$y" in
         [Yy]* )
           echo "Let's continue";
           sleep 1;
@@ -57,5 +57,5 @@ aws configure
 echo "Now attempting to send a test upload to S3."
 echo "Check your S3 bucket for an empty file titled test.txt. If it didn't work, then you did something wrong during setup."
 touch /usr/src/test.txt
-aws s3 cp /usr/src/test.txt s3://${S3_BUCKET_NAME} --storage-class STANDARD
+aws s3 cp /usr/src/test.txt "s3://${S3_BUCKET_NAME}" --storage-class STANDARD # Added quotes
 echo "Check your S3 bucket"

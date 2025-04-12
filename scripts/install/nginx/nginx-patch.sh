@@ -25,8 +25,8 @@ fi
 # These patches will change based on release. Don't assume they will work with a release other than the version they are intended for.
 
 # Patch Nginx
-cd /usr/src/nginx-${NGINX_VER}
+cd "/usr/src/nginx-${NGINX_VER}"
 patch -p1 < /usr/local/bin/enginescript/patches/nginx/nginx.patch
 
 # Patch OpenSSL
-#cd /usr/src/openssl-${OPENSSL_VER}
+#cd "/usr/src/openssl-${OPENSSL_VER}" # Added quotes

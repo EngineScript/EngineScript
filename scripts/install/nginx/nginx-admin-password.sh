@@ -34,4 +34,4 @@ echo "Set a rule within your browser to allow access anyway."
 echo ""
 
 # Set Restricted Access Password
-printf "${NGINX_USERNAME}:`openssl passwd -apr1 ${NGINX_PASSWORD}`\n" >> /etc/nginx/restricted-access/.htpasswd
+printf "%s:%s\n" "${NGINX_USERNAME}" "$(openssl passwd -apr1 "${NGINX_PASSWORD}")" >> /etc/nginx/restricted-access/.htpasswd
