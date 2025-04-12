@@ -26,9 +26,9 @@ cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
 select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 echo "${BOLD}Showing last 20 lines of Nginx error log for ${d}.${NORMAL}" | boxes -a c -d shell -p a1l2
-tail -n20 /var/log/domains/${d}/${d}-nginx-error.log
+tail -n20 "/var/log/domains/${d}/${d}-nginx-error.log"
 echo "${BOLD}Showing last 20 lines of WordPress error log for ${d}.${NORMAL}" | boxes -a c -d shell -p a1l2
-tail -n20 /var/log/domains/${d}/${d}-wp-error.log
+tail -n20 "/var/log/domains/${d}/${d}-wp-error.log"
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

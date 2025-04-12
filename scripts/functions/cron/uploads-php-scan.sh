@@ -32,7 +32,7 @@ source /home/EngineScript/enginescript-install-options.txt
 # Store sites with errors
 ERRORS=""
 
-for i in ${SITES[@]}
+for i in "${SITES[@]}"
 do
         cd "/var/www/sites/$i/html"
         # Verify checksums
@@ -49,6 +49,13 @@ do
         cd "/var/www/sites/$i/html"
 done
 
+# Trim leading space if ERRORS is not empty
+ERRORS=$(echo "$ERRORS" | sed 's/^ *//')
+
 if [ -n "$ERRORS" ]; then
-        curl -u $PUSHBULLET_TOKEN: https://api.pushbullet.com/v2/pushes -d type=note -d title="Server: $IP_ADDRESS" -d body="Found PHP in the uploads directory for the following sites: $ERRORS"
+        # Use multiple -d options for clarity and proper quoting
+        curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
+                -d type=note \
+                -d "title=Server: $IP_ADDRESS" \
+                -d "body=Found PHP in the uploads directory for the following sites: $ERRORS"
 fi

@@ -29,8 +29,8 @@ echo "Adding UFW rules for Cloudflare IPs (TCP & UDP)..."
 # Allow all TCP and UDP traffic from Cloudflare IPs (no ports restriction)
 # Using brace expansion for conciseness
 for cfip in $(curl -s https://www.cloudflare.com/ips-v{4,6}); do
-  ufw allow proto tcp from $cfip comment 'Cloudflare IP (TCP)' > /dev/null
-  ufw allow proto udp from $cfip comment 'Cloudflare IP (UDP)' > /dev/null
+  ufw allow proto tcp from "$cfip" comment 'Cloudflare IP (TCP)' > /dev/null
+  ufw allow proto udp from "$cfip" comment 'Cloudflare IP (UDP)' > /dev/null
 done
 
 echo "Reloading UFW rules..."

@@ -77,27 +77,28 @@ calculate_php() {
   fi
 
   # Apply calculated values to PHP-FPM configuration
-  sed -i "s|pm.start_servers = .*|pm.start_servers = ${PHP_FPM_START_SERVERS}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
-  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = ${PHP_FPM_MIN_SPARE_SERVERS}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
-  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = ${PHP_FPM_MAX_SPARE_SERVERS}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
-  sed -i "s|pm.max_children = .*|pm.max_children = ${PHP_FPM_MAX_CHILDREN}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+  sed -i "s|pm.start_servers = .*|pm.start_servers = \"${PHP_FPM_START_SERVERS}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
+  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = \"${PHP_FPM_MIN_SPARE_SERVERS}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
+  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = \"${PHP_FPM_MAX_SPARE_SERVERS}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
+  sed -i "s|pm.max_children = .*|pm.max_children = \"${PHP_FPM_MAX_CHILDREN}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
 
   # Apply memory and OpCache settings to php.ini
-  sed -i "s|SEDPHPMEMLIMIT|${PHP_MEMORY_LIMIT}|g" /etc/php/${PHP_VER}/fpm/php.ini
-  sed -i "s|SEDOPCACHEJITBUFFER|${OPCACHE_JIT_BUFFER}|g" /etc/php/${PHP_VER}/fpm/php.ini
-  sed -i "s|SEDOPCACHEINTBUF|${OPCACHE_INT_BUFFER}|g" /etc/php/${PHP_VER}/fpm/php.ini
-  sed -i "s|SEDOPCACHEMEM|$((AVAILABLE_MEMORY / 8))M|g" /etc/php/${PHP_VER}/fpm/php.ini
+  sed -i "s|SEDPHPMEMLIMIT|\"${PHP_MEMORY_LIMIT}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini"
+  sed -i "s|SEDOPCACHEJITBUFFER|\"${OPCACHE_JIT_BUFFER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini"
+  sed -i "s|SEDOPCACHEINTBUF|\"${OPCACHE_INT_BUFFER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini"
+  # Arithmetic expansion result is unlikely to need quoting, but added for consistency
+  sed -i "s|SEDOPCACHEMEM|\"$((AVAILABLE_MEMORY / 8))M\"|g" "/etc/php/${PHP_VER}/fpm/php.ini"
 }
 
 # Update PHP config
-cp -rf /usr/local/bin/enginescript/config/etc/php/php.ini /etc/php/${PHP_VER}/fpm/php.ini
-sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php.ini
+cp -rf /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini"
+sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini"
 
-cp -rf /usr/local/bin/enginescript/config/etc/php/php-fpm.conf /etc/php/${PHP_VER}/fpm/php-fpm.conf
-sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf
+cp -rf /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf"
+sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf"
 
-cp -rf /usr/local/bin/enginescript/config/etc/php/www.conf /etc/php/${PHP_VER}/fpm/pool.d/www.conf
-sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+cp -rf /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
+sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"
 
 # Tune PHP Configuration
 calculate_php
