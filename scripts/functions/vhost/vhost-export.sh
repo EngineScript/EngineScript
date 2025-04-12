@@ -112,7 +112,7 @@ echo "Database compressed to ${DB_EXPORT_PATH_GZ}"
 # --- Export Site Files ---
 echo "Exporting site files for ${SELECTED_SITE}..."
 # Go back one level to archive the 'html' directory itself or its contents
-cd /var/www/sites/${SELECTED_SITE}/ || exit 1
+cd "/var/www/sites/${SELECTED_SITE}/" || exit 1
 
 # Archive the contents of the html directory
 tar czf "${FILES_EXPORT_PATH}" -C html .

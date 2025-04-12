@@ -144,7 +144,7 @@ extract_prefix_from_db() {
     # Look for CREATE TABLE or INSERT INTO lines with common tables (_options or _users)
     # Capture the part between backticks/quotes before _options or _users
     # Regex: Match CREATE/INSERT, whitespace, quote/backtick, capture prefix (group 3), match _options/_users, quote/backtick
-    local search_pattern='(CREATE TABLE|INSERT INTO)[[:space:]]+(`|")([a-zA-Z0-9_]+)_(options|users)(`|")'
+    local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")([a-zA-Z0-9_]+)_(options|users)(\`|\")"
 
     # Use zgrep for .gz, grep for .sql. Extract the captured group 3 (the prefix part).
     if [[ "$db_file" == *.gz ]]; then
@@ -795,12 +795,11 @@ tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" /etc/n
 gzip -cf "${TARGET_WP_PATH}/wp-config.php" > /home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE
 
 # Remove old backups (Keep this logic)
-find /home/EngineScript/site-backups/${SITE_URL}/database/daily -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/nginx -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/ssl-keys -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/wp-config -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/wp-content -type f -mtime +15 | xargs rm -fR
-# find /home/EngineScript/site-backups/${SITE_URL}/wp-uploads -type f -mtime +15  | xargs rm -fR # Covered by wp-content
+find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/nginx" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/wp-config" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/wp-content" -type f -mtime +15 | xargs rm -fR
 
 echo "Backup: Complete"
 clear
