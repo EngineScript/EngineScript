@@ -141,7 +141,7 @@ fi
 if [ -d "/var/www/sites/${DOMAIN}" ];
 then
   echo -e "${BOLD}Main Directory Removal Check: Passed\n\n${NORMAL}Removing main directory for ${DOMAIN}...\n\n"
-  rm -rf /var/www/sites/${DOMAIN}
+  rm -rf "/var/www/sites/${DOMAIN}"
 else
   echo -e "${BOLD}Main Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a main directory.\n\n"
 fi
@@ -150,7 +150,7 @@ fi
 if [ -d "/home/EngineScript/site-backups/${DOMAIN}" ];
 then
   echo -e "${BOLD}Backup Directory Removal Check: Passed\n\n${NORMAL}Removing backup directory for ${DOMAIN}...\n\n"
-  rm -rf /home/EngineScript/site-backups/${DOMAIN}
+  rm -rf "/home/EngineScript/site-backups/${DOMAIN}"
 else
   echo -e "${BOLD}Backup Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a backup directory.\n\n"
 fi
@@ -159,7 +159,7 @@ fi
 if [ -d "/var/log/domains/${DOMAIN}" ];
 then
   echo -e "${BOLD}Log Directory Removal Check: Passed\n\n${NORMAL}Removing log directory for ${DOMAIN}...\n\n"
-  rm -rf /var/log/domains/${DOMAIN}
+  rm -rf "/var/log/domains/${DOMAIN}"
 else
   echo -e "${BOLD}Log Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a log directory.\n\n"
 fi
