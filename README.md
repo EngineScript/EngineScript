@@ -1,5 +1,7 @@
 # EngineScript
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/a7a004a9254c4d4bafcc7ce9e2393387)](https://app.codacy.com/gh/EngineScript/EngineScript?utm_source=github.com&utm_medium=referral&utm_content=EngineScript/EngineScript&utm_campaign=Badge_Grade)
+
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 
 EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
