@@ -107,13 +107,13 @@ else
 fi
 
 # Remove MySQL credentials
-if test -f /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+if test -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 then
   echo -e "${BOLD}MySQL Credentials Removal Check: Passed\n\n${NORMAL}Removing MySQL credentials for ${DOMAIN}...\n\n"
-  source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+  source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
   sudo mariadb -e "DROP DATABASE ${DB};"
   sudo mariadb -e "DROP USER '${USR}'@'localhost';"
-  rm -f /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+  rm -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 else
   echo -e "${BOLD}MySQL Credentials Check: Failed\n\n${NORMAL}${DOMAIN} did not have MySQL credentials.\n\n"
 fi
@@ -132,7 +132,7 @@ done
 if [ -d "/etc/nginx/ssl/${DOMAIN}" ];
 then
   echo -e "${BOLD}SSL Certificates Removal Check: Passed\n\n${NORMAL}Removing SSL certificates for ${DOMAIN}...\n\n"
-  rm -rf /etc/nginx/ssl/${DOMAIN}
+  rm -rf "/etc/nginx/ssl/${DOMAIN}"
 else
   echo -e "${BOLD}SSL Certificates Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have SSL Certificates.\n\n"
 fi

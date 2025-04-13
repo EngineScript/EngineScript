@@ -30,25 +30,25 @@ fi
 php_packages="php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-redis php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip"
 
 # Install the packages with error checking
-apt install -qy $php_packages || {
+apt install -qy "$php_packages" || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
 
 if [ "$INSTALL_EXPANDED_PHP" = 1 ];
-	then
+    then
     expanded_php_packages="php${PHP_VER}-soap php${PHP_VER}-sqlite3"
 
     # Install the packages with error checking
-    apt install -qy $expanded_php_packages || {
+    apt install -qy "$expanded_php_packages" || {
       echo "Error: Unable to install one or more packages. Exiting..."
       exit 1
     }
 fi
 
 # Logrotate
-cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/opcache /etc/logrotate.d/opcache
-sed -i "s|rotate 12|rotate 5|g" /etc/logrotate.d/php${PHP_VER}-fpm
+cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/opcache" "/etc/logrotate.d/opcache"
+sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${PHP_VER}-fpm"
 
 # Backup PHP config
 /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh
@@ -62,15 +62,15 @@ mkdir -p /var/cache/wsdlcache
 mkdir -p /var/log/opcache
 mkdir -p /var/log/php
 
-touch /var/log/opcache/opcache.log
-touch /var/log/php/php${PHP_VER}-fpm.log
+touch "/var/log/opcache/opcache.log"
+touch "/var/log/php/php${PHP_VER}-fpm.log"
 #touch /var/log/php/php.log
 #touch /var/log/php/php-www.log
 #touch /var/log/php/php-fpm.log
 
-find /var/log/php -type d,f -exec chmod 775 {} \;
-find /var/log/opcache -type d,f -exec chmod 775 {} \;
-find /etc/php -type d,f -exec chmod 775 {} \;
+find "/var/log/php" -type d,f -exec chmod 775 {} \;
+find "/var/log/opcache" -type d,f -exec chmod 775 {} \;
+find "/etc/php" -type d,f -exec chmod 775 {} \;
 chmod 775 /var/cache/opcache
 chmod 775 /var/cache/php-sessions
 chmod 775 /var/cache/wsdlcache
@@ -82,10 +82,10 @@ chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
 # Restart PHP
-service php${PHP_VER}-fpm restart
+service "php${PHP_VER}-fpm" restart
 
 # PHP Service Check
-STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
+STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
 if [ "${STATUS}" = "active" ]; then
   echo "PASSED: PHP ${PHP_VER} is running."
   echo "PHP=1" >> /var/log/EngineScript/install-log.txt

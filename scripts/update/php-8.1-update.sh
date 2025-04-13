@@ -25,7 +25,7 @@ fi
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
-apt install php${PHP_VER} php${PHP_VER}-bcmath php${PHP_VER}-bz2 php${PHP_VER}-common php${PHP_VER}-curl php${PHP_VER}-fpm php${PHP_VER}-gd php${PHP_VER}-igbinary php${PHP_VER}-imagick php${PHP_VER}-intl php${PHP_VER}-mbstring php${PHP_VER}-msgpack php${PHP_VER}-mysql php${PHP_VER}-opcache php${PHP_VER}-readline php${PHP_VER}-redis php${PHP_VER}-soap php${PHP_VER}-ssh2 php${PHP_VER}-xml php${PHP_VER}-zip -y
+apt install "php${PHP_VER}" "php${PHP_VER}-bcmath" "php${PHP_VER}-bz2" "php${PHP_VER}-common" "php${PHP_VER}-curl" "php${PHP_VER}-fpm" "php${PHP_VER}-gd" "php${PHP_VER}-igbinary" "php${PHP_VER}-imagick" "php${PHP_VER}-intl" "php${PHP_VER}-mbstring" "php${PHP_VER}-msgpack" "php${PHP_VER}-mysql" "php${PHP_VER}-opcache" "php${PHP_VER}-readline" "php${PHP_VER}-redis" "php${PHP_VER}-soap" "php${PHP_VER}-ssh2" "php${PHP_VER}-xml" "php${PHP_VER}-zip" -y
 
 # Update PHP config
 /usr/local/bin/enginescript/scripts/update/php-config-update.sh
@@ -44,16 +44,16 @@ chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
 # Logrotate
-rm -rf /etc/logrotate.d/php${OLDPHP}-fpm
-cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/php${PHP_VER}-fpm /etc/logrotate.d/php${PHP_VER}-fpm
+rm -rf /etc/logrotate.d/"php${OLDPHP}-fpm"
+cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/"php${PHP_VER}-fpm" /etc/logrotate.d/"php${PHP_VER}-fpm"
 
 sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/nginx/globals/php.conf
-sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf
-sed -i "s|php/${OLDPHP}/fpm|php/${PHP_VER}/fpm|g" /etc/php/${PHP_VER}/fpm/php-fpm.conf
-sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/${PHP_VER}/fpm/pool.d/www.conf
+sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/"${PHP_VER}"/fpm/php-fpm.conf
+sed -i "s|php/${OLDPHP}/fpm|php/${PHP_VER}/fpm|g" /etc/php/"${PHP_VER}"/fpm/php-fpm.conf
+sed -i "s|php${OLDPHP}-fpm|php${PHP_VER}-fpm|g" /etc/php/"${PHP_VER}"/fpm/pool.d/www.conf
 
 # Block old PHP from APT
-echo -e "Package: php${OLDPHP}*\nPin: release *\nPin-Priority: -1" > php${OLDPHP}-block
+echo -e "Package: php${OLDPHP}*\nPin: release *\nPin-Priority: -1" > "php${OLDPHP}-block"
 
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
