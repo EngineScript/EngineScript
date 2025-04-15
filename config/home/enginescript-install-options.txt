@@ -59,6 +59,11 @@ INSTALL_HTTP3=0
 # SOAP, SQLite3
 INSTALL_EXPANDED_PHP=0
 
+# Automatically perform lossless compression on all images on each domain.
+# This script will remember which files have previously been compressed on the server, but will not be able to know if this was performed on a site from another server.
+# Do not enable this feature if you have an image compression plugin or do lossless compression on images prior to uploading them to your site.
+AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
+
 ####################
 # Security Options #
 ####################
@@ -146,7 +151,7 @@ WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER"
 
 ## Nginx Password Protection (Recommended) ##
-# This adds a second layer of security to the Admin Control Panel on the server such as phpMyAdmin.
+# This adds a second layer of security to the Admin Control Panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
 # Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
 NGINX_USERNAME="PLACEHOLDER"
 NGINX_PASSWORD="PLACEHOLDER"

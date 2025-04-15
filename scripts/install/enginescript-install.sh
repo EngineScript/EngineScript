@@ -241,7 +241,6 @@ if [ "${DEPENDS}" = 1 ];
     echo "DEPENDS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh
-    echo "DEPENDS=1" >> /var/log/EngineScript/install-log.txt
 fi
 
 # ACME.sh

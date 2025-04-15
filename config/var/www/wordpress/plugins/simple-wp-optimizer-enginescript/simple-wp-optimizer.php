@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.3.1
+Version: 1.4.0
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-wp-optimizer-enginescript
@@ -82,7 +82,7 @@ function disable_classic_theme_styles() {
     wp_deregister_style('classic-theme-styles');
     wp_dequeue_style('classic-theme-styles');
 }
-add_filter('wp_enqueue_scripts', 'disable_classic_theme_styles', 100);
+add_action('wp_enqueue_scripts', 'disable_classic_theme_styles', 100);
 
 // Remove WordPress Version from Header
 remove_action('wp_head', 'wp_generator');
