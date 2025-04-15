@@ -2,14 +2,20 @@
 /*
 Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.3.0
+Version: 1.3.1
 Author: EngineScript
 License: GPL v2 or later
+Text Domain: simple-wp-optimizer-enginescript
 */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit('No direct script access allowed');
+}
+
+// Define plugin version
+if (!defined('ES_WP_OPTIMIZER_VERSION')) {
+    define('ES_WP_OPTIMIZER_VERSION', '1.3.1');
 }
 
 /**
