@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.2.2
+Version: 1.3.0
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -43,9 +43,11 @@ function sse_exporter_page_html() {
         // Handle potential error getting upload directory
          wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'simple-site-exporter-enginescript' ) );
     }
-    $export_dir_name = 'site-exports'; // Consistent name
+    $export_dir_name = 'enginescript-sse-site-exports';
+    $export_dir = $upload_dir['basedir'] . '/' . $export_dir_name;
+    $export_url = $upload_dir['baseurl'] . '/' . $export_dir_name;
+    // For display in the admin page as well:
     $export_dir_path = $upload_dir['basedir'] . '/' . $export_dir_name;
-    // Make the path relative to the WordPress root for display, if possible
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
 
     ?>
@@ -127,8 +129,10 @@ function sse_handle_export() {
 
     $site_name = sanitize_file_name( get_bloginfo( 'name' ) );
     $timestamp = date( 'Y-m-d_H-i-s' );
+    // Generate 7 random alphanumeric characters
+    $random_str = substr( bin2hex( random_bytes(4) ), 0, 7 );
     $db_filename = "db_dump_{$site_name}_{$timestamp}.sql";
-    $zip_filename = "site_export_sse_{$site_name}_{$timestamp}.zip";
+    $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
     $db_filepath = $export_dir . '/' . $db_filename;
     $zip_filepath = $export_dir . '/' . $zip_filename;
     $zip_fileurl = $export_url . '/' . $zip_filename;
