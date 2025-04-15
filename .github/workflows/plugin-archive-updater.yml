@@ -1,0 +1,64 @@
+name: Zip Simple Site Exporter Plugin and Create PR
+
+on:
+  push:
+    paths:
+      - 'config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php'
+    branches:
+      - master # Or your main branch name
+
+jobs:
+  zip_and_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Plugin Version
+        id: version
+        run: |
+          # Extract version from the PHP file header
+          plugin_file="config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php"
+          version_line=$(grep -i '^Version:' "$plugin_file")
+          plugin_version=$(echo "$version_line" | sed -n 's/Version:[[:space:]]*\([0-9.]*\).*/\1/p')
+          echo "version=${plugin_version}" >> $GITHUB_OUTPUT
+          echo "Detected version: $plugin_version"
+
+      - name: Create Zip Archive
+        run: |
+          plugin_dir_relative="config/var/www/wordpress/plugins/simple-site-exporter-enginescript"
+          plugin_name="simple-site-exporter-enginescript"
+          zip_filename="${plugin_name}.zip"
+          target_dir="config/var/www/wordpress/plugins"
+          target_path="${target_dir}/${zip_filename}"
+
+          # Navigate to the parent directory to get the correct structure in the zip
+          cd config/var/www/wordpress/plugins/
+
+          # Create the zip file directly in the target directory relative to current location
+          # Use -j to junk paths within the zip if needed, or adjust structure
+          zip -r "../../${target_path}" "${plugin_name}/" -x "${plugin_name}/.*" -x "${plugin_name}/__MACOSX"
+
+          echo "Created/Updated zip file: ${target_path}"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Or a PAT if needed for cross-repo workflows
+          commit-message: "Update simple-site-exporter-enginescript.zip to v${{ steps.version.outputs.version }}"
+          committer: GitHub <noreply@github.com> # Optional: Customize committer
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com> # Optional: Customize author
+          signoff: false # Optional: Add a Signed-off-by trailer
+          branch: "update-simple-site-exporter-zip-${{ steps.version.outputs.version }}" # Create a unique branch
+          delete-branch: true # Optional: Delete branch after PR is merged/closed
+          title: "Update simple-site-exporter-enginescript.zip to v${{ steps.version.outputs.version }}"
+          body: |
+            Automated update of `simple-site-exporter-enginescript.zip` following changes to the source PHP file.
+
+            Plugin Version: ${{ steps.version.outputs.version }}
+          labels: |
+            automated-pr
+            plugin-update
+          assignees: ${{ github.actor }} # Optional: Assign the user who pushed
+          reviewers: # Optional: Add reviewers
+          draft: false # Optional: Create a draft PR

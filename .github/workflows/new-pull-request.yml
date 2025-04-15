@@ -1,0 +1,27 @@
+name: New Pull Request Guidance
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    # Explicitly define permissions required by the job
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post guidance comment on new PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Thanks for contributing to EngineScript! 🎉
+
+            If your PR fixes an issue or relates to a specific environment, please consider including the sanitized output
+            of `es.debug` to show the environment where you tested your changes.
+            Remember to remove any sensitive information before sharing.
+
+            We'll review your PR soon!
+          # Token is implicitly provided with the defined permissions
+          # token: ${{ secrets.GITHUB_TOKEN }} # This line can be removed

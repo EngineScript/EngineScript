@@ -1,0 +1,41 @@
+name: Issue Guidance
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post guidance comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Thanks for opening an issue in EngineScript! 🚀
+
+            To help us better understand your issue, please run the following command on your server:
+            ```bash
+            es.debug
+            ```
+
+            This command will generate a detailed report including:
+            - System information
+            - Software versions
+            - Configuration settings
+            - Service status
+            - Network information
+
+            ⚠️ **Important Privacy Note**
+            Before sharing the debug output, please review and **remove any sensitive information** that you don't want to share publicly. This may include:
+            - IP addresses
+            - Hostnames
+            - Domain names
+            - Usernames
+            - Passwords or API keys (though `es.debug` tries to avoid these)
+
+            The debug report is saved to a file (the path will be shown when the command finishes) and formatted specifically for GitHub.
+            After reviewing and sanitizing the content, please **edit your original issue description** to include the debug output, or paste it in a new comment below.
+
+            We'll review your issue soon!
