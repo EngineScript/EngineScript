@@ -29,17 +29,18 @@ jobs:
           plugin_dir_relative="config/var/www/wordpress/plugins/simple-site-exporter-enginescript"
           plugin_name="simple-site-exporter-enginescript"
           zip_filename="${plugin_name}.zip"
-          target_dir="config/var/www/wordpress/plugins"
-          target_path="${target_dir}/${zip_filename}"
+          # Define target path relative to repo root for the echo message
+          target_path_from_root="config/var/www/wordpress/plugins/${zip_filename}"
 
-          # Navigate to the parent directory to get the correct structure in the zip
+          # Navigate to the parent directory of the plugin
           cd config/var/www/wordpress/plugins/
 
-          # Create the zip file directly in the target directory relative to current location
-          # Use -j to junk paths within the zip if needed, or adjust structure
-          zip -r "../../${target_path}" "${plugin_name}/" -x "${plugin_name}/.*" -x "${plugin_name}/__MACOSX"
+          # Create the zip file in the current directory (plugins/)
+          # Source directory is relative to current dir (plugins/)
+          zip -r "${zip_filename}" "${plugin_name}/" -x "${plugin_name}/.*" -x "${plugin_name}/__MACOSX"
 
-          echo "Created/Updated zip file: ${target_path}"
+          # Echo the path relative to the repository root
+          echo "Created/Updated zip file: ${target_path_from_root}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
