@@ -57,7 +57,7 @@ jobs:
 
             Plugin Version: ${{ steps.version.outputs.version }}
           labels: |
-            automated-pr
+            automated
             plugin-update
           assignees: ${{ github.actor }} # Optional: Assign the user who pushed
           reviewers: # Optional: Add reviewers
