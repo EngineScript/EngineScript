@@ -30,24 +30,16 @@ jobs:
 
       - name: Create Zip Archive
         run: |
-          plugin_source_dir="config/var/www/wordpress/plugins/simple-site-exporter-enginescript"
           plugin_name="simple-site-exporter-enginescript"
           zip_filename="${plugin_name}.zip"
-          # Parent directory where the plugin source lives and where the zip will be created
           parent_dir="config/var/www/wordpress/plugins"
-          # Full path to the zip file relative to repo root (for echo message)
-          target_path_from_root="${parent_dir}/${zip_filename}"
 
-          echo "Navigating to parent directory: ${parent_dir}"
           cd "${parent_dir}" || { echo "Error: Failed to change directory to ${parent_dir}"; exit 1; }
 
           echo "Creating zip file '${zip_filename}' from source directory '${plugin_name}/'"
-          # Create the zip file in the current directory (parent_dir)
-          # Source directory (${plugin_name}/) is relative to current dir (parent_dir)
           zip -r "${zip_filename}" "${plugin_name}/" -x "${plugin_name}/.*" -x "${plugin_name}/__MACOSX"
 
-          # Echo the path relative to the repository root
-          echo "Created/Updated zip file at: ${target_path_from_root}"
+          echo "Created/Updated zip file: ${parent_dir}/${zip_filename}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
