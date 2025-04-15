@@ -1,4 +1,4 @@
-name: Zip Simple Site Exporter Plugin and Create PR
+name: Plugin Zip and Create PR
 
 on:
   push:
