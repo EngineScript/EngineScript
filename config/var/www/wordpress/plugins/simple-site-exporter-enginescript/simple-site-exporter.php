@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.3.0
+Version: 1.3.1
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -81,6 +81,22 @@ function sse_exporter_page_html() {
                 <?php esc_html_e( 'Visit the EngineScript GitHub page', 'simple-site-exporter-enginescript' ); ?>
             </a>
         </p>
+
+        <p style="color: #b94a48; font-weight: bold;">
+            <?php esc_html_e( 'Important:', 'simple-site-exporter-enginescript' ); ?>
+            <?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'simple-site-exporter-enginescript' ); ?>
+        </p>
+        <p style="color: #31708f;">
+            <?php esc_html_e( 'Note:', 'simple-site-exporter-enginescript' ); ?>
+            <?php
+                // Get the current domain for display in the path
+                $current_domain = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : 'DOMAIN';
+                printf(
+                    esc_html__( 'If you are running EngineScript, a cronjob will run once an hour to automatically move the exported zip file to a non-public directory inside /var/www/sites/%s/enginescript-sse-site-exports for improved security.', 'simple-site-exporter-enginescript' ),
+                    esc_html( $current_domain )
+                );
+            ?>
+        </p>
     </div>
     <?php
 }
@@ -113,7 +129,7 @@ function sse_handle_export() {
     if ( empty( $upload_dir['basedir'] ) || empty( $upload_dir['baseurl'] ) ) {
          wp_die( esc_html__( 'Could not determine the WordPress upload directory or URL.', 'simple-site-exporter-enginescript' ) );
     }
-    $export_dir_name = 'site-exports';
+    $export_dir_name = 'enginescript-sse-site-exports';
     $export_dir = $upload_dir['basedir'] . '/' . $export_dir_name;
     $export_url = $upload_dir['baseurl'] . '/' . $export_dir_name;
     wp_mkdir_p( $export_dir ); // Ensure the directory exists
