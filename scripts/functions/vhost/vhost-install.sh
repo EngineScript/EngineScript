@@ -384,7 +384,10 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # Install EngineScript Optimization Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+
+# Install EngineScript Site Exporter Plugin
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
 
 # WP-CLI Activate Plugins
 wp plugin activate flush-opcache --allow-root
