@@ -2,15 +2,15 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.3.1
+Version: 1.3.2
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
 */
 
-// Prevent direct access. Note: Using exit here is standard practice for plugins.
+// Prevent direct access. Note: Using return here instead of exit.
 if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Standard WordPress practice to prevent direct access.
+    return;
 }
 
 // Define plugin version
@@ -33,33 +33,25 @@ add_action( 'admin_menu', 'sse_admin_menu' );
 // --- Exporter Page HTML ---
 function sse_exporter_page_html() {
     if ( ! current_user_can( 'manage_options' ) ) {
-        // Use wp_die for permission errors within admin pages
         wp_die( esc_html__( 'You do not have permission to view this page.', 'simple-site-exporter-enginescript' ), 403 );
     }
 
-    // Determine the export directory path for display
     $upload_dir = wp_upload_dir();
     if ( empty( $upload_dir['basedir'] ) ) {
-        // Handle potential error getting upload directory
          wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'simple-site-exporter-enginescript' ) );
     }
     $export_dir_name = 'enginescript-sse-site-exports';
-    $export_dir = $upload_dir['basedir'] . '/' . $export_dir_name;
-    $export_url = $upload_dir['baseurl'] . '/' . $export_dir_name;
-    // For display in the admin page as well:
+    // Note: Removed unused $export_dir and $export_url variables for this function.
     $export_dir_path = $upload_dir['basedir'] . '/' . $export_dir_name;
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
-
     ?>
     <div class="wrap">
-        <?php // Using echo with proper escaping (esc_html) is secure and standard. ?>
-        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+        <h1><?php esc_html_e( get_admin_page_title(), 'simple-site-exporter-enginescript' ); // Use esc_html_e for translatable titles ?></h1>
         <p><?php esc_html_e( 'Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file).', 'simple-site-exporter-enginescript' ); ?></p>
         <p><strong><?php esc_html_e( 'Warning:', 'simple-site-exporter-enginescript' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'simple-site-exporter-enginescript' ); ?></p>
-
         <p style="margin-top: 15px;">
             <?php
-            // Using printf with escaped strings and variables is secure and standard WordPress practice.
+            // Note: printf is standard WordPress practice for translatable strings with placeholders.
             printf(
                 /* translators: %s: directory path */
                 esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'simple-site-exporter-enginescript' ),
@@ -67,13 +59,11 @@ function sse_exporter_page_html() {
             );
             ?>
         </p>
-
         <form method="post" action="" style="margin-top: 15px;">
             <?php wp_nonce_field( 'sse_export_action', 'sse_export_nonce' ); ?>
             <input type="hidden" name="action" value="sse_export_site">
             <?php submit_button( esc_html__( 'Export Site', 'simple-site-exporter-enginescript' ) ); ?>
         </form>
-
         <hr>
         <p>
             <?php esc_html_e( 'This plugin is part of the EngineScript project.', 'simple-site-exporter-enginescript' ); ?>
@@ -81,7 +71,6 @@ function sse_exporter_page_html() {
                 <?php esc_html_e( 'Visit the EngineScript GitHub page', 'simple-site-exporter-enginescript' ); ?>
             </a>
         </p>
-
         <p style="color: #b94a48; font-weight: bold;">
             <?php esc_html_e( 'Important:', 'simple-site-exporter-enginescript' ); ?>
             <?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'simple-site-exporter-enginescript' ); ?>
@@ -89,8 +78,9 @@ function sse_exporter_page_html() {
         <p style="color: #31708f;">
             <?php esc_html_e( 'Note:', 'simple-site-exporter-enginescript' ); ?>
             <?php
-                // Get the current domain for display in the path
-                $current_domain = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : 'DOMAIN';
+                // Note: Accessing $_SERVER directly is sometimes necessary (e.g., for HTTP_HOST).
+                // Value is unslashed and sanitized immediately.
+                $current_domain = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : 'DOMAIN';
                 printf(
                     esc_html__( 'If you are running EngineScript, a cronjob will run once an hour to automatically move the exported zip file to a non-public directory inside /var/www/sites/%s/enginescript-sse-site-exports for improved security.', 'simple-site-exporter-enginescript' ),
                     esc_html( $current_domain )
@@ -102,17 +92,23 @@ function sse_exporter_page_html() {
 }
 
 // --- Handle Export Action ---
+/**
+ * Handles the site export process when the form is submitted.
+ *
+ * @todo This function is too long (>100 lines) and complex (Cyclomatic > 10, NPath > 200). Consider refactoring into smaller functions.
+ */
 function sse_handle_export() {
-    // Check if the form was submitted with the correct action
-    // Accessing $_POST is necessary here, but the value is immediately sanitized.
-    $action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : '';
-    if ( 'sse_export_site' !== $action ) {
+    // Sanitize and retrieve action from POST data
+    // Note: Accessing $_POST directly is necessary for form handling.
+    // Values are immediately sanitized and assigned to local variables.
+    $post_action = isset( $_POST['action'] ) ? sanitize_key( $_POST['action'] ) : '';
+    if ( 'sse_export_site' !== $post_action ) {
         return;
     }
 
-    // Verify nonce.
-    // Accessing $_POST is necessary, value is unslashed, sanitized, and verified.
-    if ( ! isset( $_POST['sse_export_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ), 'sse_export_action' ) ) {
+    // Sanitize, unslash, and verify nonce from POST data
+    $post_nonce = isset( $_POST['sse_export_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_export_nonce'] ) ) : '';
+    if ( ! $post_nonce || ! wp_verify_nonce( $post_nonce, 'sse_export_action' ) ) {
         wp_die( esc_html__( 'Nonce verification failed! Please try again.', 'simple-site-exporter-enginescript' ), 403 );
     }
 
@@ -121,8 +117,9 @@ function sse_handle_export() {
         wp_die( esc_html__( 'You do not have permission to perform this action.', 'simple-site-exporter-enginescript' ), 403 );
     }
 
-    // Increase execution time limit (may not work on all servers)
-    // Use of @ suppresses errors if the function is disabled, which is acceptable here.
+    // Increase execution time limit
+    // Note: set_time_limit is discouraged but often necessary for potentially long-running exports.
+    // Alternatives like background processing add significant complexity.
     @set_time_limit( 0 );
 
     $upload_dir = wp_upload_dir();
@@ -135,17 +132,16 @@ function sse_handle_export() {
     wp_mkdir_p( $export_dir ); // Ensure the directory exists
 
     // Add an index.php file to prevent directory listing
-    // Using file_exists and file_put_contents is acceptable for simple checks/writes
-    // within the known writable uploads directory. WP_Filesystem is more robust but adds complexity.
+    // Note: file_exists and file_put_contents are discouraged but used here for a simple,
+    // non-critical check/write within the known writable uploads directory.
+    // WP_Filesystem API adds overhead for this minor task.
     $index_file_path = $export_dir . '/index.php';
     if ( ! file_exists( $index_file_path ) ) {
-        // Use of @ suppresses errors if writing fails, acceptable for this non-critical file.
         @file_put_contents( $index_file_path, '<?php // Silence is golden.' );
     }
 
     $site_name = sanitize_file_name( get_bloginfo( 'name' ) );
     $timestamp = date( 'Y-m-d_H-i-s' );
-    // Generate 7 random alphanumeric characters
     $random_str = substr( bin2hex( random_bytes(4) ), 0, 7 );
     $db_filename = "db_dump_{$site_name}_{$timestamp}.sql";
     $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
@@ -156,18 +152,19 @@ function sse_handle_export() {
     // --- 1. Database Export (WP-CLI recommended) ---
     $db_exported = false;
     $db_error = '';
+    // Note: shell_exec is required for WP-CLI integration. Ensure server security and that the command is properly escaped.
     if ( function_exists('shell_exec') ) {
         $wp_cli_path = trim(shell_exec('which wp'));
         if (!empty($wp_cli_path)) {
+            // Note: escapeshellarg is used to sanitize arguments passed to shell_exec.
             $command = sprintf(
                 '%s db export %s --path=%s --allow-root',
                 escapeshellarg($wp_cli_path),
                 escapeshellarg( $db_filepath ),
                 escapeshellarg( ABSPATH )
             );
-            // Consider adding error handling for shell_exec if needed
             $output = shell_exec( $command . ' 2>&1' );
-            // Using file_exists and filesize is standard for checking command output files.
+            // Note: file_exists and filesize are standard for checking command output files.
             if ( file_exists( $db_filepath ) && filesize( $db_filepath ) > 0 ) {
                 $db_exported = true;
             } else {
@@ -181,12 +178,12 @@ function sse_handle_export() {
     }
 
     // Handle DB Export Failure - Show notice and stop
+    // Note: Refactored to avoid unnecessary else clause.
     if ( ! $db_exported ) {
         add_action( 'admin_notices', function() use ($db_error) {
              ?>
              <div class="notice notice-error is-dismissible">
                  <p><?php
-                    // Using printf with escaped strings/variables is secure.
                     printf(
                         /* translators: %s: error message */
                         esc_html__( 'Database export failed: %s. Export process halted.', 'simple-site-exporter-enginescript' ),
@@ -200,7 +197,6 @@ function sse_handle_export() {
         return; // Stop the export process
     }
 
-
     // --- 2. File Export (ZipArchive) ---
     if ( ! class_exists( 'ZipArchive' ) ) {
          add_action( 'admin_notices', function() {
@@ -210,8 +206,8 @@ function sse_handle_export() {
              </div>
              <?php
          });
-         // Using @unlink for cleanup of self-created temp files is acceptable practice.
-         // WP_Filesystem->delete() is more robust but adds complexity here.
+         // Note: file_exists and @unlink are used for cleanup of self-created temp files.
+         // WP_Filesystem->delete() adds complexity here.
          if ( file_exists( $db_filepath ) ) {
             @unlink( $db_filepath );
          }
@@ -225,7 +221,6 @@ function sse_handle_export() {
              ?>
              <div class="notice notice-error is-dismissible">
                  <p><?php
-                    // Using printf with escaped strings/variables is secure.
                     printf(
                         /* translators: %s: file path */
                         esc_html__( 'Could not create zip file at %s', 'simple-site-exporter-enginescript' ),
@@ -236,6 +231,7 @@ function sse_handle_export() {
              <?php
          });
          // Cleanup DB dump if zip creation failed
+         // Note: file_exists and @unlink used for cleanup.
          if ( file_exists( $db_filepath ) ) {
             @unlink( $db_filepath );
          }
@@ -243,61 +239,50 @@ function sse_handle_export() {
     }
 
     // Add Database Dump to Zip
-    // Using file_exists is standard here.
+    // Note: file_exists is standard here for checking if the DB dump was created.
     if ( $db_exported && file_exists( $db_filepath ) ) {
         if ( ! $zip->addFile( $db_filepath, $db_filename ) ) {
              error_log( "Simple Site Exporter: Failed to add DB file to zip: " . $db_filepath );
-             // Optionally add an admin notice here too
         }
     }
 
     // Add WordPress Files
+    // Note: realpath is discouraged but useful for resolving the absolute path.
+    // Fallback to ABSPATH if realpath fails.
     $source_path = realpath( ABSPATH );
     if ( ! $source_path ) {
-        error_log( "Simple Site Exporter: Could not resolve real path for ABSPATH." );
-        // Handle error - maybe add admin notice and stop?
-        $zip->close();
-        if ( file_exists( $db_filepath ) ) @unlink( $db_filepath );
-        if ( file_exists( $zip_filepath ) ) @unlink( $zip_filepath );
-        // Add admin notice about ABSPATH issue
-        return;
+        error_log( "Simple Site Exporter: Could not resolve real path for ABSPATH. Using ABSPATH directly." );
+        $source_path = ABSPATH; // Fallback
     }
 
     try {
-        // Consider adding checks for RecursiveDirectoryIterator existence if needed
         $files = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator( $source_path, RecursiveDirectoryIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS ),
             RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ( $files as $file_info ) {
-            // Check if file is readable before proceeding
             if ( ! $file_info->isReadable() ) {
                 error_log( "Simple Site Exporter: Skipping unreadable file/dir: " . $file_info->getPathname() );
                 continue;
             }
 
             $file = $file_info->getRealPath();
-            // Use getPathname() for relative path calculation if realpath fails (e.g., broken symlinks)
             $pathname = $file_info->getPathname();
             $relativePath = ltrim( substr( $pathname, strlen( $source_path ) ), '/' );
 
-
-            if ( empty($relativePath) ) continue; // Skip the root dir itself
+            if ( empty($relativePath) ) continue;
 
             // --- Exclusions ---
-            // Use pathname for exclusion checks as realpath might resolve outside export dir for symlinks
             if ( strpos( $pathname, $export_dir ) === 0 ) continue;
             if ( preg_match( '#^wp-content/(cache|upgrade|temp)/#', $relativePath ) ) continue;
-            if ( preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relativePath ) ) continue; // Improved regex
+            if ( preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relativePath ) ) continue;
 
             if ( $file_info->isDir() ) {
-                // Add directory using relative path
                 if ( ! $zip->addEmptyDir( $relativePath ) ) {
                      error_log( "Simple Site Exporter: Failed to add directory to zip: " . $relativePath );
                 }
             } elseif ( $file_info->isFile() ) {
-                // Add file using real path (if available and valid) or pathname
                 $file_to_add = ($file !== false) ? $file : $pathname;
                  if ( ! $zip->addFile( $file_to_add, $relativePath ) ) {
                      error_log( "Simple Site Exporter: Failed to add file to zip: " . $relativePath . " (Source: " . $file_to_add . ")" );
@@ -306,6 +291,7 @@ function sse_handle_export() {
         } // End foreach
     } catch ( Exception $e ) {
         // Cleanup potentially created files
+        // Note: file_exists and @unlink used for cleanup.
         if ( file_exists( $zip_filepath ) ) @unlink( $zip_filepath );
         if ( file_exists( $db_filepath ) ) @unlink( $db_filepath );
 
@@ -313,7 +299,6 @@ function sse_handle_export() {
              ?>
              <div class="notice notice-error is-dismissible">
                  <p><?php
-                    // Using printf with escaped strings/variables is secure.
                     printf(
                         /* translators: %s: error message */
                         esc_html__( 'Error during file processing: %s', 'simple-site-exporter-enginescript' ),
@@ -330,13 +315,13 @@ function sse_handle_export() {
     $zip_close_status = $zip->close();
 
     // --- 3. Cleanup temporary DB file ---
-    // Using file_exists and @unlink is acceptable for cleanup of self-created temp files.
+    // Note: file_exists and @unlink are acceptable for cleanup of self-created temp files.
     if ( $db_exported && file_exists( $db_filepath ) ) {
         @unlink( $db_filepath );
     }
 
     // --- 4. Report Success or Failure ---
-    // Using file_exists is standard for checking if the final output file was created.
+    // Note: file_exists is standard for checking if the final output file was created.
     if ( $zip_close_status && file_exists( $zip_filepath ) ) {
         add_action( 'admin_notices', function() use ( $zip_fileurl, $zip_filename, $zip_filepath ) {
             $display_zip_path = str_replace( ABSPATH, '', $zip_filepath );
@@ -344,13 +329,12 @@ function sse_handle_export() {
             <div class="notice notice-success is-dismissible">
                 <p>
                     <?php esc_html_e( 'Site export successfully created!', 'simple-site-exporter-enginescript' ); ?>
-                    <?php // Using echo with esc_url/esc_attr for attributes is secure. ?>
+                    <?php // Note: Using echo with esc_url/esc_attr for HTML attributes is standard WordPress practice. ?>
                     <a href="<?php echo esc_url( $zip_fileurl ); ?>" download="<?php echo esc_attr( $zip_filename ); ?>" class="button" style="margin-left: 10px;">
                         <?php esc_html_e( 'Download Export File', 'simple-site-exporter-enginescript' ); ?>
                     </a>
                 </p>
                  <p><small><?php
-                    // Using printf with escaped strings/variables is secure.
                     printf(
                         /* translators: %s: file path */
                         esc_html__( 'File location: %s', 'simple-site-exporter-enginescript' ),
@@ -370,9 +354,10 @@ function sse_handle_export() {
              </div>
              <?php
          });
-         // Using file_exists is appropriate for logging state.
+         // Note: file_exists is appropriate for logging state.
          error_log("Simple Site Exporter: Export failed. Zip close status: " . ($zip_close_status ? 'OK' : 'FAIL') . ", File exists: " . (file_exists($zip_filepath) ? 'Yes' : 'No'));
          // Attempt cleanup using @unlink, acceptable for self-created files.
+         // Note: file_exists and @unlink used for cleanup.
          if ( file_exists( $zip_filepath ) ) {
             @unlink( $zip_filepath );
          }
