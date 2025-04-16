@@ -1,0 +1,65 @@
+name: Plugin Zip and Create PR - Simple WP Optimizer
+# This GitHub Actions workflow automates the process of creating a zip archive of the Simple WP Optimizer plugin
+
+on:
+  push:
+    paths:
+      - 'config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php'
+    branches:
+      - master # Or your main branch name
+
+jobs:
+  zip_and_pr:
+    runs-on: ubuntu-latest
+    # Define permissions needed by the job
+    permissions:
+      contents: write      # To push the new branch and commit the zip file
+      pull-requests: write # To create the pull request
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Plugin Version
+        id: version
+        run: |
+          # Extract version from the PHP file header
+          plugin_file="config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php"
+          version_line=$(grep -i '^Version:' "$plugin_file")
+          plugin_version=$(echo "$version_line" | sed -n 's/Version:[[:space:]]*\([0-9.]*\).*/\1/p')
+          echo "version=${plugin_version}" >> $GITHUB_OUTPUT
+          echo "Detected version: $plugin_version"
+
+      - name: Create Zip Archive
+        run: |
+          plugin_name="simple-wp-optimizer-enginescript"
+          zip_filename="${plugin_name}.zip"
+          parent_dir="config/var/www/wordpress/plugins"
+
+          cd "${parent_dir}" || { echo "Error: Failed to change directory to ${parent_dir}"; exit 1; }
+
+          echo "Creating zip file '${zip_filename}' from source directory '${plugin_name}/'"
+          zip -r "${zip_filename}" "${plugin_name}/" -x "${plugin_name}/.*" -x "${plugin_name}/__MACOSX"
+
+          echo "Created/Updated zip file: ${parent_dir}/${zip_filename}"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Or a PAT if needed for cross-repo workflows
+          commit-message: "Update simple-wp-optimizer-enginescript.zip to v${{ steps.version.outputs.version }}"
+          committer: GitHub <noreply@github.com> # Optional: Customize committer
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com> # Optional: Customize author
+          signoff: false # Optional: Add a Signed-off-by trailer
+          branch: "update-simple-wp-optimizer-zip-${{ steps.version.outputs.version }}" # Create a unique branch
+          delete-branch: true # Optional: Delete branch after PR is merged/closed
+          title: "Update simple-wp-optimizer-enginescript.zip to v${{ steps.version.outputs.version }}"
+          body: |
+            Automated update of `simple-wp-optimizer-enginescript.zip` following changes to the source PHP file.
+
+            Plugin Version: ${{ steps.version.outputs.version }}
+          labels: |
+            automated
+            plugin-update
+          assignees: ${{ github.actor }} # Optional: Assign the user who pushed
+          reviewers: # Optional: Add reviewers
+          draft: false # Optional: Create a draft PR
