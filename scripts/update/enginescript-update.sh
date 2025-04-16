@@ -54,3 +54,28 @@ echo ""
 # Updating files from previous versions
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh
+
+# Update both EngineScript plugins for each site in sites.sh
+SITES_FILE="/home/EngineScript/sites-list/sites.sh"
+if [ -f "$SITES_FILE" ]; then
+  # shellcheck source=/home/EngineScript/sites-list/sites.sh
+  source "$SITES_FILE"
+  for SITE in "${SITES[@]}"; do
+    DOMAIN=$(basename "$SITE")
+    WP_PLUGIN_DIR="/var/www/sites/${DOMAIN}/html/wp-content/plugins"
+    if [ -d "$WP_PLUGIN_DIR" ]; then
+      cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript "$WP_PLUGIN_DIR/"
+      cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "$WP_PLUGIN_DIR/"
+      chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter-enginescript"
+      chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript"
+      find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type d -exec chmod 755 {} \;
+      find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type f -exec chmod 644 {} \;
+      find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type d -exec chmod 755 {} \;
+      find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type f -exec chmod 644 {} \;
+    else
+      echo "Warning: Plugin directory $WP_PLUGIN_DIR does not exist for site $SITE"
+    fi
+  done
+else
+  echo "Warning: SITES file $SITES_FILE not found. Skipping plugin updates for sites."
+fi

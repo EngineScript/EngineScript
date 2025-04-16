@@ -712,16 +712,12 @@ wp plugin install theme-check --allow-root
 wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root --activate # Activate this one
 
-# Copy EngineScript Optimizer Plugin (if it exists in config)
-if [ -d "/usr/local/bin/enginescript/config/var/www/wordpress/wp-content/plugins/enginescript-optimizer" ]; then
-    echo "Copying EngineScript Optimizer plugin..."
-    cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-content/plugins/enginescript-optimizer "${TARGET_WP_PATH}/wp-content/plugins/"
-    # Set ownership after copying
-    chown -R www-data:www-data "${TARGET_WP_PATH}/wp-content/plugins/enginescript-optimizer"
-    echo "EngineScript Optimizer plugin copied."
-else
-    echo "EngineScript Optimizer source not found in config, skipping copy."
-fi
+# Install EngineScript Optimization Plugin
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+
+# Install EngineScript Site Exporter Plugin
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+
 
 # WP-CLI Flush Transients
 wp transient delete --all --allow-root
