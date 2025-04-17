@@ -223,7 +223,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 ||
 ||
 |**Web Server**|
-|NGINX MAINLINE|1.27.4|https://nginx.org/en/download.html |
+|NGINX MAINLINE|1.27.5|https://nginx.org/en/download.html |
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
 |NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
 |NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
