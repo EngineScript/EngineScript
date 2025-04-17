@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.4.0
+Version: 1.4.1
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-wp-optimizer-enginescript
