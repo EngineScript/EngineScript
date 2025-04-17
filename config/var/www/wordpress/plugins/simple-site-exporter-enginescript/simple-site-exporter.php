@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.3.2
+Version: 1.3.3
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -10,7 +10,7 @@ Text Domain: simple-site-exporter-enginescript
 
 // Prevent direct access. Note: Using return here instead of exit.
 if ( ! defined( 'ABSPATH' ) ) {
-    return;
+    return; // Prevent direct access
 }
 
 // Define plugin version
@@ -41,7 +41,6 @@ function sse_exporter_page_html() {
          wp_die( esc_html__( 'Could not determine the WordPress upload directory.', 'simple-site-exporter-enginescript' ) );
     }
     $export_dir_name = 'enginescript-sse-site-exports';
-    // Note: Removed unused $export_dir and $export_url variables for this function.
     $export_dir_path = $upload_dir['basedir'] . '/' . $export_dir_name;
     $display_path = str_replace( ABSPATH, '', $export_dir_path );
     ?>
@@ -51,7 +50,7 @@ function sse_exporter_page_html() {
         <p><strong><?php esc_html_e( 'Warning:', 'simple-site-exporter-enginescript' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'simple-site-exporter-enginescript' ); ?></p>
         <p style="margin-top: 15px;">
             <?php
-            // Note: printf is standard WordPress practice for translatable strings with placeholders.
+            // printf is standard in WordPress for translatable strings with placeholders. All variables are escaped.
             printf(
                 /* translators: %s: directory path */
                 esc_html__( 'Exported .zip files will be saved in the following directory on the server: %s', 'simple-site-exporter-enginescript' ),
@@ -78,8 +77,7 @@ function sse_exporter_page_html() {
         <p style="color: #31708f;">
             <?php esc_html_e( 'Note:', 'simple-site-exporter-enginescript' ); ?>
             <?php
-                // Note: Accessing $_SERVER directly is sometimes necessary (e.g., for HTTP_HOST).
-                // Value is unslashed and sanitized immediately.
+                // Direct use of $_SERVER is necessary for domain display. Value is unslashed and sanitized immediately.
                 $current_domain = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : 'DOMAIN';
                 printf(
                     esc_html__( 'If you are running EngineScript, a cronjob will run once an hour to automatically move the exported zip file to a non-public directory inside /var/www/sites/%s/enginescript-sse-site-exports for improved security.', 'simple-site-exporter-enginescript' ),
