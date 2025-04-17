@@ -10,7 +10,7 @@ Text Domain: simple-wp-optimizer-enginescript
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
-    exit('No direct script access allowed');
+    return; // Prevent direct script access (WordPress best practice)
 }
 
 // Define plugin version
