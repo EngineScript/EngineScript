@@ -114,6 +114,17 @@ jobs:
             sed 's/[^0-9\.]//g')
           check_version "NGINX_PURGE_VER" "$LATEST_NGINX_PURGE"
           
+          # NGINX Dynamic TLS Records Patch
+          LATEST_NGINX_DYN_TLS_PATCH_SHA=$(curl -sL https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch | sha256sum | awk '{print $1}')
+          CURRENT_NGINX_DYN_TLS_PATCH_SHA=$(grep '^NGINX_DYN_TLS_PATCH_SHA=' enginescript-variables.txt | cut -d'"' -f2)
+          if [ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ] && [ "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]; then
+            echo "NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"" >> .github/temp_versions.txt
+            CHANGES_DETECTED=true
+            echo "::notice::NGINX_DYN_TLS_PATCH_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_SHA"
+          else
+            grep '^NGINX_DYN_TLS_PATCH_SHA=' enginescript-variables.txt >> .github/temp_versions.txt
+          fi
+          
           # Update date only if versions changed
           if [ "$CHANGES_DETECTED" = true ]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
