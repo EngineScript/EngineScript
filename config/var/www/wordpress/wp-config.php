@@ -37,20 +37,20 @@ define( 'NONCE_SALT',       'put your unique phrase here' );
 /* Redis Object Cache Plugin */
 define( 'WP_REDIS_DATABASE', 0 ); // EngineScript scales this based on the number of installed domains
 define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
-//define( 'WP_REDIS_FLUSH_TIMEOUT', 5 ); // Experimental
-//define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
-//define( 'WP_REDIS_DISABLE_METRICS', 'true' );
-//define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
-//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
-//define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' ); // Unsupported / SLOW
 define( 'WP_REDIS_MAXTTL', '43200' ); // 43200 seconds = 12 hours
-//define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
 define( 'WP_REDIS_PATH', '/run/redis/redis-server.sock' );
 define( 'WP_REDIS_PREFIX', 'SEDREDISPREFIX' );
 define( 'WP_REDIS_READ_TIMEOUT', 1 );
 define( 'WP_REDIS_SCHEME', 'unix' );
-//define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported / SLOW
 define( 'WP_REDIS_TIMEOUT', 1 );
+//define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
+//define( 'WP_REDIS_DISABLE_METRICS', 'true' );
+//define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
+//define( 'WP_REDIS_FLUSH_TIMEOUT', 5 ); // Experimental
+//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
+//define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' ); // Unsupported / SLOW
+//define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
+//define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported / SLOW
 
 /* Nginx Helper FastCGI Cache Plugin */
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );
@@ -112,6 +112,7 @@ define( 'DISABLE_NAG_NOTICES', true );
 /* WP-CLI */
 define( 'WP_CLI_BIN_DIR', '/tmp/wp-cli-phar' );
 define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
+define( 'WP_CLI_CACHE_DIR', '/var/cache/.wp-cli/cache' );
 
 /* The SEO Framework Headless Mode */
 // https://kb.theseoframework.com/kb/headless-mode/
@@ -130,8 +131,8 @@ define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
 //	- https://wpscan.com/api
 //	- https://www.wordfence.com/threat-intel/
 //	- https://patchstack.com/
-//define( 'VULN_API_TOKEN', 'PUT-API-HERE' );
 define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, wpscan
+//define( 'VULN_API_TOKEN', 'PUT-API-HERE' );
 
 /* Sentry.io */
 // https://sentry.io/welcome/
@@ -143,16 +144,18 @@ define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, 
 //define( 'WP_SENTRY_VERSION', 'v5.2.0' );
 //define( 'WP_SENTRY_ENV', 'production' );
 
-/* Debug */
-define( 'WP_DEBUG', false ); // Set to true if you want to debug
-define( 'CONCATENATE_SCRIPTS', true ); // Setting to false may fix java issues in dashboard only
-define( 'RECOVERY_MODE_EMAIL', 'SEDWPRECOVERYEMAIL' ); // When any site visitor attempts loading your site and encounters a fatal error, WordPress will send an email outlining the error details.
-define( 'SAVEQUERIES', false ); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
-define( 'SCRIPT_DEBUG', false ); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
-define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.
-define( 'WP_DEBUG_DISPLAY', false ); // Displays logs within browser on site. Not for production environments.
-define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
-//define( 'WP_SANDBOX_SCRAPING', true ); // Turn off WSOD Protection (and don't send email notification)
+/* Compression */
+// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
+//define( 'COMPRESS_CSS', true );
+//define( 'COMPRESS_SCRIPTS', true );
+//define( 'ENFORCE_GZIP', true );
+
+/* Security Headers */
+// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
+//header( 'X-Frame-Options: SAMEORIGIN' );
+//header( 'X-Content-Type-Options: nosniff' );
+//header( 'Referrer-Policy: no-referrer' );
+//header( 'Expect-CT enforce; max-age=3600' );
 
 /* Theme Check Plugin */
 // https://wordpress.org/plugins/theme-check/
@@ -172,18 +175,17 @@ define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only
 
 //add_filter( 'tc_skip_development_directories', '__return_true' );
 
-/* Compression */
-// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
-//define( 'COMPRESS_CSS', true );
-//define( 'COMPRESS_SCRIPTS', true );
-//define( 'ENFORCE_GZIP', true );
-
-/* Security Headers */
-// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
-//header( 'X-Frame-Options: SAMEORIGIN' );
-//header( 'X-Content-Type-Options: nosniff' );
-//header( 'Referrer-Policy: no-referrer' );
-//header( 'Expect-CT enforce; max-age=3600' );
+/* Debug */
+define( 'WP_DEBUG', false ); // Set to true if you want to debug
+define( 'CONCATENATE_SCRIPTS', true ); // Setting to false may fix java issues in dashboard only
+define( 'RECOVERY_MODE_EMAIL', 'SEDWPRECOVERYEMAIL' ); // When any site visitor attempts loading your site and encounters a fatal error, WordPress will send an email outlining the error details.
+define( 'SAVEQUERIES', false ); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
+define( 'SCRIPT_DEBUG', false ); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
+define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.
+define( 'WP_DEBUG_DISPLAY', false ); // Displays logs within browser on site. Not for production environments.
+define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
+//define( 'WP_DISABLE_FATAL_ERROR_HANDLER', false ); // Disable the fatal error handler
+//define( 'WP_SANDBOX_SCRAPING', true ); // Turn off WSOD Protection (and don't send email notification)
 
 // Don't change things below this line
 /* Absolute path to the WordPress directory. */
