@@ -26,8 +26,8 @@ fi
 
 # Download phpMyAdmin
 wget -O /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip --no-check-certificate
-unzip /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip -d /usr/src
-mv /usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages /var/www/admin/enginescript/phpmyadmin
+unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
+mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" "/var/www/admin/enginescript/phpmyadmin"
 mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
 
@@ -39,7 +39,7 @@ sed -i "s|'pma'|'phpmyadmin_controlusr_$RAND_CHAR8'|g" /var/www/admin/enginescri
 sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/enginescript/phpmyadmin/config.inc.php | sudo mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
 # Create phpMyAdmin Tables
-sudo mariadb < /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql
+sudo cat /var/www/admin/enginescript/phpmyadmin/sql/create_tables.sql | mariadb
 
 # User Login Credentials
 sudo mariadb -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"

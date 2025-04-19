@@ -43,7 +43,7 @@ do
 done
 
 # Trim leading space if ERRORS is not empty
-ERRORS=$(echo "$ERRORS" | sed 's/^ *//')
+ERRORS="${ERRORS##*( )}"
 
 if [ -n "$ERRORS" ]; then
     # Use multiple -d options for clarity and proper quoting

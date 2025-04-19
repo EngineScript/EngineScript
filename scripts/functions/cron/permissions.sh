@@ -42,7 +42,7 @@ do
 	chmod 600 wp-config.php
 
 	# Ownership
-	chown -R www-data:www-data *
+	chown -R www-data:www-data ./*
 
   # Make wp-cron executable
   chmod +x wp-cron.php
