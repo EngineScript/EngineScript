@@ -30,10 +30,9 @@ sudo mv wp-cli.phar /usr/local/bin/wp
 mkdir -p /tmp/wp-cli-phar
 chown -R www-data:www-data /tmp/wp-cli-phar
 chmod 775 /tmp/wp-cli-phar
-# Create cache dir for www-data user
-mkdir -p /var/cache/.wp-cli/cache
-chown -R www-data:www-data /var/cache/.wp-cli
-chmod -R u+rwX,g+rX,o-rwx /var/cache/.wp-cli # Give www-data read/write/execute, group read/execute
+mkdir -p ~/.wp-cli/cache
+chown -R www-data:www-data ~/.wp-cli/cache
+chmod 775 ~/.wp-cli/cache
 
 # Install WP-CLI Extensions
 wp package install 10up/wpcli-vulnerability-scanner:@stable --allow-root

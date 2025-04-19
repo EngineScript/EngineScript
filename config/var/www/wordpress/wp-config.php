@@ -109,10 +109,6 @@ define('PERFLAB_DISABLE_OBJECT_CACHE_DROPIN', true);
 // https://codex.wordpress.org/Plugin_API/Action_Reference/admin_notices
 define( 'DISABLE_NAG_NOTICES', true );
 
-/* WP-CLI */
-define( 'WP_CLI_BIN_DIR', '/tmp/wp-cli-phar' );
-define( 'WP_CLI_CONFIG_PATH', '/tmp/wp-cli-phar/config.yml' );
-define( 'WP_CLI_CACHE_DIR', '/var/cache/.wp-cli/cache' );
 
 /* The SEO Framework Headless Mode */
 // https://kb.theseoframework.com/kb/headless-mode/
