@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.3.3
+Version: 1.3.5
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -73,6 +73,10 @@ function sse_exporter_page_html() {
         <p style="color: #b94a48; font-weight: bold;">
             <?php esc_html_e( 'Important:', 'simple-site-exporter-enginescript' ); ?>
             <?php esc_html_e( 'The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it.', 'simple-site-exporter-enginescript' ); ?>
+        </p>
+        <p style="color: #b94a48; font-weight: bold;">
+            <?php esc_html_e( 'Security Notice:', 'simple-site-exporter-enginescript' ); ?>
+            <?php esc_html_e( 'For your protection, the exported zip file will be automatically deleted from the server 1 hour after it is created.', 'simple-site-exporter-enginescript' ); ?>
         </p>
         <p style="color: #31708f;">
             <?php esc_html_e( 'Note:', 'simple-site-exporter-enginescript' ); ?>
@@ -321,6 +325,10 @@ function sse_handle_export() {
     // --- 4. Report Success or Failure ---
     // Note: file_exists is standard for checking if the final output file was created.
     if ( $zip_close_status && file_exists( $zip_filepath ) ) {
+        // Schedule deletion of the export file after 1 hour
+        if ( ! wp_next_scheduled( 'sse_delete_export_file', array( $zip_filepath ) ) ) {
+            wp_schedule_single_event( time() + HOUR_IN_SECONDS, 'sse_delete_export_file', array( $zip_filepath ) );
+        }
         add_action( 'admin_notices', function() use ( $zip_fileurl, $zip_filename, $zip_filepath ) {
             $display_zip_path = str_replace( ABSPATH, '', $zip_filepath );
             ?>
@@ -363,4 +371,11 @@ function sse_handle_export() {
 }
 add_action( 'admin_init', 'sse_handle_export' );
 
+// --- Scheduled Deletion Handler ---
+add_action( 'sse_delete_export_file', function( $file ) {
+    if ( file_exists( $file ) ) {
+        @unlink( $file );
+        error_log( 'Simple Site Exporter: Scheduled deletion of export file: ' . $file );
+    }
+} );
 ?>
