@@ -152,6 +152,11 @@ dpkg-reconfigure unattended-upgrades
 # Set MOTD
 cp -rf /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript
 chmod +x /etc/update-motd.d/99-enginescript
+chown root:root /etc/update-motd.d/99-enginescript
+dos2unix /etc/update-motd.d/99-enginescript
+# Test MOTD
+sudo run-parts --test /etc/update-motd.d/
+sudo run-parts /etc/update-motd.d/
 
 # HWE
 apt install --install-recommends linux-generic-hwe-${UBUNTU_VERSION} -y

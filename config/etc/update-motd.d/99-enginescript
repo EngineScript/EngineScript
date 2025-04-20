@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Shell text formatting
-BOLD="$(tput bold)"
-NORMAL="$(tput sgr0)"
+BOLD="$(tput bold 2>/dev/null || echo)"
+NORMAL="$(tput sgr0 2>/dev/null || echo)"
 
 # Get system information
 HOSTNAME=$(hostname)
