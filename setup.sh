@@ -154,9 +154,10 @@ cp -rf /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc
 chmod +x /etc/update-motd.d/99-enginescript
 chown root:root /etc/update-motd.d/99-enginescript
 dos2unix /etc/update-motd.d/99-enginescript
+
 # Test MOTD
-sudo run-parts --test /etc/update-motd.d/
-sudo run-parts /etc/update-motd.d/
+run-parts --test /etc/update-motd.d/
+run-parts /etc/update-motd.d/
 
 # HWE
 apt install --install-recommends linux-generic-hwe-${UBUNTU_VERSION} -y
