@@ -594,6 +594,13 @@ rsync -av --exclude 'wp-config.php' "${WP_FILES_SOURCE_PATH}/" "${TARGET_WP_PATH
 chown -R www-data:www-data "${TARGET_WP_PATH}"
 echo "WordPress files copied."
 
+# Create Fonts Directories
+mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/fonts
+mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts
+
+# Create Languages Directory
+mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/languages
+
 # --- Create wp-config.php ---
 echo "Creating new wp-config.php with EngineScript settings..."
 cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "${TARGET_WP_PATH}/wp-config.php"
