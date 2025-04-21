@@ -581,10 +581,10 @@ mkdir -p /var/www/sites/${SITE_URL}/html
 TARGET_WP_PATH="/var/www/sites/${SITE_URL}/html"
 
 # Domain Logs
-mkdir -p /var/log/domains/${SITE_URL}
-touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
-touch /var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log
-chown -R www-data:www-data /var/log/domains/${SITE_URL}
+mkdir -p "/var/log/domains/${SITE_URL}"
+touch "/var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log"
+touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log"
+chown -R www-data:www-data "/var/log/domains/${SITE_URL}"
 
 # --- Import WordPress Files ---
 echo "Copying WordPress files from ${WP_FILES_SOURCE_PATH} to ${TARGET_WP_PATH}..." # Use the determined source path
@@ -595,15 +595,15 @@ chown -R www-data:www-data "${TARGET_WP_PATH}"
 echo "WordPress files copied."
 
 # Create Fonts Directories
-mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/fonts
-mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/fonts"
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts"
 
 # Create Languages Directory
-mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/languages
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/languages"
 
 # --- Create wp-config.php ---
 echo "Creating new wp-config.php with EngineScript settings..."
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "${TARGET_WP_PATH}/wp-config.php"
+cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php" "${TARGET_WP_PATH}/wp-config.php"
 # Use *new* DB credentials and *original* prefix
 sed -i "s|SEDWPDB|${DB}|g" "${TARGET_WP_PATH}/wp-config.php"
 sed -i "s|SEDWPUSER|${USR}|g" "${TARGET_WP_PATH}/wp-config.php"

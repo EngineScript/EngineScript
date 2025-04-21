@@ -190,7 +190,7 @@ echo "Starting domain installation for ${DOMAIN} at $(date)"
 # Continue the installation
 
 # Store SQL credentials
-echo "SITE_URL=\"${DOMAIN}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "SITE_URL=\"${DOMAIN}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
 # Add Domain to Site List
 sed -i "\/SITES\=(/a\
@@ -235,13 +235,13 @@ mkdir -p /etc/nginx/ssl/${DOMAIN}
 export CF_Key="${CF_GLOBAL_API_KEY}"
 export CF_Email="${CF_ACCOUNT_EMAIL}"
 
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d ${DOMAIN} -d admin.${DOMAIN} -d *.${DOMAIN} -k ec-384
+/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ec-384
 
-/root/.acme.sh/acme.sh --install-cert -d ${DOMAIN} --ecc \
---cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \
---key-file /etc/nginx/ssl/${DOMAIN}/key.pem \
---fullchain-file /etc/nginx/ssl/${DOMAIN}/fullchain.pem \
---ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem
+/root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
+--cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
+--key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
+--fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
+--ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
 
 # Print verion and date for logs
 echo "EngineScript Date: ${VARIABLES_DATE}"
@@ -254,12 +254,12 @@ SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
 # Domain Database Credentials
-echo "DB=\"${SDB}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "USR=\"${SUSR}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "PSWD=\"${SPS}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
-source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
 echo "Randomly generated MySQL database credentials for ${SITE_URL}."
 
@@ -269,43 +269,43 @@ sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;
 sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Backup Dir Creation
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/daily
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/hourly
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/ssl-keys
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-config
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-content
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-uploads
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/daily"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/hourly"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/nginx"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-content"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads"
 
 # Site Root
-mkdir -p /var/www/sites/${SITE_URL}/html
-cd /var/www/sites/${SITE_URL}/html
+mkdir -p "/var/www/sites/${SITE_URL}/html"
+cd "/var/www/sites/${SITE_URL}/html"
 
 # Domain Logs
-mkdir -p /var/log/domains/${SITE_URL}
-touch /var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log
-touch /var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log
-chown -R www-data:www-data /var/log/domains/${SITE_URL}
+mkdir -p "/var/log/domains/${SITE_URL}"
+touch "/var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log"
+touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log"
+chown -R www-data:www-data "/var/log/domains/${SITE_URL}"
 
 # Download WordPress using WP-CLI
 wp core download --allow-root
-rm -f /var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php
+rm -f "/var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php"
 
 # Create Fonts Directories
-mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/fonts
-mkdir -p /var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/fonts"
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts"
 
 # Create Languages Directory
-mkdir -p /var/www/html/wp-content/languages
+mkdir -p "/var/www/html/wp-content/languages"
 
 # Create wp-config.php
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php /var/www/sites/${SITE_URL}/html/wp-config.php
-sed -i "s|SEDWPDB|${DB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
-sed -i "s|SEDWPUSER|${USR}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
-sed -i "s|SEDWPPASS|${PSWD}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
-sed -i "s|SEDPREFIX|${PREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
-sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${SITE_URL}/html/wp-config.php"
+sed -i "s|SEDWPDB|${DB}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+sed -i "s|SEDWPUSER|${USR}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+sed -i "s|SEDWPPASS|${PSWD}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+sed -i "s|SEDPREFIX|${PREFIX}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+sed -i "s|SEDURL|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # Redis Config
 # Scale Redis Databases to Number of Installed Domains
@@ -344,11 +344,11 @@ cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/robots.txt /var/www/
 sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
 
 # WP File Permissions
-find /var/www/sites/${SITE_URL} -type d -print0 | sudo xargs -0 chmod 0755
-find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
-chown -R www-data:www-data /var/www/sites/${SITE_URL}
-chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
-chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
+find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
+find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
+chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
+chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
+chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # WP-CLI Finalizing Install
 clear
@@ -371,7 +371,7 @@ echo "============================================="
   #done
 
 # WP-CLI Install WordPress
-cd /var/www/sites/${SITE_URL}/html
+cd "/var/www/sites/${SITE_URL}/html"
 wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
@@ -387,10 +387,10 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # Install EngineScript Optimization Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 # Install EngineScript Site Exporter Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 # WP-CLI Activate Plugins
 wp plugin activate flush-opcache --allow-root
@@ -413,12 +413,12 @@ wp rewrite flush --hard --allow-root
 # Setting Permissions Again
 # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
 # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
-cd /var/www/sites/${SITE_URL}
-chown -R www-data:www-data /var/www/sites/${SITE_URL}
-chmod +x /var/www/sites/${SITE_URL}/html/wp-cron.php
-find /var/www/sites/${SITE_URL} -type d -print0 | sudo xargs -0 chmod 0755
-find /var/www/sites/${SITE_URL} -type f -print0 | sudo xargs -0 chmod 0644
-chmod 600 /var/www/sites/${SITE_URL}/html/wp-config.php
+cd "/var/www/sites/${SITE_URL}"
+chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
+chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
+find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
+find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
+chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 clear
 
@@ -456,21 +456,21 @@ gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FI
 tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
 
 # Nginx vhost backup
-gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > /home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE
+gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE"
 
 # SSL keys backup
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" /etc/nginx/ssl/${SITE_URL}
+tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" "/etc/nginx/ssl/${SITE_URL}"
 
 # wp-config.php backup
-gzip -cf "/var/www/sites/${SITE_URL}/html/wp-config.php" > /home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE
+gzip -cf "/var/www/sites/${SITE_URL}/html/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE"
 
 # Remove old backups
-find /home/EngineScript/site-backups/${SITE_URL}/database/daily -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/nginx -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/ssl-keys -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/wp-config -type f -mtime +7 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/wp-content -type f -mtime +15 | xargs rm -fR
-find /home/EngineScript/site-backups/${SITE_URL}/wp-uploads -type f -mtime +15  | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/nginx" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/wp-config" -type f -mtime +7 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/wp-content" -type f -mtime +15 | xargs rm -fR
+find "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads" -type f -mtime +15  | xargs rm -fR
 
 echo "Backup: Complete"
 clear

@@ -67,16 +67,16 @@ fi
 # Hide EngineScript Header
 if [ "${SHOW_ENGINESCRIPT_HEADER}" = 1 ];
   then
-    sed -i "s|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|g" /etc/nginx/globals/response-headers.conf
+    sed -i "s|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\\.com\"|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\\.com\"|g" "/etc/nginx/globals/response-headers.conf"
   else
     echo ""
 fi
 
 if [ "${NGINX_SECURE_ADMIN}" = 1 ];
   then
-    sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/admin/admin.localhost.conf
-    sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/admin/admin.localhost.conf
-    sed -i "s|#allow |allow |g" /etc/nginx/admin/admin.localhost.conf
+    sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.localhost.conf"
+    sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.localhost.conf"
+    sed -i "s|#allow |allow |g" "/etc/nginx/admin/admin.localhost.conf"
   else
     echo ""
 fi

@@ -121,8 +121,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
 
 fi
 
-make -j${CPU_COUNT}
-find /usr/src/nginx-${NGINX_VER} | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
+make -j"${CPU_COUNT}"
+find "/usr/src/nginx-${NGINX_VER}" | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
 make install
 
 # Remove .default Files
@@ -131,7 +131,7 @@ rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 # Remove debug symbols
 strip -s /usr/sbin/nginx*
 
-checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
+checksec --format=json --file="/usr/sbin/nginx" --extended | jq -r
 
 # Return to /usr/src
 cd /usr/src
