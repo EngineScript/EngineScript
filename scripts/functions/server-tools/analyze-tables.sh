@@ -38,10 +38,10 @@ SQL="${SQL} ('information_schema','performance_schema','mysql','sys','innodb')"
 SQL="${SQL} AND engine IS NOT NULL"
 
 # Create SQL Commands to run ANALYZE TABLE
-mysql ${MYSQL_AUTH} -ANe"${SQL}" > ${RUN_SQL}
+mariadb ${MYSQL_AUTH} -ANe"${SQL}" > "${RUN_SQL}"
 
 # Execute ANALYZE TABLE Commands
-mysql ${MYSQL_AUTH} --table < ${RUN_SQL} > ${RUN_LOG} 2>&1
+mariadb ${MYSQL_AUTH} --table < "${RUN_SQL}" > "${RUN_LOG}" 2>&1
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

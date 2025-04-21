@@ -197,17 +197,17 @@ sed -i "\/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
-sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf "/usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 
 # Create Admin Subdomain Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
-sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+cp -rf "/usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
 
 # Enable Admin Subdomain Vhost File
 if [ "${ADMIN_SUBDOMAIN}" = 1 ];
   then
-    sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+    sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   else
     echo ""
 fi
@@ -215,21 +215,21 @@ fi
 # Secure Admin Subdomain
 if [ "${NGINX_SECURE_ADMIN}" = 1 ];
   then
-    sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/admin/admin.${DOMAIN}.conf
-    sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/admin/admin.${DOMAIN}.conf
-    sed -i "s|#allow |allow |g" /etc/nginx/admin/admin.${DOMAIN}.conf
+    sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+    sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+    sed -i "s|#allow |allow |g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
   else
     echo ""
 fi
 
 # Enable HTTP/3 if configured
 if [ "${INSTALL_HTTP3}" = 1 ]; then
-  sed -i "s|#listen 443 quic|listen 443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
-  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+  sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
+  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 fi
 
 # Create Origin Certificate
-mkdir -p /etc/nginx/ssl/${DOMAIN}
+mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
 # Cloudflare Keys
 export CF_Key="${CF_GLOBAL_API_KEY}"
@@ -245,7 +245,7 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 
 # Print verion and date for logs
 echo "EngineScript Date: ${VARIABLES_DATE}"
-echo "System Date: `date`"
+echo "System Date: $(date)"
 
 # Domain Creation Variables
 PREFIX="${RAND_CHAR2}"
@@ -322,26 +322,26 @@ if [ "${#SITES[@]}" = 1 ];
 
     # Set WordPress to use the latest Redis database number.
     # Redis starts databases at number 0, so we take the total number of domains in sites.sh and reduce by 1. Three installed domains = database 2
-    sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+    sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 fi
 
 # Set Redis Prefix
-REDISPREFIX="$(echo ${DOMAIN::5})" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+REDISPREFIX="$(echo "${DOMAIN::5}")" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # WP Salt Creation
 SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
 STRING='put your unique phrase here'
-printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s /var/www/sites/${SITE_URL}/html/wp-config.php
+printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # WP Scan API Token
-sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+sed -i "s|SEDWPSCANAPI|${WPSCANAPI}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # WP Recovery Email
-sed -i "s|SEDWPRECOVERYEMAIL|${WP_RECOVERY_EMAIL}|g" /var/www/sites/${SITE_URL}/html/wp-config.php
+sed -i "s|SEDWPRECOVERYEMAIL|${WP_RECOVERY_EMAIL}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
 # Create robots.txt
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/robots.txt /var/www/sites/${SITE_URL}/html/robots.txt
-sed -i "s|SEDURL|${SITE_URL}|g" /var/www/sites/${SITE_URL}/html/robots.txt
+cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/robots.txt" "/var/www/sites/${SITE_URL}/html/robots.txt"
+sed -i "s|SEDURL|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/robots.txt"
 
 # WP File Permissions
 find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
@@ -372,7 +372,7 @@ echo "============================================="
 
 # WP-CLI Install WordPress
 cd "/var/www/sites/${SITE_URL}/html"
-wp core install --admin_user=${WP_ADMIN_USERNAME} --admin_password=${WP_ADMIN_PASSWORD} --admin_email=${WP_ADMIN_EMAIL} --url=https://${SITE_URL} --title='New Site' --skip-email --allow-root
+wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${SITE_URL}" --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
 wp plugin install app-for-cf --allow-root

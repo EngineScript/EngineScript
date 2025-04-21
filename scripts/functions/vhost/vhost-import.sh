@@ -87,7 +87,7 @@ else
 fi
 
 # PHP Service Check
-STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
+STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
 if [ "${STATUS}" = "active" ]; then
   echo "PASSED: PHP ${PHP_VER} is running."
 else
@@ -483,24 +483,24 @@ echo "Starting domain import for ${DOMAIN} from archive ${WP_ARCHIVE_FILE} and D
 # Continue the installation
 
 # Store SQL credentials (Generate new ones for EngineScript)
-echo "SITE_URL=\"${DOMAIN}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "SITE_URL=\"${DOMAIN}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
 # Add Domain to Site List
 sed -i "/SITES\=(/a\
 \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
 
 # Create Nginx Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
-sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+cp -rf "/usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 
 # Create Admin Subdomain Vhost File
-cp -rf /usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf /etc/nginx/admin/admin.${DOMAIN}.conf
-sed -i "s|YOURDOMAIN|${DOMAIN}|g" /etc/nginx/admin/admin.${DOMAIN}.conf
+cp -rf "/usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
 
 # Enable Admin Subdomain Vhost File
 if [ "${ADMIN_SUBDOMAIN}" = 1 ];
   then
-    sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+    sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   else
     echo ""
 fi
@@ -508,21 +508,21 @@ fi
 # Secure Admin Subdomain
 if [ "${NGINX_SECURE_ADMIN}" = 1 ];
   then
-    sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/admin/admin.${DOMAIN}.conf
-    sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/admin/admin.${DOMAIN}.conf
-    sed -i "s|#allow |allow |g" /etc/nginx/admin/admin.${DOMAIN}.conf
+    sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+    sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
+    sed -i "s|#allow |allow |g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
   else
     echo ""
 fi
 
 # Enable HTTP/3 if configured
 if [ "${INSTALL_HTTP3}" = 1 ]; then
-  sed -i "s|#listen 443 quic|listen 443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
-  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" /etc/nginx/sites-enabled/${DOMAIN}.conf
+  sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
+  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 fi
 
 # Create Origin Certificate
-mkdir -p /etc/nginx/ssl/${DOMAIN}
+mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
 # Cloudflare Keys
 export CF_Key="${CF_GLOBAL_API_KEY}"
@@ -530,17 +530,17 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 
 # Issue Certificate (Same as vhost-install)
 echo "Issuing SSL Certificate via ACME.sh (ZeroSSL)..."
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d ${DOMAIN} -d admin.${DOMAIN} -d *.${DOMAIN} -k ec-384
+/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ec-384
 
-/root/.acme.sh/acme.sh --install-cert -d ${DOMAIN} --ecc \
---cert-file /etc/nginx/ssl/${DOMAIN}/cert.pem \
---key-file /etc/nginx/ssl/${DOMAIN}/key.pem \
---fullchain-file /etc/nginx/ssl/${DOMAIN}/fullchain.pem \
---ca-file /etc/nginx/ssl/${DOMAIN}/ca.pem
+/root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
+--cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
+--key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
+--fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
+--ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
 
 # Print version and date for logs
 echo "EngineScript Date: ${VARIABLES_DATE}"
-echo "System Date: `date`"
+echo "System Date: $(date)"
 
 # --- Database and File Handling ---
 
@@ -552,12 +552,12 @@ SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
 # Domain Database Credentials (Store the *new* credentials)
-echo "DB=\"${SDB}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "USR=\"${SUSR}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "PSWD=\"${SPS}\"" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
-echo "" >> /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
-source /home/EngineScript/mysql-credentials/${DOMAIN}.txt
+source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
 echo "Generated new MySQL database credentials for ${SITE_URL}."
 
@@ -568,16 +568,16 @@ sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;
 sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;" # Needed for mariadb-health-checks plugin
 
 # Backup Dir Creation (Same as vhost-install)
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/daily
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/database/hourly
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/nginx
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/ssl-keys
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-config
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-content
-mkdir -p /home/EngineScript/site-backups/${SITE_URL}/wp-uploads
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/daily"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/hourly"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/nginx"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-content"
+mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads"
 
 # Site Root
-mkdir -p /var/www/sites/${SITE_URL}/html
+mkdir -p "/var/www/sites/${SITE_URL}/html"
 TARGET_WP_PATH="/var/www/sites/${SITE_URL}/html"
 
 # Domain Logs
@@ -638,7 +638,7 @@ if [ "${#SITES[@]}" = 1 ];
 fi
 
 # Set Redis Prefix (Same as vhost-install)
-REDISPREFIX="$(echo ${DOMAIN::5})" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "${TARGET_WP_PATH}/wp-config.php"
+REDISPREFIX="$(echo "${DOMAIN::5}")" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "${TARGET_WP_PATH}/wp-config.php"
 
 # WP Salt Creation (Generate new salts)
 echo "Generating new WordPress salts..."
@@ -720,10 +720,10 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root --activate # Activate this one
 
 # Install EngineScript Optimization Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript" "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 # Install EngineScript Site Exporter Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript /var/www/sites/${SITE_URL}/html/wp-content/plugins/
+cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript" "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 
 # WP-CLI Flush Transients
@@ -789,13 +789,13 @@ gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FI
 tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
 
 # Nginx vhost backup
-gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > /home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE
+gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/${VHOST_FILE}"
 
 # SSL keys backup
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" /etc/nginx/ssl/${SITE_URL}
+tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/${SSL_FILE}" "/etc/nginx/ssl/${SITE_URL}"
 
 # wp-config.php backup
-gzip -cf "${TARGET_WP_PATH}/wp-config.php" > /home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE
+gzip -cf "${TARGET_WP_PATH}/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/${WPCONFIG_FILE}"
 
 # Remove old backups (Keep this logic)
 find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 | xargs rm -fR
