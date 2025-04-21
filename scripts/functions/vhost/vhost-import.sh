@@ -877,12 +877,19 @@ while true; do
     case $site_works in
         [Yy]* )
             echo "Great! Proceeding with cleanup..."
-            # Clean up import directories and extracted files
-            echo "Cleaning up temporary import directories and files..."
-            rm -f "${WP_ARCHIVE_FILE}" # Remove only the archive file, not the directory
-            rm -f "${DB_SOURCE_PATH}" # Remove only the database file, not the directory
+            # Move import files to completed-backups directory
+            BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
+            mkdir -p "${BACKUP_DIR}"
+            if [ -n "${WP_ARCHIVE_FILE}" ] && [ -f "${WP_ARCHIVE_FILE}" ]; then
+                mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
+                echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
+            fi
+            if [ -n "${DB_SOURCE_PATH}" ] && [ -f "${DB_SOURCE_PATH}" ]; then
+                mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
+                echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
+            fi
             rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
-            echo "Cleanup complete."
+            echo "Cleanup complete. Import files moved to ${BACKUP_DIR}."
             sleep 2 # Short pause after cleanup message
             break # Continue to final exit
             ;;
