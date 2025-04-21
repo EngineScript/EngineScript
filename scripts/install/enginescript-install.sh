@@ -229,7 +229,7 @@ fi
 # Enabled Ubuntu Pro Apt Updates
 if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
   then
-    pro attach ${UBUNTU_PRO_TOKEN}
+    pro attach "${UBUNTU_PRO_TOKEN}"
 fi
 
 # Update & Upgrade

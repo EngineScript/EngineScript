@@ -21,7 +21,7 @@ fi
 # Check if the server is running on a 64-bit environment. If not, exit.
 BIT_TYPE=$(uname -m)
 
-if [ ${BIT_TYPE} != 'x86_64' ];
+if [ "${BIT_TYPE}" != 'x86_64' ];
   then
     echo "EngineScript requires a 64-bit environment to run optimally."
     exit 1

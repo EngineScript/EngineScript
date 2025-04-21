@@ -26,7 +26,7 @@ fi
 create_swap_file() {
     local swap_size=$1
     echo "Creating swap file of size ${swap_size}"
-    fallocate -l ${swap_size} /swapfile || {
+    fallocate -l "${swap_size}" /swapfile || {
         echo "Error: Failed to create swap file."
     }
     mkswap /swapfile || {

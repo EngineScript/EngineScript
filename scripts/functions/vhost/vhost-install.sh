@@ -53,7 +53,7 @@ else
 fi
 
 # PHP Service Check
-STATUS="$(systemctl is-active php${PHP_VER}-fpm)"
+STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
 if [ "${STATUS}" = "active" ]; then
   echo "PASSED: PHP ${PHP_VER} is running."
 else
