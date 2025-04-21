@@ -77,7 +77,7 @@ clear_redis_cache() {
 restart_service() {
     local service_name=$1
     echo "Restarting ${service_name}"
-    service ${service_name} restart || {
+    service "${service_name}" restart || {
         echo "Error: Failed to restart ${service_name}"
     }
 }
@@ -86,7 +86,7 @@ restart_service() {
 restart_php_fpm() {
     local php_versions=("8.1" "8.2" "8.3" "8.4")
     for version in "${php_versions[@]}"; do
-        if systemctl is-active --quiet php${version}-fpm; then
+        if systemctl is-active --quiet "php${version}-fpm"; then
             restart_service "php${version}-fpm"
             return
         fi
