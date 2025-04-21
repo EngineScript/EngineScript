@@ -126,3 +126,8 @@ echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
 # Modify MariaDB config for max IOPS
 sed -i "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_MAX_VAR updated to $max_iops."
+
+
+# References:
+# https://linuxblog.io/innodb_flush_method-innodb_flush_log_at_trx_commit-optimizing-mysql/
+# https://www.percona.com/blog/2018/01/31/how-to-tune-mariadb-10-3-for-high-performance/

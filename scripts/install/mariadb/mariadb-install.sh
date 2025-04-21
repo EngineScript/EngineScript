@@ -23,7 +23,7 @@ fi
 # Start Main Script
 
 # Add MariaDB repository
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=${MARIADB_VER} --skip-maxscale
+curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale
 
 # Install MariaDB
 apt update --allow-releaseinfo-change -y
