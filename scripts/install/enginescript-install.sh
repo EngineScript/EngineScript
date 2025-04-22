@@ -135,6 +135,39 @@ echo "WPSCANAPI = $WPSCANAPI"
 echo -e "\n"
 sleep 5
 
+# Warn if EngineScript automatic updates are disabled
+if [ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]; then
+  echo -e "\n${BOLD}WARNING: EngineScript Automatic Updates are DISABLED.${NORMAL}\n"
+  echo -e "You will need to manually apply updates to the EngineScript application and configuration files if updates are released in the future."
+  while true; do
+    read -p "Would you like to enable automatic updates now? (y/n/exit): " yn_auto_update
+    case $yn_auto_update in
+      [Yy]* )
+        sed -i 's/^ENGINESCRIPT_AUTO_UPDATE=0/ENGINESCRIPT_AUTO_UPDATE=1/' /home/EngineScript/enginescript-install-options.txt
+        ENGINESCRIPT_AUTO_UPDATE=1
+        if grep -q '^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0' /home/EngineScript/enginescript-install-options.txt; then
+          sed -i 's/^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0/ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1/' /home/EngineScript/enginescript-install-options.txt
+          ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
+          echo -e "\nEmergency auto updates have also been enabled.\n"
+        fi
+        echo -e "\nAutomatic updates have been enabled.\n"
+        sleep 2
+        break
+        ;;
+      [Nn]* )
+        echo -e "\nAutomatic updates remain disabled.\n"
+        sleep 2
+        break
+        ;;
+      [Ee][Xx][Ii][Tt]* )
+        echo -e "\nExiting install script as requested.\n"
+        exit 1
+        ;;
+      * ) echo "Please answer yes, no, or exit.";;
+    esac
+  done
+fi
+
 # Check S3 Install
 if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" = PLACEHOLDER ];
 	then
