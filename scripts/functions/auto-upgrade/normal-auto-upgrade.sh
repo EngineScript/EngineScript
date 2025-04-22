@@ -26,3 +26,4 @@ source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Start Normal Automatic Upgrade
+sed -i 's/\$document_root\$fastcgi_script_name/\$realpath_root\$fastcgi_script_name/g; s/\(fastcgi_param[[:space:]]*DOCUMENT_ROOT[[:space:]]*\)\$document_root/\1$realpath_root/g' /etc/nginx/globals/fastcgi-modified.conf
