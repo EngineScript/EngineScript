@@ -9,8 +9,8 @@
     sharedscripts
 
     prerotate
-        if [ "$1" = "/var/log/EngineScript/install-log.txt" ]; then
-            # Skip rotation for install log
+        if [ "$1" = "/var/log/EngineScript/install-log.txt" ] || [ "$1" = "/var/log/EngineScript/install-error-log.txt" ]; then
+            # Skip rotation for install log and install error log
             exit 0
         fi
     endscript

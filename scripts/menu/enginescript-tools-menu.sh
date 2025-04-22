@@ -30,12 +30,22 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Display Server Info" "Update EngineScript" "View/Edit EngineScript Install Configuration File" "View/Edit EngineScript Variables File" "Exit EngineScript Tools")
+    secoptions=("Display Server Info" "Run EngineScript Debug Report" "Update EngineScript" "View/Edit EngineScript Install Configuration File" "View/Edit EngineScript Variables File" "Exit EngineScript Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
         "Display Server Info")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
+          echo ""
+          echo "Done!"
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
+          echo ""
+          break
+          ;;
+        "Run EngineScript Debug Report")
+          /usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh
           echo ""
           echo "Done!"
           echo ""

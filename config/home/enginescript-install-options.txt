@@ -8,7 +8,6 @@
 #| Choose one of the methods below:
 #|
 #| At console, type: es.config
-#| At console, type: es.menu and select option 7, then option 3
 #| At console, type /home/EngineScript/enginescript-install-options.txt
 
 ###################
@@ -16,6 +15,13 @@
 ###################
 # 0 = disabled
 # 1 = enabled
+
+# EngineScript Install Debug Mode
+# Prompts the user to continue or exit after each portion of the install script has run.
+# Debug mode will print any errors that each install script encounters.
+# Regardless of whether debug mode is enabled, EngineScript will generate a complete log of the script errors will be located at touch /var/log/EngineScript/install-error-log.txt
+# Run command es.debug to generate a complete server and error log. This is useful when submitting a GitHub issue.
+DEBUG_INSTALL=0
 
 # Admin Subdomain (Recommended)
 # This will add an admin subdomain (example: admin.wordpresstesting.com) to your site, allowing you to access your server's admin control panel directly from any site installed on your server. You can also access it directly via your server's IP address.
@@ -35,11 +41,11 @@ INSTALL_ADMINER=0
 # 0 = disabled
 # 1 = enabled
 
-# EngineScript Daily Updates
+# EngineScript Daily Updates (Recommended)
 # Adds a cronjob that pulls the latest EngineScript release and updates your installation to that version.
 ENGINESCRIPT_AUTO_UPDATE=1
 
-# EngineScript Emergency Updates
+# EngineScript Emergency Updates (Recommended)
 # Recommended if you allow EngineScript to auto-update. In the event that a change is pushed live that breaks servers, this emergency-only script will run to attempt a self-heal.
 # This script runs hourly, but will not contain any code unless there is a code issue that warrants emergency measures be taken.
 ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1

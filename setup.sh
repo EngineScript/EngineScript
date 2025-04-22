@@ -101,33 +101,35 @@ chown -R root:root /usr/local/bin/enginescript
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 # Create EngineScript Home Directory
-mkdir -p /home/EngineScript/config-backups/nginx
-mkdir -p /home/EngineScript/config-backups/php
-mkdir -p /home/EngineScript/mysql-credentials
-mkdir -p /home/EngineScript/site-backups
-mkdir -p /home/EngineScript/sites-list
-mkdir -p /home/EngineScript/temp/site-export
-mkdir -p /home/EngineScript/temp/site-import/database-file
-mkdir -p /home/EngineScript/temp/site-import/root-directory
+mkdir -p "/home/EngineScript/config-backups/nginx"
+mkdir -p "/home/EngineScript/config-backups/php"
+mkdir -p "/home/EngineScript/mysql-credentials"
+mkdir -p "/home/EngineScript/site-backups"
+mkdir -p "/home/EngineScript/sites-list"
+mkdir -p "/home/EngineScript/temp/site-export"
+mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
+mkdir -p "/home/EngineScript/temp/site-import/database-file"
+mkdir -p "/home/EngineScript/temp/site-import/root-directory"
 
 # EngineScript Logs
 # Create EngineScript logs
-mkdir -p /var/log/EngineScript
-touch /var/log/EngineScript/install-log.txt
-touch /var/log/EngineScript/vhost-export.log
-touch /var/log/EngineScript/vhost-import.log
-touch /var/log/EngineScript/vhost-install.log
-touch /var/log/EngineScript/vhost-remove.log
+mkdir -p "/var/log/EngineScript"
+touch "/var/log/EngineScript/install-error-log.txt"
+touch "/var/log/EngineScript/install-log.txt"
+touch "/var/log/EngineScript/vhost-export.log"
+touch "/var/log/EngineScript/vhost-import.log"
+touch "/var/log/EngineScript/vhost-install.log"
+touch "/var/log/EngineScript/vhost-remove.log"
 
 # Logrotate - EngineScript Logs
-cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
+cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"
 find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
 
 # Return to /usr/src
-cd /usr/src
+cd "/usr/src"
 
 # Create EngineScript Aliases
-source /var/log/EngineScript/install-log.txt
+source "/var/log/EngineScript/install-log.txt"
 if [ "${ALIAS}" = 1 ];
   then
     echo "ALIAS script has already run"

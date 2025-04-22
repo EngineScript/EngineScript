@@ -39,6 +39,44 @@ find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Debug pause function
+# Prompts the user to continue if DEBUG_INSTALL is set and not 0/empty
+function debug_pause() {
+  if [ "${DEBUG_INSTALL}" = "1" ]; then
+    while true; do
+      echo -e "\n[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
+      echo -e "If you encountered errors above, you can copy the error text for a GitHub bug report."
+      echo -e "For more server details, run: es.debug"
+      read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
+      if [ -z "$user_input" ]; then
+        break
+      elif [[ "$user_input" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
+        echo -e "\nExiting install script as requested."
+        exit 1
+      else
+        echo "Please press Enter to continue or type 'exit' to stop."
+      fi
+    done
+  fi
+}
+
+# Print errors from the last script section if any
+function print_last_errors() {
+  # Always append errors to persistent log if any
+  if [ -s /tmp/enginescript_install_errors.log ]; then
+    cat /tmp/enginescript_install_errors.log >> /var/log/EngineScript/install-error-log.txt
+  fi
+  # Only show errors to user if debug mode is enabled
+  if [ "${DEBUG_INSTALL}" = "1" ] && [ -s /tmp/enginescript_install_errors.log ]; then
+    echo -e "\n${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
+    cat /tmp/enginescript_install_errors.log
+    echo -e "${BOLD}[END OF ERRORS]${NORMAL}\n"
+    echo -e "If you encounter errors and want to submit a GitHub issue, please run: es.debug"
+  fi
+  # Always clear the temp log for the next step
+  > /tmp/enginescript_install_errors.log
+}
+
 # Reboot Warning
 echo -e "\nATTENTION:\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
@@ -204,222 +242,250 @@ if [ "${REPOS}" = 1 ];
   then
     echo "REPOS script has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh
+    /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "REPOS=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Remove Preinstalled Software
 if [ "${REMOVES}" = 1 ];
   then
     echo "REMOVES script has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh
+    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh 2>> /tmp/enginescript_install_errors.log
     echo "REMOVES=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Block Unwanted Packages
 if [ "${BLOCK}" = 1 ];
   then
     echo "BLOCK script has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/block/package-block.sh
+    /usr/local/bin/enginescript/scripts/install/block/package-block.sh 2>> /tmp/enginescript_install_errors.log
     echo "BLOCK=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Enabled Ubuntu Pro Apt Updates
 if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
   then
-    pro attach "${UBUNTU_PRO_TOKEN}"
+    pro attach "${UBUNTU_PRO_TOKEN}" 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause
 
 # Install Dependencies
 if [ "${DEPENDS}" = 1 ];
   then
     echo "DEPENDS script has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh
+    /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # ACME.sh
 if [ "${ACME}" = 1 ];
   then
     echo "ACME.sh script has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh
+    /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "ACME=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # GCC
 if [ "${GCC}" = 1 ];
   then
     echo "GCC script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh
+    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "GCC=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # OpenSSL
 if [ "${OPENSSL}" = 1 ];
   then
     echo "OPENSSL script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh
+    /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "OPENSSL=1" >> /var/log/EngineScript/install-log.txt
 fi
-
-# Jemalloc
-# Not currently used
-#if [ "${JEMALLOC}" = 1 ];
-#  then
-#    echo "JEMALLOC script has already run."
-#  else
-#    /usr/local/bin/enginescript/scripts/install/jemalloc/jemalloc-install.sh
-#    echo "JEMALLOC=1" >> /var/log/EngineScript/install-log.txt
-#fi
+print_last_errors
+debug_pause
 
 # Swap
 if [ "${SWAP}" = 1 ];
   then
     echo "SWAP script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh
+    /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "SWAP=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Kernel Tweaks
 if [ "${KERNEL_TWEAKS}" = 1 ];
   then
     echo "KERNEL TWEAKS script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh
+    /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Kernel Samepage Merging
 if [ "${KSM}" = 1 ];
   then
     echo "KSM script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh
+    /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh 2>> /tmp/enginescript_install_errors.log
     echo "KSM=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Raising System File Limits
 if [ "${SFL}" = 1 ];
   then
     echo "SYSTEM FILE LIMITS script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh
+    /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh 2>> /tmp/enginescript_install_errors.log
     echo "SFL=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # NTP
 if [ "${NTP}" = 1 ];
   then
     echo "NTP script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh
+    /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh 2>> /tmp/enginescript_install_errors.log
     echo "NTP=1" >> /var/log/EngineScript/install-log.txt
 fi
-
-# THP
-# https://stackoverflow.com/a/53470169
-#if [ "${THP}" = 1 ];
-  #then
-    #echo "THP script has already run."
-  #else
-    #/usr/local/bin/enginescript/scripts/install/systemd/thp.sh
-    #echo "THP=1" >> /var/log/EngineScript/install-log.txt
-#fi
+print_last_errors
+debug_pause
 
 # PCRE
 if [ "${PCRE}" = 1 ];
   then
     echo "PCRE script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh
+    /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "PCRE=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # zlib
 if [ "${ZLIB}" = 1 ];
   then
     echo "ZLIB script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
+    /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "ZLIB=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # liburing
 if [ "${LIBURING}" = 1 ];
   then
     echo "LIBURING script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
+    /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "LIBURING=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # UFW
 if [ "${UFW}" = 1 ];
   then
     echo "UFW script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh
+    /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "UFW=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Cron
 if [ "${CRON}" = 1 ];
   then
     echo "CRON script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh
+    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "CRON=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # MariaDB
 if [ "${MARIADB}" = 1 ];
   then
     echo "MARIADB script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh
+    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # PHP
 if [ "${PHP}" = 1 ];
   then
     echo "PHP script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/php/php-install.sh
+    /usr/local/bin/enginescript/scripts/install/php/php-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # Redis
 if [ "${REDIS}" = 1 ];
   then
     echo "REDIS script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh
+    /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # Nginx
 if [ "${NGINX}" = 1 ];
   then
     echo "NGINX script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh
+    /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
+print_last_errors
+debug_pause
 
 # Tools
 if [ "${TOOLS}" = 1 ];
   then
     echo "TOOLS script has already run."
   else
-    /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh
+    /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh 2>> /tmp/enginescript_install_errors.log
     echo "TOOLS=1" >> /var/log/EngineScript/install-log.txt
 fi
+print_last_errors
+debug_pause
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh

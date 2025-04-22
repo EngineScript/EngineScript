@@ -13,10 +13,21 @@ NORMAL="\e[0m"
 GREEN="\e[32m"
 YELLOW="\e[33m"
 
-# Function to write to both console and file
+# Persistent error log path
+ERROR_LOG="/var/log/EngineScript/install-error-log.txt"
+
+# Function to log errors to persistent error log
+log_error() {
+    echo -e "$1" >> "$ERROR_LOG"
+}
+
+# Function to write to both console, file, and error log if applicable
 debug_print() {
     echo -e "$1"
     echo -e "$2" >> "$DEBUG_FILE"
+    if [[ "$1" == *"ERROR"* || "$1" == *"FAILED"* ]]; then
+        log_error "$1"
+    fi
 }
 
 # Get server info from alias-server-info.sh functions
@@ -31,7 +42,9 @@ get_server_info() {
     UBUNTU_CODENAME=$(lsb_release -c | cut -f2)
     
     # CPU Info
-    CPU_INFO=$(lscpu | grep -E "^Model name:" | cut -d":" -f2 | xargs)
+    if ! CPU_INFO=$(lscpu | grep -E "^Model name:" | cut -d":" -f2 | xargs); then
+        debug_print "ERROR: Failed to retrieve CPU model information." "ERROR: Failed to retrieve CPU model information."
+    fi
     CPU_CORES=$(nproc)
     CPU_FREQ=$(lscpu | grep -E "^CPU MHz:" | cut -d":" -f2 | xargs)
     
@@ -166,6 +179,9 @@ debug_print "${NGINX_MODULES}" "${NGINX_MODULES}"
 debug_print "\`\`\`\n" "\`\`\`\n"
 
 debug_print "#### NGINX Configuration Test\n" "#### NGINX Configuration Test\n"
+if ! nginx -t 2>&1; then
+    debug_print "ERROR: NGINX configuration test failed." "ERROR: NGINX configuration test failed."
+fi
 debug_print "\`\`\`" "\`\`\`"
 NGINX_TEST=$(nginx -t 2>&1)
 debug_print "${NGINX_TEST}" "${NGINX_TEST}"
@@ -273,3 +289,9 @@ cat << 'EOF' >> "$DEBUG_FILE"
 ## Actual Behavior
 <!-- What actually happened? -->
 EOF
+
+# Append install error log if it exists
+if [ -f /var/log/EngineScript/install-error-log.txt ]; then
+    echo -e "\n## EngineScript Install Error Log (Full Contents)\n" >> "$DEBUG_FILE"
+    cat /var/log/EngineScript/install-error-log.txt >> "$DEBUG_FILE"
+fi
