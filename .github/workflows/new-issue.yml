@@ -1,3 +1,7 @@
+# This workflow automatically posts a guidance comment on new issues.
+# It instructs users to run the `es.debug` command on their server and share the sanitized output,
+# helping maintainers get the information needed to troubleshoot and resolve issues efficiently.
+
 name: Issue Guidance
 
 on:

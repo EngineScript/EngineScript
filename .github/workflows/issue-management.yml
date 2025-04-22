@@ -1,3 +1,7 @@
+# This workflow automatically triages new and reopened issues and pull requests.
+# It applies labels using the labeler action and marks issues/PRs as stale after 30 days of inactivity,
+# closing them 7 days after being marked stale. This helps keep the issue tracker organized and up to date.
+
 name: Issue Management
 
 on:
@@ -17,4 +21,3 @@ jobs:
         days-before-close: 7
         stale-issue-message: 'This issue is stale due to inactivity'
         stale-pr-message: 'This PR is stale due to inactivity'
-        

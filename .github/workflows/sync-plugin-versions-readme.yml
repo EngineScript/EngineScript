@@ -1,6 +1,9 @@
+# This workflow automatically updates the plugin version numbers in README.md
+# whenever the source files for Simple Site Exporter or Simple WP Optimizer plugins are changed.
+# It extracts the version from the PHP plugin headers and creates a pull request
+# to keep the documentation in sync with the actual plugin versions.
+
 name: Sync Plugin Versions in README
-# This GitHub Action workflow is triggered when there are changes to the plugin files.
-# It extracts the version numbers from the plugin files and updates the README.md file accordingly.
 
 on:
   push:

@@ -1,5 +1,9 @@
+# This workflow automates the process of creating a zip archive of the Simple Site Exporter plugin
+# whenever its source PHP file is updated. It creates a new branch, commits the updated zip file,
+# and opens a pull request with labels for review. This ensures plugin archives are always up to date
+# with the latest source code changes.
+
 name: Plugin Zip and Create PR - Simple Site Exporter
-# This GitHub Actions workflow automates the process of creating a zip archive of the Simple Site Exporter plugin
 
 on:
   push:

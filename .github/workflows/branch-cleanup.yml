@@ -1,3 +1,7 @@
+# This workflow automatically deletes the branch associated with a pull request
+# after it has been merged, unless the branch is protected (e.g., main, dev, staging).
+# It helps keep the repository clean by removing merged feature or bugfix branches.
+
 name: Branch Cleanup
 
 on:
@@ -42,4 +46,3 @@ jobs:
             echo "::error::Failed to delete branch: $branch"
             exit 1
           fi
-          

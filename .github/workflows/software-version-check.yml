@@ -1,3 +1,8 @@
+# This workflow checks for new versions of key software dependencies (MariaDB, NGINX, OpenSSL, PCRE2, Zlib, etc.)
+# and updates the enginescript-variables.txt file if newer versions are found. It creates a pull request with the
+# changes and updates the version table in the README. This ensures EngineScript always tracks the latest stable
+# releases of its core dependencies.
+
 name: Software Version Check
 
 on:
