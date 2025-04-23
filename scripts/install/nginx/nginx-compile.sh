@@ -25,6 +25,15 @@ fi
 # Compile Nginx
 cd /usr/src/nginx-${NGINX_VER}
 
+# Detect best linker: prefer lld, fallback to gold, else use default
+if command -v ld.lld >/dev/null 2>&1; then
+  LD_FLAG="-fuse-ld=lld"
+elif command -v ld.gold >/dev/null 2>&1; then
+  LD_FLAG="-fuse-ld=gold"
+else
+  LD_FLAG=""
+fi
+
 if [ "${INSTALL_HTTP3}" = 1 ];
   then
     # HTTP3
@@ -44,8 +53,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
-      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto" \
+      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
@@ -91,8 +100,8 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -g -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong -fuse-ld=gold -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
-      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto" \
+      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-ld-opt="-Wl,-lpcre -Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -ljemalloc -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
