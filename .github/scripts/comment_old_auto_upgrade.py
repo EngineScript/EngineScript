@@ -52,8 +52,17 @@ for file in FILES:
             last_update_date = None
     with open(file, 'w', encoding='utf-8') as f:
         f.writelines(out_lines)
-# Set output for labeling
-if changes_made:
-    print('::set-output name=auto_upgrade_changed::true')
+# Set output for labeling using environment files (GITHUB_OUTPUT)
+import os
+output_path = os.environ.get('GITHUB_OUTPUT')
+if output_path:
+    with open(output_path, 'a') as f:
+        if changes_made:
+            f.write('auto_upgrade_changed=true\n')
+        else:
+            f.write('auto_upgrade_changed=false\n')
 else:
-    print('::set-output name=auto_upgrade_changed::false')
+    if changes_made:
+        print('auto_upgrade_changed=true')
+    else:
+        print('auto_upgrade_changed=false')
