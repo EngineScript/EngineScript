@@ -453,13 +453,13 @@ gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FI
 #tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads/$UPLOADS_FILE" wp-content/uploads
 
 # Backup uploads, themes, and plugins
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
+tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
 
 # Nginx vhost backup
 gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE"
 
 # SSL keys backup
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" "/etc/nginx/ssl/${SITE_URL}"
+tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" "/etc/nginx/ssl/${SITE_URL}"
 
 # wp-config.php backup
 gzip -cf "/var/www/sites/${SITE_URL}/html/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE"

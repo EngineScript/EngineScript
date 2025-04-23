@@ -29,7 +29,7 @@ WPCONFIG_FILE="${NOW}-wp-config.php.gz";
 WPCONTENT_FILE="${NOW}-wp-content.gz";
 
 # Backup PHP Config
-tar -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" /etc/php
+tar --no-warning=removal -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" /etc/php
 
 # Remove Old PHP Backups
 find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR

@@ -52,7 +52,7 @@ mkdir -p "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${
 wp db export --path="/var/www/sites/${d}/html" "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${DATABASE_FILE}" --add-drop-table --allow-root
 
 # Export files locally
-tar -zcvf "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${FULLWPFILES}" html
+tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${FULLWPFILES}" html
 
 echo -e "\nBackup completed.
 \n\nIf something goes wrong, the backup files can be found in in:

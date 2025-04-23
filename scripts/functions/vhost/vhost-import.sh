@@ -243,7 +243,7 @@ elif [[ "$IMPORT_FORMAT" == "two_file" ]]; then
         unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
         EXTRACT_STATUS=$?
     elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
-        tar xzf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
+        tar -zxf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
         EXTRACT_STATUS=$?
     else
         echo "FAILED: Unrecognized archive format for ${WP_ARCHIVE_FILE}"
@@ -301,7 +301,7 @@ if [[ "${WP_ARCHIVE_FILE}" == *.zip ]]; then
     unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
     EXTRACT_STATUS=$?
 elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
-    tar xzf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
+    tar --no-warning=removal -zxf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
     EXTRACT_STATUS=$?
 else
     echo "FAILED: Unrecognized archive format for ${WP_ARCHIVE_FILE}"
@@ -786,13 +786,13 @@ wp db export "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABA
 gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE"
 
 # Backup uploads, themes, and plugins (wp-content)
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
+tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
 
 # Nginx vhost backup
 gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/${VHOST_FILE}"
 
 # SSL keys backup
-tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/${SSL_FILE}" "/etc/nginx/ssl/${SITE_URL}"
+tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/${SSL_FILE}" "/etc/nginx/ssl/${SITE_URL}"
 
 # wp-config.php backup
 gzip -cf "${TARGET_WP_PATH}/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/${WPCONFIG_FILE}"

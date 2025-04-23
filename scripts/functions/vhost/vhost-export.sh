@@ -115,9 +115,7 @@ echo "Exporting site files for ${SELECTED_SITE}..."
 cd "/var/www/sites/${SELECTED_SITE}/" || exit 1
 
 # Archive the contents of the html directory
-tar czf "${FILES_EXPORT_PATH}" -C html .
-# Alternative: Archive the 'html' directory itself (import script needs adjustment)
-# tar czf "${FILES_EXPORT_PATH}" html
+tar --no-warning=removal -zcf "${FILES_EXPORT_PATH}" -C html .
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to create site files archive for ${SELECTED_SITE}"
