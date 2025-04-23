@@ -37,7 +37,7 @@ The default EngineScript configuration utilizes the simplified stack below. Addi
 
 Run the following command:
 ```shell
-wget https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh && bash setup.sh
+bash <(curl -s https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh)
 ```
 
 ### Step 2 - Edit Options File
