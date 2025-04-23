@@ -29,9 +29,13 @@ create_swap_file() {
     fallocate -l "${swap_size}" /swapfile || {
         echo "Error: Failed to create swap file."
     }
-    mkswap /swapfile || {
-        echo "Error: Failed to set up swap space."
-    }
+    # Suppress mkswap permission warning in debug mode
+    if [ "${DEBUG_INSTALL}" = "1" ]; then
+      mkswap_output=$(mkswap /swapfile 2>&1)
+      echo "$mkswap_output" | grep -v 'insecure permissions 0644, fix with: chmod 0600 /swapfile'
+    else
+      mkswap /swapfile
+    fi
     echo "Setting correct swapfile permissions: chmod 0600"
     chmod 0600 /swapfile || {
         echo "Error: Failed to set swapfile permissions."
