@@ -31,7 +31,7 @@ fi
 
 # Download and extract Nginx
 wget "https://nginx.org/download/nginx-${NGINX_VER}.tar.gz" -O "/usr/src/nginx-${NGINX_VER}.tar.gz" --no-check-certificate || { echo "Error: Failed to download Nginx."; exit 1; }
-tar -xzvf "/usr/src/nginx-${NGINX_VER}.tar.gz" || { echo "Error: Failed to extract Nginx."; exit 1; }
+tar -xzf "/usr/src/nginx-${NGINX_VER}.tar.gz" || { echo "Error: Failed to extract Nginx."; exit 1; }
 
 # Download and extract Headers More module
 wget "https://github.com/openresty/headers-more-nginx-module/archive/v${NGINX_HEADER_VER}.tar.gz" -O "/usr/src/v${NGINX_HEADER_VER}.tar.gz" --no-check-certificate || { echo "Error: Failed to download Headers More module."; exit 1; }

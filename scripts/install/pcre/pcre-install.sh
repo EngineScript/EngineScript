@@ -24,4 +24,5 @@ fi
 
 # PCRE
 cd /usr/src
-wget "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" --no-check-certificate && tar -xzvf "pcre2-${PCRE2_VER}.tar.gz"
+wget "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" --no-check-certificate
+tar -xzf "pcre2-${PCRE2_VER}.tar.gz"

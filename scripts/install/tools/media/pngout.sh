@@ -29,7 +29,7 @@ cd /usr/src
 
 # Retrieve Latest Version
 wget -O "/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz" "https://static.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz" --no-check-certificate
-tar -xf "/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz"
+tar -xzf "/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz"
 
 # Install 32-BIT or 64-BIT
 if [ "${BIT_TYPE}" == 'x86_64' ];

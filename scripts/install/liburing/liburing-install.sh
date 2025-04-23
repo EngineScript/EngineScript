@@ -27,7 +27,7 @@ cd /usr/src
 
 # Official liburing Download
 wget -O "/usr/src/liburing-${LIBURING_VER}.tar.gz" "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" --no-check-certificate
-tar -xzvf "/usr/src/liburing-${LIBURING_VER}.tar.gz"
+tar -xzf "/usr/src/liburing-${LIBURING_VER}.tar.gz"
 cd "/usr/src/liburing-liburing-${LIBURING_VER}"
 
 # Compile liburing

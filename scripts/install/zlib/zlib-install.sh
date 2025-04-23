@@ -58,7 +58,7 @@ make -f Makefile.in distclean
 
 # Official zlib Download
 wget -O "/usr/src/zlib-${ZLIB_VER}.tar.gz" "https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz" --no-check-certificate
-tar -xzvf "/usr/src/zlib-${ZLIB_VER}.tar.gz"
+tar -xzf "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 
 # Return to /usr/src
 cd /usr/src

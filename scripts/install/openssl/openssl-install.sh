@@ -27,7 +27,7 @@ cd /usr/src
 # Updated URL structure for GitHub releases
 wget "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" --no-check-certificate
 #apt remove openssl -y
-tar -xvzf "openssl-${OPENSSL_VER}.tar.gz"
+tar -xzf "openssl-${OPENSSL_VER}.tar.gz"
 
 # Compile OpenSSL
 #cd openssl-${OPENSSL_VER}
