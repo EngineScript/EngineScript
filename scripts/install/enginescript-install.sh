@@ -43,8 +43,10 @@ source /home/EngineScript/enginescript-install-options.txt
 # Prompts the user to continue if DEBUG_INSTALL is set and not 0/empty
 function debug_pause() {
   if [ "${DEBUG_INSTALL}" = "1" ]; then
+    local last_step=${1:-"Unknown step"}
     while true; do
-      echo -e "\n[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
+      echo -e "\n[DEBUG] Completed step: ${last_step}"
+      echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
       echo -e "If you encountered errors above, you can copy the error text for a GitHub bug report."
       echo -e "For more server details, run: es.debug"
       read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
@@ -68,9 +70,10 @@ function print_last_errors() {
   fi
   # Only show errors to user if debug mode is enabled
   if [ "${DEBUG_INSTALL}" = "1" ] && [ -s /tmp/enginescript_install_errors.log ]; then
-    echo -e "\n${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
+    echo -e "\n\n==============================================================="
+    echo -e "${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
     cat /tmp/enginescript_install_errors.log
-    echo -e "${BOLD}[END OF ERRORS]${NORMAL}\n"
+    echo -e "${BOLD}[END OF ERRORS]${NORMAL}\n\n"
     echo -e "If you encounter errors and want to submit a GitHub issue, please run: es.debug"
   fi
   # Always clear the temp log for the next step
@@ -279,7 +282,7 @@ if [ "${REPOS}" = 1 ];
     echo "REPOS=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Install Repositories"
 
 # Remove Preinstalled Software
 if [ "${REMOVES}" = 1 ];
@@ -290,7 +293,7 @@ if [ "${REMOVES}" = 1 ];
     echo "REMOVES=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Remove Preinstalled Software"
 
 # Block Unwanted Packages
 if [ "${BLOCK}" = 1 ];
@@ -301,7 +304,7 @@ if [ "${BLOCK}" = 1 ];
     echo "BLOCK=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Block Unwanted Packages"
 
 # Enabled Ubuntu Pro Apt Updates
 if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
@@ -309,12 +312,12 @@ if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
     pro attach "${UBUNTU_PRO_TOKEN}" 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "Enable Ubuntu Pro Apt Updates"
 
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
-debug_pause
+debug_pause "Update & Upgrade"
 
 # Install Dependencies
 if [ "${DEPENDS}" = 1 ];
@@ -324,7 +327,7 @@ if [ "${DEPENDS}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "Install Dependencies"
 
 # ACME.sh
 if [ "${ACME}" = 1 ];
@@ -335,7 +338,7 @@ if [ "${ACME}" = 1 ];
     echo "ACME=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "ACME.sh"
 
 # GCC
 if [ "${GCC}" = 1 ];
@@ -346,7 +349,7 @@ if [ "${GCC}" = 1 ];
     echo "GCC=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "GCC"
 
 # OpenSSL
 if [ "${OPENSSL}" = 1 ];
@@ -357,7 +360,7 @@ if [ "${OPENSSL}" = 1 ];
     echo "OPENSSL=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "OpenSSL"
 
 # Swap
 if [ "${SWAP}" = 1 ];
@@ -368,7 +371,7 @@ if [ "${SWAP}" = 1 ];
     echo "SWAP=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Swap"
 
 # Kernel Tweaks
 if [ "${KERNEL_TWEAKS}" = 1 ];
@@ -379,7 +382,7 @@ if [ "${KERNEL_TWEAKS}" = 1 ];
     echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Kernel Tweaks"
 
 # Kernel Samepage Merging
 if [ "${KSM}" = 1 ];
@@ -390,7 +393,7 @@ if [ "${KSM}" = 1 ];
     echo "KSM=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Kernel Samepage Merging"
 
 # Raising System File Limits
 if [ "${SFL}" = 1 ];
@@ -401,7 +404,7 @@ if [ "${SFL}" = 1 ];
     echo "SFL=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Raising System File Limits"
 
 # NTP
 if [ "${NTP}" = 1 ];
@@ -412,7 +415,7 @@ if [ "${NTP}" = 1 ];
     echo "NTP=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "NTP"
 
 # PCRE
 if [ "${PCRE}" = 1 ];
@@ -423,7 +426,7 @@ if [ "${PCRE}" = 1 ];
     echo "PCRE=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "PCRE"
 
 # zlib
 if [ "${ZLIB}" = 1 ];
@@ -434,7 +437,7 @@ if [ "${ZLIB}" = 1 ];
     echo "ZLIB=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "zlib"
 
 # liburing
 if [ "${LIBURING}" = 1 ];
@@ -445,7 +448,7 @@ if [ "${LIBURING}" = 1 ];
     echo "LIBURING=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "liburing"
 
 # UFW
 if [ "${UFW}" = 1 ];
@@ -456,7 +459,7 @@ if [ "${UFW}" = 1 ];
     echo "UFW=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "UFW"
 
 # Cron
 if [ "${CRON}" = 1 ];
@@ -467,7 +470,7 @@ if [ "${CRON}" = 1 ];
     echo "CRON=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Cron"
 
 # MariaDB
 if [ "${MARIADB}" = 1 ];
@@ -477,7 +480,7 @@ if [ "${MARIADB}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "MariaDB"
 
 # PHP
 if [ "${PHP}" = 1 ];
@@ -487,7 +490,7 @@ if [ "${PHP}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/php/php-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "PHP"
 
 # Redis
 if [ "${REDIS}" = 1 ];
@@ -497,7 +500,7 @@ if [ "${REDIS}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "Redis"
 
 # Nginx
 if [ "${NGINX}" = 1 ];
@@ -507,7 +510,7 @@ if [ "${NGINX}" = 1 ];
     /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh 2>> /tmp/enginescript_install_errors.log
 fi
 print_last_errors
-debug_pause
+debug_pause "Nginx"
 
 # Tools
 if [ "${TOOLS}" = 1 ];
@@ -518,7 +521,7 @@ if [ "${TOOLS}" = 1 ];
     echo "TOOLS=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause
+debug_pause "Tools"
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
