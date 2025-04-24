@@ -87,3 +87,9 @@ rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 strip -s /usr/sbin/nginx*
 
 service nginx start
+
+echo -e "\n\n=-=-=-=-=-=-=-=-=-\nNginx Info\n=-=-=-=-=-=-=-=-=-\n"
+nginx -Vv
+echo ""
+echo "Nginx Executable Properties:"
+checksec --format=json --file=/usr/sbin/nginx --extended | jq -r

@@ -70,7 +70,7 @@ function print_last_errors() {
   fi
   # Only show errors to user if debug mode is enabled
   if [ "${DEBUG_INSTALL}" = "1" ] && [ -s /tmp/enginescript_install_errors.log ]; then
-    echo -e "\n\n==============================================================="
+    echo -e "\n\n===============================================================\n"
     echo -e "${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
     cat /tmp/enginescript_install_errors.log
     echo -e "${BOLD}[END OF ERRORS]${NORMAL}\n\n"
@@ -329,6 +329,17 @@ fi
 print_last_errors
 debug_pause "Install Dependencies"
 
+# Cron
+if [ "${CRON}" = 1 ];
+  then
+    echo "CRON script has already run."
+  else
+    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh 2>> /tmp/enginescript_install_errors.log
+    echo "CRON=1" >> /var/log/EngineScript/install-log.txt
+fi
+print_last_errors
+debug_pause "Cron"
+
 # ACME.sh
 if [ "${ACME}" = 1 ];
   then
@@ -460,17 +471,6 @@ if [ "${UFW}" = 1 ];
 fi
 print_last_errors
 debug_pause "UFW"
-
-# Cron
-if [ "${CRON}" = 1 ];
-  then
-    echo "CRON script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "CRON=1" >> /var/log/EngineScript/install-log.txt
-fi
-print_last_errors
-debug_pause "Cron"
 
 # MariaDB
 if [ "${MARIADB}" = 1 ];

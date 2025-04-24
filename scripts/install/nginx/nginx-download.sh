@@ -40,7 +40,3 @@ tar -xzf "/usr/src/v${NGINX_HEADER_VER}.tar.gz" || { echo "Error: Failed to extr
 # Download and extract Cache Purge module
 wget "https://github.com/nginx-modules/ngx_cache_purge/archive/${NGINX_PURGE_VER}.tar.gz" -O "/usr/src/${NGINX_PURGE_VER}.tar.gz" --no-check-certificate || { echo "Error: Failed to download Cache Purge module."; exit 1; }
 tar -xzf "/usr/src/${NGINX_PURGE_VER}.tar.gz" || { echo "Error: Failed to extract Cache Purge module."; exit 1; }
-
-# Download and extract OpenSSL
-wget "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" -O "/usr/src/openssl-${OPENSSL_VER}.tar.gz" --no-check-certificate || { echo "Error: Failed to download OpenSSL."; exit 1; }
-tar -xzf "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to extract OpenSSL."; exit 1; }
