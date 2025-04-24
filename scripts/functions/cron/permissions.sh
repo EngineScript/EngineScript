@@ -72,6 +72,10 @@ chown -R www-data:www-data /var/log/opcache
 chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
+# Ensure correct socket ownership and permissions
+chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
+chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
+
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*
 

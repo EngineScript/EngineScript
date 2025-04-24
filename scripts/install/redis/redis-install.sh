@@ -68,10 +68,20 @@ sed -i "s|ReadWritePaths=-/var/run|ReadWritePaths=-/run|g" /lib/systemd/system/r
 chown -R redis:redis /etc/redis/redis.conf
 chmod 775 /etc/redis/redis.conf
 
+# Add www-data to Redis Group
+if ! getent group redis > /dev/null; then
+  groupadd redis
+fi
+usermod -aG redis www-data
+
 # Finalize Redis Install
 systemctl daemon-reload
 service redis-server restart
-sudo systemctl enable redis-server
+systemctl enable redis-server
+
+# Ensure correct socket ownership and permissions
+chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
+chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
