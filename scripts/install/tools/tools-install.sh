@@ -30,10 +30,14 @@ fi
 cd /usr/src
 
 # pngout
-/usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh
+/usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "pngout"
 
 # zImageOptimizer
-/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
+/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "zImageOptimizer"
 
 #------------------------------------------------
 # MySQL Tools
@@ -43,19 +47,25 @@ cd /usr/src
 if [ "${INSTALL_ADMINER}" = 1 ];
   then
     echo "Installing Adminer"
-    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+    debug_pause "Adminer"
   else
     echo "Skipping Adminer install"
 fi
 
 # MYSQLTuner
-/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
+/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MYSQLTuner"
 
 # phpMyAdmin
 if [ "${INSTALL_PHPMYADMIN}" = 1 ];
   then
     echo "Installing phpMyAdmin"
-    /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+    debug_pause "phpMyAdmin"
   else
     echo "Skipping phpMyAdmin install"
 fi
@@ -82,30 +92,42 @@ fi
 #/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
 
 # PHP Malware Finder
-/usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
+/usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "PHP Malware Finder"
 
 # Wordfence CLI Malware Scanner
-/usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh
+/usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Wordfence CLI"
 
 # WPScan
-/usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh
+/usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "WPScan"
 
 #------------------------------------------------
 # System Tools
 #------------------------------------------------
 
 # Admin Control Panel
-/usr/local/bin/enginescript/scripts/install/tools/system/admin-control-panel.sh
+/usr/local/bin/enginescript/scripts/install/tools/system/admin-control-panel.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Admin Control Panel"
 
 # Testssl.sh
-/usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
+/usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Testssl.sh"
 
 #------------------------------------------------
 # WordPress Tools
 #------------------------------------------------
 
 # WP-CLI
-/usr/local/bin/enginescript/scripts/install/tools/wordpress/wp-cli.sh
+/usr/local/bin/enginescript/scripts/install/tools/wordpress/wp-cli.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "WP-CLI"
 
 #------------------------------------------------
 # Cloud Backups
@@ -120,7 +142,9 @@ if [ "${INSTALL_S3_BACKUP}" = 1 ];
     echo "Installing Amazon CLI"
     echo "Please follow the instructions in the script that is about to run."
     sleep 5
-    /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
+    /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+    debug_pause "Amazon AWS CLI"
   else
     echo "Skipping Amazon CLI install"
 fi
