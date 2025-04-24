@@ -56,13 +56,13 @@ do
     #tar -zcf "/home/EngineScript/site-backups/${i}/wp-uploads/${UPLOADS_FILE}" wp-content/uploads
 
     # Backup uploads, themes, and plugins
-    tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${i}/wp-content/${WPCONTENT_FILE}" wp-content
+    tar -zcf "/home/EngineScript/site-backups/${i}/wp-content/${WPCONTENT_FILE}" wp-content
 
     # Nginx vhost backup
     gzip -cf "/etc/nginx/sites-enabled/${i}.conf" > "/home/EngineScript/site-backups/${i}/nginx/${VHOST_FILE}"
 
     # SSL keys backup
-    tar --no-warning=removal -zcf "/home/EngineScript/site-backups/${i}/ssl-keys/${SSL_FILE}" "/etc/nginx/ssl/${i}"
+    tar -zcf "/home/EngineScript/site-backups/${i}/ssl-keys/${SSL_FILE}" "/etc/nginx/ssl/${i}"
 
     # wp-config.php backup
     gzip -cf "/var/www/sites/${i}/html/wp-config.php" > "/home/EngineScript/site-backups/${i}/wp-config/${WPCONFIG_FILE}"

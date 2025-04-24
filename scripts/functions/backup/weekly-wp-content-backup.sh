@@ -41,7 +41,7 @@ do
 
     # Local WP-Content Backup
     mkdir -p "/home/EngineScript/site-backups/$i/wp-content/weekly/${NOW}"
-    tar --no-warning=removal -zcf "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" wp-content
+    tar -zcf "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" wp-content
 
     # Amazon S3 WP-Content Backup
     if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ] && [ "$WEEKLY_S3_WPCONTENT_BACKUP" = 1 ];
