@@ -421,47 +421,383 @@ while true; do
 done
 # --- End Confirmation and Correction Step ---
 
-# Initial Cloudflare SSL Steps (Keep this as SSL is still needed for the extracted domain)
-echo -e "\n\n"
-echo "Your domain (${DOMAIN}) must be added to Cloudflare and fully configured before continuing."
-echo "This includes setting up DNS records and enabling SSL in Cloudflare."
-echo "Visit: https://github.com/EngineScript/EngineScript/tree/master?tab=readme-ov-file#cloudflare"
-echo -e "\n\n"
 
-MAX_RETRIES=5
-RETRY_COUNT=0
+# ================= Cloudflare API Settings =================
+# Set Cloudflare settings for the domain using the Cloudflare API
+
+echo ""
+echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+echo "${BOLD}IMPORTANT: Cloudflare Configuration${NORMAL}"
+echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+echo ""
+echo "This script will make the following changes to your Cloudflare account:"
+echo ""
+echo "1. Add or update the A record for ${DOMAIN} to point to this server's IP"
+echo "2. Add or update the CNAME record for admin.${DOMAIN} and www.${DOMAIN} to point to ${DOMAIN}"
+echo "3. Configure optimal performance settings in Cloudflare"
+echo "   - SSL/TLS settings"
+echo "   - Speed optimizations"
+echo "   - Caching configurations"
+echo "   - Network settings"
+echo ""
+echo "These changes are recommended for optimal EngineScript performance."
+echo ""
 
 while true; do
-  echo "Have you completed the Cloudflare setup for domain ${DOMAIN}?"
-  echo "Options:"
-  echo "  [y] Yes, I have completed the setup."
-  echo "  [n] No, I need more time."
-  echo "  [e] Exit the script."
-  read -p "Enter your choice (y/n/e): " choice
-
-  case $choice in
+  read -p "Would you like to proceed with Cloudflare configuration? (y/exit): " CF_CHOICE
+  case $CF_CHOICE in
     [Yy]* )
-      echo "Great! Let's continue with the import."
-      sleep 1
+      echo ""
+      echo "Proceeding with Cloudflare configuration..."
+      echo ""
       break
       ;;
-    [Nn]* )
-      echo "Please complete the Cloudflare setup before proceeding."
-      RETRY_COUNT=$((RETRY_COUNT + 1))
-      if [ "${RETRY_COUNT}" -ge "${MAX_RETRIES}" ]; then
-        echo "Maximum retries reached. Exiting."
-        exit 1
-      fi
-      ;;
-    [Ee]* )
-      echo "Exiting the script. You can rerun it later when ready."
+    exit|EXIT )
+      echo ""
+      echo "Exiting installation process."
       exit 0
       ;;
     * )
-      echo "Invalid input. Please enter 'y', 'n', or 'e'."
+      echo "Please answer 'y' to continue or 'exit' to quit."
       ;;
   esac
 done
+
+# Only continue with Cloudflare configuration if the user chose to proceed
+if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
+  # Cloudflare Keys
+  export CF_Key="${CF_GLOBAL_API_KEY}"
+  export CF_Email="${CF_ACCOUNT_EMAIL}"
+
+  get_cf_zone_id() {
+    local CF_DOMAIN="$1"
+    curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${CF_DOMAIN}&status=active" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" | \
+      grep -o '"id":"[a-zA-Z0-9]*"' | head -n1 | cut -d'"' -f4
+  }
+
+  ZONE_ID=$(get_cf_zone_id "$DOMAIN")
+
+  # Check if domain exists in Cloudflare
+  if [ -z "$ZONE_ID" ]; then
+    echo ""
+    echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+    echo "${BOLD}ERROR: Domain not found in Cloudflare${NORMAL}"
+    echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+    echo ""
+    echo "The domain '$DOMAIN' was not found in your Cloudflare account."
+    echo "Please add the domain to Cloudflare first, and ensure that:"
+    echo ""
+    echo "1. DNS records have propagated"
+    echo "2. The domain is active in your Cloudflare account"
+    echo "3. The API key and email are correct"
+    echo ""
+    echo "Exiting installation process."
+    echo ""
+    exit 1
+  else
+    echo "Cloudflare Zone ID for $DOMAIN: $ZONE_ID"
+
+    ## DNS Settings
+    
+    # Get server's current public IP address
+    SERVER_IP=$(curl -s https://ipinfo.io/ip)
+    
+    # Check if A record exists and matches server IP
+    A_RECORD_INFO=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=A&name=${DOMAIN}" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json")
+    
+    A_RECORD_ID=$(echo "$A_RECORD_INFO" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+    A_RECORD_CONTENT=$(echo "$A_RECORD_INFO" | grep -o '"content":"[^"]*' | head -1 | cut -d'"' -f4)
+    
+    if [ -z "$A_RECORD_ID" ]; then
+      # A record doesn't exist, create it
+      echo "Adding A record for ${DOMAIN} pointing to ${SERVER_IP}..."
+      curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"type\": \"A\",
+          \"name\": \"${DOMAIN}\",
+          \"content\": \"${SERVER_IP}\",
+          \"ttl\": 1,
+          \"proxied\": true
+        }"
+    elif [ "$A_RECORD_CONTENT" != "$SERVER_IP" ]; then
+      # A record exists but IP doesn't match, update it
+      echo "Updating A record for ${DOMAIN} from ${A_RECORD_CONTENT} to ${SERVER_IP}..."
+      curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${A_RECORD_ID}" \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"type\": \"A\",
+          \"name\": \"${DOMAIN}\",
+          \"content\": \"${SERVER_IP}\",
+          \"ttl\": 1,
+          \"proxied\": true
+        }"
+    else
+      echo "A record for ${DOMAIN} already points to ${SERVER_IP}. No update needed."
+    fi
+    
+    # Check if admin subdomain already exists
+    ADMIN_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=admin.${DOMAIN}" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+
+    if [ -z "$ADMIN_RECORD_ID" ]; then
+      # Admin subdomain does not exist, create it
+      echo "Adding admin subdomain to Cloudflare..."
+      curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records \
+        -H 'Content-Type: application/json' \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -d "{
+          \"comment\": \"Admin Control Panel\",
+          \"content\": \"${DOMAIN}\",
+          \"name\": \"admin\",
+          \"proxied\": true,
+          \"ttl\": 1,
+          \"type\": \"CNAME\"
+        }"
+    else
+      # Admin subdomain exists, update it
+      echo "Updating existing admin subdomain in Cloudflare..."
+      curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${ADMIN_RECORD_ID}" \
+        -H 'Content-Type: application/json' \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -d "{
+          \"comment\": \"Admin Control Panel\",
+          \"content\": \"${DOMAIN}\",
+          \"name\": \"admin\",
+          \"proxied\": true,
+          \"ttl\": 1,
+          \"type\": \"CNAME\"
+        }"
+    fi
+    
+    # Check if www subdomain already exists
+    WWW_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=www.${DOMAIN}" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+
+    if [ -z "$WWW_RECORD_ID" ]; then
+      # www subdomain does not exist, create it
+      echo "Adding www subdomain to Cloudflare..."
+      curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records \
+        -H 'Content-Type: application/json' \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -d "{
+          \"comment\": \"WWW Redirect\",
+          \"content\": \"${DOMAIN}\",
+          \"name\": \"www\",
+          \"proxied\": true,
+          \"ttl\": 1,
+          \"type\": \"CNAME\"
+        }"
+    else
+      # www subdomain exists, update it
+      echo "Updating existing www subdomain in Cloudflare..."
+      curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${WWW_RECORD_ID}" \
+        -H 'Content-Type: application/json' \
+        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -d "{
+          \"comment\": \"WWW Redirect\",
+          \"content\": \"${DOMAIN}\",
+          \"name\": \"www\",
+          \"proxied\": true,
+          \"ttl\": 1,
+          \"type\": \"CNAME\"
+        }"
+    fi
+
+    ## SSL/TLS Settings
+
+    # Edge Certificates Section: Always Use HTTPS
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/always_use_https" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"off"}'
+
+    # Edge Certificates Section: Minimum TLS Version
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/min_tls_version" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"1.2"}'
+
+    # Edge Certificates Section: Opportunistic Encryption
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/opportunistic_encryption" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Edge Certificates Section: TLS 1.3
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/tls_1_3" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Edge Certificates Section: Automatic HTTPS Rewrites
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/automatic_https_rewrites" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Origin Server Section: Authenticated Origin Pulls (per zone)
+    curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/origin_tls_client_auth/settings" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"enabled": true}'
+      
+    # Origin Server Section: Authenticated Origin Pulls
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/tls_client_auth" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+
+    ## Speed Settings
+
+    # Speed Tab: Speed Brain
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/speed_brain" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Speed Tab: Early Hints
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/early_hints" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Speed Tab: HTTP/3 (with QUIC)
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/http3" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Speed Tab: Enhanced HTTP/2 Prioritization
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/h2_prioritization" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Speed Tab: 0-RTT Connection Resumption
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/0rtt" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+
+    ## Caching Settings
+
+    # Caching Tab: Caching Level
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/cache_level" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"aggressive"}'
+
+    # Caching Tab: Browser Cache TTL (Respect Existing Headers)
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/browser_cache_ttl" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":0}'
+
+    # Caching Tab: Always Online
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/always_online" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Tiered Cache Section: Tiered Cache Topology
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/argo/tiered_caching" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Tiered Cache Section: Tiered Cache Topology (Smart Tiered Caching)
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/cache/tiered_cache_smart_topology_enable" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+
+    ## Network Settings
+
+    # Network Tab: IPv6 Compatibility
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/ipv6" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Network Tab: WebSockets
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/websockets" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Network Tab: Pseudo IPv4
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/pseudo_ipv4" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"add_header"}'
+
+    # Network Tab: IP Geolocation
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/ip_geolocation" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+
+    # Network Tab: Network Error Logging
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/nel" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value": {"enabled": true} }'
+
+    # Network Tab: Onion Routing
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/opportunistic_onion" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"on"}'
+  fi
+fi
+
+# ================= Cloudflare API Settings =================
+
 
 # Verify if the extracted domain is already configured
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
@@ -524,14 +860,11 @@ fi
 # Create Origin Certificate
 mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
-# Cloudflare Keys
-export CF_Key="${CF_GLOBAL_API_KEY}"
-export CF_Email="${CF_ACCOUNT_EMAIL}"
-
 # Issue Certificate (Same as vhost-install)
 echo "Issuing SSL Certificate via ACME.sh (ZeroSSL)..."
 /root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ec-384
 
+# Install Certificate (Same as vhost-install)
 /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
 --cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
 --key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
