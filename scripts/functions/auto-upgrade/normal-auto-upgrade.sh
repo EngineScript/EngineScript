@@ -27,3 +27,5 @@ source /home/EngineScript/enginescript-install-options.txt
 
 # Start Normal Automatic Upgrade
 
+systemctl daemon-reload
+/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
