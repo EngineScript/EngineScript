@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.2
+Version: 1.5.3
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.5.2');
+    define('ES_SITE_EXPORTER_VERSION', '1.5.3');
 }
 
 // --- Admin Menu ---
@@ -496,6 +496,7 @@ function sse_validate_download_request($filename) {
     
     return array(
         'filepath' => $file_path,
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename
         'filename' => basename($file_path),
         'filesize' => $file_size
     );
@@ -586,6 +587,9 @@ function sse_stream_file($file_path) {
     // Try different methods to send the file, starting with the most efficient
     
     // Method 1: Direct readfile (most efficient for most servers)
+    // WordPress discourages direct file operations but doesn't provide a native API for efficient 
+    // streaming of large files. Using readfile() here is necessary for performance reasons 
+    // when handling potentially large export files, with fallback options if it fails.
     // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_readfile
     if (@readfile($file_path) !== false) {
         return true;
@@ -593,7 +597,9 @@ function sse_stream_file($file_path) {
     
     // Method 2: File chunks with WordPress filesystem
     if ($wp_filesystem->exists($file_path) && $wp_filesystem->is_readable($file_path)) {
-        // WP_Filesystem doesn't support streaming, so we need direct file access
+        // WP_Filesystem doesn't support efficient streaming for large files, so we need direct file access
+        // for chunked downloads. This approach is only used if readfile() fails and is necessary for
+        // properly handling large exports in memory-constrained environments.
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_fopen
         $handle = fopen($file_path, 'rb');
         if ($handle !== false) {
@@ -649,7 +655,7 @@ function sse_secure_download_handler() {
     
     // Handle validation errors
     if (is_wp_error($file_info)) {
-        wp_die($file_info->get_error_message(), 400);
+        wp_die(esc_html($file_info->get_error_message()), 400);
     }
     
     // Log the download for auditing purposes
@@ -718,6 +724,7 @@ function sse_validate_file_deletion($filename) {
     
     return array(
         'filepath' => $file_path,
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_basename
         'filename' => basename($file_path)
     );
 }
@@ -735,8 +742,8 @@ function sse_clear_scheduled_deletions($file_path) {
     if (!empty($crons)) {
         foreach ($crons as $timestamp => $cron) {
             if (isset($cron['sse_delete_export_file'])) {
-                foreach ($cron['sse_delete_export_file'] as $key => $event) {
-                    // Using $key instead of $hash to avoid Codacy unused variable warning
+                // Use foreach without creating an unused key variable
+                foreach ($cron['sse_delete_export_file'] as $event) {
                     if (isset($event['args'][0]) && $event['args'][0] === $file_path) {
                         // Found a scheduled cron task for this file, remove it
                         wp_unschedule_event($timestamp, 'sse_delete_export_file', array($file_path));
@@ -789,7 +796,7 @@ function sse_manual_delete_handler() {
     
     // Handle validation errors
     if (is_wp_error($file_info)) {
-        wp_die($file_info->get_error_message(), 400);
+        wp_die(esc_html($file_info->get_error_message()), 400);
     }
     
     // Clear any scheduled cron events for this file
