@@ -280,7 +280,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
     if [ -z "$ADMIN_RECORD_ID" ]; then
       # Admin subdomain does not exist, create it
       echo "Adding admin subdomain to Cloudflare..."
-      curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records \
+      curl -s https://api.cloudflare.com/client/v4/zones/"${ZONE_ID}"/dns_records \
         -H 'Content-Type: application/json' \
         -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
         -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
