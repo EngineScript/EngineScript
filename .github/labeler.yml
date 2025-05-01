@@ -1,0 +1,72 @@
+# Configuration for GitHub Actions Labeler
+# Labels PRs based on changed file paths
+
+# Core system changes
+core:
+  - changed-files:
+    - any-glob-to-any-file: scripts/install/**/*
+    - any-glob-to-any-file: scripts/functions/**/*
+    - any-glob-to-any-file: scripts/menu/**/*
+    - any-glob-to-any-file: setup.sh
+    - any-glob-to-any-file: enginescript-variables.txt
+    
+# Configuration changes
+configuration:
+  - changed-files:
+    - any-glob-to-any-file: config/**/*
+
+# Workflows and automation
+automation:
+  - changed-files:
+    - any-glob-to-any-file: .github/**/*
+
+# Security related changes
+security:
+  - changed-files:
+    - any-glob-to-any-file: scripts/functions/security/**/*
+    - any-glob-to-any-file: SECURITY.md
+
+# Documentation
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: README.md
+    - any-glob-to-any-file: '*.md'
+
+# Backup related changes
+backup:
+  - changed-files:
+    - any-glob-to-any-file: scripts/functions/backup/**/*
+
+# Database related changes
+database:
+  - changed-files:
+    - any-glob-to-any-file: config/etc/mysql/**/*
+    - any-glob-to-any-file: scripts/functions/backup/*database*
+    - any-glob-to-any-file: scripts/update/mariadb-update.sh
+
+# Nginx related changes
+nginx:
+  - changed-files:
+    - any-glob-to-any-file: config/etc/nginx/**/*
+    - any-glob-to-any-file: scripts/install/nginx/**/*
+    - any-glob-to-any-file: scripts/update/nginx-update.sh
+    - any-glob-to-any-file: patches/nginx/**/*
+
+# PHP related changes
+php:
+  - changed-files:
+    - any-glob-to-any-file: config/etc/php/**/*
+    - any-glob-to-any-file: scripts/install/php/**/*
+    - any-glob-to-any-file: scripts/update/php-*-update.sh
+    - any-glob-to-any-file: scripts/functions/php-clean.sh
+
+# WordPress plugins
+wordpress-plugins:
+  - changed-files:
+    - any-glob-to-any-file: config/var/www/wordpress/plugins/**/*
+    - any-glob-to-any-file: scripts/update/wp-cli-update.sh
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file: .github/dependabot.yml
