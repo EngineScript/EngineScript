@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.3
+Version: 1.5.4
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version
 if (!defined('ES_SITE_EXPORTER_VERSION')) {
-    define('ES_SITE_EXPORTER_VERSION', '1.5.3');
+    define('ES_SITE_EXPORTER_VERSION', '1.5.4');
 }
 
 // --- Admin Menu ---
@@ -144,6 +144,8 @@ function sse_handle_export() {
         // Use WordPress Filesystem API instead of direct file operations
         global $wp_filesystem;
         if ( ! $wp_filesystem ) {
+            // Standard WordPress pattern for including core files
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_require_once
             require_once ABSPATH . 'wp-admin/includes/file.php';
             WP_Filesystem();
         }
@@ -168,7 +170,7 @@ function sse_handle_export() {
     $zip_filename = "site_export_sse_{$random_str}_{$site_name}_{$timestamp}.zip";
     $db_filepath = $export_dir . '/' . $db_filename;
     $zip_filepath = $export_dir . '/' . $zip_filename;
-    $zip_fileurl = $export_url . '/' . $zip_filename;
+    // Removed unused variable $zip_fileurl
 
     // --- 1. Database Export (WP-CLI recommended) ---
     $db_exported = false;
@@ -178,6 +180,8 @@ function sse_handle_export() {
         $wp_cli_path = trim(shell_exec('which wp'));
         
         // Validate the wp-cli path before using it
+        // Using file_exists() for validating WP-CLI path is a security measure before executing shell commands
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_file_exists
         if (!empty($wp_cli_path) && file_exists($wp_cli_path) && (strpos($wp_cli_path, '/') === 0 || strpos($wp_cli_path, '\\') === 0)) {
             // Note: escapeshellarg is used to sanitize arguments passed to shell_exec.
             $command = sprintf(
@@ -372,9 +376,17 @@ function sse_handle_export() {
             <div class="notice notice-success is-dismissible">
                 <p>
                     <?php esc_html_e( 'Site export successfully created!', 'simple-site-exporter-enginescript' ); ?>
+                    <?php 
+                    // Echo with esc_url() is the WordPress standard approach and is secure
+                    // phpcs:ignore WordPress.Security.EchoNotEscaped.OutputNotEscaped
+                    ?>
                     <a href="<?php echo esc_url( $download_url ); ?>" class="button" style="margin-left: 10px;">
                         <?php esc_html_e( 'Download Export File', 'simple-site-exporter-enginescript' ); ?>
                     </a>
+                    <?php 
+                    // Echo with esc_url() is the WordPress standard approach and is secure
+                    // phpcs:ignore WordPress.Security.EchoNotEscaped.OutputNotEscaped
+                    ?>
                     <a href="<?php echo esc_url( $delete_url ); ?>" class="button button-secondary" style="margin-left: 10px;" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this export file?', 'simple-site-exporter-enginescript' ); ?>');">
                         <?php esc_html_e( 'Delete Export File', 'simple-site-exporter-enginescript' ); ?>
                     </a>
@@ -606,7 +618,9 @@ function sse_stream_file($file_path) {
             $chunk_size = 1024 * 1024; // 1MB chunks
             // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_feof
             while (!feof($handle)) {
-                // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.filesystem_fread
+                // No escaping needed here as we're outputting binary file content for download
+                // with appropriate Content-Type and Content-Disposition headers already set
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.PHP.DiscouragedPHPFunctions.filesystem_fread
                 echo fread($handle, $chunk_size);
                 flush();
                 if (connection_status() != 0) {
@@ -676,6 +690,7 @@ function sse_secure_download_handler() {
     }
     
     // Terminate immediately after sending file (necessary for proper download)
+    // Using exit is necessary after sending a file to prevent any additional output that could corrupt the downloaded file
     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     exit;
 }
@@ -760,6 +775,15 @@ function sse_clear_scheduled_deletions($file_path) {
 
 /**
  * Handle manual export file deletion requests
+ * 
+ * This function follows a specific security flow:
+ * 1. Verify context and inputs
+ * 2. Validate security tokens
+ * 3. Validate permissions and files
+ * 4. Perform the deletion operation
+ * 5. Log and redirect
+ * 
+ * @since 1.5.3
  */
 function sse_manual_delete_handler() {
     // Only run on admin pages
@@ -767,8 +791,35 @@ function sse_manual_delete_handler() {
         return;
     }
     
+    // Get and validate input parameters
+    $request = sse_validate_delete_request();
+    if (!$request['valid']) {
+        return;
+    }
+    
+    // Validate the file
+    $file_info = sse_validate_file_deletion(sanitize_file_name($request['filename']));
+    
+    // Handle validation errors
+    if (is_wp_error($file_info)) {
+        wp_die(esc_html($file_info->get_error_message()), 400);
+    }
+    
+    // Process the file deletion
+    $result = sse_process_file_deletion($file_info);
+    
+    // Redirect with appropriate status
+    sse_redirect_after_deletion($result);
+}
+
+/**
+ * Validate delete request parameters
+ * 
+ * @since 1.5.4
+ * @return array Request validation results
+ */
+function sse_validate_delete_request() {
     // Use filter_input for better security when accessing superglobals
-    // Make sure to use wp_unslash on filtered input
     $sse_delete_export = filter_input(INPUT_GET, 'sse_delete_export', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $sse_delete_export = $sse_delete_export ? wp_unslash($sse_delete_export) : '';
     
@@ -777,7 +828,7 @@ function sse_manual_delete_handler() {
     
     // Check for our delete action
     if (empty($sse_delete_export)) {
-        return;
+        return ['valid' => false];
     }
     
     // Verify nonce for security
@@ -791,14 +842,20 @@ function sse_manual_delete_handler() {
         wp_die(esc_html__('You do not have permission to delete export files.', 'simple-site-exporter-enginescript'), 403);
     }
     
-    // Validate file - properly sanitized after wp_unslash
-    $file_info = sse_validate_file_deletion(sanitize_file_name($sse_delete_export));
-    
-    // Handle validation errors
-    if (is_wp_error($file_info)) {
-        wp_die(esc_html($file_info->get_error_message()), 400);
-    }
-    
+    return [
+        'valid' => true,
+        'filename' => $sse_delete_export
+    ];
+}
+
+/**
+ * Process file deletion
+ * 
+ * @since 1.5.4
+ * @param array $file_info File information
+ * @return array Operation result
+ */
+function sse_process_file_deletion($file_info) {
     // Clear any scheduled cron events for this file
     $cron_cleared = sse_clear_scheduled_deletions($file_info['filepath']);
     
@@ -812,11 +869,24 @@ function sse_manual_delete_handler() {
                   ($cron_cleared ? ' (scheduled task removed)' : ''));
     }
     
+    return [
+        'deleted' => $deleted,
+        'cron_cleared' => $cron_cleared
+    ];
+}
+
+/**
+ * Redirect after file deletion
+ * 
+ * @since 1.5.4
+ * @param array $result Deletion operation result
+ */
+function sse_redirect_after_deletion($result) {
     // Redirect back to the exporter page with a message and nonce for CSRF protection
     $redirect_url = add_query_arg(
         array(
             'page' => 'simple-site-exporter',
-            'file_deleted' => $deleted ? '1' : '0',
+            'file_deleted' => $result['deleted'] ? '1' : '0',
             '_wpnonce' => wp_create_nonce('sse_file_deleted_notice')
         ),
         admin_url('tools.php')
