@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.5.0
+Version: 1.5.1
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-wp-optimizer-enginescript
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 
 // Define plugin version
 if (!defined('ES_WP_OPTIMIZER_VERSION')) {
-    define('ES_WP_OPTIMIZER_VERSION', '1.5.0');
+    define('ES_WP_OPTIMIZER_VERSION', '1.5.1');
 }
 
 /**
@@ -27,29 +27,36 @@ function es_optimizer_init_settings() {
     
     // Register default options if they don't exist
     if (false === get_option('es_optimizer_options')) {
-        $default_options = array(
-            'disable_emojis' => 1,
-            'remove_jquery_migrate' => 1,
-            'disable_classic_theme_styles' => 1,
-            'remove_wp_version' => 1,
-            'remove_wlw_manifest' => 1,
-            'remove_shortlink' => 1,
-            'remove_recent_comments_style' => 1,
-            'enable_dns_prefetch' => 1,
-            'dns_prefetch_domains' => implode("\n", array(
-                'https://fonts.googleapis.com',
-                'https://fonts.gstatic.com',
-                'https://ajax.googleapis.com',
-                'https://apis.google.com',
-                'https://www.google-analytics.com'
-            )),
-            'disable_jetpack_ads' => 1
-        );
-        
-        add_option('es_optimizer_options', $default_options);
+        add_option('es_optimizer_options', es_optimizer_get_default_options());
     }
 }
 add_action('admin_init', 'es_optimizer_init_settings');
+
+/**
+ * Get default plugin options
+ * 
+ * @return array Default options
+ */
+function es_optimizer_get_default_options() {
+    return array(
+        'disable_emojis' => 1,
+        'remove_jquery_migrate' => 1,
+        'disable_classic_theme_styles' => 1,
+        'remove_wp_version' => 1,
+        'remove_wlw_manifest' => 1,
+        'remove_shortlink' => 1,
+        'remove_recent_comments_style' => 1,
+        'enable_dns_prefetch' => 1,
+        'dns_prefetch_domains' => implode("\n", array(
+            'https://fonts.googleapis.com',
+            'https://fonts.gstatic.com',
+            'https://ajax.googleapis.com',
+            'https://apis.google.com',
+            'https://www.google-analytics.com'
+        )),
+        'disable_jetpack_ads' => 1
+    );
+}
 
 /**
  * Add settings page to the admin menu
@@ -70,7 +77,7 @@ add_action('admin_menu', 'es_optimizer_add_settings_page');
  */
 function es_optimizer_settings_page() {
     if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have sufficient permissions to access this page.'));
+        wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'simple-wp-optimizer-enginescript'));
     }
     
     $options = get_option('es_optimizer_options');
@@ -83,103 +90,16 @@ function es_optimizer_settings_page() {
             <?php settings_fields('es_optimizer_settings'); ?>
             
             <table class="form-table">
-                <tr valign="top">
-                    <th scope="row">Disable WordPress Emojis</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[disable_emojis]" value="1" <?php checked(1, isset($options['disable_emojis']) ? $options['disable_emojis'] : 0); ?> />
-                            Remove emoji scripts and styles to improve page load time
-                        </label>
-                    </td>
-                </tr>
+                <?php 
+                // Render performance optimization options
+                es_optimizer_render_performance_options($options);
                 
-                <tr valign="top">
-                    <th scope="row">Remove jQuery Migrate</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[remove_jquery_migrate]" value="1" <?php checked(1, isset($options['remove_jquery_migrate']) ? $options['remove_jquery_migrate'] : 0); ?> />
-                            Remove jQuery Migrate script (may affect compatibility with very old plugins)
-                        </label>
-                    </td>
-                </tr>
+                // Render header cleanup options
+                es_optimizer_render_header_options($options);
                 
-                <tr valign="top">
-                    <th scope="row">Disable Classic Theme Styles</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[disable_classic_theme_styles]" value="1" <?php checked(1, isset($options['disable_classic_theme_styles']) ? $options['disable_classic_theme_styles'] : 0); ?> />
-                            Remove classic theme styles added in WordPress 6.1+
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Remove WordPress Version</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[remove_wp_version]" value="1" <?php checked(1, isset($options['remove_wp_version']) ? $options['remove_wp_version'] : 0); ?> />
-                            Remove WordPress version from header (security benefit)
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Remove WLW Manifest</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[remove_wlw_manifest]" value="1" <?php checked(1, isset($options['remove_wlw_manifest']) ? $options['remove_wlw_manifest'] : 0); ?> />
-                            Remove Windows Live Writer manifest link
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Remove Shortlink</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[remove_shortlink]" value="1" <?php checked(1, isset($options['remove_shortlink']) ? $options['remove_shortlink'] : 0); ?> />
-                            Remove WordPress shortlink URLs from header
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Remove Recent Comments Style</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[remove_recent_comments_style]" value="1" <?php checked(1, isset($options['remove_recent_comments_style']) ? $options['remove_recent_comments_style'] : 0); ?> />
-                            Remove recent comments widget inline CSS
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Enable DNS Prefetch</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[enable_dns_prefetch]" value="1" <?php checked(1, isset($options['enable_dns_prefetch']) ? $options['enable_dns_prefetch'] : 0); ?> />
-                            Add DNS prefetch for common external domains
-                        </label>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">DNS Prefetch Domains</th>
-                    <td>
-                        <p><small>Enter one domain per line. Include the full URL (e.g., https://fonts.googleapis.com)</small></p>
-                        <textarea name="es_optimizer_options[dns_prefetch_domains]" rows="5" cols="50" class="large-text code"><?php echo esc_textarea(isset($options['dns_prefetch_domains']) ? $options['dns_prefetch_domains'] : ''); ?></textarea>
-                    </td>
-                </tr>
-                
-                <tr valign="top">
-                    <th scope="row">Disable Jetpack Ads</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="es_optimizer_options[disable_jetpack_ads]" value="1" <?php checked(1, isset($options['disable_jetpack_ads']) ? $options['disable_jetpack_ads'] : 0); ?> />
-                            Remove Jetpack advertisements and promotions
-                        </label>
-                    </td>
-                </tr>
+                // Render additional features
+                es_optimizer_render_additional_options($options);
+                ?>
             </table>
             
             <p class="submit">
@@ -190,11 +110,159 @@ function es_optimizer_settings_page() {
         <hr>
         <p>
             <?php esc_html_e('This plugin is part of the EngineScript project.', 'simple-wp-optimizer-enginescript'); ?>
-            <a href="<?php echo esc_url('https://github.com/EngineScript/EngineScript'); ?>" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/EngineScript/EngineScript" target="_blank" rel="noopener noreferrer">
                 <?php esc_html_e('Visit the EngineScript GitHub page', 'simple-wp-optimizer-enginescript'); ?>
             </a>
         </p>
     </div>
+    <?php
+}
+
+/**
+ * Render performance optimization options
+ *
+ * @param array $options Plugin options
+ */
+function es_optimizer_render_performance_options($options) {
+    // Emoji settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'disable_emojis',
+        esc_html__('Disable WordPress Emojis', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove emoji scripts and styles to improve page load time', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // jQuery Migrate settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'remove_jquery_migrate',
+        esc_html__('Remove jQuery Migrate', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove jQuery Migrate script (may affect compatibility with very old plugins)', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // Classic Theme Styles settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'disable_classic_theme_styles',
+        esc_html__('Disable Classic Theme Styles', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove classic theme styles added in WordPress 6.1+', 'simple-wp-optimizer-enginescript')
+    );
+}
+
+/**
+ * Render header cleanup options
+ *
+ * @param array $options Plugin options
+ */
+function es_optimizer_render_header_options($options) {
+    // WordPress Version settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'remove_wp_version',
+        esc_html__('Remove WordPress Version', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove WordPress version from header (security benefit)', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // WLW Manifest settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'remove_wlw_manifest',
+        esc_html__('Remove WLW Manifest', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove Windows Live Writer manifest link', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // Shortlink settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'remove_shortlink',
+        esc_html__('Remove Shortlink', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove WordPress shortlink URLs from header', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // Recent Comments Style settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'remove_recent_comments_style',
+        esc_html__('Remove Recent Comments Style', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove recent comments widget inline CSS', 'simple-wp-optimizer-enginescript')
+    );
+}
+
+/**
+ * Render additional optimization options
+ *
+ * @param array $options Plugin options
+ */
+function es_optimizer_render_additional_options($options) {
+    // DNS Prefetch settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'enable_dns_prefetch',
+        esc_html__('Enable DNS Prefetch', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Add DNS prefetch for common external domains', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // DNS Prefetch Domains textarea
+    es_optimizer_render_textarea_option(
+        $options,
+        'dns_prefetch_domains',
+        esc_html__('DNS Prefetch Domains', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Enter one domain per line. Include the full URL (e.g., https://fonts.googleapis.com)', 'simple-wp-optimizer-enginescript')
+    );
+    
+    // Jetpack Ads settings
+    es_optimizer_render_checkbox_option(
+        $options,
+        'disable_jetpack_ads',
+        esc_html__('Disable Jetpack Ads', 'simple-wp-optimizer-enginescript'),
+        esc_html__('Remove Jetpack advertisements and promotions', 'simple-wp-optimizer-enginescript')
+    );
+}
+
+/**
+ * Helper function to render checkbox options
+ *
+ * @param array  $options       Plugin options
+ * @param string $option_name   Option name
+ * @param string $title         Option title
+ * @param string $description   Option description
+ */
+function es_optimizer_render_checkbox_option($options, $option_name, $title, $description) {
+    ?>
+    <tr valign="top">
+        <th scope="row"><?php echo esc_html($title); ?></th>
+        <td>
+            <label>
+                <input type="checkbox" name="es_optimizer_options[<?php echo esc_attr($option_name); ?>]" value="1" 
+                    <?php checked(1, isset($options[$option_name]) ? $options[$option_name] : 0); ?> />
+                <?php echo esc_html($description); ?>
+            </label>
+        </td>
+    </tr>
+    <?php
+}
+
+/**
+ * Helper function to render textarea options
+ *
+ * @param array  $options       Plugin options
+ * @param string $option_name   Option name
+ * @param string $title         Option title
+ * @param string $description   Option description
+ */
+function es_optimizer_render_textarea_option($options, $option_name, $title, $description) {
+    ?>
+    <tr valign="top">
+        <th scope="row"><?php echo esc_html($title); ?></th>
+        <td>
+            <p><small><?php echo esc_html($description); ?></small></p>
+            <textarea name="es_optimizer_options[<?php echo esc_attr($option_name); ?>]" rows="5" cols="50" class="large-text code"><?php 
+                if (isset($options[$option_name])) {
+                    echo esc_textarea($options[$option_name]);
+                }
+            ?></textarea>
+        </td>
+    </tr>
     <?php
 }
 
@@ -231,8 +299,6 @@ function es_optimizer_validate_options($input) {
         }
         
         $valid['dns_prefetch_domains'] = implode("\n", $sanitized_domains);
-    } else {
-        $valid['dns_prefetch_domains'] = '';
     }
     
     return $valid;
@@ -430,7 +496,7 @@ function add_dns_prefetch() {
     
     // Output the prefetch links
     foreach ($domains as $domain) {
-        echo '<link rel="dns-prefetch" href="' . esc_attr($domain) . '" />' . "\n";
+        printf('<link rel="dns-prefetch" href="%s" />' . "\n", esc_attr($domain));
     }
 }
 // Hook after wp_head and before other elements are added
