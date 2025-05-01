@@ -1,0 +1,25 @@
+# Dependabot configuration for automated dependency updates
+version: 2
+updates:
+  # Updates for GitHub Actions used in workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    # Set custom labels on pull requests
+    labels:
+      - "dependencies"
+      - "security"
+      - "automated"
+    # Limit the number of open PRs
+    open-pull-requests-limit: 10
+    # Assign reviewers automatically
+    reviewers:
+      - "EngineScript"
+    # Create a group of updates for all actions
+    groups:
+      actions:
+        patterns:
+          - "*"s
