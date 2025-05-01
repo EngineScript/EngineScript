@@ -22,4 +22,4 @@ updates:
     groups:
       actions:
         patterns:
-          - "*"s
+          - "*"
