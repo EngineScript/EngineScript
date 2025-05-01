@@ -2,7 +2,7 @@
 /*
 Plugin Name: EngineScript: Simple Site Exporter
 Description: Exports the site files and database as a zip archive.
-Version: 1.5.4
+Version: 1.5.5
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-site-exporter-enginescript
