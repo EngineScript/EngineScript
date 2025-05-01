@@ -1,17 +1,20 @@
 # This workflow automatically updates the plugin version numbers in README.md
-# whenever the source files for Simple Site Exporter or Simple WP Optimizer plugins are changed.
-# It extracts the version from the PHP plugin headers and creates a pull request
-# to keep the documentation in sync with the actual plugin versions.
+# whenever the source files for Simple WP Optimizer plugin is changed or
+# when a new release is published in the EngineScript-Simple-Site-Exporter repository.
+# It extracts the version and creates a pull request to keep the documentation in sync.
 
 name: Sync Plugin Versions in README
 
 on:
   push:
     paths:
-      - 'config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php'
       - 'config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php'
     branches:
       - master  # or your main branch
+  repository_dispatch:
+    types: [simple-site-exporter-release]
+  schedule:
+    - cron: '0 0 * * *'  # Run daily to check for updates
 
 jobs:
   update-readme:
@@ -23,22 +26,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract Simple Site Exporter version
+      - name: Get Simple Site Exporter latest version
         id: exporter
         run: |
-          version=$(grep -i '^Version:' config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php | sed -n 's/Version:[[:space:]]*\([0-9.]*\).*/\1/p')
+          # Get the latest release version from the GitHub API
+          version=$(curl -s https://api.github.com/repos/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest | grep -Po '"tag_name": "v\K[^"]*')
+          if [ -z "$version" ]; then
+            echo "Failed to get latest version from API, using fallback method"
+            # Fallback: download the plugin file and extract version
+            mkdir -p /tmp/sse-check
+            curl -s -L https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip -o /tmp/sse-check/plugin.zip
+            unzip -q -o /tmp/sse-check/plugin.zip -d /tmp/sse-check/
+            version=$(grep -i '^Version:' /tmp/sse-check/simple-site-exporter-enginescript/simple-site-exporter.php | sed -n 's/Version:[[:space:]]*\([0-9.]*\).*/\1/p')
+            rm -rf /tmp/sse-check
+          fi
           echo "exporter_version=$version" >> $GITHUB_OUTPUT
+          echo "Detected Simple Site Exporter version: $version"
 
       - name: Extract WP Optimizer version
         id: optimizer
         run: |
           version=$(grep -i '^Version:' config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php | sed -n 's/Version:[[:space:]]*\([0-9.]*\).*/\1/p')
           echo "optimizer_version=$version" >> $GITHUB_OUTPUT
+          echo "Detected WP Optimizer version: $version"
 
       - name: Update README plugin versions
         run: |
-          # Update Simple Site Exporter version in README.md
-          sed -i -E "s/(\|PLUGIN: EngineScript: Simple Site Exporter\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-site-exporter-enginescript\/simple-site-exporter.php\) \|)/\1${{ steps.exporter.outputs.exporter_version }}\2/" README.md
+          # Update Simple Site Exporter version in README.md with new repo link
+          sed -i -E "s/(\|PLUGIN: EngineScript: Simple Site Exporter\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-site-exporter-enginescript\/simple-site-exporter.php\) \|)/\1${{ steps.exporter.outputs.exporter_version }} \| \[https:\/\/github.com\/EngineScript\/EngineScript-Simple-Site-Exporter\]\(https:\/\/github.com\/EngineScript\/EngineScript-Simple-Site-Exporter\) \|/" README.md
           # Update WP Optimization version in README.md
           sed -i -E "s/(\|PLUGIN: EngineScript: WP Optimization\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-wp-optimizer-enginescript\/simple-wp-optimizer.php\) \|)/\1${{ steps.optimizer.outputs.optimizer_version }}\2/" README.md
 
@@ -50,9 +65,11 @@ jobs:
           branch: "sync-plugin-readme-versions-${{ github.run_id }}"
           title: "Sync plugin versions in README.md"
           body: |
-            This PR updates the plugin version numbers in README.md to match the latest versions found in:
-            - Simple Site Exporter: `${{ steps.exporter.outputs.exporter_version }}`
+            This PR updates the plugin version numbers in README.md to match the latest versions:
+            - Simple Site Exporter: `${{ steps.exporter.outputs.exporter_version }}` (from EngineScript-Simple-Site-Exporter repo)
             - WP Optimizer: `${{ steps.optimizer.outputs.optimizer_version }}`
+            
+            Also updates the Simple Site Exporter repository link to point to the dedicated repository.
           labels: |
             automated
             documentation

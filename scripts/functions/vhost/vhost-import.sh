@@ -37,7 +37,7 @@ echo "${BOLD}Method 1: Single Export File (Recommended - using Simple Site Expor
 echo "   - This method uses the 'Simple Site Exporter' plugin to create a single .zip file"
 echo "     containing both WordPress files and the database (.sql)."
 echo "   - ${YELLOW}If you don't have the plugin on your source site:${NORMAL}"
-echo "     1. Download the plugin zip: ${UNDERLINE}https://raw.githubusercontent.com/EngineScript/EngineScript/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript.zip${NORMAL}"
+echo "     1. Download the plugin zip: ${UNDERLINE}https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip${NORMAL}"
 echo "     2. In your source WordPress admin area, go to 'Plugins' -> 'Add New' -> 'Upload Plugin'."
 echo "     3. Upload the downloaded .zip file and activate the 'EngineScript: Simple Site Exporter' plugin."
 echo "   - Once the plugin is active on your source site:"
@@ -1056,7 +1056,11 @@ wp plugin install wp-mail-smtp --allow-root --activate # Activate this one
 cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript" "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 # Install EngineScript Site Exporter Plugin
-cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript" "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+echo "Downloading Simple Site Exporter plugin from GitHub..."
+mkdir -p /tmp/sse-plugin
+wget -q https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip -O /tmp/sse-plugin/simple-site-exporter-enginescript.zip
+unzip -q -o /tmp/sse-plugin/simple-site-exporter-enginescript.zip -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+rm -rf /tmp/sse-plugin
 
 
 # WP-CLI Flush Transients
