@@ -58,7 +58,7 @@ jobs:
           sed -i -E "s/(\|PLUGIN: EngineScript: WP Optimization\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-wp-optimizer-enginescript\/simple-wp-optimizer.php\) \|)/\1${{ steps.optimizer.outputs.optimizer_version }}\2/" README.md
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Sync plugin versions in README.md"
