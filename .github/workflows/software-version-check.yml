@@ -67,6 +67,20 @@ jobs:
             tail -n1)
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
+          # Simple Site Exporter Plugin
+          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest | 
+            jq -r '.tag_name' | 
+            sed 's/v//')
+          
+          # Check if SSE_PLUGIN_VER exists, if not add it
+          if ! grep -q "^SSE_PLUGIN_VER=" enginescript-variables.txt; then
+            echo "SSE_PLUGIN_VER=\"$LATEST_SSE\"" >> enginescript-variables.txt
+            echo "::notice::Added SSE_PLUGIN_VER=$LATEST_SSE to enginescript-variables.txt"
+            CHANGES_DETECTED=true
+          else
+            check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
+          fi
+          
           # PCRE2
           LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
             jq -r '.tag_name' | 
@@ -213,6 +227,7 @@ jobs:
           PHPMYADMIN_VER=$(get_var PHPMYADMIN_VER)
           MARIADB_VER=$(get_var MARIADB_VER)
           NGINX_DYN_TLS_PATCH_SHA=$(get_var NGINX_DYN_TLS_PATCH_SHA)
+          SSE_PLUGIN_VER=$(get_var SSE_PLUGIN_VER)
 
           # Get patch date (Last-Modified header or today)
           PATCH_URL="https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch"
@@ -237,7 +252,16 @@ jobs:
             -e "/|PHPMYADMIN|/s/|[^|]*|/|$PHPMYADMIN_VER|/2" \
             -e "/|MARIADB|/s/|[^|]*|/|$MARIADB_VER|/2" \
             README.md
-
+            
+          # Update Simple Site Exporter Plugin version in README
+          # This uses a different pattern because we need to also update the URL to point to the new repository
+          if [ -n "$SSE_PLUGIN_VER" ]; then
+            sed -i \
+              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$SSE_PLUGIN_VER|/2" \
+              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s#\[https://github.com/EngineScript/EngineScript\](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php)#\[https://github.com/EngineScript/EngineScript-Simple-Site-Exporter\](https://github.com/EngineScript/EngineScript-Simple-Site-Exporter)#" \
+              README.md
+          fi
+          
       - name: Cleanup temp_versions.txt
         if: always()
         run: rm -f .github/temp_versions.txt
