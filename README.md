@@ -195,7 +195,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
 |PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
 |PLUGIN: EngineScript: Simple Site Exporter| 1.5.4 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php) |
-|PLUGIN: EngineScript: WP Optimization| 1.4.1 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php) |
+|PLUGIN: EngineScript: WP Optimization| 1.5.0 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php) |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
 |PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |
