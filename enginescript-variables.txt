@@ -6,7 +6,7 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="APR1725"
+VARIABLES_DATE="MAY0125"
 
 # Software Versions
 LIBURING_VER="2.9"
@@ -60,3 +60,4 @@ SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"
 # Shell text formatting
 BOLD="$(tput bold)"
 NORMAL="$(tput sgr0)"
+SSE_PLUGIN_VER="1.5.8"
