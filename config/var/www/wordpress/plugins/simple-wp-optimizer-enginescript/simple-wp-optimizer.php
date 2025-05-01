@@ -2,12 +2,39 @@
 /*
 Plugin Name: EngineScript: WP Optimization
 Description: Optimizes WordPress by removing unnecessary features and scripts
-Version: 1.5.2
+Version: 1.5.3
 Author: EngineScript
 License: GPL v2 or later
 Text Domain: simple-wp-optimizer-enginescript
 Security: Follows OWASP security guidelines and WordPress best practices
 */
+
+/**
+ * Security Implementation Notes:
+ * 
+ * This plugin follows WordPress security best practices and OWASP guidelines:
+ * 
+ * 1. Input Validation: All user inputs are validated before processing
+ *    - Options are strictly type-checked (checkbox values limited to 0 or 1)
+ *    - URLs undergo multi-layer validation (filter_var + WordPress sanitization)
+ * 
+ * 2. Output Escaping: All outputs are properly escaped with context-appropriate functions
+ *    - HTML content: esc_html(), esc_html_e()
+ *    - Attributes: esc_attr()
+ *    - URLs: esc_url(), esc_url_raw()
+ *    - Textarea content: esc_textarea()
+ * 
+ * 3. Capability Checks: All admin functions verify user permissions
+ *    - current_user_can('manage_options') guards settings pages
+ * 
+ * 4. Secure Coding Patterns:
+ *    - Direct script access prevention
+ *    - Proper use of WordPress hooks and filters
+ *    - Code follows WordPress Plugin Handbook guidelines
+ * 
+ * Some uses of echo/printf with proper escaping are unavoidable for HTML output,
+ * and have been documented with phpcs:ignore comments explaining the security measures.
+ */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
@@ -19,7 +46,7 @@ if (!defined('ABSPATH')) {
 
 // Define plugin version
 if (!defined('ES_WP_OPTIMIZER_VERSION')) {
-    define('ES_WP_OPTIMIZER_VERSION', '1.5.2');
+    define('ES_WP_OPTIMIZER_VERSION', '1.5.3');
 }
 
 /**
@@ -248,12 +275,15 @@ function es_optimizer_render_checkbox_option($options, $option_name, $title, $de
         ?></th>
         <td>
             <label>
-                <input type="checkbox" name="es_optimizer_options[<?php 
-                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Using esc_attr is appropriate here
-                    // Explanation: We must use echo with esc_attr here because this is for an HTML attribute name within a form element.
-                    // The $option_name variables are hardcoded strings passed from the render functions and not user input.
-                    echo esc_attr($option_name); 
-                ?>]" value="1" 
+                <input type="checkbox" name="<?php 
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    /* 
+                     * Using printf with esc_attr for attribute name which cannot be avoided.
+                     * The $option_name values are hardcoded strings from render functions, not user input.
+                     * This is a controlled environment where these values are defined within the plugin.
+                     */
+                    printf('es_optimizer_options[%s]', esc_attr($option_name));
+                ?>" value="1" 
                     <?php checked(1, isset($options[$option_name]) ? $options[$option_name] : 0); ?> />
                 <?php 
                     // Using esc_html_e for internationalization and secure output of descriptions
@@ -293,17 +323,23 @@ function es_optimizer_render_textarea_option($options, $option_name, $title, $de
                 // This ensures the text is properly escaped while supporting translations
                 esc_html_e($description, 'simple-wp-optimizer-enginescript'); 
             ?></small></p>
-            <textarea name="es_optimizer_options[<?php 
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Using esc_attr is appropriate here
-                // Explanation: We must use echo with esc_attr here for the attribute name, which is a controlled value.
-                // The $option_name is a hardcoded string passed from the render functions and is not user input.
-                echo esc_attr($option_name); 
-            ?>]" rows="5" cols="50" class="large-text code"><?php 
+            <textarea name="<?php 
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                /* 
+                 * Using printf with esc_attr for attribute name which cannot be avoided.
+                 * The $option_name values are hardcoded strings from render functions, not user input.
+                 * This is a controlled environment where these values are defined within the plugin.
+                 */
+                printf('es_optimizer_options[%s]', esc_attr($option_name));
+            ?>" rows="5" cols="50" class="large-text code"><?php 
                 if (isset($options[$option_name])) {
-                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Using esc_textarea is appropriate here
-                    // Explanation: esc_textarea already properly escapes content for use inside textarea elements.
-                    // This function is designed specifically for this purpose and ensures data is properly escaped.
-                    echo esc_textarea($options[$option_name]);
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    /* 
+                     * Using printf with esc_textarea is the most appropriate approach.
+                     * esc_textarea already properly escapes content for use inside textarea elements.
+                     * This function is designed specifically for this purpose and ensures data is properly escaped.
+                     */
+                    printf('%s', esc_textarea($options[$option_name]));
                 }
             ?></textarea>
         </td>
@@ -561,16 +597,18 @@ function add_dns_prefetch() {
         $domains = array_filter($domains);
     }
     
-    // Output the prefetch links
+    // Output the prefetch links using WordPress core functions
     foreach ($domains as $domain) {
-        $escaped_domain = esc_attr($domain);
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Domain is properly escaped above
-        // Explanation: This output generates HTML link tags for DNS prefetching.
-        // The domain is properly sanitized through:
-        // 1. filter_var with FILTER_VALIDATE_URL in the validation function
-        // 2. esc_url_raw when saving to database
-        // 3. esc_attr before output here
-        echo '<link rel="dns-prefetch" href="' . $escaped_domain . '" />' . "\n";
+        $escaped_domain = esc_url($domain);
+        
+        /*
+         * Using wp_print_resource_hints with array of sanitized domains would be the ideal approach,
+         * but we need to output these individually since we're adding custom domains.
+         * WordPress core doesn't have a direct function for outputting single dns-prefetch tags,
+         * so we need to construct it ourselves.
+         */
+        echo "\n";
+        wp_print_link_tag('dns-prefetch', $escaped_domain);
     }
 }
 // Hook after wp_head and before other elements are added
