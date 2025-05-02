@@ -32,18 +32,6 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 
 ----------
 
-## Default Configuration ##
-
-The default EngineScript configuration utilizes the simplified stack below. Additional information on specific software versions and sources can be found further down.
-
-|||||
-|-|-|-|-|
-|**CDN \ SSL:** Cloudflare|||**Web Server:** Nginx|
-|**Script Processing:** PHP|||**MySQL Database:** MariaDB|
-|**Object Cache:** Redis|||**CMS:** WordPress|
-
-----------
-
 ## Install EngineScript
 
 ### Step 1 - Initial Install
