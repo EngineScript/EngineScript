@@ -67,7 +67,7 @@ if [ -f "$SITES_FILE" ]; then
       # Download latest Simple Site Exporter plugin from GitHub
       echo "Downloading Simple Site Exporter plugin for $DOMAIN..."
       mkdir -p "/tmp/sse-plugin-update"
-      wget -q "https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip"
+      wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip"
       unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip" -d "$WP_PLUGIN_DIR/"
       rm -rf "/tmp/sse-plugin-update"
       

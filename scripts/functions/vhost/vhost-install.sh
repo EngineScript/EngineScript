@@ -723,7 +723,11 @@ wp plugin install wp-mail-smtp --allow-root
 cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
 # Install EngineScript Site Exporter Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-site-exporter-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+# Download the latest version from GitHub
+mkdir -p "/tmp/sse-plugin-download"
+wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip"
+unzip -q -o "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+rm -rf "/tmp/sse-plugin-download"
 
 # WP-CLI Activate Plugins
 wp plugin activate flush-opcache --allow-root

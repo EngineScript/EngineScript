@@ -1058,7 +1058,7 @@ cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-o
 # Install EngineScript Site Exporter Plugin
 echo "Downloading Simple Site Exporter plugin from GitHub..."
 mkdir -p /tmp/sse-plugin
-wget -q https://github.com/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip -O /tmp/sse-plugin/simple-site-exporter-enginescript.zip
+wget -q https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip -O /tmp/sse-plugin/simple-site-exporter-enginescript.zip
 unzip -q -o /tmp/sse-plugin/simple-site-exporter-enginescript.zip -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 rm -rf /tmp/sse-plugin
 

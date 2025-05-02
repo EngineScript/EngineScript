@@ -68,7 +68,7 @@ jobs:
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
           # Simple Site Exporter Plugin
-          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/EngineScript-Simple-Site-Exporter/releases/latest | 
+          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-Site-Exporter/releases/latest | 
             jq -r '.tag_name' | 
             sed 's/v//')
           
@@ -258,7 +258,7 @@ jobs:
           if [ -n "$SSE_PLUGIN_VER" ]; then
             sed -i \
               -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$SSE_PLUGIN_VER|/2" \
-              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s#\[https://github.com/EngineScript/EngineScript\](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php)#\[https://github.com/EngineScript/EngineScript-Simple-Site-Exporter\](https://github.com/EngineScript/EngineScript-Simple-Site-Exporter)#" \
+              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s#\[https://github.com/EngineScript/EngineScript\](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php)#\[https://github.com/EngineScript/Simple-Site-Exporter\](https://github.com/EngineScript/Simple-Site-Exporter)#" \
               README.md
           fi
           
