@@ -1,6 +1,22 @@
 # EngineScript
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b8b03bc4beba44a7aee2f879029b2e95)](https://app.codacy.com/gh/EngineScript/EngineScript/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![GitHub License](https://img.shields.io/github/license/EngineScript/EngineScript)](https://github.com/EngineScript/EngineScript/blob/master/LICENSE)
+[![GPL License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub stars](https://img.shields.io/github/stars/EngineScript/EngineScript?style=social)](https://github.com/EngineScript/EngineScript/stargazers)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/EngineScript/EngineScript)](https://github.com/EngineScript/EngineScript/releases)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/EngineScript?logo=github&color=db61a2)](https://github.com/sponsors/EngineScript)
+[![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
+[![WordPress](https://img.shields.io/badge/WordPress-Latest-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![MariaDB 11.4](https://img.shields.io/badge/MariaDB-11.4-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![Redis](https://img.shields.io/badge/Redis-Latest-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![WP-CLI](https://img.shields.io/badge/WP--CLI-Latest-21759B?logo=wordpress&logoColor=white)](https://wp-cli.org/)
+[![ACME.sh](https://img.shields.io/badge/ACME.sh-Latest-41BDF5?logo=letsencrypt&logoColor=white)](https://github.com/acmesh-official/acme.sh)
+[![phpMyAdmin](https://img.shields.io/badge/phpMyAdmin-5.2.2-6C78AF?logo=phpmyadmin&logoColor=white)](https://www.phpmyadmin.net/)
+[![AWS CLI](https://img.shields.io/badge/AWS_CLI-Latest-232F3E?logo=amazonaws&logoColor=white)](https://aws.amazon.com/cli/)
+[![DigitalOcean](https://img.shields.io/badge/DigitalOcean-0080FF?logo=digitalocean&logoColor=white)](https://m.do.co/c/e57cc8492285)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare&logoColor=white)](https://cloudflare.com/)
 
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 
