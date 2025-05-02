@@ -71,6 +71,8 @@ After EngineScript is fully installed, type `es.menu` in console to bring up the
 
 Before your site is ready to use, you'll need to make sure it has been added to Cloudflare. The scripts that add or import a domain will automatically add or update the DNS records in Cloudflare to point to your server, issue SSL certificates, and apply numerous performance-related settings in Cloudflare.
 
+For your reference, the settings EngineScript automatically applies can be viewed on our wiki at: [Cloudflare Settings Guide](https://github.com/EngineScript/EngineScript/wiki/Cloudflare-Settings).
+
 ### Manual Cloudflare Settings
 
 Although we do our best to automate this process, there are a few settings that we don't or can't currently change via the Cloudflare API. We recommend you enable the following settings manually in Cloudflare:
