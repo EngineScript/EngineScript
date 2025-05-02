@@ -33,8 +33,6 @@ jobs:
 
       - name: Update README plugin versions
         run: |
-          # Update Simple Site Exporter version in README.md with new repo link
-          sed -i -E "s/(\|PLUGIN: EngineScript: Simple Site Exporter\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-site-exporter-enginescript\/simple-site-exporter.php\) \|)/\1${{ steps.exporter.outputs.exporter_version }} \| \[https:\/\/github.com\/EngineScript\/Simple-Site-Exporter\]\(https:\/\/github.com\/EngineScript\/Simple-Site-Exporter\) \|/" README.md
           # Update WP Optimization version in README.md
           sed -i -E "s/(\|PLUGIN: EngineScript: WP Optimization\| )[0-9.]+( \| \[https:\/\/github.com\/EngineScript\/EngineScript\]\(https:\/\/github.com\/EngineScript\/EngineScript\/blob\/master\/config\/var\/www\/wordpress\/plugins\/simple-wp-optimizer-enginescript\/simple-wp-optimizer.php\) \|)/\1${{ steps.optimizer.outputs.optimizer_version }}\2/" README.md
 
@@ -42,15 +40,12 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Sync plugin versions in README.md"
-          branch: "sync-plugin-readme-versions-${{ github.run_id }}"
-          title: "Sync plugin versions in README.md"
+          commit-message: "Sync WP Optimizer version in README.md"
+          branch: "sync-wp-optimizer-version-${{ github.run_id }}"
+          title: "Sync WP Optimizer version in README.md"
           body: |
-            This PR updates the plugin version numbers in README.md to match the latest versions:
-            - Simple Site Exporter: `${{ steps.exporter.outputs.exporter_version }}` (from Simple-Site-Exporter repo)
+            This PR updates the WP Optimizer plugin version in README.md to match the latest version:
             - WP Optimizer: `${{ steps.optimizer.outputs.optimizer_version }}`
-            
-            Also updates the Simple Site Exporter repository link to point to the dedicated repository.
           labels: |
             automated
             documentation
