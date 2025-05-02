@@ -9,11 +9,11 @@
 [![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![MariaDB](https://img.shields.io/badge/MariaDB-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
-[![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![ACME.sh](https://img.shields.io/badge/ACME.sh-41BDF5?logo=letsencrypt&logoColor=white)](https://github.com/acmesh-official/acme.sh)
 [![phpMyAdmin](https://img.shields.io/badge/phpMyAdmin-6C78AF?logo=phpmyadmin&logoColor=white)](https://www.phpmyadmin.net/)
 [![AWS CLI](https://img.shields.io/badge/AWS_CLI-232F3E?logo=amazonaws&logoColor=white)](https://aws.amazon.com/cli/)
+[![WP-CLI](https://img.shields.io/badge/WP--CLI-21759B?logo=wordpress&logoColor=white)](https://wp-cli.org/)
 
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 
