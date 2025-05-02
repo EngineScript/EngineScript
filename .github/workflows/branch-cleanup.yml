@@ -26,23 +26,22 @@ jobs:
         if: github.event.pull_request.merged == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          branch="${{ github.event.pull_request.head.ref }}"
-          repo="${{ github.repository }}"
+          echo "Checking branch: $BRANCH_NAME"
           
-          echo "Checking branch: $branch"
-          
-          # Protected branch check
-          if [[ "$branch" =~ ^(main|master|dev|develop|staging|production)$ ]]; then
-            echo "::warning::Skipping deletion of protected branch: $branch"
+          # Protected branch check - using quotes to prevent injection
+          if [[ "$BRANCH_NAME" =~ ^(main|master|dev|develop|staging|production)$ ]]; then
+            echo "::warning::Skipping deletion of protected branch: $BRANCH_NAME"
             exit 0
           fi
           
-          # Attempt branch deletion
-          echo "Attempting to delete branch: $branch"
-          if git push origin --delete "$branch" 2>/dev/null; then
-            echo "::notice::Successfully deleted branch: $branch"
+          # Attempt branch deletion - using quotes to prevent injection
+          echo "Attempting to delete branch: $BRANCH_NAME"
+          if git push origin --delete "$BRANCH_NAME" 2>/dev/null; then
+            echo "::notice::Successfully deleted branch: $BRANCH_NAME"
           else
-            echo "::error::Failed to delete branch: $branch"
+            echo "::error::Failed to delete branch: $BRANCH_NAME"
             exit 1
           fi
