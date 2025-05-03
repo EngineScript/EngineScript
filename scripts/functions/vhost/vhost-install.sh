@@ -719,16 +719,22 @@ wp plugin install theme-check --allow-root
 wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
-# Install EngineScript Optimization Plugin
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+# Install EngineScript custom plugins if enabled
+if [ "${INSTALL_ENGINESCRIPT_PLUGINS}" = 1 ]; then
+    echo "Installing EngineScript custom plugins..."
+    # 1. Simple WP Optimizer plugin
+    cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
 
-# Install EngineScript Site Exporter Plugin
-# Download the latest version from GitHub
-mkdir -p "/tmp/sse-plugin-download"
-wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip"
-unzip -q -o "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
-rm -rf "/tmp/sse-plugin-download"
+    # 2. Simple Site Exporter plugin
+    mkdir -p "/tmp/sse-plugin-download"
+    wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip"
+    unzip -q -o "/tmp/sse-plugin-download/simple-site-exporter-enginescript.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    rm -rf "/tmp/sse-plugin-download"
+else
+    echo "Skipping EngineScript custom plugins installation (disabled in config)..."
+fi
 
+# Always install and activate essential plugins regardless of INSTALL_ENGINESCRIPT_PLUGINS setting
 # WP-CLI Activate Plugins
 wp plugin activate flush-opcache --allow-root
 wp plugin activate mariadb-health-checks --allow-root

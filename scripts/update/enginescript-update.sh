@@ -64,23 +64,31 @@ if [ -f "$SITES_FILE" ]; then
     DOMAIN=$(basename "$SITE")
     WP_PLUGIN_DIR="/var/www/sites/${DOMAIN}/html/wp-content/plugins"
     if [ -d "$WP_PLUGIN_DIR" ]; then
-      # Download latest Simple Site Exporter plugin from GitHub
-      echo "Downloading Simple Site Exporter plugin for $DOMAIN..."
-      mkdir -p "/tmp/sse-plugin-update"
-      wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip"
-      unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip" -d "$WP_PLUGIN_DIR/"
-      rm -rf "/tmp/sse-plugin-update"
-      
-      # Copy WP Optimizer plugin from local directory
-      cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "$WP_PLUGIN_DIR/"
-      
-      # Set permissions
-      chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter-enginescript"
-      chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript"
-      find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type d -exec chmod 755 {} \;
-      find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type f -exec chmod 644 {} \;
-      find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type d -exec chmod 755 {} \;
-      find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type f -exec chmod 644 {} \;
+      # Only update EngineScript custom plugins if the option is enabled
+      if [ "${INSTALL_ENGINESCRIPT_PLUGINS}" = 1 ]; then
+        # Update the two custom EngineScript plugins:
+        
+        # 1. Simple Site Exporter plugin
+        echo "Updating Simple Site Exporter plugin for $DOMAIN..."
+        mkdir -p "/tmp/sse-plugin-update"
+        wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip"
+        unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip" -d "$WP_PLUGIN_DIR/"
+        rm -rf "/tmp/sse-plugin-update"
+        
+        # 2. Simple WP Optimizer plugin
+        echo "Updating Simple WP Optimizer plugin for $DOMAIN..."
+        cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "$WP_PLUGIN_DIR/"
+        
+        # Set permissions for both plugins
+        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter-enginescript"
+        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript"
+        find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type d -exec chmod 755 {} \;
+        find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type f -exec chmod 644 {} \;
+        find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type d -exec chmod 755 {} \;
+        find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type f -exec chmod 644 {} \;
+      else
+        echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."
+      fi
     else
       echo "Warning: Plugin directory $WP_PLUGIN_DIR does not exist for site $SITE"
     fi

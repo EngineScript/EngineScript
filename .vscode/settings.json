@@ -6,5 +6,6 @@
         "markdown": true,
         "scminput": true,
         "shellscript": true
-    }
+    },
+    "git.autofetch": true
 }
