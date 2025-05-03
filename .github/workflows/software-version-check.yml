@@ -71,15 +71,7 @@ jobs:
           LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-Site-Exporter/releases/latest | 
             jq -r '.tag_name' | 
             sed 's/v//')
-          
-          # Check if SSE_PLUGIN_VER exists, if not add it
-          if ! grep -q "^SSE_PLUGIN_VER=" enginescript-variables.txt; then
-            echo "SSE_PLUGIN_VER=\"$LATEST_SSE\"" >> enginescript-variables.txt
-            echo "::notice::Added SSE_PLUGIN_VER=$LATEST_SSE to enginescript-variables.txt"
-            CHANGES_DETECTED=true
-          else
-            check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
-          fi
+          check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
           
           # PCRE2
           LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
@@ -251,17 +243,17 @@ jobs:
             -e "/|LIBURING|/s/|[^|]*|/|$LIBURING_VER|/2" \
             -e "/|PHPMYADMIN|/s/|[^|]*|/|$PHPMYADMIN_VER|/2" \
             -e "/|MARIADB|/s/|[^|]*|/|$MARIADB_VER|/2" \
+            -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$SSE_PLUGIN_VER|/2" \
             README.md
-            
-          # Update Simple Site Exporter Plugin version in README
-          # This uses a different pattern because we need to also update the URL to point to the new repository
-          if [ -n "$SSE_PLUGIN_VER" ]; then
-            sed -i \
-              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$SSE_PLUGIN_VER|/2" \
-              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s#\[https://github.com/EngineScript/EngineScript\](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-site-exporter-enginescript/simple-site-exporter.php)#\[https://github.com/EngineScript/Simple-Site-Exporter\](https://github.com/EngineScript/Simple-Site-Exporter)#" \
-              README.md
-          fi
           
+          # Always cleanup the temp file
+          rm -f .github/temp_versions.txt
+                      
       - name: Cleanup temp_versions.txt
         if: always()
-        run: rm -f .github/temp_versions.txt
+        run: |
+          # Double-check that the temp file is removed
+          if [ -f .github/temp_versions.txt ]; then
+            echo "Cleaning up temp_versions.txt that was not removed earlier"
+            rm -f .github/temp_versions.txt
+          fi
