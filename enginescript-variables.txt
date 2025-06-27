@@ -6,15 +6,15 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="MAY0325"
+VARIABLES_DATE="JUN2725"
 
 # Software Versions
-LIBURING_VER="2.9"
-MARIADB_VER="11.4.5"
+LIBURING_VER="2.11"
+MARIADB_VER="11.4.7"
 NGINX_DYN_TLS_PATCH_SHA="1eeff69434585b2417e5d5c49e0479c8b22b205192f60b638a5b6c589152c40b"
 NGINX_HEADER_VER="0.38"
 NGINX_PURGE_VER="2.5.3"
-NGINX_VER="1.27.5"
+NGINX_VER="1.29.0"
 OPENSSL_VER="3.4.1"
 PCRE2_VER="10.45"
 PHP_VER="8.3"
@@ -60,4 +60,4 @@ SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"
 # Shell text formatting
 BOLD="$(tput bold)"
 NORMAL="$(tput sgr0)"
-SSE_PLUGIN_VER="1.5.9"
+SSE_PLUGIN_VER="null"
