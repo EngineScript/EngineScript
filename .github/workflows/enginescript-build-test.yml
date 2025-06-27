@@ -1,0 +1,603 @@
+name: EngineScript Build Test
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'enginescript-variables.txt'
+      - 'config/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**'
+      - 'enginescript-variables.txt'
+      - 'config/**'
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Test scope'
+        required: true
+        default: 'component'
+        type: choice
+        options:
+          - component
+          - full
+          - nginx-only
+          - php-only
+          - mariadb-only
+          - redis-only
+      ubuntu_version:
+        description: 'Ubuntu version to test'
+        required: true
+        default: '24.04'
+        type: choice
+        options:
+          - '24.04'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate-scripts:
+    name: Validate Shell Scripts
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Validate Shell Scripts
+        run: |
+          echo "🔍 Validating shell scripts..."
+          find scripts/ -name "*.sh" -type f | while read -r script; do
+            echo "Checking: $script"
+            shellcheck "$script" || echo "❌ ShellCheck failed for $script"
+          done
+          
+          # Check main install script
+          shellcheck scripts/install/enginescript-install.sh || echo "❌ Main install script has issues"
+
+      - name: Check Script Permissions
+        run: |
+          echo "🔍 Checking script permissions..."
+          find scripts/ -name "*.sh" -type f ! -perm -u+x | while read -r script; do
+            echo "⚠️ Script not executable: $script"
+          done
+
+  component-build-test:
+    name: Component Build Test
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.inputs.test_scope == 'component' || github.event.inputs.test_scope == '' }}
+    needs: validate-scripts
+    strategy:
+      fail-fast: false
+      matrix:
+        component: ['dependencies', 'nginx', 'php', 'openssl', 'mariadb', 'redis']
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          # Free up disk space for compilation
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+      - name: Setup CI Environment
+        run: |
+          # Update system
+          sudo apt-get update
+          
+          # Install core packages (from setup.sh)
+          core_packages="apt bash boxes cron coreutils curl dos2unix git gzip nano openssl pwgen sed software-properties-common tar tzdata unattended-upgrades unzip zip"
+          sudo apt-get install -qy $core_packages
+          
+          # Install additional build packages for compilation
+          sudo apt-get install -y \
+            build-essential \
+            wget \
+            curl \
+            git \
+            cmake \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libssl-dev \
+            zlib1g-dev \
+            libpcre3-dev \
+            pwgen \
+            boxes
+          
+          # Create EngineScript directory structure
+          sudo mkdir -p /usr/local/bin/enginescript
+          sudo mkdir -p /home/EngineScript
+          sudo mkdir -p /var/log/EngineScript
+          sudo mkdir -p /tmp
+          
+          # Copy scripts to proper location
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          
+          # Copy CI configuration
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          
+          # Set permissions
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+          sudo chown -R root:root /usr/local/bin/enginescript
+          
+          # Create log files
+          sudo touch /var/log/EngineScript/install-error-log.txt
+          sudo touch /var/log/EngineScript/install-log.txt
+
+      - name: Install Full Dependencies
+        run: |
+          echo "🔧 Installing full EngineScript dependencies..."
+          cd /usr/local/bin/enginescript/scripts/install/depends
+          sudo timeout 600 ./depends-install.sh 2>&1 | tee /tmp/depends-full-install.log || {
+            echo "⚠️ Dependencies installation had issues, continuing..."
+            tail -50 /tmp/depends-full-install.log
+          }
+
+      - name: Test Dependencies Installation
+        if: matrix.component == 'dependencies'
+        run: |
+          echo "🔧 Testing dependencies installation..."
+          cd /usr/local/bin/enginescript/scripts/install/depends
+          sudo timeout 600 ./depends-install.sh 2>&1 | tee /tmp/depends-install.log || {
+            echo "❌ Dependencies installation failed or timed out"
+            cat /tmp/depends-install.log
+            exit 1
+          }
+
+      - name: Test OpenSSL Compilation
+        if: matrix.component == 'openssl'
+        run: |
+          echo "🔧 Testing OpenSSL compilation..."
+          cd /usr/local/bin/enginescript/scripts/install/openssl
+          sudo timeout 900 ./openssl-install.sh 2>&1 | tee /tmp/openssl-install.log || {
+            echo "❌ OpenSSL compilation failed or timed out"
+            tail -100 /tmp/openssl-install.log
+            exit 1
+          }
+
+      - name: Test Nginx Compilation
+        if: matrix.component == 'nginx'
+        run: |
+          echo "🔧 Testing Nginx compilation..."
+          
+          # Compile OpenSSL first (required for Nginx)
+          cd /usr/local/bin/enginescript/scripts/install/openssl
+          sudo timeout 600 ./openssl-install.sh || echo "OpenSSL compilation may have issues"
+          
+          # Compile PCRE2 (required for Nginx)
+          cd /usr/local/bin/enginescript/scripts/install/pcre
+          sudo timeout 300 ./pcre-install.sh || echo "PCRE compilation may have issues"
+          
+          # Compile Zlib (required for Nginx)
+          cd /usr/local/bin/enginescript/scripts/install/zlib
+          sudo timeout 300 ./zlib-install.sh || echo "Zlib compilation may have issues"
+          
+          # Now compile Nginx
+          cd /usr/local/bin/enginescript/scripts/install/nginx
+          sudo timeout 1200 ./nginx-install.sh 2>&1 | tee /tmp/nginx-install.log || {
+            echo "❌ Nginx compilation failed or timed out"
+            tail -100 /tmp/nginx-install.log
+            exit 1
+          }
+          
+          # Verify Nginx binary was created
+          if [ -f /usr/sbin/nginx ]; then
+            echo "✅ Nginx binary created successfully"
+            sudo /usr/sbin/nginx -V
+          else
+            echo "❌ Nginx binary not found"
+            exit 1
+          fi
+
+      - name: Test PHP Compilation
+        if: matrix.component == 'php'
+        run: |
+          echo "🔧 Testing PHP compilation..."
+          
+          # Compile OpenSSL first (required for PHP)
+          cd /usr/local/bin/enginescript/scripts/install/openssl
+          sudo timeout 600 ./openssl-install.sh || echo "OpenSSL compilation may have issues"
+          
+          # Now compile PHP
+          cd /usr/local/bin/enginescript/scripts/install/php
+          sudo timeout 1800 ./php-install.sh 2>&1 | tee /tmp/php-install.log || {
+            echo "❌ PHP compilation failed or timed out"
+            tail -100 /tmp/php-install.log
+            exit 1
+          }
+          
+          # Verify PHP was compiled
+          if [ -f /usr/local/bin/php ]; then
+            echo "✅ PHP binary created successfully"
+            sudo /usr/local/bin/php -v
+          else
+            echo "❌ PHP binary not found"
+            exit 1
+          fi
+
+      - name: Test MariaDB Installation
+        if: matrix.component == 'mariadb'
+        run: |
+          echo "🔧 Testing MariaDB installation..."
+          cd /usr/local/bin/enginescript/scripts/install/mariadb
+          sudo timeout 900 ./mariadb-install.sh 2>&1 | tee /tmp/mariadb-install.log || {
+            echo "❌ MariaDB installation failed or timed out"
+            tail -100 /tmp/mariadb-install.log
+            exit 1
+          }
+          
+          # Verify MariaDB was installed
+          if [ -f /usr/local/mysql/bin/mysql ]; then
+            echo "✅ MariaDB binary created successfully"
+            sudo /usr/local/mysql/bin/mysql --version
+          else
+            echo "❌ MariaDB binary not found"
+            exit 1
+          fi
+          
+          # Check if MariaDB service is running
+          if systemctl is-active --quiet mariadb; then
+            echo "✅ MariaDB service is running"
+          else
+            echo "ℹ️ MariaDB service not running (may be expected in CI)"
+          fi
+
+      - name: Test Redis Installation
+        if: matrix.component == 'redis'
+        run: |
+          echo "🔧 Testing Redis installation..."
+          cd /usr/local/bin/enginescript/scripts/install/redis
+          sudo timeout 600 ./redis-install.sh 2>&1 | tee /tmp/redis-install.log || {
+            echo "❌ Redis installation failed or timed out"
+            tail -100 /tmp/redis-install.log
+            exit 1
+          }
+          
+          # Verify Redis was installed
+          if command -v redis-server &> /dev/null; then
+            echo "✅ Redis server installed successfully"
+            redis-server --version
+          else
+            echo "❌ Redis server not found"
+            exit 1
+          fi
+          
+          # Check if Redis service is running
+          if systemctl is-active --quiet redis-server; then
+            echo "✅ Redis service is running"
+          else
+            echo "ℹ️ Redis service not running (may be expected in CI)"
+          fi
+
+      - name: Check Disk Space
+        if: always()
+        run: |
+          echo "💾 Disk space usage:"
+          df -h
+          echo "📁 Large directories:"
+          sudo du -sh /tmp/* 2>/dev/null | sort -hr | head -10 || true
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.component }}-ubuntu-24.04
+          path: |
+            /tmp/*.log
+            /var/log/EngineScript/
+          retention-days: 7
+
+  nginx-specific-test:
+    name: Nginx Compilation Test
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.inputs.test_scope == 'nginx-only' }}
+    needs: validate-scripts
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Environment for Nginx Test
+        run: |
+          # Free up space
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          
+          # Update and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget curl git cmake autoconf automake libtool pkg-config pwgen boxes
+          
+          # Create directory structure
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Test Nginx with Different Configurations
+        run: |
+          echo "🔧 Testing Nginx compilation with CPU detection..."
+          
+          # Test the CPU detection functionality
+          cd /usr/local/bin/enginescript/scripts/install/nginx
+          
+          # Install minimal dependencies for Nginx
+          sudo apt-get install -y libssl-dev zlib1g-dev libpcre3-dev
+          
+          # Test Nginx compilation with automatic CPU detection
+          sudo timeout 1200 ./nginx-install.sh 2>&1 | tee /tmp/nginx-auto.log
+          
+          # Verify the build
+          if [ -f /usr/sbin/nginx ]; then
+            echo "✅ Nginx with auto CPU detection successful"
+            sudo /usr/sbin/nginx -V 2>&1 | grep -E "(configure arguments|built with)"
+          else
+            echo "❌ Nginx compilation failed"
+            tail -50 /tmp/nginx-auto.log
+            exit 1
+          fi
+
+      - name: Test Nginx Modules
+        run: |
+          echo "🔧 Testing Nginx modules..."
+          sudo /usr/sbin/nginx -V 2>&1 | grep -o 'with-[^[:space:]]*' | sort
+          
+          # Check for key modules
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_ssl_module" && echo "✅ SSL module found" || echo "❌ SSL module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_v2_module" && echo "✅ HTTP/2 module found" || echo "❌ HTTP/2 module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_gzip_module" && echo "✅ Gzip module found" || echo "❌ Gzip module missing"
+
+  mariadb-specific-test:
+    name: MariaDB Installation Test
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.inputs.test_scope == 'mariadb-only' }}
+    needs: validate-scripts
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Environment for MariaDB Test
+        run: |
+          # Free up space
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          
+          # Update and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget curl git pwgen boxes
+          
+          # Create directory structure
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Test MariaDB Installation
+        run: |
+          echo "🔧 Testing MariaDB installation..."
+          cd /usr/local/bin/enginescript/scripts/install/mariadb
+          sudo timeout 1200 ./mariadb-install.sh 2>&1 | tee /tmp/mariadb-install.log || {
+            echo "❌ MariaDB installation failed or timed out"
+            tail -100 /tmp/mariadb-install.log
+            exit 1
+          }
+          
+          # Verify MariaDB was installed
+          if [ -f /usr/local/mysql/bin/mysql ]; then
+            echo "✅ MariaDB binary installed successfully"
+            sudo /usr/local/mysql/bin/mysql --version
+          else
+            echo "❌ MariaDB binary not found"
+            exit 1
+          fi
+
+      - name: Test MariaDB Configuration
+        run: |
+          echo "🔧 Testing MariaDB configuration..."
+          
+          # Check if MariaDB config exists
+          [ -f /etc/my.cnf ] && echo "✅ MariaDB config found" || echo "ℹ️ MariaDB config not in expected location"
+          
+          # Test MariaDB tuning script if it exists
+          cd /usr/local/bin/enginescript/scripts/install/mariadb
+          if [ -f "./mariadb-tune.sh" ]; then
+            echo "🔧 Testing MariaDB tuning script..."
+            sudo ./mariadb-tune.sh 2>&1 | tee /tmp/mariadb-tune.log || echo "⚠️ MariaDB tuning had issues"
+          fi
+
+  redis-specific-test:
+    name: Redis Installation Test
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.inputs.test_scope == 'redis-only' }}
+    needs: validate-scripts
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Environment for Redis Test
+        run: |
+          # Free up space
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          
+          # Update and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget curl git pwgen boxes
+          
+          # Create directory structure
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Test Redis Installation
+        run: |
+          echo "🔧 Testing Redis installation..."
+          cd /usr/local/bin/enginescript/scripts/install/redis
+          sudo timeout 600 ./redis-install.sh 2>&1 | tee /tmp/redis-install.log || {
+            echo "❌ Redis installation failed or timed out"
+            tail -100 /tmp/redis-install.log
+            exit 1
+          }
+          
+          # Verify Redis was installed
+          if command -v redis-server &> /dev/null; then
+            echo "✅ Redis server installed successfully"
+            redis-server --version
+          else
+            echo "❌ Redis server not found"
+            exit 1
+          fi
+
+      - name: Test Redis Configuration
+        run: |
+          echo "🔧 Testing Redis configuration..."
+          
+          # Check if Redis config exists
+          [ -f /etc/redis/redis.conf ] && echo "✅ Redis config found" || echo "ℹ️ Redis config not in expected location"
+          
+          # Test Redis connectivity (if service is running)
+          if systemctl is-active --quiet redis-server; then
+            echo "✅ Redis service is running, testing connectivity..."
+            redis-cli ping && echo "✅ Redis responds to ping" || echo "⚠️ Redis ping failed"
+          else
+            echo "ℹ️ Redis service not running (may be expected in CI)"
+          fi
+
+  full-build-test:
+    name: Full EngineScript Build Test
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.inputs.test_scope == 'full' }}
+    needs: validate-scripts
+    timeout-minutes: 180
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Maximize Disk Space
+        run: |
+          # Free up maximum disk space for full build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/graalvm
+          sudo rm -rf /usr/local/.ghcup
+          sudo docker system prune -af
+          sudo apt-get autoremove -y
+          sudo apt-get autoclean
+          df -h
+
+      - name: Setup Full Build Environment
+        run: |
+          sudo apt-get update
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript
+          sudo cp -r . /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          
+          # Create a modified install script that skips problematic parts for CI
+          sudo cp scripts/install/enginescript-install.sh /usr/local/bin/enginescript/scripts/install/enginescript-install-ci.sh
+          
+          # Modify the CI install script to skip certain steps
+          sudo sed -i 's/sleep 5/echo "Skipping sleep in CI"/' /usr/local/bin/enginescript/scripts/install/enginescript-install-ci.sh
+          sudo sed -i 's/read -p/#read -p/' /usr/local/bin/enginescript/scripts/install/enginescript-install-ci.sh
+          
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Run Full EngineScript Build (Limited)
+        run: |
+          echo "🚀 Starting full EngineScript build test..."
+          
+          # Set timeout and run with limited scope
+          cd /usr/local/bin/enginescript
+          sudo timeout 10800 ./scripts/install/enginescript-install-ci.sh 2>&1 | tee /tmp/full-build.log || {
+            echo "❌ Full build failed or timed out"
+            echo "📊 Last 100 lines of build log:"
+            tail -100 /tmp/full-build.log
+            
+            echo "📊 Error log if exists:"
+            [ -f /var/log/EngineScript/install-error-log.txt ] && tail -50 /var/log/EngineScript/install-error-log.txt
+            
+            echo "💾 Disk usage:"
+            df -h
+            exit 1
+          }
+
+      - name: Verify Full Build Results
+        if: always()
+        run: |
+          echo "🔍 Verifying build results..."
+          
+          # Check if key binaries exist
+          [ -f /usr/sbin/nginx ] && echo "✅ Nginx installed" || echo "❌ Nginx missing"
+          [ -f /usr/local/bin/php ] && echo "✅ PHP installed" || echo "❌ PHP missing"
+          [ -f /usr/local/mysql/bin/mysql ] && echo "✅ MariaDB installed" || echo "❌ MariaDB missing"
+          
+          # Check services (if they were started)
+          systemctl is-active nginx && echo "✅ Nginx service active" || echo "ℹ️ Nginx service not active (expected in CI)"
+          systemctl is-active php8.3-fpm && echo "✅ PHP-FPM service active" || echo "ℹ️ PHP-FPM service not active (expected in CI)"
+          
+          echo "📁 Directory structure:"
+          ls -la /usr/local/bin/enginescript/ || true
+          ls -la /etc/nginx/ || true
+
+  report-results:
+    name: Report Test Results
+    runs-on: ubuntu-24.04
+    needs: [validate-scripts, component-build-test, nginx-specific-test, mariadb-specific-test, redis-specific-test, full-build-test]
+    if: always()
+    
+    steps:
+      - name: Create Test Report
+        run: |
+          echo "# EngineScript Build Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "## Test Summary" >> test-report.md
+          echo "- **Validation**: ${{ needs.validate-scripts.result }}" >> test-report.md
+          echo "- **Component Tests**: ${{ needs.component-build-test.result }}" >> test-report.md
+          echo "- **Nginx Specific**: ${{ needs.nginx-specific-test.result }}" >> test-report.md
+          echo "- **MariaDB Specific**: ${{ needs.mariadb-specific-test.result }}" >> test-report.md
+          echo "- **Redis Specific**: ${{ needs.redis-specific-test.result }}" >> test-report.md
+          echo "- **Full Build**: ${{ needs.full-build-test.result }}" >> test-report.md
+          echo "" >> test-report.md
+          echo "## Workflow Details" >> test-report.md
+          echo "- **Trigger**: ${{ github.event_name }}" >> test-report.md
+          echo "- **Branch**: ${{ github.ref_name }}" >> test-report.md
+          echo "- **Commit**: ${{ github.sha }}" >> test-report.md
+          echo "- **Test Scope**: ${{ github.event.inputs.test_scope || 'component' }}" >> test-report.md
+          
+          cat test-report.md
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('test-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

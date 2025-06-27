@@ -1,0 +1,443 @@
+name: Nginx Compilation Test
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/install/nginx/**'
+      - 'scripts/install/openssl/**'
+      - 'scripts/install/pcre/**'
+      - 'scripts/install/zlib/**'
+      - 'patches/nginx/**'
+      - 'enginescript-variables.txt'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/install/nginx/**'
+      - 'scripts/install/openssl/**'
+      - 'scripts/install/pcre/**'
+      - 'scripts/install/zlib/**'
+  workflow_dispatch:
+    inputs:
+      test_cpu_override:
+        description: 'Test specific CPU architecture override'
+        required: false
+        default: ''
+        type: string
+      test_http3:
+        description: 'Test HTTP/3 compilation'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  nginx-compile-matrix:
+    name: Nginx Compilation Matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ['standard', 'optimized']
+        include:
+          - config: 'standard'
+            description: 'Standard compilation'
+            cpu_override: ''
+          - config: 'optimized'
+            description: 'Optimized compilation with CPU detection'
+            cpu_override: 'native'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space for Compilation
+        run: |
+          # Free up disk space for Nginx compilation
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            wget \
+            curl \
+            git \
+            cmake \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libssl-dev \
+            zlib1g-dev \
+            libpcre3-dev \
+            pwgen \
+            boxes \
+            ccache \
+            ninja-build
+
+      - name: Setup EngineScript Environment
+        run: |
+          # Create EngineScript directory structure
+          sudo mkdir -p /usr/local/bin/enginescript
+          sudo mkdir -p /home/EngineScript
+          sudo mkdir -p /var/log/EngineScript
+          sudo mkdir -p /tmp/nginx-build
+          
+          # Copy scripts and variables
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          
+          # Set permissions
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+          sudo chown -R root:root /usr/local/bin/enginescript
+          
+          # Show system information
+          echo "=== System Information ==="
+          uname -a
+          cat /proc/cpuinfo | grep -E "(model name|flags)" | head -4
+          free -h
+          df -h
+
+      - name: Test CPU Architecture Detection
+        run: |
+          echo "🔍 Testing CPU architecture detection..."
+          
+          # Source the variables to test detection logic
+          source /usr/local/bin/enginescript/enginescript-variables.txt
+          
+          echo "Detected architecture: $BIT_TYPE"
+          echo "CPU count: $CPU_COUNT"
+          
+          # Test the CPU detection script if it exists
+          if [ -f "/usr/local/bin/enginescript/scripts/install/nginx/detect-cpu.sh" ]; then
+            sudo /usr/local/bin/enginescript/scripts/install/nginx/detect-cpu.sh
+          else
+            echo "CPU detection integrated into main script"
+          fi
+
+      - name: Compile Dependencies (OpenSSL)
+        run: |
+          echo "🔧 Compiling OpenSSL..."
+          cd /usr/local/bin/enginescript/scripts/install/openssl
+          sudo timeout 600 ./openssl-install.sh 2>&1 | tee /tmp/openssl-build.log
+          
+          # Verify OpenSSL compilation
+          if [ -f /usr/local/ssl/bin/openssl ]; then
+            echo "✅ OpenSSL compiled successfully"
+            /usr/local/ssl/bin/openssl version
+          else
+            echo "❌ OpenSSL compilation failed"
+            tail -50 /tmp/openssl-build.log
+            exit 1
+          fi
+
+      - name: Compile Dependencies (PCRE2)
+        run: |
+          echo "🔧 Compiling PCRE2..."
+          cd /usr/local/bin/enginescript/scripts/install/pcre
+          sudo timeout 300 ./pcre-install.sh 2>&1 | tee /tmp/pcre-build.log
+          
+          # Verify PCRE compilation
+          if [ -f /usr/local/bin/pcre2-config ]; then
+            echo "✅ PCRE2 compiled successfully"
+            /usr/local/bin/pcre2-config --version
+          else
+            echo "❌ PCRE2 compilation failed"
+            tail -30 /tmp/pcre-build.log
+            exit 1
+          fi
+
+      - name: Compile Dependencies (Zlib)
+        run: |
+          echo "🔧 Compiling Zlib..."
+          cd /usr/local/bin/enginescript/scripts/install/zlib
+          sudo timeout 300 ./zlib-install.sh 2>&1 | tee /tmp/zlib-build.log
+          
+          # Verify Zlib compilation
+          if [ -f /usr/local/lib/libz.so ]; then
+            echo "✅ Zlib compiled successfully"
+            ls -la /usr/local/lib/libz.*
+          else
+            echo "❌ Zlib compilation failed"
+            tail -30 /tmp/zlib-build.log
+            exit 1
+          fi
+
+      - name: Set CPU Override for Testing
+        if: matrix.config == 'optimized' || github.event.inputs.test_cpu_override != ''
+        run: |
+          CPU_OVERRIDE="${{ github.event.inputs.test_cpu_override || matrix.cpu_override }}"
+          if [ -n "$CPU_OVERRIDE" ]; then
+            echo "Setting CPU override to: $CPU_OVERRIDE"
+            # Set environment variable for the nginx compilation
+            echo "NGINX_CPU_OVERRIDE=$CPU_OVERRIDE" | sudo tee -a /home/EngineScript/enginescript-install-options.txt
+          fi
+
+      - name: Compile Nginx with Configuration
+        run: |
+          echo "🚀 Compiling Nginx (${{ matrix.description }})..."
+          cd /usr/local/bin/enginescript/scripts/install/nginx
+          
+          # Set compilation timeout to 20 minutes
+          sudo timeout 1200 ./nginx-install.sh 2>&1 | tee /tmp/nginx-build.log
+          
+          # Check compilation result
+          if [ $? -eq 0 ] && [ -f /usr/sbin/nginx ]; then
+            echo "✅ Nginx compilation successful"
+          else
+            echo "❌ Nginx compilation failed or timed out"
+            echo "=== Last 100 lines of build log ==="
+            tail -100 /tmp/nginx-build.log
+            exit 1
+          fi
+
+      - name: Verify Nginx Binary and Configuration
+        run: |
+          echo "🔍 Verifying Nginx binary and configuration..."
+          
+          # Check if binary exists and is executable
+          if [ -f /usr/sbin/nginx ] && [ -x /usr/sbin/nginx ]; then
+            echo "✅ Nginx binary exists and is executable"
+          else
+            echo "❌ Nginx binary missing or not executable"
+            exit 1
+          fi
+          
+          # Get Nginx version and configuration
+          echo "=== Nginx Version ==="
+          sudo /usr/sbin/nginx -v
+          
+          echo -e "\n=== Nginx Configuration ==="
+          sudo /usr/sbin/nginx -V 2>&1 | tr ' ' '\n' | grep -E '^--'
+          
+          # Check for key modules
+          echo -e "\n=== Module Verification ==="
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_ssl_module" && echo "✅ SSL module" || echo "❌ SSL module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_v2_module" && echo "✅ HTTP/2 module" || echo "❌ HTTP/2 module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_gzip_module" && echo "✅ Gzip module" || echo "❌ Gzip module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_brotli" && echo "✅ Brotli module" || echo "ℹ️ Brotli module not found (may be expected)"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_headers_more" && echo "✅ Headers More module" || echo "❌ Headers More module missing"
+
+      - name: Test Nginx Configuration Syntax
+        run: |
+          echo "🔍 Testing Nginx configuration syntax..."
+          
+          # Create a minimal test configuration
+          sudo mkdir -p /etc/nginx/conf.d
+          
+          # Create nginx configuration file using cat with proper escaping
+          cat > /tmp/nginx.conf << 'ENDCONFIG'
+          user www-data;
+          worker_processes auto;
+          pid /run/nginx.pid;
+          
+          events {
+              worker_connections 1024;
+          }
+          
+          http {
+              sendfile on;
+              tcp_nopush on;
+              tcp_nodelay on;
+              keepalive_timeout 65;
+              types_hash_max_size 2048;
+              
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+              
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+              
+              server {
+                  listen 80;
+                  server_name localhost;
+                  root /var/www/html;
+                  index index.html;
+                  
+                  location / {
+                      try_files $uri $uri/ =404;
+                  }
+              }
+          }
+          ENDCONFIG
+          
+          # Copy the configuration file to the correct location
+          sudo cp /tmp/nginx.conf /etc/nginx/nginx.conf
+          
+          # Test configuration syntax
+          if sudo /usr/sbin/nginx -t; then
+            echo "✅ Nginx configuration syntax is valid"
+          else
+            echo "❌ Nginx configuration syntax error"
+            exit 1
+          fi
+
+      - name: Test Nginx Performance Features
+        run: |
+          echo "🚀 Testing Nginx performance features..."
+          
+          # Check for performance-related compile flags
+          echo "=== Performance Features Check ==="
+          NGINX_V_OUTPUT=$(sudo /usr/sbin/nginx -V 2>&1)
+          
+          echo "$NGINX_V_OUTPUT" | grep -q "O2\|O3" && echo "✅ Optimization flags detected" || echo "⚠️ No optimization flags detected"
+          echo "$NGINX_V_OUTPUT" | grep -q "native\|march" && echo "✅ CPU-specific optimizations detected" || echo "ℹ️ Generic CPU optimization"
+          echo "$NGINX_V_OUTPUT" | grep -q "file-aio" && echo "✅ File AIO support" || echo "ℹ️ No File AIO"
+          echo "$NGINX_V_OUTPUT" | grep -q "threads" && echo "✅ Thread pool support" || echo "ℹ️ No thread pool"
+
+      - name: Check Build Size and Performance
+        run: |
+          echo "📊 Nginx binary analysis..."
+          
+          # Check binary size
+          ls -lh /usr/sbin/nginx
+          
+          # Check linked libraries
+          echo -e "\n=== Linked Libraries ==="
+          ldd /usr/sbin/nginx | head -20
+          
+          # Check for debugging symbols (should be stripped for production)
+          if file /usr/sbin/nginx | grep -q "not stripped"; then
+            echo "⚠️ Binary contains debugging symbols (larger size)"
+          else
+            echo "✅ Binary is stripped (optimized size)"
+          fi
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nginx-build-logs-ubuntu-24.04-${{ matrix.config }}
+          path: |
+            /tmp/*-build.log
+            /var/log/EngineScript/
+          retention-days: 5
+
+      - name: Monitor Resource Usage
+        if: always()
+        run: |
+          echo "💾 Final disk usage:"
+          df -h
+          echo -e "\n🧠 Memory usage:"
+          free -h
+          echo -e "\n📁 Large build directories:"
+          sudo du -sh /tmp/* 2>/dev/null | sort -hr | head -10 || true
+
+  http3-test:
+    name: HTTP/3 Compilation Test
+    runs-on: ubuntu-24.04
+    if: github.event.inputs.test_http3 == 'true'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup HTTP/3 Build Environment
+        run: |
+          # Free space and install dependencies
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git wget curl autoconf automake libtool pkg-config
+          
+          # Setup EngineScript
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript
+          sudo cp -r scripts/ /usr/local/bin/enginescript/
+          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          
+          # Enable HTTP/3 in configuration
+          echo "INSTALL_HTTP3=1" | sudo tee -a /home/EngineScript/enginescript-install-options.txt
+          
+          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Compile Nginx with HTTP/3
+        run: |
+          echo "🚀 Testing Nginx compilation with HTTP/3 support..."
+          
+          # Install dependencies first
+          cd /usr/local/bin/enginescript/scripts/install/depends
+          sudo ./depends-install.sh
+          
+          # Compile dependencies
+          cd /usr/local/bin/enginescript/scripts/install/openssl
+          sudo timeout 600 ./openssl-install.sh
+          
+          # Compile Nginx with HTTP/3
+          cd /usr/local/bin/enginescript/scripts/install/nginx
+          sudo timeout 1800 ./nginx-install.sh 2>&1 | tee /tmp/nginx-http3.log
+          
+          # Verify HTTP/3 support
+          if [ -f /usr/sbin/nginx ]; then
+            echo "✅ Nginx with HTTP/3 compiled successfully"
+            sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_v3" && echo "✅ HTTP/3 module found" || echo "❌ HTTP/3 module missing"
+          else
+            echo "❌ Nginx HTTP/3 compilation failed"
+            tail -100 /tmp/nginx-http3.log
+            exit 1
+          fi
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-24.04
+    needs: [nginx-compile-matrix, http3-test]
+    if: always()
+    
+    steps:
+      - name: Generate Summary Report
+        run: |
+          echo "# Nginx Compilation Test Summary" > summary.md
+          echo "" >> summary.md
+          echo "## Matrix Test Results" >> summary.md
+          echo "- **Nginx Compilation Matrix**: ${{ needs.nginx-compile-matrix.result }}" >> summary.md
+          echo "- **HTTP/3 Test**: ${{ needs.http3-test.result }}" >> summary.md
+          echo "" >> summary.md
+          
+          if [ "${{ needs.nginx-compile-matrix.result }}" = "success" ]; then
+            echo "✅ All Nginx compilation configurations passed" >> summary.md
+          else
+            echo "❌ Some Nginx compilation configurations failed" >> summary.md
+          fi
+          
+          if [ "${{ needs.http3-test.result }}" = "success" ]; then
+            echo "✅ HTTP/3 compilation test passed" >> summary.md
+          elif [ "${{ needs.http3-test.result }}" = "skipped" ]; then
+            echo "⏭️ HTTP/3 compilation test was skipped" >> summary.md
+          else
+            echo "❌ HTTP/3 compilation test failed" >> summary.md
+          fi
+          
+          echo "" >> summary.md
+          echo "## Configuration Tested" >> summary.md
+          echo "- Standard Nginx compilation" >> summary.md
+          echo "- Optimized Nginx compilation with CPU detection" >> summary.md
+          echo "- Ubuntu 24.04 LTS" >> summary.md
+          echo "- OpenSSL, PCRE2, and Zlib dependency compilation" >> summary.md
+          echo "- Module verification and configuration testing" >> summary.md
+          
+          cat summary.md
+
+      - name: Comment Summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

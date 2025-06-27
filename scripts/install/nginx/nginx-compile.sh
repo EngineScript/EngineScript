@@ -35,6 +35,65 @@ else
   LD_FLAG=""
 fi
 
+# Get CPU architecture and optimizations
+echo "Detecting CPU architecture and capabilities..."
+# Save CPU flags to a temporary file
+gcc -c -Q -march=native --help=target > /tmp/cpu_capabilities.txt
+
+# Initialize optimization flags
+ARCH_FLAGS="-march=native -mtune=native"
+VECTOR_FLAGS=""
+CRYPTO_FLAGS=""
+BIT_FLAGS=""
+OTHER_FLAGS=""
+
+# Check for AVX/AVX2 support
+if grep -q "\-mavx.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  VECTOR_FLAGS="$VECTOR_FLAGS -mavx"
+fi
+if grep -q "\-mavx2.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  VECTOR_FLAGS="$VECTOR_FLAGS -mavx2"
+fi
+
+# Check for AES and other crypto extensions
+if grep -q "\-maes.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  CRYPTO_FLAGS="$CRYPTO_FLAGS -maes"
+fi
+if grep -q "\-mrdrnd.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  CRYPTO_FLAGS="$CRYPTO_FLAGS -mrdrnd"
+fi
+if grep -q "\-mrdseed.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  CRYPTO_FLAGS="$CRYPTO_FLAGS -mrdseed"
+fi
+
+# Check for bit manipulation instructions
+if grep -q "\-mbmi.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  BIT_FLAGS="$BIT_FLAGS -mbmi"
+fi
+if grep -q "\-mbmi2.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  BIT_FLAGS="$BIT_FLAGS -mbmi2"
+fi
+if grep -q "\-mlzcnt.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  BIT_FLAGS="$BIT_FLAGS -mlzcnt"
+fi
+
+# Check for other useful extensions
+if grep -q "\-mfsgsbase.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  OTHER_FLAGS="$OTHER_FLAGS -mfsgsbase"
+fi
+if grep -q "\-mprfchw.*\[enabled\]" /tmp/cpu_capabilities.txt; then
+  OTHER_FLAGS="$OTHER_FLAGS -mprfchw"
+fi
+
+# Combine all flags
+CPU_SPECIFIC_FLAGS="$ARCH_FLAGS $VECTOR_FLAGS $CRYPTO_FLAGS $BIT_FLAGS $OTHER_FLAGS"
+
+echo "CPU-specific compiler flags: $CPU_SPECIFIC_FLAGS"
+echo "------------------------------------------------"
+
+# Clean up
+rm -f /tmp/cpu_capabilities.txt
+
 if [ "${INSTALL_HTTP3}" = 1 ];
   then
     # HTTP3
@@ -54,7 +113,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
@@ -101,7 +160,7 @@ if [ "${INSTALL_HTTP3}" = 1 ];
       --sbin-path=/usr/sbin/nginx \
       --build=nginx-${NGINX_VER}-${DT}-enginescript \
       --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="-march=native -mtune=native -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
+      --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
       --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -fPIC -march=native --release" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \

@@ -197,8 +197,8 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command |
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
 |PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
-|PLUGIN: EngineScript: Simple Site Exporter| 1.5.8 | [https://github.com/EngineScript/Simple-Site-Exporter](https://github.com/EngineScript/Simple-Site-Exporter) |
-|PLUGIN: EngineScript: WP Optimization| 1.5.4 | [https://github.com/EngineScript/EngineScript](https://github.com/EngineScript/EngineScript/blob/master/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript/simple-wp-optimizer.php) |
+|PLUGIN: EngineScript: Simple Site Exporter| 1.5.8 | [https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter) |
+|PLUGIN: EngineScript: Simple WP Optimizer| 1.5.4 | [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
 |PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |

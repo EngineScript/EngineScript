@@ -1,0 +1,366 @@
+name: Script Validation
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - '*.sh'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**'
+      - '*.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  shellcheck:
+    name: ShellCheck Script Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Find Shell Scripts
+        id: find-scripts
+        run: |
+          echo "🔍 Finding shell scripts..."
+          SCRIPTS=$(find . -name "*.sh" -type f | grep -v .git | sort)
+          echo "Found scripts:"
+          echo "$SCRIPTS"
+          echo "script_count=$(echo "$SCRIPTS" | wc -l)" >> $GITHUB_OUTPUT
+          echo "scripts<<EOF" >> $GITHUB_OUTPUT
+          echo "$SCRIPTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate Shell Scripts with ShellCheck
+        run: |
+          echo "🔍 Running ShellCheck on ${{ steps.find-scripts.outputs.script_count }} scripts..."
+          
+          # Create output files
+          touch shellcheck-results.txt
+          touch shellcheck-summary.txt
+          
+          FAILED_SCRIPTS=0
+          PASSED_SCRIPTS=0
+          TOTAL_ISSUES=0
+          
+          while IFS= read -r script; do
+            if [ -n "$script" ]; then
+              echo "Checking: $script"
+              
+              if shellcheck "$script" > "shellcheck-${script//\//_}.out" 2>&1; then
+                echo "✅ $script - PASSED" | tee -a shellcheck-results.txt
+                PASSED_SCRIPTS=$((PASSED_SCRIPTS + 1))
+              else
+                echo "❌ $script - FAILED" | tee -a shellcheck-results.txt
+                FAILED_SCRIPTS=$((FAILED_SCRIPTS + 1))
+                
+                # Count issues in this script
+                SCRIPT_ISSUES=$(grep -c "^.*:.*:.*:" "shellcheck-${script//\//_}.out" 2>/dev/null || echo "0")
+                TOTAL_ISSUES=$((TOTAL_ISSUES + SCRIPT_ISSUES))
+                
+                echo "   Issues found: $SCRIPT_ISSUES" | tee -a shellcheck-results.txt
+                echo "" | tee -a shellcheck-results.txt
+                cat "shellcheck-${script//\//_}.out" | tee -a shellcheck-results.txt
+                echo "" | tee -a shellcheck-results.txt
+              fi
+            fi
+          done <<< "${{ steps.find-scripts.outputs.scripts }}"
+          
+          # Create summary
+          echo "# ShellCheck Summary" > shellcheck-summary.txt
+          echo "- **Total Scripts**: ${{ steps.find-scripts.outputs.script_count }}" >> shellcheck-summary.txt
+          echo "- **Passed**: $PASSED_SCRIPTS" >> shellcheck-summary.txt
+          echo "- **Failed**: $FAILED_SCRIPTS" >> shellcheck-summary.txt
+          echo "- **Total Issues**: $TOTAL_ISSUES" >> shellcheck-summary.txt
+          
+          # Display summary
+          cat shellcheck-summary.txt
+          
+          # Fail if any scripts failed
+          if [ $FAILED_SCRIPTS -gt 0 ]; then
+            echo "❌ $FAILED_SCRIPTS scripts failed ShellCheck validation"
+            exit 1
+          else
+            echo "✅ All scripts passed ShellCheck validation"
+          fi
+
+      - name: Check Script Permissions
+        run: |
+          echo "🔍 Checking script file permissions..."
+          
+          # Find scripts that should be executable but aren't
+          NON_EXECUTABLE=$(find scripts/ -name "*.sh" -type f ! -perm -u+x 2>/dev/null || true)
+          
+          if [ -n "$NON_EXECUTABLE" ]; then
+            echo "⚠️ Scripts without execute permission:"
+            echo "$NON_EXECUTABLE"
+            echo "" >> shellcheck-results.txt
+            echo "## Permission Issues" >> shellcheck-results.txt
+            echo "The following scripts are missing execute permissions:" >> shellcheck-results.txt
+            echo "$NON_EXECUTABLE" >> shellcheck-results.txt
+          else
+            echo "✅ All scripts have proper execute permissions"
+          fi
+
+      - name: Check for Common Issues
+        run: |
+          echo "🔍 Checking for common script issues..."
+          
+          # Check for missing shebangs
+          echo "Checking for missing shebangs..."
+          MISSING_SHEBANG=$(find scripts/ -name "*.sh" -type f -exec head -1 {} \; -print | grep -B1 -v "^#!/" | grep -E "\.sh$" || true)
+          
+          if [ -n "$MISSING_SHEBANG" ]; then
+            echo "⚠️ Scripts missing proper shebang:" >> shellcheck-results.txt
+            echo "$MISSING_SHEBANG" >> shellcheck-results.txt
+          fi
+          
+          # Check for potential security issues (basic check)
+          echo "Checking for potential security patterns..."
+          SECURITY_PATTERNS=$(grep -r -n -E "(eval|exec|system|rm -rf /|chmod 777)" scripts/ | head -10 || true)
+          
+          if [ -n "$SECURITY_PATTERNS" ]; then
+            echo "" >> shellcheck-results.txt
+            echo "## Potential Security Concerns (Review Required)" >> shellcheck-results.txt
+            echo "The following patterns may need security review:" >> shellcheck-results.txt
+            echo "$SECURITY_PATTERNS" >> shellcheck-results.txt
+          fi
+
+      - name: Generate Quality Report
+        run: |
+          echo "📊 Generating code quality report..."
+          
+          # Count different types of issues
+          INFO_COUNT=$(grep -c "info:" shellcheck-results.txt 2>/dev/null || echo "0")
+          WARNING_COUNT=$(grep -c "warning:" shellcheck-results.txt 2>/dev/null || echo "0")
+          ERROR_COUNT=$(grep -c "error:" shellcheck-results.txt 2>/dev/null || echo "0")
+          
+          echo "" >> shellcheck-summary.txt
+          echo "## Issue Breakdown" >> shellcheck-summary.txt
+          echo "- **Errors**: $ERROR_COUNT" >> shellcheck-summary.txt
+          echo "- **Warnings**: $WARNING_COUNT" >> shellcheck-summary.txt
+          echo "- **Info**: $INFO_COUNT" >> shellcheck-summary.txt
+          
+          # Quality score (simple calculation)
+          TOTAL_SCRIPTS=${{ steps.find-scripts.outputs.script_count }}
+          TOTAL_ISSUES=$((ERROR_COUNT + WARNING_COUNT))
+          
+          if [ $TOTAL_SCRIPTS -gt 0 ]; then
+            QUALITY_SCORE=$((100 - (TOTAL_ISSUES * 100 / TOTAL_SCRIPTS)))
+            echo "- **Quality Score**: ${QUALITY_SCORE}%" >> shellcheck-summary.txt
+          fi
+          
+          cat shellcheck-summary.txt
+
+      - name: Upload ShellCheck Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shellcheck-results
+          path: |
+            shellcheck-*.txt
+            shellcheck-*.out
+          retention-days: 7
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '# 🛠️ ShellCheck Script Validation Results\n\n';
+            
+            try {
+              const summary = fs.readFileSync('shellcheck-summary.txt', 'utf8');
+              comment += summary + '\n\n';
+              
+              // Add detailed results if there are issues
+              if (fs.existsSync('shellcheck-results.txt')) {
+                const results = fs.readFileSync('shellcheck-results.txt', 'utf8');
+                if (results.includes('❌') || results.includes('⚠️')) {
+                  comment += '<details>\n<summary>📋 Detailed Results</summary>\n\n```\n';
+                  comment += results.substring(0, 5000); // Limit length
+                  if (results.length > 5000) {
+                    comment += '\n... (truncated, see artifacts for full results)';
+                  }
+                  comment += '\n```\n</details>\n';
+                }
+              }
+            } catch (error) {
+              comment += '❌ Could not read validation results.\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  syntax-check:
+    name: Bash Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check Bash Syntax
+        run: |
+          echo "🔍 Checking Bash syntax for all shell scripts..."
+          
+          SYNTAX_ERRORS=0
+          
+          find scripts/ -name "*.sh" -type f | while read -r script; do
+            echo "Syntax checking: $script"
+            
+            if ! bash -n "$script"; then
+              echo "❌ Syntax error in: $script"
+              SYNTAX_ERRORS=$((SYNTAX_ERRORS + 1))
+            else
+              echo "✅ Syntax OK: $script"
+            fi
+          done
+          
+          if [ $SYNTAX_ERRORS -gt 0 ]; then
+            echo "❌ Found $SYNTAX_ERRORS scripts with syntax errors"
+            exit 1
+          else
+            echo "✅ All scripts have valid syntax"
+          fi
+
+      - name: Check for Variables File
+        run: |
+          echo "🔍 Checking enginescript-variables.txt..."
+          
+          if [ -f "enginescript-variables.txt" ]; then
+            echo "✅ Variables file exists"
+            
+            # Basic validation of variables file
+            source enginescript-variables.txt || {
+              echo "❌ Variables file has syntax errors"
+              exit 1
+            }
+            
+            echo "✅ Variables file syntax is valid"
+            
+            # Check for required variables
+            REQUIRED_VARS="NGINX_VER PHP_VER MARIADB_VER OPENSSL_VER"
+            for var in $REQUIRED_VARS; do
+              if [ -z "${!var:-}" ]; then
+                echo "⚠️ Required variable $var is not set or empty"
+              else
+                echo "✅ $var=${!var}"
+              fi
+            done
+          else
+            echo "❌ enginescript-variables.txt not found"
+            exit 1
+          fi
+
+  dependency-check:
+    name: Check Script Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check for Required Commands
+        run: |
+          echo "🔍 Checking for required commands in scripts..."
+          
+          # Common commands that should be available
+          COMMON_COMMANDS="wget curl git apt-get systemctl nginx php mysql"
+          
+          # Extract unique commands from scripts
+          SCRIPT_COMMANDS=$(grep -h -o -E '\b(wget|curl|git|apt-get|systemctl|nginx|php|mysql|mariadb|openssl)\b' scripts/**/*.sh | sort -u)
+          
+          echo "Commands found in scripts:"
+          echo "$SCRIPT_COMMANDS"
+          
+          # Check for potentially missing commands
+          echo "Checking command availability in Ubuntu..."
+          for cmd in $SCRIPT_COMMANDS; do
+            if command -v "$cmd" >/dev/null 2>&1; then
+              echo "✅ $cmd - available"
+            else
+              echo "⚠️ $cmd - may need installation"
+            fi
+          done
+
+      - name: Check Source Dependencies
+        run: |
+          echo "🔍 Checking source file dependencies..."
+          
+          # Find all source commands in scripts
+          SOURCED_FILES=$(grep -r -h "source " scripts/ | grep -o "source [^[:space:]]*" | cut -d' ' -f2 | sort -u)
+          
+          echo "Files being sourced:"
+          echo "$SOURCED_FILES"
+          
+          # Check if sourced files exist or are expected to be created
+          for file in $SOURCED_FILES; do
+            # Skip variables that are expected
+            if [[ "$file" == *"enginescript-variables.txt"* ]] || [[ "$file" == *"enginescript-install-options.txt"* ]]; then
+              echo "✅ $file - expected EngineScript file"
+            elif [ -f "$file" ]; then
+              echo "✅ $file - exists"
+            else
+              echo "⚠️ $file - may be created during install"
+            fi
+          done
+
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [shellcheck, syntax-check, dependency-check]
+    if: always()
+    
+    steps:
+      - name: Generate Validation Summary
+        run: |
+          echo "# 📋 Script Validation Summary" > validation-summary.md
+          echo "" >> validation-summary.md
+          echo "## Test Results" >> validation-summary.md
+          echo "- **ShellCheck**: ${{ needs.shellcheck.result }}" >> validation-summary.md
+          echo "- **Syntax Check**: ${{ needs.syntax-check.result }}" >> validation-summary.md
+          echo "- **Dependency Check**: ${{ needs.dependency-check.result }}" >> validation-summary.md
+          echo "" >> validation-summary.md
+          
+          # Overall status
+          if [ "${{ needs.shellcheck.result }}" = "success" ] && [ "${{ needs.syntax-check.result }}" = "success" ]; then
+            echo "✅ **Overall Status**: All validations passed" >> validation-summary.md
+          else
+            echo "❌ **Overall Status**: Some validations failed" >> validation-summary.md
+          fi
+          
+          echo "" >> validation-summary.md
+          echo "## Recommendations" >> validation-summary.md
+          
+          if [ "${{ needs.shellcheck.result }}" != "success" ]; then
+            echo "- Fix ShellCheck issues before merging" >> validation-summary.md
+          fi
+          
+          if [ "${{ needs.syntax-check.result }}" != "success" ]; then
+            echo "- Fix syntax errors before merging" >> validation-summary.md
+          fi
+          
+          if [ "${{ needs.dependency-check.result }}" = "success" ]; then
+            echo "- Dependencies look good" >> validation-summary.md
+          fi
+          
+          cat validation-summary.md

@@ -71,21 +71,24 @@ if [ -f "$SITES_FILE" ]; then
         # 1. Simple Site Exporter plugin
         echo "Updating Simple Site Exporter plugin for $DOMAIN..."
         mkdir -p "/tmp/sse-plugin-update"
-        wget -q "https://github.com/EngineScript/Simple-Site-Exporter/releases/latest/download/simple-site-exporter-enginescript.zip" -O "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip"
-        unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter-enginescript.zip" -d "$WP_PLUGIN_DIR/"
+        wget -q "https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-site-exporter.zip" -O "/tmp/sse-plugin-update/simple-site-exporter.zip"
+        unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter.zip" -d "$WP_PLUGIN_DIR/"
         rm -rf "/tmp/sse-plugin-update"
         
         # 2. Simple WP Optimizer plugin
         echo "Updating Simple WP Optimizer plugin for $DOMAIN..."
-        cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/plugins/simple-wp-optimizer-enginescript "$WP_PLUGIN_DIR/"
+        mkdir -p "/tmp/swpo-plugin-update"
+        wget -q "https://github.com/EngineScript/Simple-WP-Optimizer/releases/latest/download/simple-wp-optimizer.zip" -O "/tmp/swpo-plugin-update/simple-wp-optimizer.zip"
+        unzip -q -o "/tmp/swpo-plugin-update/simple-wp-optimizer.zip" -d "$WP_PLUGIN_DIR/"
+        rm -rf "/tmp/swpo-plugin-update"
         
         # Set permissions for both plugins
-        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter-enginescript"
-        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript"
-        find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type d -exec chmod 755 {} \;
-        find "$WP_PLUGIN_DIR/simple-site-exporter-enginescript" -type f -exec chmod 644 {} \;
-        find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type d -exec chmod 755 {} \;
-        find "$WP_PLUGIN_DIR/simple-wp-optimizer-enginescript" -type f -exec chmod 644 {} \;
+        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter"
+        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer"
+        find "$WP_PLUGIN_DIR/simple-site-exporter" -type d -exec chmod 755 {} \;
+        find "$WP_PLUGIN_DIR/simple-site-exporter" -type f -exec chmod 644 {} \;
+        find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type d -exec chmod 755 {} \;
+        find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type f -exec chmod 644 {} \;
       else
         echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."
       fi

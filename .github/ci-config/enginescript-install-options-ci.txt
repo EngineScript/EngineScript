@@ -1,0 +1,134 @@
+######################################################################
+# # # # # # # # # # # # EngineScript Variables # # # # # # # # # # # #
+######################################################################
+
+#| IMPORTANT: This is a CI/CD test configuration file
+#| It contains safe dummy values for automated testing
+#| DO NOT use this configuration for production servers
+
+###################
+# Install Options #
+###################
+# 0 = disabled
+# 1 = enabled
+
+# EngineScript Install Debug Mode
+# Enable debug mode for CI to catch errors
+DEBUG_INSTALL=1
+
+# Admin Subdomain (Disabled for CI)
+# Disable admin subdomain for CI testing
+ADMIN_SUBDOMAIN=0
+
+# phpMyAdmin (Disabled for CI)
+# Skip phpMyAdmin installation in CI
+INSTALL_PHPMYADMIN=0
+
+# Adminer (Disabled for CI)
+# Skip Adminer installation in CI
+INSTALL_ADMINER=0
+
+########################
+# EngineScript Updates #
+########################
+# 0 = disabled
+# 1 = enabled
+
+# EngineScript Daily Updates (Disabled for CI)
+# Disable auto-updates in CI environment
+ENGINESCRIPT_AUTO_UPDATE=0
+
+# EngineScript Emergency Updates (Disabled for CI)
+# Disable emergency updates in CI environment
+ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0
+
+############################
+# Expanded Server Features #
+############################
+# 0 = disabled
+# 1 = enabled
+
+## NGINX HTTP3 Support ##
+# Disable HTTP3 for CI testing to reduce complexity
+INSTALL_HTTP3=0
+
+## Expanded PHP Extensions Support ##
+# Enable for testing PHP compilation
+INSTALL_EXPANDED_PHP=1
+
+# Automatically perform lossless compression (Disabled for CI)
+# Disable image optimization in CI
+AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
+
+# Install EngineScript Custom Plugins (Disabled for CI)
+# Skip plugin installation in CI
+INSTALL_ENGINESCRIPT_PLUGINS=0
+
+####################
+# Security Options #
+####################
+# 0 = disabled
+# 1 = enabled
+
+## Secure Admin Control Panel ##
+# Disable for CI testing
+NGINX_SECURE_ADMIN=0
+
+## Show EngineScript Header ##
+# Disable for CI testing
+SHOW_ENGINESCRIPT_HEADER=0
+
+##################
+# Backup Options #
+##################
+# 0 = disabled
+# 1 = enabled
+
+# Disable all backup features for CI
+BACKUP_LOCAL_ENABLED=0
+BACKUP_COMPRESSION=0
+DAILY_DATABASE_BACKUP=0
+WEEKLY_DATABASE_BACKUP=0
+WEEKLY_WP_CONTENT_BACKUP=0
+
+###############################
+# CI Testing Specific Options #
+###############################
+
+# CI Environment Flag
+CI_TESTING=1
+
+# Skip interactive prompts
+SKIP_INTERACTIVE=1
+
+# Fast testing mode (skip non-essential steps)
+FAST_TESTING_MODE=1
+
+# Test server details (dummy values)
+SERVER_NAME="ci-test-server"
+SERVER_EMAIL="test@example.com"
+SERVER_TIMEZONE="UTC"
+
+# Test domain (use example.com for safety)
+PRIMARY_DOMAIN="example.com"
+TEST_DOMAIN="test.example.com"
+
+# Test database credentials (dummy but valid format)
+DB_ROOT_PASSWORD="CI_Test_Password_123"
+DB_USER="ci_test_user"
+DB_PASSWORD="CI_Test_DB_Pass_456"
+DB_NAME="ci_test_database"
+
+# Test SSL settings (use self-signed for CI)
+SSL_MODE="self-signed"
+SSL_COUNTRY="US"
+SSL_STATE="TestState"
+SSL_CITY="TestCity"
+SSL_ORG="CI Testing Org"
+SSL_UNIT="CI Testing Unit"
+
+# Memory settings for CI (adjust for GitHub Actions 7GB limit)
+CI_MEMORY_LIMIT="4096"
+CI_PHP_MEMORY_LIMIT="512M"
+CI_NGINX_WORKER_PROCESSES="2"
+CI_MARIADB_INNODB_BUFFER_POOL="1G"

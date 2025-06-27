@@ -51,7 +51,8 @@ jobs:
             local new_ver=$2
             local current_ver=$(get_current_version "$var_name")
             
-            if [ -n "$new_ver" ] && version_gt "$new_ver" "$current_ver"; then
+            # Handle special case where current version is "null" or empty
+            if [ -n "$new_ver" ] && ([ "$current_ver" = "null" ] || [ -z "$current_ver" ] || version_gt "$new_ver" "$current_ver"); then
               echo "${var_name}=\"${new_ver}\"" >> .github/temp_versions.txt
               CHANGES_DETECTED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
@@ -68,10 +69,16 @@ jobs:
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
           # Simple Site Exporter Plugin
-          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-Site-Exporter/releases/latest | 
+          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Site-Exporter/releases/latest | 
             jq -r '.tag_name' | 
             sed 's/v//')
           check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
+          
+          # Simple WP Optimizer Plugin
+          LATEST_SWPO=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Optimizer/releases/latest | 
+            jq -r '.tag_name' | 
+            sed 's/v//')
+          check_version "SWPO_PLUGIN_VER" "$LATEST_SWPO"
           
           # PCRE2
           LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
@@ -170,7 +177,7 @@ jobs:
         run: |
           # Update version numbers from temp file
           while IFS= read -r line; do
-            if [[ $line =~ ^[A-Z_]+_VER= ]]; then
+            if [[ $line =~ ^[A-Z_]+_VER= ]] || [[ $line =~ ^NGINX_DYN_TLS_PATCH_SHA= ]]; then
               var_name=$(echo "$line" | cut -d= -f1)
               sed -i "s/$var_name=\".*\"/$line/" enginescript-variables.txt
             elif [[ $line =~ ^VARIABLES_DATE= ]]; then
@@ -220,6 +227,7 @@ jobs:
           MARIADB_VER=$(get_var MARIADB_VER)
           NGINX_DYN_TLS_PATCH_SHA=$(get_var NGINX_DYN_TLS_PATCH_SHA)
           SSE_PLUGIN_VER=$(get_var SSE_PLUGIN_VER)
+          SWPO_PLUGIN_VER=$(get_var SWPO_PLUGIN_VER)
 
           # Get patch date (Last-Modified header or today)
           PATCH_URL="https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch"
@@ -244,6 +252,7 @@ jobs:
             -e "/|PHPMYADMIN|/s/|[^|]*|/|$PHPMYADMIN_VER|/2" \
             -e "/|MARIADB|/s/|[^|]*|/|$MARIADB_VER|/2" \
             -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$SSE_PLUGIN_VER|/2" \
+            -e "/|PLUGIN: EngineScript: Simple WP Optimizer|/s/|[^|]*|/|$SWPO_PLUGIN_VER|/2" \
             README.md
           
           # Always cleanup the temp file
