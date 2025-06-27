@@ -2,9 +2,7 @@ name: Script Validation
 
 on:
   pull_request:
-    paths:
-      - 'scripts/**'
-      - '*.sh'
+    # Run on all pull requests to ensure script quality
   push:
     branches:
       - main

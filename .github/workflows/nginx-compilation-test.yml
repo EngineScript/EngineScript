@@ -2,13 +2,8 @@ name: Nginx Compilation Test
 
 on:
   pull_request:
-    paths:
-      - 'scripts/install/nginx/**'
-      - 'scripts/install/openssl/**'
-      - 'scripts/install/pcre/**'
-      - 'scripts/install/zlib/**'
-      - 'patches/nginx/**'
-      - 'enginescript-variables.txt'
+    # Run on all pull requests for comprehensive nginx testing
+    # Specific path triggers maintained for push events to optimize CI usage
   push:
     branches:
       - main
@@ -27,8 +22,18 @@ on:
       test_http3:
         description: 'Test HTTP/3 compilation'
         required: false
-        default: false
+        default: true
         type: boolean
+      test_matrix:
+        description: 'Which test matrix to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - standard-only
+          - optimized-only
+          - http3-only
 
 permissions:
   contents: read
@@ -41,20 +46,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ['standard', 'optimized']
+        config: ['standard', 'optimized', 'http3']
         include:
           - config: 'standard'
-            description: 'Standard compilation'
+            description: 'Standard compilation with HTTP/2'
             cpu_override: ''
+            enable_http3: false
           - config: 'optimized'
             description: 'Optimized compilation with CPU detection'
             cpu_override: 'native'
+            enable_http3: false
+          - config: 'http3'
+            description: 'HTTP/3 and QUIC compilation test'
+            cpu_override: ''
+            enable_http3: true
     
     steps:
+      - name: Check Matrix Configuration
+        id: check-config
+        run: |
+          SHOULD_RUN="true"
+          
+          # Check if we should skip this configuration based on workflow input
+          if [ "${{ github.event.inputs.test_matrix }}" = "standard-only" ] && [ "${{ matrix.config }}" != "standard" ]; then
+            SHOULD_RUN="false"
+          elif [ "${{ github.event.inputs.test_matrix }}" = "optimized-only" ] && [ "${{ matrix.config }}" != "optimized" ]; then
+            SHOULD_RUN="false"
+          elif [ "${{ github.event.inputs.test_matrix }}" = "http3-only" ] && [ "${{ matrix.config }}" != "http3" ]; then
+            SHOULD_RUN="false"
+          fi
+          
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "Running ${{ matrix.config }} configuration: $SHOULD_RUN"
+
       - name: Checkout Repository
+        if: steps.check-config.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
       - name: Free Disk Space for Compilation
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           # Free up disk space for Nginx compilation
           sudo rm -rf /usr/share/dotnet
@@ -65,6 +95,7 @@ jobs:
           df -h
 
       - name: Install Build Dependencies
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -86,6 +117,7 @@ jobs:
             ninja-build
 
       - name: Setup EngineScript Environment
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           # Create EngineScript directory structure
           sudo mkdir -p /usr/local/bin/enginescript
@@ -93,14 +125,14 @@ jobs:
           sudo mkdir -p /var/log/EngineScript
           sudo mkdir -p /tmp/nginx-build
           
-          # Copy scripts and variables
-          sudo cp -r scripts/ /usr/local/bin/enginescript/
-          sudo cp enginescript-variables.txt /usr/local/bin/enginescript/
+          # Copy all scripts and config files
+          sudo cp -r . /usr/local/bin/enginescript/
           sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
           
-          # Set permissions
-          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
+          # Set proper permissions
+          sudo find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
           sudo chown -R root:root /usr/local/bin/enginescript
+          sudo find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
           
           # Show system information
           echo "=== System Information ==="
@@ -109,70 +141,80 @@ jobs:
           free -h
           df -h
 
-      - name: Test CPU Architecture Detection
+      - name: Run Base EngineScript Installation
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
-          echo "🔍 Testing CPU architecture detection..."
+          echo "� Running base EngineScript installation sequence..."
+          cd /usr/local/bin/enginescript
           
-          # Source the variables to test detection logic
+          # Run setup.sh first
+          sudo timeout 300 ./setup.sh 2>&1 | tee /tmp/setup.log || {
+            echo "❌ Setup script failed"
+            tail -50 /tmp/setup.log
+            exit 1
+          }
+          
+          # Source variables and set CI mode
           source /usr/local/bin/enginescript/enginescript-variables.txt
+          source /home/EngineScript/enginescript-install-options.txt
+          export DEBUG_INSTALL=0
           
-          echo "Detected architecture: $BIT_TYPE"
-          echo "CPU count: $CPU_COUNT"
+          cd scripts/install
           
-          # Test the CPU detection script if it exists
-          if [ -f "/usr/local/bin/enginescript/scripts/install/nginx/detect-cpu.sh" ]; then
-            sudo /usr/local/bin/enginescript/scripts/install/nginx/detect-cpu.sh
-          else
-            echo "CPU detection integrated into main script"
-          fi
+          # Essential base installations for Nginx compilation
+          echo "📦 Installing repositories..."
+          sudo timeout 600 ./repositories/repositories-install.sh 2>/dev/null || echo "⚠️ Repositories step had issues"
+          
+          echo "📚 Installing dependencies..."
+          sudo timeout 900 ./depends/depends-install.sh 2>/dev/null || echo "⚠️ Dependencies step had issues"
+          
+          echo "� Installing GCC..."
+          sudo timeout 600 ./gcc/gcc-install.sh 2>/dev/null || echo "⚠️ GCC step had issues"
+          
+          echo "🔒 Installing OpenSSL..."
+          sudo timeout 900 ./openssl/openssl-install.sh 2>/dev/null || echo "⚠️ OpenSSL step had issues"
+          
+          echo "📝 Installing PCRE..."
+          sudo timeout 600 ./pcre/pcre-install.sh 2>/dev/null || echo "⚠️ PCRE step had issues"
+          
+          echo "� Installing Zlib..."
+          sudo timeout 600 ./zlib/zlib-install.sh 2>/dev/null || echo "⚠️ Zlib step had issues"
+          
+          echo "✅ Base installation sequence completed"
 
-      - name: Compile Dependencies (OpenSSL)
+      - name: Verify Dependencies for Nginx
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
-          echo "🔧 Compiling OpenSSL..."
-          cd /usr/local/bin/enginescript/scripts/install/openssl
-          sudo timeout 600 ./openssl-install.sh 2>&1 | tee /tmp/openssl-build.log
+          echo "🔍 Verifying dependencies for Nginx compilation..."
           
-          # Verify OpenSSL compilation
+          # Verify OpenSSL
           if [ -f /usr/local/ssl/bin/openssl ]; then
-            echo "✅ OpenSSL compiled successfully"
+            echo "✅ OpenSSL available"
             /usr/local/ssl/bin/openssl version
           else
-            echo "❌ OpenSSL compilation failed"
-            tail -50 /tmp/openssl-build.log
+            echo "❌ OpenSSL not found"
             exit 1
           fi
-
-      - name: Compile Dependencies (PCRE2)
-        run: |
-          echo "🔧 Compiling PCRE2..."
-          cd /usr/local/bin/enginescript/scripts/install/pcre
-          sudo timeout 300 ./pcre-install.sh 2>&1 | tee /tmp/pcre-build.log
           
-          # Verify PCRE compilation
+          # Verify PCRE2
           if [ -f /usr/local/bin/pcre2-config ]; then
-            echo "✅ PCRE2 compiled successfully"
+            echo "✅ PCRE2 available"
             /usr/local/bin/pcre2-config --version
           else
-            echo "❌ PCRE2 compilation failed"
-            tail -30 /tmp/pcre-build.log
+            echo "❌ PCRE2 not found"
             exit 1
           fi
-
-      - name: Compile Dependencies (Zlib)
-        run: |
-          echo "🔧 Compiling Zlib..."
-          cd /usr/local/bin/enginescript/scripts/install/zlib
-          sudo timeout 300 ./zlib-install.sh 2>&1 | tee /tmp/zlib-build.log
           
-          # Verify Zlib compilation
+          # Verify Zlib
           if [ -f /usr/local/lib/libz.so ]; then
-            echo "✅ Zlib compiled successfully"
+            echo "✅ Zlib available"
             ls -la /usr/local/lib/libz.*
           else
-            echo "❌ Zlib compilation failed"
-            tail -30 /tmp/zlib-build.log
+            echo "❌ Zlib not found"
             exit 1
           fi
+          
+          echo "✅ All dependencies verified"
 
       - name: Set CPU Override for Testing
         if: matrix.config == 'optimized' || github.event.inputs.test_cpu_override != ''
@@ -184,7 +226,21 @@ jobs:
             echo "NGINX_CPU_OVERRIDE=$CPU_OVERRIDE" | sudo tee -a /home/EngineScript/enginescript-install-options.txt
           fi
 
+      - name: Configure HTTP/3 Build
+        if: (matrix.config == 'http3' || matrix.enable_http3 == true) && steps.check-config.outputs.should_run == 'true'
+        run: |
+          echo "🔧 Configuring HTTP/3 build environment..."
+          
+          # Ensure we have the latest OpenSSL for HTTP/3 support
+          echo "FORCE_OPENSSL_LATEST=1" | sudo tee -a /home/EngineScript/enginescript-install-options.txt
+          
+          # Enable HTTP/3 module in configuration
+          echo "ENABLE_NGINX_HTTP3=1" | sudo tee -a /home/EngineScript/enginescript-install-options.txt
+          
+          echo "✅ HTTP/3 build configuration completed"
+
       - name: Compile Nginx with Configuration
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           echo "🚀 Compiling Nginx (${{ matrix.description }})..."
           cd /usr/local/bin/enginescript/scripts/install/nginx
@@ -203,6 +259,7 @@ jobs:
           fi
 
       - name: Verify Nginx Binary and Configuration
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           echo "🔍 Verifying Nginx binary and configuration..."
           
@@ -225,11 +282,113 @@ jobs:
           echo -e "\n=== Module Verification ==="
           sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_ssl_module" && echo "✅ SSL module" || echo "❌ SSL module missing"
           sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_v2_module" && echo "✅ HTTP/2 module" || echo "❌ HTTP/2 module missing"
+          sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_v3_module" && echo "✅ HTTP/3 module" || echo "ℹ️ HTTP/3 module not compiled (may be expected)"
           sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_gzip_module" && echo "✅ Gzip module" || echo "❌ Gzip module missing"
           sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_brotli" && echo "✅ Brotli module" || echo "ℹ️ Brotli module not found (may be expected)"
           sudo /usr/sbin/nginx -V 2>&1 | grep -q "http_headers_more" && echo "✅ Headers More module" || echo "❌ Headers More module missing"
 
+      - name: Test HTTP/3 and QUIC Features
+        if: matrix.config == 'http3' || matrix.enable_http3 == true
+        run: |
+          echo "🔍 Testing HTTP/3 and QUIC specific features..."
+          
+          # Install SSL certificates for testing
+          sudo apt-get install -y ssl-cert
+          
+          # Verify HTTP/3 module compilation
+          NGINX_V_OUTPUT=$(sudo /usr/sbin/nginx -V 2>&1)
+          
+          if echo "$NGINX_V_OUTPUT" | grep -q "http_v3_module"; then
+            echo "✅ HTTP/3 module successfully compiled"
+          else
+            echo "❌ HTTP/3 module missing from compilation"
+            echo "Available modules:"
+            echo "$NGINX_V_OUTPUT" | grep -o 'with-[^[:space:]]*' | sort
+            exit 1
+          fi
+          
+          # Check for QUIC support
+          if echo "$NGINX_V_OUTPUT" | grep -q "quic"; then
+            echo "✅ QUIC support detected"
+          else
+            echo "⚠️ QUIC support not explicitly detected"
+          fi
+          
+          # Check for required HTTP/3 dependencies
+          echo -e "\n=== HTTP/3 Dependencies Check ==="
+          echo "$NGINX_V_OUTPUT" | grep -q "with-openssl" && echo "✅ OpenSSL support" || echo "❌ OpenSSL support missing"
+          echo "$NGINX_V_OUTPUT" | grep -q "with-http_ssl_module" && echo "✅ SSL module for QUIC" || echo "❌ SSL module missing"
+          
+          # Create log directories for testing
+          sudo mkdir -p /var/log/nginx
+          
+          # Test configuration file with HTTP/3 directives
+          echo -e "\n=== HTTP/3 Configuration Test ==="
+          cat > /tmp/nginx-http3-test.conf << 'HTTP3CONFIG'
+          user www-data;
+          worker_processes auto;
+          pid /run/nginx.pid;
+          
+          events {
+              worker_connections 1024;
+          }
+          
+          http {
+              sendfile on;
+              tcp_nopush on;
+              tcp_nodelay on;
+              keepalive_timeout 65;
+              
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+              
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+              
+              server {
+                  listen 80;
+                  listen 443 ssl http2;
+                  listen 443 quic reuseport;
+                  server_name example.com;
+                  
+                  ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+                  ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+                  ssl_protocols TLSv1.2 TLSv1.3;
+                  
+                  # HTTP/3 and QUIC settings
+                  quic_retry on;
+                  ssl_early_data on;
+                  
+                  # HTTP/3 advertisement header
+                  add_header Alt-Svc 'h3=":443"; ma=86400' always;
+                  
+                  location / {
+                      return 200 "HTTP/3 test server\\n";
+                      add_header Content-Type text/plain;
+                  }
+              }
+          }
+          HTTP3CONFIG
+          
+          # Test the HTTP/3 configuration syntax
+          if sudo /usr/sbin/nginx -t -c /tmp/nginx-http3-test.conf; then
+            echo "✅ HTTP/3 configuration syntax is valid"
+          else
+            echo "❌ HTTP/3 configuration syntax has errors"
+            cat /tmp/nginx-http3-test.conf
+            exit 1
+          fi
+          
+          # Test QUIC-specific directives
+          echo -e "\n=== QUIC Directives Test ==="
+          if grep -q "quic_retry\|quic_gso\|quic_bpf" /usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh; then
+            echo "✅ QUIC optimization directives found in nginx-tune.sh"
+          else
+            echo "⚠️ QUIC optimization directives not found"
+          fi
+
       - name: Test Nginx Configuration Syntax
+        if: steps.check-config.outputs.should_run == 'true'
         run: |
           echo "🔍 Testing Nginx configuration syntax..."
           

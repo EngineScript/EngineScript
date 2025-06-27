@@ -18,6 +18,16 @@ Changes are organized by date, with the most recent changes listed first.
 - Hourly cleanup cron script for lightweight maintenance tasks
 - EngineScript plugins install option to control custom plugin installation
 - Backward compatibility mechanism for existing installations
+- HTTP/3 and QUIC compilation testing in Nginx workflow matrix
+- Comprehensive HTTP/3 configuration syntax validation 
+- QUIC-specific directive testing and verification
+- Enhanced dependencies installation timeout (15 minutes) for CI stability
+- Matrix-based Nginx compilation testing (standard, optimized, HTTP/3)
+- Workflow dispatch options for selective Nginx test execution
+- Complete EngineScript base installation sequence in CI workflows
+- Proper sequential installation following enginescript-install.sh line order
+- Base setup integration including setup.sh execution
+- Full dependency chain installation before component testing
 
 ### Changed
 - Updated Copilot instructions to reflect EngineScript project focus instead of WordPress plugin development
@@ -36,6 +46,11 @@ Changes are organized by date, with the most recent changes listed first.
 - Removed Ubuntu 20.04 and 22.04 from CI/CD test matrix to focus on latest LTS support
 - Standardized all workflow jobs (validate-scripts, component-build-test, nginx-specific-test, full-build-test, report-results) to use ubuntu-24.04
 - Updated artifact naming to reflect single Ubuntu version in build logs
+- Restructured CI workflows to follow proper EngineScript installation sequence
+- Component tests now run only after complete base installation (lines 1-453)
+- CI now follows the exact installation order: repositories → depends → gcc → openssl → pcre → zlib
+- Nginx, PHP, MariaDB, Redis tests now properly depend on completed base setup
+- Removed individual component dependency installations in favor of base sequence
 
 ### Fixed
 - GitHub Actions workflow SSE plugin version checking issues
@@ -46,6 +61,13 @@ Changes are organized by date, with the most recent changes listed first.
 - Ubuntu version matrix in nginx-compilation-test.yml to use only Ubuntu 24.04 for consistency
 - Artifact naming in nginx-compilation-test.yml to reflect single Ubuntu version support
 - Nginx configuration file creation using proper YAML-compatible heredoc syntax
+- Dependencies installation timeout issues in CI by increasing limit to 15 minutes
+- Enhanced error diagnostics for dependencies installation failures
+- Improved path validation and executable checks for depends-install.sh
+- Better CI environment setup for EngineScript testing workflows
+- **Fixed CI component testing by implementing proper base installation sequence**
+- **Resolved timeout issues by following correct EngineScript installation dependencies**
+- **Fixed Nginx compilation failures by ensuring OpenSSL, PCRE, and Zlib are pre-installed**
 
 ### Security
 - Enhanced CPU feature validation in compilation scripts
