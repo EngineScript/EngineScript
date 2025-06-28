@@ -18,6 +18,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  actions: read
 
 jobs:
   full-build-test:
@@ -53,11 +54,21 @@ jobs:
           # Create required directories including log directories
           sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript /tmp/ci-logs
           
+          # Set proper permissions on log directory for file operations
+          sudo chmod 755 /tmp/ci-logs
+          sudo chown runner:runner /tmp/ci-logs
+          
           # Copy entire project to build location
           sudo cp -r . /usr/local/bin/enginescript/
           
           # Copy CI configuration
-          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          if [ -f .github/ci-config/enginescript-install-options-ci.txt ]; then
+            sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+            echo "✅ CI configuration copied successfully"
+          else
+            echo "⚠️ CI configuration file not found, creating default"
+            sudo touch /home/EngineScript/enginescript-install-options.txt
+          fi
           
           # CRITICAL: Set executable permissions immediately after copying
           echo "🔧 Setting executable permissions on all scripts..."
@@ -370,7 +381,7 @@ jobs:
           fi
           
           # Create comprehensive test summary
-          cat > /tmp/ci-logs/test-summary.md << 'EOF'
+          cat > /tmp/ci-logs/test-summary.md << EOF
           # EngineScript Build Test Results
           
           ## 🎯 Overall Status
@@ -380,10 +391,10 @@ jobs:
           
           | Component | Status | Version | Config |
           |-----------|--------|---------|--------|
-          | **Nginx** | $NGINX_STATUS | $([ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v 2>&1 \| head -1 \| cut -d' ' -f3 \| cut -d'/' -f2 || echo "Not installed") | $([ -f /etc/nginx/nginx.conf ] && echo "✅ Present" || echo "❌ Missing") |
-          | **PHP** | $PHP_STATUS | $([ -f /usr/local/bin/php ] && /usr/local/bin/php -v 2>&1 \| head -1 \| cut -d' ' -f2 || echo "Not installed") | $([ -f /usr/local/etc/php.ini ] && echo "✅ Present" || echo "❌ Missing") |
-          | **MariaDB** | $MARIADB_STATUS | $([ -f /usr/local/mysql/bin/mysql ] && /usr/local/mysql/bin/mysql --version 2>&1 \| head -1 \| cut -d' ' -f6 \| cut -d',' -f1 || echo "Not installed") | $([ -f /etc/mysql/mariadb.cnf ] && echo "✅ Present" || echo "❌ Missing") |
-          | **Redis** | $REDIS_STATUS | $(command -v redis-server >/dev/null 2>&1 && redis-server --version 2>&1 \| head -1 \| cut -d' ' -f3 \| cut -d'=' -f2 || echo "Not installed") | $([ -f /etc/redis/redis.conf ] && echo "✅ Present" || echo "❌ Missing") |
+          | **Nginx** | $NGINX_STATUS | $([ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v 2>&1 | head -1 | cut -d' ' -f3 | cut -d'/' -f2 || echo "Not installed") | $([ -f /etc/nginx/nginx.conf ] && echo "✅ Present" || echo "❌ Missing") |
+          | **PHP** | $PHP_STATUS | $([ -f /usr/local/bin/php ] && /usr/local/bin/php -v 2>&1 | head -1 | cut -d' ' -f2 || echo "Not installed") | $([ -f /usr/local/etc/php.ini ] && echo "✅ Present" || echo "❌ Missing") |
+          | **MariaDB** | $MARIADB_STATUS | $([ -f /usr/local/mysql/bin/mysql ] && /usr/local/mysql/bin/mysql --version 2>&1 | head -1 | cut -d' ' -f6 | cut -d',' -f1 || echo "Not installed") | $([ -f /etc/mysql/mariadb.cnf ] && echo "✅ Present" || echo "❌ Missing") |
+          | **Redis** | $REDIS_STATUS | $(command -v redis-server >/dev/null 2>&1 && redis-server --version 2>&1 | head -1 | cut -d' ' -f3 | cut -d'=' -f2 || echo "Not installed") | $([ -f /etc/redis/redis.conf ] && echo "✅ Present" || echo "❌ Missing") |
           
           ## 📊 Build Environment
           - **OS**: Ubuntu $(lsb_release -rs)
@@ -403,11 +414,8 @@ jobs:
           
           EOF
           
-          # Process the template to expand variables
-          envsubst < /tmp/ci-logs/test-summary.md > /tmp/ci-logs/test-summary-final.md
-          
           echo "📋 Test Summary Generated:"
-          cat /tmp/ci-logs/test-summary-final.md
+          cat /tmp/ci-logs/test-summary.md
           
           # Set output for potential PR commenting
           echo "OVERALL_STATUS=$OVERALL_STATUS" >> $GITHUB_OUTPUT
@@ -418,25 +426,29 @@ jobs:
           
           # Create simple status for PR comment
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
-            echo "🎉 **EngineScript Build Test PASSED** 🎉" > /tmp/ci-logs/pr-comment.md
-            echo "" >> /tmp/ci-logs/pr-comment.md
-            echo "All core components built successfully:" >> /tmp/ci-logs/pr-comment.md
-            echo "- Nginx: $NGINX_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- PHP: $PHP_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- MariaDB: $MARIADB_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- Redis: $REDIS_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "" >> /tmp/ci-logs/pr-comment.md
-            echo "✅ Ready for deployment testing!" >> /tmp/ci-logs/pr-comment.md
+            cat > /tmp/ci-logs/pr-comment.md << EOF
+          🎉 **EngineScript Build Test PASSED** 🎉
+          
+          All core components built successfully:
+          - Nginx: $NGINX_STATUS
+          - PHP: $PHP_STATUS
+          - MariaDB: $MARIADB_STATUS
+          - Redis: $REDIS_STATUS
+          
+          ✅ Ready for deployment testing!
+          EOF
           else
-            echo "⚠️ **EngineScript Build Test FAILED** ⚠️" > /tmp/ci-logs/pr-comment.md
-            echo "" >> /tmp/ci-logs/pr-comment.md
-            echo "Component status:" >> /tmp/ci-logs/pr-comment.md
-            echo "- Nginx: $NGINX_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- PHP: $PHP_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- MariaDB: $MARIADB_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "- Redis: $REDIS_STATUS" >> /tmp/ci-logs/pr-comment.md
-            echo "" >> /tmp/ci-logs/pr-comment.md
-            echo "📋 Please review the build logs for detailed error information." >> /tmp/ci-logs/pr-comment.md
+            cat > /tmp/ci-logs/pr-comment.md << EOF
+          ⚠️ **EngineScript Build Test FAILED** ⚠️
+          
+          Component status:
+          - Nginx: $NGINX_STATUS
+          - PHP: $PHP_STATUS
+          - MariaDB: $MARIADB_STATUS
+          - Redis: $REDIS_STATUS
+          
+          📋 Please review the build logs for detailed error information.
+          EOF
           fi
 
       - name: Comment on PR
