@@ -4,6 +4,17 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-06-28
+
+### Changed
+- **Removed EUID/root user checks from all scripts except `setup.sh` and `enginescript-install.sh`**
+  - Eliminated EUID checks from 100+ shell scripts across all directories
+  - Maintained root checks only in the main entry point scripts (`setup.sh` and `scripts/install/enginescript-install.sh`)
+  - Prevents CI workflow hangs caused by EUID checks in non-interactive environments
+  - Improves script portability and execution in containerized/automated environments
+  - Scripts affected include all alias, auto-upgrade, cron, security, vhost, install, update, and menu scripts
+  - CI workflows can now execute all scripts without manual EUID override requirements
+
 ## 2025-06-27
 
 ### Added
@@ -212,3 +223,27 @@ Each entry is dated to show when changes were implemented. For questions about a
 - Focus on Nginx compilation ensures the most complex build process is thoroughly tested
 - Removed components (PHP, MariaDB, Redis) can still be tested manually or in separate workflows if needed
 - Nginx build remains the most comprehensive test of EngineScript's compilation capabilities
+
+---
+
+## 2025-01-29
+
+### Added
+- **Enhanced debugging for CI script execution hangs**
+- **Comprehensive environment checks before script execution**
+- **Package manager preparation and lock removal in CI environment**
+- **Script existence and permission validation before execution**
+- **Enhanced error reporting with detailed log output for failed scripts**
+
+### Fixed
+- **Fixed CI script hanging by adding enhanced debugging to Remove Preinstalled Software step**
+- **Added EUID override for CI environment to prevent root check failures**
+- **Implemented package manager lock removal and process cleanup**
+- **Enhanced script timeout handling with detailed failure reporting**
+
+### Technical Details
+- CI now validates script existence and permissions before execution
+- Package manager locks and hanging processes are cleared before script execution
+- EUID is explicitly set to 0 in CI environment to bypass root checks
+- Enhanced debugging shows exact point of failure when scripts hang
+- Timeout failures now provide detailed log output for debugging

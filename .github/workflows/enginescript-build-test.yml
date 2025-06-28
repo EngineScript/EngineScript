@@ -242,10 +242,74 @@ jobs:
           # Set CI environment variables
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
+          export NEEDRESTART_MODE=a
+          export NEEDRESTART_SUSPEND=1
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./removes/remove-preinstalled.sh" 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
-            echo "⚠️ Remove preinstalled software had issues, continuing..."
+          # Debug: Check script exists and is executable
+          echo "🔍 Checking remove-preinstalled.sh..."
+          if [ -f "./removes/remove-preinstalled.sh" ]; then
+            echo "✅ remove-preinstalled.sh exists"
+            ls -la ./removes/remove-preinstalled.sh
+          else
+            echo "❌ remove-preinstalled.sh missing"
+            ls -la ./removes/
+            exit 1
+          fi
+          
+          # Debug: Check environment and fix EUID issue
+          echo "🔍 Environment check:"
+          echo "Current user: $(whoami)"
+          echo "EUID: $EUID"
+          echo "PWD: $PWD"
+          echo "CI_ENVIRONMENT: $CI_ENVIRONMENT"
+          echo "DEBIAN_FRONTEND: $DEBIAN_FRONTEND"
+          
+          # Debug: Check required files exist
+          echo "🔍 Checking required files..."
+          if [ -f "/usr/local/bin/enginescript/enginescript-variables.txt" ]; then
+            echo "✅ enginescript-variables.txt exists"
+          else
+            echo "❌ enginescript-variables.txt missing"
+          fi
+          
+          if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
+            echo "✅ enginescript-install-options.txt exists"
+          else
+            echo "❌ enginescript-install-options.txt missing"
+          fi
+          
+          # Run with enhanced debugging and CI-specific fixes
+          echo "🚀 Starting preinstalled software removal with debug output..."
+          sudo bash -c "
+            set -x
+            cd /usr/local/bin/enginescript/scripts/install
+            export CI_ENVIRONMENT=true
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export NEEDRESTART_SUSPEND=1
+            export APT_LISTCHANGES_FRONTEND=none
+            
+            # Force EUID to 0 for CI environment
+            export EUID=0
+            
+            # Ensure package manager is ready
+            echo 'Preparing package manager...'
+            apt-get update -qq
+            
+            # Kill any hanging package managers
+            killall -9 apt apt-get dpkg 2>/dev/null || true
+            
+            # Remove package manager locks
+            rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock
+            
+            echo 'Starting remove-preinstalled.sh...'
+            timeout 300 ./removes/remove-preinstalled.sh
+          " 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
+            echo "❌ Remove preinstalled software failed or timed out"
+            echo "📋 Last 30 lines of output:"
             tail -30 /tmp/ci-logs/removes.log
+            echo "📋 Full log file size: $(wc -l < /tmp/ci-logs/removes.log 2>/dev/null || echo 0) lines"
+            exit 1
           }
           sudo sync
           echo "✅ Preinstalled software removal completed"
@@ -285,16 +349,80 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "� Installing dependencies..."
+          echo "📦 Installing dependencies..."
           cd /usr/local/bin/enginescript/scripts/install
           
-          # Set CI environment variables
+          # Set CI environment variables with maximum verbosity
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
+          export NEEDRESTART_MODE=a
+          export NEEDRESTART_SUSPEND=1
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./depends/depends-install.sh" 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
-            echo "⚠️ Dependencies installation had issues, continuing..."
+          # Debug: Check script exists and is executable
+          echo "🔍 Checking depends-install.sh..."
+          if [ -f "./depends/depends-install.sh" ]; then
+            echo "✅ depends-install.sh exists"
+            ls -la ./depends/depends-install.sh
+          else
+            echo "❌ depends-install.sh missing"
+            ls -la ./depends/
+            exit 1
+          fi
+          
+          # Debug: Check environment and fix EUID issue
+          echo "🔍 Environment check:"
+          echo "Current user: $(whoami)"
+          echo "EUID: $EUID"
+          echo "PWD: $PWD"
+          echo "CI_ENVIRONMENT: $CI_ENVIRONMENT"
+          echo "DEBIAN_FRONTEND: $DEBIAN_FRONTEND"
+          
+          # Debug: Check required files exist
+          echo "🔍 Checking required files..."
+          if [ -f "/usr/local/bin/enginescript/enginescript-variables.txt" ]; then
+            echo "✅ enginescript-variables.txt exists"
+          else
+            echo "❌ enginescript-variables.txt missing"
+            ls -la /usr/local/bin/enginescript/ | head -10
+          fi
+          
+          if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
+            echo "✅ enginescript-install-options.txt exists"
+          else
+            echo "❌ enginescript-install-options.txt missing"
+            ls -la /home/EngineScript/
+          fi
+          
+          # Run with enhanced debugging and CI-specific fixes
+          echo "🚀 Starting dependencies installation with debug output..."
+          sudo bash -c "
+            set -x
+            cd /usr/local/bin/enginescript/scripts/install
+            export CI_ENVIRONMENT=true
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export NEEDRESTART_SUSPEND=1
+            export APT_LISTCHANGES_FRONTEND=none
+            
+            # Force EUID to 0 for CI environment
+            export EUID=0
+            
+            # Ensure package manager is ready
+            apt-get update -qq
+            
+            # Kill any hanging package managers
+            killall -9 apt apt-get dpkg 2>/dev/null || true
+            
+            # Remove package manager locks
+            rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock
+            
+            timeout 300 ./depends/depends-install.sh
+          " 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
+            echo "❌ Dependencies installation failed or timed out"
+            echo "📋 Last 50 lines of output:"
             tail -50 /tmp/ci-logs/depends.log
+            echo "📋 Full log file size: $(wc -l < /tmp/ci-logs/depends.log 2>/dev/null || echo 0) lines"
+            exit 1
           }
           sudo sync
           echo "✅ Dependencies installation completed"

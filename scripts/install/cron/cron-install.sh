@@ -11,11 +11,7 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check Root User
-if [ "${EUID}" -ne 0 ]; then
-    echo "${BOLD}ALERT:${NORMAL} EngineScript should be executed as the root user."
-    exit 1
-fi
+
 
 # Copy Sites List Template
 if [ ! -f "/home/EngineScript/sites-list/sites.sh" ]; then

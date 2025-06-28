@@ -11,13 +11,7 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-# Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
-  then
-    echo "${BOLD}ALERT:${NORMAL}"
-    echo "EngineScript should be executed as the root user."
-    exit 1
-fi
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
