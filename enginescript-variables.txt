@@ -6,7 +6,7 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="JUN2725"
+VARIABLES_DATE="JUN2825"
 
 # Software Versions
 LIBURING_VER="2.11"
@@ -23,8 +23,8 @@ PNGOUT_VER="20200115"
 ZLIB_VER="1.3.1"
 
 # EngineScript Plugins
-SSE_PLUGIN_VER="null"
-SWPO_PLUGIN_VER="null"
+SSE_PLUGIN_VER="1.8.0"
+SWPO_PLUGIN_VER="1.5.9"
 
 # Old Software Versions
 OLDPHP="8.0"
