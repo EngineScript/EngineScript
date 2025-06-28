@@ -85,15 +85,20 @@ jobs:
           echo "🔧 Running base system setup..."
           cd /usr/local/bin/enginescript
           
+          # Set CI environment variable to bypass root checks in scripts
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           # Initialize setup log
           echo "EngineScript Base System Setup Started: $(date)" | sudo tee /tmp/ci-logs/setup.log
           
           # Check user privileges (CI runs as root via sudo)
-          if [ "${EUID}" != 0 ]; then
-            echo "ALERT: EngineScript should be executed as the root user." | sudo tee -a /tmp/ci-logs/setup.log
+          # In CI environment, force root context for script compatibility
+          if ! sudo bash -c 'test "${EUID}" -eq 0'; then
+            echo "ALERT: Unable to establish root context for EngineScript installation." | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           fi
-          echo "✅ Running with root privileges" | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Running with root privileges (CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
           
           # Check architecture
           BIT_TYPE=$(uname -m)
@@ -237,6 +242,10 @@ jobs:
           echo "🔧 Installing base EngineScript components in proper sequence..."
           cd /usr/local/bin/enginescript/scripts/install
           
+          # Set CI environment variables to bypass root checks and interactive prompts
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           # Source variables and set CI mode
           source /usr/local/bin/enginescript/enginescript-variables.txt
           source /home/EngineScript/enginescript-install-options.txt
@@ -244,7 +253,7 @@ jobs:
           
           # Step 1: Install repositories
           echo "📦 Installing repositories..."
-          sudo timeout 600 ./repositories/repositories-install.sh 2>&1 | sudo tee /tmp/ci-logs/repos.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./repositories/repositories-install.sh" 2>&1 | sudo tee /tmp/ci-logs/repos.log || {
             echo "⚠️ Repositories installation had issues, continuing..."
             tail -30 /tmp/ci-logs/repos.log
           }
@@ -252,7 +261,7 @@ jobs:
           
           # Step 2: Remove preinstalled software
           echo "🗑️ Removing preinstalled software..."
-          sudo timeout 300 ./removes/remove-preinstalled.sh 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./removes/remove-preinstalled.sh" 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
             echo "⚠️ Remove preinstalled software had issues, continuing..."
             tail -30 /tmp/ci-logs/removes.log
           }
@@ -260,7 +269,7 @@ jobs:
           
           # Step 3: Block unwanted packages
           echo "🚫 Blocking unwanted packages..."
-          sudo timeout 300 ./block/package-block.sh 2>&1 | sudo tee /tmp/ci-logs/block.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./block/package-block.sh" 2>&1 | sudo tee /tmp/ci-logs/block.log || {
             echo "⚠️ Package blocking had issues, continuing..."
             tail -30 /tmp/ci-logs/block.log
           }
@@ -268,7 +277,7 @@ jobs:
           
           # Step 4: Install dependencies
           echo "📚 Installing dependencies..."
-          sudo timeout 900 ./depends/depends-install.sh 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./depends/depends-install.sh" 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
             echo "⚠️ Dependencies installation had issues, continuing..."
             tail -50 /tmp/ci-logs/depends.log
           }
@@ -276,7 +285,7 @@ jobs:
           
           # Step 5: Install cron
           echo "⏰ Installing cron..."
-          sudo timeout 300 ./cron/cron-install.sh 2>&1 | sudo tee /tmp/ci-logs/cron.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./cron/cron-install.sh" 2>&1 | sudo tee /tmp/ci-logs/cron.log || {
             echo "⚠️ Cron installation had issues, continuing..."
             tail -30 /tmp/ci-logs/cron.log
           }
@@ -284,7 +293,7 @@ jobs:
           
           # Step 6: Install ACME.sh
           echo "🔐 Installing ACME.sh..."
-          sudo timeout 300 ./acme/acme-install.sh 2>&1 | sudo tee /tmp/ci-logs/acme.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./acme/acme-install.sh" 2>&1 | sudo tee /tmp/ci-logs/acme.log || {
             echo "⚠️ ACME.sh installation had issues, continuing..."
             tail -30 /tmp/ci-logs/acme.log
           }
@@ -292,7 +301,7 @@ jobs:
           
           # Step 7: Install GCC
           echo "🔨 Installing GCC..."
-          sudo timeout 600 ./gcc/gcc-install.sh 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./gcc/gcc-install.sh" 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
             echo "⚠️ GCC installation had issues, continuing..."
             tail -30 /tmp/ci-logs/gcc.log
           }
@@ -300,7 +309,7 @@ jobs:
           
           # Step 8: Install OpenSSL
           echo "🔒 Installing OpenSSL..."
-          sudo timeout 900 ./openssl/openssl-install.sh 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./openssl/openssl-install.sh" 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
             echo "⚠️ OpenSSL installation had issues, continuing..."
             tail -50 /tmp/ci-logs/openssl.log
           }
@@ -308,7 +317,7 @@ jobs:
           
           # Step 9: Install Swap
           echo "💾 Installing Swap..."
-          sudo timeout 300 ./swap/swap-install.sh 2>&1 | sudo tee /tmp/ci-logs/swap.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./swap/swap-install.sh" 2>&1 | sudo tee /tmp/ci-logs/swap.log || {
             echo "⚠️ Swap installation had issues, continuing..."
             tail -30 /tmp/ci-logs/swap.log
           }
@@ -319,7 +328,7 @@ jobs:
           
           # Step 10: Install PCRE
           echo "📝 Installing PCRE..."
-          sudo timeout 600 ./pcre/pcre-install.sh 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./pcre/pcre-install.sh" 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
             echo "⚠️ PCRE installation had issues, continuing..."
             tail -30 /tmp/ci-logs/pcre.log
           }
@@ -327,7 +336,7 @@ jobs:
           
           # Step 11: Install Zlib
           echo "📦 Installing Zlib..."
-          sudo timeout 600 ./zlib/zlib-install.sh 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./zlib/zlib-install.sh" 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
             echo "⚠️ Zlib installation had issues, continuing..."
             tail -30 /tmp/ci-logs/zlib.log
           }
@@ -335,7 +344,7 @@ jobs:
           
           # Step 12: Install liburing
           echo "⚡ Installing liburing..."
-          sudo timeout 600 ./liburing/liburing-install.sh 2>&1 | sudo tee /tmp/ci-logs/liburing.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./liburing/liburing-install.sh" 2>&1 | sudo tee /tmp/ci-logs/liburing.log || {
             echo "⚠️ liburing installation had issues, continuing..."
             tail -30 /tmp/ci-logs/liburing.log
           }
@@ -351,9 +360,13 @@ jobs:
           echo "🔨 Building core components..."
           cd /usr/local/bin/enginescript/scripts/install
           
+          # Set CI environment variables to bypass root checks
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           # Build Nginx with custom optimizations
           echo "🌐 Building Nginx..."
-          sudo timeout 1200 ./nginx/nginx-install.sh 2>&1 | sudo tee /tmp/ci-logs/nginx.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 1200 ./nginx/nginx-install.sh" 2>&1 | sudo tee /tmp/ci-logs/nginx.log || {
             echo "❌ Nginx build failed"
             tail -50 /tmp/ci-logs/nginx.log
             exit 1
@@ -370,7 +383,7 @@ jobs:
           
           # Build PHP
           echo "🐘 Building PHP..."
-          sudo timeout 1800 ./php/php-install.sh 2>&1 | sudo tee /tmp/ci-logs/php.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 1800 ./php/php-install.sh" 2>&1 | sudo tee /tmp/ci-logs/php.log || {
             echo "❌ PHP build failed"
             tail -50 /tmp/ci-logs/php.log
             exit 1
@@ -392,9 +405,13 @@ jobs:
           echo "🗄️ Installing database and cache systems..."
           cd /usr/local/bin/enginescript/scripts/install
           
+          # Set CI environment variables to bypass root checks
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           # Install MariaDB
           echo "🐬 Installing MariaDB..."
-          sudo timeout 900 ./mariadb/mariadb-install.sh 2>&1 | sudo tee /tmp/ci-logs/mariadb.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./mariadb/mariadb-install.sh" 2>&1 | sudo tee /tmp/ci-logs/mariadb.log || {
             echo "❌ MariaDB installation failed"
             tail -50 /tmp/ci-logs/mariadb.log
             exit 1
@@ -411,7 +428,7 @@ jobs:
           
           # Install Redis
           echo "🔴 Installing Redis..."
-          sudo timeout 600 ./redis/redis-install.sh 2>&1 | sudo tee /tmp/ci-logs/redis.log || {
+          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./redis/redis-install.sh" 2>&1 | sudo tee /tmp/ci-logs/redis.log || {
             echo "❌ Redis installation failed"
             tail -50 /tmp/ci-logs/redis.log
             exit 1

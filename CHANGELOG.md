@@ -86,6 +86,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **Corrected file path inconsistencies in artifact upload for reliable log collection**
 - **Fixed script executable permission setting to occur immediately after file copying**
 - **Resolved CI configuration file handling with proper error checking and fallbacks**
+- **Fixed root privilege checks in CI environment to properly handle GitHub Actions sudo context**
+- **Resolved EUID validation issues by running all installation scripts in proper root shell context**
 - GitHub Actions workflow SSE plugin version checking issues
 - Improved temp file cleanup handling in automated workflows
 - Redis memory monitoring thresholds in cleanup scripts
