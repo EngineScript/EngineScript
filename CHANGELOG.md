@@ -53,6 +53,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **Enhanced log collection strategy with centralized `/tmp/ci-logs/` directory**
 - **Improved permission handling with proper file ownership for CI operations**
 - **Updated GitHub Actions permissions to include `actions: read` and `pull-requests: write`**
+- **Migrated setup.sh logic directly into CI workflow with CI-specific optimizations**
+- **Replaced setup.sh execution with inline setup steps, omitting problematic CI components**
 - Updated Copilot instructions to reflect EngineScript project focus instead of WordPress plugin development
 - Nginx compilation now uses intelligent CPU detection instead of hardcoded optimization flags
 - Cleanup cron script now runs hourly with time-based task execution
@@ -111,6 +113,7 @@ Changes are organized by date, with the most recent changes listed first.
 - **Removed redundant validation and testing steps in favor of comprehensive single build**
 - **Simplified workflow from multiple parallel jobs to single sequential build process**
 - **Removed dos2unix step and line ending conversion dependencies**
+- **Excluded problematic setup.sh components from CI: dos2unix, logrotate, aliases, tzdata, motd, hwe, system restart**
 
 ### Security
 - Enhanced CPU feature validation in compilation scripts

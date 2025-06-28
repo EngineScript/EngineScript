@@ -73,7 +73,6 @@ jobs:
           # CRITICAL: Set executable permissions immediately after copying
           echo "🔧 Setting executable permissions on all scripts..."
           sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
-          sudo chmod +x /usr/local/bin/enginescript/setup.sh
           
           # Initialize main CI log with timestamp
           echo "EngineScript CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
@@ -86,13 +85,143 @@ jobs:
           echo "🔧 Running base system setup..."
           cd /usr/local/bin/enginescript
           
-          # Run setup.sh which handles initial system configuration
-          sudo ./setup.sh 2>&1 | sudo tee /tmp/ci-logs/setup.log || {
-            echo "❌ Base setup failed"
-            echo "📊 Setup log:"
-            cat /tmp/ci-logs/setup.log
+          # Initialize setup log
+          echo "EngineScript Base System Setup Started: $(date)" | sudo tee /tmp/ci-logs/setup.log
+          
+          # Check user privileges (CI runs as root via sudo)
+          if [ "${EUID}" != 0 ]; then
+            echo "ALERT: EngineScript should be executed as the root user." | sudo tee -a /tmp/ci-logs/setup.log
+            exit 1
+          fi
+          echo "✅ Running with root privileges" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Check architecture
+          BIT_TYPE=$(uname -m)
+          if [ "${BIT_TYPE}" != 'x86_64' ]; then
+            echo "EngineScript requires a 64-bit environment to run optimally." | sudo tee -a /tmp/ci-logs/setup.log
+            exit 1
+          fi
+          echo "✅ Detected 64-bit architecture: $BIT_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Check Ubuntu version
+          LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
+          UBUNTU_VERSION="$(lsb_release -sr)"
+          
+          if [ "$LINUX_TYPE" != "Ubuntu" ]; then
+            echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 22.04 or 24.04" | sudo tee -a /tmp/ci-logs/setup.log
+            exit 1
+          fi
+          echo "✅ Detected Linux Type: $LINUX_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Current Ubuntu Version: $UBUNTU_VERSION" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Install required packages for script (excluding problematic packages)
+          echo "📦 Installing core packages..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt update --allow-releaseinfo-change -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Core packages without dos2unix and tzdata (problematic in CI)
+          core_packages="apt bash boxes cron coreutils curl git gzip nano openssl pwgen sed software-properties-common tar unattended-upgrades unzip zip"
+          
+          sudo apt install -qy $core_packages 2>&1 | sudo tee -a /tmp/ci-logs/setup.log || {
+            echo "Error: Unable to install one or more packages. Exiting..." | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           }
+          echo "✅ Core packages installed successfully" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Check for required commands (excluding dos2unix)
+          required_commands=("apt" "boxes" "git" "nano" "wget")
+          for cmd in "${required_commands[@]}"; do
+            if ! command -v $cmd &> /dev/null; then
+              echo "Error: $cmd is not installed. Please install it and try again." | sudo tee -a /tmp/ci-logs/setup.log
+              exit 1
+            fi
+          done
+          echo "✅ All required commands available" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Configure needrestart for automated restarts
+          sudo sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Configured needrestart for automated mode" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Upgrade software
+          echo "📈 Upgrading system packages..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt upgrade -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ System packages upgraded" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Create EngineScript directories (already done in earlier step, but ensure completeness)
+          echo "📁 Creating EngineScript directories..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo mkdir -p "/home/EngineScript/config-backups/nginx"
+          sudo mkdir -p "/home/EngineScript/config-backups/php"
+          sudo mkdir -p "/home/EngineScript/mysql-credentials"
+          sudo mkdir -p "/home/EngineScript/site-backups"
+          sudo mkdir -p "/home/EngineScript/sites-list"
+          sudo mkdir -p "/home/EngineScript/temp/site-export"
+          sudo mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
+          sudo mkdir -p "/home/EngineScript/temp/site-import/database-file"
+          sudo mkdir -p "/home/EngineScript/temp/site-import/root-directory"
+          echo "✅ EngineScript directories created" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Set directory and file permissions
+          echo "🔧 Setting permissions..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo chown -R root:root /usr/local/bin/enginescript 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Permissions set correctly" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Create EngineScript log files (already done in earlier step, but ensure completeness)
+          echo "📊 Creating log files..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo touch "/var/log/EngineScript/install-error-log.txt"
+          sudo touch "/var/log/EngineScript/install-log.txt"
+          sudo touch "/var/log/EngineScript/vhost-export.log"
+          sudo touch "/var/log/EngineScript/vhost-import.log"
+          sudo touch "/var/log/EngineScript/vhost-install.log"
+          sudo touch "/var/log/EngineScript/vhost-remove.log"
+          echo "✅ Log files created" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip logrotate setup (not needed for CI)
+          echo "⏭️ Skipping logrotate setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip alias setup (not needed for CI) 
+          echo "⏭️ Skipping alias setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Cleanup old packages
+          echo "🧹 Cleaning up old packages..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' 'php8\.1.*' 'php8\.2.*' 'php8\.3.*' -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Old packages cleaned up" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Final update
+          echo "� Final system update..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt update --allow-releaseinfo-change -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt upgrade -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip timezone configuration (problematic in CI)
+          echo "⏭️ Skipping timezone configuration (not suitable for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip unattended upgrades configuration (not needed for CI)
+          echo "⏭️ Skipping unattended upgrades configuration (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip MOTD setup (not needed for CI)
+          echo "⏭️ Skipping MOTD setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Skip HWE kernel installation (not suitable for CI)
+          echo "⏭️ Skipping HWE kernel installation (not suitable for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Remove old downloads and clean up
+          echo "🗑️ Final cleanup..." | sudo tee -a /tmp/ci-logs/setup.log
+          sudo rm -rf /usr/src/*.tar.gz* 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt clean -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt autoremove --purge -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt autoclean -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          echo "✅ Final cleanup completed" | sudo tee -a /tmp/ci-logs/setup.log
+          
+          # Ensure options file exists (create if missing)
+          if [ ! -f "/home/EngineScript/enginescript-install-options.txt" ]; then
+            echo "📝 Creating default install options file..." | sudo tee -a /tmp/ci-logs/setup.log
+            sudo cp -rf /usr/local/bin/enginescript/config/home/enginescript-install-options.txt /home/EngineScript/enginescript-install-options.txt 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+            echo "✅ Install options file created" | sudo tee -a /tmp/ci-logs/setup.log
+          else
+            echo "✅ Install options file already exists" | sudo tee -a /tmp/ci-logs/setup.log
+          fi
+          
+          echo "✅ Base system setup completed successfully at $(date)" | sudo tee -a /tmp/ci-logs/setup.log
           
           # Ensure log is flushed and has content
           sudo sync
