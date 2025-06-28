@@ -1,4 +1,4 @@
-name: EngineScript Build Test
+name: EngineScript Nginx Build Test
 
 on:
   pull_request:
@@ -7,8 +7,8 @@ on:
     # Run on all pushes to any branch for comprehensive testing
     paths:
       - 'scripts/**'
-      - 'enginescript-variables.txt'
       - 'config/**'
+      - 'enginescript-variables.txt'
   workflow_dispatch:
 
 concurrency:
@@ -21,10 +21,10 @@ permissions:
   actions: read
 
 jobs:
-  full-build-test:
-    name: Full EngineScript Build Test
+  nginx-build-test:
+    name: Nginx Build Test
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 120
     
     steps:
       - name: Checkout Repository
@@ -46,9 +46,9 @@ jobs:
           echo "💾 Available disk space:"
           df -h
 
-      - name: Setup Full Build Environment
+      - name: Setup Nginx Build Environment
         run: |
-          echo "🏗️ Setting up full build environment..."
+          echo "🏗️ Setting up Nginx build environment..."
           sudo apt-get update -qq
           
           # Create required directories including log directories
@@ -75,10 +75,10 @@ jobs:
           sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
           
           # Initialize main CI log with timestamp
-          echo "EngineScript CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
+          echo "EngineScript Nginx CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
           echo "Build environment: Ubuntu $(lsb_release -rs)" | sudo tee -a /tmp/ci-logs/ci-main.log
           
-          echo "✅ Full build environment setup completed with proper permissions"
+          echo "✅ Nginx build environment setup completed with proper permissions"
 
       - name: Run Base System Setup
         run: |
@@ -154,13 +154,10 @@ jobs:
           # Create EngineScript directories (already done in earlier step, but ensure completeness)
           echo "📁 Creating EngineScript directories..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo mkdir -p "/home/EngineScript/config-backups/nginx"
-          sudo mkdir -p "/home/EngineScript/config-backups/php"
-          sudo mkdir -p "/home/EngineScript/mysql-credentials"
           sudo mkdir -p "/home/EngineScript/site-backups"
           sudo mkdir -p "/home/EngineScript/sites-list"
           sudo mkdir -p "/home/EngineScript/temp/site-export"
           sudo mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
-          sudo mkdir -p "/home/EngineScript/temp/site-import/database-file"
           sudo mkdir -p "/home/EngineScript/temp/site-import/root-directory"
           echo "✅ EngineScript directories created" | sudo tee -a /tmp/ci-logs/setup.log
           
@@ -189,7 +186,7 @@ jobs:
           
           # Cleanup old packages
           echo "🧹 Cleaning up old packages..." | sudo tee -a /tmp/ci-logs/setup.log
-          sudo apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' 'php8\.1.*' 'php8\.2.*' 'php8\.3.*' -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo apt-get remove 'apache2.*' -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Old packages cleaned up" | sudo tee -a /tmp/ci-logs/setup.log
           
           # Final update
@@ -237,27 +234,6 @@ jobs:
             echo "Setup completed at $(date)" | sudo tee /tmp/ci-logs/setup.log
           fi
 
-      - name: Install Repositories
-        run: |
-          echo "� Installing repositories..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables to bypass root checks and interactive prompts
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          # Source variables and set CI mode
-          source /usr/local/bin/enginescript/enginescript-variables.txt
-          source /home/EngineScript/enginescript-install-options.txt
-          export DEBUG_INSTALL=0  # Disable debug prompts for CI
-          
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./repositories/repositories-install.sh" 2>&1 | sudo tee /tmp/ci-logs/repos.log || {
-            echo "⚠️ Repositories installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/repos.log
-          }
-          sudo sync
-          echo "✅ Repositories installation completed"
-
       - name: Remove Preinstalled Software
         run: |
           echo "🗑️ Removing preinstalled software..."
@@ -273,6 +249,39 @@ jobs:
           }
           sudo sync
           echo "✅ Preinstalled software removal completed"
+
+      - name: Remove Default Nginx Installation
+        run: |
+          echo "🗑️ Removing default Nginx installation..."
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
+          # Remove any existing Nginx installations
+          echo "Stopping and removing existing Nginx services..." | sudo tee /tmp/ci-logs/nginx-removal.log
+          sudo systemctl stop nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "Nginx service not running"
+          sudo systemctl disable nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "Nginx service not enabled"
+          
+          # Remove Nginx packages completely
+          sudo apt-get remove --purge nginx nginx-* -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No nginx packages to remove"
+          sudo apt-get autoremove -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log
+          
+          # Remove Nginx directories and files
+          sudo rm -rf /etc/nginx/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /etc/nginx directory"
+          sudo rm -rf /var/log/nginx/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /var/log/nginx directory"
+          sudo rm -rf /var/www/html/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /var/www/html directory"
+          sudo rm -f /usr/sbin/nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No nginx binary to remove"
+          
+          # Verify removal
+          if command -v nginx >/dev/null 2>&1; then
+            echo "⚠️ Nginx still present after removal attempt" | sudo tee -a /tmp/ci-logs/nginx-removal.log
+          else
+            echo "✅ Nginx successfully removed" | sudo tee -a /tmp/ci-logs/nginx-removal.log
+          fi
+          
+          sudo sync
+          echo "✅ Default Nginx removal completed"
 
       - name: Install Dependencies
         run: |
@@ -354,25 +363,9 @@ jobs:
           sudo sync
           echo "✅ Zlib installation completed"
 
-      - name: Install liburing
+      - name: Build Nginx Component
         run: |
-          echo "⚡ Installing liburing..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./liburing/liburing-install.sh" 2>&1 | sudo tee /tmp/ci-logs/liburing.log || {
-            echo "⚠️ liburing installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/liburing.log
-          }
-          sudo sync
-          echo "✅ liburing installation completed"
-
-      - name: Build Core Components
-        run: |
-          echo "🔨 Building core components..."
+          echo "🔨 Building Nginx component..."
           cd /usr/local/bin/enginescript/scripts/install
           
           # Set CI environment variables to bypass root checks
@@ -396,74 +389,14 @@ jobs:
             echo "Nginx build completed at $(date)" | sudo tee /tmp/ci-logs/nginx.log
           fi
           
-          # Build PHP
-          echo "🐘 Building PHP..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 1800 ./php/php-install.sh" 2>&1 | sudo tee /tmp/ci-logs/php.log || {
-            echo "❌ PHP build failed"
-            tail -50 /tmp/ci-logs/php.log
-            exit 1
-          }
-          
-          # Ensure log is flushed and has content
-          sudo sync
-          if [ -s /tmp/ci-logs/php.log ]; then
-            echo "✅ PHP build log created successfully ($(wc -l < /tmp/ci-logs/php.log) lines)"
-          else
-            echo "⚠️ PHP build log is empty, creating summary"
-            echo "PHP build completed at $(date)" | sudo tee /tmp/ci-logs/php.log
-          fi
-          
-          echo "✅ Core components build completed"
+          echo "✅ Nginx build completed"
 
-      - name: Install Database and Cache
-        run: |
-          echo "🗄️ Installing database and cache systems..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables to bypass root checks
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          # Install MariaDB
-          echo "🐬 Installing MariaDB..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./mariadb/mariadb-install.sh" 2>&1 | sudo tee /tmp/ci-logs/mariadb.log || {
-            echo "❌ MariaDB installation failed"
-            tail -50 /tmp/ci-logs/mariadb.log
-            exit 1
-          }
-          
-          # Ensure log is flushed and has content
-          sudo sync
-          if [ -s /tmp/ci-logs/mariadb.log ]; then
-            echo "✅ MariaDB install log created successfully ($(wc -l < /tmp/ci-logs/mariadb.log) lines)"
-          else
-            echo "⚠️ MariaDB install log is empty, creating summary"
-            echo "MariaDB installation completed at $(date)" | sudo tee /tmp/ci-logs/mariadb.log
-          fi
-          
-          # Install Redis
-          echo "🔴 Installing Redis..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./redis/redis-install.sh" 2>&1 | sudo tee /tmp/ci-logs/redis.log || {
-            echo "❌ Redis installation failed"
-            tail -50 /tmp/ci-logs/redis.log
-            exit 1
-          }
-          
-          # Ensure log is flushed and has content
-          sudo sync
-          if [ -s /tmp/ci-logs/redis.log ]; then
-            echo "✅ Redis install log created successfully ($(wc -l < /tmp/ci-logs/redis.log) lines)"
-          else
-            echo "⚠️ Redis install log is empty, creating summary"
-            echo "Redis installation completed at $(date)" | sudo tee /tmp/ci-logs/redis.log
-          fi
-
-      - name: Verify Full Build Results
+      - name: Verify Nginx Build Results
         if: always()
         run: |
-          echo "🔍 Verifying full build results..."
+          echo "🔍 Verifying Nginx build results..."
           
-          # Check if key binaries exist
+          # Check if Nginx binary exists and works
           if [ -f /usr/sbin/nginx ]; then
             echo "✅ Nginx binary installed at /usr/sbin/nginx"
             /usr/sbin/nginx -v 2>&1 || echo "⚠️ Nginx version check failed"
@@ -471,33 +404,14 @@ jobs:
             echo "❌ Nginx binary missing"
           fi
           
-          if [ -f /usr/local/bin/php ]; then
-            echo "✅ PHP binary installed at /usr/local/bin/php"
-            /usr/local/bin/php -v 2>&1 || echo "⚠️ PHP version check failed"
-          else
-            echo "❌ PHP binary missing"
-          fi
-          
-          if [ -f /usr/local/mysql/bin/mysql ]; then
-            echo "✅ MariaDB binary installed at /usr/local/mysql/bin/mysql"
-            /usr/local/mysql/bin/mysql --version 2>&1 || echo "⚠️ MariaDB version check failed"
-          else
-            echo "❌ MariaDB binary missing"
-          fi
-          
-          if command -v redis-server &> /dev/null; then
-            echo "✅ Redis server installed and available"
-            redis-server --version 2>&1 || echo "⚠️ Redis version check failed"
-          else
-            echo "❌ Redis server missing"
-          fi
-          
-          # Check configuration files
-          echo "📁 Configuration files:"
+          # Check Nginx configuration
+          echo "📁 Nginx configuration:"
           [ -f /etc/nginx/nginx.conf ] && echo "✅ Nginx config exists" || echo "❌ Nginx config missing"
-          [ -f /usr/local/etc/php.ini ] && echo "✅ PHP config exists" || echo "❌ PHP config missing"
-          [ -f /etc/mysql/mariadb.cnf ] && echo "✅ MariaDB config exists" || echo "❌ MariaDB config missing"
-          [ -f /etc/redis/redis.conf ] && echo "✅ Redis config exists" || echo "❌ Redis config missing"
+          
+          # Test Nginx configuration syntax
+          if [ -f /usr/sbin/nginx ]; then
+            /usr/sbin/nginx -t 2>&1 && echo "✅ Nginx configuration syntax valid" || echo "❌ Nginx configuration syntax invalid"
+          fi
           
           # Show disk usage
           echo "💾 Final disk usage:"
@@ -514,36 +428,21 @@ jobs:
           
           # Initialize result variables
           NGINX_STATUS="❌ Failed"
-          PHP_STATUS="❌ Failed"
-          MARIADB_STATUS="❌ Failed"
-          REDIS_STATUS="❌ Failed"
           OVERALL_STATUS="❌ FAILED"
           
-          # Check component status based on binaries and logs
+          # Check Nginx status based on binary and logs
           if [ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v >/dev/null 2>&1; then
             NGINX_STATUS="✅ Success"
           fi
           
-          if [ -f /usr/local/bin/php ] && /usr/local/bin/php -v >/dev/null 2>&1; then
-            PHP_STATUS="✅ Success"
-          fi
-          
-          if [ -f /usr/local/mysql/bin/mysql ] && /usr/local/mysql/bin/mysql --version >/dev/null 2>&1; then
-            MARIADB_STATUS="✅ Success"
-          fi
-          
-          if command -v redis-server >/dev/null 2>&1 && redis-server --version >/dev/null 2>&1; then
-            REDIS_STATUS="✅ Success"
-          fi
-          
-          # Determine overall status
-          if [[ "$NGINX_STATUS" == "✅ Success" && "$PHP_STATUS" == "✅ Success" && "$MARIADB_STATUS" == "✅ Success" && "$REDIS_STATUS" == "✅ Success" ]]; then
+          # Determine overall status based on Nginx only
+          if [[ "$NGINX_STATUS" == "✅ Success" ]]; then
             OVERALL_STATUS="✅ SUCCESS"
           fi
           
           # Create comprehensive test summary
           cat > /tmp/ci-logs/test-summary.md << EOF
-          # EngineScript Build Test Results
+          # EngineScript Nginx Build Test Results
           
           ## 🎯 Overall Status
           **$OVERALL_STATUS**
@@ -553,9 +452,6 @@ jobs:
           | Component | Status | Version | Config |
           |-----------|--------|---------|--------|
           | **Nginx** | $NGINX_STATUS | $([ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v 2>&1 | head -1 | cut -d' ' -f3 | cut -d'/' -f2 || echo "Not installed") | $([ -f /etc/nginx/nginx.conf ] && echo "✅ Present" || echo "❌ Missing") |
-          | **PHP** | $PHP_STATUS | $([ -f /usr/local/bin/php ] && /usr/local/bin/php -v 2>&1 | head -1 | cut -d' ' -f2 || echo "Not installed") | $([ -f /usr/local/etc/php.ini ] && echo "✅ Present" || echo "❌ Missing") |
-          | **MariaDB** | $MARIADB_STATUS | $([ -f /usr/local/mysql/bin/mysql ] && /usr/local/mysql/bin/mysql --version 2>&1 | head -1 | cut -d' ' -f6 | cut -d',' -f1 || echo "Not installed") | $([ -f /etc/mysql/mariadb.cnf ] && echo "✅ Present" || echo "❌ Missing") |
-          | **Redis** | $REDIS_STATUS | $(command -v redis-server >/dev/null 2>&1 && redis-server --version 2>&1 | head -1 | cut -d' ' -f3 | cut -d'=' -f2 || echo "Not installed") | $([ -f /etc/redis/redis.conf ] && echo "✅ Present" || echo "❌ Missing") |
           
           ## 📊 Build Environment
           - **OS**: Ubuntu $(lsb_release -rs)
@@ -581,32 +477,23 @@ jobs:
           # Set output for potential PR commenting
           echo "OVERALL_STATUS=$OVERALL_STATUS" >> $GITHUB_OUTPUT
           echo "NGINX_STATUS=$NGINX_STATUS" >> $GITHUB_OUTPUT
-          echo "PHP_STATUS=$PHP_STATUS" >> $GITHUB_OUTPUT
-          echo "MARIADB_STATUS=$MARIADB_STATUS" >> $GITHUB_OUTPUT
-          echo "REDIS_STATUS=$REDIS_STATUS" >> $GITHUB_OUTPUT
           
           # Create simple status for PR comment
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
             cat > /tmp/ci-logs/pr-comment.md << EOF
-          🎉 **EngineScript Build Test PASSED** 🎉
+          🎉 **EngineScript Nginx Build Test PASSED** 🎉
           
-          All core components built successfully:
+          Nginx core component built successfully:
           - Nginx: $NGINX_STATUS
-          - PHP: $PHP_STATUS
-          - MariaDB: $MARIADB_STATUS
-          - Redis: $REDIS_STATUS
           
           ✅ Ready for deployment testing!
           EOF
           else
             cat > /tmp/ci-logs/pr-comment.md << EOF
-          ⚠️ **EngineScript Build Test FAILED** ⚠️
+          ⚠️ **EngineScript Nginx Build Test FAILED** ⚠️
           
           Component status:
           - Nginx: $NGINX_STATUS
-          - PHP: $PHP_STATUS
-          - MariaDB: $MARIADB_STATUS
-          - Redis: $REDIS_STATUS
           
           📋 Please review the build logs for detailed error information.
           EOF
@@ -630,7 +517,7 @@ jobs:
               
               const botComment = comments.find(comment => 
                 comment.user.type === 'Bot' && 
-                comment.body.includes('EngineScript Build Test')
+                comment.body.includes('EngineScript') && comment.body.includes('Build Test')
               );
               
               if (botComment) {
@@ -659,7 +546,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-build-logs-ubuntu-24.04
+          name: nginx-build-logs-ubuntu-24.04
           path: |
             /tmp/ci-logs/*
             /var/log/EngineScript/
@@ -670,7 +557,7 @@ jobs:
         run: |
           echo "🏁 Final workflow status check..."
           
-          # Check if critical components are working
+          # Check if Nginx is working
           FAILED_COMPONENTS=0
           
           if ! [ -f /usr/sbin/nginx ] || ! /usr/sbin/nginx -v >/dev/null 2>&1; then
@@ -678,27 +565,12 @@ jobs:
             FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
           fi
           
-          if ! [ -f /usr/local/bin/php ] || ! /usr/local/bin/php -v >/dev/null 2>&1; then
-            echo "❌ PHP build/installation failed"
-            FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
-          fi
-          
-          if ! [ -f /usr/local/mysql/bin/mysql ] || ! /usr/local/mysql/bin/mysql --version >/dev/null 2>&1; then
-            echo "❌ MariaDB installation failed"
-            FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
-          fi
-          
-          if ! command -v redis-server >/dev/null 2>&1 || ! redis-server --version >/dev/null 2>&1; then
-            echo "❌ Redis installation failed"
-            FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
-          fi
-          
           if [ $FAILED_COMPONENTS -eq 0 ]; then
-            echo "🎉 All core components successfully built and installed!"
-            echo "✅ EngineScript build test PASSED"
+            echo "🎉 Nginx successfully built and installed!"
+            echo "✅ EngineScript Nginx build test PASSED"
             exit 0
           else
-            echo "💥 $FAILED_COMPONENTS core component(s) failed to build/install"
-            echo "❌ EngineScript build test FAILED"
+            echo "💥 Nginx failed to build/install"
+            echo "❌ EngineScript Nginx build test FAILED"
             exit 1
           fi

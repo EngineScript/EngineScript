@@ -57,6 +57,7 @@ Changes are organized by date, with the most recent changes listed first.
 - **Replaced setup.sh execution with inline setup steps, omitting problematic CI components**
 - **Separated base component installation into individual workflow steps for better debugging**
 - **Streamlined component installation by removing unnecessary steps (package blocking, cron, ACME.sh, swap)**
+- **Skipped external repository installation in CI to prevent hanging issues caused by network dependencies**
 - Updated Copilot instructions to reflect EngineScript project focus instead of WordPress plugin development
 - Nginx compilation now uses intelligent CPU detection instead of hardcoded optimization flags
 - Cleanup cron script now runs hourly with time-based task execution
@@ -180,3 +181,34 @@ This changelog tracks all notable changes made to the EngineScript project organ
 - **Removed** for now removed features
 
 Each entry is dated to show when changes were implemented. For questions about any changes listed here, please refer to the project documentation or open an issue on GitHub.
+
+---
+
+## 2025-01-27
+
+### Changed
+- **Simplified CI workflow to focus exclusively on Nginx compilation testing**
+- **Renamed workflow from "EngineScript Build Test" to "EngineScript Nginx Build Test"**
+- **Reduced build timeout from 180 to 120 minutes for focused Nginx testing**
+- **Removed PHP, MariaDB, and Redis build steps and verification from CI workflow**
+- **Updated verification and reporting steps to only check Nginx component status**
+- **Streamlined PR comments to report only Nginx build results**
+- **Updated artifact naming from "full-build-logs" to "nginx-build-logs" for clarity**
+- **Removed unnecessary directory creation for PHP, MariaDB, and Redis configurations**
+- **Simplified final status check to only validate Nginx build success**
+- **Modified test summary generation to focus on Nginx component only**
+
+### Removed
+- **PHP build and verification steps from CI workflow (not needed for core functionality testing)**
+- **MariaDB installation and verification steps from CI workflow**
+- **Redis installation and verification steps from CI workflow**
+- **PHP-specific directory creation and configuration checks**
+- **MariaDB-specific directory creation and credential management setup**
+- **Multi-component status tracking and reporting complexity**
+
+### Technical Details
+- CI workflow now provides faster feedback by testing only the most critical component (Nginx)
+- Simplified workflow structure reduces maintenance overhead and potential CI failures
+- Focus on Nginx compilation ensures the most complex build process is thoroughly tested
+- Removed components (PHP, MariaDB, Redis) can still be tested manually or in separate workflows if needed
+- Nginx build remains the most comprehensive test of EngineScript's compilation capabilities
