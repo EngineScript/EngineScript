@@ -55,6 +55,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **Updated GitHub Actions permissions to include `actions: read` and `pull-requests: write`**
 - **Migrated setup.sh logic directly into CI workflow with CI-specific optimizations**
 - **Replaced setup.sh execution with inline setup steps, omitting problematic CI components**
+- **Separated base component installation into individual workflow steps for better debugging**
+- **Streamlined component installation by removing unnecessary steps (package blocking, cron, ACME.sh, swap)**
 - Updated Copilot instructions to reflect EngineScript project focus instead of WordPress plugin development
 - Nginx compilation now uses intelligent CPU detection instead of hardcoded optimization flags
 - Cleanup cron script now runs hourly with time-based task execution

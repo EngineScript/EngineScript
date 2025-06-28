@@ -237,9 +237,9 @@ jobs:
             echo "Setup completed at $(date)" | sudo tee /tmp/ci-logs/setup.log
           fi
 
-      - name: Install Base EngineScript Components
+      - name: Install Repositories
         run: |
-          echo "🔧 Installing base EngineScript components in proper sequence..."
+          echo "� Installing repositories..."
           cd /usr/local/bin/enginescript/scripts/install
           
           # Set CI environment variables to bypass root checks and interactive prompts
@@ -251,109 +251,124 @@ jobs:
           source /home/EngineScript/enginescript-install-options.txt
           export DEBUG_INSTALL=0  # Disable debug prompts for CI
           
-          # Step 1: Install repositories
-          echo "📦 Installing repositories..."
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./repositories/repositories-install.sh" 2>&1 | sudo tee /tmp/ci-logs/repos.log || {
             echo "⚠️ Repositories installation had issues, continuing..."
             tail -30 /tmp/ci-logs/repos.log
           }
           sudo sync
-          
-          # Step 2: Remove preinstalled software
+          echo "✅ Repositories installation completed"
+
+      - name: Remove Preinstalled Software
+        run: |
           echo "🗑️ Removing preinstalled software..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./removes/remove-preinstalled.sh" 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
             echo "⚠️ Remove preinstalled software had issues, continuing..."
             tail -30 /tmp/ci-logs/removes.log
           }
           sudo sync
+          echo "✅ Preinstalled software removal completed"
+
+      - name: Install Dependencies
+        run: |
+          echo "� Installing dependencies..."
+          cd /usr/local/bin/enginescript/scripts/install
           
-          # Step 3: Block unwanted packages
-          echo "🚫 Blocking unwanted packages..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./block/package-block.sh" 2>&1 | sudo tee /tmp/ci-logs/block.log || {
-            echo "⚠️ Package blocking had issues, continuing..."
-            tail -30 /tmp/ci-logs/block.log
-          }
-          sudo sync
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
           
-          # Step 4: Install dependencies
-          echo "📚 Installing dependencies..."
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./depends/depends-install.sh" 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
             echo "⚠️ Dependencies installation had issues, continuing..."
             tail -50 /tmp/ci-logs/depends.log
           }
           sudo sync
-          
-          # Step 5: Install cron
-          echo "⏰ Installing cron..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./cron/cron-install.sh" 2>&1 | sudo tee /tmp/ci-logs/cron.log || {
-            echo "⚠️ Cron installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/cron.log
-          }
-          sudo sync
-          
-          # Step 6: Install ACME.sh
-          echo "🔐 Installing ACME.sh..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./acme/acme-install.sh" 2>&1 | sudo tee /tmp/ci-logs/acme.log || {
-            echo "⚠️ ACME.sh installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/acme.log
-          }
-          sudo sync
-          
-          # Step 7: Install GCC
+          echo "✅ Dependencies installation completed"
+
+      - name: Install GCC
+        run: |
           echo "🔨 Installing GCC..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./gcc/gcc-install.sh" 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
             echo "⚠️ GCC installation had issues, continuing..."
             tail -30 /tmp/ci-logs/gcc.log
           }
           sudo sync
+          echo "✅ GCC installation completed"
+
+      - name: Install OpenSSL
+        run: |
+          echo "� Installing OpenSSL..."
+          cd /usr/local/bin/enginescript/scripts/install
           
-          # Step 8: Install OpenSSL
-          echo "🔒 Installing OpenSSL..."
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./openssl/openssl-install.sh" 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
             echo "⚠️ OpenSSL installation had issues, continuing..."
             tail -50 /tmp/ci-logs/openssl.log
           }
           sudo sync
+          echo "✅ OpenSSL installation completed"
+
+      - name: Install PCRE
+        run: |
+          echo "� Installing PCRE..."
+          cd /usr/local/bin/enginescript/scripts/install
           
-          # Step 9: Install Swap
-          echo "💾 Installing Swap..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 300 ./swap/swap-install.sh" 2>&1 | sudo tee /tmp/ci-logs/swap.log || {
-            echo "⚠️ Swap installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/swap.log
-          }
-          sudo sync
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
           
-          # Skip kernel tweaks (not suitable for CI)
-          echo "⏭️ Skipping kernel tweaks (not suitable for CI environment)"
-          
-          # Step 10: Install PCRE
-          echo "📝 Installing PCRE..."
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./pcre/pcre-install.sh" 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
             echo "⚠️ PCRE installation had issues, continuing..."
             tail -30 /tmp/ci-logs/pcre.log
           }
           sudo sync
-          
-          # Step 11: Install Zlib
+          echo "✅ PCRE installation completed"
+
+      - name: Install Zlib
+        run: |
           echo "📦 Installing Zlib..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./zlib/zlib-install.sh" 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
             echo "⚠️ Zlib installation had issues, continuing..."
             tail -30 /tmp/ci-logs/zlib.log
           }
           sudo sync
-          
-          # Step 12: Install liburing
+          echo "✅ Zlib installation completed"
+
+      - name: Install liburing
+        run: |
           echo "⚡ Installing liburing..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          
           sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./liburing/liburing-install.sh" 2>&1 | sudo tee /tmp/ci-logs/liburing.log || {
             echo "⚠️ liburing installation had issues, continuing..."
             tail -30 /tmp/ci-logs/liburing.log
           }
           sudo sync
-          
-          # Skip UFW (firewall not needed for CI)
-          echo "⏭️ Skipping UFW (firewall not needed for CI environment)"
-          
-          echo "✅ Base EngineScript installation completed"
+          echo "✅ liburing installation completed"
 
       - name: Build Core Components
         run: |
