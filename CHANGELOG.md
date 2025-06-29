@@ -11,6 +11,10 @@ Changes are organized by date, with the most recent changes listed first.
 - **CI/CD Pipeline**: Simplified workflow triggers and removed unnecessary test jobs
 - **CI/CD Pipeline**: Enhanced debugging and logging for CI environment troubleshooting
 - **CI/CD Pipeline**: Improved artifact collection for build logs and test results
+- **CI/CD Pipeline**: **NEW** Added automatic GitHub issue reporting for failed CI builds
+- **CI/CD Pipeline**: **NEW** Added intelligent issue deduplication to prevent spam (checks for existing CI failure issues within 24 hours)
+- **CI/CD Pipeline**: **NEW** Added comprehensive failure logs in automated issue reports with collapsible sections
+- **CI/CD Pipeline**: **NEW** Added `nginx -V` output capture in CI test summary and issue reports
 
 ### 🐛 BUG FIXES
 
@@ -33,6 +37,9 @@ Changes are organized by date, with the most recent changes listed first.
 - **CI/CD Pipeline**: Replaced complex "Remove Preinstalled Software" step with focused Nginx/Apache removal
 - **CI/CD Pipeline**: Added systematic debugging for environment variables and file permissions
 - **CI/CD Pipeline**: Enhanced log collection and artifact management for troubleshooting
+- **CI/CD Pipeline**: Added missing "Install Repositories" step before dependencies installation
+- **CI/CD Pipeline**: Enhanced workflow permissions to support automatic issue creation (`issues: write`)
+- **CI/CD Pipeline**: Improved test result reporting with comprehensive build environment details
 
 ---
 

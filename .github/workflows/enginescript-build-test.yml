@@ -19,6 +19,7 @@ permissions:
   contents: read
   pull-requests: write
   actions: read
+  issues: write
 
 jobs:
   nginx-build-test:
@@ -77,10 +78,6 @@ jobs:
           else
             echo "⚠️ CI variables file not found, using original"
           fi
-          
-          # CRITICAL: Set executable permissions immediately after copying
-          echo "🔧 Setting executable permissions on all scripts..."
-          sudo find /usr/local/bin/enginescript -type f -name "*.sh" -exec chmod +x {} \;
           
           # Initialize main CI log with timestamp
           echo "EngineScript Nginx CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
@@ -597,6 +594,7 @@ jobs:
           du -sh /var/log/EngineScript/ 2>/dev/null || echo "Log directory size unknown"
 
       - name: Report Test Results
+        id: report-test-results
         if: always()
         run: |
           echo "📋 Generating comprehensive test results..."
@@ -631,15 +629,19 @@ jobs:
           ## 📊 Build Environment
           - **OS**: Ubuntu $(lsb_release -rs)
           - **Architecture**: $(uname -m)
+          - **Kernel**: $(uname -r)
+          - **Available Memory**: $(free -h | grep '^Mem:' | awk '{print $7}')
+          - **Available Disk**: $(df -h / | tail -1 | awk '{print $4}')
           - **Build Time**: $(date)
           - **Workflow**: ${{ github.workflow }}
           - **Run ID**: ${{ github.run_id }}
+          - **CI Environment**: GitHub Actions Ubuntu 24.04
           
           ## 📁 Log Files Generated
           $(ls -la /tmp/ci-logs/ 2>/dev/null | grep -E '\.log$' | wc -l) log files created:
           $(ls -1 /tmp/ci-logs/*.log 2>/dev/null | sed 's/.*\//- /' || echo "- No log files found")
           
-          ## � Nginx Build Details
+          ## 🔧 Nginx Build Details
           $(if [ -f /tmp/ci-logs/nginx-build-info.log ]; then
             echo "\`\`\`"
             cat /tmp/ci-logs/nginx-build-info.log
@@ -648,7 +650,7 @@ jobs:
             echo "Build information not available"
           fi)
           
-          ## �💾 Disk Usage
+          ## 💾 Disk Usage
           **Build Directory**: $(du -sh /usr/local/bin/enginescript/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Logs Directory**: $(du -sh /tmp/ci-logs/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Available Space**: $(df -h / | tail -1 | awk '{print $4}')
@@ -658,9 +660,10 @@ jobs:
           echo "📋 Test Summary Generated:"
           cat /tmp/ci-logs/test-summary.md
           
-          # Set output for potential PR commenting
+          # Set output for potential PR commenting and issue reporting
           echo "OVERALL_STATUS=$OVERALL_STATUS" >> $GITHUB_OUTPUT
           echo "NGINX_STATUS=$NGINX_STATUS" >> $GITHUB_OUTPUT
+          echo "TEST_FAILED=$([ "$OVERALL_STATUS" = "❌ FAILED" ] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
           
           # Create simple status for PR comment
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
@@ -682,6 +685,213 @@ jobs:
           📋 Please review the build logs for detailed error information.
           EOF
           fi
+
+      - name: Create Issue Report for Failed Build
+        if: failure() && steps.report-test-results.outputs.TEST_FAILED == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Prepare detailed failure information
+            let nginxLog = 'Log not available';
+            let setupLog = 'Log not available';
+            let dependsLog = 'Log not available';
+            let gccLog = 'Log not available';
+            let opensslLog = 'Log not available';
+            
+            try {
+              if (fs.existsSync('/tmp/ci-logs/nginx.log')) {
+                const fullLog = fs.readFileSync('/tmp/ci-logs/nginx.log', 'utf8');
+                // Include last 100 lines of Nginx log (most critical for build failures)
+                nginxLog = fullLog.split('\n').slice(-100).join('\n');
+              }
+            } catch (e) {
+              nginxLog = 'Error reading Nginx log';
+            }
+            
+            try {
+              if (fs.existsSync('/tmp/ci-logs/setup.log')) {
+                const fullLog = fs.readFileSync('/tmp/ci-logs/setup.log', 'utf8');
+                setupLog = fullLog.split('\n').slice(-50).join('\n');
+              }
+            } catch (e) {
+              setupLog = 'Error reading setup log';
+            }
+            
+            try {
+              if (fs.existsSync('/tmp/ci-logs/depends.log')) {
+                const fullLog = fs.readFileSync('/tmp/ci-logs/depends.log', 'utf8');
+                dependsLog = fullLog.split('\n').slice(-50).join('\n');
+              }
+            } catch (e) {
+              dependsLog = 'Error reading dependencies log';
+            }
+            
+            try {
+              if (fs.existsSync('/tmp/ci-logs/gcc.log')) {
+                const fullLog = fs.readFileSync('/tmp/ci-logs/gcc.log', 'utf8');
+                gccLog = fullLog.split('\n').slice(-30).join('\n');
+              }
+            } catch (e) {
+              gccLog = 'Error reading GCC log';
+            }
+            
+            try {
+              if (fs.existsSync('/tmp/ci-logs/openssl.log')) {
+                const fullLog = fs.readFileSync('/tmp/ci-logs/openssl.log', 'utf8');
+                opensslLog = fullLog.split('\n').slice(-30).join('\n');
+              }
+            } catch (e) {
+              opensslLog = 'Error reading OpenSSL log';
+            }
+            
+            // Get workflow context
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commitSha = context.sha.substring(0, 7);
+            const branch = context.ref.replace('refs/heads/', '');
+            
+            // Create comprehensive issue title and body
+            const issueTitle = `🚨 CI Build Failure: Nginx Build Test Failed on ${new Date().toISOString().split('T')[0]}`;
+            
+            const issueBody = `## 🔥 Automated CI Failure Report
+            
+            The EngineScript Nginx Build Test has failed during automated testing.
+            
+            ### 📊 Failure Details
+            - **Workflow**: ${context.workflow}
+            - **Run ID**: [${context.runId}](${runUrl})
+            - **Branch**: \`${branch}\`
+            - **Commit**: \`${commitSha}\`
+            - **Ubuntu Version**: Ubuntu 24.04
+            - **Failure Time**: ${new Date().toISOString()}
+            - **Trigger**: ${context.eventName}
+            
+            ### 🎯 Component Status
+            - **Nginx**: ❌ Failed
+            
+            ### 📋 Critical Log Excerpts
+            
+            #### Nginx Build Log (Last 100 lines)
+            <details>
+            <summary>Click to expand Nginx build log</summary>
+            
+            \`\`\`
+            ${nginxLog}
+            \`\`\`
+            </details>
+            
+            #### Setup Log (Last 50 lines)
+            <details>
+            <summary>Click to expand setup log</summary>
+            
+            \`\`\`
+            ${setupLog}
+            \`\`\`
+            </details>
+            
+            #### Dependencies Log (Last 50 lines)
+            <details>
+            <summary>Click to expand dependencies log</summary>
+            
+            \`\`\`
+            ${dependsLog}
+            \`\`\`
+            </details>
+            
+            #### GCC Log (Last 30 lines)
+            <details>
+            <summary>Click to expand GCC log</summary>
+            
+            \`\`\`
+            ${gccLog}
+            \`\`\`
+            </details>
+            
+            #### OpenSSL Log (Last 30 lines)
+            <details>
+            <summary>Click to expand OpenSSL log</summary>
+            
+            \`\`\`
+            ${opensslLog}
+            \`\`\`
+            </details>
+            
+            ### 🔍 Immediate Actions Required
+            1. **Review Nginx build logs** for compilation errors
+            2. **Check dependency installation** for missing packages
+            3. **Verify Ubuntu 24.04 compatibility** for all components
+            4. **Test locally** with the same commit to reproduce the issue
+            5. **Update CI workflow** if environment changes are needed
+            
+            ### 🔗 Additional Resources
+            - [Full Workflow Run](${runUrl})
+            - [Build Artifacts](${runUrl}#artifacts) (Available for 7 days)
+            - [EngineScript Documentation](https://github.com/EngineScript/EngineScript/blob/main/README.md)
+            
+            ### 🏷️ Labels
+            This issue was automatically created by the CI/CD pipeline when the Nginx build test failed.
+            
+            ---
+            *This issue was automatically generated by GitHub Actions on failure of workflow run [${context.runId}](${runUrl})*`;
+            
+            // Check if a similar issue already exists (within last 24 hours)
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+            
+            try {
+              const { data: existingIssues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: 'ci-failure',
+                since: oneDayAgo.toISOString(),
+                per_page: 10
+              });
+              
+              // Check if there's already a similar CI failure issue open
+              const existingCiFailure = existingIssues.find(issue => 
+                issue.title.includes('CI Build Failure') && 
+                issue.title.includes('Nginx Build Test Failed')
+              );
+              
+              if (existingCiFailure) {
+                console.log(`Similar CI failure issue already exists: #${existingCiFailure.number}`);
+                
+                // Add a comment to the existing issue instead of creating a new one
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existingCiFailure.number,
+                  body: `## 🔄 Additional CI Failure Report
+                  
+                  Another build failure occurred:
+                  - **Run ID**: [${context.runId}](${runUrl})
+                  - **Commit**: \`${commitSha}\`
+                  - **Time**: ${new Date().toISOString()}
+                  - **Branch**: \`${branch}\`
+                  
+                  This appears to be a recurring issue. Please review the [latest workflow run](${runUrl}) for updated logs.`
+                });
+                
+                console.log(`Added comment to existing issue #${existingCiFailure.number}`);
+              } else {
+                // Create a new issue
+                const { data: newIssue } = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: issueTitle,
+                  body: issueBody,
+                  labels: ['bug', 'ci-failure', 'nginx', 'automated-report']
+                });
+                
+                console.log(`Created new CI failure issue: #${newIssue.number}`);
+                console.log(`Issue URL: ${newIssue.html_url}`);
+              }
+            } catch (error) {
+              console.error('Error creating or updating CI failure issue:', error);
+              // Don't fail the workflow if issue creation fails
+            }
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
@@ -744,9 +954,16 @@ jobs:
           # Check if Nginx is working
           FAILED_COMPONENTS=0
           
-          if ! [ -f /usr/sbin/nginx ] || ! /usr/sbin/nginx -v >/dev/null 2>&1; then
-            echo "❌ Nginx build/installation failed"
+          echo "🔍 Testing Nginx installation..."
+          if ! [ -f /usr/sbin/nginx ]; then
+            echo "❌ Nginx binary not found at /usr/sbin/nginx"
             FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
+          elif ! timeout 10 /usr/sbin/nginx -v >/dev/null 2>&1; then
+            echo "❌ Nginx binary exists but failed version check (timeout or error)"
+            FAILED_COMPONENTS=$((FAILED_COMPONENTS + 1))
+          else
+            echo "✅ Nginx binary exists and responds to version check"
+            echo "📋 Nginx version: $(/usr/sbin/nginx -v 2>&1)"
           fi
           
           if [ $FAILED_COMPONENTS -eq 0 ]; then
