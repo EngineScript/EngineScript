@@ -61,13 +61,21 @@ jobs:
           # Copy entire project to build location
           sudo cp -r . /usr/local/bin/enginescript/
           
-          # Copy CI configuration
+          # Copy CI-specific configuration files
           if [ -f .github/ci-config/enginescript-install-options-ci.txt ]; then
             sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
-            echo "✅ CI configuration copied successfully"
+            echo "✅ CI install options copied successfully"
           else
-            echo "⚠️ CI configuration file not found, creating default"
+            echo "⚠️ CI install options file not found, creating default"
             sudo touch /home/EngineScript/enginescript-install-options.txt
+          fi
+          
+          # Copy CI-specific variables file (prevents command substitution timeouts)
+          if [ -f .github/ci-config/enginescript-variables-ci.txt ]; then
+            sudo cp .github/ci-config/enginescript-variables-ci.txt /usr/local/bin/enginescript/enginescript-variables.txt
+            echo "✅ CI variables file copied successfully"
+          else
+            echo "⚠️ CI variables file not found, using original"
           fi
           
           # CRITICAL: Set executable permissions immediately after copying
@@ -124,6 +132,7 @@ jobs:
           sudo apt update --allow-releaseinfo-change -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           
           # Core packages without dos2unix and tzdata (problematic in CI)
+          # Also install pwgen which is used by scripts (but not in CI variables file)
           core_packages="apt bash boxes cron coreutils curl git gzip nano openssl pwgen sed software-properties-common tar unattended-upgrades unzip zip"
           
           sudo apt install -qy $core_packages 2>&1 | sudo tee -a /tmp/ci-logs/setup.log || {
@@ -234,86 +243,6 @@ jobs:
             echo "Setup completed at $(date)" | sudo tee /tmp/ci-logs/setup.log
           fi
 
-      - name: Remove Preinstalled Software
-        run: |
-          echo "🗑️ Removing preinstalled software..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          export NEEDRESTART_MODE=a
-          export NEEDRESTART_SUSPEND=1
-          
-          # Debug: Check script exists and is executable
-          echo "🔍 Checking remove-preinstalled.sh..."
-          if [ -f "./removes/remove-preinstalled.sh" ]; then
-            echo "✅ remove-preinstalled.sh exists"
-            ls -la ./removes/remove-preinstalled.sh
-          else
-            echo "❌ remove-preinstalled.sh missing"
-            ls -la ./removes/
-            exit 1
-          fi
-          
-          # Debug: Check environment and fix EUID issue
-          echo "🔍 Environment check:"
-          echo "Current user: $(whoami)"
-          echo "EUID: $EUID"
-          echo "PWD: $PWD"
-          echo "CI_ENVIRONMENT: $CI_ENVIRONMENT"
-          echo "DEBIAN_FRONTEND: $DEBIAN_FRONTEND"
-          
-          # Debug: Check required files exist
-          echo "🔍 Checking required files..."
-          if [ -f "/usr/local/bin/enginescript/enginescript-variables.txt" ]; then
-            echo "✅ enginescript-variables.txt exists"
-          else
-            echo "❌ enginescript-variables.txt missing"
-          fi
-          
-          if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
-            echo "✅ enginescript-install-options.txt exists"
-          else
-            echo "❌ enginescript-install-options.txt missing"
-          fi
-          
-          # Run with enhanced debugging and CI-specific fixes
-          echo "🚀 Starting preinstalled software removal with debug output..."
-          sudo bash -c "
-            set -x
-            cd /usr/local/bin/enginescript/scripts/install
-            export CI_ENVIRONMENT=true
-            export DEBIAN_FRONTEND=noninteractive
-            export NEEDRESTART_MODE=a
-            export NEEDRESTART_SUSPEND=1
-            export APT_LISTCHANGES_FRONTEND=none
-            
-            # Force EUID to 0 for CI environment
-            export EUID=0
-            
-            # Ensure package manager is ready
-            echo 'Preparing package manager...'
-            apt-get update -qq
-            
-            # Kill any hanging package managers
-            killall -9 apt apt-get dpkg 2>/dev/null || true
-            
-            # Remove package manager locks
-            rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock
-            
-            echo 'Starting remove-preinstalled.sh...'
-            timeout 300 ./removes/remove-preinstalled.sh
-          " 2>&1 | sudo tee /tmp/ci-logs/removes.log || {
-            echo "❌ Remove preinstalled software failed or timed out"
-            echo "📋 Last 30 lines of output:"
-            tail -30 /tmp/ci-logs/removes.log
-            echo "📋 Full log file size: $(wc -l < /tmp/ci-logs/removes.log 2>/dev/null || echo 0) lines"
-            exit 1
-          }
-          sudo sync
-          echo "✅ Preinstalled software removal completed"
-
       - name: Remove Default Nginx Installation
         run: |
           echo "🗑️ Removing default Nginx installation..."
@@ -337,6 +266,9 @@ jobs:
           sudo rm -rf /var/www/html/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /var/www/html directory"
           sudo rm -f /usr/sbin/nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No nginx binary to remove"
           
+          # Remove other web servers and conflicting packages
+          sudo apt-get remove --purge apache2 apache2-* lighttpd -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No other web servers to remove"
+          
           # Verify removal
           if command -v nginx >/dev/null 2>&1; then
             echo "⚠️ Nginx still present after removal attempt" | sudo tee -a /tmp/ci-logs/nginx-removal.log
@@ -345,7 +277,7 @@ jobs:
           fi
           
           sudo sync
-          echo "✅ Default Nginx removal completed"
+          echo "✅ Default software removal completed"
 
       - name: Install Dependencies
         run: |
@@ -377,10 +309,12 @@ jobs:
           echo "CI_ENVIRONMENT: $CI_ENVIRONMENT"
           echo "DEBIAN_FRONTEND: $DEBIAN_FRONTEND"
           
-          # Debug: Check required files exist
+          # Debug: Check required files exist and their content
           echo "🔍 Checking required files..."
           if [ -f "/usr/local/bin/enginescript/enginescript-variables.txt" ]; then
             echo "✅ enginescript-variables.txt exists"
+            echo "📄 First 10 lines of variables file:"
+            head -10 /usr/local/bin/enginescript/enginescript-variables.txt
           else
             echo "❌ enginescript-variables.txt missing"
             ls -la /usr/local/bin/enginescript/ | head -10
@@ -388,42 +322,77 @@ jobs:
           
           if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
             echo "✅ enginescript-install-options.txt exists"
+            echo "📄 First 10 lines of install options file:"
+            head -10 /home/EngineScript/enginescript-install-options.txt
           else
             echo "❌ enginescript-install-options.txt missing"
             ls -la /home/EngineScript/
           fi
           
-          # Run with enhanced debugging and CI-specific fixes
-          echo "🚀 Starting dependencies installation with debug output..."
-          sudo bash -c "
-            set -x
-            cd /usr/local/bin/enginescript/scripts/install
-            export CI_ENVIRONMENT=true
-            export DEBIAN_FRONTEND=noninteractive
-            export NEEDRESTART_MODE=a
-            export NEEDRESTART_SUSPEND=1
-            export APT_LISTCHANGES_FRONTEND=none
-            
-            # Force EUID to 0 for CI environment
-            export EUID=0
-            
-            # Ensure package manager is ready
-            apt-get update -qq
-            
-            # Kill any hanging package managers
-            killall -9 apt apt-get dpkg 2>/dev/null || true
-            
-            # Remove package manager locks
-            rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock
-            
-            timeout 300 ./depends/depends-install.sh
-          " 2>&1 | sudo tee /tmp/ci-logs/depends.log || {
+          # Test sourcing the files to ensure they don't hang
+          echo "🧪 Testing configuration file loading..."
+          if timeout 10 bash -c "source /usr/local/bin/enginescript/enginescript-variables.txt"; then
+            echo "✅ Variables file loads successfully"
+          else
+            echo "❌ Variables file failed to load or timed out"
+            exit 1
+          fi
+          
+          if timeout 10 bash -c "source /home/EngineScript/enginescript-install-options.txt"; then
+            echo "✅ Install options file loads successfully"
+          else
+            echo "❌ Install options file failed to load or timed out"
+            exit 1
+          fi
+          
+          # Run with simplified execution approach
+          echo "🚀 Starting dependencies installation..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Make script executable and test basic execution
+          chmod +x ./depends/depends-install.sh
+          echo "📄 Script permissions:"
+          ls -la ./depends/depends-install.sh
+          
+          # Test script syntax first
+          echo "🧪 Testing script syntax..."
+          if bash -n ./depends/depends-install.sh; then
+            echo "✅ Script syntax is valid"
+          else
+            echo "❌ Script syntax error detected"
+            exit 1
+          fi
+          
+          # Execute with timeout and error handling
+          echo "🏃 Executing dependencies installation..."
+          echo "Script start time: $(date)" | sudo tee -a /tmp/ci-logs/depends.log
+          
+          timeout 300 sudo bash ./depends/depends-install.sh 2>&1 | sudo tee -a /tmp/ci-logs/depends.log || {
+            SCRIPT_EXIT_CODE=$?
             echo "❌ Dependencies installation failed or timed out"
+            echo "📋 Exit code: $SCRIPT_EXIT_CODE"
+            echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/depends.log
             echo "📋 Last 50 lines of output:"
-            tail -50 /tmp/ci-logs/depends.log
-            echo "📋 Full log file size: $(wc -l < /tmp/ci-logs/depends.log 2>/dev/null || echo 0) lines"
+            tail -50 /tmp/ci-logs/depends.log 2>/dev/null || echo "No log output available"
+            echo "📋 Full log size: $(wc -l < /tmp/ci-logs/depends.log 2>/dev/null || echo 0) lines"
+            echo "📋 Script location and permissions:"
+            ls -la ./depends/depends-install.sh
+            echo "📋 Current directory:"
+            pwd
+            
+            # Check if it was a timeout (exit code 124)
+            if [ $SCRIPT_EXIT_CODE -eq 124 ]; then
+              echo "🕐 Script timed out after 300 seconds"
+            elif [ $SCRIPT_EXIT_CODE -eq 1 ]; then
+              echo "💥 Script exited with error code 1"
+            else
+              echo "🔍 Script exited with code $SCRIPT_EXIT_CODE"
+            fi
+            
             exit 1
           }
+          
+          echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/depends.log
           sudo sync
           echo "✅ Dependencies installation completed"
 
@@ -436,9 +405,12 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./gcc/gcc-install.sh" 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
+          cd /usr/local/bin/enginescript/scripts/install
+          chmod +x ./gcc/gcc-install.sh
+          
+          timeout 600 sudo bash ./gcc/gcc-install.sh 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
             echo "⚠️ GCC installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/gcc.log
+            tail -30 /tmp/ci-logs/gcc.log 2>/dev/null || echo "No GCC log available"
           }
           sudo sync
           echo "✅ GCC installation completed"
@@ -452,9 +424,12 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 900 ./openssl/openssl-install.sh" 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
+          cd /usr/local/bin/enginescript/scripts/install
+          chmod +x ./openssl/openssl-install.sh
+          
+          timeout 900 sudo bash ./openssl/openssl-install.sh 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
             echo "⚠️ OpenSSL installation had issues, continuing..."
-            tail -50 /tmp/ci-logs/openssl.log
+            tail -50 /tmp/ci-logs/openssl.log 2>/dev/null || echo "No OpenSSL log available"
           }
           sudo sync
           echo "✅ OpenSSL installation completed"
@@ -468,9 +443,12 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./pcre/pcre-install.sh" 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
+          cd /usr/local/bin/enginescript/scripts/install
+          chmod +x ./pcre/pcre-install.sh
+          
+          timeout 600 sudo bash ./pcre/pcre-install.sh 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
             echo "⚠️ PCRE installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/pcre.log
+            tail -30 /tmp/ci-logs/pcre.log 2>/dev/null || echo "No PCRE log available"
           }
           sudo sync
           echo "✅ PCRE installation completed"
@@ -484,9 +462,12 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 600 ./zlib/zlib-install.sh" 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
+          cd /usr/local/bin/enginescript/scripts/install
+          chmod +x ./zlib/zlib-install.sh
+          
+          timeout 600 sudo bash ./zlib/zlib-install.sh 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
             echo "⚠️ Zlib installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/zlib.log
+            tail -30 /tmp/ci-logs/zlib.log 2>/dev/null || echo "No Zlib log available"
           }
           sudo sync
           echo "✅ Zlib installation completed"
@@ -500,11 +481,14 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
+          cd /usr/local/bin/enginescript/scripts/install
+          chmod +x ./nginx/nginx-install.sh
+          
           # Build Nginx with custom optimizations
           echo "🌐 Building Nginx..."
-          sudo bash -c "cd /usr/local/bin/enginescript/scripts/install && timeout 1200 ./nginx/nginx-install.sh" 2>&1 | sudo tee /tmp/ci-logs/nginx.log || {
+          timeout 1200 sudo bash ./nginx/nginx-install.sh 2>&1 | sudo tee /tmp/ci-logs/nginx.log || {
             echo "❌ Nginx build failed"
-            tail -50 /tmp/ci-logs/nginx.log
+            tail -50 /tmp/ci-logs/nginx.log 2>/dev/null || echo "No Nginx log available"
             exit 1
           }
           

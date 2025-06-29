@@ -4,6 +4,38 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-06-29
+
+### 🚀 ENHANCEMENTS
+- **CI/CD Pipeline**: Modernized GitHub Actions workflow to focus exclusively on Nginx build testing
+- **CI/CD Pipeline**: Simplified workflow triggers and removed unnecessary test jobs
+- **CI/CD Pipeline**: Enhanced debugging and logging for CI environment troubleshooting
+- **CI/CD Pipeline**: Improved artifact collection for build logs and test results
+
+### 🐛 BUG FIXES
+
+#### Critical CI Timeout Resolution
+- **CI/CD Pipeline**: **FIXED** systematic script timeouts by identifying and resolving root cause
+- **CI/CD Pipeline**: Created CI-specific `enginescript-variables-ci.txt` to prevent command substitution hangs
+- **CI/CD Pipeline**: Replaced dynamic command substitutions with static values for CI environment
+- **CI/CD Pipeline**: Added comprehensive configuration file validation and timeout testing
+- **CI/CD Pipeline**: Simplified script execution approach to prevent bash context issues
+- **CI/CD Pipeline**: Enhanced script permission setting and validation before execution
+
+#### Script Execution Improvements
+- **Scripts**: Removed EUID/root privilege checks from all scripts except `setup.sh` and `enginescript-install.sh`
+- **Scripts**: Enhanced error handling and debugging output for CI environment compatibility
+- **Scripts**: Added syntax validation before script execution to catch errors early
+- **Scripts**: Improved timeout handling and error reporting for long-running operations
+
+### 🔧 DEVELOPMENT
+- **CI/CD Pipeline**: Removed problematic `export EUID=0` that caused "readonly variable" errors
+- **CI/CD Pipeline**: Replaced complex "Remove Preinstalled Software" step with focused Nginx/Apache removal
+- **CI/CD Pipeline**: Added systematic debugging for environment variables and file permissions
+- **CI/CD Pipeline**: Enhanced log collection and artifact management for troubleshooting
+
+---
+
 ## 2025-06-28
 
 ### Changed
