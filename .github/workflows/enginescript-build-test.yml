@@ -579,6 +579,15 @@ jobs:
             /usr/sbin/nginx -t 2>&1 && echo "✅ Nginx configuration syntax valid" || echo "❌ Nginx configuration syntax invalid"
           fi
           
+          # Capture Nginx build information
+          echo "🔧 Nginx Build Information:"
+          if [ -f /usr/sbin/nginx ]; then
+            echo "Running nginx -V to capture build details..."
+            /usr/sbin/nginx -V 2>&1 | sudo tee /tmp/ci-logs/nginx-build-info.log
+          else
+            echo "❌ Cannot capture build info - Nginx binary not found"
+          fi
+          
           # Show disk usage
           echo "💾 Final disk usage:"
           df -h
@@ -630,7 +639,16 @@ jobs:
           $(ls -la /tmp/ci-logs/ 2>/dev/null | grep -E '\.log$' | wc -l) log files created:
           $(ls -1 /tmp/ci-logs/*.log 2>/dev/null | sed 's/.*\//- /' || echo "- No log files found")
           
-          ## 💾 Disk Usage
+          ## � Nginx Build Details
+          $(if [ -f /tmp/ci-logs/nginx-build-info.log ]; then
+            echo "\`\`\`"
+            cat /tmp/ci-logs/nginx-build-info.log
+            echo "\`\`\`"
+          else
+            echo "Build information not available"
+          fi)
+          
+          ## �💾 Disk Usage
           **Build Directory**: $(du -sh /usr/local/bin/enginescript/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Logs Directory**: $(du -sh /tmp/ci-logs/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Available Space**: $(df -h / | tail -1 | awk '{print $4}')

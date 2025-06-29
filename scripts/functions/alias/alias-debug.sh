@@ -168,7 +168,7 @@ debug_print "Zlib | ${ZLIB_VER}" "| Zlib | \`${ZLIB_VER}\` |"
 # NGINX Details
 debug_print "\n### NGINX Configuration\n" "\n### NGINX Configuration\n"
 debug_print "\`\`\`" "\`\`\`"
-NGINX_INFO=$(2>&1 nginx -V)
+NGINX_INFO=$(nginx -V 2>&1)
 debug_print "${NGINX_INFO}" "${NGINX_INFO}"
 debug_print "\`\`\`\n" "\`\`\`\n"
 
