@@ -279,6 +279,66 @@ jobs:
           sudo sync
           echo "✅ Default software removal completed"
 
+      - name: Install Repositories
+        run: |
+          echo "📦 Installing repositories..."
+          cd /usr/local/bin/enginescript/scripts/install
+          
+          # Set CI environment variables
+          export CI_ENVIRONMENT=true
+          export DEBIAN_FRONTEND=noninteractive
+          export NEEDRESTART_MODE=a
+          export NEEDRESTART_SUSPEND=1
+          
+          # Verify script exists and is executable
+          echo "🔍 Checking repositories-install.sh..."
+          if [ -f "./repositories/repositories-install.sh" ]; then
+            echo "✅ repositories-install.sh exists"
+            ls -la ./repositories/repositories-install.sh
+          else
+            echo "❌ repositories-install.sh missing"
+            ls -la ./repositories/
+            exit 1
+          fi
+          
+          # Test script syntax first
+          echo "🧪 Testing script syntax..."
+          if bash -n ./repositories/repositories-install.sh; then
+            echo "✅ Script syntax is valid"
+          else
+            echo "❌ Script syntax error detected"
+            exit 1
+          fi
+          
+          # Execute with timeout and error handling
+          echo "🚀 Installing repositories..."
+          echo "Script start time: $(date)" | sudo tee /tmp/ci-logs/repositories.log
+          
+          timeout 300 sudo bash ./repositories/repositories-install.sh 2>&1 | sudo tee -a /tmp/ci-logs/repositories.log || {
+            SCRIPT_EXIT_CODE=$?
+            echo "❌ Repositories installation failed or timed out"
+            echo "📋 Exit code: $SCRIPT_EXIT_CODE"
+            echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/repositories.log
+            echo "📋 Last 30 lines of output:"
+            tail -30 /tmp/ci-logs/repositories.log 2>/dev/null || echo "No log output available"
+            echo "📋 Full log size: $(wc -l < /tmp/ci-logs/repositories.log 2>/dev/null || echo 0) lines"
+            
+            # Check if it was a timeout (exit code 124)
+            if [ $SCRIPT_EXIT_CODE -eq 124 ]; then
+              echo "🕐 Script timed out after 300 seconds"
+            elif [ $SCRIPT_EXIT_CODE -eq 1 ]; then
+              echo "💥 Script exited with error code 1"
+            else
+              echo "🔍 Script exited with code $SCRIPT_EXIT_CODE"
+            fi
+            
+            exit 1
+          }
+          
+          echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/repositories.log
+          sudo sync
+          echo "✅ Repositories installation completed"
+
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies..."
