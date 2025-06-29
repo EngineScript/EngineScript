@@ -349,8 +349,7 @@ jobs:
           echo "🚀 Starting dependencies installation..."
           cd /usr/local/bin/enginescript/scripts/install
           
-          # Make script executable and test basic execution
-          chmod +x ./depends/depends-install.sh
+          # Verify script is executable (permissions already set in setup step)
           echo "📄 Script permissions:"
           ls -la ./depends/depends-install.sh
           
@@ -406,7 +405,6 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           
           cd /usr/local/bin/enginescript/scripts/install
-          chmod +x ./gcc/gcc-install.sh
           
           timeout 600 sudo bash ./gcc/gcc-install.sh 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
             echo "⚠️ GCC installation had issues, continuing..."
@@ -425,7 +423,6 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           
           cd /usr/local/bin/enginescript/scripts/install
-          chmod +x ./openssl/openssl-install.sh
           
           timeout 900 sudo bash ./openssl/openssl-install.sh 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
             echo "⚠️ OpenSSL installation had issues, continuing..."
@@ -444,7 +441,6 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           
           cd /usr/local/bin/enginescript/scripts/install
-          chmod +x ./pcre/pcre-install.sh
           
           timeout 600 sudo bash ./pcre/pcre-install.sh 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
             echo "⚠️ PCRE installation had issues, continuing..."
@@ -463,7 +459,6 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           
           cd /usr/local/bin/enginescript/scripts/install
-          chmod +x ./zlib/zlib-install.sh
           
           timeout 600 sudo bash ./zlib/zlib-install.sh 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
             echo "⚠️ Zlib installation had issues, continuing..."
@@ -482,7 +477,6 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           
           cd /usr/local/bin/enginescript/scripts/install
-          chmod +x ./nginx/nginx-install.sh
           
           # Build Nginx with custom optimizations
           echo "🌐 Building Nginx..."
