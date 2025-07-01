@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Source EngineScript variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
