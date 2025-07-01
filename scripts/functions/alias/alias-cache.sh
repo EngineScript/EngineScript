@@ -11,7 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -65,27 +66,6 @@ clear_redis_cache() {
     redis-cli FLUSHALL ASYNC || {
         echo "Error: Failed to clear Redis cache"
     }
-}
-
-# Function to restart a service
-restart_service() {
-    local service_name=$1
-    echo "Restarting ${service_name}"
-    service "${service_name}" restart || {
-        echo "Error: Failed to restart ${service_name}"
-    }
-}
-
-# Function to restart PHP-FPM service
-restart_php_fpm() {
-    local php_versions=("8.1" "8.2" "8.3" "8.4")
-    for version in "${php_versions[@]}"; do
-        if systemctl is-active --quiet "php${version}-fpm"; then
-            restart_service "php${version}-fpm"
-            return
-        fi
-    done
-    echo "Error: No active PHP-FPM service found."
 }
 
 # Clear caches

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Add proper error handling
+set -e
+set -o pipefail
+
 #----------------------------------------------------------------------------------
 # EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 #----------------------------------------------------------------------------------
@@ -11,7 +16,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -79,25 +85,29 @@ if [[ ! -d "$SITE_ROOT_PATH" ]]; then
     echo "ERROR: Site root directory not found at ${SITE_ROOT_PATH}"
     exit 1
 fi
-cd "$SITE_ROOT_PATH" || exit 1 # Change to site root for wp-cli context
 
-wp db export "${DB_EXPORT_PATH}" --allow-root
-if [ $? -ne 0 ]; then
+# Change to site root for wp-cli context with error checking
+if ! cd "$SITE_ROOT_PATH"; then
+    echo "ERROR: Failed to change directory to ${SITE_ROOT_PATH}"
+    exit 1
+fi
+
+# Export database with immediate error checking
+if ! wp db export "${DB_EXPORT_PATH}" --allow-root; then
     echo "ERROR: Failed to export database for ${SELECTED_SITE} using wp-cli."
     # Clean up potentially empty export directory
-    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null
+    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null || true
     exit 1
 fi
 echo "Database exported to ${DB_EXPORT_PATH}"
 
 # --- Compress Database ---
 echo "Compressing database export..."
-gzip -f "${DB_EXPORT_PATH}"
-if [ $? -ne 0 ]; then
+if ! gzip -f "${DB_EXPORT_PATH}"; then
     echo "ERROR: Failed to compress database file ${DB_EXPORT_PATH}"
     # Clean up
-    rm -f "${DB_EXPORT_PATH}" # Remove potentially corrupted .sql file
-    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null
+    rm -f "${DB_EXPORT_PATH}" 2>/dev/null || true # Remove potentially corrupted .sql file
+    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null || true
     exit 1
 fi
 DB_EXPORT_PATH_GZ="${DB_EXPORT_PATH}.gz" # Update path to compressed file
@@ -106,16 +116,17 @@ echo "Database compressed to ${DB_EXPORT_PATH_GZ}"
 # --- Export Site Files ---
 echo "Exporting site files for ${SELECTED_SITE}..."
 # Go back one level to archive the 'html' directory itself or its contents
-cd "/var/www/sites/${SELECTED_SITE}/" || exit 1
+if ! cd "/var/www/sites/${SELECTED_SITE}/"; then
+    echo "ERROR: Failed to change directory to /var/www/sites/${SELECTED_SITE}/"
+    exit 1
+fi
 
-# Archive the contents of the html directory
-tar -zcf "${FILES_EXPORT_PATH}" -C html .
-
-if [ $? -ne 0 ]; then
+# Archive the contents of the html directory with immediate error checking
+if ! tar -zcf "${FILES_EXPORT_PATH}" -C html .; then
     echo "ERROR: Failed to create site files archive for ${SELECTED_SITE}"
     # Clean up
-    rm -f "${DB_EXPORT_PATH_GZ}"
-    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null
+    rm -f "${DB_EXPORT_PATH_GZ}" 2>/dev/null || true
+    rmdir "${SITE_EXPORT_DIR}" 2>/dev/null || true
     exit 1
 fi
 echo "Site files archived to ${FILES_EXPORT_PATH}"

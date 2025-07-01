@@ -11,51 +11,11 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
-
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Debug pause function
-function debug_pause() {
-  if [ "${DEBUG_INSTALL}" = "1" ]; then
-    local last_step=${1:-"Unknown step"}
-    while true; do
-      echo -e "\n[DEBUG] Completed step: ${last_step}"
-      echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
-      echo -e "If you encountered errors above, you can copy the error text for a GitHub bug report."
-      echo -e "For more server details, run: es.debug"
-      read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
-      if [ -z "$user_input" ]; then
-        break
-      elif [[ "$user_input" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
-        echo -e "\nExiting install script as requested."
-        exit 1
-      else
-        echo "Please press Enter to continue or type 'exit' to stop."
-      fi
-    done
-  fi
-}
-
-# Print errors from the last script section if any
-function print_last_errors() {
-  # Always append errors to persistent log if any
-  if [ -s /tmp/enginescript_install_errors.log ]; then
-    cat /tmp/enginescript_install_errors.log >> /var/log/EngineScript/install-error-log.txt
-  fi
-  # Only show errors to user if debug mode is enabled
-  if [ "${DEBUG_INSTALL}" = "1" ] && [ -s /tmp/enginescript_install_errors.log ]; then
-    echo -e "\n\n==============================================================="
-    echo -e "[DEBUG] ERRORS FROM LAST STEP:"
-    cat /tmp/enginescript_install_errors.log
-    echo -e "[END OF ERRORS]"
-    echo -e "If you encounter errors and want to submit a GitHub issue, please run: es.debug"
-    echo -e "===============================================================\n\n"
-  fi
-  # Always clear the temp log for the next step
-  > /tmp/enginescript_install_errors.log
-}
 
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log

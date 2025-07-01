@@ -4,6 +4,33 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-01
+
+### 🔧 CODE QUALITY
+- **Shell Scripts**: Standardized shebang line in `scripts/functions/alias/alias-debug.sh` to use `#!/usr/bin/env bash` for consistency across all shell scripts
+- **Function Deduplication**: Created shared functions library at `scripts/functions/shared/enginescript-common.sh` to consolidate duplicated functions
+  - Consolidated `debug_pause()` and `print_last_errors()` functions from `scripts/install/enginescript-install.sh` and `scripts/install/nginx/nginx-install.sh`
+  - Consolidated `restart_service()`, `restart_php_fpm()`, and `clear_cache()` functions from `scripts/functions/alias/alias-cache.sh` and `scripts/functions/alias/alias-restart.sh`
+  - Updated `scripts/install/enginescript-install.sh`, `scripts/install/nginx/nginx-install.sh`, `scripts/install/tools/tools-install.sh`, `scripts/functions/alias/alias-cache.sh`, and `scripts/functions/alias/alias-restart.sh` to source the shared library
+  - Removed duplicate function definitions from individual scripts, improving maintainability and consistency
+
+### 🐛 BUG FIXES
+- **Timing Issues**: Fixed timing issues in `scripts/functions/vhost/vhost-export.sh`
+  - Added `set -e` and `set -o pipefail` for proper error handling
+  - Changed all command execution to use immediate error checking instead of checking `$?` after the fact
+  - Improved error checking for `cd` commands and file operations
+  - Enhanced cleanup operations with `|| true` to prevent secondary errors
+  - Fixed race conditions between database export, compression, and file archiving operations
+- **Silent Error Handling**: Fixed silent error handling in `scripts/functions/alias/alias-debug.sh`
+  - Added `set -o pipefail` for proper pipeline error handling
+  - Enhanced all command substitutions with error checking and fallback values
+  - Added comprehensive error checking for system information gathering (CPU, memory, disk, network)
+  - Improved hostname, network interface, and port detection with proper error handling
+  - Added fallback values ("unknown") for failed system information commands
+  - Enhanced website status checking with proper curl error handling
+
+---
+
 ## 2025-06-29
 
 ### 🚀 ENHANCEMENTS

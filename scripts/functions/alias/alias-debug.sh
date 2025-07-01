@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
+# Add proper error handling for critical operations
+set -o pipefail
+
 # Source EngineScript variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Create temp file with date stamp
-DEBUG_FILE="/tmp/enginescript-debug-$(date +%Y%m%d-%H%M%S).md"
+DEBUG_FILE="/tmp/enginescript-debug-$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "unknown").md"
 
 # ANSI color codes
 BOLD="\e[1m"
@@ -32,40 +35,116 @@ debug_print() {
 
 # Get server info from alias-server-info.sh functions
 get_server_info() {
-    # System Info
-    BIT_TYPE=$(getconf LONG_BIT)
-    CPU_COUNT=$(nproc)
-    SERVER_MEMORY_TOTAL_100=$(free -m | awk '/^Mem:/{print $2}')
-    IP_ADDRESS=$(hostname -I | awk '{print $1}')
-    UBUNTU_TYPE=$(lsb_release -i | cut -f2)
-    UBUNTU_VERSION=$(lsb_release -r | cut -f2)
-    UBUNTU_CODENAME=$(lsb_release -c | cut -f2)
-    
-    # CPU Info
-    if ! CPU_INFO=$(lscpu | grep -E "^Model name:" | cut -d":" -f2 | xargs); then
-        debug_print "ERROR: Failed to retrieve CPU model information." "ERROR: Failed to retrieve CPU model information."
+    # System Info with error checking
+    if ! BIT_TYPE=$(getconf LONG_BIT 2>/dev/null); then
+        BIT_TYPE="unknown"
+        debug_print "WARNING: Failed to retrieve system architecture." "WARNING: Failed to retrieve system architecture."
     fi
-    CPU_CORES=$(nproc)
-    CPU_FREQ=$(lscpu | grep -E "^CPU MHz:" | cut -d":" -f2 | xargs)
     
-    # Memory Info
-    TOTAL_RAM=$(free -h | awk '/^Mem:/ {print $2}')
-    USED_RAM=$(free -h | awk '/^Mem:/ {print $3}')
-    FREE_RAM=$(free -h | awk '/^Mem:/ {print $4}')
-    SWAP_TOTAL=$(free -h | awk '/^Swap:/ {print $2}')
-    SWAP_USED=$(free -h | awk '/^Swap:/ {print $3}')
+    if ! CPU_COUNT=$(nproc 2>/dev/null); then
+        CPU_COUNT="unknown"
+        debug_print "WARNING: Failed to retrieve CPU count." "WARNING: Failed to retrieve CPU count."
+    fi
     
-    # Disk Info
-    ROOT_TOTAL=$(df -h / | awk 'NR==2 {print $2}')
-    ROOT_USED=$(df -h / | awk 'NR==2 {print $3}')
-    ROOT_FREE=$(df -h / | awk 'NR==2 {print $4}')
-    ROOT_PCENT=$(df -h / | awk 'NR==2 {print $5}')
+    if ! SERVER_MEMORY_TOTAL_100=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}'); then
+        SERVER_MEMORY_TOTAL_100="unknown"
+        debug_print "WARNING: Failed to retrieve total memory." "WARNING: Failed to retrieve total memory."
+    fi
     
-    # Load Average
-    LOAD_AVG=$(uptime | awk -F'load average:' '{print $2}' | xargs)
+    if ! IP_ADDRESS=$(hostname -I 2>/dev/null | awk '{print $1}'); then
+        IP_ADDRESS="unknown"
+        debug_print "WARNING: Failed to retrieve IP address." "WARNING: Failed to retrieve IP address."
+    fi
     
-    # Network Info
-    NETWORK_INFO=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1')
+    if ! UBUNTU_TYPE=$(lsb_release -i 2>/dev/null | cut -f2); then
+        UBUNTU_TYPE="unknown"
+        debug_print "WARNING: Failed to retrieve Ubuntu type." "WARNING: Failed to retrieve Ubuntu type."
+    fi
+    
+    if ! UBUNTU_VERSION=$(lsb_release -r 2>/dev/null | cut -f2); then
+        UBUNTU_VERSION="unknown"
+        debug_print "WARNING: Failed to retrieve Ubuntu version." "WARNING: Failed to retrieve Ubuntu version."
+    fi
+    
+    if ! UBUNTU_CODENAME=$(lsb_release -c 2>/dev/null | cut -f2); then
+        UBUNTU_CODENAME="unknown"
+        debug_print "WARNING: Failed to retrieve Ubuntu codename." "WARNING: Failed to retrieve Ubuntu codename."
+    fi
+    
+    # CPU Info with enhanced error checking
+    if ! CPU_INFO=$(lscpu 2>/dev/null | grep -E "^Model name:" | cut -d":" -f2 | xargs); then
+        CPU_INFO="unknown"
+        debug_print "WARNING: Failed to retrieve CPU model information." "WARNING: Failed to retrieve CPU model information."
+    fi
+    
+    if ! CPU_CORES=$(nproc 2>/dev/null); then
+        CPU_CORES="unknown"
+        debug_print "WARNING: Failed to retrieve CPU core count." "WARNING: Failed to retrieve CPU core count."
+    fi
+    
+    if ! CPU_FREQ=$(lscpu 2>/dev/null | grep -E "^CPU MHz:" | cut -d":" -f2 | xargs); then
+        CPU_FREQ="unknown"
+        debug_print "WARNING: Failed to retrieve CPU frequency." "WARNING: Failed to retrieve CPU frequency."
+    fi
+    
+    # Memory Info with error checking
+    if ! TOTAL_RAM=$(free -h 2>/dev/null | awk '/^Mem:/ {print $2}'); then
+        TOTAL_RAM="unknown"
+        debug_print "WARNING: Failed to retrieve total RAM." "WARNING: Failed to retrieve total RAM."
+    fi
+    
+    if ! USED_RAM=$(free -h 2>/dev/null | awk '/^Mem:/ {print $3}'); then
+        USED_RAM="unknown"
+        debug_print "WARNING: Failed to retrieve used RAM." "WARNING: Failed to retrieve used RAM."
+    fi
+    
+    if ! FREE_RAM=$(free -h 2>/dev/null | awk '/^Mem:/ {print $4}'); then
+        FREE_RAM="unknown"
+        debug_print "WARNING: Failed to retrieve free RAM." "WARNING: Failed to retrieve free RAM."
+    fi
+    
+    if ! SWAP_TOTAL=$(free -h 2>/dev/null | awk '/^Swap:/ {print $2}'); then
+        SWAP_TOTAL="unknown"
+        debug_print "WARNING: Failed to retrieve total swap." "WARNING: Failed to retrieve total swap."
+    fi
+    
+    if ! SWAP_USED=$(free -h 2>/dev/null | awk '/^Swap:/ {print $3}'); then
+        SWAP_USED="unknown"
+        debug_print "WARNING: Failed to retrieve used swap." "WARNING: Failed to retrieve used swap."
+    fi
+    
+    # Disk Info with error checking
+    if ! ROOT_TOTAL=$(df -h / 2>/dev/null | awk 'NR==2 {print $2}'); then
+        ROOT_TOTAL="unknown"
+        debug_print "WARNING: Failed to retrieve root disk total." "WARNING: Failed to retrieve root disk total."
+    fi
+    
+    if ! ROOT_USED=$(df -h / 2>/dev/null | awk 'NR==2 {print $3}'); then
+        ROOT_USED="unknown"
+        debug_print "WARNING: Failed to retrieve root disk used." "WARNING: Failed to retrieve root disk used."
+    fi
+    
+    if ! ROOT_FREE=$(df -h / 2>/dev/null | awk 'NR==2 {print $4}'); then
+        ROOT_FREE="unknown"
+        debug_print "WARNING: Failed to retrieve root disk free." "WARNING: Failed to retrieve root disk free."
+    fi
+    
+    if ! ROOT_PCENT=$(df -h / 2>/dev/null | awk 'NR==2 {print $5}'); then
+        ROOT_PCENT="unknown"
+        debug_print "WARNING: Failed to retrieve root disk percentage." "WARNING: Failed to retrieve root disk percentage."
+    fi
+    
+    # Load Average with error checking
+    if ! LOAD_AVG=$(uptime 2>/dev/null | awk -F'load average:' '{print $2}' | xargs); then
+        LOAD_AVG="unknown"
+        debug_print "WARNING: Failed to retrieve load average." "WARNING: Failed to retrieve load average."
+    fi
+    
+    # Network Info with error checking
+    if ! NETWORK_INFO=$(ip -4 addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1'); then
+        NETWORK_INFO="unknown"
+        debug_print "WARNING: Failed to retrieve network information." "WARNING: Failed to retrieve network information."
+    fi
 }
 
 # Start debug report
@@ -87,7 +166,8 @@ debug_print "Ubuntu Version | ${UBUNTU_TYPE} ${UBUNTU_VERSION} (${UBUNTU_CODENAM
 debug_print "\n## System Information\n" "\n## System Information\n"
 debug_print "| Component | Details |" "| Component | Details |"
 debug_print "|-----------|----------|" "|-----------|----------|"
-debug_print "Hostname | $(hostname)" "| Hostname | \`$(hostname)\` |"
+HOSTNAME_VAL=$(hostname 2>/dev/null || echo "unknown")
+debug_print "Hostname | ${HOSTNAME_VAL}" "| Hostname | \`${HOSTNAME_VAL}\` |"
 debug_print "IP Address | ${IP_ADDRESS}" "| IP Address | \`${IP_ADDRESS}\` |"
 debug_print "CPU Model | ${CPU_INFO}" "| CPU Model | \`${CPU_INFO}\` |"
 debug_print "CPU Cores | ${CPU_CORES}" "| CPU Cores | \`${CPU_CORES}\` |"
@@ -97,17 +177,22 @@ debug_print "\n## Network Information\n" "\n## Network Information\n"
 debug_print "### IP Addresses\n" "### IP Addresses\n"
 debug_print "| Interface | IP Address |" "| Interface | IP Address |"
 debug_print "|-----------|------------|" "|-----------|------------|"
-ip -4 addr show | grep inet | while read -r line; do
-    IFACE=$(echo "$line" | awk '{print $NF}')
-    IP=$(echo "$line" | awk '{print $2}' | cut -d/ -f1)
-    debug_print "${IFACE} | ${IP}" "| ${IFACE} | \`${IP}\` |"
-done
+if ip -4 addr show 2>/dev/null | grep inet >/dev/null 2>&1; then
+    ip -4 addr show 2>/dev/null | grep inet | while read -r line; do
+        if IFACE=$(echo "$line" | awk '{print $NF}' 2>/dev/null) && IP=$(echo "$line" | awk '{print $2}' | cut -d/ -f1 2>/dev/null); then
+            debug_print "${IFACE} | ${IP}" "| ${IFACE} | \`${IP}\` |"
+        fi
+    done
+else
+    debug_print "Unknown | Unable to retrieve" "| Unknown | \`Unable to retrieve\` |"
+fi
 
 debug_print "\n\n"
 
 debug_print "\n### Active Ports\n" "### Active Ports\n"
 debug_print "\`\`\`" "\`\`\`"
-debug_print "$(netstat -tuln | grep LISTEN)" "$(netstat -tuln | grep LISTEN)"
+NETSTAT_OUTPUT=$(netstat -tuln 2>/dev/null | grep LISTEN || echo "Unable to retrieve port information")
+debug_print "${NETSTAT_OUTPUT}" "${NETSTAT_OUTPUT}"
 debug_print "\`\`\`\n" "\`\`\`\n"
 
 # Memory Information
@@ -230,16 +315,23 @@ debug_print "|--------|---------|" "|--------|---------|"
 first_domain=""
 
 while IFS= read -r site; do
-    # Get full domain name
-    domain=$(basename "$(dirname "$site")")
+    # Get full domain name with error checking
+    if ! site_dir=$(dirname "$site" 2>/dev/null); then
+        continue # Skip if we can't get the directory
+    fi
+    if ! domain=$(basename "$site_dir" 2>/dev/null); then
+        continue # Skip if we can't get the domain name
+    fi
     
     # Store first domain encountered
-    if [ -z "$first_domain" ]; then
+    if [[ -z "$first_domain" ]]; then
         first_domain="$domain"
     fi
     
-    # Get HTTP status
-    curl_result=$(curl -sL -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null)
+    # Get HTTP status with error handling
+    if ! curl_result=$(curl -sL -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null); then
+        curl_result="000" # Default to connection failed
+    fi
     
     # Set status emoji
     case $curl_result in
