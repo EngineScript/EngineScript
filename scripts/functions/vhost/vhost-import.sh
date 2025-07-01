@@ -477,7 +477,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
   ZONE_ID=$(get_cf_zone_id "$DOMAIN")
 
   # Check if domain exists in Cloudflare
-  if [ -z "$ZONE_ID" ]; then
+  if [[ -z "$ZONE_ID" ]]; then
     echo ""
     echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
     echo "${BOLD}ERROR: Domain not found in Cloudflare${NORMAL}"
@@ -510,7 +510,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
     A_RECORD_ID=$(echo "$A_RECORD_INFO" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
     A_RECORD_CONTENT=$(echo "$A_RECORD_INFO" | grep -o '"content":"[^"]*' | head -1 | cut -d'"' -f4)
     
-    if [ -z "$A_RECORD_ID" ]; then
+    if [[ -z "$A_RECORD_ID" ]]; then
       # A record doesn't exist, create it
       echo "Adding A record for ${DOMAIN} pointing to ${SERVER_IP}..."
       curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
@@ -524,7 +524,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
           \"ttl\": 1,
           \"proxied\": true
         }"
-    elif [ "$A_RECORD_CONTENT" != "$SERVER_IP" ]; then
+    elif [[ "$A_RECORD_CONTENT" != "$SERVER_IP" ]]; then
       # A record exists but IP doesn't match, update it
       echo "Updating A record for ${DOMAIN} from ${A_RECORD_CONTENT} to ${SERVER_IP}..."
       curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${A_RECORD_ID}" \
@@ -548,7 +548,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
       -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
       -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
-    if [ -z "$ADMIN_RECORD_ID" ]; then
+    if [[ -z "$ADMIN_RECORD_ID" ]]; then
       # Admin subdomain does not exist, create it
       echo "Adding admin subdomain to Cloudflare..."
       curl -s https://api.cloudflare.com/client/v4/zones/"${ZONE_ID}"/dns_records \
@@ -586,7 +586,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
       -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
       -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
-    if [ -z "$WWW_RECORD_ID" ]; then
+    if [[ -z "$WWW_RECORD_ID" ]]; then
       # www subdomain does not exist, create it
       echo "Adding www subdomain to Cloudflare..."
       curl -s https://api.cloudflare.com/client/v4/zones/"${ZONE_ID}"/dns_records \
@@ -830,7 +830,7 @@ cp -rf "/usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.con
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
 
 # Enable Admin Subdomain Vhost File
-if [ "${ADMIN_SUBDOMAIN}" = 1 ];
+if [[ "${ADMIN_SUBDOMAIN}" == "1" ]];
   then
     sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   else
@@ -838,7 +838,7 @@ if [ "${ADMIN_SUBDOMAIN}" = 1 ];
 fi
 
 # Secure Admin Subdomain
-if [ "${NGINX_SECURE_ADMIN}" = 1 ];
+if [[ "${NGINX_SECURE_ADMIN}" == "1" ]];
   then
     sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
     sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
@@ -848,7 +848,7 @@ if [ "${NGINX_SECURE_ADMIN}" = 1 ];
 fi
 
 # Enable HTTP/3 if configured
-if [ "${INSTALL_HTTP3}" = 1 ]; then
+if [[ "${INSTALL_HTTP3}" == "1" ]]; then
   sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 fi
@@ -950,7 +950,7 @@ sed -i "s|define( 'DB_CHARSET', 'utf8mb4' );|define( 'DB_CHARSET', '${DB_CHARSET
 
 # Redis Config (Same as vhost-install)
 source /home/EngineScript/sites-list/sites.sh
-if [ "${#SITES[@]}" = 1 ];
+if [[ "${#SITES[@]}" = 1 ]];
   then
     echo "There is only 1 domain in the site list. Not adding additional Redis databases."
     # Ensure WP_REDIS_DATABASE is 0 for the first site
@@ -995,7 +995,7 @@ if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then
     echo "Decompressing database..."
     IMPORT_FILE_PATH="/tmp/${DOMAIN}_db_import.sql"
     gunzip -c "${DB_SOURCE_PATH}" > "${IMPORT_FILE_PATH}"
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         echo "Failed to decompress database file. Exiting."
         exit 1
     fi
@@ -1003,7 +1003,7 @@ fi
 
 # Import the database using WP-CLI
 wp db import "${IMPORT_FILE_PATH}" --allow-root
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
     echo "Failed to import database. Please check the database file and credentials. Exiting."
     # Clean up temp file if created
     if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then
@@ -1049,7 +1049,7 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root --activate # Activate this one
 
 # Install EngineScript custom plugins if enabled
-if [ "${INSTALL_ENGINESCRIPT_PLUGINS}" = 1 ]; then
+if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
     echo "Installing EngineScript custom plugins..."
     # 1. Simple WP Optimizer plugin
     mkdir -p "/tmp/swpo-plugin"
@@ -1096,7 +1096,7 @@ find "${TARGET_WP_PATH}" -type f -print0 | sudo xargs -0 chmod 0644
 # Secure specific files
 chmod 600 "${TARGET_WP_PATH}/wp-config.php"
 # Ensure wp-cron is executable if it exists
-if [ -f "${TARGET_WP_PATH}/wp-cron.php" ]; then
+if [[ -f "${TARGET_WP_PATH}/wp-cron.php" ]]; then
     chmod +x "${TARGET_WP_PATH}/wp-cron.php"
 fi
 
@@ -1224,11 +1224,11 @@ while true; do
             # Move import files to completed-backups directory
             BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
             mkdir -p "${BACKUP_DIR}"
-            if [ -n "${WP_ARCHIVE_FILE}" ] && [ -f "${WP_ARCHIVE_FILE}" ]; then
+            if [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
                 mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
                 echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
             fi
-            if [ -n "${DB_SOURCE_PATH}" ] && [ -f "${DB_SOURCE_PATH}" ]; then
+            if [[ -n "${DB_SOURCE_PATH}" ]] && [[ -f "${DB_SOURCE_PATH}" ]]; then
                 mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
                 echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
             fi

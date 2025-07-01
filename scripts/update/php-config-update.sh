@@ -29,15 +29,15 @@ calculate_php() {
   SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2 }')"
 
   # Dynamically calculate pm.start_servers, pm.min_spare_servers, and pm.max_spare_servers based on CPU threads
-  if [ "${CPU_COUNT}" -eq 1 ]; then
+  if [[ "${CPU_COUNT}" -eq 1 ]]; then
     PHP_FPM_START_SERVERS=2
     PHP_FPM_MIN_SPARE_SERVERS=1
     PHP_FPM_MAX_SPARE_SERVERS=3
-  elif [ "${CPU_COUNT}" -eq 2 ]; then
+  elif [[ "${CPU_COUNT}" -eq 2 ]]; then
     PHP_FPM_START_SERVERS=3
     PHP_FPM_MIN_SPARE_SERVERS=2
     PHP_FPM_MAX_SPARE_SERVERS=5
-  elif [ "${CPU_COUNT}" -eq 4 ]; then
+  elif [[ "${CPU_COUNT}" -eq 4 ]]; then
     PHP_FPM_START_SERVERS=4
     PHP_FPM_MIN_SPARE_SERVERS=3
     PHP_FPM_MAX_SPARE_SERVERS=6
@@ -48,17 +48,17 @@ calculate_php() {
   fi
   
   # Calculate pm.max_children based on available memory
-  if [ "${AVAILABLE_MEMORY}" -lt 1200 ]; then
+  if [[ "${AVAILABLE_MEMORY}" -lt 1200 ]]; then
     PHP_FPM_MAX_CHILDREN=8
     PHP_MEMORY_LIMIT="256M"
     OPCACHE_JIT_BUFFER="64M"
     OPCACHE_INT_BUFFER=16
-  elif [ "${AVAILABLE_MEMORY}" -lt 2200 ]; then
+  elif [[ "${AVAILABLE_MEMORY}" -lt 2200 ]]; then
     PHP_FPM_MAX_CHILDREN=16
     PHP_MEMORY_LIMIT="256M"
     OPCACHE_JIT_BUFFER="64M"
     OPCACHE_INT_BUFFER=16
-  elif [ "${AVAILABLE_MEMORY}" -lt 4200 ]; then
+  elif [[ "${AVAILABLE_MEMORY}" -lt 4200 ]]; then
     PHP_FPM_MAX_CHILDREN=24
     PHP_MEMORY_LIMIT="512M"
     OPCACHE_JIT_BUFFER="96M"

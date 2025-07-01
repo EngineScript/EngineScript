@@ -19,7 +19,7 @@ source /home/EngineScript/enginescript-install-options.txt
 # Update System Software and Tools
 
 # Update Adminer
-if [ "${INSTALL_ADMINER}" = 1 ];
+if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Updating Adminer"
     /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
@@ -37,7 +37,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
 
 # Update phpMyAdmin
-if [ "${INSTALL_PHPMYADMIN}" = 1 ];
+if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then
     echo "Updating phpMyAdmin"
     /usr/local/bin/enginescript/scripts/install/tools/security/phpmyadmin-update.sh

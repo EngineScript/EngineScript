@@ -51,15 +51,15 @@ echo ""
 
 # Update both EngineScript plugins for each site in sites.sh
 SITES_FILE="/home/EngineScript/sites-list/sites.sh"
-if [ -f "$SITES_FILE" ]; then
+if [[ -f "$SITES_FILE" ]]; then
   # shellcheck source=/home/EngineScript/sites-list/sites.sh
   source "$SITES_FILE"
   for SITE in "${SITES[@]}"; do
     DOMAIN=$(basename "$SITE")
     WP_PLUGIN_DIR="/var/www/sites/${DOMAIN}/html/wp-content/plugins"
-    if [ -d "$WP_PLUGIN_DIR" ]; then
+    if [[ -d "$WP_PLUGIN_DIR" ]]; then
       # Only update EngineScript custom plugins if the option is enabled
-      if [ "${INSTALL_ENGINESCRIPT_PLUGINS}" = 1 ]; then
+      if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
         # Update the two custom EngineScript plugins:
         
         # 1. Simple Site Exporter plugin
