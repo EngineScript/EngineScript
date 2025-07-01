@@ -46,7 +46,7 @@ do
       gzip -f "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/${DATABASE_FILE}"
 
     # Amazon S3 Database Backup
-    if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ] && [ "$HOURLY_S3_DATABASE_BACKUP" = 1 ];
+    if [[ "$INSTALL_S3_BACKUP" == "1" ]] && [[ "$S3_BUCKET_NAME" != "PLACEHOLDER" ]] && [[ "$HOURLY_S3_DATABASE_BACKUP" == "1" ]];
         then
         /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/hourly/${NOW}/${DATABASE_FILE}.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/hourly/${NOW}/${DATABASE_FILE}.gz" --storage-class STANDARD
     fi

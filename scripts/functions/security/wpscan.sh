@@ -22,7 +22,7 @@ select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
 echo "WPScan"
 
 # Run WPScan
-if [ "${WPSCANAPI}" = PLACEHOLDER ]
+if [[ "${WPSCANAPI}" == "PLACEHOLDER" ]]
   then
     wpscan --url "$d"
   else

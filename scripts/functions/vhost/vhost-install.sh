@@ -11,6 +11,9 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
 
 
 #----------------------------------------------------------------------------------
@@ -21,7 +24,7 @@ echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: MariaDB is running."
 else
   echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
@@ -30,7 +33,7 @@ fi
 
 # MySQL Service Check
 STATUS="$(systemctl is-active mysql)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: MySQL is running."
 else
   echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
@@ -39,7 +42,7 @@ fi
 
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Nginx is running."
 else
   echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
@@ -48,7 +51,7 @@ fi
 
 # PHP Service Check
 STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: PHP ${PHP_VER} is running."
 else
   echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
@@ -57,7 +60,7 @@ fi
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Redis is running."
 else
   echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
@@ -200,7 +203,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
   ZONE_ID=$(get_cf_zone_id "$DOMAIN")
 
   # Check if domain exists in Cloudflare
-  if [ -z "$ZONE_ID" ]; then
+  if [[ -z "$ZONE_ID" ]]; then
     echo ""
     echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
     echo "${BOLD}ERROR: Domain not found in Cloudflare${NORMAL}"
@@ -233,7 +236,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
     A_RECORD_ID=$(echo "$A_RECORD_INFO" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
     A_RECORD_CONTENT=$(echo "$A_RECORD_INFO" | grep -o '"content":"[^"]*' | head -1 | cut -d'"' -f4)
     
-    if [ -z "$A_RECORD_ID" ]; then
+    if [[ -z "$A_RECORD_ID" ]]; then
       # A record doesn't exist, create it
       echo "Adding A record for ${DOMAIN} pointing to ${SERVER_IP}..."
       curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
@@ -247,7 +250,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
           \"ttl\": 1,
           \"proxied\": true
         }"
-    elif [ "$A_RECORD_CONTENT" != "$SERVER_IP" ]; then
+    elif [[ "$A_RECORD_CONTENT" != "$SERVER_IP" ]]; then
       # A record exists but IP doesn't match, update it
       echo "Updating A record for ${DOMAIN} from ${A_RECORD_CONTENT} to ${SERVER_IP}..."
       curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${A_RECORD_ID}" \
@@ -271,7 +274,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
       -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
       -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
-    if [ -z "$ADMIN_RECORD_ID" ]; then
+    if [[ -z "$ADMIN_RECORD_ID" ]]; then
       # Admin subdomain does not exist, create it
       echo "Adding admin subdomain to Cloudflare..."
       curl -s https://api.cloudflare.com/client/v4/zones/"${ZONE_ID}"/dns_records \
@@ -309,7 +312,7 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
       -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
       -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
 
-    if [ -z "$WWW_RECORD_ID" ]; then
+    if [[ -z "$WWW_RECORD_ID" ]]; then
       # www subdomain does not exist, create it
       echo "Adding www subdomain to Cloudflare..."
       curl -s https://api.cloudflare.com/client/v4/zones/"${ZONE_ID}"/dns_records \
@@ -534,7 +537,7 @@ cp -rf "/usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.con
 sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
 
 # Enable Admin Subdomain Vhost File
-if [ "${ADMIN_SUBDOMAIN}" = 1 ];
+if [[ "${ADMIN_SUBDOMAIN}" == "1" ]];
   then
     sed -i "s|#include /etc/nginx/admin/admin.your-domain.conf;|include /etc/nginx/admin/admin.${DOMAIN}.conf;|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   else
@@ -542,7 +545,7 @@ if [ "${ADMIN_SUBDOMAIN}" = 1 ];
 fi
 
 # Secure Admin Subdomain
-if [ "${NGINX_SECURE_ADMIN}" = 1 ];
+if [[ "${NGINX_SECURE_ADMIN}" == "1" ]];
   then
     sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
     sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
@@ -552,7 +555,7 @@ if [ "${NGINX_SECURE_ADMIN}" = 1 ];
 fi
 
 # Enable HTTP/3 if configured
-if [ "${INSTALL_HTTP3}" = 1 ]; then
+if [[ "${INSTALL_HTTP3}" == "1" ]]; then
   sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
   sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 fi
@@ -637,7 +640,7 @@ sed -i "s|SEDURL|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 # Redis Config
 # Scale Redis Databases to Number of Installed Domains
 source /home/EngineScript/sites-list/sites.sh
-if [ "${#SITES[@]}" = 1 ];
+if [[ "${#SITES[@]}" == "1" ]];
   then
     # If number of installed domains = 1, leave Redis at 1 database and WordPress set to use database 0
     echo "There is only 1 domain in the site list. Not adding additional Redis databases."
@@ -645,7 +648,7 @@ if [ "${#SITES[@]}" = 1 ];
     # Raise number of Redis databases to equal number of domains in sites.sh
     OLDREDISDB=$((${#SITES[@]} - 1))
     sed -i "s|databases ${OLDREDISDB}|databases ${#SITES[@]}|g" /etc/redis/redis.conf
-    service redis-server restart
+    restart_service "redis-server"
 
     # Set WordPress to use the latest Redis database number.
     # Redis starts databases at number 0, so we take the total number of domains in sites.sh and reduce by 1. Three installed domains = database 2
@@ -714,7 +717,7 @@ wp plugin install wp-crontrol --allow-root
 wp plugin install wp-mail-smtp --allow-root
 
 # Install EngineScript custom plugins if enabled
-if [ "${INSTALL_ENGINESCRIPT_PLUGINS}" = 1 ]; then
+if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
     echo "Installing EngineScript custom plugins..."
     # 1. Simple WP Optimizer plugin
     mkdir -p "/tmp/swpo-plugin-download"

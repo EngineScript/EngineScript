@@ -11,7 +11,13 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
+
+
+#----------------------------------------------------------------------------------
+# Start Main Script
 
 # --- Define Fixed Import Paths (Needed for instructions) ---
 IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
@@ -55,16 +61,12 @@ echo "---------------------------------------------------------------------"
 read -p "Press [Enter] to continue once the file(s) are prepared..."
 # --- End Instructions ---
 
-
-#----------------------------------------------------------------------------------
-# Start Main Script
-
 # Check if services are running
 echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 
 # MariaDB Service Check
 STATUS="$(systemctl is-active mariadb)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: MariaDB is running."
 else
   echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
@@ -73,7 +75,7 @@ fi
 
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Nginx is running."
 else
   echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
@@ -82,7 +84,7 @@ fi
 
 # PHP Service Check
 STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: PHP ${PHP_VER} is running."
 else
   echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
@@ -91,7 +93,7 @@ fi
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Redis is running."
 else
   echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
@@ -958,7 +960,7 @@ if [ "${#SITES[@]}" = 1 ];
     # Check if redis.conf needs update (avoid duplicate changes)
     if ! grep -q "databases ${#SITES[@]}" /etc/redis/redis.conf; then
         sed -i "s|databases ${OLDREDISDB}|databases ${#SITES[@]}|g" /etc/redis/redis.conf
-        service redis-server restart
+        restart_service "redis-server"
     fi
     # Set WordPress to use the latest Redis database number.
     sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" "${TARGET_WP_PATH}/wp-config.php"

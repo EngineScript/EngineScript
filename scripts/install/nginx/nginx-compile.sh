@@ -88,7 +88,7 @@ echo "------------------------------------------------"
 # Clean up
 rm -f /tmp/cpu_capabilities.txt
 
-if [ "${INSTALL_HTTP3}" = 1 ];
+if [[ "${INSTALL_HTTP3}" == "1" ]];
   then
     # HTTP3
     ./configure \

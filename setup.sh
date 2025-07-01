@@ -11,7 +11,7 @@
 set -e
 
 # Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" != 0 ];
+if [[ "${EUID}" != 0 ]];
   then
     echo "ALERT:"
     echo "EngineScript should be executed as the root user."
@@ -21,7 +21,7 @@ fi
 # Check if the server is running on a 64-bit environment. If not, exit.
 BIT_TYPE=$(uname -m)
 
-if [ "${BIT_TYPE}" != 'x86_64' ];
+if [[ "${BIT_TYPE}" != 'x86_64' ]];
   then
     echo "EngineScript requires a 64-bit environment to run optimally."
     exit 1
@@ -30,7 +30,7 @@ fi
 # Check if the server is running Ubuntu
 LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
 
-if [ "$LINUX_TYPE" != "Ubuntu" ]; then
+if [[ "$LINUX_TYPE" != "Ubuntu" ]]; then
   echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 22.04 or 24.04"
   exit 1
 else
@@ -81,7 +81,7 @@ apt upgrade -y
 cd /usr/src
 
 # Remove existing EngineScript directory if it exists
-if [ -d "/usr/local/bin/enginescript" ]; then
+if [[ -d "/usr/local/bin/enginescript" ]]; then
   rm -rf /usr/local/bin/enginescript
 fi
 
@@ -130,7 +130,7 @@ cd "/usr/src"
 
 # Create EngineScript Aliases
 source "/var/log/EngineScript/install-log.txt"
-if [ "${ALIAS}" = 1 ];
+if [[ "${ALIAS}" = 1 ]];
   then
     echo "ALIAS script has already run"
   else
@@ -176,7 +176,7 @@ apt clean -y
 apt autoremove --purge -y
 apt autoclean -y
 
-if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
+if [[ -f "/home/EngineScript/enginescript-install-options.txt" ]]; then
   clear
   echo -e "\n\nInitial setup is complete.\n\nProceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"
 else

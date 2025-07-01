@@ -20,7 +20,7 @@ source /home/EngineScript/enginescript-install-options.txt
 cd /usr/src
 
 # Remove existing Testssl.sh directory if it exists
-if [ -d "/usr/local/bin/testssl.sh" ]; then
+if [[ -d "/usr/local/bin/testssl.sh" ]]; then
   rm -rf /usr/local/bin/testssl.sh
 fi
 

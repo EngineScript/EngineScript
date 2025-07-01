@@ -19,7 +19,7 @@ retry_add_ppa() {
   local max_retries=3
   local delay=5
   local attempt=1
-  while [ $attempt -le $max_retries ]; do
+  while [[ $attempt -le $max_retries ]]; do
     add-apt-repository -yn "$ppa" && return 0
     echo "Attempt $attempt to add $ppa failed. Retrying in $delay seconds..."
     attempt=$((attempt+1))
@@ -102,7 +102,7 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 # Version Specific Repositories
 UBUNTU_VERSION="$(lsb_release -sr)"
-if [ "${UBUNTU_VERSION}" = "22.04" ]; then
+if [[ "${UBUNTU_VERSION}" == "22.04" ]]; then
   echo "Not adding any additional repositories for Ubuntu Jammy 22.04"
   # phpMyAdmin
   #add-apt-repository -yn ppa:phpmyadmin/ppa

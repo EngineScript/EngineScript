@@ -20,7 +20,7 @@ source /home/EngineScript/enginescript-install-options.txt
 cd /usr/src
 
 # Remove existing OpCache-GUI directory if it exists
-if [ -d "/var/www/admin/enginescript/opcache-gui" ]; then
+if [[ -d "/var/www/admin/enginescript/opcache-gui" ]]; then
   rm -rf /var/www/admin/enginescript/opcache-gui
 fi
 

@@ -9,7 +9,9 @@
 
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
+
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 
@@ -60,17 +62,17 @@ validateIPv6() {
 }
 
 # Download the files from CloudFlare
-if [ -f /usr/bin/curl ];
+if [[ -f /usr/bin/curl ]];
 then
 	# IPv4
 	HTTP_STATUS=$(curl -sw '%{http_code}' -o /tmp/cloudflare-ipv4 $CLOUDFLARE_IPSV4)
-	if [ "$HTTP_STATUS" -ne 200 ]; then
+	if [[ "$HTTP_STATUS" -ne 200 ]]; then
 		echo "FAILED. Reason: unable to download IPv4 list [Status code: $HTTP_STATUS]"
 		exit 1
 	fi
 	# IPv6
 	HTTP_STATUS=$(curl -sw '%{http_code}' -o $TEMP_FILE_IPV6 $CLOUDFLARE_IPSV6)
-	if [ "$HTTP_STATUS" -ne 200 ]; then
+	if [[ "$HTTP_STATUS" -ne 200 ]]; then
 		echo "FAILED. Reason: unable to download IPv6 list [Status code: $HTTP_STATUS]"
 		exit 1
 	fi
@@ -105,4 +107,4 @@ echo "real_ip_header CF-Connecting-IP;" >> $CLOUDFLARE_NGINX_CONFIG
 rm $TEMP_FILE_IPV4 $TEMP_FILE_IPV6
 
 # Reload Nginx to implement changes
-service nginx reload
+restart_service "nginx"

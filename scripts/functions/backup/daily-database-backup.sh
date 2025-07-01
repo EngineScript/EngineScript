@@ -51,7 +51,7 @@ do
     gzip -cf "/var/www/sites/$i/html/wp-config.php" > "/home/EngineScript/site-backups/$i/wp-config/daily/${NOW}/${WPCONFIG_FILE}"
 
     # Amazon S3 Database Backup
-    if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ] && [ "$DAILY_S3_DATABASE_BACKUP" = 1 ];
+    if [[ "$INSTALL_S3_BACKUP" == "1" ]] && [[ "$S3_BUCKET_NAME" != "PLACEHOLDER" ]] && [[ "$DAILY_S3_DATABASE_BACKUP" == "1" ]];
     then
         echo "Uploading Database Backup for ${i} to Amazon S3 Bucket"
         /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/database/daily/${NOW}/${DATABASE_FILE}.gz" "s3://${S3_BUCKET_NAME}/$i/backups/database/daily/${NOW}/${DATABASE_FILE}.gz" --storage-class STANDARD

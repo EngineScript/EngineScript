@@ -26,7 +26,7 @@ wget -O "/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz" "https://static.jonof.id.au
 tar -xzf "/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz"
 
 # Install 32-BIT or 64-BIT
-if [ "${BIT_TYPE}" == 'x86_64' ];
+if [[ "${BIT_TYPE}" == 'x86_64' ]];
   then
     # 64-bit
     cp "/usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout" /bin

@@ -21,7 +21,7 @@ cd /usr/src
 
 # Cloudflare zlib Download
 # Remove existing Zlib-CF directory if it exists
-if [ -d "/usr/src/zlib-cf" ]; then
+if [[ -d "/usr/src/zlib-cf" ]]; then
   rm -rf "/usr/src/zlib-cf"
 fi
 

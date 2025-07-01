@@ -36,7 +36,7 @@ do
                 ! -path './wp-migrate-db/*' \
                 | wc -l)
 
-        if [ "$numFiles" -gt 0 ]; then
+        if [[ "$numFiles" -gt 0 ]]; then
                 ERRORS="$ERRORS $i"
         fi
 
@@ -46,7 +46,7 @@ done
 # Trim leading space if ERRORS is not empty
 ERRORS="${ERRORS##*( )}"
 
-if [ -n "$ERRORS" ]; then
+if [[ -n "$ERRORS" ]]; then
         # Use multiple -d options for clarity and proper quoting
         curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
                 -d type=note \

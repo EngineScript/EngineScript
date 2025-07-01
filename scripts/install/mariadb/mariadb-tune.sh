@@ -34,21 +34,21 @@ sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
 # Scales to be near the MariaDB default value on a 4GB server
 sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/mariadb.cnf
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
     sed -i "s|SEDLBS|32|g" /etc/mysql/mariadb.cnf
   else
     sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
 fi
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
     sed -i "s|SEDTCS|256|g" /etc/mysql/mariadb.cnf
   else
     sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/mariadb.cnf
 fi
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
     sed -i "s|SEDTOC|2000|g" /etc/mysql/mariadb.cnf
   else
@@ -56,25 +56,25 @@ if [ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ];
 fi
 
 # For Servers with 1GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ];
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ]];
   then
     sed -i "s|SEDINOF|1000|g" /etc/mysql/mariadb.cnf
 fi
 
 # For Servers with 2GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ];
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]];
   then
     sed -i "s|SEDINOF|2000|g" /etc/mysql/mariadb.cnf
 fi
 
 # For Servers with 4GB RAM
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ];
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]];
   then
     sed -i "s|SEDINOF|4000|g" /etc/mysql/mariadb.cnf
 fi
 
 # For Servers with 8GB RAM+
-if [ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ];
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ]];
   then
     sed -i "s|SEDINOF|8000|g" /etc/mysql/mariadb.cnf
 fi
@@ -107,7 +107,7 @@ avg_iops=$(echo "$avg_iops" | cut -d '.' -f 1 | xargs)
 max_iops=$(echo "$max_iops" | cut -d '.' -f 1 | sed 's/^[ \t]*//;s/[ \t]*$//') # Remove leading/trailing whitespace
 
 # Failsafe: Set avg IOPS to 500 and max IOPS to 1000 if avg IOPS is less than 500 or if extraction failed
-if [ -z "$avg_iops" ] || [ "$avg_iops" -lt 500 ]; then
+if [[ -z "$avg_iops" ]] || [[ "$avg_iops" -lt 500 ]]; then
     avg_iops=500
     max_iops=1000
     echo "Failsafe activated: avg IOPS set to 500 and max IOPS set to 1000."

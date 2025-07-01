@@ -14,7 +14,7 @@ source /home/EngineScript/enginescript-install-options.txt
 
 
 # Copy Sites List Template
-if [ ! -f "/home/EngineScript/sites-list/sites.sh" ]; then
+if [[ ! -f "/home/EngineScript/sites-list/sites.sh" ]]; then
     cp -rf /usr/local/bin/enginescript/scripts/functions/cron/sites.sh /home/EngineScript/sites-list/sites.sh
 fi
 
@@ -23,29 +23,29 @@ fi
 #----------------------------------------------------------------------------------
 
 # Security and Updates
-[ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" = 1 ] && \
+[[ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1") | crontab -
 
-[ "${ENGINESCRIPT_AUTO_UPDATE}" = 1 ] && \
+[[ "${ENGINESCRIPT_AUTO_UPDATE}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1") | crontab -
 
 # WordPress Maintenance
 (crontab -l 2>/dev/null; echo "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1") | crontab -
 
 # Backup Tasks
-[ "${DAILY_LOCAL_DATABASE_BACKUP}" = 1 ] && \
+[[ "${DAILY_LOCAL_DATABASE_BACKUP}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "0 1 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash daily-database-backup.sh >/dev/null 2>&1") | crontab -
 
-[ "${HOURLY_LOCAL_DATABASE_BACKUP}" = 1 ] && \
+[[ "${HOURLY_LOCAL_DATABASE_BACKUP}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash hourly-database-backup.sh >/dev/null 2>&1") | crontab -
 
-[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" = 1 ] && \
+[[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "10 1 */7 * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1") | crontab -
 
 # System Maintenance
 (crontab -l 2>/dev/null; echo "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1") | crontab -
 
-[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" = 1 ] && \
+[[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "37 5 */7 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1") | crontab -
 
 # Configuration Backups
@@ -64,7 +64,7 @@ fi
 # Permissions and Security
 (crontab -l 2>/dev/null; echo "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash permissions.sh >/dev/null 2>&1") | crontab -
 
-[ "$PUSHBULLET_TOKEN" != PLACEHOLDER ] && {
+[[ "$PUSHBULLET_TOKEN" != "PLACEHOLDER" ]] && {
     (crontab -l 2>/dev/null; echo "56 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash uploads-php-scan.sh >/dev/null 2>&1") | crontab -
     (crontab -l 2>/dev/null; echo "57 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash checksums.sh >/dev/null 2>&1") | crontab -
 }

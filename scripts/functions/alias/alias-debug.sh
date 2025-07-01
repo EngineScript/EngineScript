@@ -299,7 +299,7 @@ debug_print "|---------|---------|" "|---------|---------|"
 services=("nginx" "php8.3-fpm" "mariadb" "redis-server")
 for service in "${services[@]}"; do
     status=$(systemctl is-active "$service")
-    if [ "$status" = "active" ]; then
+    if [[ "$status" == "active" ]]; then
         debug_print "${service} | ${GREEN}${status}${NORMAL}" "| ${service} | 🟢 \`${status}\` |"
     else
         debug_print "${service} | ${YELLOW}${status}${NORMAL}" "| ${service} | 🟡 \`${status}\` |"
@@ -348,7 +348,7 @@ done < <(find /var/www/sites/*/html -maxdepth 0 -type d 2>/dev/null)
 debug_print "\n\n"
 
 # Show sample headers from first domain
-if [ -n "$first_domain" ]; then
+if [[ -n "$first_domain" ]]; then
     debug_print "\n### Sample HTTP Headers\n" "\n### Sample HTTP Headers\n"
     debug_print "Below is a sample of HTTP headers from \`$first_domain\`. Other domains may have different configurations.\n" "Below is a sample of HTTP headers from \`$first_domain\`. Other domains may have different configurations.\n"
     debug_print "To check headers for other domains, use: \`curl -I https://domain.com\`\n" "To check headers for other domains, use: \`curl -I https://domain.com\`\n"
@@ -383,7 +383,7 @@ cat << 'EOF' >> "$DEBUG_FILE"
 EOF
 
 # Append install error log if it exists
-if [ -f /var/log/EngineScript/install-error-log.txt ]; then
+if [[ -f /var/log/EngineScript/install-error-log.txt ]]; then
     echo -e "\n## EngineScript Install Error Log (Full Contents)\n" >> "$DEBUG_FILE"
     cat /var/log/EngineScript/install-error-log.txt >> "$DEBUG_FILE"
 fi

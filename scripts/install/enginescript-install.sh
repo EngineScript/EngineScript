@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------
 
 # Check current user's ID. If user is not 0 (root), exit.
-if [ "${EUID}" -ne 0 ];
+if [[ "${EUID}" -ne 0 ]];
   then
     echo "${BOLD}ALERT:${NORMAL}"
     echo "EngineScript should be executed as the root user."
@@ -46,7 +46,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 echo -e "\nATTENTION:\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
 
-if [ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ];
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ]];
   then
     echo "WARNING: Total server memory is low."
     echo "It is recommended that a server running EngineScript has at least 2GB total memory."
@@ -101,7 +101,7 @@ echo -e "\n"
 sleep 5
 
 # Warn if EngineScript automatic updates are disabled
-if [ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]; then
+if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
   echo -e "\n${BOLD}WARNING: EngineScript Automatic Updates are DISABLED.${NORMAL}\n"
   echo -e "You will need to manually apply updates to the EngineScript application and configuration files if updates are released in the future."
   while true; do
@@ -134,76 +134,76 @@ if [ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]; then
 fi
 
 # Check S3 Install
-if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" = PLACEHOLDER ];
+if [[ "$INSTALL_S3_BACKUP" = 1 ]] && [[ "$S3_BUCKET_NAME" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0\n"
     exit
 fi
 
 # Check Cloudflare Global API Key
-if [ "$CF_GLOBAL_API_KEY" = PLACEHOLDER ] && [ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ];
+if [[ "$CF_GLOBAL_API_KEY" = PLACEHOLDER ]] && [[ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nCF_GLOBAL_API_KEY is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_GLOBAL_API_KEY to the correct value.\n"
     exit
 fi
 
 # Check Cloudflare Account Email
-if [ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ];
+if [[ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nCF_ACCOUNT_EMAIL is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_ACCOUNT_EMAIL to the correct value.\n"
     exit
 fi
 
 # Check MariaDB Password
-if [ "$MARIADB_ADMIN_PASSWORD" = PLACEHOLDER ];
+if [[ "$MARIADB_ADMIN_PASSWORD" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nMARIADB_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change MARIADB_ADMIN_PASSWORD to something more secure.\n"
     exit
 fi
 
 # Check phpMyAdmin Username
-if [ "$PHPMYADMIN_USERNAME" = PLACEHOLDER ];
+if [[ "$PHPMYADMIN_USERNAME" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nPHPMYADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_USERNAME to something more secure.\n"
     exit
 fi
 
 # Check phpMyAdmin Password
-if [ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ];
+if [[ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\nPHPMYADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_PASSWORD to something more secure.\n"
     exit
 fi
 
 # Check WordPress Admin Email
-if [ "$WP_ADMIN_EMAIL" = PLACEHOLDER ];
+if [[ "$WP_ADMIN_EMAIL" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nWP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address.\n"
     exit
 fi
 
 # Check/fix WordPress Recovery Email
-if [ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ];
+if [[ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ]];
 	then
     sed -i "s|PLACEHOLDER@PLACEHOLDER\.com|${WP_ADMIN_EMAIL}|g" /home/EngineScript/enginescript-install-options.txt
 fi
 
 # Check WordPress Admin Username
-if [ "$WP_ADMIN_USERNAME" = PLACEHOLDER ];
+if [[ "$WP_ADMIN_USERNAME" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nWP_ADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_USERNAME to something more secure.\n"
     exit
 fi
 
 # Check WordPress Admin Password
-if [ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ];
+if [[ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nWP_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_PASSWORD to something more secure.\n"
     exit
 fi
 
 # Check Admin Subdomain Security Configuration
-if [ "$ADMIN_SUBDOMAIN" = 1 ] && [ "$NGINX_SECURE_ADMIN" = 0 ]; then
+if [[ "$ADMIN_SUBDOMAIN" = 1 ]] && [[ "$NGINX_SECURE_ADMIN" = 0 ]]; then
     echo -e "\n${BOLD}WARNING: Security Configuration Issue${NORMAL}"
     echo "You have enabled the Admin Subdomain (ADMIN_SUBDOMAIN=1) but disabled Nginx password protection for it (NGINX_SECURE_ADMIN=0)."
     echo "This is insecure as it would expose tools like phpMyAdmin or Adminer publicly."
@@ -236,7 +236,7 @@ fi
 source /var/log/EngineScript/install-log.txt
 
 # Repositories
-if [ "${REPOS}" = 1 ];
+if [[ "${REPOS}" = 1 ]];
   then
     echo "REPOS script has already run"
   else
@@ -247,7 +247,7 @@ print_last_errors
 debug_pause "Install Repositories"
 
 # Remove Preinstalled Software
-if [ "${REMOVES}" = 1 ];
+if [[ "${REMOVES}" = 1 ]];
   then
     echo "REMOVES script has already run"
   else
@@ -258,7 +258,7 @@ print_last_errors
 debug_pause "Remove Preinstalled Software"
 
 # Block Unwanted Packages
-if [ "${BLOCK}" = 1 ];
+if [[ "${BLOCK}" = 1 ]];
   then
     echo "BLOCK script has already run"
   else
@@ -269,7 +269,7 @@ print_last_errors
 debug_pause "Block Unwanted Packages"
 
 # Enabled Ubuntu Pro Apt Updates
-if [ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ];
+if [[ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ]];
   then
     pro attach "${UBUNTU_PRO_TOKEN}" 2>> /tmp/enginescript_install_errors.log
 fi
@@ -282,7 +282,7 @@ print_last_errors
 debug_pause "Update & Upgrade"
 
 # Install Dependencies
-if [ "${DEPENDS}" = 1 ];
+if [[ "${DEPENDS}" = 1 ]];
   then
     echo "DEPENDS script has already run"
   else
@@ -292,7 +292,7 @@ print_last_errors
 debug_pause "Install Dependencies"
 
 # Cron
-if [ "${CRON}" = 1 ];
+if [[ "${CRON}" = 1 ]];
   then
     echo "CRON script has already run."
   else
@@ -303,7 +303,7 @@ print_last_errors
 debug_pause "Cron"
 
 # ACME.sh
-if [ "${ACME}" = 1 ];
+if [[ "${ACME}" = 1 ]];
   then
     echo "ACME.sh script has already run"
   else
@@ -314,7 +314,7 @@ print_last_errors
 debug_pause "ACME.sh"
 
 # GCC
-if [ "${GCC}" = 1 ];
+if [[ "${GCC}" = 1 ]];
   then
     echo "GCC script has already run."
   else
@@ -325,7 +325,7 @@ print_last_errors
 debug_pause "GCC"
 
 # OpenSSL
-if [ "${OPENSSL}" = 1 ];
+if [[ "${OPENSSL}" = 1 ]];
   then
     echo "OPENSSL script has already run."
   else
@@ -336,7 +336,7 @@ print_last_errors
 debug_pause "OpenSSL"
 
 # Swap
-if [ "${SWAP}" = 1 ];
+if [[ "${SWAP}" = 1 ]];
   then
     echo "SWAP script has already run."
   else
@@ -347,7 +347,7 @@ print_last_errors
 debug_pause "Swap"
 
 # Kernel Tweaks
-if [ "${KERNEL_TWEAKS}" = 1 ];
+if [[ "${KERNEL_TWEAKS}" = 1 ]];
   then
     echo "KERNEL TWEAKS script has already run."
   else
@@ -358,7 +358,7 @@ print_last_errors
 debug_pause "Kernel Tweaks"
 
 # Kernel Samepage Merging
-if [ "${KSM}" = 1 ];
+if [[ "${KSM}" = 1 ]];
   then
     echo "KSM script has already run."
   else
@@ -369,7 +369,7 @@ print_last_errors
 debug_pause "Kernel Samepage Merging"
 
 # Raising System File Limits
-if [ "${SFL}" = 1 ];
+if [[ "${SFL}" = 1 ]];
   then
     echo "SYSTEM FILE LIMITS script has already run."
   else
@@ -380,7 +380,7 @@ print_last_errors
 debug_pause "Raising System File Limits"
 
 # NTP
-if [ "${NTP}" = 1 ];
+if [[ "${NTP}" = 1 ]];
   then
     echo "NTP script has already run."
   else
@@ -391,7 +391,7 @@ print_last_errors
 debug_pause "NTP"
 
 # PCRE
-if [ "${PCRE}" = 1 ];
+if [[ "${PCRE}" = 1 ]];
   then
     echo "PCRE script has already run."
   else
@@ -402,7 +402,7 @@ print_last_errors
 debug_pause "PCRE"
 
 # zlib
-if [ "${ZLIB}" = 1 ];
+if [[ "${ZLIB}" = 1 ]];
   then
     echo "ZLIB script has already run."
   else
@@ -413,7 +413,7 @@ print_last_errors
 debug_pause "zlib"
 
 # liburing
-if [ "${LIBURING}" = 1 ];
+if [[ "${LIBURING}" = 1 ]];
   then
     echo "LIBURING script has already run."
   else
@@ -424,7 +424,7 @@ print_last_errors
 debug_pause "liburing"
 
 # UFW
-if [ "${UFW}" = 1 ];
+if [[ "${UFW}" = 1 ]];
   then
     echo "UFW script has already run."
   else
@@ -435,7 +435,7 @@ print_last_errors
 debug_pause "UFW"
 
 # MariaDB
-if [ "${MARIADB}" = 1 ];
+if [[ "${MARIADB}" = 1 ]];
   then
     echo "MARIADB script has already run."
   else
@@ -445,7 +445,7 @@ print_last_errors
 debug_pause "MariaDB"
 
 # PHP
-if [ "${PHP}" = 1 ];
+if [[ "${PHP}" = 1 ]];
   then
     echo "PHP script has already run."
   else
@@ -455,7 +455,7 @@ print_last_errors
 debug_pause "PHP"
 
 # Redis
-if [ "${REDIS}" = 1 ];
+if [[ "${REDIS}" = 1 ]];
   then
     echo "REDIS script has already run."
   else
@@ -465,7 +465,7 @@ print_last_errors
 debug_pause "Redis"
 
 # Nginx
-if [ "${NGINX}" = 1 ];
+if [[ "${NGINX}" = 1 ]];
   then
     echo "NGINX script has already run."
   else
@@ -475,7 +475,7 @@ print_last_errors
 debug_pause "Nginx"
 
 # Tools
-if [ "${TOOLS}" = 1 ];
+if [[ "${TOOLS}" = 1 ]];
   then
     echo "TOOLS script has already run."
   else

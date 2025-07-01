@@ -32,7 +32,7 @@ else
 fi
 
 # Check if SITES array is empty or unset
-if [ ${#SITES[@]} -eq 0 ]; then
+if [[ ${#SITES[@]} -eq 0 ]]; then
     echo "No sites found in ${SITES_LIST_FILE}. Cannot export."
     exit 1
 fi
@@ -73,7 +73,7 @@ FILES_EXPORT_PATH="${SITE_EXPORT_DIR}/${FILES_EXPORT_FILENAME}"
 # --- Create Export Directory ---
 echo "Creating export directory: ${SITE_EXPORT_DIR}"
 mkdir -p "${SITE_EXPORT_DIR}"
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
     echo "ERROR: Failed to create export directory ${SITE_EXPORT_DIR}"
     exit 1
 fi

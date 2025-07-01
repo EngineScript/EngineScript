@@ -44,7 +44,7 @@ do
     tar -zcf "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" wp-content
 
     # Amazon S3 WP-Content Backup
-    if [ "$INSTALL_S3_BACKUP" = 1 ] && [ "$S3_BUCKET_NAME" != PLACEHOLDER ] && [ "$WEEKLY_S3_WPCONTENT_BACKUP" = 1 ];
+    if [[ "$INSTALL_S3_BACKUP" == "1" ]] && [[ "$S3_BUCKET_NAME" != "PLACEHOLDER" ]] && [[ "$WEEKLY_S3_WPCONTENT_BACKUP" == "1" ]];
         then
         echo "Uploading WP-Content Backup for ${i} to Amazon S3 Bucket"
         /usr/local/bin/aws s3 cp "/home/EngineScript/site-backups/$i/wp-content/weekly/${WPCONTENT_FILE}" "s3://${S3_BUCKET_NAME}/$i/backups/wp-content/weekly/${WPCONTENT_FILE}" --storage-class STANDARD

@@ -11,6 +11,9 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
 
 
 #----------------------------------------------------------------------------------
@@ -44,7 +47,7 @@ apt install -qy $php_packages || {
     exit 1
 }
 
-if [ "$INSTALL_EXPANDED_PHP" = 1 ];
+if [[ "$INSTALL_EXPANDED_PHP" == "1" ]];
     then
     expanded_php_packages="php${PHP_VER}-soap
 php${PHP_VER}-sqlite3"
@@ -93,11 +96,11 @@ chown -R www-data:www-data /var/log/php
 chown -R www-data:www-data /etc/php
 
 # Restart PHP
-service "php${PHP_VER}-fpm" restart
+restart_service "php${PHP_VER}-fpm"
 
 # PHP Service Check
 STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: PHP ${PHP_VER} is running."
   echo "PHP=1" >> /var/log/EngineScript/install-log.txt
 else

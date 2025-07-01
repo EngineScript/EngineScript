@@ -20,7 +20,7 @@ source /home/EngineScript/enginescript-install-options.txt
 cd /usr/src
 
 # Remove existing zImageOptimizer directory if it exists
-if [ -d "/usr/local/bin/zimageoptimizer" ]; then
+if [[ -d "/usr/local/bin/zimageoptimizer" ]]; then
   rm -rf "/usr/local/bin/zimageoptimizer"
 fi
 

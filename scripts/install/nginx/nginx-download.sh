@@ -19,7 +19,7 @@ source /home/EngineScript/enginescript-install-options.txt
 cd /usr/src
 
 # Remove existing Nginx source directory if it exists
-if [ -d "/usr/src/nginx-${NGINX_VER}" ]; then
+if [[ -d "/usr/src/nginx-${NGINX_VER}" ]]; then
   rm -rf "/usr/src/nginx-${NGINX_VER}"
 fi
 

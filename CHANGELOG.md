@@ -7,6 +7,20 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-01
 
 ### 🔧 CODE QUALITY
+- **Shared Functions Library Integration**: Expanded usage of `scripts/functions/shared/enginescript-common.sh` across the entire codebase
+  - Added shared library sourcing to all vhost scripts (`vhost-install.sh`, `vhost-import.sh`, `vhost-remove.sh`)
+  - Added shared library sourcing to installation scripts (`php-install.sh`, `redis-install.sh`, `nginx-cloudflare-ip-updater.sh`)
+  - Added shared library sourcing to update scripts (`nginx-update.sh`, `mariadb-update.sh`)
+  - Replaced direct `service restart` commands with `restart_service()` function calls for consistency
+  - Enhanced `nginx-update.sh` with comprehensive error logging and debug pauses using shared functions
+  - Fixed remaining conditional expressions (`[ ]` → `[[ ]]`) in `vhost-import.sh` for consistency
+  - All scripts now use consistent error handling, service management, and debugging patterns
+- **Conditional Expression Standardization**: Replaced all `[ ]` (test) conditional expressions with `[[ ]]` (keyword) throughout the entire codebase
+  - Updated all installation scripts (enginescript-install.sh, nginx-install.sh, php-install.sh, mariadb-install.sh, redis-install.sh, gcc-install.sh, etc.)
+  - Updated all function scripts (backup scripts, cron scripts, vhost scripts, security scripts, alias scripts, etc.)
+  - Updated all utility and tool installation scripts (ufw-cloudflare.sh, zlib-install.sh, tools-install.sh, etc.)
+  - Modernizes shell scripting practices and improves readability and maintainability
+  - `[[ ]]` provides better string handling, pattern matching, and is less error-prone than `[ ]`
 - **Shell Scripts**: Standardized shebang line in `scripts/functions/alias/alias-debug.sh` to use `#!/usr/bin/env bash` for consistency across all shell scripts
 - **Function Deduplication**: Created shared functions library at `scripts/functions/shared/enginescript-common.sh` to consolidate duplicated functions
   - Consolidated `debug_pause()` and `print_last_errors()` functions from `scripts/install/enginescript-install.sh` and `scripts/install/nginx/nginx-install.sh`

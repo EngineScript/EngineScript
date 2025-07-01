@@ -11,6 +11,9 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
 
 
 #----------------------------------------------------------------------------------
@@ -70,7 +73,7 @@ usermod -aG redis www-data
 
 # Finalize Redis Install
 systemctl daemon-reload
-service redis-server restart
+restart_service "redis-server"
 systemctl enable redis-server
 
 # Ensure correct socket ownership and permissions
@@ -79,7 +82,7 @@ chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 
 # Redis Service Check
 STATUS="$(systemctl is-active redis)"
-if [ "${STATUS}" = "active" ]; then
+if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Redis is running."
   echo "REDIS=1" >> /var/log/EngineScript/install-log.txt
 else

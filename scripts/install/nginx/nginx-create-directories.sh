@@ -43,7 +43,7 @@ for DIR in "${DIRS[@]}"; do
 done
 
 for DIR in "${DIRS[@]}"; do
-    if [ -d "${DIR}" ]; then
+    if [[ -d "${DIR}" ]]; then
         echo "Directory ${DIR} already exists. Skipping."
     else
         mkdir -p "${DIR}" || { echo "Error: Failed to create directory ${DIR}"; exit 1; }

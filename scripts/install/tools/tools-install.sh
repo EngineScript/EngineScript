@@ -39,7 +39,7 @@ debug_pause "zImageOptimizer"
 #------------------------------------------------
 
 # Adminer
-if [ "${INSTALL_ADMINER}" = 1 ];
+if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Installing Adminer"
     /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> /tmp/enginescript_install_errors.log
@@ -55,7 +55,7 @@ print_last_errors
 debug_pause "MYSQLTuner"
 
 # phpMyAdmin
-if [ "${INSTALL_PHPMYADMIN}" = 1 ];
+if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then
     echo "Installing phpMyAdmin"
     /usr/local/bin/enginescript/scripts/install/tools/mysql/phpmyadmin.sh 2>> /tmp/enginescript_install_errors.log
@@ -132,7 +132,7 @@ debug_pause "WP-CLI"
 #------------------------------------------------
 
 # Amazon AWS CLI
-if [ "${INSTALL_S3_BACKUP}" = 1 ];
+if [[ "${INSTALL_S3_BACKUP}" == "1" ]];
   then
     echo "Installing Amazon CLI"
     echo "Please follow the instructions in the script that is about to run."

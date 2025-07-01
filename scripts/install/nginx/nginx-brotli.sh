@@ -22,7 +22,7 @@ cd /usr/src
 # Brotli
 
 # Remove existing ngx_brotli directory if it exists
-if [ -d "/usr/src/ngx_brotli" ]; then
+if [[ -d "/usr/src/ngx_brotli" ]]; then
   rm -rf /usr/src/ngx_brotli
 fi
 

@@ -11,6 +11,9 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
 
 
 #----------------------------------------------------------------------------------
@@ -123,7 +126,7 @@ for VHOST in "/etc/nginx/sites-enabled/${DOMAIN}.conf" "/etc/nginx/admin/admin.$
 done
 
 # Remove SSL certificates
-if [ -d "/etc/nginx/ssl/${DOMAIN}" ];
+if [[ -d "/etc/nginx/ssl/${DOMAIN}" ]];
 then
   echo -e "${BOLD}SSL Certificates Removal Check: Passed\n\n${NORMAL}Removing SSL certificates for ${DOMAIN}...\n\n"
   rm -rf "/etc/nginx/ssl/${DOMAIN}"
@@ -132,7 +135,7 @@ else
 fi
 
 # Remove main directory
-if [ -d "/var/www/sites/${DOMAIN}" ];
+if [[ -d "/var/www/sites/${DOMAIN}" ]];
 then
   echo -e "${BOLD}Main Directory Removal Check: Passed\n\n${NORMAL}Removing main directory for ${DOMAIN}...\n\n"
   rm -rf "/var/www/sites/${DOMAIN}"
@@ -141,7 +144,7 @@ else
 fi
 
 # Remove backup directory
-if [ -d "/home/EngineScript/site-backups/${DOMAIN}" ];
+if [[ -d "/home/EngineScript/site-backups/${DOMAIN}" ]];
 then
   echo -e "${BOLD}Backup Directory Removal Check: Passed\n\n${NORMAL}Removing backup directory for ${DOMAIN}...\n\n"
   rm -rf "/home/EngineScript/site-backups/${DOMAIN}"
@@ -150,7 +153,7 @@ else
 fi
 
 # Remove log directory
-if [ -d "/var/log/domains/${DOMAIN}" ];
+if [[ -d "/var/log/domains/${DOMAIN}" ]];
 then
   echo -e "${BOLD}Log Directory Removal Check: Passed\n\n${NORMAL}Removing log directory for ${DOMAIN}...\n\n"
   rm -rf "/var/log/domains/${DOMAIN}"
