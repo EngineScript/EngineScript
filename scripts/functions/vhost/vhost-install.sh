@@ -165,25 +165,18 @@ echo ""
 echo "These changes are recommended for optimal EngineScript performance."
 echo ""
 
-while true; do
-  read -p "Would you like to proceed with Cloudflare configuration? (y/exit): " CF_CHOICE
-  case $CF_CHOICE in
-    [Yy]* )
-      echo ""
-      echo "Proceeding with Cloudflare configuration..."
-      echo ""
-      break
-      ;;
-    exit|EXIT )
-      echo ""
-      echo "Exiting installation process."
-      exit 0
-      ;;
-    * )
-      echo "Please answer 'y' to continue or 'exit' to quit."
-      ;;
-  esac
-done
+# Use enhanced validation for Cloudflare configuration
+if prompt_yes_no "Would you like to proceed with Cloudflare configuration?" "y" 300; then
+    echo ""
+    echo "Proceeding with Cloudflare configuration..."
+    echo ""
+    CF_CHOICE="y"
+else
+    echo ""
+    echo "Skipping Cloudflare configuration."
+    echo ""
+    CF_CHOICE="n"
+fi
 
 # Only continue with Cloudflare configuration if the user chose to proceed
 if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then

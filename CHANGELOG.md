@@ -7,6 +7,43 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-01
 
 ### 🔧 CODE QUALITY
+- **CI/CD Workflow Enhancement**: Comprehensively improved the GitHub Actions software-version-check workflow
+  - **Robust Error Handling**: Added comprehensive error handling for all GitHub API calls to prevent "null" version values
+    - Enhanced SSE_PLUGIN, SWPO_PLUGIN, PCRE2, OpenSSL, Zlib, liburing, NGINX modules with proper null checking
+    - Added debug output for all API responses to improve troubleshooting
+    - Implemented fallback behavior to retain current versions when API calls fail
+    - Added warning messages for failed API calls with clear context
+  - **Conditional Expression Modernization**: Updated all workflow conditionals to use `[[ ]]` for consistency
+  - **API Response Validation**: All GitHub API calls now validate responses before processing
+    - Uses `jq -r '.field // empty'` pattern to handle null/missing values gracefully
+    - Checks for non-empty and non-null values before version updates
+    - Preserves current versions when external APIs are unavailable or return invalid data
+  - **Debug Logging**: Added comprehensive debug output for version fetching operations to aid in troubleshooting
+  - **Reliability Improvements**: Workflow now handles network failures, API rate limits, and malformed responses gracefully
+  - **Cleanup Fix**: Fixed temp_versions.txt file not being removed when no changes are detected
+    - Added dedicated cleanup step for scenarios where no version changes occur
+    - Enhanced final cleanup step with better debugging output
+    - Ensured temp file removal in all workflow execution paths
+- **Input Validation Standardization Phase 1**: Implemented comprehensive input validation improvements across critical scripts
+  - **Enhanced Shared Functions Library**: Added advanced validation functions to `scripts/functions/shared/enginescript-common.sh`
+    - `prompt_continue()` - Enhanced "Press Enter" prompts with timeout (300s default) and exit options
+    - `prompt_yes_no()` - Standardized yes/no prompts with validation, defaults, and timeout handling
+    - `prompt_input()` - Advanced text input with regex validation, defaults, timeout, and empty input handling
+    - `validate_domain()`, `validate_email()`, `validate_url()` - Dedicated validation functions for common input types
+  - **Critical Script Updates**: Replaced minimal validation patterns with robust, timeout-enabled prompts
+    - Fixed `scripts/install/tools/system/amazon-s3-install.sh` - replaced basic `y` prompt with timeout and exit handling
+    - Fixed `scripts/functions/vhost/vhost-import.sh` - enhanced all user prompts with validation and timeout (600s for file prep, 300s for configuration)
+      - Site URL input now includes proper URL format validation
+      - Database prefix input includes format validation and automatic underscore appending
+      - Database charset input includes validation
+      - Cloudflare configuration prompt standardized with yes/no validation
+      - Site verification prompt enhanced with timeout and proper error handling
+    - Fixed `scripts/functions/vhost/vhost-install.sh` - standardized Cloudflare configuration prompt with enhanced validation
+    - Fixed `scripts/functions/vhost/vhost-remove.sh` - improved initial confirmation prompt with timeout and validation
+    - Fixed `scripts/install/enginescript-install.sh` - enhanced admin subdomain security prompt with standardized validation
+  - **Safety Improvements**: All enhanced prompts now include automatic timeout (300-600 seconds) and consistent exit handling
+  - **User Experience**: Eliminated hanging prompts and provided clear feedback for invalid inputs
+  - **Backward Compatibility**: All changes maintain existing script functionality while adding robust validation
 - **Final Legacy Conditional Expression Modernization**: Completed the final phase of modernizing all remaining conditional expressions in the codebase
   - Fixed `scripts/install/nginx/nginx-tune.sh` - converted 13 legacy `[ ]` conditionals to `[[ ]]` syntax for memory and HTTP3 configurations
   - Fixed `scripts/functions/vhost/vhost-import.sh` - converted 5 additional legacy `[ ]` conditionals to `[[ ]]` syntax for database handling and file operations

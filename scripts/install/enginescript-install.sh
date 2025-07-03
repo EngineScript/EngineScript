@@ -208,28 +208,21 @@ if [[ "$ADMIN_SUBDOMAIN" = 1 ]] && [[ "$NGINX_SECURE_ADMIN" = 0 ]]; then
     echo "You have enabled the Admin Subdomain (ADMIN_SUBDOMAIN=1) but disabled Nginx password protection for it (NGINX_SECURE_ADMIN=0)."
     echo "This is insecure as it would expose tools like phpMyAdmin or Adminer publicly."
     echo ""
-    while true; do
-        read -p "Do you want to enable Nginx password protection for the admin subdomain? (y/n): " yn_secure_admin
-        case $yn_secure_admin in
-            [Yy]* )
-                echo "Enabling Nginx password protection for the admin subdomain..."
-                sed -i 's/^NGINX_SECURE_ADMIN=0/NGINX_SECURE_ADMIN=1/' /home/EngineScript/enginescript-install-options.txt
-                NGINX_SECURE_ADMIN=1 # Update variable in current script scope
-                echo "NGINX_SECURE_ADMIN has been set to 1 in enginescript-install-options.txt."
-                sleep 2
-                break
-                ;;
-            [Nn]* )
-                echo "Disabling the admin subdomain due to security concerns..."
-                sed -i 's/^ADMIN_SUBDOMAIN=1/ADMIN_SUBDOMAIN=0/' /home/EngineScript/enginescript-install-options.txt
-                ADMIN_SUBDOMAIN=0 # Update variable in current script scope
-                echo "ADMIN_SUBDOMAIN has been set to 0 in enginescript-install-options.txt."
-                sleep 2
-                break
-                ;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
+    
+    # Use enhanced validation for admin subdomain security
+    if prompt_yes_no "Do you want to enable Nginx password protection for the admin subdomain?" "y" 300; then
+        echo "Enabling Nginx password protection for the admin subdomain..."
+        sed -i 's/^NGINX_SECURE_ADMIN=0/NGINX_SECURE_ADMIN=1/' /home/EngineScript/enginescript-install-options.txt
+        NGINX_SECURE_ADMIN=1 # Update variable in current script scope
+        echo "NGINX_SECURE_ADMIN has been set to 1 in enginescript-install-options.txt."
+        sleep 2
+    else
+        echo "Disabling the admin subdomain due to security concerns..."
+        sed -i 's/^ADMIN_SUBDOMAIN=1/ADMIN_SUBDOMAIN=0/' /home/EngineScript/enginescript-install-options.txt
+        ADMIN_SUBDOMAIN=0 # Update variable in current script scope
+        echo "ADMIN_SUBDOMAIN has been set to 0 in enginescript-install-options.txt."
+        sleep 2
+    fi
 fi
 
 # Install Check

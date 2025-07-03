@@ -28,14 +28,12 @@ echo ""
 echo -e "WARNING: This script will remove a site from your installation.\n\n${BOLD}This removal is non-reversible and everything will be destroyed, including backups.${NORMAL}\nPlease be 100% sure of your choice before continuing on with this process.\n\n"
 sleep 1
 
-while true; do
-  read -p "Are you sure you want to remove a domain from your server? Please type Yes or No: " yn
-    case $yn in
-      [Yy][Ee][Ss] ) echo "Continuing"; break;;
-      [Nn][Oo] ) echo "Exiting"; exit 1;;
-      * ) echo "Please answer Yes or No.";;
-    esac
-done
+# Enhanced confirmation with timeout and exit option
+if ! prompt_yes_no "Are you sure you want to remove a domain from your server?" "n" 300; then
+    echo "Exiting domain removal script."
+    exit 0
+fi
+echo "Continuing with domain removal..."
 
 # Domain Input
 echo "For the domain name, enter only the domain portion (e.g., 'wordpresstesting')."

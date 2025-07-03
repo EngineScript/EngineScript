@@ -58,7 +58,7 @@ echo "      - Export your database (.sql or .sql.gz)."
 echo "      - Place the database file inside:"
 echo "        \`${DB_IMPORT_DIR_ORIGINAL}\`"
 echo "---------------------------------------------------------------------"
-read -p "Press [Enter] to continue once the file(s) are prepared..."
+prompt_continue "Press [Enter] when your files are prepared and ready" 600
 # --- End Instructions ---
 
 # Check if services are running
@@ -384,19 +384,38 @@ while true; do
       ;;
     [Cc]* )
       echo "Please enter the correct values:"
-      read -p "  Enter correct Site URL [${SITE_URL}]: " new_site_url
-      SITE_URL=${new_site_url:-$SITE_URL} # Use new value or keep old if empty
+      
+      # Site URL input with validation
+      while true; do
+          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300 "^https?://[a-zA-Z0-9.-]+[a-zA-Z0-9](/.*)?$")
+          if [[ -n "$new_site_url" ]]; then
+              if validate_url "$new_site_url"; then
+                  SITE_URL="$new_site_url"
+                  break
+              else
+                  echo "Invalid URL format. Please use format: https://example.com or http://example.com"
+              fi
+          else
+              break  # Keep existing value
+          fi
+      done
 
-      read -p "  Enter correct DB Prefix [${PREFIX}]: " new_prefix
-      # Basic validation: ensure prefix ends with _ if not empty
-      if [[ -n "$new_prefix" && "${new_prefix: -1}" != "_" ]]; then
-          new_prefix="${new_prefix}_"
-          echo "  (Appended '_' to prefix)"
+      # DB Prefix input with validation
+      new_prefix=$(prompt_input "Enter correct DB Prefix" "${PREFIX}" 300 "^[a-zA-Z0-9_]+$" true)
+      if [[ -n "$new_prefix" ]]; then
+          # Ensure prefix ends with _ if not empty
+          if [[ "${new_prefix: -1}" != "_" ]]; then
+              new_prefix="${new_prefix}_"
+              echo "  (Appended '_' to prefix)"
+          fi
+          PREFIX="$new_prefix"
       fi
-      PREFIX=${new_prefix:-$PREFIX} # Use new value or keep old if empty
 
-      read -p "  Enter correct DB Charset [${DB_CHARSET}]: " new_db_charset
-      DB_CHARSET=${new_db_charset:-$DB_CHARSET} # Use new value or keep old if empty
+      # DB Charset input with validation
+      new_db_charset=$(prompt_input "Enter correct DB Charset" "${DB_CHARSET}" 300 "^[a-zA-Z0-9_]+$" true)
+      if [[ -n "$new_db_charset" ]]; then
+          DB_CHARSET="$new_db_charset"
+      fi
 
       # Re-assign DOMAIN based on potentially updated SITE_URL
       DOMAIN=$(echo "$SITE_URL" | sed -E 's#^https?://##; s#/$##')
@@ -439,25 +458,20 @@ echo ""
 echo "These changes are recommended for optimal EngineScript performance."
 echo ""
 
-while true; do
-  read -p "Would you like to proceed with Cloudflare configuration? (y/exit): " CF_CHOICE
-  case $CF_CHOICE in
-    [Yy]* )
-      echo ""
-      echo "Proceeding with Cloudflare configuration..."
-      echo ""
-      break
-      ;;
-    exit|EXIT )
-      echo ""
-      echo "Exiting installation process."
-      exit 0
-      ;;
-    * )
-      echo "Please answer 'y' to continue or 'exit' to quit."
-      ;;
-  esac
-done
+# Use enhanced validation for Cloudflare configuration
+if prompt_yes_no "Would you like to proceed with Cloudflare configuration?" "n" 300; then
+    echo ""
+    echo "Proceeding with Cloudflare configuration..."
+    echo ""
+    # Set CF_CHOICE for compatibility with existing logic
+    CF_CHOICE="y"
+else
+    echo ""
+    echo "Skipping Cloudflare configuration."
+    echo ""
+    # Set CF_CHOICE for compatibility with existing logic
+    CF_CHOICE="n"
+fi
 
 # Only continue with Cloudflare configuration if the user chose to proceed
 if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
@@ -1216,39 +1230,32 @@ echo "============================================================="
 echo ""
 
 # --- Site Verification Step ---
-while true; do
-    read -p "Is the imported site at https://${SITE_URL} working correctly? (y/n): " site_works
-    case $site_works in
-        [Yy]* )
-            echo "Great! Proceeding with cleanup..."
-            # Move import files to completed-backups directory
-            BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
-            mkdir -p "${BACKUP_DIR}"
-            if [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
-                mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
-                echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
-            fi
-            if [[ -n "${DB_SOURCE_PATH}" ]] && [[ -f "${DB_SOURCE_PATH}" ]]; then
-                mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
-                echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
-            fi
-            rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
-            echo "Cleanup complete. Import files moved to ${BACKUP_DIR}."
-            sleep 2 # Short pause after cleanup message
-            break # Continue to final exit
-            ;;
-        [Nn]* )
-            echo "Site verification failed by user."
-            echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
-            rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
-            echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
-            echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
-            echo "Exiting script now."
-            exit 1 # Exit without full cleanup
-            ;;
-        * ) echo "Please answer yes (y) or no (n).";;
-    esac
-done
+echo ""
+if prompt_yes_no "Is the imported site at https://${SITE_URL} working correctly?" "n" 600; then
+    echo "Great! Proceeding with cleanup..."
+    # Move import files to completed-backups directory
+    BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
+    mkdir -p "${BACKUP_DIR}"
+    if [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
+        mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
+        echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
+    fi
+    if [[ -n "${DB_SOURCE_PATH}" ]] && [[ -f "${DB_SOURCE_PATH}" ]]; then
+        mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
+        echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
+    fi
+    rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
+    echo "Cleanup complete. Import files moved to ${BACKUP_DIR}."
+    sleep 2 # Short pause after cleanup message
+else
+    echo "Site verification failed by user."
+    echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
+    rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
+    echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
+    echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
+    echo "Exiting script now."
+    exit 1 # Exit without full cleanup
+fi
 # --- End Site Verification Step ---
 
 

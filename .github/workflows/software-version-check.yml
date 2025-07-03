@@ -52,7 +52,7 @@ jobs:
             local current_ver=$(get_current_version "$var_name")
             
             # Handle special case where current version is "null" or empty
-            if [ -n "$new_ver" ] && ([ "$current_ver" = "null" ] || [ -z "$current_ver" ] || version_gt "$new_ver" "$current_ver"); then
+            if [[ -n "$new_ver" && ( "$current_ver" = "null" || -z "$current_ver" || $(version_gt "$new_ver" "$current_ver") ) ]]; then
               echo "${var_name}=\"${new_ver}\"" >> .github/temp_versions.txt
               CHANGES_DETECTED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
@@ -69,31 +69,71 @@ jobs:
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
           # Simple Site Exporter Plugin
-          LATEST_SSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Site-Exporter/releases/latest | 
-            jq -r '.tag_name' | 
-            sed 's/v//')
-          check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
+          echo "::debug::Fetching SSE Plugin version..."
+          SSE_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Site-Exporter/releases/latest)
+          echo "::debug::SSE API Response: $SSE_API_RESPONSE"
+          
+          LATEST_SSE=$(echo "$SSE_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
+          echo "::debug::Parsed SSE version: '$LATEST_SSE'"
+          
+          # Only check version if we got a valid response
+          if [[ -n "$LATEST_SSE" && "$LATEST_SSE" != "null" ]]; then
+            check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
+          else
+            echo "::warning::Failed to fetch SSE Plugin version, keeping current version"
+            grep "^SSE_PLUGIN_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # Simple WP Optimizer Plugin
-          LATEST_SWPO=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Optimizer/releases/latest | 
-            jq -r '.tag_name' | 
-            sed 's/v//')
-          check_version "SWPO_PLUGIN_VER" "$LATEST_SWPO"
+          echo "::debug::Fetching SWPO Plugin version..."
+          SWPO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Optimizer/releases/latest)
+          echo "::debug::SWPO API Response: $SWPO_API_RESPONSE"
+          
+          LATEST_SWPO=$(echo "$SWPO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
+          echo "::debug::Parsed SWPO version: '$LATEST_SWPO'"
+          
+          # Only check version if we got a valid response
+          if [[ -n "$LATEST_SWPO" && "$LATEST_SWPO" != "null" ]]; then
+            check_version "SWPO_PLUGIN_VER" "$LATEST_SWPO"
+          else
+            echo "::warning::Failed to fetch SWPO Plugin version, keeping current version"
+            grep "^SWPO_PLUGIN_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # PCRE2
-          LATEST_PCRE2=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest | 
-            jq -r '.tag_name' | 
-            sed 's/pcre2-//')
-          check_version "PCRE2_VER" "$LATEST_PCRE2"
+          echo "::debug::Fetching PCRE2 version..."
+          PCRE2_API_RESPONSE=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest)
+          echo "::debug::PCRE2 API Response: $PCRE2_API_RESPONSE"
+          
+          LATEST_PCRE2=$(echo "$PCRE2_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/pcre2-//')
+          echo "::debug::Parsed PCRE2 version: '$LATEST_PCRE2'"
+          
+          if [[ -n "$LATEST_PCRE2" && "$LATEST_PCRE2" != "null" ]]; then
+            check_version "PCRE2_VER" "$LATEST_PCRE2"
+          else
+            echo "::warning::Failed to fetch PCRE2 version, keeping current version"
+            grep "^PCRE2_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # OpenSSL (3.4.x series)
-          LATEST_OPENSSL=$(curl -s https://api.github.com/repos/openssl/openssl/releases | 
-            jq -r '.[].tag_name' | 
+          echo "::debug::Fetching OpenSSL version..."
+          OPENSSL_API_RESPONSE=$(curl -s https://api.github.com/repos/openssl/openssl/releases)
+          echo "::debug::OpenSSL API Response: $(echo "$OPENSSL_API_RESPONSE" | jq -r '.[0:3]')"
+          
+          LATEST_OPENSSL=$(echo "$OPENSSL_API_RESPONSE" | 
+            jq -r '.[].tag_name // empty' | 
             grep '^openssl-3\.4\.[0-9]*$' | 
             sort -V | 
             tail -n 1 | 
             sed 's/openssl-//')
-          check_version "OPENSSL_VER" "$LATEST_OPENSSL"
+          echo "::debug::Parsed OpenSSL version: '$LATEST_OPENSSL'"
+          
+          if [[ -n "$LATEST_OPENSSL" && "$LATEST_OPENSSL" != "null" ]]; then
+            check_version "OPENSSL_VER" "$LATEST_OPENSSL"
+          else
+            echo "::warning::Failed to fetch OpenSSL version, keeping current version"
+            grep "^OPENSSL_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # NGINX
           LATEST_NGINX=$(curl -s https://nginx.org/en/download.html | 
@@ -109,42 +149,85 @@ jobs:
           check_version "PHPMYADMIN_VER" "$LATEST_PMA"
           
           # Zlib
-          LATEST_ZLIB=$(curl -s https://api.github.com/repos/madler/zlib/tags | 
-            jq -r '.[0].name' | 
-            sed 's/v//')
-          check_version "ZLIB_VER" "$LATEST_ZLIB"
+          echo "::debug::Fetching Zlib version..."
+          ZLIB_API_RESPONSE=$(curl -s https://api.github.com/repos/madler/zlib/tags)
+          echo "::debug::Zlib API Response: $(echo "$ZLIB_API_RESPONSE" | jq -r '.[0:3]')"
+          
+          LATEST_ZLIB=$(echo "$ZLIB_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
+          echo "::debug::Parsed Zlib version: '$LATEST_ZLIB'"
+          
+          if [[ -n "$LATEST_ZLIB" && "$LATEST_ZLIB" != "null" ]]; then
+            check_version "ZLIB_VER" "$LATEST_ZLIB"
+          else
+            echo "::warning::Failed to fetch Zlib version, keeping current version"
+            grep "^ZLIB_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # liburing
-          LATEST_LIBURING=$(curl -s https://api.github.com/repos/axboe/liburing/tags | 
-            jq -r '.[0].name' | 
-            sed 's/liburing-//')
-          check_version "LIBURING_VER" "$LATEST_LIBURING"
+          echo "::debug::Fetching liburing version..."
+          LIBURING_API_RESPONSE=$(curl -s https://api.github.com/repos/axboe/liburing/tags)
+          echo "::debug::liburing API Response: $(echo "$LIBURING_API_RESPONSE" | jq -r '.[0:3]')"
+          
+          LATEST_LIBURING=$(echo "$LIBURING_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/liburing-//')
+          echo "::debug::Parsed liburing version: '$LATEST_LIBURING'"
+          
+          if [[ -n "$LATEST_LIBURING" && "$LATEST_LIBURING" != "null" ]]; then
+            check_version "LIBURING_VER" "$LATEST_LIBURING"
+          else
+            echo "::warning::Failed to fetch liburing version, keeping current version"
+            grep "^LIBURING_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # NGINX Headers More Module
-          LATEST_NGINX_HEADER=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags | 
-            jq -r '.[0].name' | 
-            sed 's/v//')
-          check_version "NGINX_HEADER_VER" "$LATEST_NGINX_HEADER"
+          echo "::debug::Fetching NGINX Headers More Module version..."
+          NGINX_HEADER_API_RESPONSE=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags)
+          echo "::debug::NGINX Headers API Response: $(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0:3]')"
+          
+          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
+          echo "::debug::Parsed NGINX Headers version: '$LATEST_NGINX_HEADER'"
+          
+          if [[ -n "$LATEST_NGINX_HEADER" && "$LATEST_NGINX_HEADER" != "null" ]]; then
+            check_version "NGINX_HEADER_VER" "$LATEST_NGINX_HEADER"
+          else
+            echo "::warning::Failed to fetch NGINX Headers More Module version, keeping current version"
+            grep "^NGINX_HEADER_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # NGINX Cache Purge Module
-          LATEST_NGINX_PURGE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags | 
-            jq -r '.[0].name' | 
-            sed 's/[^0-9\.]//g')
-          check_version "NGINX_PURGE_VER" "$LATEST_NGINX_PURGE"
+          echo "::debug::Fetching NGINX Cache Purge Module version..."
+          NGINX_PURGE_API_RESPONSE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags)
+          echo "::debug::NGINX Purge API Response: $(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0:3]')"
+          
+          LATEST_NGINX_PURGE=$(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/[^0-9\.]//g')
+          echo "::debug::Parsed NGINX Purge version: '$LATEST_NGINX_PURGE'"
+          
+          if [[ -n "$LATEST_NGINX_PURGE" && "$LATEST_NGINX_PURGE" != "null" ]]; then
+            check_version "NGINX_PURGE_VER" "$LATEST_NGINX_PURGE"
+          else
+            echo "::warning::Failed to fetch NGINX Cache Purge Module version, keeping current version"
+            grep "^NGINX_PURGE_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
           
           # NGINX Dynamic TLS Records Patch
+          echo "::debug::Fetching NGINX Dynamic TLS Records Patch SHA..."
           LATEST_NGINX_DYN_TLS_PATCH_SHA=$(curl -sL https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch | sha256sum | awk '{print $1}')
+          echo "::debug::Fetched patch SHA: '$LATEST_NGINX_DYN_TLS_PATCH_SHA'"
+          
           CURRENT_NGINX_DYN_TLS_PATCH_SHA=$(grep '^NGINX_DYN_TLS_PATCH_SHA=' enginescript-variables.txt | cut -d'"' -f2)
-          if [ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ] && [ "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]; then
+          
+          if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]]; then
             echo "NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"" >> .github/temp_versions.txt
             CHANGES_DETECTED=true
             echo "::notice::NGINX_DYN_TLS_PATCH_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_SHA"
           else
+            if [[ -z "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ]]; then
+              echo "::warning::Failed to fetch NGINX Dynamic TLS Records Patch, keeping current SHA"
+            fi
             grep '^NGINX_DYN_TLS_PATCH_SHA=' enginescript-variables.txt >> .github/temp_versions.txt
           fi
           
           # Update date only if versions changed
-          if [ "$CHANGES_DETECTED" = true ]; then
+          if [[ "$CHANGES_DETECTED" = true ]]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
             NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
             echo "VARIABLES_DATE=\"$NEW_DATE\"" >> .github/temp_versions.txt
@@ -160,7 +243,7 @@ jobs:
                 var_name="${BASH_REMATCH[1]}"
                 new_ver="${BASH_REMATCH[2]}"
                 current_ver=$(get_current_version "${var_name}_VER")
-                if [ "$new_ver" != "$current_ver" ]; then
+                if [[ "$new_ver" != "$current_ver" ]]; then
                   echo "| $var_name | $current_ver | $new_ver |" >> $GITHUB_OUTPUT
                 fi
               fi
@@ -257,12 +340,32 @@ jobs:
           
           # Always cleanup the temp file
           rm -f .github/temp_versions.txt
+
+      - name: Cleanup temp_versions.txt (No Changes)
+        if: steps.version-check.outputs.changes_detected != 'true'
+        run: |
+          # Clean up temp file when no changes were detected
+          echo "No changes detected, cleaning up temp_versions.txt"
+          if [[ -f .github/temp_versions.txt ]]; then
+            rm -f .github/temp_versions.txt
+            echo "temp_versions.txt removed"
+          else
+            echo "temp_versions.txt already cleaned up"
+          fi
                       
       - name: Cleanup temp_versions.txt
         if: always()
         run: |
-          # Double-check that the temp file is removed
-          if [ -f .github/temp_versions.txt ]; then
+          # Ensure temp file is removed in all scenarios
+          if [[ -f .github/temp_versions.txt ]]; then
             echo "Cleaning up temp_versions.txt that was not removed earlier"
             rm -f .github/temp_versions.txt
+          else
+            echo "temp_versions.txt already cleaned up or not found"
+          fi
+          
+          # List any remaining temp files for debugging
+          if ls .github/temp* 2>/dev/null; then
+            echo "Found other temp files in .github directory:"
+            ls -la .github/temp* 2>/dev/null || true
           fi
