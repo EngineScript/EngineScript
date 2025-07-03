@@ -153,6 +153,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**`es.menu`**       |EngineScript menu |
 |**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
 |**`es.restart`**    |Restart Nginx and PHP |
+|**`es.sites`**      |Lists all WordPress sites installed on the server with status information |
 |**`es.update`**     |Update EngineScript |
 |**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated |
 
@@ -185,6 +186,11 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**Database Management**|
 |ADMINER|||
 |PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/ |
+||
+||
+|**Admin Control Panel**|
+|Chart.js|4.5.0|https://github.com/chartjs/Chart.js |
+|Font Awesome|6.7.2|https://github.com/FortAwesome/Font-Awesome |
 ||
 ||
 |**Object Cache**|
@@ -232,6 +238,5 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |LIBURING|2.9|https://github.com/axboe/liburing |
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
 |ZLIB|1.3.1|https://github.com/madler/zlib |
-|Admin Control Panel Template|-|https://github.com/bhjoco/onepage-medium |
 
 ----------

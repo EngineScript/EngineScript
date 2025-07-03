@@ -18,3 +18,9 @@ source /home/EngineScript/enginescript-install-options.txt
 
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
+
+# Check if es.sites alias is missing and add it if needed
+if ! grep -q "alias es.sites=" /root/.bashrc; then
+    echo "Adding missing es.sites alias to /root/.bashrc"
+    echo 'alias es.sites="/usr/local/bin/enginescript/scripts/functions/alias/alias-sites.sh"' >> /root/.bashrc
+fi

@@ -30,17 +30,25 @@ git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/
 cp -rf /usr/local/bin/enginescript/config/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
 
-# Admin Control Panel
-cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
-
-# Remove Adminer link if INSTALL_ADMINER=0
-if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
-    sed -i '/<li><a href="adminer"><strong>Adminer<\/strong><\/a><\/li>/d' "/var/www/admin/enginescript/index.html"
-fi
-
 # PHPinfo.php
 mkdir -p /var/www/admin/enginescript/phpinfo
 echo "<?php phpinfo(); ?>" > /var/www/admin/enginescript/phpinfo/index.php
+
+# Admin Control Panel
+cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+
+# Substitute frontend dependency versions
+sed -i "s|{CHARTJS_VER}|${CHARTJS_VER}|g" /var/www/admin/enginescript/index.html
+sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/index.html
+
+# Create API directory and setup
+mkdir -p /var/www/admin/enginescript/api
+cp /var/www/admin/enginescript/api.php /var/www/admin/enginescript/api/index.php
+
+# Remove Adminer tool card if INSTALL_ADMINER=0
+if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
+    sed -i '/<div class="tool-card" data-tool="adminer" id="adminer-tool">/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
+fi
 
 # Set Permissions
 find /var/www/admin/enginescript -type d -print0 | sudo xargs -0 chmod 0755

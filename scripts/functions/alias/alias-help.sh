@@ -26,6 +26,7 @@ es.install      - Runs the main EngineScript installation script
 es.menu         - EngineScript menu
 es.permissions  - Resets the permissions of all files in the WordPress directory (server-wide)
 es.restart      - Restart Nginx and PHP
+es.sites        - Lists all WordPress sites installed on the server
 es.update       - Update EngineScript
 es.variables    - Opens the variable file in Nano. This file resets when EngineScript is updated
 

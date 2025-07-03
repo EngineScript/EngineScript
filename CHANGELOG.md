@@ -6,6 +6,97 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-01
 
+### 🎨 ADMIN CONTROL PANEL MODERNIZATION
+- **Complete Admin Dashboard Redesign**: Fully modernized the admin control panel with a professional, interactive dashboard
+  - **Modern UI/UX**: Replaced basic HTML template with responsive, dark-themed dashboard using modern CSS Grid and Flexbox
+  - **Interactive Features**: Added real-time system monitoring, service status indicators, and performance charts
+  - **Multi-page Dashboard**: Implemented single-page application with Overview, Sites, System, Security, Backups, Logs, and Tools sections
+  - **Real-time Data**: Integrated Chart.js for interactive performance monitoring and resource usage visualization
+  - **Responsive Design**: Mobile-first design that works seamlessly on desktop, tablet, and mobile devices
+  - **Enhanced Navigation**: Sidebar navigation with active states and smooth transitions
+  - **Live Server Clock**: Real-time server time display with automatic updates
+  - **Service Monitoring**: Live status indicators for Nginx, PHP-FPM, MariaDB, and Redis with version information
+  - **System Metrics**: Real-time CPU, memory, and disk usage monitoring with visual indicators
+  - **Activity Feed**: Recent system activity and alerts with contextual icons and timestamps
+  - **WordPress Site Management**: Enhanced site overview with status, SSL, and backup information
+  - **Security Dashboard**: SSL certificate status, firewall monitoring, and malware scanning overview
+  - **Log Viewer**: Real-time log viewing with filtering for different services (EngineScript, Nginx, PHP, MariaDB)
+  - **Admin Tools Integration**: Quick access to phpMyAdmin, PHPinfo, phpSysinfo, and Adminer with availability checking
+  - **Command Reference**: Complete EngineScript command reference with descriptions and usage examples
+- **Backend API Implementation**: Created comprehensive PHP-based REST API for dashboard functionality
+  - **System Information API**: Real-time system stats including CPU, memory, disk usage, uptime, and load averages
+  - **Service Status API**: Live monitoring of all EngineScript services with version detection
+  - **WordPress Sites API**: Automated detection and management of WordPress installations
+  - **Security Status API**: SSL certificate monitoring, firewall status, and malware scanner integration
+  - **Backup Status API**: Integration with EngineScript backup systems for status reporting
+  - **Log Access API**: Secure log file access with filtering and real-time updates
+  - **Activity Monitoring**: System activity logging and alert generation for proactive monitoring
+  - **Error Handling**: Comprehensive error handling with graceful fallbacks and user-friendly messages
+- **Enhanced Installation Process**: Updated admin control panel deployment script
+  - **API Setup**: Automatic API endpoint configuration with proper routing
+  - **Permission Management**: Secure file permissions and ownership configuration
+  - **Feature Detection**: Dynamic feature availability based on installed components (e.g., Adminer availability)
+  - **Nginx Integration**: Added nginx configuration snippets for optimal performance and security
+- **Security Enhancements**: Implemented robust security measures for the admin panel
+  - **Access Control**: Restricted access to sensitive files and directories
+  - **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, and Referrer-Policy
+  - **Input Validation**: Server-side validation for all API endpoints
+  - **Error Sanitization**: Prevents information disclosure through error messages
+- **Performance Optimizations**: Optimized dashboard for fast loading and smooth operation
+  - **Asset Caching**: Proper cache headers for static assets with versioning support
+  - **Compressed Delivery**: Gzip compression for text-based resources
+  - **Lazy Loading**: Progressive loading of dashboard components to improve perceived performance
+  - **Efficient API Design**: Optimized API endpoints to minimize server load and response times
+- **Documentation**: Comprehensive documentation for the new dashboard
+  - **Feature Overview**: Complete feature documentation with usage examples
+  - **API Documentation**: Detailed API endpoint documentation for future enhancements
+  - **Installation Guide**: Step-by-step setup and configuration instructions
+  - **Future Roadmap**: Planned enhancements including authentication, WebSocket integration, and advanced monitoring
+
+### 🔧 NEW ENGINESCRIPT COMMAND
+- **Added es.sites Command**: New EngineScript alias to list all WordPress sites installed on the server
+  - **Site Discovery**: Automatically discovers all WordPress installations in `/var/www/sites/*/html`
+  - **Status Checking**: Tests HTTPS/HTTP connectivity for each site with color-coded status indicators
+  - **Formatted Output**: Clean table format showing domain, document root, and online status
+  - **WordPress Validation**: Verifies actual WordPress installations by checking for `wp-config.php`
+  - **Configuration Status**: Shows whether sites are configured for automated tasks (backups, maintenance)
+  - **Command Integration**: Integrates with existing EngineScript alias system and help documentation
+  - **Error Handling**: Graceful handling of missing directories and inaccessible sites
+  - **Usage Instructions**: Provides helpful commands for further site management
+
+### 🛡️ SECURITY & AUTOMATION IMPROVEMENTS
+- **Frontend Dashboard Security**: Completed comprehensive security audit and hardening of the JavaScript dashboard
+  - **Input Validation & Sanitization**: Implemented strict client-side input validation with parameter whitelisting
+    - Added validation for page names, log types, time ranges, and tool names against predefined whitelists
+    - Comprehensive input sanitization removing HTML special characters, JavaScript protocols, and dangerous patterns
+    - Length limits implemented (1000 chars for general input, 50KB for log content)
+  - **XSS Prevention**: Complete protection against Cross-Site Scripting attacks
+    - Replaced unsafe `innerHTML` usage with secure `textContent` and `createElement()` methods
+    - All dynamic content created using DOM manipulation instead of HTML string injection
+    - API response data sanitized before display with comprehensive content filtering
+    - Eliminated inline event handlers and prevented `eval()` usage
+  - **URL & Navigation Security**: Secure handling of external URLs and navigation
+    - Domain validation with regex patterns before opening external links
+    - `window.open()` enhanced with `noopener,noreferrer` security flags
+    - Dangerous protocols (`javascript:`, `data:`, `vbscript:`) filtered and removed
+    - Frame protection implemented to prevent embedding in malicious frames
+  - **Data Handling Security**: Secure processing of all API responses and user data
+    - Strict type validation for all data objects received from API
+    - Safe URL handling with domain validation before creating clickable links
+    - Proper memory management with cleanup of charts and event listeners
+    - Secure error handling without information disclosure
+  - **Production Security Features**: Enhanced security for production environments
+    - Console access disabled in production environments to prevent debugging
+    - Error message sanitization to prevent sensitive information disclosure
+    - Resource validation before loading external dependencies
+    - Secure initialization and cleanup procedures
+- **Enhanced Security Documentation**: Updated comprehensive security documentation covering both frontend and backend
+  - **Frontend Security Guide**: Detailed documentation of all JavaScript security measures
+  - **Security Architecture**: Defense-in-depth approach with multiple security layers
+  - **Testing Procedures**: Comprehensive security testing checklists for both frontend and backend
+  - **Incident Response**: Updated emergency response procedures for security incidents
+  - **Monitoring Integration**: Enhanced security monitoring and logging procedures
+
 ### 🔧 CODE QUALITY
 - **CI/CD Workflow Enhancement**: Comprehensively improved the GitHub Actions software-version-check workflow
   - **Robust Error Handling**: Added comprehensive error handling for all GitHub API calls to prevent "null" version values
@@ -379,3 +470,59 @@ Each entry is dated to show when changes were implemented. For questions about a
 - EUID is explicitly set to 0 in CI environment to bypass root checks
 - Enhanced debugging shows exact point of failure when scripts hang
 - Timeout failures now provide detailed log output for debugging
+
+---
+
+## 2025-07-01 - Security Update
+
+### � DEPENDENCY MANAGEMENT
+- **Frontend Dependency Tracking**: Added Chart.js and Font Awesome to the automated software version checker
+  - **Chart.js**: Now automatically monitored for updates (currently v4.5.0)
+  - **Font Awesome**: Now automatically monitored for updates (currently v6.7.2)
+  - **Version Variables**: Added `CHARTJS_VER` and `FONTAWESOME_VER` to `enginescript-variables.txt`
+  - **Dynamic Substitution**: Admin control panel installation script now substitutes versions automatically
+  - **GitHub Actions Integration**: Extended software-version-check.yml workflow to monitor frontend dependencies
+  - **README Documentation**: Added Chart.js and Font Awesome to the software versions table
+
+### �🔒 COMPREHENSIVE SECURITY HARDENING
+- **Frontend Dashboard Security**: Completed comprehensive security audit and hardening of the JavaScript dashboard
+  - **Input Validation & Sanitization**: Implemented strict client-side input validation with parameter whitelisting
+    - Added validation for page names, log types, time ranges, and tool names against predefined whitelists
+    - Comprehensive input sanitization removing HTML special characters, JavaScript protocols, and dangerous patterns
+    - Length limits implemented (1000 chars for general input, 50KB for log content)
+  - **XSS Prevention**: Complete protection against Cross-Site Scripting attacks
+    - Replaced unsafe `innerHTML` usage with secure `textContent` and `createElement()` methods
+    - All dynamic content created using DOM manipulation instead of HTML string injection
+    - API response data sanitized before display with comprehensive content filtering
+    - Eliminated inline event handlers and prevented `eval()` usage
+  - **URL & Navigation Security**: Secure handling of external URLs and navigation
+    - Domain validation with regex patterns before opening external links
+    - `window.open()` enhanced with `noopener,noreferrer` security flags
+    - Dangerous protocols (`javascript:`, `data:`, `vbscript:`) filtered and removed
+    - Frame protection implemented to prevent embedding in malicious frames
+  - **Data Handling Security**: Secure processing of all API responses and user data
+    - Strict type validation for all data objects received from API
+    - Safe URL handling with domain validation before creating clickable links
+    - Proper memory management with cleanup of charts and event listeners
+    - Secure error handling without information disclosure
+  - **Production Security Features**: Enhanced security for production environments
+    - Console access disabled in production environments to prevent debugging
+    - Error message sanitization to prevent sensitive information disclosure
+    - Resource validation before loading external dependencies
+    - Secure initialization and cleanup procedures
+- **Enhanced Security Documentation**: Updated comprehensive security documentation covering both frontend and backend
+  - **Frontend Security Guide**: Detailed documentation of all JavaScript security measures
+  - **Security Architecture**: Defense-in-depth approach with multiple security layers
+  - **Testing Procedures**: Comprehensive security testing checklists for both frontend and backend
+  - **Incident Response**: Updated emergency response procedures for security incidents
+  - **Monitoring Integration**: Enhanced security monitoring and logging procedures
+
+### 🛡️ BACKEND API SECURITY (Previously Implemented)
+- **Complete API Security Audit**: Comprehensive security review and hardening of PHP API backend
+  - **Input Validation**: Strict validation and sanitization of all API inputs
+  - **Command Injection Prevention**: Eliminated shell command vulnerabilities
+  - **Path Traversal Protection**: Prevented directory traversal attacks
+  - **Rate Limiting**: Implemented rate limiting with IP-based tracking
+  - **Security Headers**: Added comprehensive security headers for all responses
+  - **Error Handling**: Secure error handling without information disclosure
+  - **Logging**: Comprehensive security event logging and monitoring

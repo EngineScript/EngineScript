@@ -49,6 +49,22 @@ echo ""
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh
 
+# Admin Control Panel
+cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+
+# Substitute frontend dependency versions
+sed -i "s|{CHARTJS_VER}|${CHARTJS_VER}|g" /var/www/admin/enginescript/index.html
+sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/index.html
+
+# Create API directory and setup
+mkdir -p /var/www/admin/enginescript/api
+cp /var/www/admin/enginescript/api.php /var/www/admin/enginescript/api/index.php
+
+# Remove Adminer tool card if INSTALL_ADMINER=0
+if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
+    sed -i '/<div class="tool-card" data-tool="adminer" id="adminer-tool">/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
+fi
+
 # Update both EngineScript plugins for each site in sites.sh
 SITES_FILE="/home/EngineScript/sites-list/sites.sh"
 if [[ -f "$SITES_FILE" ]]; then

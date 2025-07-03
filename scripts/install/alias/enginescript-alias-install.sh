@@ -29,6 +29,7 @@ alias es.install="/usr/local/bin/enginescript/scripts/install/enginescript-insta
 alias es.menu="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 alias es.permissions="/usr/local/bin/enginescript/scripts/functions/cron/permissions.sh"
 alias es.restart="/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh"
+alias es.sites="/usr/local/bin/enginescript/scripts/functions/alias/alias-sites.sh"
 alias es.update="/usr/local/bin/enginescript/scripts/update/enginescript-update.sh"
 alias es.variables="nano /usr/local/bin/enginescript/enginescript-variables.txt"
 alias ng.reload="ng.test && systemctl reload nginx"

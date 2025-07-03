@@ -1,15 +1,47 @@
-# onepager-medium
+# EngineScript Admin Dashboard
 
-Live Preview: https://op.1lp.org/medium
+This directory contains the modern admin dashboard for EngineScript server management.
 
-Simple (only HTML &amp; CSS), responsive one-pager for small businesses. Minimalist, clean design for longer content. 
+## Files
 
-It's possible to display smaller image galleries, lists, tables, but also to insert a YouTube/Vimeo video or a Google/Wufoo form.
+- `index.html` - Main dashboard HTML file with modern, responsive design
+- `dashboard.css` - Modern CSS styling with dark theme and smooth animations
+- `dashboard.js` - Interactive JavaScript for real-time dashboard functionality
+- `favicon.png` - Dashboard favicon (simple placeholder)
 
-The template comes with a navigation bar (removable), facilitating jumping between sections (e.g., introduction, services, references, gallery, etc.). However, keep in mind that everything appears on one page, there are no subpages, so let's keep the wording concise. 
+## Features
 
-It could be ideal for small, individual entrepreneurs who want to quickly and succinctly present their activities to potential clients, but it can also function as an online resume.
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Real-time Monitoring**: Live server statistics and service status
+- **Interactive Charts**: Performance monitoring with Chart.js
+- **Multi-page Dashboard**: Overview, Sites, System, Security, Backups, Logs, and Tools
+- **Service Management**: Monitor Nginx, PHP, MariaDB, and Redis
+- **WordPress Site Management**: View and manage WordPress installations
+- **Security Monitoring**: SSL certificates, firewall, and malware scanning
+- **Log Viewer**: Real-time log viewing with filtering
+- **Admin Tools**: Quick access to phpMyAdmin, PHPinfo, and other tools
 
-Created by József Balázs-Hegedűs (www.balazshegedus.com).
-First published on www.egylapon.hu in 2023.
-Made public in 16.04.2024.
+## API Integration
+
+The dashboard is designed to work with RESTful API endpoints for real-time data:
+
+- `/api/system/*` - System information and statistics
+- `/api/sites/*` - WordPress site management
+- `/api/security/*` - Security status and alerts
+- `/api/backups/*` - Backup status and management
+- `/api/logs/*` - Log file access
+- `/api/services/*` - Service status monitoring
+
+## Future Enhancements
+
+- Real backend API implementation
+- User authentication and role-based access
+- WebSocket connections for real-time updates
+- Advanced monitoring and alerting
+- Site deployment and management tools
+- Automated backup scheduling
+- Security scanning and hardening tools
+
+## Installation
+
+The dashboard is automatically deployed by the EngineScript installation process to `/var/www/admin/enginescript/`.

@@ -1,136 +1,489 @@
 <!DOCTYPE html>
-<html lang="hu">
-	<head>
-	<!--STOP GOOGLE--><meta name="robots" content="noindex, nofollow">
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width">
-		<meta name="description" content="">
-		<meta name="author" content="">
-		<link rel="icon" type="image/png" href="favicon.png">
-		<title>EngineScript Admin Control Panel</title>
-		<link rel="stylesheet" href="https://use.typekit.net/zjc3nag.css">
-		<link rel="stylesheet" href="style.css">
-		<link rel="stylesheet" href="custom.css">
-	</head>
-	<body>
-		<header>
-			<div class="overlay">
-				<div class="container">
-					<nav>
-					</nav>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>EngineScript Admin Dashboard</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- External Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@{CHARTJS_VER}/dist/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>EngineScript</h2>
+            <p>Loading Dashboard...</p>
+        </div>
+    </div>
 
-						<h1 class="clear-both">EngineScript</h1>
-						<h2>Admin Control Panel</h2>
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-server"></i> EngineScript</h2>
+                <p class="version">Admin Dashboard</p>
+            </div>
+            
+            <ul class="sidebar-nav">
+                <li class="nav-item active" data-page="overview">
+                    <a href="#"><i class="fas fa-tachometer-alt"></i> Overview</a>
+                </li>
+                <li class="nav-item" data-page="sites">
+                    <a href="#"><i class="fas fa-globe"></i> Sites</a>
+                </li>
+                <li class="nav-item" data-page="system">
+                    <a href="#"><i class="fas fa-cogs"></i> System</a>
+                </li>
+                <li class="nav-item" data-page="security">
+                    <a href="#"><i class="fas fa-shield-alt"></i> Security</a>
+                </li>
+                <li class="nav-item" data-page="backups">
+                    <a href="#"><i class="fas fa-cloud-upload-alt"></i> Backups</a>
+                </li>
+                <li class="nav-item" data-page="logs">
+                    <a href="#"><i class="fas fa-file-alt"></i> Logs</a>
+                </li>
+                <li class="nav-item" data-page="tools">
+                    <a href="#"><i class="fas fa-tools"></i> Tools</a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="server-status" id="server-status">
+                    <i class="fas fa-circle status-indicator"></i>
+                    <span>Server Online</span>
+                </div>
+            </div>
+        </nav>
 
-					<div id="icons">
-					</div>
-				</div>
-			</div>
-		</header>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1 id="page-title">Overview</h1>
+                    <span id="last-updated">Last updated: <span id="update-time">--</span></span>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" id="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <div class="server-time" id="server-time">--:--:--</div>
+                </div>
+            </header>
 
-		<section id="main_section">
-			<div class="container">
-				<div class="box col-4_6">
-					<h3>Admin Tools</h3>
-					<p>
-						<ul>
-							<li><a href="phpmyadmin"><strong>phpMyAdmin</strong></a></li>
-							<li><a href="phpinfo"><strong>phpinfo</strong></a></li>
-							<li><a href="phpsysinfo"><strong>phpSysInfo</strong></a></li>
-							<li><a href="adminer"><strong>Adminer</strong></a></li>
-						</ul>
-				</div>
-			</div>
-		</section>
+            <!-- Overview Page -->
+            <div class="page-content" id="overview-page">
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="sites-count">--</h3>
+                            <p>Active Sites</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="memory-usage">--%</h3>
+                            <p>Memory Usage</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-hdd"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="disk-usage">--%</h3>
+                            <p>Disk Usage</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="cpu-usage">--%</h3>
+                            <p>CPU Usage</p>
+                        </div>
+                    </div>
+                </div>
 
-		<section id="section_5" class="highlight">
-			<div class="container">
-				<h3>EngineScript Commands</h3>
-				<div id="map" class="box col-4_6">
-					<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;}
-.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg .tg-4xln{background-color:#cbcefb;border-color:inherit;font-weight:bold;text-align:left;text-decoration:underline;
-  vertical-align:top}
-.tg .tg-bbpf{background-color:#cbcefb;border-color:#000000;font-weight:bold;text-align:left;text-decoration:underline;
-  vertical-align:top}
-.tg .tg-fymr{border-color:inherit;font-weight:bold;text-align:left;vertical-align:top}
-.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
-</style>
+                <!-- System Health -->
+                <div class="content-row">
+                    <div class="card col-8">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> System Performance</h3>
+                            <div class="card-actions">
+                                <select id="chart-timerange">
+                                    <option value="1h">Last Hour</option>
+                                    <option value="6h">Last 6 Hours</option>
+                                    <option value="24h" selected>Last 24 Hours</option>
+                                    <option value="7d">Last 7 Days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <h3><i class="fas fa-heartbeat"></i> Service Status</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="service-list">
+                                <div class="service-item" id="nginx-status">
+                                    <div class="service-info">
+                                        <strong>Nginx</strong>
+                                        <span class="service-version">v--</span>
+                                    </div>
+                                    <div class="service-status">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="service-item" id="php-status">
+                                    <div class="service-info">
+                                        <strong>PHP-FPM</strong>
+                                        <span class="service-version">v--</span>
+                                    </div>
+                                    <div class="service-status">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="service-item" id="mysql-status">
+                                    <div class="service-info">
+                                        <strong>MariaDB</strong>
+                                        <span class="service-version">v--</span>
+                                    </div>
+                                    <div class="service-status">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="service-item" id="redis-status">
+                                    <div class="service-info">
+                                        <strong>Redis</strong>
+                                        <span class="service-version">v--</span>
+                                    </div>
+                                    <div class="service-status">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<table class="tg"><thead>
-  <tr>
-    <th class="tg-4xln">COMMAND</th>
-    <th class="tg-bbpf">FUNCTION</th>
-  </tr></thead>
-<tbody>
-  <tr>
-    <td class="tg-fymr">es.backup</td>
-    <td class="tg-0pky">Runs the backup script to backup all domains locally and <span style="font-style:italic">optionally</span> in the cloud</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.cache</td>
-    <td class="tg-0pky">Clear FastCGI Cache, OpCache, and Redis <span style="font-style:italic">(server-wide)</span></td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.config</td>
-    <td class="tg-0pky">Opens the configuration file in Nano</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.debug</td>
-    <td class="tg-0pky">Displays debug information for EngineScript</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.help</td>
-    <td class="tg-0pky">Displays EngineScript commands and locations</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.images</td>
-    <td class="tg-0pky">Losslessly compress all images in the WordPress /uploads directory <span style="font-style:italic">(server-wide)</span></td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.info</td>
-    <td class="tg-0pky">Displays server information</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.install</td>
-    <td class="tg-0pky">Runs the main EngineScript installation script</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.menu</td>
-    <td class="tg-0pky">EngineScript menu</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.permissions</td>
-    <td class="tg-0pky">Resets the permissions of all files in the WordPress directory <span style="font-style:italic">(server-wide)</span></td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.restart</td>
-    <td class="tg-0pky">Restart Nginx and PHP</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.update</td>
-    <td class="tg-0pky">Update EngineScript</td>
-  </tr>
-  <tr>
-    <td class="tg-fymr">es.variables</td>
-    <td class="tg-0pky">Opens the variable file in Nano. This file resets when EngineScript is updated</td>
-  </tr>
-</tbody></table>
-			</div>
-		</section>
+                <!-- Recent Activity -->
+                <div class="content-row">
+                    <div class="card col-6">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list" id="recent-activity">
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p>Loading recent activity...</p>
+                                        <span class="activity-time">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card col-6">
+                        <div class="card-header">
+                            <h3><i class="fas fa-exclamation-triangle"></i> System Alerts</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert-list" id="system-alerts">
+                                <div class="alert-item info">
+                                    <div class="alert-icon">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <div class="alert-content">
+                                        <p>System monitoring active</p>
+                                        <span class="alert-time">Just now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-		<footer>
-			<div class="container">
-				<p>EngineScript</p>
-				<a href="#" id="top_arrow"><img src="./img/icon-top_arrow.svg" width="40" alt="Back to top"></a>
-				<p id="cookie"><img src="./img/w-icon-30-cookie.svg" width="40" alt="Cookie icon">Thanks for trying EngineScript!</p>
-				<p><a href="https://github.com/EngineScript/EngineScript" target="_blank">View on GitHub</a></p>
-			</div>
-		</footer>
-	</body>
+            <!-- Sites Page -->
+            <div class="page-content" id="sites-page" style="display: none;">
+                <div class="page-header">
+                    <h2>WordPress Sites</h2>
+                    <button class="btn btn-primary" id="add-site-btn">
+                        <i class="fas fa-plus"></i> Add New Site
+                    </button>
+                </div>
+                
+                <div class="sites-grid" id="sites-grid">
+                    <div class="site-card loading">
+                        <div class="site-header">
+                            <h3>Loading sites...</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Page -->
+            <div class="page-content" id="system-page" style="display: none;">
+                <div class="content-row">
+                    <div class="card col-6">
+                        <div class="card-header">
+                            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-list" id="system-info">
+                                <div class="info-item">
+                                    <strong>OS:</strong> <span>Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card col-6">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-pie"></i> Resource Usage</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="resource-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Page -->
+            <div class="page-content" id="security-page" style="display: none;">
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-shield-alt"></i> Security Overview</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="security-grid">
+                                <div class="security-item">
+                                    <div class="security-icon">
+                                        <i class="fas fa-lock"></i>
+                                    </div>
+                                    <div class="security-content">
+                                        <h4>SSL Certificates</h4>
+                                        <p id="ssl-status">Checking...</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="security-item">
+                                    <div class="security-icon">
+                                        <i class="fas fa-fire"></i>
+                                    </div>
+                                    <div class="security-content">
+                                        <h4>Firewall Status</h4>
+                                        <p id="firewall-status">Checking...</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="security-item">
+                                    <div class="security-icon">
+                                        <i class="fas fa-bug"></i>
+                                    </div>
+                                    <div class="security-content">
+                                        <h4>Malware Scanning</h4>
+                                        <p id="malware-status">Checking...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backups Page -->
+            <div class="page-content" id="backups-page" style="display: none;">
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-cloud-upload-alt"></i> Backup Status</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="backup-grid" id="backup-grid">
+                                <div class="backup-item">
+                                    <h4>Loading backup information...</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Page -->
+            <div class="page-content" id="logs-page" style="display: none;">
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-alt"></i> System Logs</h3>
+                            <div class="card-actions">
+                                <select id="log-type">
+                                    <option value="enginescript">EngineScript</option>
+                                    <option value="nginx">Nginx</option>
+                                    <option value="php">PHP</option>
+                                    <option value="mysql">MariaDB</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="log-viewer" id="log-viewer">
+                                <pre>Loading logs...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools Page -->
+            <div class="page-content" id="tools-page" style="display: none;">
+                <div class="tools-grid">
+                    <div class="tool-card" data-tool="phpmyadmin">
+                        <div class="tool-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>phpMyAdmin</h3>
+                            <p>Database management interface</p>
+                            <button class="btn btn-primary">Open</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="phpinfo">
+                        <div class="tool-icon">
+                            <i class="fab fa-php"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>PHP Info</h3>
+                            <p>PHP configuration details</p>
+                            <button class="btn btn-primary">Open</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="phpsysinfo">
+                        <div class="tool-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>System Info</h3>
+                            <p>Detailed system information</p>
+                            <button class="btn btn-primary">Open</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="adminer" id="adminer-tool">
+                        <div class="tool-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>Adminer</h3>
+                            <p>Lightweight database tool</p>
+                            <button class="btn btn-primary">Open</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-terminal"></i> EngineScript Commands</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="commands-grid">
+                                <div class="command-item">
+                                    <code>es.backup</code>
+                                    <p>Backup all domains locally and optionally to cloud</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.cache</code>
+                                    <p>Clear FastCGI Cache, OpCache, and Redis (server-wide)</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.config</code>
+                                    <p>Open configuration file in Nano</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.debug</code>
+                                    <p>Display debug information for EngineScript</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.help</code>
+                                    <p>Display EngineScript commands and locations</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.images</code>
+                                    <p>Compress images in WordPress uploads directory (server-wide)</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.info</code>
+                                    <p>Display server information</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.install</code>
+                                    <p>Run main EngineScript installation script</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.menu</code>
+                                    <p>Open EngineScript interactive menu</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.permissions</code>
+                                    <p>Reset file permissions in WordPress directories (server-wide)</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.restart</code>
+                                    <p>Restart Nginx and PHP services</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.update</code>
+                                    <p>Update EngineScript to latest version</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.variables</code>
+                                    <p>Open variables file in Nano (resets on update)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="dashboard.js"></script>
+</body>
 </html>
-<!-- Template Source: https://github.com/bhjoco/onepage-medium  -->
