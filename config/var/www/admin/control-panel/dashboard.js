@@ -893,15 +893,19 @@ class EngineScriptDashboard {
         
         // For logs, we allow more characters but still remove dangerous patterns
         // Keep line breaks and basic formatting for readability but remove XSS vectors
-        return input
-            .replace(/\0/g, '') // Remove null bytes first
-            .replace(/[<>&"'`]/g, '') // Remove HTML/XML special characters that could break out of attributes
-            .replace(/javascript:/gi, '') // Remove javascript: protocol
-            .replace(/data:/gi, '') // Remove data: protocol
-            .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-            .replace(/on\w+=/gi, '') // Remove event handlers
-            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars but keep \t, \n, \r
-            .substring(0, 50000); // Reasonable log size limit
+        let previous;
+        do {
+            previous = input;
+            input = input
+                .replace(/\0/g, '') // Remove null bytes first
+                .replace(/[<>&"'`]/g, '') // Remove HTML/XML special characters that could break out of attributes
+                .replace(/javascript:/gi, '') // Remove javascript: protocol
+                .replace(/data:/gi, '') // Remove data: protocol
+                .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+                .replace(/on\w+=/gi, '') // Remove event handlers
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control chars but keep \t, \n, \r
+        } while (input !== previous);
+        return input.substring(0, 50000); // Reasonable log size limit
     }
     
     setTextContent(elementId, content) {
