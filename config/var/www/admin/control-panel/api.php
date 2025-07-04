@@ -149,7 +149,15 @@ if ($path === false) {
     exit(json_encode(['error' => 'Invalid request']));
 }
 
-$path = str_replace('/api', '', $path);
+// Check if endpoint is passed as a query parameter (from nginx rewrite)
+$endpoint_param = $_GET['endpoint'] ?? '';
+if (!empty($endpoint_param)) {
+    // Use the endpoint parameter from the query string
+    $path = '/' . ltrim($endpoint_param, '/');
+} else {
+    // Fallback to parsing from path (for direct access)
+    $path = str_replace('/api', '', $path);
+}
 
 // Validate path to prevent injection
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {

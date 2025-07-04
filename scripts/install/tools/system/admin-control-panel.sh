@@ -41,9 +41,9 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 sed -i "s|{CHARTJS_VER}|${CHARTJS_VER}|g" /var/www/admin/enginescript/index.html
 sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/index.html
 
-# Create API directory and setup
-mkdir -p /var/www/admin/enginescript/api
-cp /var/www/admin/enginescript/api.php /var/www/admin/enginescript/api/index.php
+# Ensure API file is in the correct location for nginx routing
+# The nginx config expects /enginescript/api.php for API calls
+# Keep the original api.php in place for direct access
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then

@@ -12,7 +12,7 @@ class EngineScriptDashboard {
         this.minRefreshInterval = 5000;   // 5 seconds min
         this.allowedLogTypes = ['enginescript', 'nginx', 'php', 'mysql', 'redis', 'system'];
         this.allowedTimeRanges = ['1h', '6h', '24h', '48h'];
-        this.allowedPages = ['overview', 'sites', 'system', 'security', 'backups', 'logs', 'tools'];
+        this.allowedPages = ['overview', 'sites', 'system', 'security', 'backups', 'logs', 'tools', 'documentation'];
         this.allowedTools = ['phpmyadmin', 'phpinfo', 'phpsysinfo', 'adminer'];
         
         this.init();
@@ -113,6 +113,13 @@ class EngineScriptDashboard {
         const targetPage = document.getElementById(`${pageName}-page`);
         if (targetPage) {
             targetPage.style.display = 'block';
+            // Scroll to top when navigating to a new page
+            targetPage.scrollTop = 0;
+            // Also scroll the main content area to top
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
         }
         
         // Update page title
@@ -134,7 +141,8 @@ class EngineScriptDashboard {
             'security': 'Security Overview',
             'backups': 'Backup Management',
             'logs': 'System Logs',
-            'tools': 'Admin Tools'
+            'tools': 'Admin Tools',
+            'documentation': 'Documentation'
         };
         return titles[pageName] || 'Dashboard';
     }
@@ -167,6 +175,9 @@ class EngineScriptDashboard {
                 break;
             case 'tools':
                 this.checkToolAvailability();
+                break;
+            case 'documentation':
+                // Documentation page doesn't need dynamic data loading
                 break;
         }
     }
@@ -525,11 +536,24 @@ class EngineScriptDashboard {
             return;
         }
         
+        // Get the current hostname from the browser
+        const hostname = window.location.hostname;
+        
+        // Generate the admin subdomain URL dynamically
+        let adminUrl;
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+            // For localhost or IP addresses, use the current host
+            adminUrl = `${window.location.protocol}//${hostname}`;
+        } else {
+            // For domains, construct the admin subdomain
+            adminUrl = `${window.location.protocol}//admin.${hostname}`;
+        }
+        
         const toolUrls = {
-            'phpmyadmin': '/phpmyadmin/',
-            'phpinfo': '/phpinfo/',
-            'phpsysinfo': '/phpsysinfo/',
-            'adminer': '/adminer/'
+            'phpmyadmin': `${adminUrl}/phpmyadmin/`,
+            'phpinfo': `${adminUrl}/phpinfo/`,
+            'phpsysinfo': `${adminUrl}/phpsysinfo/`,
+            'adminer': `${adminUrl}/adminer/`
         };
         
         const url = toolUrls[toolName];
