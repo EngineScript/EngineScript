@@ -71,7 +71,8 @@ if [[ -f "$SITES_FILE" ]]; then
   # shellcheck source=/home/EngineScript/sites-list/sites.sh
   source "$SITES_FILE"
   for SITE in "${SITES[@]}"; do
-    DOMAIN=$(basename "$SITE")
+    # Remove quotes from domain name if present
+    DOMAIN=$(echo "$SITE" | tr -d '"')
     WP_PLUGIN_DIR="/var/www/sites/${DOMAIN}/html/wp-content/plugins"
     if [[ -d "$WP_PLUGIN_DIR" ]]; then
       # Only update EngineScript custom plugins if the option is enabled
@@ -81,29 +82,51 @@ if [[ -f "$SITES_FILE" ]]; then
         # 1. Simple Site Exporter plugin
         echo "Updating Simple Site Exporter plugin for $DOMAIN..."
         mkdir -p "/tmp/sse-plugin-update"
-        wget -q "https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-site-exporter.zip" -O "/tmp/sse-plugin-update/simple-site-exporter.zip"
-        unzip -q -o "/tmp/sse-plugin-update/simple-site-exporter.zip" -d "$WP_PLUGIN_DIR/"
+        if wget -q "https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/download/v${SSE_PLUGIN_VER}/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" -O "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" 2>/dev/null; then
+          # Verify the downloaded file is a valid zip
+          if unzip -t "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" >/dev/null 2>&1; then
+            unzip -q -o "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
+            echo "Simple Site Exporter plugin updated successfully for $DOMAIN"
+          else
+            echo "Warning: Downloaded Simple Site Exporter plugin file is corrupted for $DOMAIN"
+          fi
+        else
+          echo "Warning: Failed to download Simple Site Exporter plugin for $DOMAIN"
+        fi
         rm -rf "/tmp/sse-plugin-update"
         
         # 2. Simple WP Optimizer plugin
         echo "Updating Simple WP Optimizer plugin for $DOMAIN..."
         mkdir -p "/tmp/swpo-plugin-update"
-        wget -q "https://github.com/EngineScript/Simple-WP-Optimizer/releases/latest/download/simple-wp-optimizer.zip" -O "/tmp/swpo-plugin-update/simple-wp-optimizer.zip"
-        unzip -q -o "/tmp/swpo-plugin-update/simple-wp-optimizer.zip" -d "$WP_PLUGIN_DIR/"
+        if wget -q "https://github.com/EngineScript/Simple-WP-Optimizer/releases/download/v${SWPO_PLUGIN_VER}/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" -O "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" 2>/dev/null; then
+          # Verify the downloaded file is a valid zip
+          if unzip -t "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
+            unzip -q -o "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
+            echo "Simple WP Optimizer plugin updated successfully for $DOMAIN"
+          else
+            echo "Warning: Downloaded Simple WP Optimizer plugin file is corrupted for $DOMAIN"
+          fi
+        else
+          echo "Warning: Failed to download Simple WP Optimizer plugin for $DOMAIN"
+        fi
         rm -rf "/tmp/swpo-plugin-update"
         
-        # Set permissions for both plugins
-        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter"
-        chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer"
-        find "$WP_PLUGIN_DIR/simple-site-exporter" -type d -exec chmod 755 {} \;
-        find "$WP_PLUGIN_DIR/simple-site-exporter" -type f -exec chmod 644 {} \;
-        find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type d -exec chmod 755 {} \;
-        find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type f -exec chmod 644 {} \;
+        # Set permissions for both plugins (only if they exist)
+        if [[ -d "$WP_PLUGIN_DIR/simple-site-exporter" ]]; then
+          chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter"
+          find "$WP_PLUGIN_DIR/simple-site-exporter" -type d -exec chmod 755 {} \;
+          find "$WP_PLUGIN_DIR/simple-site-exporter" -type f -exec chmod 644 {} \;
+        fi
+        if [[ -d "$WP_PLUGIN_DIR/simple-wp-optimizer" ]]; then
+          chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer"
+          find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type d -exec chmod 755 {} \;
+          find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type f -exec chmod 644 {} \;
+        fi
       else
         echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."
       fi
     else
-      echo "Warning: Plugin directory $WP_PLUGIN_DIR does not exist for site $SITE"
+      echo "Warning: Plugin directory $WP_PLUGIN_DIR does not exist for site $DOMAIN"
     fi
   done
 else
