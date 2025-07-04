@@ -29,11 +29,16 @@ class EngineScriptDashboard {
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
+            const page = item.dataset.page;
+            console.log(`Setting up navigation for page: ${page}`);
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = this.sanitizeInput(item.dataset.page);
+                console.log(`Navigation clicked for page: ${page}`);
                 if (this.allowedPages.includes(page)) {
                     this.navigateToPage(page);
+                } else {
+                    console.error(`Page not allowed: ${page}, allowed pages:`, this.allowedPages);
                 }
             });
         });
@@ -91,6 +96,8 @@ class EngineScriptDashboard {
     }
     
     navigateToPage(pageName) {
+        console.log(`Navigating to page: ${pageName}`);
+        
         // Validate page name
         if (!this.allowedPages.includes(pageName)) {
             console.error('Invalid page name:', pageName);
@@ -104,6 +111,9 @@ class EngineScriptDashboard {
         const targetNav = document.querySelector(`[data-page="${pageName}"]`);
         if (targetNav) {
             targetNav.classList.add('active');
+            console.log(`Added active class to nav item: ${pageName}`);
+        } else {
+            console.error(`Nav item not found for page: ${pageName}`);
         }
         
         // Update pages
@@ -113,6 +123,7 @@ class EngineScriptDashboard {
         const targetPage = document.getElementById(`${pageName}-page`);
         if (targetPage) {
             targetPage.style.display = 'block';
+            console.log(`Showing page: ${pageName}-page`);
             // Scroll to top when navigating to a new page
             targetPage.scrollTop = 0;
             // Also scroll the main content area to top
@@ -120,12 +131,15 @@ class EngineScriptDashboard {
             if (mainContent) {
                 mainContent.scrollTop = 0;
             }
+        } else {
+            console.error(`Page element not found: ${pageName}-page`);
         }
         
         // Update page title
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) {
             pageTitle.textContent = this.getPageTitle(pageName);
+            console.log(`Updated page title to: ${this.getPageTitle(pageName)}`);
         }
         
         // Load page-specific data
@@ -268,32 +282,42 @@ class EngineScriptDashboard {
             
         } catch (error) {
             console.error('Failed to load overview data:', error);
-            this.showError('Failed to load dashboard data');
+            this.showError(`Failed to load dashboard data: ${error.message || error}`);
         }
     }
     
     async loadSystemStats() {
-        // Simulate API calls - In real implementation, these would be actual API endpoints
-        const stats = {
-            sites: await this.getApiData('/api/sites/count', '0'),
-            memory: await this.getApiData('/api/system/memory', '0%'),
-            disk: await this.getApiData('/api/system/disk', '0%'),
-            cpu: await this.getApiData('/api/system/cpu', '0%')
-        };
-        
-        // Validate and sanitize numeric values
-        const sanitizedStats = {
-            sites: this.sanitizeNumeric(stats.sites, '0'),
-            memory: this.sanitizePercentage(stats.memory, '0%'),
-            disk: this.sanitizePercentage(stats.disk, '0%'),
-            cpu: this.sanitizePercentage(stats.cpu, '0%')
-        };
-        
-        // Update stat cards safely
-        this.setTextContent('sites-count', sanitizedStats.sites);
-        this.setTextContent('memory-usage', sanitizedStats.memory);
-        this.setTextContent('disk-usage', sanitizedStats.disk);
-        this.setTextContent('cpu-usage', sanitizedStats.cpu);
+        try {
+            // Simulate API calls - In real implementation, these would be actual API endpoints
+            const stats = {
+                sites: await this.getApiData('/api/sites/count', '0'),
+                memory: await this.getApiData('/api/system/memory', '0%'),
+                disk: await this.getApiData('/api/system/disk', '0%'),
+                cpu: await this.getApiData('/api/system/cpu', '0%')
+            };
+            
+            // Validate and sanitize numeric values
+            const sanitizedStats = {
+                sites: this.sanitizeNumeric(stats.sites, '0'),
+                memory: this.sanitizePercentage(stats.memory, '0%'),
+                disk: this.sanitizePercentage(stats.disk, '0%'),
+                cpu: this.sanitizePercentage(stats.cpu, '0%')
+            };
+            
+            // Update stat cards safely
+            this.setTextContent('sites-count', sanitizedStats.sites);
+            this.setTextContent('memory-usage', sanitizedStats.memory);
+            this.setTextContent('disk-usage', sanitizedStats.disk);
+            this.setTextContent('cpu-usage', sanitizedStats.cpu);
+        } catch (error) {
+            console.error('Failed to load system stats:', error);
+            // Set fallback values
+            this.setTextContent('sites-count', '0');
+            this.setTextContent('memory-usage', '0%');
+            this.setTextContent('disk-usage', '0%');
+            this.setTextContent('cpu-usage', '0%');
+            throw error; // Re-throw to be caught by loadOverviewData
+        }
     }
     
     async loadServiceStatus() {
@@ -536,33 +560,23 @@ class EngineScriptDashboard {
             return;
         }
         
-        // Get the current hostname from the browser
-        const hostname = window.location.hostname;
+        // Get the current URL components
+        const currentHost = window.location.host; // includes port if present
+        const protocol = window.location.protocol;
         
-        // Generate the admin subdomain URL dynamically
-        let adminUrl;
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-            // For localhost or IP addresses, use the current host
-            adminUrl = `${window.location.protocol}//${hostname}`;
-        } else {
-            // For domains, construct the admin subdomain
-            adminUrl = `${window.location.protocol}//admin.${hostname}`;
-        }
-        
+        // For admin control panel, tools are accessible via the same host
+        // since we're already on the admin subdomain or IP
         const toolUrls = {
-            'phpmyadmin': `${adminUrl}/phpmyadmin/`,
-            'phpinfo': `${adminUrl}/phpinfo/`,
-            'phpsysinfo': `${adminUrl}/phpsysinfo/`,
-            'adminer': `${adminUrl}/adminer/`
+            'phpmyadmin': `${protocol}//${currentHost}/phpmyadmin/`,
+            'phpinfo': `${protocol}//${currentHost}/phpinfo/`,
+            'phpsysinfo': `${protocol}//${currentHost}/phpsysinfo/`,
+            'adminer': `${protocol}//${currentHost}/adminer/`
         };
         
         const url = toolUrls[toolName];
         if (url) {
             // Use noopener and noreferrer for security
-            const newWindow = window.open('', '_blank', 'noopener,noreferrer');
-            if (newWindow) {
-                newWindow.location.href = url;
-            }
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
     }
     
@@ -725,13 +739,15 @@ class EngineScriptDashboard {
     // API Methods
     async getApiData(endpoint, fallback) {
         try {
+            console.log(`Making API call to: ${endpoint}`);
             const response = await fetch(endpoint);
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
             }
             
             const data = await response.json();
+            console.log(`API response from ${endpoint}:`, data);
             
             // Handle different response formats
             if (endpoint.includes('/system/memory') && data.usage) {
@@ -749,8 +765,8 @@ class EngineScriptDashboard {
             
             return data;
         } catch (error) {
-            console.error(`API call failed for ${endpoint}:`, error);
-            return fallback;
+            console.error(`API call failed for ${endpoint}:`, error.message || error);
+            throw new Error(`API call to ${endpoint} failed: ${error.message || error}`);
         }
     }
     
