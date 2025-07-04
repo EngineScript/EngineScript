@@ -12,7 +12,7 @@ class EngineScriptDashboard {
         this.minRefreshInterval = 5000;   // 5 seconds min
         this.allowedLogTypes = ['enginescript', 'nginx', 'php', 'mysql', 'redis', 'system'];
         this.allowedTimeRanges = ['1h', '6h', '24h', '48h'];
-        this.allowedPages = ['overview', 'sites', 'system', 'security', 'backups', 'logs', 'tools', 'documentation'];
+        this.allowedPages = ['overview', 'sites', 'system', 'security', 'backups', 'logs', 'tools'];
         this.allowedTools = ['phpmyadmin', 'phpinfo', 'phpsysinfo', 'adminer'];
         
         this.init();
@@ -49,14 +49,45 @@ class EngineScriptDashboard {
             refreshBtn.addEventListener('click', () => this.refreshData());
         }
         
-        // Tool cards
-        document.querySelectorAll('.tool-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const tool = this.sanitizeInput(card.dataset.tool);
-                if (this.allowedTools.includes(tool)) {
-                    this.openTool(tool);
-                }
-            });
+        // Tool cards - set up click events on buttons
+        console.log('Setting up tool card event listeners...');
+        const toolCards = document.querySelectorAll('.tool-card');
+        console.log(`Found ${toolCards.length} tool cards`);
+        
+        document.querySelectorAll('.tool-card').forEach((card, index) => {
+            const button = card.querySelector('button');
+            const tool = this.sanitizeInput(card.dataset.tool);
+            console.log(`[${index}] Setting up tool card for: "${tool}", button found: ${!!button}, card element:`, card);
+            
+            if (button) {
+                console.log(`[${index}] Adding click listener to button for tool: ${tool}`);
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`[CLICK EVENT] Tool button clicked for: "${tool}"`);
+                    console.log(`[CLICK EVENT] Event target:`, e.target);
+                    console.log(`[CLICK EVENT] Current tool in allowed list:`, this.allowedTools.includes(tool));
+                    
+                    if (this.allowedTools.includes(tool)) {
+                        console.log(`[CLICK EVENT] Opening tool: ${tool}`);
+                        this.openTool(tool);
+                    } else {
+                        console.error(`[CLICK EVENT] Tool not allowed: "${tool}", allowed tools:`, this.allowedTools);
+                    }
+                });
+                
+                // Test button accessibility
+                console.log(`[${index}] Button attributes:`, {
+                    className: button.className,
+                    disabled: button.disabled,
+                    style: button.style.cssText,
+                    textContent: button.textContent
+                });
+                
+            } else {
+                console.warn(`[${index}] No button found for tool card: "${tool}"`);
+                console.log(`[${index}] Card HTML:`, card.innerHTML);
+            }
         });
         
         // Log type selector
@@ -155,8 +186,7 @@ class EngineScriptDashboard {
             'security': 'Security Overview',
             'backups': 'Backup Management',
             'logs': 'System Logs',
-            'tools': 'Admin Tools',
-            'documentation': 'Documentation'
+            'tools': 'Admin Tools'
         };
         return titles[pageName] || 'Dashboard';
     }
@@ -189,9 +219,6 @@ class EngineScriptDashboard {
                 break;
             case 'tools':
                 this.checkToolAvailability();
-                break;
-            case 'documentation':
-                // Documentation page doesn't need dynamic data loading
                 break;
         }
     }
@@ -560,23 +587,44 @@ class EngineScriptDashboard {
             return;
         }
         
-        // Get the current URL components
-        const currentHost = window.location.host; // includes port if present
-        const protocol = window.location.protocol;
+        console.log(`[OPEN TOOL] Opening tool: "${toolName}"`);
+        console.log(`[OPEN TOOL] Current location:`, {
+            href: window.location.href,
+            host: window.location.host,
+            protocol: window.location.protocol,
+            pathname: window.location.pathname
+        });
         
-        // For admin control panel, tools are accessible via the same host
-        // since we're already on the admin subdomain or IP
+        // Use relative URLs that work from the admin subdomain or direct IP
         const toolUrls = {
-            'phpmyadmin': `${protocol}//${currentHost}/phpmyadmin/`,
-            'phpinfo': `${protocol}//${currentHost}/phpinfo/`,
-            'phpsysinfo': `${protocol}//${currentHost}/phpsysinfo/`,
-            'adminer': `${protocol}//${currentHost}/adminer/`
+            'phpmyadmin': '/phpmyadmin/',
+            'phpinfo': '/phpinfo/',
+            'phpsysinfo': '/phpsysinfo/',
+            'adminer': '/adminer/'
         };
         
         const url = toolUrls[toolName];
         if (url) {
-            // Use noopener and noreferrer for security
-            window.open(url, '_blank', 'noopener,noreferrer');
+            console.log(`[OPEN TOOL] Opening tool URL: "${url}"`);
+            console.log(`[OPEN TOOL] Full URL would be: ${window.location.protocol}//${window.location.host}${url}`);
+            
+            try {
+                // Use noopener and noreferrer for security
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                
+                if (newWindow) {
+                    console.log(`[OPEN TOOL] Successfully opened new window for: ${toolName}`);
+                } else {
+                    console.error(`[OPEN TOOL] Failed to open new window - likely blocked by popup blocker`);
+                    // Fallback: try to navigate in current tab as a test
+                    console.log(`[OPEN TOOL] Popup blocked. You can manually test the URL: ${url}`);
+                }
+            } catch (error) {
+                console.error(`[OPEN TOOL] Error opening tool window:`, error);
+            }
+        } else {
+            console.error(`[OPEN TOOL] URL not found for tool: "${toolName}"`);
+            console.log(`[OPEN TOOL] Available tool URLs:`, toolUrls);
         }
     }
     
@@ -817,12 +865,13 @@ class EngineScriptDashboard {
         
         // Remove potentially dangerous characters and patterns
         return input
-            .replace(/[<>&"']/g, '') // Remove HTML/XML special characters
+            .replace(/\0/g, '') // Remove null bytes first
+            .replace(/[<>&"'`\r\n\t]/g, '') // Remove HTML/XML special characters including backticks and whitespace chars
             .replace(/javascript:/gi, '') // Remove javascript: protocol
             .replace(/data:/gi, '') // Remove data: protocol
             .replace(/vbscript:/gi, '') // Remove vbscript: protocol
             .replace(/on\w+=/gi, '') // Remove event handlers
-            .replace(/\0/g, '') // Remove null bytes
+            .replace(/[\x00-\x1F\x7F]/g, '') // Remove all control characters
             .trim()
             .substring(0, 1000); // Limit length
     }
@@ -843,12 +892,15 @@ class EngineScriptDashboard {
         }
         
         // For logs, we allow more characters but still remove dangerous patterns
+        // Keep line breaks and basic formatting for readability but remove XSS vectors
         return input
-            .replace(/javascript:/gi, '')
-            .replace(/data:/gi, '')
-            .replace(/vbscript:/gi, '')
-            .replace(/on\w+=/gi, '')
-            .replace(/\0/g, '')
+            .replace(/\0/g, '') // Remove null bytes first
+            .replace(/[<>&"'`]/g, '') // Remove HTML/XML special characters that could break out of attributes
+            .replace(/javascript:/gi, '') // Remove javascript: protocol
+            .replace(/data:/gi, '') // Remove data: protocol
+            .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+            .replace(/on\w+=/gi, '') // Remove event handlers
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars but keep \t, \n, \r
             .substring(0, 50000); // Reasonable log size limit
     }
     
@@ -1120,6 +1172,45 @@ class EngineScriptDashboard {
         return backupDiv;
     }
     
+    // Debug method for manual testing from console
+    debugTools() {
+        console.log('=== EngineScript Dashboard Tool Debug ===');
+        console.log('Available tools:', this.allowedTools);
+        
+        // Test each tool URL
+        this.allowedTools.forEach(tool => {
+            const toolUrls = {
+                'phpmyadmin': '/phpmyadmin/',
+                'phpinfo': '/phpinfo/',
+                'phpsysinfo': '/phpsysinfo/',
+                'adminer': '/adminer/'
+            };
+            
+            const url = toolUrls[tool];
+            const fullUrl = `${window.location.protocol}//${window.location.host}${url}`;
+            console.log(`${tool}: ${url} -> ${fullUrl}`);
+        });
+        
+        // Test button elements
+        const toolCards = document.querySelectorAll('.tool-card');
+        console.log(`Found ${toolCards.length} tool cards:`);
+        
+        toolCards.forEach((card, index) => {
+            const tool = card.dataset.tool;
+            const button = card.querySelector('button');
+            console.log(`  [${index}] Tool: ${tool}, Button: ${!!button}`);
+            
+            if (button) {
+                console.log(`    Button text: "${button.textContent.trim()}"`);
+                console.log(`    Button disabled: ${button.disabled}`);
+                console.log(`    Button class: "${button.className}"`);
+            }
+        });
+        
+        console.log('To test a tool manually, run: window.engineScriptDashboard.openTool("phpmyadmin")');
+        console.log('=== End Debug ===');
+    }
+    
     // Cleanup method
     destroy() {
         if (this.refreshTimer) {
@@ -1154,10 +1245,21 @@ if (window.top !== window.self) {
     window.top.location = window.self.location;
 }
 
-// Security: Remove console access in production
-if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+// Security: Remove console access in production (but not on admin interfaces)
+if (window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' && 
+    !window.location.hostname.includes('admin')) {
     // Disable console in production
     if (typeof console !== 'undefined') {
         console.log = console.warn = console.error = console.info = console.debug = function() {};
     }
 }
+
+// Global debug function for console access
+window.debugEngineScript = function() {
+    if (window.engineScriptDashboard && window.engineScriptDashboard.debugTools) {
+        window.engineScriptDashboard.debugTools();
+    } else {
+        console.log('Dashboard not initialized yet. Please wait for page load.');
+    }
+};
