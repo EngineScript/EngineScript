@@ -579,46 +579,7 @@ body {
     font-size: 0.875rem;
 }
 
-/* Security Grid */
-.security-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-}
 
-.security-item {
-    display: flex;
-    align-items: center;
-    padding: 1.5rem;
-    background: var(--secondary-bg);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-}
-
-.security-icon {
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-}
-
-.security-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.security-content h4 {
-    margin-bottom: 0.5rem;
-}
-
-.security-content p {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-}
 
 /* Backup Grid */
 .backup-grid {

@@ -43,9 +43,6 @@
                 <li class="nav-item" data-page="system">
                     <a href="#"><i class="fas fa-cogs"></i> System</a>
                 </li>
-                <li class="nav-item" data-page="security">
-                    <a href="#"><i class="fas fa-shield-alt"></i> Security</a>
-                </li>
                 <li class="nav-item" data-page="backups">
                     <a href="#"><i class="fas fa-cloud-upload-alt"></i> Backups</a>
                 </li>
@@ -306,9 +303,6 @@
             <div class="page-content" id="sites-page" style="display: none;">
                 <div class="page-header">
                     <h2>WordPress Sites</h2>
-                    <button class="btn btn-primary" id="add-site-btn">
-                        <i class="fas fa-plus"></i> Add New Site
-                    </button>
                 </div>
                 
                 <div class="sites-grid" id="sites-grid">
@@ -342,50 +336,6 @@
                         </div>
                         <div class="card-body">
                             <canvas id="resource-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Page -->
-            <div class="page-content" id="security-page" style="display: none;">
-                <div class="content-row">
-                    <div class="card col-12">
-                        <div class="card-header">
-                            <h3><i class="fas fa-shield-alt"></i> Security Overview</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="security-grid">
-                                <div class="security-item">
-                                    <div class="security-icon">
-                                        <i class="fas fa-lock"></i>
-                                    </div>
-                                    <div class="security-content">
-                                        <h4>SSL Certificates</h4>
-                                        <p id="ssl-status">Checking...</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="security-item">
-                                    <div class="security-icon">
-                                        <i class="fas fa-fire"></i>
-                                    </div>
-                                    <div class="security-content">
-                                        <h4>Firewall Status</h4>
-                                        <p id="firewall-status">Checking...</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="security-item">
-                                    <div class="security-icon">
-                                        <i class="fas fa-bug"></i>
-                                    </div>
-                                    <div class="security-content">
-                                        <h4>Malware Scanning</h4>
-                                        <p id="malware-status">Checking...</p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -435,62 +385,51 @@
 
             <!-- Tools Page -->
             <div class="page-content" id="tools-page" style="display: none;">
+                <div class="page-header">
+                    <h1><i class="fas fa-tools"></i> Administrative Tools</h1>
+                    <p>Access database management and system administration tools</p>
+                </div>
+                
                 <div class="tools-grid">
-                    <div class="tool-card" data-tool="phpmyadmin">
+                    <a href="/phpmyadmin/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fas fa-database"></i>
                         </div>
                         <div class="tool-content">
                             <h3>phpMyAdmin</h3>
-                            <p>Database management interface</p>
-                            <button class="btn btn-primary">Open</button>
-                            <div style="margin-top: 8px; font-size: 12px; color: #888;">
-                                Debug: <a href="/phpmyadmin/" target="_blank" style="color: #00d4aa;">/phpmyadmin/</a>
-                            </div>
+                            <p>Full-featured database administration interface for MySQL/MariaDB</p>
                         </div>
-                    </div>
+                    </a>
                     
-                    <div class="tool-card" data-tool="phpinfo">
+                    <a href="/phpinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fab fa-php"></i>
                         </div>
                         <div class="tool-content">
                             <h3>PHP Info</h3>
-                            <p>PHP configuration details</p>
-                            <button class="btn btn-primary">Open</button>
-                            <div style="margin-top: 8px; font-size: 12px; color: #888;">
-                                Debug: <a href="/phpinfo/" target="_blank" style="color: #00d4aa;">/phpinfo/</a>
-                            </div>
+                            <p>Comprehensive PHP configuration and environment information</p>
                         </div>
-                    </div>
+                    </a>
                     
-                    <div class="tool-card" data-tool="phpsysinfo">
+                    <a href="/phpsysinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fas fa-server"></i>
                         </div>
                         <div class="tool-content">
                             <h3>System Info</h3>
-                            <p>Detailed system information</p>
-                            <button class="btn btn-primary">Open</button>
-                            <div style="margin-top: 8px; font-size: 12px; color: #888;">
-                                Debug: <a href="/phpsysinfo/" target="_blank" style="color: #00d4aa;">/phpsysinfo/</a>
-                            </div>
+                            <p>Detailed system hardware and software information display</p>
                         </div>
-                    </div>
+                    </a>
                     
-                    <div class="tool-card" data-tool="adminer" id="adminer-tool">
+                    <a href="/adminer/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
-                            <i class="fas fa-table"></i>
+                            <i class="fas fa-database"></i>
                         </div>
                         <div class="tool-content">
                             <h3>Adminer</h3>
-                            <p>Lightweight database tool</p>
-                            <button class="btn btn-primary">Open</button>
-                            <div style="margin-top: 8px; font-size: 12px; color: #888;">
-                                Debug: <a href="/adminer/" target="_blank" style="color: #00d4aa;">/adminer/</a>
-                            </div>
+                            <p>Lightweight database management interface alternative</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 

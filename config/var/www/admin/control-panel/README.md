@@ -14,10 +14,9 @@ This directory contains the modern admin dashboard for EngineScript server manag
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Real-time Monitoring**: Live server statistics and service status
 - **Interactive Charts**: Performance monitoring with Chart.js
-- **Multi-page Dashboard**: Overview, Sites, System, Security, Backups, Logs, and Tools
+- **Multi-page Dashboard**: Overview, Sites, System, Backups, Logs, and Tools
 - **Service Management**: Monitor Nginx, PHP, MariaDB, and Redis
 - **WordPress Site Management**: View and manage WordPress installations
-- **Security Monitoring**: SSL certificates, firewall, and malware scanning
 - **Log Viewer**: Real-time log viewing with filtering
 - **Admin Tools**: Quick access to phpMyAdmin, PHPinfo, and other tools
 
@@ -27,7 +26,6 @@ The dashboard is designed to work with RESTful API endpoints for real-time data:
 
 - `/api/system/*` - System information and statistics
 - `/api/sites/*` - WordPress site management
-- `/api/security/*` - Security status and alerts
 - `/api/backups/*` - Backup status and management
 - `/api/logs/*` - Log file access
 - `/api/services/*` - Service status monitoring
@@ -40,7 +38,6 @@ The dashboard is designed to work with RESTful API endpoints for real-time data:
 - Advanced monitoring and alerting
 - Site deployment and management tools
 - Automated backup scheduling
-- Security scanning and hardening tools
 
 ## Installation
 

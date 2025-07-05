@@ -12,7 +12,7 @@ class EngineScriptDashboard {
         this.minRefreshInterval = 5000;   // 5 seconds min
         this.allowedLogTypes = ['enginescript', 'nginx', 'php', 'mysql', 'redis', 'system'];
         this.allowedTimeRanges = ['1h', '6h', '24h', '48h'];
-        this.allowedPages = ['overview', 'sites', 'system', 'security', 'backups', 'logs', 'tools'];
+        this.allowedPages = ['overview', 'sites', 'system', 'backups', 'logs', 'tools'];
         this.allowedTools = ['phpmyadmin', 'phpinfo', 'phpsysinfo', 'adminer'];
         
         this.init();
@@ -48,47 +48,6 @@ class EngineScriptDashboard {
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.refreshData());
         }
-        
-        // Tool cards - set up click events on buttons
-        console.log('Setting up tool card event listeners...');
-        const toolCards = document.querySelectorAll('.tool-card');
-        console.log(`Found ${toolCards.length} tool cards`);
-        
-        document.querySelectorAll('.tool-card').forEach((card, index) => {
-            const button = card.querySelector('button');
-            const tool = this.sanitizeInput(card.dataset.tool);
-            console.log(`[${index}] Setting up tool card for: "${tool}", button found: ${!!button}, card element:`, card);
-            
-            if (button) {
-                console.log(`[${index}] Adding click listener to button for tool: ${tool}`);
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log(`[CLICK EVENT] Tool button clicked for: "${tool}"`);
-                    console.log(`[CLICK EVENT] Event target:`, e.target);
-                    console.log(`[CLICK EVENT] Current tool in allowed list:`, this.allowedTools.includes(tool));
-                    
-                    if (this.allowedTools.includes(tool)) {
-                        console.log(`[CLICK EVENT] Opening tool: ${tool}`);
-                        this.openTool(tool);
-                    } else {
-                        console.error(`[CLICK EVENT] Tool not allowed: "${tool}", allowed tools:`, this.allowedTools);
-                    }
-                });
-                
-                // Test button accessibility
-                console.log(`[${index}] Button attributes:`, {
-                    className: button.className,
-                    disabled: button.disabled,
-                    style: button.style.cssText,
-                    textContent: button.textContent
-                });
-                
-            } else {
-                console.warn(`[${index}] No button found for tool card: "${tool}"`);
-                console.log(`[${index}] Card HTML:`, card.innerHTML);
-            }
-        });
         
         // Log type selector
         const logTypeSelect = document.getElementById('log-type');
@@ -183,7 +142,6 @@ class EngineScriptDashboard {
             'overview': 'Overview',
             'sites': 'WordPress Sites',
             'system': 'System Information',
-            'security': 'Security Overview',
             'backups': 'Backup Management',
             'logs': 'System Logs',
             'tools': 'Admin Tools'
@@ -208,17 +166,11 @@ class EngineScriptDashboard {
             case 'system':
                 this.loadSystemInfo();
                 break;
-            case 'security':
-                this.loadSecurityStatus();
-                break;
             case 'backups':
                 this.loadBackupStatus();
                 break;
             case 'logs':
                 this.loadLogs('enginescript');
-                break;
-            case 'tools':
-                this.checkToolAvailability();
                 break;
         }
     }
@@ -493,24 +445,6 @@ class EngineScriptDashboard {
         }
     }
     
-    async loadSecurityStatus() {
-        try {
-            const security = await this.getApiData('/api/security/status', {});
-            
-            // Update SSL status safely
-            this.setTextContent('ssl-status', this.sanitizeInput(security.ssl) || 'Checking SSL certificates...');
-            
-            // Update firewall status safely
-            this.setTextContent('firewall-status', this.sanitizeInput(security.firewall) || 'Checking firewall status...');
-            
-            // Update malware status safely
-            this.setTextContent('malware-status', this.sanitizeInput(security.malware) || 'Checking malware scanner...');
-            
-        } catch (error) {
-            console.error('Failed to load security status:', error);
-        }
-    }
-    
     async loadBackupStatus() {
         try {
             const backups = await this.getApiData('/api/backups', []);
@@ -559,72 +493,6 @@ class EngineScriptDashboard {
             }
         } catch (error) {
             console.error(`Failed to load ${logType} logs:`, error);
-        }
-    }
-    
-    checkToolAvailability() {
-        // Check if Adminer is installed
-        const adminerTool = document.getElementById('adminer-tool');
-        if (adminerTool) {
-            // This would be replaced with actual API call
-            const adminerInstalled = false; // Placeholder
-            if (!adminerInstalled) {
-                adminerTool.style.opacity = '0.5';
-                adminerTool.style.pointerEvents = 'none';
-                const button = adminerTool.querySelector('button');
-                if (button) {
-                    button.textContent = 'Not Installed';
-                    button.disabled = true;
-                }
-            }
-        }
-    }
-    
-    openTool(toolName) {
-        // Validate tool name
-        if (!this.allowedTools.includes(toolName)) {
-            console.error('Invalid tool name:', toolName);
-            return;
-        }
-        
-        console.log(`[OPEN TOOL] Opening tool: "${toolName}"`);
-        console.log(`[OPEN TOOL] Current location:`, {
-            href: window.location.href,
-            host: window.location.host,
-            protocol: window.location.protocol,
-            pathname: window.location.pathname
-        });
-        
-        // Use relative URLs that work from the admin subdomain or direct IP
-        const toolUrls = {
-            'phpmyadmin': '/phpmyadmin/',
-            'phpinfo': '/phpinfo/',
-            'phpsysinfo': '/phpsysinfo/',
-            'adminer': '/adminer/'
-        };
-        
-        const url = toolUrls[toolName];
-        if (url) {
-            console.log(`[OPEN TOOL] Opening tool URL: "${url}"`);
-            console.log(`[OPEN TOOL] Full URL would be: ${window.location.protocol}//${window.location.host}${url}`);
-            
-            try {
-                // Use noopener and noreferrer for security
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                
-                if (newWindow) {
-                    console.log(`[OPEN TOOL] Successfully opened new window for: ${toolName}`);
-                } else {
-                    console.error(`[OPEN TOOL] Failed to open new window - likely blocked by popup blocker`);
-                    // Fallback: try to navigate in current tab as a test
-                    console.log(`[OPEN TOOL] Popup blocked. You can manually test the URL: ${url}`);
-                }
-            } catch (error) {
-                console.error(`[OPEN TOOL] Error opening tool window:`, error);
-            }
-        } else {
-            console.error(`[OPEN TOOL] URL not found for tool: "${toolName}"`);
-            console.log(`[OPEN TOOL] Available tool URLs:`, toolUrls);
         }
     }
     
@@ -1065,24 +933,24 @@ class EngineScriptDashboard {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'site-actions';
         
-        const visitBtn = document.createElement('button');
-        visitBtn.className = 'btn btn-primary';
-        visitBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Visit';
-        
-        // Safe URL handling
+        // Create a direct link instead of a button with JavaScript
         const domain = this.sanitizeInput(site.domain);
         if (domain && /^[a-zA-Z0-9.-]+$/.test(domain)) {
-            visitBtn.addEventListener('click', () => {
-                const newWindow = window.open('', '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                    newWindow.location.href = `https://${domain}`;
-                }
-            });
+            const visitLink = document.createElement('a');
+            visitLink.href = `https://${domain}`;
+            visitLink.target = '_blank';
+            visitLink.rel = 'noopener noreferrer';
+            visitLink.className = 'btn btn-primary';
+            visitLink.innerHTML = '<i class="fas fa-external-link-alt"></i> Visit';
+            actionsDiv.appendChild(visitLink);
         } else {
-            visitBtn.disabled = true;
+            const disabledSpan = document.createElement('span');
+            disabledSpan.className = 'btn btn-primary disabled';
+            disabledSpan.innerHTML = '<i class="fas fa-external-link-alt"></i> Visit';
+            disabledSpan.style.opacity = '0.5';
+            disabledSpan.style.pointerEvents = 'none';
+            actionsDiv.appendChild(disabledSpan);
         }
-        
-        actionsDiv.appendChild(visitBtn);
         
         siteDiv.appendChild(headerDiv);
         siteDiv.appendChild(infoDiv);
@@ -1176,45 +1044,6 @@ class EngineScriptDashboard {
         return backupDiv;
     }
     
-    // Debug method for manual testing from console
-    debugTools() {
-        console.log('=== EngineScript Dashboard Tool Debug ===');
-        console.log('Available tools:', this.allowedTools);
-        
-        // Test each tool URL
-        this.allowedTools.forEach(tool => {
-            const toolUrls = {
-                'phpmyadmin': '/phpmyadmin/',
-                'phpinfo': '/phpinfo/',
-                'phpsysinfo': '/phpsysinfo/',
-                'adminer': '/adminer/'
-            };
-            
-            const url = toolUrls[tool];
-            const fullUrl = `${window.location.protocol}//${window.location.host}${url}`;
-            console.log(`${tool}: ${url} -> ${fullUrl}`);
-        });
-        
-        // Test button elements
-        const toolCards = document.querySelectorAll('.tool-card');
-        console.log(`Found ${toolCards.length} tool cards:`);
-        
-        toolCards.forEach((card, index) => {
-            const tool = card.dataset.tool;
-            const button = card.querySelector('button');
-            console.log(`  [${index}] Tool: ${tool}, Button: ${!!button}`);
-            
-            if (button) {
-                console.log(`    Button text: "${button.textContent.trim()}"`);
-                console.log(`    Button disabled: ${button.disabled}`);
-                console.log(`    Button class: "${button.className}"`);
-            }
-        });
-        
-        console.log('To test a tool manually, run: window.engineScriptDashboard.openTool("phpmyadmin")');
-        console.log('=== End Debug ===');
-    }
-    
     // Cleanup method
     destroy() {
         if (this.refreshTimer) {
@@ -1258,12 +1087,3 @@ if (window.location.hostname !== 'localhost' &&
         console.log = console.warn = console.error = console.info = console.debug = function() {};
     }
 }
-
-// Global debug function for console access
-window.debugEngineScript = function() {
-    if (window.engineScriptDashboard && window.engineScriptDashboard.debugTools) {
-        window.engineScriptDashboard.debugTools();
-    } else {
-        console.log('Dashboard not initialized yet. Please wait for page load.');
-    }
-};
