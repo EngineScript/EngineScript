@@ -10,7 +10,7 @@
 // Prevent direct access if not from proper context
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) {
     http_response_code(403);
-    exit('Direct access forbidden');
+    die('Direct access forbidden');
 }
 
 // Security headers
@@ -23,13 +23,16 @@ header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';
 
 // Secure CORS - Only allow same origin by default
 $allowed_origins = [
-    $_SERVER['HTTP_HOST'],
+    isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '',
     'localhost',
     '127.0.0.1'
 ];
 
-$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? '';
-$origin_host = parse_url($origin, PHP_URL_HOST) ?: $origin;
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '');
+$origin_host = parse_url($origin, PHP_URL_HOST);
+if ($origin_host === false) {
+    $origin_host = $origin;
+}
 
 if (in_array($origin_host, $allowed_origins, true) || 
     preg_match('/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/', $origin_host)) {
@@ -44,8 +47,10 @@ header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Max-Age: 86400');
 
 // Rate limiting (basic implementation)
-session_start();
-$client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
 
 if (!isset($_SESSION[$rate_limit_key])) {
@@ -60,26 +65,26 @@ if (time() > $_SESSION[$rate_limit_key]['reset']) {
 // Check rate limit (100 requests per minute)
 if ($_SESSION[$rate_limit_key]['count'] >= 100) {
     http_response_code(429);
-    exit(json_encode(['error' => 'Rate limit exceeded']));
+    die(json_encode(['error' => 'Rate limit exceeded']));
 }
 
 $_SESSION[$rate_limit_key]['count']++;
 
 // Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit();
+    die();
 }
 
 // Only allow GET requests for security
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
-    exit(json_encode(['error' => 'Method not allowed']));
+    die(json_encode(['error' => 'Method not allowed']));
 }
 
 // Get the request URI and method
-$request_uri = $_SERVER['REQUEST_URI'] ?? '';
-$request_method = $_SERVER['REQUEST_METHOD'] ?? '';
+$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+$request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '';
 
 // Input validation and sanitization
 function validateInput($input, $type = 'string', $max_length = 255) {
@@ -95,7 +100,8 @@ function validateInput($input, $type = 'string', $max_length = 255) {
             }
             // Remove any potential script tags or dangerous characters
             $input = preg_replace('/[<>"\']/', '', $input);
-            return filter_var($input, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+            // Use htmlspecialchars instead of deprecated FILTER_SANITIZE_STRING
+            return htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             
         case 'path':
             // Strict path validation - only allow alphanumeric, dash, underscore, dot
@@ -134,7 +140,7 @@ function logSecurityEvent($event, $details = '') {
     if ($details) {
         $log_entry .= " - " . $details;
     }
-    $log_entry .= " - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . "\n";
+    $log_entry .= " - IP: " . (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown') . "\n";
     
     // Log to a secure location
     $log_file = '/var/log/enginescript-api-security.log';
@@ -150,7 +156,7 @@ if ($path === false) {
 }
 
 // Check if endpoint is passed as a query parameter (from nginx rewrite)
-$endpoint_param = $_GET['endpoint'] ?? '';
+$endpoint_param = isset($_GET['endpoint']) ? $_GET['endpoint'] : '';
 if (!empty($endpoint_param)) {
     // Use the endpoint parameter from the query string
     $path = '/' . ltrim($endpoint_param, '/');
@@ -163,7 +169,7 @@ if (!empty($endpoint_param)) {
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
     http_response_code(400);
     logSecurityEvent('Suspicious path', $path);
-    exit(json_encode(['error' => 'Invalid path']));
+    die(json_encode(['error' => 'Invalid path']));
 }
 
 // Route handling
@@ -199,15 +205,6 @@ switch ($path) {
     
     case '/sites/count':
         handleSitesCount();
-        break;
-    
-    case '/security/status':
-        handleSecurityStatus();
-        break;
-    
-    case '/backups':
-    case '/backups/':
-        handleBackups();
         break;
     
     case '/activity/recent':
@@ -338,31 +335,6 @@ function handleSitesCount() {
     }
 }
 
-function handleSecurityStatus() {
-    try {
-        $status = [
-            'ssl' => getSSLStatus(),
-            'firewall' => getFirewallStatus(),
-            'malware' => getMalwareStatus()
-        ];
-        echo json_encode(sanitizeOutput($status));
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Security status error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve security status']);
-    }
-}
-
-function handleBackups() {
-    try {
-        echo json_encode(sanitizeOutput(getBackupStatus()));
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Backups error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve backup status']);
-    }
-}
-
 function handleRecentActivity() {
     try {
         echo json_encode(sanitizeOutput(getRecentActivity()));
@@ -472,7 +444,19 @@ function getOsInfo() {
 }
 
 function getKernelVersion() {
-    return trim(shell_exec('uname -r')) ?: 'Unknown';
+    try {
+        $version = shell_exec('uname -r 2>/dev/null');
+        if ($version !== null) {
+            $version = trim($version);
+            // Validate kernel version format
+            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $version)) {
+                return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            }
+        }
+    } catch (Exception $e) {
+        logSecurityEvent('Kernel version error', $e->getMessage());
+    }
+    return 'Unknown';
 }
 
 function getTotalMemory() {
@@ -498,6 +482,8 @@ function getNetworkInfo() {
         $hostname = gethostname();
         if ($hostname === false) {
             $hostname = 'Unknown';
+        } else {
+            $hostname = htmlspecialchars($hostname, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
         
         // Use safer method to get IP
@@ -506,17 +492,19 @@ function getNetworkInfo() {
         // Try to get IP from /proc/net/fib_trie (safer than shell commands)
         if (file_exists('/proc/net/route')) {
             // Fallback to safer shell command with validation
-            $ip_output = shell_exec("ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}'");
-            if ($ip_output) {
+            $ip_output = shell_exec("ip route get 8.8.8.8 2>/dev/null | awk '{print \$7; exit}'");
+            if ($ip_output !== null) {
                 $ip = trim($ip_output);
                 // Validate the IP
                 if (!filter_var($ip, FILTER_VALIDATE_IP)) {
                     $ip = 'Unknown';
+                } else {
+                    $ip = htmlspecialchars($ip, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
             }
         }
         
-        return trim($hostname . ' (' . $ip . ')');
+        return $hostname . ' (' . $ip . ')';
     } catch (Exception $e) {
         logSecurityEvent('Network info error', $e->getMessage());
         return 'Unknown (Unknown)';
@@ -539,32 +527,33 @@ function getServiceStatus($service) {
         // Use escapeshellarg for additional safety
         $safe_service = escapeshellarg($service);
         $command = "systemctl is-active $safe_service 2>/dev/null";
-        $status = trim(shell_exec($command) ?? '');
+        $status_output = shell_exec($command);
+        $status = $status_output !== null ? trim($status_output) : '';
         
         $version = 'Unknown';
         switch ($service) {
             case 'nginx':
                 $version_output = shell_exec('nginx -v 2>&1');
-                if ($version_output && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = $matches[1];
+                if ($version_output !== null && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
                 break;
             case 'php8.3-fpm':
                 $version_output = shell_exec('php -v 2>/dev/null');
-                if ($version_output && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = $matches[1];
+                if ($version_output !== null && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
+                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
                 break;
             case 'mariadb':
                 $version_output = shell_exec('mariadb --version 2>/dev/null');
-                if ($version_output && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = $matches[1];
+                if ($version_output !== null && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
                 break;
             case 'redis-server':
                 $version_output = shell_exec('redis-server --version 2>/dev/null');
-                if ($version_output && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = $matches[1];
+                if ($version_output !== null && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
                 break;
         }
@@ -630,7 +619,10 @@ function getWordPressSites() {
                 if (strpos($config_content, 'wordpress') !== false || 
                     strpos($config_content, 'wp-') !== false) {
                     
-                    // Extract domain name safely
+                    // Extract domain name and document root safely
+                    $domain = '';
+                    $document_root = '';
+                    
                     if (preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
                         $domain = trim($matches[1]);
                         
@@ -640,14 +632,30 @@ function getWordPressSites() {
                         
                         // Validate domain format
                         if (filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-                            $sites[] = [
-                                'domain' => htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                                'status' => 'online',
-                                'wp_version' => 'Unknown',
-                                'ssl_status' => 'Enabled',
-                                'last_backup' => 'Unknown'
-                            ];
+                            $domain = htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                         }
+                    }
+                    
+                    // Extract document root for WordPress version detection
+                    if (preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
+                        $document_root = trim($matches[1]);
+                        // Validate and sanitize document root path
+                        if (preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
+                            $document_root = realpath($document_root);
+                        } else {
+                            $document_root = '';
+                        }
+                    }
+                    
+                    if (!empty($domain)) {
+                        $wp_version = getWordPressVersion($document_root);
+                        
+                        $sites[] = [
+                            'domain' => $domain,
+                            'status' => 'online',
+                            'wp_version' => $wp_version,
+                            'ssl_status' => 'Enabled'
+                        ];
                     }
                 }
             }
@@ -659,115 +667,47 @@ function getWordPressSites() {
     return $sites;
 }
 
-function getSSLStatus() {
-    // Check for SSL certificates
-    $ssl_dir = '/etc/letsencrypt/live';
-    if (is_dir($ssl_dir)) {
-        $cert_count = count(glob($ssl_dir . '/*', GLOB_ONLYDIR));
-        return "Active SSL certificates: $cert_count";
+/**
+ * Get WordPress version from a site's document root
+ * @param string $document_root The document root path of the WordPress installation
+ * @return string WordPress version or 'Unknown'
+ */
+function getWordPressVersion($document_root) {
+    if (empty($document_root) || !is_dir($document_root)) {
+        return 'Unknown';
     }
-    return 'No SSL certificates found';
-}
-
-function getFirewallStatus() {
-    $ufw_status = shell_exec('ufw status 2>/dev/null');
-    if (strpos($ufw_status, 'Status: active') !== false) {
-        return 'UFW Firewall: Active';
-    }
-    return 'UFW Firewall: Inactive';
-}
-
-function getMalwareStatus() {
-    if (file_exists('/usr/bin/clamscan')) {
-        return 'ClamAV: Installed and running';
-    }
-    return 'ClamAV: Not installed';
-}
-
-function getBackupStatus() {
-    $backups = [];
     
     try {
-        // Validate backup directories exist and are secure
-        $allowed_backup_dirs = [
-            '/var/backups/databases',
-            '/var/backups/files'
-        ];
+        // Check for wp-includes/version.php file
+        $version_file = $document_root . '/wp-includes/version.php';
+        $real_version_file = realpath($version_file);
         
-        foreach ($allowed_backup_dirs as $backup_dir) {
-            $real_path = realpath($backup_dir);
-            if ($real_path && $real_path === $backup_dir && is_dir($real_path)) {
-                
-                if ($backup_dir === '/var/backups/databases') {
-                    // Check for database backups safely
-                    $files = glob($real_path . '/*.sql*', GLOB_NOSORT);
-                    if ($files && count($files) > 0) {
-                        $latest_file = null;
-                        $latest_time = 0;
-                        
-                        foreach ($files as $file) {
-                            $file_time = filemtime($file);
-                            if ($file_time && $file_time > $latest_time) {
-                                $latest_time = $file_time;
-                                $latest_file = $file;
-                            }
-                        }
-                        
-                        if ($latest_file) {
-                            $backups[] = [
-                                'type' => 'Database',
-                                'last_run' => date('Y-m-d H:i:s', $latest_time),
-                                'status' => 'Success',
-                                'size' => human_filesize(filesize($latest_file))
-                            ];
-                        }
-                    }
-                }
-                
-                if ($backup_dir === '/var/backups/files') {
-                    // Check for file backups safely
-                    if (is_dir($real_path)) {
-                        $iterator = new DirectoryIterator($real_path);
-                        $has_backups = false;
-                        
-                        foreach ($iterator as $file) {
-                            if ($file->isFile()) {
-                                $has_backups = true;
-                                break;
-                            }
-                        }
-                        
-                        if ($has_backups) {
-                            $backups[] = [
-                                'type' => 'Files',
-                                'last_run' => 'Recent',
-                                'status' => 'Success',
-                                'size' => 'Multiple files'
-                            ];
-                        }
-                    }
+        // Ensure the file exists and is within the expected directory structure
+        if (!$real_version_file || 
+            strpos($real_version_file, realpath($document_root) . '/') !== 0) {
+            return 'Unknown';
+        }
+        
+        if (file_exists($real_version_file) && is_readable($real_version_file)) {
+            $content = file_get_contents($real_version_file);
+            if ($content === false) {
+                return 'Unknown';
+            }
+            
+            // Look for the WordPress version variable
+            if (preg_match('/\$wp_version\s*=\s*[\'"]([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/', $content, $matches)) {
+                $version = $matches[1];
+                // Validate version format
+                if (preg_match('/^[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?$/', $version)) {
+                    return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
             }
         }
     } catch (Exception $e) {
-        logSecurityEvent('Backup status error', $e->getMessage());
+        logSecurityEvent('WordPress version detection error', $e->getMessage());
     }
     
-    return $backups;
-}
-
-function human_filesize($size, $precision = 2) {
-    if ($size === false || $size < 0) {
-        return 'Unknown';
-    }
-    
-    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    
-    for ($i = 0; $size > 1024 && $i < count($units) - 1; $i++) {
-        $size /= 1024;
-    }
-    
-    return round($size, $precision) . ' ' . $units[$i];
+    return 'Unknown';
 }
 
 function getRecentActivity() {
