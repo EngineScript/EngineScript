@@ -700,17 +700,24 @@ class EngineScriptDashboard {
             return String(input || '');
         }
         
-        // Remove potentially dangerous characters and patterns
-        return input
-            .replace(/\0/g, '') // Remove null bytes first
-            .replace(/[<>&"'`\r\n\t]/g, '') // Remove HTML/XML special characters including backticks and whitespace chars
-            .replace(/javascript:/gi, '') // Remove javascript: protocol
-            .replace(/data:/gi, '') // Remove data: protocol
-            .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-            .replace(/on\w+=/gi, '') // Remove event handlers
-            .replace(/[\x00-\x1F\x7F]/g, '') // Remove all control characters
-            .trim()
-            .substring(0, 1000); // Limit length
+        // Remove potentially dangerous characters and patterns using global loop for complete sanitization
+        let sanitized = input;
+        let previous;
+        
+        // Loop until no more changes are made to handle patterns like "javjavascript:ascript:"
+        do {
+            previous = sanitized;
+            sanitized = sanitized
+                .replace(/\0/g, '') // Remove null bytes first
+                .replace(/[<>&"'`\r\n\t]/g, '') // Remove HTML/XML special characters including backticks and whitespace chars
+                .replace(/javascript:/gi, '') // Remove javascript: protocol
+                .replace(/data:/gi, '') // Remove data: protocol
+                .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+                .replace(/on\w+=/gi, '') // Remove event handlers
+                .replace(/[\x00-\x1F\x7F]/g, ''); // Remove all control characters
+        } while (sanitized !== previous);
+        
+        return sanitized.trim().substring(0, 1000); // Limit length
     }
     
     sanitizeNumeric(input, fallback = '0') {
@@ -730,10 +737,13 @@ class EngineScriptDashboard {
         
         // For logs, we allow more characters but still remove dangerous patterns
         // Keep line breaks and basic formatting for readability but remove XSS vectors
+        let sanitized = input;
         let previous;
+        
+        // Loop until no more changes are made to handle nested patterns
         do {
-            previous = input;
-            input = input
+            previous = sanitized;
+            sanitized = sanitized
                 .replace(/\0/g, '') // Remove null bytes first
                 .replace(/[<>&"'`]/g, '') // Remove HTML/XML special characters that could break out of attributes
                 .replace(/javascript:/gi, '') // Remove javascript: protocol
@@ -741,8 +751,9 @@ class EngineScriptDashboard {
                 .replace(/vbscript:/gi, '') // Remove vbscript: protocol
                 .replace(/on\w+=/gi, '') // Remove event handlers
                 .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control chars but keep \t, \n, \r
-        } while (input !== previous);
-        return input.substring(0, 50000); // Reasonable log size limit
+        } while (sanitized !== previous);
+        
+        return sanitized.substring(0, 50000); // Reasonable log size limit
     }
     
     setTextContent(elementId, content) {
