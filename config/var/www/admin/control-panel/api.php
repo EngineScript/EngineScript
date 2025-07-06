@@ -141,7 +141,7 @@ function sanitizeOutput($data) {
     return $data;
 }
 
-function logSecurityEvent($event, $details = '') {
+function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_SERVER access required for security logging in standalone API
     // Sanitize all log inputs to prevent log injection attacks
     $safe_event = preg_replace('/[\r\n\t]/', ' ', $event);
     $safe_event = substr(trim($safe_event), 0, 255); // Limit length
@@ -505,7 +505,9 @@ function getNetworkInfo() {
         $hostname = gethostname();
         if ($hostname === false) {
             $hostname = 'Unknown';
-        } else {
+        }
+        
+        if ($hostname !== 'Unknown') {
             $hostname = htmlspecialchars($hostname, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
         
@@ -521,7 +523,9 @@ function getNetworkInfo() {
                 // Validate the IP
                 if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
                     $client_ip = 'Unknown';
-                } else {
+                }
+                
+                if ($client_ip !== 'Unknown') {
                     $client_ip = htmlspecialchars($client_ip, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
             }
@@ -539,47 +543,12 @@ function getServiceStatus($service) {
     $service = validateInput($service, 'service');
     if ($service === false) {
         logSecurityEvent('Invalid service name attempted', $service);
-        return [
-            'status' => 'error',
-            'version' => 'Invalid',
-            'online' => false
-        ];
+        return createErrorServiceStatus();
     }
     
     try {
-        // Use escapeshellarg for additional safety
-        $safe_service = escapeshellarg($service);
-        $command = "systemctl is-active $safe_service 2>/dev/null";
-        $status_output = shell_exec($command);
-        $status = $status_output !== null ? trim($status_output) : '';
-        
-        $version = 'Unknown';
-        switch ($service) {
-            case 'nginx':
-                $version_output = shell_exec('nginx -v 2>&1');
-                if ($version_output !== null && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-                break;
-            case 'php8.3-fpm':
-                $version_output = shell_exec('php -v 2>/dev/null');
-                if ($version_output !== null && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-                break;
-            case 'mariadb':
-                $version_output = shell_exec('mariadb --version 2>/dev/null');
-                if ($version_output !== null && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-                break;
-            case 'redis-server':
-                $version_output = shell_exec('redis-server --version 2>/dev/null');
-                if ($version_output !== null && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-                    $version = htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-                break;
-        }
+        $status = getSystemServiceStatus($service);
+        $version = getServiceVersion($service);
         
         return [
             'status' => $status === 'active' ? 'online' : 'offline',
@@ -588,12 +557,70 @@ function getServiceStatus($service) {
         ];
     } catch (Exception $e) {
         logSecurityEvent('Service status error', $e->getMessage());
-        return [
-            'status' => 'error',
-            'version' => 'Error',
-            'online' => false
-        ];
+        return createErrorServiceStatus();
     }
+}
+
+function createErrorServiceStatus() {
+    return [
+        'status' => 'error',
+        'version' => 'Error',
+        'online' => false
+    ];
+}
+
+function getSystemServiceStatus($service) {
+    $safe_service = escapeshellarg($service);
+    $command = "systemctl is-active $safe_service 2>/dev/null";
+    $status_output = shell_exec($command);
+    return $status_output !== null ? trim($status_output) : '';
+}
+
+function getServiceVersion($service) {
+    switch ($service) {
+        case 'nginx':
+            return getNginxVersion();
+        case 'php8.3-fpm':
+            return getPhpVersion();
+        case 'mariadb':
+            return getMariadbVersion();
+        case 'redis-server':
+            return getRedisVersion();
+        default:
+            return 'Unknown';
+    }
+}
+
+function getNginxVersion() {
+    $version_output = shell_exec('nginx -v 2>&1');
+    if ($version_output !== null && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+        return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    return 'Unknown';
+}
+
+function getPhpVersion() {
+    $version_output = shell_exec('php -v 2>/dev/null');
+    if ($version_output !== null && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
+        return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    return 'Unknown';
+}
+
+function getMariadbVersion() {
+    $version_output = shell_exec('mariadb --version 2>/dev/null');
+    if ($version_output !== null && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+        return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    return 'Unknown';
+}
+
+function getRedisVersion() {
+    $version_output = shell_exec('redis-server --version 2>/dev/null');
+    if ($version_output !== null && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
+        return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    return 'Unknown';
 }
 
 function getWordPressSites() {
@@ -737,32 +764,10 @@ function getRecentActivity() {
     $activities = [];
     
     try {
-        // Check recent log entries safely
-        $auth_log = '/var/log/auth.log';
-        $real_auth_log = realpath($auth_log);
-        
-        if ($real_auth_log && $real_auth_log === '/var/log/auth.log' && 
-            file_exists($real_auth_log) && is_readable($real_auth_log)) {
-            
-            // Read last few lines safely without shell_exec
-            $handle = fopen($real_auth_log, 'r');
-            if ($handle) {
-                // Read last 1KB to look for recent logins
-                $file_size = filesize($real_auth_log);
-                if ($file_size && $file_size > 0) {
-                    fseek($handle, max(0, $file_size - 1024), SEEK_SET);
-                    $content = fread($handle, 1024);
-                    
-                    if ($content && strpos($content, 'Accepted') !== false) {
-                        $activities[] = [
-                            'message' => 'Recent SSH login detected',
-                            'time' => '5 minutes ago',
-                            'icon' => 'fa-sign-in-alt'
-                        ];
-                    }
-                }
-                fclose($handle);
-            }
+        // Check for SSH login activity
+        $ssh_activity = checkRecentSSHActivity();
+        if ($ssh_activity) {
+            $activities[] = $ssh_activity;
         }
         
         // Add system status update
@@ -782,6 +787,52 @@ function getRecentActivity() {
     }
     
     return $activities;
+}
+
+function checkRecentSSHActivity() {
+    $auth_log = '/var/log/auth.log';
+    $real_auth_log = realpath($auth_log);
+    
+    if (!isValidLogFile($real_auth_log, $auth_log)) {
+        return null;
+    }
+    
+    $handle = fopen($real_auth_log, 'r');
+    if (!$handle) {
+        return null;
+    }
+    
+    $ssh_activity = parseAuthLogForActivity($handle);
+    fclose($handle);
+    
+    return $ssh_activity;
+}
+
+function isValidLogFile($real_path, $expected_path) {
+    return $real_path && 
+           $real_path === $expected_path && 
+           file_exists($real_path) && 
+           is_readable($real_path);
+}
+
+function parseAuthLogForActivity($handle) {
+    $file_size = filesize('/var/log/auth.log');
+    if (!$file_size || $file_size <= 0) {
+        return null;
+    }
+    
+    fseek($handle, max(0, $file_size - 1024), SEEK_SET);
+    $content = fread($handle, 1024);
+    
+    if ($content && strpos($content, 'Accepted') !== false) {
+        return [
+            'message' => 'Recent SSH login detected',
+            'time' => '5 minutes ago',
+            'icon' => 'fa-sign-in-alt'
+        ];
+    }
+    
+    return null;
 }
 
 function getSystemAlerts() {

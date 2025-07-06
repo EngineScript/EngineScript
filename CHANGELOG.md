@@ -64,6 +64,19 @@ Changes are organized by date, with the most recent changes listed first.
     - Removed unused `$buffer` variable from log reading function
     - Renamed short variable names (`$ip` → `$client_ip`, `$mb` → `$memory_mb`, `$gb` → `$disk_gb`)
     - Improved variable naming for better code readability and maintainability
+    - Added appropriate Codacy ignore comment for `logSecurityEvent()` $_SERVER access
+    - Refactored high-complexity functions to improve maintainability and reduce cyclomatic complexity
+  - **Function Complexity Reduction**: Broke down complex functions into smaller, more manageable components
+    - **getRecentActivity()**: Reduced complexity from 11 to 3 by extracting helper functions
+      - Created `checkRecentSSHActivity()`, `isValidLogFile()`, and `parseAuthLogForActivity()` helpers
+      - Improved code readability and testability through function decomposition
+    - **getServiceStatus()**: Reduced complexity from 16 to 4 by extracting version detection logic
+      - Created individual version detection functions (`getNginxVersion()`, `getPhpVersion()`, etc.)
+      - Separated service status checking from version detection for better maintainability
+      - Added `createErrorServiceStatus()` helper for consistent error responses
+    - **getNetworkInfo()**: Eliminated else clause and improved code flow structure
+      - Replaced nested if-else with early return pattern for better readability
+      - Enhanced IP validation and sanitization logic
   - **CSS Standards Compliance**: Fixed color hex code formatting issues
     - Shortened hex color codes for better performance (`#333333` → `#333`, `#ffffff` → `#fff`, `#ff4444` → `#f44`)
     - Added proper spacing in CSS animation rules for better formatting
@@ -73,6 +86,8 @@ Changes are organized by date, with the most recent changes listed first.
     - Standardized quote usage (single quotes → double quotes for consistency)
     - Improved function and class formatting for better maintainability
     - Enhanced code structure organization and documentation
+    - Fixed navigation and page management function formatting
+    - Corrected element selector formatting and event handler structure
 - **Comprehensive Security Audit**: Addressed all Codacy security issues and implemented OWASP best practices
   - **Input Validation Fixes**: Implemented proper superglobal array access with `isset()` checks
     - Fixed all `$_SERVER`, `$_GET`, and `$_SESSION` array access to use `isset()` validation

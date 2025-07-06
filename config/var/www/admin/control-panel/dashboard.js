@@ -82,72 +82,72 @@ class EngineScriptDashboard {
     }
   }
     
-    setupNavigation() {
-        // Set up single page app navigation
-        const navItems = document.querySelectorAll('.nav-item');
-        const pages = document.querySelectorAll('.page-content');
-        
-        // Hide all pages except overview
-        pages.forEach(page => {
-            if (page.id !== 'overview-page') {
-                page.style.display = 'none';
-            }
-        });
+  setupNavigation() {
+    // Set up single page app navigation
+    const navItems = document.querySelectorAll(".nav-item");
+    const pages = document.querySelectorAll(".page-content");
+
+    // Hide all pages except overview
+    pages.forEach((page) => {
+      if (page.id !== "overview-page") {
+        page.style.display = "none";
+      }
+    });
+  }
+
+  navigateToPage(pageName) {
+    console.log(`Navigating to page: ${pageName}`);
+
+    // Validate page name
+    if (!this.allowedPages.includes(pageName)) {
+      console.error("Invalid page name:", pageName);
+      return;
     }
-    
-    navigateToPage(pageName) {
-        console.log(`Navigating to page: ${pageName}`);
-        
-        // Validate page name
-        if (!this.allowedPages.includes(pageName)) {
-            console.error('Invalid page name:', pageName);
-            return;
-        }
-        
-        // Update navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        const targetNav = document.querySelector(`[data-page="${pageName}"]`);
-        if (targetNav) {
-            targetNav.classList.add('active');
-            console.log(`Added active class to nav item: ${pageName}`);
-        } else {
-            console.error(`Nav item not found for page: ${pageName}`);
-        }
-        
-        // Update pages
-        document.querySelectorAll('.page-content').forEach(page => {
-            page.style.display = 'none';
-        });
-        const targetPage = document.getElementById(`${pageName}-page`);
-        if (targetPage) {
-            targetPage.style.display = 'block';
-            console.log(`Showing page: ${pageName}-page`);
-            // Scroll to top when navigating to a new page
-            targetPage.scrollTop = 0;
-            // Also scroll the main content area to top
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.scrollTop = 0;
-            }
-        } else {
-            console.error(`Page element not found: ${pageName}-page`);
-        }
-        
-        // Update page title
-        const pageTitle = document.getElementById('page-title');
-        if (pageTitle) {
-            pageTitle.textContent = this.getPageTitle(pageName);
-            console.log(`Updated page title to: ${this.getPageTitle(pageName)}`);
-        }
-        
-        // Load page-specific data
-        this.loadPageData(pageName);
-        this.currentPage = pageName;
+
+    // Update navigation
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.remove("active");
+    });
+    const targetNav = document.querySelector(`[data-page="${pageName}"]`);
+    if (targetNav) {
+      targetNav.classList.add("active");
+      console.log(`Added active class to nav item: ${pageName}`);
+    } else {
+      console.error(`Nav item not found for page: ${pageName}`);
     }
-    
-    getPageTitle(pageName) {
+
+    // Update pages
+    document.querySelectorAll(".page-content").forEach((page) => {
+      page.style.display = "none";
+    });
+    const targetPage = document.getElementById(`${pageName}-page`);
+    if (targetPage) {
+      targetPage.style.display = "block";
+      console.log(`Showing page: ${pageName}-page`);
+      // Scroll to top when navigating to a new page
+      targetPage.scrollTop = 0;
+      // Also scroll the main content area to top
+      const mainContent = document.querySelector(".main-content");
+      if (mainContent) {
+        mainContent.scrollTop = 0;
+      }
+    } else {
+      console.error(`Page element not found: ${pageName}-page`);
+    }
+
+    // Update page title
+    const pageTitle = document.getElementById("page-title");
+    if (pageTitle) {
+      pageTitle.textContent = this.getPageTitle(pageName);
+      console.log(`Updated page title to: ${this.getPageTitle(pageName)}`);
+    }
+
+    // Load page-specific data
+    this.loadPageData(pageName);
+    this.currentPage = pageName;
+  }
+
+  getPageTitle(pageName) {
         const titles = {
             'overview': 'Overview',
             'sites': 'WordPress Sites',
@@ -231,7 +231,7 @@ class EngineScriptDashboard {
     }
     
     showRefreshAnimation() {
-        const refreshBtn = document.getElementById('refresh-btn');
+        const refreshBtn = document.getElementById("refresh-btn");
         const icon = refreshBtn.querySelector('i');
         
         icon.style.animation = 'spin 1s linear';
