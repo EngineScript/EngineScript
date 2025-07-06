@@ -346,11 +346,18 @@
                             <h3><i class="fas fa-file-alt"></i> System Logs</h3>
                             <div class="card-actions">
                                 <select id="log-type">
+                                    <option value="syslog">System Log</option>
+                                    <option value="auth">Authentication Log</option>
                                     <option value="enginescript">EngineScript</option>
                                     <option value="nginx">Nginx</option>
                                     <option value="php">PHP</option>
                                     <option value="mysql">MariaDB</option>
+                                    <option value="redis">Redis</option>
+                                    <option value="cron">Cron</option>
                                 </select>
+                                <button id="log-diagnostic-btn" class="btn btn-secondary" title="Run log diagnostic">
+                                    <i class="fas fa-search"></i> Diagnostic
+                                </button>
                             </div>
                         </div>
                         <div class="card-body">

@@ -6,7 +6,35 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-06
 
-### 🔧 CODE QUALITY IMPROVEMENTS
+### � FINAL LOG VIEWER VERIFICATION & ENHANCEMENTS
+- **Log Viewer Functionality Verification**: Completed comprehensive verification of log file access and display
+  - **Improved Log Content Sanitization**: Enhanced sanitization to preserve log formatting while maintaining security
+    - Removed overly restrictive character filtering that was removing common log symbols
+    - Changed from whitelist approach to security-focused sanitization that preserves log readability
+    - Increased log size limit from 50KB to 100KB for better log coverage
+    - Enhanced sanitization to remove only HTML tags and control characters while preserving timestamps, paths, and symbols
+  - **Enhanced Error Handling**: Improved log loading with better feedback and state management
+    - Added loading state indicators while fetching log data
+    - Enhanced error messages to provide specific feedback on log accessibility issues
+    - Added automatic scrolling to bottom of logs to show most recent entries
+    - Improved null/empty response handling with specific user feedback
+  - **EngineScript Log Directory Management**: Added automatic creation of EngineScript log directories
+    - Created `ensureEngineScriptLogDirectory()` function to create `/var/log/EngineScript/` if missing
+    - Added proper directory permissions (755) and ownership (www-data) for web server access
+    - Integrated directory creation into log loading process for EngineScript-specific logs
+    - Added security event logging for directory creation operations
+  - **Comprehensive Log Diagnostic System**: Added diagnostic tools for troubleshooting log access
+    - Created `/api/logs/diagnostic` endpoint to check directory permissions and file accessibility
+    - Added diagnostic button to logs page for real-time log system status checking
+    - Diagnostic output includes directory status, file permissions, sample content, and error details
+    - Enhanced debugging capability to identify log access issues in different server environments
+  - **Log File Path Validation**: Enhanced security and compatibility for log file access
+    - Improved realpath validation to handle non-existent files in expected directory structures
+    - Added support for EngineScript logs that may not exist in fresh installations
+    - Enhanced path traversal protection with comprehensive expected path validation
+    - Added specific handling for different log types (system, service, EngineScript logs)
+
+### �🔧 CODE QUALITY IMPROVEMENTS
 - **Performance Chart Enhancements**: Implemented real system performance data and fixed chart sizing issues
   - **Real Data Integration**: Added `/api/system/performance` endpoint to provide actual CPU, memory, and disk usage data
     - Replaced random sample data with real system metrics from current usage values
@@ -41,7 +69,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Parameter Usage Optimization**: Fixed unused parameter in API methods
     - Modified `getApiData()` to properly utilize the fallback parameter on errors
     - Ensures proper error handling and graceful degradation
-- **Code Deduplication**: Eliminated 4 instances of code duplication across admin control panel
+- **Code Deduplication**: Eliminated 6 instances of code duplication across admin control panel
   - **Security Pattern Consolidation**: Extracted common dangerous pattern removal logic
     - Created `removeDangerousPatterns()` helper method to eliminate duplicated security code
     - Refactored `sanitizeInput()` and `sanitizeLogContent()` to use shared security patterns
@@ -51,6 +79,12 @@ Changes are organized by date, with the most recent changes listed first.
     - Refactored `createActivityElement()` and `createAlertElement()` to use shared logic
     - Reduced code duplication by 32 lines while maintaining identical functionality
     - Improved consistency in element creation patterns across the application
+  - **Chart Configuration Optimization**: Consolidated Chart.js configuration patterns
+    - Created `createPerformanceChartConfig()` helper method to eliminate duplicated chart options
+    - Refactored `loadPerformanceChartData()` and `loadFallbackChart()` to use shared configuration
+    - Created `createPerformanceChart()` helper method to consolidate chart creation logic
+    - Reduced code duplication by 108 lines while maintaining identical chart functionality
+    - Improved maintainability of chart configuration and creation across dashboard
 - **Best Practice Compliance**: Fixed multiple code style issues identified by linters
   - **Character Class Optimization**: Removed redundant characters in regex patterns
     - Removed unnecessary `_` from `[\w\s.\-_@#%]` since `\w` already includes underscore
@@ -58,6 +92,29 @@ Changes are organized by date, with the most recent changes listed first.
   - **Error Handling Enhancement**: Improved API error handling and browser compatibility
     - Enhanced fallback mechanisms for unsupported browser features
     - Improved error recovery and user experience across different environments
+- **Log Viewer Improvements**: Enhanced comprehensive log viewer functionality with better error handling and user feedback
+  - **Fixed Log Display Issue**: Resolved API response format mismatch preventing log content from displaying
+    - Updated `getApiData()` method to properly handle `/api/logs/` endpoints that return `{logs: 'content'}` format
+    - Fixed log viewer to extract actual log content from API response wrapper
+    - Enhanced error handling to show meaningful messages instead of failing silently
+  - **Enhanced Log Availability**: Improved log file detection and user feedback for missing or empty logs
+    - Updated default log selection to use system log (syslog) which is more likely to exist
+    - Added comprehensive error messages explaining why logs might not be available
+    - Enhanced log reading to provide context about file size, location, and status
+    - Added helpful troubleshooting information for missing service logs
+  - **Expanded Log Options**: Added more log types to log viewer interface
+    - Added system log, authentication log, Redis log, and cron log options to dropdown
+    - Reorganized log selector to prioritize commonly available logs first
+    - Improved log type descriptions for better user understanding
+  - **Sample Log Content**: Added demonstration log content for development and testing environments
+    - Generated realistic sample log entries when actual log files don't exist or are empty
+    - Provided context-appropriate sample content for each log type (system, auth, nginx, php, etc.)
+    - Enhanced user experience by showing what logs would look like when properly configured
+  - **Improved Log Reading**: Enhanced log file processing with better formatting and context
+    - Added file size information and line count to log headers
+    - Improved handling of empty log files with explanatory messages
+    - Enhanced permission error reporting with actionable troubleshooting steps
+    - Better formatting for both small files (complete content) and large files (last 100 lines)
 
 ## 2025-07-05
 

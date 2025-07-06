@@ -239,6 +239,17 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-secondary {
+    background: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--hover-color);
+    transform: translateY(-1px);
+}
+
 .btn i {
     margin-right: 0.5rem;
 }

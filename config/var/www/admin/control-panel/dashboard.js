@@ -83,6 +83,12 @@ class EngineScriptDashboard {
         }
       });
     }
+
+    // Log diagnostic button
+    const logDiagnosticBtn = document.getElementById("log-diagnostic-btn");
+    if (logDiagnosticBtn) {
+      logDiagnosticBtn.addEventListener("click", () => this.runLogDiagnostic());
+    }
   }
   setupNavigation() {
     // Set up single page app navigation
@@ -166,7 +172,7 @@ class EngineScriptDashboard {
         this.loadSystemInfo();
         break;
       case "logs":
-        this.loadLogs("enginescript");
+        this.loadLogs("syslog"); // Try system log first as it's more likely to exist
         break;
     }
   }
@@ -456,20 +462,46 @@ class EngineScriptDashboard {
       return;
     }
 
-    try {
-      const logs = await this.getApiData(`/api/logs/${logType}`, "");
-      const logViewer = document.getElementById("log-viewer");
+    const logViewer = document.getElementById("log-viewer");
+    const pre = logViewer?.querySelector("pre");
+    
+    if (!pre) return;
 
-      if (logViewer) {
-        const pre = logViewer.querySelector("pre");
-        if (pre) {
-          // Sanitize and set log content as text (not HTML)
-          const sanitizedLogs = this.sanitizeLogContent(logs) || `No ${logType} logs available.`;
-          pre.textContent = sanitizedLogs;
-        }
+    // Show loading state
+    pre.textContent = `Loading ${logType} logs...`;
+
+    try {
+      const response = await this.getApiData(`/api/logs/${logType}`, null);
+      
+      if (response === null) {
+        pre.textContent = `Failed to load ${logType} logs. The API may be unavailable.`;
+        return;
       }
+
+      // The API returns the log content directly (extracted from data.logs in getApiData)
+      let logContent = response;
+      
+      // Handle case where response is empty or undefined
+      if (!logContent || (typeof logContent === 'string' && logContent.trim() === '')) {
+        pre.textContent = `No ${logType} logs available or log file is empty.`;
+        return;
+      }
+
+      // Sanitize and display log content
+      const sanitizedLogs = this.sanitizeLogContent(logContent);
+      
+      if (!sanitizedLogs || sanitizedLogs.trim() === '') {
+        pre.textContent = `${logType} logs could not be processed or are empty.`;
+        return;
+      }
+      
+      pre.textContent = sanitizedLogs;
+      
+      // Scroll to bottom of logs to show most recent entries
+      pre.scrollTop = pre.scrollHeight;
+      
     } catch (error) {
-      // Silently handle log loading errors
+      pre.textContent = `Error loading ${logType} logs: ${error.message}`;
     }
   }
     
@@ -486,111 +518,29 @@ class EngineScriptDashboard {
     this.loadPerformanceChartData("24h");
   }
 
-  async loadPerformanceChartData(timerange) {
-    try {
-      const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
-      
-      const ctx = document.getElementById("performance-chart");
-      if (!ctx || typeof Chart === "undefined") return;
-
-      this.charts.performance = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: chartData.labels || [],
-          datasets: [
-            {
-              label: "CPU %",
-              data: chartData.cpu || [],
-              borderColor: "#00d4aa",
-              backgroundColor: "rgba(0, 212, 170, 0.1)",
-              tension: 0.4,
-            },
-            {
-              label: "Memory %",
-              data: chartData.memory || [],
-              borderColor: "#00a8ff",
-              backgroundColor: "rgba(0, 168, 255, 0.1)",
-              tension: 0.4,
-            },
-            {
-              label: "Disk %",
-              data: chartData.disk || [],
-              borderColor: "#ffb800",
-              backgroundColor: "rgba(255, 184, 0, 0.1)",
-              tension: 0.4,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: {
-            duration: 0, // Disable animation to prevent sizing issues
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              min: 0,
-              grid: {
-                color: "#444444",
-              },
-              ticks: {
-                color: "#b3b3b3",
-                stepSize: 25, // Force consistent scale steps
-              },
-            },
-            x: {
-              grid: {
-                color: "#444444",
-              },
-              ticks: {
-                color: "#b3b3b3",
-              },
-            },
-          },
-          plugins: {
-            legend: {
-              labels: {
-                color: "#b3b3b3",
-              },
-            },
-          },
-        },
-      });
-    } catch (error) {
-      // Use fallback data if API fails
-      this.loadFallbackChart(timerange);
-    }
-  }
-
-  loadFallbackChart(timerange) {
-    const chartData = this.generateFallbackData(timerange);
-    const ctx = document.getElementById("performance-chart");
-    if (!ctx || typeof Chart === "undefined") return;
-
-    this.charts.performance = new Chart(ctx, {
+  createPerformanceChartConfig(chartData) {
+    return {
       type: "line",
       data: {
-        labels: chartData.labels,
+        labels: chartData.labels || [],
         datasets: [
           {
             label: "CPU %",
-            data: chartData.cpu,
+            data: chartData.cpu || [],
             borderColor: "#00d4aa",
             backgroundColor: "rgba(0, 212, 170, 0.1)",
             tension: 0.4,
           },
           {
             label: "Memory %",
-            data: chartData.memory,
+            data: chartData.memory || [],
             borderColor: "#00a8ff",
             backgroundColor: "rgba(0, 168, 255, 0.1)",
             tension: 0.4,
           },
           {
             label: "Disk %",
-            data: chartData.disk,
+            data: chartData.disk || [],
             borderColor: "#ffb800",
             backgroundColor: "rgba(255, 184, 0, 0.1)",
             tension: 0.4,
@@ -601,7 +551,7 @@ class EngineScriptDashboard {
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 0,
+          duration: 0, // Disable animation to prevent sizing issues
         },
         scales: {
           y: {
@@ -613,7 +563,7 @@ class EngineScriptDashboard {
             },
             ticks: {
               color: "#b3b3b3",
-              stepSize: 25,
+              stepSize: 25, // Force consistent scale steps
             },
           },
           x: {
@@ -633,7 +583,30 @@ class EngineScriptDashboard {
           },
         },
       },
-    });
+    };
+  }
+
+  createPerformanceChart(chartData) {
+    const ctx = document.getElementById("performance-chart");
+    if (!ctx || typeof Chart === "undefined") return;
+
+    const config = this.createPerformanceChartConfig(chartData);
+    this.charts.performance = new Chart(ctx, config);
+  }
+
+  async loadPerformanceChartData(timerange) {
+    try {
+      const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
+      this.createPerformanceChart(chartData);
+    } catch (error) {
+      // Use fallback data if API fails
+      this.loadFallbackChart(timerange);
+    }
+  }
+
+  loadFallbackChart(timerange) {
+    const chartData = this.generateFallbackData(timerange);
+    this.createPerformanceChart(chartData);
   }
     
   initializeResourceChart() {
@@ -766,6 +739,9 @@ class EngineScriptDashboard {
       if (endpoint.includes("/sites/count") && data.count !== undefined) {
         return data.count.toString();
       }
+      if (endpoint.includes("/logs/") && data.logs !== undefined) {
+        return data.logs;
+      }
 
       return data;
     } catch (error) {
@@ -883,13 +859,12 @@ class EngineScriptDashboard {
       return "";
     }
 
-    // For logs, we use whitelist approach but allow more characters for readability
-    // Keep alphanumeric, spaces, line breaks, and common log punctuation
+    // For logs, we need to preserve log format while removing only dangerous content
+    // Allow common log characters: alphanumeric, spaces, punctuation, timestamps, etc.
     let sanitized = String(input)
       .replace(/[\u0000-\u0008\v\u000C\u000E-\u001F\u007F-\u009F]/g, "") // Remove control chars but keep \t, \n, \r
-      .replace(/[^\w\s.\-@#%:/[\]()\n\r\t]/g, "") // Keep safe chars + common log symbols
-      .replace(/ +/g, " ") // Normalize multiple spaces but preserve single spaces
-      .substring(0, 50000); // Reasonable log size limit
+      .replace(/[<>]/g, "") // Remove potential HTML tags but keep other characters
+      .substring(0, 100000); // Increased limit for larger log files
 
     // Remove dangerous patterns using shared method
     return this.removeDangerousPatterns(sanitized);
