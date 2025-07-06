@@ -1,5 +1,8 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
+
+/* global Chart, fetch */
+
 class EngineScriptDashboard {
   constructor() {
     this.currentPage = "overview";
@@ -464,7 +467,7 @@ class EngineScriptDashboard {
     
   initializePerformanceChart() {
     const ctx = document.getElementById("performance-chart");
-    if (!ctx) return;
+    if (!ctx || typeof Chart === "undefined") return;
 
     // Destroy existing chart if it exists
     if (this.charts.performance) {
@@ -537,7 +540,7 @@ class EngineScriptDashboard {
     
   initializeResourceChart() {
     const ctx = document.getElementById("resource-chart");
-    if (!ctx) return;
+    if (!ctx || typeof Chart === "undefined") return;
 
     // Destroy existing chart if it exists
     if (this.charts.resource) {
@@ -620,6 +623,11 @@ class EngineScriptDashboard {
   // API Methods
   async getApiData(endpoint, fallback) {
     try {
+      // Check if fetch is available
+      if (typeof fetch === "undefined") {
+        return fallback;
+      }
+
       const response = await fetch(endpoint);
 
       if (!response.ok) {
@@ -644,12 +652,18 @@ class EngineScriptDashboard {
 
       return data;
     } catch (error) {
-      throw new Error(`API call to ${endpoint} failed: ${error.message || error}`);
+      // Return fallback value on error
+      return fallback;
     }
   }
 
   async getServiceStatus(service) {
     try {
+      // Check if fetch is available
+      if (typeof fetch === "undefined") {
+        return { online: false, version: "Unavailable" };
+      }
+
       const response = await fetch("/api/services/status");
       const data = await response.json();
 
@@ -695,8 +709,8 @@ class EngineScriptDashboard {
     // Use whitelist approach for maximum security
     // Only allow alphanumeric characters, spaces, and safe punctuation
     let sanitized = String(input)
-      .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove all control characters
-      .replace(/[^\w\s.\-_@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - _ @ # %
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove all control characters
+      .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
       .replace(/\s+/g, " ") // Normalize whitespace
       .trim()
       .substring(0, 1000); // Limit length
@@ -748,8 +762,8 @@ class EngineScriptDashboard {
     // For logs, we use whitelist approach but allow more characters for readability
     // Keep alphanumeric, spaces, line breaks, and common log punctuation
     let sanitized = String(input)
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "") // Remove control chars but keep \t, \n, \r
-      .replace(/[^\w\s.\-_@#%:\/\[\]\(\)\n\r\t]/g, "") // Keep safe chars + common log symbols
+      .replace(/[\u0000-\u0008\v\u000C\u000E-\u001F\u007F-\u009F]/g, "") // Remove control chars but keep \t, \n, \r
+      .replace(/[^\w\s.\-@#%:/[\]()\n\r\t]/g, "") // Keep safe chars + common log symbols
       .replace(/ +/g, " ") // Normalize multiple spaces but preserve single spaces
       .substring(0, 50000); // Reasonable log size limit
 
