@@ -9,16 +9,16 @@
     /* Color Scheme */
     --primary-bg: #1a1a1a;
     --secondary-bg: #2d2d2d;
-    --card-bg: #333333;
+    --card-bg: #333;
     --accent-color: #00d4aa;
     --accent-hover: #00c49a;
-    --text-primary: #ffffff;
+    --text-primary: #fff;
     --text-secondary: #b3b3b3;
     --text-muted: #808080;
-    --border-color: #444444;
+    --border-color: #444;
     --success-color: #00d4aa;
     --warning-color: #ffb800;
-    --error-color: #ff4444;
+    --error-color: #f44;
     --info-color: #00a8ff;
     
     /* Layout */
@@ -690,6 +690,7 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

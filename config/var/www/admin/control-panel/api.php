@@ -485,8 +485,8 @@ function getKernelVersion() {
 function getTotalMemory() {
     $meminfo = file_get_contents('/proc/meminfo');
     if ($meminfo && preg_match('/MemTotal:\s+(\d+)/', $meminfo, $matches)) {
-        $mb = round($matches[1] / 1024);
-        return $mb . ' MB';
+        $memory_mb = round($matches[1] / 1024);
+        return $memory_mb . ' MB';
     }
     return 'N/A';
 }
@@ -494,8 +494,8 @@ function getTotalMemory() {
 function getTotalDisk() {
     $bytes = disk_total_space('/');
     if ($bytes) {
-        $gb = round($bytes / (1024 * 1024 * 1024), 1);
-        return $gb . ' GB';
+        $disk_gb = round($bytes / (1024 * 1024 * 1024), 1);
+        return $disk_gb . ' GB';
     }
     return 'N/A';
 }
@@ -510,24 +510,24 @@ function getNetworkInfo() {
         }
         
         // Use safer method to get IP
-        $ip = 'Unknown';
+        $client_ip = 'Unknown';
         
         // Try to get IP from /proc/net/fib_trie (safer than shell commands)
         if (file_exists('/proc/net/route')) {
             // Fallback to safer shell command with validation
             $ip_output = shell_exec("ip route get 8.8.8.8 2>/dev/null | awk '{print \$7; exit}'");
             if ($ip_output !== null) {
-                $ip = trim($ip_output);
+                $client_ip = trim($ip_output);
                 // Validate the IP
-                if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-                    $ip = 'Unknown';
+                if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
+                    $client_ip = 'Unknown';
                 } else {
-                    $ip = htmlspecialchars($ip, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $client_ip = htmlspecialchars($client_ip, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
             }
         }
         
-        return $hostname . ' (' . $ip . ')';
+        return $hostname . ' (' . $client_ip . ')';
     } catch (Exception $e) {
         logSecurityEvent('Network info error', $e->getMessage());
         return 'Unknown (Unknown)';
@@ -868,7 +868,6 @@ function getLogs($logType) {
             // Read last 50 lines safely
             $lines = [];
             $line_count = 0;
-            $buffer = '';
             
             // Read from end of file
             fseek($handle, -min($file_size, 8192), SEEK_END); // Read last 8KB

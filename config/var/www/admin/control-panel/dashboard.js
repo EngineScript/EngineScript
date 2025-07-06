@@ -1,76 +1,86 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 class EngineScriptDashboard {
-    constructor() {
-        this.currentPage = 'overview';
-        this.refreshInterval = 30000; // 30 seconds
-        this.charts = {};
-        this.refreshTimer = null;
-        
-        // Security configurations
-        this.maxRefreshInterval = 300000; // 5 minutes max
-        this.minRefreshInterval = 5000;   // 5 seconds min
-        this.allowedLogTypes = ['enginescript', 'nginx', 'php', 'mysql', 'redis', 'system'];
-        this.allowedTimeRanges = ['1h', '6h', '24h', '48h'];
-        this.allowedPages = ['overview', 'sites', 'system', 'logs', 'tools'];
-        this.allowedTools = ['phpmyadmin', 'phpinfo', 'phpsysinfo', 'adminer'];
-        
-        this.init();
-    }
-    
-    init() {
-        this.setupEventListeners();
-        this.setupNavigation();
-        this.startClock();
-        this.loadInitialData();
-        this.hideLoadingScreen();
-    }
-    
-    setupEventListeners() {
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            const page = item.dataset.page;
-            console.log(`Setting up navigation for page: ${page}`);
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = this.sanitizeInput(item.dataset.page);
-                console.log(`Navigation clicked for page: ${page}`);
-                if (this.allowedPages.includes(page)) {
-                    this.navigateToPage(page);
-                } else {
-                    console.error(`Page not allowed: ${page}, allowed pages:`, this.allowedPages);
-                }
-            });
-        });
-        
-        // Refresh button
-        const refreshBtn = document.getElementById('refresh-btn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshData());
+  constructor() {
+    this.currentPage = "overview";
+    this.refreshInterval = 30000; // 30 seconds
+    this.charts = {};
+    this.refreshTimer = null;
+
+    // Security configurations
+    this.maxRefreshInterval = 300000; // 5 minutes max
+    this.minRefreshInterval = 5000; // 5 seconds min
+    this.allowedLogTypes = [
+      "enginescript",
+      "nginx",
+      "php",
+      "mysql",
+      "redis",
+      "system",
+    ];
+    this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
+    this.allowedPages = ["overview", "sites", "system", "logs", "tools"];
+    this.allowedTools = ["phpmyadmin", "phpinfo", "phpsysinfo", "adminer"];
+
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.setupNavigation();
+    this.startClock();
+    this.loadInitialData();
+    this.hideLoadingScreen();
+  }
+
+  setupEventListeners() {
+    // Navigation
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      const page = item.dataset.page;
+      console.log(`Setting up navigation for page: ${page}`);
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        const page = this.sanitizeInput(item.dataset.page);
+        console.log(`Navigation clicked for page: ${page}`);
+        if (this.allowedPages.includes(page)) {
+          this.navigateToPage(page);
+        } else {
+          console.error(
+            `Page not allowed: ${page}, allowed pages:`,
+            this.allowedPages,
+          );
         }
-        
-        // Log type selector
-        const logTypeSelect = document.getElementById('log-type');
-        if (logTypeSelect) {
-            logTypeSelect.addEventListener('change', (e) => {
-                const logType = this.sanitizeInput(e.target.value);
-                if (this.allowedLogTypes.includes(logType)) {
-                    this.loadLogs(logType);
-                }
-            });
-        }
-        
-        // Chart timerange selector
-        const chartTimerange = document.getElementById('chart-timerange');
-        if (chartTimerange) {
-            chartTimerange.addEventListener('change', (e) => {
-                const timeRange = this.sanitizeInput(e.target.value);
-                if (this.allowedTimeRanges.includes(timeRange)) {
-                    this.updatePerformanceChart(timeRange);
-                }
-            });
-        }
+      });
+    });
+
+    // Refresh button
+    const refreshBtn = document.getElementById("refresh-btn");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", () => this.refreshData());
     }
+
+    // Log type selector
+    const logTypeSelect = document.getElementById("log-type");
+    if (logTypeSelect) {
+      logTypeSelect.addEventListener("change", (e) => {
+        const logType = this.sanitizeInput(e.target.value);
+        if (this.allowedLogTypes.includes(logType)) {
+          this.loadLogs(logType);
+        }
+      });
+    }
+
+    // Chart timerange selector
+    const chartTimerange = document.getElementById("chart-timerange");
+    if (chartTimerange) {
+      chartTimerange.addEventListener("change", (e) => {
+        const timeRange = this.sanitizeInput(e.target.value);
+        if (this.allowedTimeRanges.includes(timeRange)) {
+          this.updatePerformanceChart(timeRange);
+        }
+      });
+    }
+  }
     
     setupNavigation() {
         // Set up single page app navigation
@@ -700,24 +710,42 @@ class EngineScriptDashboard {
             return String(input || '');
         }
         
-        // Remove potentially dangerous characters and patterns using global loop for complete sanitization
-        let sanitized = input;
-        let previous;
+        // Use whitelist approach for maximum security
+        // Only allow alphanumeric characters, spaces, and safe punctuation
+        let sanitized = String(input)
+            .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove all control characters
+            .replace(/[^\w\s.\-_@#%]/g, '') // Keep only safe characters: letters, numbers, spaces, . - _ @ # %
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim()
+            .substring(0, 1000); // Limit length
         
-        // Loop until no more changes are made to handle patterns like "javjavascript:ascript:"
-        do {
-            previous = sanitized;
-            sanitized = sanitized
-                .replace(/\0/g, '') // Remove null bytes first
-                .replace(/[<>&"'`\r\n\t]/g, '') // Remove HTML/XML special characters including backticks and whitespace chars
-                .replace(/javascript:/gi, '') // Remove javascript: protocol
-                .replace(/data:/gi, '') // Remove data: protocol
-                .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-                .replace(/on\w+=/gi, '') // Remove event handlers
-                .replace(/[\x00-\x1F\x7F]/g, ''); // Remove all control characters
-        } while (sanitized !== previous);
+        // Additional security: remove any remaining dangerous patterns
+        // This catches edge cases that might slip through the whitelist
+        const dangerousPatterns = [
+            /javascript/gi,
+            /vbscript/gi,
+            /data:/gi,
+            /about:/gi,
+            /file:/gi,
+            /<script/gi,
+            /<iframe/gi,
+            /<object/gi,
+            /<embed/gi,
+            /<link/gi,
+            /<meta/gi,
+            /on\w+=/gi,
+            /expression/gi,
+            /eval/gi,
+            /alert/gi,
+            /prompt/gi,
+            /confirm/gi
+        ];
         
-        return sanitized.trim().substring(0, 1000); // Limit length
+        dangerousPatterns.forEach(pattern => {
+            sanitized = sanitized.replace(pattern, '');
+        });
+        
+        return sanitized;
     }
     
     sanitizeNumeric(input, fallback = '0') {
@@ -735,25 +763,43 @@ class EngineScriptDashboard {
             return '';
         }
         
-        // For logs, we allow more characters but still remove dangerous patterns
-        // Keep line breaks and basic formatting for readability but remove XSS vectors
-        let sanitized = input;
-        let previous;
+        // For logs, we use whitelist approach but allow more characters for readability
+        // Keep alphanumeric, spaces, line breaks, and common log punctuation
+        let sanitized = String(input)
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove control chars but keep \t, \n, \r
+            .replace(/[^\w\s.\-_@#%:\/\[\]\(\)\n\r\t]/g, '') // Keep safe chars + common log symbols
+            .replace(/ +/g, ' ') // Normalize multiple spaces but preserve single spaces
+            .substring(0, 50000); // Reasonable log size limit
         
-        // Loop until no more changes are made to handle nested patterns
-        do {
-            previous = sanitized;
-            sanitized = sanitized
-                .replace(/\0/g, '') // Remove null bytes first
-                .replace(/[<>&"'`]/g, '') // Remove HTML/XML special characters that could break out of attributes
-                .replace(/javascript:/gi, '') // Remove javascript: protocol
-                .replace(/data:/gi, '') // Remove data: protocol
-                .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-                .replace(/on\w+=/gi, '') // Remove event handlers
-                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control chars but keep \t, \n, \r
-        } while (sanitized !== previous);
+        // Additional security: remove any remaining dangerous patterns
+        // This prevents any script injection even in log content
+        const dangerousPatterns = [
+            /javascript/gi,
+            /vbscript/gi,
+            /data:/gi,
+            /about:/gi,
+            /file:/gi,
+            /<script/gi,
+            /<iframe/gi,
+            /<object/gi,
+            /<embed/gi,
+            /<link/gi,
+            /<meta/gi,
+            /on\w+=/gi,
+            /expression/gi,
+            /eval/gi,
+            /alert/gi,
+            /prompt/gi,
+            /confirm/gi,
+            /<\/script/gi,
+            /<\/iframe/gi
+        ];
         
-        return sanitized.substring(0, 50000); // Reasonable log size limit
+        dangerousPatterns.forEach(pattern => {
+            sanitized = sanitized.replace(pattern, '');
+        });
+        
+        return sanitized;
     }
     
     setTextContent(elementId, content) {
