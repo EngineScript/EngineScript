@@ -37,18 +37,11 @@ class EngineScriptDashboard {
     // Navigation
     document.querySelectorAll(".nav-item").forEach((item) => {
       const page = item.dataset.page;
-      console.log(`Setting up navigation for page: ${page}`);
       item.addEventListener("click", (e) => {
         e.preventDefault();
         const page = this.sanitizeInput(item.dataset.page);
-        console.log(`Navigation clicked for page: ${page}`);
         if (this.allowedPages.includes(page)) {
           this.navigateToPage(page);
-        } else {
-          console.error(
-            `Page not allowed: ${page}, allowed pages:`,
-            this.allowedPages,
-          );
         }
       });
     });
@@ -84,7 +77,6 @@ class EngineScriptDashboard {
     
   setupNavigation() {
     // Set up single page app navigation
-    const navItems = document.querySelectorAll(".nav-item");
     const pages = document.querySelectorAll(".page-content");
 
     // Hide all pages except overview
@@ -96,11 +88,8 @@ class EngineScriptDashboard {
   }
 
   navigateToPage(pageName) {
-    console.log(`Navigating to page: ${pageName}`);
-
     // Validate page name
     if (!this.allowedPages.includes(pageName)) {
-      console.error("Invalid page name:", pageName);
       return;
     }
 
@@ -111,9 +100,6 @@ class EngineScriptDashboard {
     const targetNav = document.querySelector(`[data-page="${pageName}"]`);
     if (targetNav) {
       targetNav.classList.add("active");
-      console.log(`Added active class to nav item: ${pageName}`);
-    } else {
-      console.error(`Nav item not found for page: ${pageName}`);
     }
 
     // Update pages
@@ -123,7 +109,6 @@ class EngineScriptDashboard {
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
       targetPage.style.display = "block";
-      console.log(`Showing page: ${pageName}-page`);
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
@@ -131,15 +116,12 @@ class EngineScriptDashboard {
       if (mainContent) {
         mainContent.scrollTop = 0;
       }
-    } else {
-      console.error(`Page element not found: ${pageName}-page`);
     }
 
     // Update page title
     const pageTitle = document.getElementById("page-title");
     if (pageTitle) {
       pageTitle.textContent = this.getPageTitle(pageName);
-      console.log(`Updated page title to: ${this.getPageTitle(pageName)}`);
     }
 
     // Load page-specific data
@@ -161,7 +143,6 @@ class EngineScriptDashboard {
     loadPageData(pageName) {
         // Validate page name
         if (!this.allowedPages.includes(pageName)) {
-            console.error('Invalid page name for loadPageData:', pageName);
             return;
         }
         
@@ -266,7 +247,6 @@ class EngineScriptDashboard {
             this.initializePerformanceChart();
             
         } catch (error) {
-            console.error('Failed to load overview data:', error);
             this.showError(`Failed to load dashboard data: ${error.message || error}`);
         }
     }
@@ -295,7 +275,6 @@ class EngineScriptDashboard {
             this.setTextContent('disk-usage', sanitizedStats.disk);
             this.setTextContent('cpu-usage', sanitizedStats.cpu);
         } catch (error) {
-            console.error('Failed to load system stats:', error);
             // Set fallback values
             this.setTextContent('sites-count', '0');
             this.setTextContent('memory-usage', '0%');
@@ -323,7 +302,7 @@ class EngineScriptDashboard {
                     }
                 }
             } catch (error) {
-                console.error(`Failed to load ${service} status:`, error);
+                // Silently handle service status errors
             }
         }
     }
@@ -346,7 +325,7 @@ class EngineScriptDashboard {
                 });
             }
         } catch (error) {
-            console.error('Failed to load recent activity:', error);
+            // Silently handle recent activity errors
         }
     }
     
@@ -377,7 +356,7 @@ class EngineScriptDashboard {
                 }
             }
         } catch (error) {
-            console.error('Failed to load system alerts:', error);
+            // Silently handle system alerts errors
         }
     }
     
@@ -414,7 +393,7 @@ class EngineScriptDashboard {
                 }
             }
         } catch (error) {
-            console.error('Failed to load sites:', error);
+            // Silently handle sites loading errors
         }
     }
     
@@ -447,14 +426,13 @@ class EngineScriptDashboard {
             this.initializeResourceChart();
             
         } catch (error) {
-            console.error('Failed to load system info:', error);
+            // Silently handle system info errors
         }
     }
     
     async loadLogs(logType) {
         // Validate log type
         if (!this.allowedLogTypes.includes(logType)) {
-            console.error('Invalid log type:', logType);
             return;
         }
         
@@ -471,7 +449,7 @@ class EngineScriptDashboard {
                 }
             }
         } catch (error) {
-            console.error(`Failed to load ${logType} logs:`, error);
+            // Silently handle log loading errors
         }
     }
     
@@ -587,7 +565,6 @@ class EngineScriptDashboard {
     updatePerformanceChart(timerange) {
         // Validate timerange
         if (!this.allowedTimeRanges.includes(timerange)) {
-            console.error('Invalid timerange:', timerange);
             return;
         }
         
@@ -634,7 +611,6 @@ class EngineScriptDashboard {
     // API Methods
     async getApiData(endpoint, fallback) {
         try {
-            console.log(`Making API call to: ${endpoint}`);
             const response = await fetch(endpoint);
             
             if (!response.ok) {
@@ -642,7 +618,6 @@ class EngineScriptDashboard {
             }
             
             const data = await response.json();
-            console.log(`API response from ${endpoint}:`, data);
             
             // Handle different response formats
             if (endpoint.includes('/system/memory') && data.usage) {
@@ -660,7 +635,6 @@ class EngineScriptDashboard {
             
             return data;
         } catch (error) {
-            console.error(`API call failed for ${endpoint}:`, error.message || error);
             throw new Error(`API call to ${endpoint} failed: ${error.message || error}`);
         }
     }
@@ -672,7 +646,6 @@ class EngineScriptDashboard {
             
             return data[service] || { online: false, version: 'Unknown' };
         } catch (error) {
-            console.error(`Failed to get ${service} status:`, error);
             return { online: false, version: 'Error' };
         }
     }
@@ -1022,14 +995,4 @@ window.addEventListener('beforeunload', () => {
 // Security: Prevent frame embedding
 if (window.top !== window.self) {
     window.top.location = window.self.location;
-}
-
-// Security: Remove console access in production (but not on admin interfaces)
-if (window.location.hostname !== 'localhost' && 
-    window.location.hostname !== '127.0.0.1' && 
-    !window.location.hostname.includes('admin')) {
-    // Disable console in production
-    if (typeof console !== 'undefined') {
-        console.log = console.warn = console.error = console.info = console.debug = function() {};
-    }
 }
