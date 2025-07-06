@@ -35,8 +35,8 @@ class EngineScriptDashboard {
 
   setupEventListeners() {
     // Navigation
-    document.querySelectorAll('.nav-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.addEventListener("click", (e) => {
         e.preventDefault();
         const page = this.sanitizeInput(item.dataset.page);
         if (this.allowedPages.includes(page)) {
@@ -46,15 +46,15 @@ class EngineScriptDashboard {
     });
 
     // Refresh button
-    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.refreshData());
+      refreshBtn.addEventListener("click", () => this.refreshData());
     }
 
     // Log type selector
-    const logTypeSelect = document.getElementById('log-type');
+    const logTypeSelect = document.getElementById("log-type");
     if (logTypeSelect) {
-      logTypeSelect.addEventListener('change', (e) => {
+      logTypeSelect.addEventListener("change", (e) => {
         const logType = this.sanitizeInput(e.target.value);
         if (this.allowedLogTypes.includes(logType)) {
           this.loadLogs(logType);
@@ -63,9 +63,9 @@ class EngineScriptDashboard {
     }
 
     // Chart timerange selector
-    const chartTimerange = document.getElementById('chart-timerange');
+    const chartTimerange = document.getElementById("chart-timerange");
     if (chartTimerange) {
-      chartTimerange.addEventListener('change', (e) => {
+      chartTimerange.addEventListener("change", (e) => {
         const timeRange = this.sanitizeInput(e.target.value);
         if (this.allowedTimeRanges.includes(timeRange)) {
           this.updatePerformanceChart(timeRange);
@@ -75,12 +75,12 @@ class EngineScriptDashboard {
   }
   setupNavigation() {
     // Set up single page app navigation
-    const pages = document.querySelectorAll('.page-content');
+    const pages = document.querySelectorAll(".page-content");
 
     // Hide all pages except overview
     pages.forEach((page) => {
-      if (page.id !== 'overview-page') {
-        page.style.display = 'none';
+      if (page.id !== "overview-page") {
+        page.style.display = "none";
       }
     });
   }
@@ -92,32 +92,32 @@ class EngineScriptDashboard {
     }
 
     // Update navigation
-    document.querySelectorAll('.nav-item').forEach((item) => {
-      item.classList.remove('active');
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.remove("active");
     });
     const targetNav = document.querySelector(`[data-page="${pageName}"]`);
     if (targetNav) {
-      targetNav.classList.add('active');
+      targetNav.classList.add("active");
     }
 
     // Update pages
-    document.querySelectorAll('.page-content').forEach((page) => {
-      page.style.display = 'none';
+    document.querySelectorAll(".page-content").forEach((page) => {
+      page.style.display = "none";
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.style.display = 'block';
+      targetPage.style.display = "block";
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
-      const mainContent = document.querySelector('.main-content');
+      const mainContent = document.querySelector(".main-content");
       if (mainContent) {
         mainContent.scrollTop = 0;
       }
     }
 
     // Update page title
-    const pageTitle = document.getElementById('page-title');
+    const pageTitle = document.getElementById("page-title");
     if (pageTitle) {
       pageTitle.textContent = this.getPageTitle(pageName);
     }
@@ -129,13 +129,13 @@ class EngineScriptDashboard {
 
   getPageTitle(pageName) {
     const titles = {
-      'overview': 'Overview',
-      'sites': 'WordPress Sites',
-      'system': 'System Information',
-      'logs': 'System Logs',
-      'tools': 'Admin Tools'
+      overview: "Overview",
+      sites: "WordPress Sites",
+      system: "System Information",
+      logs: "System Logs",
+      tools: "Admin Tools",
     };
-    return titles[pageName] || 'Dashboard';
+    return titles[pageName] || "Dashboard";
   }
     
   loadPageData(pageName) {
@@ -145,30 +145,30 @@ class EngineScriptDashboard {
     }
 
     switch (pageName) {
-      case 'overview':
+      case "overview":
         this.loadOverviewData();
         break;
-      case 'sites':
+      case "sites":
         this.loadSites();
         break;
-      case 'system':
+      case "system":
         this.loadSystemInfo();
         break;
-      case 'logs':
-        this.loadLogs('enginescript');
+      case "logs":
+        this.loadLogs("enginescript");
         break;
     }
   }
     
   hideLoadingScreen() {
     setTimeout(() => {
-      const loadingScreen = document.getElementById('loading-screen');
-      const dashboard = document.getElementById('dashboard');
+      const loadingScreen = document.getElementById("loading-screen");
+      const dashboard = document.getElementById("dashboard");
 
-      loadingScreen.style.opacity = '0';
+      loadingScreen.style.opacity = "0";
       setTimeout(() => {
-        loadingScreen.style.display = 'none';
-        dashboard.style.display = 'flex';
+        loadingScreen.style.display = "none";
+        dashboard.style.display = "flex";
       }, 500);
     }, 1500);
   }
@@ -176,14 +176,14 @@ class EngineScriptDashboard {
   startClock() {
     const updateClock = () => {
       const now = new Date();
-      const timeString = now.toLocaleTimeString('en-US', {
+      const timeString = now.toLocaleTimeString("en-US", {
         hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
       });
 
-      const serverTime = document.getElementById('server-time');
+      const serverTime = document.getElementById("server-time");
       if (serverTime) {
         serverTime.textContent = timeString;
       }
@@ -210,17 +210,17 @@ class EngineScriptDashboard {
   }
     
   showRefreshAnimation() {
-    const refreshBtn = document.getElementById('refresh-btn');
-    const icon = refreshBtn.querySelector('i');
+    const refreshBtn = document.getElementById("refresh-btn");
+    const icon = refreshBtn.querySelector("i");
 
-    icon.style.animation = 'spin 1s linear';
+    icon.style.animation = "spin 1s linear";
     setTimeout(() => {
-      icon.style.animation = '';
+      icon.style.animation = "";
     }, 1000);
   }
     
   updateLastRefresh() {
-    const updateTime = document.getElementById('update-time');
+    const updateTime = document.getElementById("update-time");
     if (updateTime) {
       updateTime.textContent = new Date().toLocaleTimeString();
     }
@@ -245,7 +245,9 @@ class EngineScriptDashboard {
       this.initializePerformanceChart();
 
     } catch (error) {
-      this.showError(`Failed to load dashboard data: ${error.message || error}`);
+      this.showError(
+        `Failed to load dashboard data: ${error.message || error}`,
+      );
     }
   }
     
@@ -253,10 +255,10 @@ class EngineScriptDashboard {
     try {
       // Simulate API calls - In real implementation, these would be actual API endpoints
       const stats = {
-        sites: await this.getApiData('/api/sites/count', '0'),
-        memory: await this.getApiData('/api/system/memory', '0%'),
-        disk: await this.getApiData('/api/system/disk', '0%'),
-        cpu: await this.getApiData('/api/system/cpu', '0%')
+        sites: await this.getApiData("/api/sites/count", "0"),
+        memory: await this.getApiData("/api/system/memory", "0%"),
+        disk: await this.getApiData("/api/system/disk", "0%"),
+        cpu: await this.getApiData("/api/system/cpu", "0%")
       };
 
       // Validate and sanitize numeric values

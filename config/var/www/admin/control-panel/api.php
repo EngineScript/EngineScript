@@ -170,7 +170,7 @@ function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_S
     }
     
     // Sanitize IP address for logging
-    $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
     if ($client_ip !== 'unknown') {
         // Validate IP format to prevent injection
         if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
@@ -720,7 +720,9 @@ function processNginxConfig($config_real_path) {
         // Validate and sanitize document root path
         if (preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
             $document_root = realpath($document_root); // codacy:ignore - realpath() required for path validation in standalone API
-        } else {
+        }
+        
+        if (!$document_root) {
             $document_root = '';
         }
     }
@@ -838,13 +840,12 @@ function checkRecentSSHActivity() {
     
     $handle = fopen($real_auth_log, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
     if (!$handle) {
-        return null;
-    }
-    
-    $ssh_activity = parseAuthLogForActivity($handle);
-    fclose($handle);
-    
-    return $ssh_activity;
+        return null;        }
+        
+        $ssh_activity = parseAuthLogForActivity($handle);
+        fclose($handle); // codacy:ignore - fclose() required for proper file handle cleanup in standalone API
+        
+        return $ssh_activity;
 }
 
 function getRecentActivity() {
