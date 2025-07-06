@@ -35,9 +35,8 @@ class EngineScriptDashboard {
 
   setupEventListeners() {
     // Navigation
-    document.querySelectorAll(".nav-item").forEach((item) => {
-      const page = item.dataset.page;
-      item.addEventListener("click", (e) => {
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
         e.preventDefault();
         const page = this.sanitizeInput(item.dataset.page);
         if (this.allowedPages.includes(page)) {
@@ -47,15 +46,15 @@ class EngineScriptDashboard {
     });
 
     // Refresh button
-    const refreshBtn = document.getElementById("refresh-btn");
+    const refreshBtn = document.getElementById('refresh-btn');
     if (refreshBtn) {
-      refreshBtn.addEventListener("click", () => this.refreshData());
+      refreshBtn.addEventListener('click', () => this.refreshData());
     }
 
     // Log type selector
-    const logTypeSelect = document.getElementById("log-type");
+    const logTypeSelect = document.getElementById('log-type');
     if (logTypeSelect) {
-      logTypeSelect.addEventListener("change", (e) => {
+      logTypeSelect.addEventListener('change', (e) => {
         const logType = this.sanitizeInput(e.target.value);
         if (this.allowedLogTypes.includes(logType)) {
           this.loadLogs(logType);
@@ -64,9 +63,9 @@ class EngineScriptDashboard {
     }
 
     // Chart timerange selector
-    const chartTimerange = document.getElementById("chart-timerange");
+    const chartTimerange = document.getElementById('chart-timerange');
     if (chartTimerange) {
-      chartTimerange.addEventListener("change", (e) => {
+      chartTimerange.addEventListener('change', (e) => {
         const timeRange = this.sanitizeInput(e.target.value);
         if (this.allowedTimeRanges.includes(timeRange)) {
           this.updatePerformanceChart(timeRange);
@@ -74,15 +73,14 @@ class EngineScriptDashboard {
       });
     }
   }
-    
   setupNavigation() {
     // Set up single page app navigation
-    const pages = document.querySelectorAll(".page-content");
+    const pages = document.querySelectorAll('.page-content');
 
     // Hide all pages except overview
     pages.forEach((page) => {
-      if (page.id !== "overview-page") {
-        page.style.display = "none";
+      if (page.id !== 'overview-page') {
+        page.style.display = 'none';
       }
     });
   }
@@ -94,32 +92,32 @@ class EngineScriptDashboard {
     }
 
     // Update navigation
-    document.querySelectorAll(".nav-item").forEach((item) => {
-      item.classList.remove("active");
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.classList.remove('active');
     });
     const targetNav = document.querySelector(`[data-page="${pageName}"]`);
     if (targetNav) {
-      targetNav.classList.add("active");
+      targetNav.classList.add('active');
     }
 
     // Update pages
-    document.querySelectorAll(".page-content").forEach((page) => {
-      page.style.display = "none";
+    document.querySelectorAll('.page-content').forEach((page) => {
+      page.style.display = 'none';
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.style.display = "block";
+      targetPage.style.display = 'block';
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
-      const mainContent = document.querySelector(".main-content");
+      const mainContent = document.querySelector('.main-content');
       if (mainContent) {
         mainContent.scrollTop = 0;
       }
     }
 
     // Update page title
-    const pageTitle = document.getElementById("page-title");
+    const pageTitle = document.getElementById('page-title');
     if (pageTitle) {
       pageTitle.textContent = this.getPageTitle(pageName);
     }
@@ -130,328 +128,328 @@ class EngineScriptDashboard {
   }
 
   getPageTitle(pageName) {
-        const titles = {
-            'overview': 'Overview',
-            'sites': 'WordPress Sites',
-            'system': 'System Information',
-            'logs': 'System Logs',
-            'tools': 'Admin Tools'
-        };
-        return titles[pageName] || 'Dashboard';
-    }
+    const titles = {
+      'overview': 'Overview',
+      'sites': 'WordPress Sites',
+      'system': 'System Information',
+      'logs': 'System Logs',
+      'tools': 'Admin Tools'
+    };
+    return titles[pageName] || 'Dashboard';
+  }
     
-    loadPageData(pageName) {
-        // Validate page name
-        if (!this.allowedPages.includes(pageName)) {
-            return;
-        }
-        
-        switch (pageName) {
-            case 'overview':
-                this.loadOverviewData();
-                break;
-            case 'sites':
-                this.loadSites();
-                break;
-            case 'system':
-                this.loadSystemInfo();
-                break;
-            case 'logs':
-                this.loadLogs('enginescript');
-                break;
-        }
+  loadPageData(pageName) {
+    // Validate page name
+    if (!this.allowedPages.includes(pageName)) {
+      return;
     }
-    
-    hideLoadingScreen() {
-        setTimeout(() => {
-            const loadingScreen = document.getElementById('loading-screen');
-            const dashboard = document.getElementById('dashboard');
-            
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                dashboard.style.display = 'flex';
-            }, 500);
-        }, 1500);
-    }
-    
-    startClock() {
-        const updateClock = () => {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            const serverTime = document.getElementById('server-time');
-            if (serverTime) {
-                serverTime.textContent = timeString;
-            }
-        };
-        
-        updateClock();
-        setInterval(updateClock, 1000);
-    }
-    
-    loadInitialData() {
+
+    switch (pageName) {
+      case 'overview':
         this.loadOverviewData();
-        this.updateLastRefresh();
-        
-        // Set up auto-refresh
-        this.refreshTimer = setInterval(() => {
-            this.refreshData();
-        }, this.refreshInterval);
+        break;
+      case 'sites':
+        this.loadSites();
+        break;
+      case 'system':
+        this.loadSystemInfo();
+        break;
+      case 'logs':
+        this.loadLogs('enginescript');
+        break;
     }
+  }
     
-    refreshData() {
-        this.showRefreshAnimation();
-        this.loadPageData(this.currentPage);
-        this.updateLastRefresh();
+  hideLoadingScreen() {
+    setTimeout(() => {
+      const loadingScreen = document.getElementById('loading-screen');
+      const dashboard = document.getElementById('dashboard');
+
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        dashboard.style.display = 'flex';
+      }, 500);
+    }, 1500);
+  }
+    
+  startClock() {
+    const updateClock = () => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const serverTime = document.getElementById('server-time');
+      if (serverTime) {
+        serverTime.textContent = timeString;
+      }
+    };
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
+    
+  loadInitialData() {
+    this.loadOverviewData();
+    this.updateLastRefresh();
+
+    // Set up auto-refresh
+    this.refreshTimer = setInterval(() => {
+      this.refreshData();
+    }, this.refreshInterval);
+  }
+    
+  refreshData() {
+    this.showRefreshAnimation();
+    this.loadPageData(this.currentPage);
+    this.updateLastRefresh();
+  }
+    
+  showRefreshAnimation() {
+    const refreshBtn = document.getElementById('refresh-btn');
+    const icon = refreshBtn.querySelector('i');
+
+    icon.style.animation = 'spin 1s linear';
+    setTimeout(() => {
+      icon.style.animation = '';
+    }, 1000);
+  }
+    
+  updateLastRefresh() {
+    const updateTime = document.getElementById('update-time');
+    if (updateTime) {
+      updateTime.textContent = new Date().toLocaleTimeString();
     }
+  }
     
-    showRefreshAnimation() {
-        const refreshBtn = document.getElementById("refresh-btn");
-        const icon = refreshBtn.querySelector('i');
-        
-        icon.style.animation = 'spin 1s linear';
-        setTimeout(() => {
-            icon.style.animation = '';
-        }, 1000);
+  // Data Loading Methods
+  async loadOverviewData() {
+    try {
+      // Load system stats
+      await this.loadSystemStats();
+
+      // Load service status
+      await this.loadServiceStatus();
+
+      // Load recent activity
+      await this.loadRecentActivity();
+
+      // Load system alerts
+      await this.loadSystemAlerts();
+
+      // Initialize performance chart
+      this.initializePerformanceChart();
+
+    } catch (error) {
+      this.showError(`Failed to load dashboard data: ${error.message || error}`);
     }
+  }
     
-    updateLastRefresh() {
-        const updateTime = document.getElementById('update-time');
-        if (updateTime) {
-            updateTime.textContent = new Date().toLocaleTimeString();
+  async loadSystemStats() {
+    try {
+      // Simulate API calls - In real implementation, these would be actual API endpoints
+      const stats = {
+        sites: await this.getApiData('/api/sites/count', '0'),
+        memory: await this.getApiData('/api/system/memory', '0%'),
+        disk: await this.getApiData('/api/system/disk', '0%'),
+        cpu: await this.getApiData('/api/system/cpu', '0%')
+      };
+
+      // Validate and sanitize numeric values
+      const sanitizedStats = {
+        sites: this.sanitizeNumeric(stats.sites, '0'),
+        memory: this.sanitizePercentage(stats.memory, '0%'),
+        disk: this.sanitizePercentage(stats.disk, '0%'),
+        cpu: this.sanitizePercentage(stats.cpu, '0%')
+      };
+
+      // Update stat cards safely
+      this.setTextContent('sites-count', sanitizedStats.sites);
+      this.setTextContent('memory-usage', sanitizedStats.memory);
+      this.setTextContent('disk-usage', sanitizedStats.disk);
+      this.setTextContent('cpu-usage', sanitizedStats.cpu);
+    } catch (error) {
+      // Set fallback values
+      this.setTextContent('sites-count', '0');
+      this.setTextContent('memory-usage', '0%');
+      this.setTextContent('disk-usage', '0%');
+      this.setTextContent('cpu-usage', '0%');
+      throw error; // Re-throw to be caught by loadOverviewData
+    }
+  }
+    
+  async loadServiceStatus() {
+    const services = ['nginx', 'php', 'mysql', 'redis'];
+
+    for (const service of services) {
+      try {
+        const status = await this.getServiceStatus(service);
+        const element = document.getElementById(`${service}-status`);
+
+        if (element) {
+          const statusIcon = element.querySelector('.service-status i');
+          const versionSpan = element.querySelector('.service-version');
+
+          statusIcon.className = `fas fa-circle ${status.online ? 'online' : 'offline'}`;
+          if (versionSpan && status.version) {
+            versionSpan.textContent = `v${status.version}`;
+          }
         }
+      } catch (error) {
+        // Silently handle service status errors
+      }
     }
+  }
     
-    // Data Loading Methods
-    async loadOverviewData() {
-        try {
-            // Load system stats
-            await this.loadSystemStats();
-            
-            // Load service status
-            await this.loadServiceStatus();
-            
-            // Load recent activity
-            await this.loadRecentActivity();
-            
-            // Load system alerts
-            await this.loadSystemAlerts();
-            
-            // Initialize performance chart
-            this.initializePerformanceChart();
-            
-        } catch (error) {
-            this.showError(`Failed to load dashboard data: ${error.message || error}`);
-        }
+  async loadRecentActivity() {
+    try {
+      const activities = await this.getApiData('/api/activity/recent', []);
+      const activityList = document.getElementById('recent-activity');
+
+      if (activityList && Array.isArray(activities) && activities.length > 0) {
+        // Clear existing content
+        activityList.innerHTML = '';
+
+        // Validate and render each activity safely
+        activities.forEach(activity => {
+          if (this.isValidActivity(activity)) {
+            const activityElement = this.createActivityElement(activity);
+            activityList.appendChild(activityElement);
+          }
+        });
+      }
+    } catch (error) {
+      // Silently handle recent activity errors
     }
+  }
     
-    async loadSystemStats() {
-        try {
-            // Simulate API calls - In real implementation, these would be actual API endpoints
-            const stats = {
-                sites: await this.getApiData('/api/sites/count', '0'),
-                memory: await this.getApiData('/api/system/memory', '0%'),
-                disk: await this.getApiData('/api/system/disk', '0%'),
-                cpu: await this.getApiData('/api/system/cpu', '0%')
-            };
-            
-            // Validate and sanitize numeric values
-            const sanitizedStats = {
-                sites: this.sanitizeNumeric(stats.sites, '0'),
-                memory: this.sanitizePercentage(stats.memory, '0%'),
-                disk: this.sanitizePercentage(stats.disk, '0%'),
-                cpu: this.sanitizePercentage(stats.cpu, '0%')
-            };
-            
-            // Update stat cards safely
-            this.setTextContent('sites-count', sanitizedStats.sites);
-            this.setTextContent('memory-usage', sanitizedStats.memory);
-            this.setTextContent('disk-usage', sanitizedStats.disk);
-            this.setTextContent('cpu-usage', sanitizedStats.cpu);
-        } catch (error) {
-            // Set fallback values
-            this.setTextContent('sites-count', '0');
-            this.setTextContent('memory-usage', '0%');
-            this.setTextContent('disk-usage', '0%');
-            this.setTextContent('cpu-usage', '0%');
-            throw error; // Re-throw to be caught by loadOverviewData
-        }
-    }
-    
-    async loadServiceStatus() {
-        const services = ['nginx', 'php', 'mysql', 'redis'];
-        
-        for (const service of services) {
-            try {
-                const status = await this.getServiceStatus(service);
-                const element = document.getElementById(`${service}-status`);
-                
-                if (element) {
-                    const statusIcon = element.querySelector('.service-status i');
-                    const versionSpan = element.querySelector('.service-version');
-                    
-                    statusIcon.className = `fas fa-circle ${status.online ? 'online' : 'offline'}`;
-                    if (versionSpan && status.version) {
-                        versionSpan.textContent = `v${status.version}`;
-                    }
-                }
-            } catch (error) {
-                // Silently handle service status errors
+  async loadSystemAlerts() {
+    try {
+      const alerts = await this.getApiData('/api/alerts', []);
+      const alertList = document.getElementById('system-alerts');
+
+      if (alertList) {
+        // Clear existing content
+        alertList.innerHTML = '';
+
+        if (Array.isArray(alerts) && alerts.length > 0) {
+          alerts.forEach(alert => {
+            if (this.isValidAlert(alert)) {
+              const alertElement = this.createAlertElement(alert);
+              alertList.appendChild(alertElement);
             }
+          });
+        } else {
+          // Create default "all systems operational" alert
+          const defaultAlert = this.createAlertElement({
+            message: 'All systems operational',
+            time: 'Just now',
+            type: 'info'
+          });
+          alertList.appendChild(defaultAlert);
         }
+      }
+    } catch (error) {
+      // Silently handle system alerts errors
     }
+  }
     
-    async loadRecentActivity() {
-        try {
-            const activities = await this.getApiData('/api/activity/recent', []);
-            const activityList = document.getElementById('recent-activity');
-            
-            if (activityList && Array.isArray(activities) && activities.length > 0) {
-                // Clear existing content
-                activityList.innerHTML = '';
-                
-                // Validate and render each activity safely
-                activities.forEach(activity => {
-                    if (this.isValidActivity(activity)) {
-                        const activityElement = this.createActivityElement(activity);
-                        activityList.appendChild(activityElement);
-                    }
-                });
+  getAlertIcon(type) {
+    const icons = {
+      'info': 'fa-info-circle',
+      'warning': 'fa-exclamation-triangle',
+      'error': 'fa-exclamation-circle',
+      'success': 'fa-check-circle'
+    };
+    return icons[type] || 'fa-info-circle';
+  }
+    
+  async loadSites() {
+    try {
+      const sites = await this.getApiData('/api/sites', []);
+      const sitesGrid = document.getElementById('sites-grid');
+
+      if (sitesGrid) {
+        // Clear existing content
+        sitesGrid.innerHTML = '';
+
+        if (Array.isArray(sites) && sites.length > 0) {
+          sites.forEach(site => {
+            if (this.isValidSite(site)) {
+              const siteElement = this.createSiteElement(site);
+              sitesGrid.appendChild(siteElement);
             }
-        } catch (error) {
-            // Silently handle recent activity errors
+          });
+        } else {
+          // Create no sites found element
+          const noSitesElement = this.createNoSitesElement();
+          sitesGrid.appendChild(noSitesElement);
         }
+      }
+    } catch (error) {
+      // Silently handle sites loading errors
     }
+  }
     
-    async loadSystemAlerts() {
-        try {
-            const alerts = await this.getApiData('/api/alerts', []);
-            const alertList = document.getElementById('system-alerts');
-            
-            if (alertList) {
-                // Clear existing content
-                alertList.innerHTML = '';
-                
-                if (Array.isArray(alerts) && alerts.length > 0) {
-                    alerts.forEach(alert => {
-                        if (this.isValidAlert(alert)) {
-                            const alertElement = this.createAlertElement(alert);
-                            alertList.appendChild(alertElement);
-                        }
-                    });
-                } else {
-                    // Create default "all systems operational" alert
-                    const defaultAlert = this.createAlertElement({
-                        message: 'All systems operational',
-                        time: 'Just now',
-                        type: 'info'
-                    });
-                    alertList.appendChild(defaultAlert);
-                }
-            }
-        } catch (error) {
-            // Silently handle system alerts errors
-        }
+  async loadSystemInfo() {
+    try {
+      const sysInfo = await this.getApiData('/api/system/info', {});
+      const systemInfo = document.getElementById('system-info');
+
+      if (systemInfo && typeof sysInfo === 'object') {
+        // Clear existing content
+        systemInfo.innerHTML = '';
+
+        const infoItems = [
+          { label: 'OS', value: this.sanitizeInput(sysInfo.os) || 'Ubuntu 24.04 LTS' },
+          { label: 'Kernel', value: this.sanitizeInput(sysInfo.kernel) || 'Loading...' },
+          { label: 'Uptime', value: this.sanitizeInput(sysInfo.uptime) || 'Loading...' },
+          { label: 'Load Average', value: this.sanitizeInput(sysInfo.load) || 'Loading...' },
+          { label: 'Memory Total', value: this.sanitizeInput(sysInfo.memory_total) || 'Loading...' },
+          { label: 'Disk Total', value: this.sanitizeInput(sysInfo.disk_total) || 'Loading...' },
+          { label: 'Network', value: this.sanitizeInput(sysInfo.network) || 'Loading...' }
+        ];
+
+        infoItems.forEach(item => {
+          const infoElement = this.createInfoElement(item.label, item.value);
+          systemInfo.appendChild(infoElement);
+        });
+      }
+
+      // Initialize resource usage chart
+      this.initializeResourceChart();
+
+    } catch (error) {
+      // Silently handle system info errors
     }
+  }
     
-    getAlertIcon(type) {
-        const icons = {
-            'info': 'fa-info-circle',
-            'warning': 'fa-exclamation-triangle',
-            'error': 'fa-exclamation-circle',
-            'success': 'fa-check-circle'
-        };
-        return icons[type] || 'fa-info-circle';
+  async loadLogs(logType) {
+    // Validate log type
+    if (!this.allowedLogTypes.includes(logType)) {
+      return;
     }
-    
-    async loadSites() {
-        try {
-            const sites = await this.getApiData('/api/sites', []);
-            const sitesGrid = document.getElementById('sites-grid');
-            
-            if (sitesGrid) {
-                // Clear existing content
-                sitesGrid.innerHTML = '';
-                
-                if (Array.isArray(sites) && sites.length > 0) {
-                    sites.forEach(site => {
-                        if (this.isValidSite(site)) {
-                            const siteElement = this.createSiteElement(site);
-                            sitesGrid.appendChild(siteElement);
-                        }
-                    });
-                } else {
-                    // Create no sites found element
-                    const noSitesElement = this.createNoSitesElement();
-                    sitesGrid.appendChild(noSitesElement);
-                }
-            }
-        } catch (error) {
-            // Silently handle sites loading errors
+
+    try {
+      const logs = await this.getApiData(`/api/logs/${logType}`, '');
+      const logViewer = document.getElementById('log-viewer');
+
+      if (logViewer) {
+        const pre = logViewer.querySelector('pre');
+        if (pre) {
+          // Sanitize and set log content as text (not HTML)
+          const sanitizedLogs = this.sanitizeLogContent(logs) || `No ${logType} logs available.`;
+          pre.textContent = sanitizedLogs;
         }
+      }
+    } catch (error) {
+      // Silently handle log loading errors
     }
-    
-    async loadSystemInfo() {
-        try {
-            const sysInfo = await this.getApiData('/api/system/info', {});
-            const systemInfo = document.getElementById('system-info');
-            
-            if (systemInfo && typeof sysInfo === 'object') {
-                // Clear existing content
-                systemInfo.innerHTML = '';
-                
-                const infoItems = [
-                    { label: 'OS', value: this.sanitizeInput(sysInfo.os) || 'Ubuntu 24.04 LTS' },
-                    { label: 'Kernel', value: this.sanitizeInput(sysInfo.kernel) || 'Loading...' },
-                    { label: 'Uptime', value: this.sanitizeInput(sysInfo.uptime) || 'Loading...' },
-                    { label: 'Load Average', value: this.sanitizeInput(sysInfo.load) || 'Loading...' },
-                    { label: 'Memory Total', value: this.sanitizeInput(sysInfo.memory_total) || 'Loading...' },
-                    { label: 'Disk Total', value: this.sanitizeInput(sysInfo.disk_total) || 'Loading...' },
-                    { label: 'Network', value: this.sanitizeInput(sysInfo.network) || 'Loading...' }
-                ];
-                
-                infoItems.forEach(item => {
-                    const infoElement = this.createInfoElement(item.label, item.value);
-                    systemInfo.appendChild(infoElement);
-                });
-            }
-            
-            // Initialize resource usage chart
-            this.initializeResourceChart();
-            
-        } catch (error) {
-            // Silently handle system info errors
-        }
-    }
-    
-    async loadLogs(logType) {
-        // Validate log type
-        if (!this.allowedLogTypes.includes(logType)) {
-            return;
-        }
-        
-        try {
-            const logs = await this.getApiData(`/api/logs/${logType}`, '');
-            const logViewer = document.getElementById('log-viewer');
-            
-            if (logViewer) {
-                const pre = logViewer.querySelector('pre');
-                if (pre) {
-                    // Sanitize and set log content as text (not HTML)
-                    const sanitizedLogs = this.sanitizeLogContent(logs) || `No ${logType} logs available.`;
-                    pre.textContent = sanitizedLogs;
-                }
-            }
-        } catch (error) {
-            // Silently handle log loading errors
-        }
-    }
+  }
     
     initializePerformanceChart() {
         const ctx = document.getElementById('performance-chart');

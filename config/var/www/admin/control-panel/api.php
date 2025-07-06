@@ -93,6 +93,37 @@ $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; //
 $request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 
 // Input validation and sanitization
+// Input validation and sanitization helper
+function validateInputString($input, $max_length = 255) {
+    $input = trim($input);
+    if (strlen($input) > $max_length) {
+        return false;
+    }
+    
+    // Remove any potential script tags or dangerous characters
+    $input = preg_replace('/[<>"\']/', '', $input);
+    // Use htmlspecialchars instead of deprecated FILTER_SANITIZE_STRING
+    return htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function validateInputPath($input) {
+    // Strict path validation - only allow alphanumeric, dash, underscore, dot
+    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $input)) {
+        return false;
+    }
+    // Prevent path traversal
+    if (strpos($input, '..') !== false || strpos($input, '/') !== false) {
+        return false;
+    }
+    return $input;
+}
+
+function validateInputService($input) {
+    // Only allow known service names
+    $allowed_services = ['nginx', 'php8.3-fpm', 'mariadb', 'redis-server'];
+    return in_array($input, $allowed_services, true) ? $input : false;
+}
+
 function validateInput($input, $type = 'string', $max_length = 255) {
     if (empty($input) && $input !== '0') {
         return false;
@@ -100,30 +131,13 @@ function validateInput($input, $type = 'string', $max_length = 255) {
     
     switch ($type) {
         case 'string':
-            $input = trim($input);
-            if (strlen($input) > $max_length) {
-                return false;
-            }
-            // Remove any potential script tags or dangerous characters
-            $input = preg_replace('/[<>"\']/', '', $input);
-            // Use htmlspecialchars instead of deprecated FILTER_SANITIZE_STRING
-            return htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return validateInputString($input, $max_length);
             
         case 'path':
-            // Strict path validation - only allow alphanumeric, dash, underscore, dot
-            if (!preg_match('/^[a-zA-Z0-9._-]+$/', $input)) {
-                return false;
-            }
-            // Prevent path traversal
-            if (strpos($input, '..') !== false || strpos($input, '/') !== false) {
-                return false;
-            }
-            return $input;
+            return validateInputPath($input);
             
         case 'service':
-            // Only allow known service names
-            $allowed_services = ['nginx', 'php8.3-fpm', 'mariadb', 'redis-server'];
-            return in_array($input, $allowed_services, true) ? $input : false;
+            return validateInputService($input);
             
         default:
             return false;
@@ -623,91 +637,127 @@ function getRedisVersion() {
     return 'Unknown';
 }
 
+// WordPress sites discovery helpers
+function validateNginxSitesPath($nginx_sites_path) {
+    // Verify the path is exactly what we expect
+    $real_path = realpath($nginx_sites_path); // codacy:ignore - realpath() required for path validation in standalone API
+    if ($real_path !== '/etc/nginx/sites-enabled') {
+        logSecurityEvent('Nginx sites path traversal attempt', $nginx_sites_path);
+        return false;
+    }
+    
+    if (!is_dir($real_path)) { // codacy:ignore - is_dir() required for directory validation in standalone API
+        return false;
+    }
+    
+    return $real_path;
+}
+
+function scanNginxConfigs($real_path) {
+    $files = scandir($real_path); // codacy:ignore - scandir() required for directory listing in standalone API
+    if ($files === false) {
+        return false;
+    }
+    
+    $valid_files = [];
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..' || $file === 'default') {
+            continue;
+        }
+        
+        // Validate filename to prevent traversal
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
+            logSecurityEvent('Suspicious nginx config filename', $file);
+            continue;
+        }
+        
+        $config_path = $real_path . '/' . $file;
+        $config_real_path = realpath($config_path); // codacy:ignore - realpath() required for path validation in standalone API
+        
+        // Ensure the file is within the expected directory
+        if (!$config_real_path || strpos($config_real_path, $real_path . '/') !== 0) {
+            logSecurityEvent('Config file path traversal attempt', $config_path);
+            continue;
+        }
+        
+        $valid_files[] = $config_real_path;
+    }
+    
+    return $valid_files;
+}
+
+function processNginxConfig($config_real_path) {
+    $config_content = file_get_contents($config_real_path); // codacy:ignore - file_get_contents() required for configuration reading in standalone API
+    if ($config_content === false) {
+        return null;
+    }
+    
+    if (strpos($config_content, 'wordpress') === false && 
+        strpos($config_content, 'wp-') === false) {
+        return null;
+    }
+    
+    // Extract domain name and document root safely
+    $domain = '';
+    $document_root = '';
+    
+    if (preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
+        $domain = trim($matches[1]);
+        
+        // Split multiple domains and take the first one
+        $domain_parts = preg_split('/\s+/', $domain);
+        $primary_domain = $domain_parts[0];
+        
+        // Validate domain format
+        if (filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+            $domain = htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+    }
+    
+    // Extract document root for WordPress version detection
+    if (preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
+        $document_root = trim($matches[1]);
+        // Validate and sanitize document root path
+        if (preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
+            $document_root = realpath($document_root); // codacy:ignore - realpath() required for path validation in standalone API
+        } else {
+            $document_root = '';
+        }
+    }
+    
+    if (empty($domain)) {
+        return null;
+    }
+    
+    $wp_version = getWordPressVersion($document_root);
+    
+    return [
+        'domain' => $domain,
+        'status' => 'online',
+        'wp_version' => $wp_version,
+        'ssl_status' => 'Enabled'
+    ];
+}
+
 function getWordPressSites() {
     $sites = [];
     $nginx_sites_path = '/etc/nginx/sites-enabled';
     
     try {
-        // Verify the path is exactly what we expect
-        $real_path = realpath($nginx_sites_path); // codacy:ignore - realpath() required for path validation in standalone API
-        if ($real_path !== '/etc/nginx/sites-enabled') {
-            logSecurityEvent('Nginx sites path traversal attempt', $nginx_sites_path);
+        $real_path = validateNginxSitesPath($nginx_sites_path);
+        if (!$real_path) {
             return $sites;
         }
         
-        if (is_dir($real_path)) { // codacy:ignore - is_dir() required for directory validation in standalone API
-            $files = scandir($real_path); // codacy:ignore - scandir() required for directory listing in standalone API
-            if ($files === false) {
-                return $sites;
-            }
-            
-            foreach ($files as $file) {
-                if ($file === '.' || $file === '..' || $file === 'default') {
-                    continue;
-                }
-                
-                // Validate filename to prevent traversal
-                if (!preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
-                    logSecurityEvent('Suspicious nginx config filename', $file);
-                    continue;
-                }
-                
-                $config_path = $real_path . '/' . $file;
-                $config_real_path = realpath($config_path); // codacy:ignore - realpath() required for path validation in standalone API
-                
-                // Ensure the file is within the expected directory
-                if (!$config_real_path || strpos($config_real_path, $real_path . '/') !== 0) {
-                    logSecurityEvent('Config file path traversal attempt', $config_path);
-                    continue;
-                }
-                
-                $config_content = file_get_contents($config_real_path); // codacy:ignore - file_get_contents() required for configuration reading in standalone API
-                if ($config_content === false) {
-                    continue;
-                }
-                
-                if (strpos($config_content, 'wordpress') !== false || 
-                    strpos($config_content, 'wp-') !== false) {
-                    
-                    // Extract domain name and document root safely
-                    $domain = '';
-                    $document_root = '';
-                    
-                    if (preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
-                        $domain = trim($matches[1]);
-                        
-                        // Split multiple domains and take the first one
-                        $domain_parts = preg_split('/\s+/', $domain);
-                        $primary_domain = $domain_parts[0];
-                        
-                        // Validate domain format
-                        if (filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-                            $domain = htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                        }
-                    }
-                    
-                    // Extract document root for WordPress version detection
-                    if (preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
-                        $document_root = trim($matches[1]);
-                        // Validate and sanitize document root path
-                        if (preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
-                            $document_root = realpath($document_root); // codacy:ignore - realpath() required for path validation in standalone API
-                        } else {
-                            $document_root = '';
-                        }
-                    }
-                    
-                    if (!empty($domain)) {
-                        $wp_version = getWordPressVersion($document_root);
-                        
-                        $sites[] = [
-                            'domain' => $domain,
-                            'status' => 'online',
-                            'wp_version' => $wp_version,
-                            'ssl_status' => 'Enabled'
-                        ];
-                    }
-                }
+        $valid_files = scanNginxConfigs($real_path);
+        if ($valid_files === false) {
+            return $sites;
+        }
+        
+        foreach ($valid_files as $config_real_path) {
+            $site_info = processNginxConfig($config_real_path);
+            if ($site_info !== null) {
+                $sites[] = $site_info;
             }
         }
     } catch (Exception $e) {
@@ -717,47 +767,84 @@ function getWordPressSites() {
     return $sites;
 }
 
+// WordPress version detection helper
+function validateWordPressPath($document_root) {
+    if (empty($document_root) || !is_dir($document_root)) { // codacy:ignore - is_dir() required for directory validation in standalone API
+        return false;
+    }
+    
+    // Check for wp-includes/version.php file
+    $version_file = $document_root . '/wp-includes/version.php';
+    $real_version_file = realpath($version_file); // codacy:ignore - realpath() required for path validation in standalone API
+    
+    // Ensure the file exists and is within the expected directory structure
+    if (!$real_version_file || 
+        strpos($real_version_file, realpath($document_root) . '/') !== 0) { // codacy:ignore - realpath() required for path validation in standalone API
+        return false;
+    }
+    
+    if (file_exists($real_version_file) && is_readable($real_version_file)) { // codacy:ignore - file_exists() and is_readable() required for version file checking in standalone API
+        return $real_version_file;
+    }
+    
+    return false;
+}
+
+function parseWordPressVersion($real_version_file) {
+    $content = file_get_contents($real_version_file); // codacy:ignore - file_get_contents() required for version reading in standalone API
+    if ($content === false) {
+        return 'Unknown';
+    }
+    
+    // Look for the WordPress version variable
+    if (preg_match('/\$wp_version\s*=\s*[\'"]([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/', $content, $matches)) {
+        $version = $matches[1];
+        // Validate version format
+        if (preg_match('/^[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?$/', $version)) {
+            return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+    }
+    
+    return 'Unknown';
+}
+
 /**
  * Get WordPress version from a site's document root
  * @param string $document_root The document root path of the WordPress installation
  * @return string WordPress version or 'Unknown'
  */
 function getWordPressVersion($document_root) {
-    if (empty($document_root) || !is_dir($document_root)) { // codacy:ignore - is_dir() required for directory validation in standalone API
-        return 'Unknown';
-    }
-    
     try {
-        // Check for wp-includes/version.php file
-        $version_file = $document_root . '/wp-includes/version.php';
-        $real_version_file = realpath($version_file); // codacy:ignore - realpath() required for path validation in standalone API
-        
-        // Ensure the file exists and is within the expected directory structure
-        if (!$real_version_file || 
-            strpos($real_version_file, realpath($document_root) . '/') !== 0) { // codacy:ignore - realpath() required for path validation in standalone API
+        $real_version_file = validateWordPressPath($document_root);
+        if (!$real_version_file) {
             return 'Unknown';
         }
         
-        if (file_exists($real_version_file) && is_readable($real_version_file)) { // codacy:ignore - file_exists() and is_readable() required for version file checking in standalone API
-            $content = file_get_contents($real_version_file); // codacy:ignore - file_get_contents() required for version reading in standalone API
-            if ($content === false) {
-                return 'Unknown';
-            }
-            
-            // Look for the WordPress version variable
-            if (preg_match('/\$wp_version\s*=\s*[\'"]([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/', $content, $matches)) {
-                $version = $matches[1];
-                // Validate version format
-                if (preg_match('/^[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?$/', $version)) {
-                    return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
-            }
-        }
+        return parseWordPressVersion($real_version_file);
     } catch (Exception $e) {
         logSecurityEvent('WordPress version detection error', $e->getMessage());
+        return 'Unknown';
+    }
+}
+
+// Recent activity helpers
+function checkRecentSSHActivity() {
+    $auth_log = '/var/log/auth.log';
+    $real_auth_log = realpath($auth_log); // codacy:ignore - realpath() required for log file path validation in standalone API
+    
+    if (!isValidLogFile($real_auth_log, $auth_log)) {
+        return null;
     }
     
-    return 'Unknown';
+    $handle = fopen($real_auth_log, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
+    if (!$handle) {
+        return null;
+    }
+    
+    $ssh_activity = parseAuthLogForActivity($handle);
+    fclose($handle);
+    
+    return $ssh_activity;
 }
 
 function getRecentActivity() {
@@ -787,25 +874,6 @@ function getRecentActivity() {
     }
     
     return $activities;
-}
-
-function checkRecentSSHActivity() {
-    $auth_log = '/var/log/auth.log';
-    $real_auth_log = realpath($auth_log); // codacy:ignore - realpath() required for log file path validation in standalone API
-    
-    if (!isValidLogFile($real_auth_log, $auth_log)) {
-        return null;
-    }
-    
-    $handle = fopen($real_auth_log, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
-    if (!$handle) {
-        return null;
-    }
-    
-    $ssh_activity = parseAuthLogForActivity($handle);
-    fclose($handle);
-    
-    return $ssh_activity;
 }
 
 function isValidLogFile($real_path, $expected_path) {
@@ -870,15 +938,20 @@ function getSystemAlerts() {
     return $alerts;
 }
 
-function getLogs($logType) {
+// Log reading helpers
+function validateLogType($logType) {
     // Strict whitelist of allowed log types
     $allowed_log_types = ['enginescript', 'nginx', 'php', 'mysql'];
     
     if (!in_array($logType, $allowed_log_types, true)) {
         logSecurityEvent('Invalid log type requested', $logType);
-        return 'Invalid log type';
+        return false;
     }
     
+    return true;
+}
+
+function getLogFilePath($logType) {
     // Predefined safe log file paths
     $log_files = [
         'enginescript' => '/var/log/enginescript.log',
@@ -887,8 +960,10 @@ function getLogs($logType) {
         'mysql' => '/var/log/mysql/error.log'
     ];
     
-    $log_file = $log_files[$logType];
-    
+    return $log_files[$logType];
+}
+
+function validateLogFilePath($log_file) {
     // Additional security check - ensure the path is exactly what we expect
     $real_path = realpath($log_file); // codacy:ignore - realpath() required for log file path validation in standalone API
     $expected_paths = [
@@ -900,44 +975,63 @@ function getLogs($logType) {
     
     if (!$real_path || !in_array($real_path, $expected_paths, true)) {
         logSecurityEvent('Log file path traversal attempt', $log_file);
+        return false;
+    }
+    
+    return $real_path;
+}
+
+function readLogFileSafely($real_path) {
+    if (!file_exists($real_path) || !is_readable($real_path)) { // codacy:ignore - file_exists() and is_readable() required for log file validation in standalone API
+        return 'Log file not found';
+    }
+    
+    // Use safe method to read last 50 lines
+    $file_size = filesize($real_path); // codacy:ignore - filesize() required for log file size checking in standalone API
+    if ($file_size === false || $file_size > 50 * 1024 * 1024) { // 50MB limit
+        return 'Log file too large or unreadable';
+    }
+    
+    $handle = fopen($real_path, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
+    if ($handle === false) {
+        return 'Cannot open log file';
+    }
+    
+    // Read last 50 lines safely
+    $lines = [];
+    $line_count = 0;
+    
+    // Read from end of file
+    fseek($handle, -min($file_size, 8192), SEEK_END); // codacy:ignore - fseek() required for log file positioning in standalone API
+    while (($line = fgets($handle)) !== false && $line_count < 50) { // codacy:ignore - fgets() required for log file line reading in standalone API
+        $lines[] = $line;
+        $line_count++;
+    }
+    
+    fclose($handle);
+    
+    // Return last 50 lines, sanitized
+    $result = implode('', array_slice($lines, -50));
+    return htmlspecialchars($result, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function getLogs($logType) {
+    if (!validateLogType($logType)) {
+        return 'Invalid log type';
+    }
+    
+    $log_file = getLogFilePath($logType);
+    $real_path = validateLogFilePath($log_file);
+    
+    if (!$real_path) {
         return 'Log file access denied';
     }
     
     try {
-        if (file_exists($real_path) && is_readable($real_path)) { // codacy:ignore - file_exists() and is_readable() required for log file validation in standalone API
-            // Use safe method to read last 50 lines
-            $file_size = filesize($real_path); // codacy:ignore - filesize() required for log file size checking in standalone API
-            if ($file_size === false || $file_size > 50 * 1024 * 1024) { // 50MB limit
-                return 'Log file too large or unreadable';
-            }
-            
-            $handle = fopen($real_path, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
-            if ($handle === false) {
-                return 'Cannot open log file';
-            }
-            
-            // Read last 50 lines safely
-            $lines = [];
-            $line_count = 0;
-            
-            // Read from end of file
-            fseek($handle, -min($file_size, 8192), SEEK_END); // codacy:ignore - fseek() required for log file positioning in standalone API
-            while (($line = fgets($handle)) !== false && $line_count < 50) { // codacy:ignore - fgets() required for log file line reading in standalone API
-                $lines[] = $line;
-                $line_count++;
-            }
-            
-            fclose($handle);
-            
-            // Return last 50 lines, sanitized
-            $result = implode('', array_slice($lines, -50));
-            return htmlspecialchars($result, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
+        return readLogFileSafely($real_path);
     } catch (Exception $e) {
         logSecurityEvent('Log reading error', $e->getMessage());
         return 'Error reading log file';
     }
-    
-    return 'Log file not found';
 }
 ?>

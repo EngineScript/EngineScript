@@ -88,16 +88,34 @@ Changes are organized by date, with the most recent changes listed first.
     - Improved CSS rule organization and readability
   - **JavaScript Formatting Improvements**: Enhanced code consistency and readability
     - Fixed inconsistent indentation patterns throughout dashboard.js
-    - Standardized quote usage (single quotes → double quotes for consistency)
+    - Standardized quote usage (single quotes for DOM selectors and string literals)
     - Improved function and class formatting for better maintainability
     - Enhanced code structure organization and documentation
     - Fixed navigation and page management function formatting
     - Corrected element selector formatting and event handler structure
+    - Applied comprehensive code style quick fixes across all JavaScript functions
     - **Removed Debugging Code**: Eliminated all debugging-related console.log statements and user interaction tracking
       - Removed 15+ console.log statements used for navigation, API calls, and page management debugging
       - Removed console.error statements for validation failures and missing elements
       - Removed production console disabling code that was debugging-related
       - Simplified error handling to fail silently for better user experience
+  - **PHP Complexity Reduction**: Refactored high-complexity API functions to improve maintainability
+    - **validateInput() Function**: Split into focused helper functions to reduce complexity
+      - Created `validateInputString()`, `validateInputPath()`, and `validateInputService()` helpers
+      - Reduced cyclomatic complexity while maintaining security validation
+      - Improved code readability and maintainability through function decomposition
+    - **getWordPressVersion() Function**: Extracted path validation and version parsing logic
+      - Created `validateWordPressPath()` and `parseWordPressVersion()` helper functions
+      - Separated security validation from version extraction for better organization
+      - Reduced NPath complexity while maintaining security standards
+    - **getWordPressSites() Function**: Decomposed into specialized helper functions
+      - Created `validateNginxSitesPath()`, `scanNginxConfigs()`, and `processNginxConfig()` helpers
+      - Reduced cyclomatic complexity from 23 to 8 through logical function separation
+      - Improved error handling and maintainability of WordPress site discovery
+    - **getLogs() Function**: Split into validation and reading helper functions
+      - Created `validateLogType()`, `getLogFilePath()`, `validateLogFilePath()`, and `readLogFileSafely()` helpers
+      - Reduced complexity while maintaining strict security validation
+      - Improved code organization and reusability of log handling logic
       - Maintained functional error handling while removing verbose debugging output
     - **Removed Unused Variables**: Fixed Codacy error-prone issues
       - Removed unused `navItems` variable from `setupNavigation()` function
