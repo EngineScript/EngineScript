@@ -12,7 +12,7 @@ class EngineScriptDashboard {
         this.minRefreshInterval = 5000;   // 5 seconds min
         this.allowedLogTypes = ['enginescript', 'nginx', 'php', 'mysql', 'redis', 'system'];
         this.allowedTimeRanges = ['1h', '6h', '24h', '48h'];
-        this.allowedPages = ['overview', 'sites', 'system', 'backups', 'logs', 'tools'];
+        this.allowedPages = ['overview', 'sites', 'system', 'logs', 'tools'];
         this.allowedTools = ['phpmyadmin', 'phpinfo', 'phpsysinfo', 'adminer'];
         
         this.init();
@@ -142,7 +142,6 @@ class EngineScriptDashboard {
             'overview': 'Overview',
             'sites': 'WordPress Sites',
             'system': 'System Information',
-            'backups': 'Backup Management',
             'logs': 'System Logs',
             'tools': 'Admin Tools'
         };
@@ -165,9 +164,6 @@ class EngineScriptDashboard {
                 break;
             case 'system':
                 this.loadSystemInfo();
-                break;
-            case 'backups':
-                this.loadBackupStatus();
                 break;
             case 'logs':
                 this.loadLogs('enginescript');
@@ -442,33 +438,6 @@ class EngineScriptDashboard {
             
         } catch (error) {
             console.error('Failed to load system info:', error);
-        }
-    }
-    
-    async loadBackupStatus() {
-        try {
-            const backups = await this.getApiData('/api/backups', []);
-            const backupGrid = document.getElementById('backup-grid');
-            
-            if (backupGrid) {
-                // Clear existing content
-                backupGrid.innerHTML = '';
-                
-                if (Array.isArray(backups) && backups.length > 0) {
-                    backups.forEach(backup => {
-                        if (this.isValidBackup(backup)) {
-                            const backupElement = this.createBackupElement(backup);
-                            backupGrid.appendChild(backupElement);
-                        }
-                    });
-                } else {
-                    // Create no backup info element
-                    const noBackupElement = this.createNoBackupElement();
-                    backupGrid.appendChild(noBackupElement);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load backup status:', error);
         }
     }
     
@@ -812,14 +781,6 @@ class EngineScriptDashboard {
                /^[a-zA-Z0-9.-]+$/.test(site.domain); // Basic domain validation
     }
     
-    isValidBackup(backup) {
-        return backup &&
-               typeof backup === 'object' &&
-               typeof backup.type === 'string' &&
-               backup.type.length > 0 &&
-               backup.type.length < 100;
-    }
-    
     createActivityElement(activity) {
         const activityDiv = document.createElement('div');
         activityDiv.className = 'activity-item';
@@ -921,40 +882,11 @@ class EngineScriptDashboard {
         sslInfo.innerHTML = '<strong>SSL:</strong> ';
         sslInfo.appendChild(document.createTextNode(this.sanitizeInput(site.ssl_status) || 'Unknown'));
         
-        const backupInfo = document.createElement('p');
-        backupInfo.innerHTML = '<strong>Last Backup:</strong> ';
-        backupInfo.appendChild(document.createTextNode(this.sanitizeInput(site.last_backup) || 'Never'));
-        
         infoDiv.appendChild(wpInfo);
         infoDiv.appendChild(sslInfo);
-        infoDiv.appendChild(backupInfo);
-        
-        // Site actions
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'site-actions';
-        
-        // Create a direct link instead of a button with JavaScript
-        const domain = this.sanitizeInput(site.domain);
-        if (domain && /^[a-zA-Z0-9.-]+$/.test(domain)) {
-            const visitLink = document.createElement('a');
-            visitLink.href = `https://${domain}`;
-            visitLink.target = '_blank';
-            visitLink.rel = 'noopener noreferrer';
-            visitLink.className = 'btn btn-primary';
-            visitLink.innerHTML = '<i class="fas fa-external-link-alt"></i> Visit';
-            actionsDiv.appendChild(visitLink);
-        } else {
-            const disabledSpan = document.createElement('span');
-            disabledSpan.className = 'btn btn-primary disabled';
-            disabledSpan.innerHTML = '<i class="fas fa-external-link-alt"></i> Visit';
-            disabledSpan.style.opacity = '0.5';
-            disabledSpan.style.pointerEvents = 'none';
-            actionsDiv.appendChild(disabledSpan);
-        }
         
         siteDiv.appendChild(headerDiv);
         siteDiv.appendChild(infoDiv);
-        siteDiv.appendChild(actionsDiv);
         
         return siteDiv;
     }
@@ -999,49 +931,6 @@ class EngineScriptDashboard {
         infoDiv.appendChild(valueElement);
         
         return infoDiv;
-    }
-    
-    createBackupElement(backup) {
-        const backupDiv = document.createElement('div');
-        backupDiv.className = 'backup-item';
-        
-        const title = document.createElement('h4');
-        title.textContent = `${this.sanitizeInput(backup.type)} Backup`;
-        
-        const lastRun = document.createElement('p');
-        lastRun.innerHTML = '<strong>Last Run:</strong> ';
-        lastRun.appendChild(document.createTextNode(this.sanitizeInput(backup.last_run) || 'Unknown'));
-        
-        const status = document.createElement('p');
-        status.innerHTML = '<strong>Status:</strong> ';
-        status.appendChild(document.createTextNode(this.sanitizeInput(backup.status) || 'Unknown'));
-        
-        const size = document.createElement('p');
-        size.innerHTML = '<strong>Size:</strong> ';
-        size.appendChild(document.createTextNode(this.sanitizeInput(backup.size) || 'Unknown'));
-        
-        backupDiv.appendChild(title);
-        backupDiv.appendChild(lastRun);
-        backupDiv.appendChild(status);
-        backupDiv.appendChild(size);
-        
-        return backupDiv;
-    }
-    
-    createNoBackupElement() {
-        const backupDiv = document.createElement('div');
-        backupDiv.className = 'backup-item';
-        
-        const title = document.createElement('h4');
-        title.textContent = 'No backup information available';
-        
-        const message = document.createElement('p');
-        message.textContent = 'Backup status will be displayed here once configured.';
-        
-        backupDiv.appendChild(title);
-        backupDiv.appendChild(message);
-        
-        return backupDiv;
     }
     
     // Cleanup method

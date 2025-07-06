@@ -517,12 +517,15 @@ body {
     border: 1px solid var(--border-color);
     transition: var(--transition);
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
 }
 
 .tool-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow);
     border-color: var(--accent-color);
+    text-decoration: none;
 }
 
 .tool-icon {
@@ -580,20 +583,6 @@ body {
 }
 
 
-
-/* Backup Grid */
-.backup-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.backup-item {
-    padding: 1.5rem;
-    background: var(--secondary-bg);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-}
 
 /* System Info */
 .info-list {
