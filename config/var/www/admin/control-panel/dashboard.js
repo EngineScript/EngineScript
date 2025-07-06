@@ -13,24 +13,8 @@ class EngineScriptDashboard {
     // Security configurations
     this.maxRefreshInterval = 300000; // 5 minutes max
     this.minRefreshInterval = 5000; // 5 seconds min
-    this.allowedLogTypes = [
-      "enginescript",
-      "nginx",
-      "php",
-      "mysql",
-      "redis",
-      "system",
-      "install",
-      "install-error",
-      "vhost-install",
-      "vhost-import",
-      "vhost-remove",
-      "auth",
-      "syslog",
-      "cron",
-    ];
     this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
-    this.allowedPages = ["overview", "sites", "system", "logs", "tools"];
+    this.allowedPages = ["overview", "sites", "system", "tools"];
     this.allowedTools = ["phpmyadmin", "phpinfo", "phpsysinfo", "adminer"];
 
     this.init();
@@ -62,17 +46,6 @@ class EngineScriptDashboard {
       refreshBtn.addEventListener("click", () => this.refreshData());
     }
 
-    // Log type selector
-    const logTypeSelect = document.getElementById("log-type");
-    if (logTypeSelect) {
-      logTypeSelect.addEventListener("change", (e) => {
-        const logType = this.sanitizeInput(e.target.value);
-        if (this.allowedLogTypes.includes(logType)) {
-          this.loadLogs(logType);
-        }
-      });
-    }
-
     // Chart timerange selector
     const chartTimerange = document.getElementById("chart-timerange");
     if (chartTimerange) {
@@ -82,12 +55,6 @@ class EngineScriptDashboard {
           this.updatePerformanceChart(timeRange);
         }
       });
-    }
-
-    // Log diagnostic button
-    const logDiagnosticBtn = document.getElementById("log-diagnostic-btn");
-    if (logDiagnosticBtn) {
-      logDiagnosticBtn.addEventListener("click", () => this.runLogDiagnostic());
     }
   }
   setupNavigation() {
@@ -149,7 +116,6 @@ class EngineScriptDashboard {
       overview: "Overview",
       sites: "WordPress Sites",
       system: "System Information",
-      logs: "System Logs",
       tools: "Admin Tools",
     };
     return titles[pageName] || "Dashboard";
@@ -170,9 +136,6 @@ class EngineScriptDashboard {
         break;
       case "system":
         this.loadSystemInfo();
-        break;
-      case "logs":
-        this.loadLogs("syslog"); // Try system log first as it's more likely to exist
         break;
     }
   }
@@ -456,55 +419,6 @@ class EngineScriptDashboard {
     }
   }
     
-  async loadLogs(logType) {
-    // Validate log type
-    if (!this.allowedLogTypes.includes(logType)) {
-      return;
-    }
-
-    const logViewer = document.getElementById("log-viewer");
-    const pre = logViewer?.querySelector("pre");
-    
-    if (!pre) return;
-
-    // Show loading state
-    pre.textContent = `Loading ${logType} logs...`;
-
-    try {
-      const response = await this.getApiData(`/api/logs/${logType}`, null);
-      
-      if (response === null) {
-        pre.textContent = `Failed to load ${logType} logs. The API may be unavailable.`;
-        return;
-      }
-
-      // The API returns the log content directly (extracted from data.logs in getApiData)
-      let logContent = response;
-      
-      // Handle case where response is empty or undefined
-      if (!logContent || (typeof logContent === 'string' && logContent.trim() === '')) {
-        pre.textContent = `No ${logType} logs available or log file is empty.`;
-        return;
-      }
-
-      // Sanitize and display log content
-      const sanitizedLogs = this.sanitizeLogContent(logContent);
-      
-      if (!sanitizedLogs || sanitizedLogs.trim() === '') {
-        pre.textContent = `${logType} logs could not be processed or are empty.`;
-        return;
-      }
-      
-      pre.textContent = sanitizedLogs;
-      
-      // Scroll to bottom of logs to show most recent entries
-      pre.scrollTop = pre.scrollHeight;
-      
-    } catch (error) {
-      pre.textContent = `Error loading ${logType} logs: ${error.message}`;
-    }
-  }
-    
   initializePerformanceChart() {
     const ctx = document.getElementById("performance-chart");
     if (!ctx || typeof Chart === "undefined") return;
@@ -739,9 +653,6 @@ class EngineScriptDashboard {
       if (endpoint.includes("/sites/count") && data.count !== undefined) {
         return data.count.toString();
       }
-      if (endpoint.includes("/logs/") && data.logs !== undefined) {
-        return data.logs;
-      }
 
       return data;
     } catch (error) {
@@ -854,22 +765,6 @@ class EngineScriptDashboard {
     return cleaned || fallback;
   }
     
-  sanitizeLogContent(input) {
-    if (typeof input !== "string") {
-      return "";
-    }
-
-    // For logs, we need to preserve log format while removing only dangerous content
-    // Allow common log characters: alphanumeric, spaces, punctuation, timestamps, etc.
-    let sanitized = String(input)
-      .replace(/[\u0000-\u0008\v\u000C\u000E-\u001F\u007F-\u009F]/g, "") // Remove control chars but keep \t, \n, \r
-      .replace(/[<>]/g, "") // Remove potential HTML tags but keep other characters
-      .substring(0, 100000); // Increased limit for larger log files
-
-    // Remove dangerous patterns using shared method
-    return this.removeDangerousPatterns(sanitized);
-  }
-
   setTextContent(elementId, content) {
     const element = document.getElementById(elementId);
     if (element) {

@@ -621,25 +621,6 @@ body {
     color: var(--text-secondary);
 }
 
-/* Log Viewer */
-.log-viewer {
-    background: var(--primary-bg);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-    height: 400px;
-    overflow-y: auto;
-}
-
-.log-viewer pre {
-    padding: 1rem;
-    margin: 0;
-    color: var(--text-secondary);
-    font-family: 'Courier New', monospace;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    white-space: pre-wrap;
-}
-
 /* Chart Containers */
 #performance-chart, #resource-chart {
     max-height: 300px;
