@@ -20,6 +20,14 @@ class EngineScriptDashboard {
       "mysql",
       "redis",
       "system",
+      "install",
+      "install-error",
+      "vhost-install",
+      "vhost-import",
+      "vhost-remove",
+      "auth",
+      "syslog",
+      "cron",
     ];
     this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
     this.allowedPages = ["overview", "sites", "system", "logs", "tools"];
@@ -474,7 +482,92 @@ class EngineScriptDashboard {
       this.charts.performance.destroy();
     }
 
-    const chartData = this.generateSampleData("24h");
+    // Load real performance data
+    this.loadPerformanceChartData("24h");
+  }
+
+  async loadPerformanceChartData(timerange) {
+    try {
+      const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
+      
+      const ctx = document.getElementById("performance-chart");
+      if (!ctx || typeof Chart === "undefined") return;
+
+      this.charts.performance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: chartData.labels || [],
+          datasets: [
+            {
+              label: "CPU %",
+              data: chartData.cpu || [],
+              borderColor: "#00d4aa",
+              backgroundColor: "rgba(0, 212, 170, 0.1)",
+              tension: 0.4,
+            },
+            {
+              label: "Memory %",
+              data: chartData.memory || [],
+              borderColor: "#00a8ff",
+              backgroundColor: "rgba(0, 168, 255, 0.1)",
+              tension: 0.4,
+            },
+            {
+              label: "Disk %",
+              data: chartData.disk || [],
+              borderColor: "#ffb800",
+              backgroundColor: "rgba(255, 184, 0, 0.1)",
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 0, // Disable animation to prevent sizing issues
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              min: 0,
+              grid: {
+                color: "#444444",
+              },
+              ticks: {
+                color: "#b3b3b3",
+                stepSize: 25, // Force consistent scale steps
+              },
+            },
+            x: {
+              grid: {
+                color: "#444444",
+              },
+              ticks: {
+                color: "#b3b3b3",
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "#b3b3b3",
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      // Use fallback data if API fails
+      this.loadFallbackChart(timerange);
+    }
+  }
+
+  loadFallbackChart(timerange) {
+    const chartData = this.generateFallbackData(timerange);
+    const ctx = document.getElementById("performance-chart");
+    if (!ctx || typeof Chart === "undefined") return;
 
     this.charts.performance = new Chart(ctx, {
       type: "line",
@@ -507,15 +600,20 @@ class EngineScriptDashboard {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 0,
+        },
         scales: {
           y: {
             beginAtZero: true,
             max: 100,
+            min: 0,
             grid: {
               color: "#444444",
             },
             ticks: {
               color: "#b3b3b3",
+              stepSize: 25,
             },
           },
           x: {
@@ -580,17 +678,16 @@ class EngineScriptDashboard {
       return;
     }
 
-    if (!this.charts.performance) return;
+    if (!this.charts.performance) {
+      this.loadPerformanceChartData(timerange);
+      return;
+    }
 
-    const chartData = this.generateSampleData(timerange);
-    this.charts.performance.data.labels = chartData.labels;
-    this.charts.performance.data.datasets[0].data = chartData.cpu;
-    this.charts.performance.data.datasets[1].data = chartData.memory;
-    this.charts.performance.data.datasets[2].data = chartData.disk;
-    this.charts.performance.update();
+    // Load new data for the selected timerange
+    this.loadPerformanceChartData(timerange);
   }
     
-  generateSampleData(timerange) {
+  generateFallbackData(timerange) {
     const points = timerange === "1h" ? 12 : timerange === "6h" ? 24 : timerange === "24h" ? 24 : 48;
     const labels = [];
     const cpu = [];
@@ -611,20 +708,40 @@ class EngineScriptDashboard {
         labels.push(time.toLocaleTimeString("en-US", { hour: "2-digit" }) + ":00");
       }
 
-      // Generate sample data with some realistic patterns
-      cpu.push(Math.random() * 30 + 10); // 10-40% CPU
-      memory.push(Math.random() * 20 + 40); // 40-60% Memory
-      disk.push(Math.random() * 10 + 70); // 70-80% Disk
+      // Generate sample fallback data with realistic patterns (not random)
+      const baseTime = Date.now() - ((points - i) * (timerange === "1h" ? 5 : timerange === "6h" ? 15 : 60) * 60000);
+      const hourOfDay = new Date(baseTime).getHours();
+      
+      // Create realistic CPU patterns based on time of day
+      let baseCpu = 15;
+      if (hourOfDay >= 9 && hourOfDay <= 17) baseCpu = 25; // Business hours
+      if (hourOfDay >= 18 && hourOfDay <= 22) baseCpu = 20; // Evening
+      cpu.push(baseCpu + Math.sin(i * 0.5) * 5); // Gentle variation
+      
+      // Memory usage typically more stable
+      memory.push(45 + Math.sin(i * 0.3) * 8);
+      
+      // Disk usage very stable
+      disk.push(65 + Math.sin(i * 0.1) * 2);
     }
 
     return { labels, cpu, memory, disk };
   }
     
+  // Browser compatibility helper
+  isOperaMini() {
+    return (
+      typeof navigator !== "undefined" &&
+      navigator.userAgent &&
+      navigator.userAgent.indexOf("Opera Mini") > -1
+    );
+  }
+
   // API Methods
   async getApiData(endpoint, fallback) {
     try {
-      // Check if fetch is available
-      if (typeof fetch === "undefined") {
+      // Check if fetch is available and supported (Opera Mini compatibility)
+      if (typeof fetch === "undefined" || this.isOperaMini()) {
         return fallback;
       }
 
@@ -659,8 +776,8 @@ class EngineScriptDashboard {
 
   async getServiceStatus(service) {
     try {
-      // Check if fetch is available
-      if (typeof fetch === "undefined") {
+      // Check if fetch is available and supported (Opera Mini compatibility)
+      if (typeof fetch === "undefined" || this.isOperaMini()) {
         return { online: false, version: "Unavailable" };
       }
 
