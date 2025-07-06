@@ -1,7 +1,7 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-/* global Chart, fetch */
+/* global Chart */
 
 class EngineScriptDashboard {
   constructor() {
@@ -701,22 +701,8 @@ class EngineScriptDashboard {
   }
     
   // Security Helper Methods
-  sanitizeInput(input) {
-    if (typeof input !== "string") {
-      return String(input || "");
-    }
-
-    // Use whitelist approach for maximum security
-    // Only allow alphanumeric characters, spaces, and safe punctuation
-    let sanitized = String(input)
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove all control characters
-      .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
-      .replace(/\s+/g, " ") // Normalize whitespace
-      .trim()
-      .substring(0, 1000); // Limit length
-
-    // Additional security: remove any remaining dangerous patterns
-    // This catches edge cases that might slip through the whitelist
+  removeDangerousPatterns(input) {
+    // Common security patterns that should be removed from all inputs
     const dangerousPatterns = [
       /javascript/gi,
       /vbscript/gi,
@@ -735,13 +721,34 @@ class EngineScriptDashboard {
       /alert/gi,
       /prompt/gi,
       /confirm/gi,
+      /<\/script/gi,
+      /<\/iframe/gi,
     ];
 
+    let sanitized = input;
     dangerousPatterns.forEach((pattern) => {
       sanitized = sanitized.replace(pattern, "");
     });
 
     return sanitized;
+  }
+
+  sanitizeInput(input) {
+    if (typeof input !== "string") {
+      return String(input || "");
+    }
+
+    // Use whitelist approach for maximum security
+    // Only allow alphanumeric characters, spaces, and safe punctuation
+    let sanitized = String(input)
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove all control characters
+      .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
+      .replace(/\s+/g, " ") // Normalize whitespace
+      .trim()
+      .substring(0, 1000); // Limit length
+
+    // Remove dangerous patterns using shared method
+    return this.removeDangerousPatterns(sanitized);
   }
 
   sanitizeNumeric(input, fallback = "0") {
@@ -767,35 +774,8 @@ class EngineScriptDashboard {
       .replace(/ +/g, " ") // Normalize multiple spaces but preserve single spaces
       .substring(0, 50000); // Reasonable log size limit
 
-    // Additional security: remove any remaining dangerous patterns
-    // This prevents any script injection even in log content
-    const dangerousPatterns = [
-      /javascript/gi,
-      /vbscript/gi,
-      /data:/gi,
-      /about:/gi,
-      /file:/gi,
-      /<script/gi,
-      /<iframe/gi,
-      /<object/gi,
-      /<embed/gi,
-      /<link/gi,
-      /<meta/gi,
-      /on\w+=/gi,
-      /expression/gi,
-      /eval/gi,
-      /alert/gi,
-      /prompt/gi,
-      /confirm/gi,
-      /<\/script/gi,
-      /<\/iframe/gi,
-    ];
-
-    dangerousPatterns.forEach((pattern) => {
-      sanitized = sanitized.replace(pattern, "");
-    });
-
-    return sanitized;
+    // Remove dangerous patterns using shared method
+    return this.removeDangerousPatterns(sanitized);
   }
 
   setTextContent(elementId, content) {
@@ -840,67 +820,65 @@ class EngineScriptDashboard {
     ); // Basic domain validation
   }
     
-  createActivityElement(activity) {
-    const activityDiv = document.createElement("div");
-    activityDiv.className = "activity-item";
+  // Helper method for creating content elements with icon, message, and time
+  createContentElement(config) {
+    const { containerClass, iconClass, contentClass, messageText, timeText, timeClass, iconType } = config;
+
+    const containerDiv = document.createElement("div");
+    containerDiv.className = containerClass;
 
     const iconDiv = document.createElement("div");
-    iconDiv.className = "activity-icon";
+    iconDiv.className = iconClass;
 
     const icon = document.createElement("i");
-    const iconClass = this.sanitizeInput(activity.icon) || "fa-info-circle";
-    icon.className = `fas ${iconClass}`;
+    icon.className = `fas ${iconType}`;
     iconDiv.appendChild(icon);
 
     const contentDiv = document.createElement("div");
-    contentDiv.className = "activity-content";
+    contentDiv.className = contentClass;
 
     const message = document.createElement("p");
-    message.textContent = this.sanitizeInput(activity.message);
+    message.textContent = this.sanitizeInput(messageText);
 
     const time = document.createElement("span");
-    time.className = "activity-time";
-    time.textContent = this.sanitizeInput(activity.time);
+    time.className = timeClass;
+    time.textContent = this.sanitizeInput(timeText);
 
     contentDiv.appendChild(message);
     contentDiv.appendChild(time);
 
-    activityDiv.appendChild(iconDiv);
-    activityDiv.appendChild(contentDiv);
+    containerDiv.appendChild(iconDiv);
+    containerDiv.appendChild(contentDiv);
 
-    return activityDiv;
+    return containerDiv;
   }
+
+  createActivityElement(activity) {
+    const iconClass = this.sanitizeInput(activity.icon) || "fa-info-circle";
     
+    return this.createContentElement({
+      containerClass: "activity-item",
+      iconClass: "activity-icon",
+      contentClass: "activity-content",
+      messageText: activity.message,
+      timeText: activity.time,
+      timeClass: "activity-time",
+      iconType: iconClass,
+    });
+  }
+
   createAlertElement(alert) {
     const alertType = this.sanitizeInput(alert.type) || "info";
 
-    const alertDiv = document.createElement("div");
-    alertDiv.className = `alert-item ${alertType}`;
-
-    const iconDiv = document.createElement("div");
-    iconDiv.className = `alert-icon ${alertType}`;
-
-    const icon = document.createElement("i");
-    icon.className = `fas ${this.getAlertIcon(alertType)}`;
-    iconDiv.appendChild(icon);
-
-    const contentDiv = document.createElement("div");
-    contentDiv.className = "alert-content";
-
-    const message = document.createElement("p");
-    message.textContent = this.sanitizeInput(alert.message);
-
-    const time = document.createElement("span");
-    time.className = "alert-time";
-    time.textContent = this.sanitizeInput(alert.time);
-
-    contentDiv.appendChild(message);
-    contentDiv.appendChild(time);
-
-    alertDiv.appendChild(iconDiv);
-    alertDiv.appendChild(contentDiv);
-
-    return alertDiv;
+    return this.createContentElement({
+      containerClass: `alert-item ${alertType}`,
+      iconClass: `alert-icon ${alertType}`,
+      contentClass: "alert-content",
+      messageText: alert.message,
+      timeText: alert.time,
+      timeClass: "alert-time",
+      iconType: this.getAlertIcon(alertType),
+    });
   }
     
   createSiteElement(site) {
