@@ -45,17 +45,51 @@ sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/in
 # The nginx config expects /enginescript/api.php for API calls
 # Keep the original api.php in place for direct access
 
-# Download Tiny File Manager for the file manager tool
-echo "Downloading Tiny File Manager..."
-TFM_URL="https://raw.githubusercontent.com/prasathmani/tinyfilemanager/master/tinyfilemanager.php"
-TFM_FILE="/var/www/admin/enginescript/tinyfilemanager.php"
+# Download and install official Tiny File Manager from GitHub
+echo "Installing official Tiny File Manager from GitHub..."
+TFM_DIR="/var/www/admin/enginescript/tinyfilemanager"
+TFM_ZIP_URL="https://github.com/prasathmani/tinyfilemanager/archive/refs/tags/${TINYFILEMANAGER_VER}.tar.gz"
+TFM_ZIP_FILE="/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}.tar.gz"
 
-# Download TFM with error handling
-if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_URL}" -o "${TFM_FILE}"; then
-    chmod 644 "${TFM_FILE}"
-    echo "Tiny File Manager downloaded successfully."
+# Remove existing TFM directory if it exists
+if [[ -d "$TFM_DIR" ]]; then
+    rm -rf "$TFM_DIR"
+fi
+
+# Create TFM directory
+mkdir -p "$TFM_DIR"
+
+# Download and extract TFM with error handling
+if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_FILE}"; then
+    if tar -xzf "${TFM_ZIP_FILE}" -C /tmp/; then
+        # Copy files from extracted directory to our target directory
+        cp -r /tmp/tinyfilemanager-${TINYFILEMANAGER_VER}/* "$TFM_DIR/"
+        
+        # Copy our custom configuration file
+        if [[ -f "/usr/local/bin/enginescript/config/var/www/admin/tinyfilemanager/config.php" ]]; then
+            cp /usr/local/bin/enginescript/config/var/www/admin/tinyfilemanager/config.php "$TFM_DIR/"
+        fi
+        
+        # Set proper permissions
+        find "$TFM_DIR" -type f -name "*.php" -exec chmod 644 {} \;
+        find "$TFM_DIR" -type f -name "*.md" -exec chmod 644 {} \;
+        find "$TFM_DIR" -type f -name "*.txt" -exec chmod 644 {} \;
+        find "$TFM_DIR" -type d -exec chmod 755 {} \;
+        chmod 755 "$TFM_DIR"
+        
+        # Clean up
+        rm -f "${TFM_ZIP_FILE}"
+        rm -rf /tmp/tinyfilemanager-${TINYFILEMANAGER_VER}
+        
+        echo "✓ Official Tiny File Manager v${TINYFILEMANAGER_VER} installed successfully"
+        echo "  - Location: $TFM_DIR"
+        echo "  - Access URL: /enginescript/tinyfilemanager/tinyfilemanager.php"
+        echo "  - Default login: admin/admin"
+    else
+        echo "⚠ Warning: Failed to extract Tiny File Manager archive"
+    fi
 else
-    echo "Warning: Failed to download Tiny File Manager. File manager will attempt auto-download on first access."
+    echo "⚠ Warning: Failed to download Tiny File Manager from GitHub"
 fi
 
 # Create /etc/enginescript directory if it doesn't exist
@@ -67,15 +101,6 @@ if [[ ! -d "/etc/enginescript" ]]; then
     chown -R www-data:www-data /etc/enginescript
 
     echo "✓ EngineScript configuration directory created"
-fi
-
-# Create File Manager configuration file if it doesn't exist
-if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
-    echo "Creating File Manager configuration file..."
-    cp /usr/local/bin/enginescript/config/etc/enginescript/filemanager.conf /etc/enginescript/filemanager.conf
-    chmod 600 /etc/enginescript/filemanager.conf
-    chown -R www-data:www-data /etc/enginescript/filemanager.conf
-    echo "✓ File Manager configuration template created"
 fi
 
 # Create Uptime Robot configuration file if it doesn't exist

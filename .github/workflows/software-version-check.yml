@@ -256,6 +256,21 @@ jobs:
             grep "^FONTAWESOME_VER=" enginescript-variables.txt >> .github/temp_versions.txt
           fi
           
+          # TinyFileManager
+          echo "::debug::Fetching TinyFileManager version..."
+          TFM_API_RESPONSE=$(curl -s https://api.github.com/repos/prasathmani/tinyfilemanager/releases/latest)
+          echo "::debug::TinyFileManager API Response: $TFM_API_RESPONSE"
+          
+          LATEST_TFM=$(echo "$TFM_API_RESPONSE" | jq -r '.tag_name // empty')
+          echo "::debug::Parsed TinyFileManager version: '$LATEST_TFM'"
+          
+          if [[ -n "$LATEST_TFM" && "$LATEST_TFM" != "null" ]]; then
+            check_version "TINYFILEMANAGER_VER" "$LATEST_TFM"
+          else
+            echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
+            grep "^TINYFILEMANAGER_VER=" enginescript-variables.txt >> .github/temp_versions.txt
+          fi
+          
           # Update date only if versions changed
           if [[ "$CHANGES_DETECTED" = true ]]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT

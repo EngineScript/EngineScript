@@ -1,8 +1,77 @@
-# Changelog
+# Chan## 2025-07-07
+
+### 🏷️ OFFICIAL RELEASE INTEGRATION
+- **Version Management**: Switched TinyFileManager to official tagged releases instead of master branch
+  - **Release Tracking**: Added `TINYFILEMANAGER_VER="2.6"` to `enginescript-variables.txt`
+    - Uses official GitHub release tags instead of master branch
+    - Downloads from `https://github.com/prasathmani/tinyfilemanager/archive/refs/tags/{version}.tar.gz`
+    - Ensures stable, tested releases rather than development code
+  - **Automated Updates**: Integrated TinyFileManager into GitHub Actions version checking workflow
+    - Automatically detects new releases via GitHub API
+    - Updates version variable when new stable releases are available
+    - Includes in centralized dependency tracking system
+  - **Complete Reference Cleanup**: Removed all traces of deprecated custom wrapper system
+    - Eliminated all references to removed `filemanager.php` from API and control panel
+    - Removed all mentions of `/etc/enginescript/filemanager.conf` from scripts
+    - Updated control panel links to point directly to `/enginescript/tinyfilemanager/tinyfilemanager.php`
+    - Converted `reset-filemanager-password.sh` to informational notice about native configuration
+  - **Installation Updates**: Modified installation scripts to use versioned releases
+    - Admin control panel script now uses `${TINYFILEMANAGER_VER}` variable
+    - Proper TAR.GZ extraction instead of ZIP for better compatibility
+    - Removed filemanager.conf creation from installation and update scripts
+
+### 🔄 COMPLETE FILE MANAGER OVERHAULog
 
 All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
+
+## 2025-07-07
+
+### � COMPLETE FILE MANAGER OVERHAUL
+- **Official TinyFileManager Integration**: Completely replaced custom wrapper with official GitHub repository
+  - **Repository Download**: Now downloads and extracts the complete official TinyFileManager from GitHub
+    - Downloads latest master branch as ZIP from `https://github.com/prasathmani/tinyfilemanager/archive/refs/heads/master.zip`
+    - Extracts to `/var/www/admin/enginescript/tinyfilemanager/` directory
+    - Includes all official files, documentation, and features from the upstream project
+  - **Custom Configuration Removal**: Eliminated complex custom authentication wrapper entirely
+    - Removed `filemanager.php` custom wrapper with 100+ lines of authentication logic
+    - Simplified to basic redirect: `header('Location: /enginescript/tinyfilemanager/');`
+    - No more rate limiting, session management, or custom security headers in wrapper
+  - **Native Configuration**: Uses official TinyFileManager configuration system
+    - Created `/config/var/www/admin/tinyfilemanager/config.php` with basic EngineScript defaults
+    - Default credentials: admin/admin (users can edit config.php directly)
+    - Root path restricted to `/var/www` for security
+    - Standard TinyFileManager settings with sensible defaults
+  - **Installation Simplification**: Streamlined installation process in admin control panel script
+    - Downloads official ZIP archive instead of single PHP file
+    - Extracts complete project structure with proper permissions
+    - Copies EngineScript configuration file during installation
+    - Comprehensive error handling for download and extraction
+  - **Legacy System Deprecation**: Marked custom configuration system as legacy
+    - Updated `update-config-files.sh` to indicate native configuration usage
+    - Removed dependency on `/etc/enginescript/filemanager.conf`
+    - Simplified to direct editing of TinyFileManager's native config.php
+
+### �🔧 FILE MANAGER SIMPLIFICATION
+- **Password Wrapper Removal**: Removed complex password wrapper and authentication workarounds from file manager
+  - **Configuration Cleanup**: Removed `fm_password_hash` from file manager configuration file
+    - Simplified `/config/etc/enginescript/filemanager.conf` to use basic username/password authentication
+    - Removed automatic password hashing functionality that was causing compatibility issues
+    - Streamlined configuration to focus on basic authentication settings
+  - **PHP Authentication Simplification**: Removed complex password validation and hashing logic from `filemanager.php`
+    - Eliminated password hash validation and placeholder checking routines
+    - Removed dependency on PHP password_hash() function for authentication
+    - Simplified credential loading to use direct username/password from configuration
+    - Added basic default values (admin/admin) for immediate functionality
+  - **Update Script Cleanup**: Removed password hashing logic from configuration update script
+    - Simplified `update-config-files.sh` to handle basic credential updates without hashing
+    - Removed PHP password_hash() calls that were causing authentication failures
+    - Streamlined credential transfer from main configuration to file manager config
+  - **Back to Basics Approach**: Returned to simple, straightforward file manager authentication
+    - Eliminated complex authentication wrapper that was preventing proper login
+    - Focused on reliable, basic authentication mechanism
+    - Removed unnecessary security layers that were creating usability issues
 
 ## 2025-07-06
 

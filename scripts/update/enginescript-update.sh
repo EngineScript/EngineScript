@@ -61,15 +61,6 @@ if [[ ! -d "/etc/enginescript" ]]; then
     echo "✓ EngineScript configuration directory created"
 fi
 
-# Create File Manager configuration file if it doesn't exist
-if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
-    echo "Creating File Manager configuration file..."
-    cp /usr/local/bin/enginescript/config/etc/enginescript/filemanager.conf /etc/enginescript/filemanager.conf
-    chmod 600 /etc/enginescript/filemanager.conf
-    chown www-data:www-data /etc/enginescript/filemanager.conf
-    echo "✓ File Manager configuration template created"
-fi
-
 # Create Uptime Robot configuration file if it doesn't exist
 if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf

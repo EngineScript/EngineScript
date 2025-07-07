@@ -15,36 +15,12 @@ source /home/EngineScript/enginescript-install-options.txt
 
 echo "Updating EngineScript configuration files..."
 
-# Update File Manager Configuration
+# Update File Manager Configuration (Legacy - TinyFileManager now uses native config)
 update_filemanager_config() {
-    local config_file="/etc/enginescript/filemanager.conf"
-    
-    if [[ -f "$config_file" ]]; then
-        echo "Updating File Manager configuration..."
-        echo "  - Config file: $config_file"
-        echo "  - Username: $FILEMANAGER_USERNAME"
-        echo "  - Password: [length: ${#FILEMANAGER_PASSWORD}]"
-        
-        # Only update if credentials are not PLACEHOLDER
-        if [[ "$FILEMANAGER_USERNAME" != "PLACEHOLDER" ]] && [[ "$FILEMANAGER_PASSWORD" != "PLACEHOLDER" ]]; then
-            # Generate password hash
-            local password_hash
-            password_hash=$(php -r "echo password_hash('${FILEMANAGER_PASSWORD}', PASSWORD_DEFAULT);")
-            
-            # Update configuration - handle both empty and existing values
-            sed -i "s|^fm_username=.*|fm_username=${FILEMANAGER_USERNAME}|g" "$config_file"
-            sed -i "s|^fm_password=.*|fm_password=${FILEMANAGER_PASSWORD}|g" "$config_file"
-            sed -i "s|^fm_password_hash=.*|fm_password_hash=${password_hash}|g" "$config_file"
-            
-            echo "✓ File Manager configuration updated"
-            echo "  - Configuration file populated with user credentials"
-        else
-            echo "⚠ File Manager credentials still contain PLACEHOLDER values - skipping update"
-            echo "  - Run 'es.config' to set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD"
-        fi
-    else
-        echo "⚠ File Manager configuration file not found at $config_file"
-    fi
+    echo "File Manager now uses native TinyFileManager configuration"
+    echo "  - Edit credentials directly in: /var/www/admin/enginescript/tinyfilemanager/config.php"
+    echo "  - Default login: admin/admin"
+    echo "  - No longer uses /etc/enginescript/filemanager.conf"
 }
 
 # Update Uptime Robot Configuration

@@ -415,52 +415,28 @@ function handleAlerts() {
 
 function handleFileManagerStatus() {
     try {
-        $fm_file = __DIR__ . '/filemanager.php';
-        $tfm_file = __DIR__ . '/tinyfilemanager.php';
-        $config_file = '/etc/enginescript/filemanager.conf';
-        $credentials_file = '/home/EngineScript/enginescript-install-options.txt';
-        
-        // Check if configuration exists and get username
-        $fm_username = null;
-        $config_exists = false;
-        $config_populated = false;
-        $credentials_configured = false;
-        
-        if (file_exists($config_file)) {
-            $config_content = file_get_contents($config_file);
-            if (preg_match('/fm_username=(.+)/m', $config_content, $matches)) {
-                $username = trim($matches[1]);
-                if (!empty($username)) {
-                    $fm_username = $username;
-                    $config_populated = true;
-                }
-            }
-            $config_exists = true;
+        // Load EngineScript variables to get current version
+        $variables = [];
+        if (file_exists('/usr/local/bin/enginescript/enginescript-variables.txt')) {
+            $content = file_get_contents('/usr/local/bin/enginescript/enginescript-variables.txt');
+            preg_match('/TINYFILEMANAGER_VER="([^"]*)"/', $content, $matches);
+            $current_version = isset($matches[1]) ? $matches[1] : '2.6';
+        } else {
+            $current_version = '2.6';
         }
         
-        // Check if main credentials are configured
-        if (file_exists($credentials_file)) {
-            $cred_content = file_get_contents($credentials_file);
-            if (strpos($cred_content, 'FILEMANAGER_USERNAME="PLACEHOLDER"') === false &&
-                strpos($cred_content, 'FILEMANAGER_PASSWORD="PLACEHOLDER"') === false) {
-                $credentials_configured = true;
-            }
-        }
+        $tfm_file = '/var/www/admin/enginescript/tinyfilemanager/tinyfilemanager.php';
+        $tfm_config = '/var/www/admin/enginescript/tinyfilemanager/config.php';
         
         $status = [
-            'available' => file_exists($fm_file),
-            'tfm_downloaded' => file_exists($tfm_file),
-            'tfm_age_days' => file_exists($tfm_file) ? round((time() - filemtime($tfm_file)) / (24 * 60 * 60)) : null,
-            'config_exists' => $config_exists,
-            'config_populated' => $config_populated,
-            'credentials_configured' => $credentials_configured,
-            'username' => $fm_username,
+            'available' => file_exists($tfm_file),
+            'config_exists' => file_exists($tfm_config),
             'writable_dirs' => [
                 '/var/www' => is_writable('/var/www'),
                 '/tmp' => is_writable('/tmp')
             ],
-            'url' => '/filemanager.php',
-            'password_reset_command' => 'sudo /usr/local/bin/enginescript/scripts/functions/shared/reset-filemanager-password.sh'
+            'url' => '/enginescript/tinyfilemanager/tinyfilemanager.php',
+            'version' => $current_version
         ];
         
         echo json_encode(sanitizeOutput($status)); // codacy:ignore - echo required for JSON API response

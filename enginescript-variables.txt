@@ -29,6 +29,7 @@ SWPO_PLUGIN_VER="1.5.9"
 # Frontend Dependencies  
 CHARTJS_VER="4.5.0"
 FONTAWESOME_VER="6.7.2"
+TINYFILEMANAGER_VER="2.6"
 
 # Old Software Versions
 OLDPHP="8.0"

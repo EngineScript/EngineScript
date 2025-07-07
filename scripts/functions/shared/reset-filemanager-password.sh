@@ -1,53 +1,29 @@
 #!/usr/bin/env bash
 #----------------------------------------------------------------------------------
-# EngineScript File Manager Password Reset Tool
+# EngineScript File Manager Configuration Notice
 #----------------------------------------------------------------------------------
-# This script allows administrators to reset the file manager password
-# Updates both the main credentials file and the file manager config
+# File Manager now uses native TinyFileManager configuration
 #----------------------------------------------------------------------------------
 
-set -e
-
-# Check if running as root
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root (use sudo)" 
-   exit 1
-fi
-
-CREDENTIALS_FILE="/home/EngineScript/enginescript-install-options.txt"
-CONFIG_FILE="/etc/enginescript/filemanager.conf"
-
-# Check if credentials file exists
-if [[ ! -f "$CREDENTIALS_FILE" ]]; then
-    echo "Error: Main credentials file not found at $CREDENTIALS_FILE"
-    echo "Please ensure EngineScript is properly installed."
-    exit 1
-fi
-
-# Check if config file exists
-if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "Error: File manager configuration not found at $CONFIG_FILE"
-    echo "Please run the admin control panel installation first."
-    exit 1
-fi
-
-echo "EngineScript File Manager Password Reset"
+echo "========================================"
+echo "File Manager Configuration Notice"
 echo "========================================"
 echo ""
-
-# Get current username from credentials file
-CURRENT_USERNAME=$(grep "^FILEMANAGER_USERNAME=" "$CREDENTIALS_FILE" | cut -d'"' -f2)
-if [[ "$CURRENT_USERNAME" == "PLACEHOLDER" ]] || [[ -z "$CURRENT_USERNAME" ]]; then
-    CURRENT_USERNAME="admin"
-fi
-
-# Prompt for new username
-read -p "Enter username (current: $CURRENT_USERNAME, press enter to keep): " NEW_USERNAME
-if [[ -z "$NEW_USERNAME" ]]; then
-    NEW_USERNAME="$CURRENT_USERNAME"
-fi
-
-# Prompt for new password or generate one
+echo "EngineScript now uses the native TinyFileManager configuration system."
+echo ""
+echo "To change file manager credentials:"
+echo "1. Edit: /var/www/admin/enginescript/tinyfilemanager/config.php"
+echo "2. Modify the \$auth_users array with your desired username/password"
+echo "3. Use password_hash() to generate secure password hashes"
+echo ""
+echo "Example:"
+echo "  \$auth_users = array("
+echo "    'yourusername' => '\$2y\$10\$...' // Use password_hash('yourpassword', PASSWORD_DEFAULT)"
+echo "  );"
+echo ""
+echo "Default credentials: admin/admin"
+echo "Location: /enginescript/tinyfilemanager/tinyfilemanager.php"
+echo ""
 read -p "Enter new password (leave blank to generate): " NEW_PASSWORD
 
 if [[ -z "$NEW_PASSWORD" ]]; then
