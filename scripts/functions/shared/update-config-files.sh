@@ -18,9 +18,8 @@ echo "Updating EngineScript configuration files..."
 # Update File Manager Configuration (Legacy - TinyFileManager now uses native config)
 update_filemanager_config() {
     echo "File Manager now uses native TinyFileManager configuration"
-    echo "  - Edit credentials directly in: /var/www/admin/enginescript/tinyfilemanager/config.php"
-    echo "  - Default login: admin/admin"
-    echo "  - No longer uses /etc/enginescript/filemanager.conf"
+    echo "  - Credentials automatically loaded from main EngineScript configuration"
+    echo "  - To change credentials, use: es.config or edit /home/EngineScript/enginescript-install-options.txt"
 }
 
 # Update Uptime Robot Configuration

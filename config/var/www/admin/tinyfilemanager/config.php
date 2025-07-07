@@ -1,12 +1,43 @@
 <?php
 /**
  * EngineScript TinyFileManager Configuration
- * Basic configuration for official TinyFileManager
+ * Dynamic configuration using EngineScript credentials
  */
 
-// Basic authentication - users can modify this file directly
+// Load credentials from EngineScript install options
+$credentials_file = '/home/EngineScript/enginescript-install-options.txt';
+$fm_username = null;
+$fm_password = null;
+
+if (file_exists($credentials_file)) {
+    $content = file_get_contents($credentials_file);
+    
+    // Extract FILEMANAGER_USERNAME
+    if (preg_match('/FILEMANAGER_USERNAME="([^"]*)"/', $content, $matches)) {
+        $extracted_username = trim($matches[1]);
+        if (!empty($extracted_username) && $extracted_username !== 'PLACEHOLDER') {
+            $fm_username = $extracted_username;
+        }
+    }
+    
+    // Extract FILEMANAGER_PASSWORD
+    if (preg_match('/FILEMANAGER_PASSWORD="([^"]*)"/', $content, $matches)) {
+        $extracted_password = trim($matches[1]);
+        if (!empty($extracted_password) && $extracted_password !== 'PLACEHOLDER') {
+            $fm_password = $extracted_password;
+        }
+    }
+}
+
+// Security check - fail if credentials are not properly configured
+if (empty($fm_username) || empty($fm_password)) {
+    http_response_code(503);
+    die('File Manager Error: Credentials not configured. Please run "es.config" to set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD.');
+}
+
+// Generate authentication array with hashed password
 $auth_users = array(
-    'admin' => '$2y$10$3F7VnbFpPHIyFODrUQOgXKvGLgKfBgHZQT7xU8xvQ9qLpG3Rn7bCy' // password: admin
+    $fm_username => password_hash($fm_password, PASSWORD_DEFAULT)
 );
 
 // Set as non-global auth

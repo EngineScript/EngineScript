@@ -6,7 +6,38 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-07
 
-### � URL PATH CORRECTION
+### 🔐 DYNAMIC AUTHENTICATION SYSTEM
+- **TinyFileManager Credential Integration**: Implemented dynamic authentication using main EngineScript credentials
+  - **Automatic Credential Loading**: TinyFileManager now reads username/password from `/home/EngineScript/enginescript-install-options.txt`
+    - Parses `FILEMANAGER_USERNAME` and `FILEMANAGER_PASSWORD` variables from main configuration
+    - Falls back to admin/test if credentials are missing or set to PLACEHOLDER
+    - Eliminates need for separate credential management
+  - **Dynamic Password Hashing**: Passwords are hashed in real-time using PHP `password_hash()` function
+    - Uses `PASSWORD_DEFAULT` algorithm for security compatibility
+    - No more static password hashes in configuration files
+    - Passwords are re-hashed on each access for maximum security
+  - **Simplified Management**: File manager credentials now managed through main EngineScript system
+    - Users change credentials via `es.config` command
+    - No manual editing of TinyFileManager configuration required
+    - Unified credential management across all EngineScript components
+  - **Updated Documentation**: Revised all references to reflect dynamic authentication
+    - Installation script indicates credentials come from main configuration
+    - Password reset script provides proper guidance for credential updates
+    - Removed static credential references from documentation
+
+### 🔐 PASSWORD HASH CORRECTION
+- **TinyFileManager Authentication**: Fixed password hash generation for proper authentication
+  - **Correct Hash Format**: Updated default password hash to use proper PHP `password_hash()` format
+    - Changed default password from admin/admin to admin/test with correctly generated hash
+    - Hash: `$2y$10$jhQeRpfSEnweAsi8LfnKcutyPauhihfdeplFPE4jobD7FQ5Jmzq5u` (password: test)
+    - Generated using TinyFileManager's official password generator tool
+  - **Updated Documentation**: Revised password generation guidance across all scripts
+    - Installation script now shows correct default credentials (admin/test)
+    - Password reset script provides link to official TinyFileManager hash generator
+    - Includes both web tool and PHP command line options for hash generation
+    - Clarified that PHP5+ `password_hash()` with `PASSWORD_DEFAULT` is required
+
+### 🔗 URL PATH CORRECTION
 - **File Manager URL Fix**: Corrected TinyFileManager URL paths for admin subdomain
   - **Path Structure**: Fixed URL to match nginx admin subdomain configuration
     - Changed from `/enginescript/tinyfilemanager/tinyfilemanager.php` to `/tinyfilemanager/tinyfilemanager.php`

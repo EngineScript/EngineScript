@@ -2,53 +2,25 @@
 #----------------------------------------------------------------------------------
 # EngineScript File Manager Configuration Notice
 #----------------------------------------------------------------------------------
-# File Manager now uses native TinyFileManager configuration
+# File Manager now uses native TinyFileManager with dynamic credentials
 #----------------------------------------------------------------------------------
 
 echo "========================================"
 echo "File Manager Configuration Notice"
 echo "========================================"
 echo ""
-echo "EngineScript now uses the native TinyFileManager configuration system."
+echo "EngineScript TinyFileManager now uses dynamic authentication."
+echo "Credentials are automatically loaded from your main EngineScript configuration."
 echo ""
 echo "To change file manager credentials:"
-echo "1. Edit: /var/www/admin/enginescript/tinyfilemanager/config.php"
-echo "2. Modify the \$auth_users array with your desired username/password"
-echo "3. Use password_hash() to generate secure password hashes"
+echo "1. Run: es.config"
+echo "2. Update FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD"
+echo "3. Restart web server: sudo systemctl reload nginx"
 echo ""
-echo "Example:"
-echo "  \$auth_users = array("
-echo "    'yourusername' => '\$2y\$10\$...' // Use password_hash('yourpassword', PASSWORD_DEFAULT)"
-echo "  );"
+echo "Current configuration:"
+echo "  - Credentials file: /home/EngineScript/enginescript-install-options.txt"
+echo "  - Configuration: /var/www/admin/enginescript/tinyfilemanager/config.php"
+echo "  - Access URL: /tinyfilemanager/tinyfilemanager.php"
 echo ""
-echo "Default credentials: admin/admin"
-echo "Location: /tinyfilemanager/tinyfilemanager.php"
+echo "Note: Passwords are automatically hashed using PHP password_hash() function."
 echo ""
-read -p "Enter new password (leave blank to generate): " NEW_PASSWORD
-
-if [[ -z "$NEW_PASSWORD" ]]; then
-    NEW_PASSWORD=$(openssl rand -base64 16 | tr -d '/+=' | head -c 12)
-    echo "Generated password: $NEW_PASSWORD"
-fi
-
-# Update main credentials file
-sed -i "s|FILEMANAGER_USERNAME=\".*\"|FILEMANAGER_USERNAME=\"${NEW_USERNAME}\"|g" "$CREDENTIALS_FILE"
-sed -i "s|FILEMANAGER_PASSWORD=\".*\"|FILEMANAGER_PASSWORD=\"${NEW_PASSWORD}\"|g" "$CREDENTIALS_FILE"
-
-# Update configuration file using the shared updater
-echo "Updating configuration files..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
-
-echo ""
-echo "============================================="
-echo "File Manager Credentials Updated Successfully!"
-echo "Username: $NEW_USERNAME"
-echo "Password: $NEW_PASSWORD"
-echo "============================================="
-echo "IMPORTANT: Save these credentials securely!"
-echo ""
-
-# Log the password reset
-logger "EngineScript: File manager credentials reset by $(whoami)"
-
-echo "Password reset completed."

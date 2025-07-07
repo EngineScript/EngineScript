@@ -84,7 +84,7 @@ if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_
         echo "✓ Official Tiny File Manager v${TINYFILEMANAGER_VER} installed successfully"
         echo "  - Location: $TFM_DIR"
         echo "  - Access URL: /tinyfilemanager/tinyfilemanager.php"
-        echo "  - Default login: admin/admin"
+        echo "  - Login: Uses credentials from main EngineScript configuration"
     else
         echo "⚠ Warning: Failed to extract Tiny File Manager archive"
     fi
