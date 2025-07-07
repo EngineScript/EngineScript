@@ -58,6 +58,15 @@ else
     echo "Warning: Failed to download Tiny File Manager. File manager will attempt auto-download on first access."
 fi
 
+# Create File Manager configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
+    echo "Creating File Manager configuration file..."
+    cp /usr/local/bin/enginescript/config/etc/enginescript/filemanager.conf /etc/enginescript/filemanager.conf
+    chmod 600 /etc/enginescript/filemanager.conf
+    chown root:root /etc/enginescript/filemanager.conf
+    echo "✓ File Manager configuration template created"
+fi
+
 # Create Uptime Robot configuration file if it doesn't exist
 if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
@@ -74,6 +83,10 @@ fi
 find /var/www/admin/enginescript -type d -print0 | sudo xargs -0 chmod 0755
 find /var/www/admin/enginescript -type f -print0 | sudo xargs -0 chmod 0644
 chown -R www-data:www-data /var/www/admin/enginescript
+
+# Update configuration files from main credentials file
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
 
 # Return to /usr/src
 cd /usr/src

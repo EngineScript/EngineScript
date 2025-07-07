@@ -179,6 +179,17 @@ MARIADB_ADMIN_PASSWORD="PLACEHOLDER"
 PHPMYADMIN_USERNAME="PLACEHOLDER"
 PHPMYADMIN_PASSWORD="PLACEHOLDER"
 
+## File Manager (Recommended) ##
+# Credentials for the Tiny File Manager web interface
+# Allows secure file browsing and management through the admin control panel
+FILEMANAGER_USERNAME="PLACEHOLDER"
+FILEMANAGER_PASSWORD="PLACEHOLDER"
+
+## Uptime Robot (Optional) ##
+# API key for Uptime Robot website monitoring service
+# Get your API key from: https://uptimerobot.com/dashboard (Settings > API Settings)
+UPTIMEROBOT_API_KEY="PLACEHOLDER"
+
 # DONE
 # Proceed to: Step 3 - Main Install Process
 # https://github.com/EngineScript/EngineScript#step-3---main-install-process

@@ -590,11 +590,6 @@ body {
     background-color: var(--error-color);
 }
 
-.tool-status .status-indicator.checking {
-    background-color: var(--warning-color);
-    animation: pulse 1.5s infinite;
-}
-
 .tool-status .status-indicator.error {
     background-color: var(--error-color);
 }

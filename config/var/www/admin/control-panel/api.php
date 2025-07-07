@@ -417,16 +417,50 @@ function handleFileManagerStatus() {
     try {
         $fm_file = __DIR__ . '/filemanager.php';
         $tfm_file = __DIR__ . '/tinyfilemanager.php';
+        $config_file = '/etc/enginescript/filemanager.conf';
+        $credentials_file = '/home/EngineScript/enginescript-install-options.txt';
+        
+        // Check if configuration exists and get username
+        $fm_username = null;
+        $config_exists = false;
+        $config_populated = false;
+        $credentials_configured = false;
+        
+        if (file_exists($config_file)) {
+            $config_content = file_get_contents($config_file);
+            if (preg_match('/fm_username=(.+)/m', $config_content, $matches)) {
+                $username = trim($matches[1]);
+                if (!empty($username)) {
+                    $fm_username = $username;
+                    $config_populated = true;
+                }
+            }
+            $config_exists = true;
+        }
+        
+        // Check if main credentials are configured
+        if (file_exists($credentials_file)) {
+            $cred_content = file_get_contents($credentials_file);
+            if (strpos($cred_content, 'FILEMANAGER_USERNAME="PLACEHOLDER"') === false &&
+                strpos($cred_content, 'FILEMANAGER_PASSWORD="PLACEHOLDER"') === false) {
+                $credentials_configured = true;
+            }
+        }
         
         $status = [
             'available' => file_exists($fm_file),
             'tfm_downloaded' => file_exists($tfm_file),
             'tfm_age_days' => file_exists($tfm_file) ? round((time() - filemtime($tfm_file)) / (24 * 60 * 60)) : null,
+            'config_exists' => $config_exists,
+            'config_populated' => $config_populated,
+            'credentials_configured' => $credentials_configured,
+            'username' => $fm_username,
             'writable_dirs' => [
                 '/var/www' => is_writable('/var/www'),
                 '/tmp' => is_writable('/tmp')
             ],
-            'url' => '/filemanager.php'
+            'url' => '/filemanager.php',
+            'password_reset_command' => 'sudo /usr/local/bin/enginescript/scripts/functions/shared/reset-filemanager-password.sh'
         ];
         
         echo json_encode(sanitizeOutput($status)); // codacy:ignore - echo required for JSON API response

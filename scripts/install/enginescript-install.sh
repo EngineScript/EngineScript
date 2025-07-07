@@ -91,6 +91,9 @@ echo "NGINX_PASSWORD = $NGINX_PASSWORD"
 echo "MARIADB_ADMIN_PASSWORD = $MARIADB_ADMIN_PASSWORD"
 echo "PHPMYADMIN_USERNAME = $PHPMYADMIN_USERNAME"
 echo "PHPMYADMIN_PASSWORD = $PHPMYADMIN_PASSWORD"
+echo "FILEMANAGER_USERNAME = $FILEMANAGER_USERNAME"
+echo "FILEMANAGER_PASSWORD = $FILEMANAGER_PASSWORD"
+echo "UPTIMEROBOT_API_KEY = $UPTIMEROBOT_API_KEY"
 echo "WP_ADMIN_EMAIL = $WP_ADMIN_EMAIL"
 echo "WP_ADMIN_USERNAME = $WP_ADMIN_USERNAME"
 echo "WP_ADMIN_PASSWORD = $WP_ADMIN_PASSWORD"
@@ -172,6 +175,20 @@ fi
 if [[ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\nPHPMYADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_PASSWORD to something more secure.\n"
+    exit
+fi
+
+# Check File Manager Username
+if [[ "$FILEMANAGER_USERNAME" = PLACEHOLDER ]];
+	then
+    echo -e "\nWARNING:\n\nFILEMANAGER_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change FILEMANAGER_USERNAME to something more secure.\n"
+    exit
+fi
+
+# Check File Manager Password
+if [[ "$FILEMANAGER_PASSWORD" = PLACEHOLDER ]];
+	then
+    echo -e "\nWARNING:\n\nFILEMANAGER_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change FILEMANAGER_PASSWORD to something more secure.\n"
     exit
 fi
 
@@ -477,6 +494,12 @@ if [[ "${TOOLS}" = 1 ]];
 fi
 print_last_errors
 debug_pause "Tools"
+
+# Update Configuration Files
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Configuration Update"
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh

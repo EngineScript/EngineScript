@@ -34,24 +34,73 @@ if ($_SESSION[$rate_limit_key]['count'] >= 50) { // 50 operations per 5 minutes
 
 $_SESSION[$rate_limit_key]['count']++;
 
+// Load file manager configuration
+$fm_config_file = '/etc/enginescript/filemanager.conf';
+$fm_config = [];
+
+if (file_exists($fm_config_file)) {
+    $config_content = file_get_contents($fm_config_file);
+    $config_lines = explode("\n", $config_content);
+    
+    foreach ($config_lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) {
+            continue; // Skip empty lines and comments
+        }
+        
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $fm_config[trim($key)] = trim($value);
+        }
+    }
+}
+
+// Set values from configuration file only - no defaults
+$fm_username = isset($fm_config['fm_username']) && !empty($fm_config['fm_username']) ? $fm_config['fm_username'] : null;
+$fm_password_hash = isset($fm_config['fm_password_hash']) && !empty($fm_config['fm_password_hash']) ? $fm_config['fm_password_hash'] : null;
+
+// Check if credentials are properly configured
+if (empty($fm_username) || empty($fm_password_hash)) {
+    // Check if main credentials file exists and has been configured
+    if (file_exists('/home/EngineScript/enginescript-install-options.txt')) {
+        $credentials_content = file_get_contents('/home/EngineScript/enginescript-install-options.txt');
+        
+        // Check if credentials are still PLACEHOLDER values
+        if (strpos($credentials_content, 'FILEMANAGER_USERNAME="PLACEHOLDER"') !== false ||
+            strpos($credentials_content, 'FILEMANAGER_PASSWORD="PLACEHOLDER"') !== false) {
+            
+            die('File Manager credentials not configured. Please edit your credentials file with command: es.config');
+        } else {
+            // Credentials configured but config file not updated
+            die('File Manager configuration needs to be updated. Please run: sudo /usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh');
+        }
+    } else {
+        die('EngineScript credentials file not found. Please ensure EngineScript is properly installed.');
+    }
+}
+
+$fm_root_path = isset($fm_config['fm_root_path']) && !empty($fm_config['fm_root_path']) ? $fm_config['fm_root_path'] : '/var/www';
+$fm_max_upload = isset($fm_config['fm_max_upload_size']) && !empty($fm_config['fm_max_upload_size']) ? (int)$fm_config['fm_max_upload_size'] : 104857600;
+$fm_readonly = isset($fm_config['fm_readonly']) && $fm_config['fm_readonly'] === 'true' ? true : false;
+
 // Security configuration for Tiny File Manager
 $CONFIG = [
     // Authentication
     'auth' => true,
     'auth_users' => array(
-        'admin' => '$2y$10$k9eBj8J6.1jDZMHxY/MqC.SqZwOZDKOGGgHI3xQKNLxWJj9KvyQnW' // Default: admin/admin123 (change this!)
+        $fm_username => $fm_password_hash
     ),
     
     // Directories configuration
-    'root_path' => '/var/www',
+    'root_path' => $fm_root_path,
     'root_url' => '',
     'show_hidden_files' => false,
     'hide_Cols' => false,
-    'readonly' => false,
+    'readonly' => $fm_readonly,
     
     // Upload settings
     'upload_extension' => 'zip,rar,7z,tar,gz,txt,pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,svg,mp3,mp4,avi,mov,wmv,sql',
-    'max_upload_size_bytes' => 100 * 1024 * 1024, // 100MB
+    'max_upload_size_bytes' => $fm_max_upload,
     'upload_overwrite' => false,
     
     // Security settings

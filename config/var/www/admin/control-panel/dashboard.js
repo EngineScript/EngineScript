@@ -987,40 +987,7 @@ class EngineScriptDashboard {
 
   // Tools management methods
   async loadToolsData() {
-    try {
-      await this.checkFileManagerStatus();
-      await this.checkUptimeRobotStatus();
-    } catch (error) {
-      // Silently handle tools loading errors
-    }
-  }
-
-  async checkFileManagerStatus() {
-    try {
-      const status = await this.getApiData("/api/tools/filemanager/status", {});
-      const statusElement = document.getElementById("filemanager-status");
-      
-      if (statusElement) {
-        const indicator = statusElement.querySelector(".status-indicator");
-        const text = statusElement.querySelector(".status-text");
-        
-        if (status.available && status.tfm_downloaded) {
-          indicator.className = "status-indicator online";
-          text.textContent = "Ready";
-        } else {
-          indicator.className = "status-indicator offline";
-          text.textContent = "Setup Required";
-        }
-      }
-    } catch (error) {
-      const statusElement = document.getElementById("filemanager-status");
-      if (statusElement) {
-        const indicator = statusElement.querySelector(".status-indicator");
-        const text = statusElement.querySelector(".status-text");
-        indicator.className = "status-indicator error";
-        text.textContent = "Error";
-      }
-    }
+    // Tools are now static links - no status checking needed
   }
 
   // Uptime monitoring methods
@@ -1156,33 +1123,6 @@ class EngineScriptDashboard {
     }
   }
 
-  async checkUptimeRobotStatus() {
-    try {
-      const status = await this.getApiData("/api/monitoring/uptime", {});
-      const statusElement = document.getElementById("uptimerobot-status");
-      
-      if (statusElement) {
-        const indicator = statusElement.querySelector(".status-indicator");
-        const text = statusElement.querySelector(".status-text");
-        
-        if (status.configured) {
-          indicator.className = "status-indicator online";
-          text.textContent = `${status.total_monitors || 0} monitors`;
-        } else {
-          indicator.className = "status-indicator offline";
-          text.textContent = "Not configured";
-        }
-      }
-    } catch (error) {
-      const statusElement = document.getElementById("uptimerobot-status");
-      if (statusElement) {
-        const indicator = statusElement.querySelector(".status-indicator");
-        const text = statusElement.querySelector(".status-text");
-        indicator.className = "status-indicator error";
-        text.textContent = "Error";
-      }
-    }
-  }
 }
 
 // Initialize dashboard when DOM is loaded

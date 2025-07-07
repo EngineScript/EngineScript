@@ -6,7 +6,54 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-06
 
-### 📁 TINY FILE MANAGER FIXES
+### �🔧 DASHBOARD UX IMPROVEMENTS
+- **Tool Card Status Simplification**: Removed "checking..." status indicators from admin dashboard tool cards
+  - **File Manager Card**: Removed dynamic status checking and "Checking..." text from file manager tool card
+    - Removed `checkFileManagerStatus()` function and related status display logic
+    - Simplified to static tool card with direct link to file manager interface
+    - Eliminated unnecessary API calls and loading states for better performance
+  - **Uptime Robot Card**: Removed dynamic status checking and "Checking..." text from uptime robot tool card
+    - Removed `checkUptimeRobotStatus()` function and related status display logic
+    - Simplified to static tool card with direct link to Uptime Robot website
+    - Eliminated background API polling for cleaner user experience
+  - **CSS Cleanup**: Removed `.checking` status indicator CSS rule and pulse animation
+    - Cleaned up unused status indicator styles from dashboard stylesheet
+    - Simplified tool card styling by removing dynamic status elements
+  - **JavaScript Optimization**: Simplified `loadToolsData()` function to eliminate unnecessary status checks
+    - Removed complex status checking logic that was causing loading delays
+    - Improved dashboard loading performance by eliminating redundant API calls
+    - Enhanced user experience with immediate access to tool cards
+
+### � AUTO-UPGRADE CREDENTIAL MANAGEMENT
+- **Missing Credential Detection**: Enhanced auto-upgrade script to add missing credential placeholders to existing installations
+  - **File Manager Credentials**: Automatically adds `FILEMANAGER_USERNAME` and `FILEMANAGER_PASSWORD` placeholders if missing
+    - Detects existing installations missing file manager credential entries
+    - Inserts properly formatted credential section before phpMyAdmin section
+    - Includes descriptive comments explaining file manager functionality
+  - **Uptime Robot Credentials**: Automatically adds `UPTIMEROBOT_API_KEY` placeholder if missing
+    - Detects existing installations missing uptime robot API key entry
+    - Inserts properly formatted credential section before "# DONE" marker
+    - Includes setup instructions and API key retrieval guidance
+  - **Backward Compatibility**: Ensures older EngineScript installations receive new credential placeholders
+    - Safe detection using `grep` to avoid duplicate entries
+    - Smart insertion using `sed` commands to maintain proper file structure
+    - Comprehensive logging of credential addition operations
+  - **Error Handling**: Added proper file existence checking and informative user feedback
+    - Validates credentials file exists before attempting modifications
+    - Provides clear status messages about credential checking and addition
+    - Graceful handling of missing credentials file with appropriate warnings
+
+### � CREDENTIALS SYSTEM INTEGRATION
+- **Unified Credentials Management**: Integrated file manager and uptime monitor into main EngineScript credentials system
+  - **Main Credentials File**: Added `FILEMANAGER_USERNAME`, `FILEMANAGER_PASSWORD`, and `UPTIMEROBOT_API_KEY` to `/home/EngineScript/enginescript-install-options.txt`
+  - **Configuration Updater**: Created `/scripts/functions/shared/update-config-files.sh` to populate .conf files from main credentials
+  - **Validation Integration**: Added placeholder validation for file manager credentials in main install script
+  - **Template Updates**: Modified .conf templates to use empty values populated during installation
+  - **Password Reset Integration**: Updated file manager password reset tool to modify main credentials file
+  - **Installation Integration**: Configuration files automatically populated during EngineScript installation
+  - **Consistency**: Follows existing EngineScript pattern for credential management across all services
+
+### �📁 TINY FILE MANAGER FIXES
 - **File Manager Integration Improvements**: Fixed clicking and installation issues with Tiny File Manager
   - **HTML Link Conversion**: Converted file manager card from JavaScript click handler to direct HTML link
     - **Reliable Navigation**: File manager now opens in new tab using standard HTML `<a>` tag
@@ -21,6 +68,15 @@ Changes are organized by date, with the most recent changes listed first.
     - **Real-time Status**: Dashboard shows accurate availability of file manager
     - **Installation Verification**: Checks for both wrapper script and TFM core file
     - **Directory Permissions**: Validates write permissions for file operations
+  - **Secure Authentication System**: Added comprehensive password management for file manager access
+    - **Configuration File**: Created `/etc/enginescript/filemanager.conf` for secure credential storage
+    - **Automatic Password Generation**: Install script generates secure random passwords during setup
+    - **Password Hashing**: Uses PHP password_hash() for secure credential storage
+    - **Custom Configuration**: Support for custom usernames, passwords, and settings
+    - **File Permissions**: Config file secured with 600 permissions (root:root ownership)
+    - **Password Reset Tool**: Added `/scripts/functions/shared/reset-filemanager-password.sh` for easy password resets
+    - **Dashboard Integration**: Authentication status displayed in admin dashboard
+    - **Default Fallback**: Graceful fallback to default credentials if config is missing
 
 ### � UPTIME ROBOT INTEGRATION
 - **Complete Uptime Robot Monitoring Integration**: Added comprehensive website uptime monitoring to the admin control panel
@@ -204,7 +260,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🎨 ADMIN CONTROL PANEL REFACTORING
 - **UI Simplification and Security Focus**: Comprehensive refactoring of the admin control panel to remove security-related features and improve user experience
-  - **Removed Security Features**: Eliminated all security-related pages, navigation, and functionality from the control panel
     - Removed Security dashboard page and navigation item
     - Removed all security status monitoring (SSL, firewall, malware scanning)
     - Simplified UI to focus on core server administration tasks
@@ -848,203 +903,3 @@ Each entry is dated to show when changes were implemented. For questions about a
 - EUID is explicitly set to 0 in CI environment to bypass root checks
 - Enhanced debugging shows exact point of failure when scripts hang
 - Timeout failures now provide detailed log output for debugging
-
----
-
-## 2025-07-01 - Security Update
-
-### � DEPENDENCY MANAGEMENT
-- **Frontend Dependency Tracking**: Added Chart.js and Font Awesome to the automated software version checker
-  - **Chart.js**: Now automatically monitored for updates (currently v4.5.0)
-  - **Font Awesome**: Now automatically monitored for updates (currently v6.7.2)
-  - **Version Variables**: Added `CHARTJS_VER` and `FONTAWESOME_VER` to `enginescript-variables.txt`
-  - **Dynamic Substitution**: Admin control panel installation script now substitutes versions automatically
-  - **GitHub Actions Integration**: Extended software-version-check.yml workflow to monitor frontend dependencies
-  - **README Documentation**: Added Chart.js and Font Awesome to the software versions table
-
-### �🔒 COMPREHENSIVE SECURITY HARDENING
-- **Frontend Dashboard Security**: Completed comprehensive security audit and hardening of the JavaScript dashboard
-  - **Input Validation & Sanitization**: Implemented strict client-side input validation with parameter whitelisting
-    - Added validation for page names, log types, time ranges, and tool names against predefined whitelists
-    - Comprehensive input sanitization removing HTML special characters, JavaScript protocols, and dangerous patterns
-    - Length limits implemented (1000 chars for general input, 50KB for log content)
-  - **XSS Prevention**: Complete protection against Cross-Site Scripting attacks
-    - Replaced unsafe `innerHTML` usage with secure `textContent` and `createElement()` methods
-    - All dynamic content created using DOM manipulation instead of HTML string injection
-    - API response data sanitized before display with comprehensive content filtering
-    - Eliminated inline event handlers and prevented `eval()` usage
-  - **URL & Navigation Security**: Secure handling of external URLs and navigation
-    - Domain validation with regex patterns before opening external links
-    - `window.open()` enhanced with `noopener,noreferrer` security flags
-    - Dangerous protocols (`javascript:`, `data:`, `vbscript:`) filtered and removed
-    - Frame protection implemented to prevent embedding in malicious frames
-  - **Data Handling Security**: Secure processing of all API responses and user data
-    - Strict type validation for all data objects received from API
-    - Safe URL handling with domain validation before creating clickable links
-    - Proper memory management with cleanup of charts and event listeners
-    - Secure error handling without information disclosure
-  - **Production Security Features**: Enhanced security for production environments
-    - Console access disabled in production environments to prevent debugging
-    - Error message sanitization to prevent sensitive information disclosure
-    - Resource validation before loading external dependencies
-    - Secure initialization and cleanup procedures
-- **Enhanced Security Documentation**: Updated comprehensive security documentation covering both frontend and backend
-  - **Frontend Security Guide**: Detailed documentation of all JavaScript security measures
-  - **Security Architecture**: Defense-in-depth approach with multiple security layers
-  - **Testing Procedures**: Comprehensive security testing checklists for both frontend and backend
-  - **Incident Response**: Updated emergency response procedures for security incidents
-  - **Monitoring Integration**: Enhanced security monitoring and logging procedures
-
-### 🛡️ BACKEND API SECURITY (Previously Implemented)
-- **Complete API Security Audit**: Comprehensive security review and hardening of PHP API backend
-  - **Input Validation**: Strict validation and sanitization of all API inputs
-  - **Command Injection Prevention**: Eliminated shell command vulnerabilities
-  - **Path Traversal Protection**: Prevented directory traversal attacks
-  - **Rate Limiting**: Implemented rate limiting with IP-based tracking
-  - **Security Headers**: Added comprehensive security headers for all responses
-  - **Error Handling**: Secure error handling without information disclosure
-  - **Logging**: Comprehensive security event logging and monitoring
-
-## Security Scan & Final Assessment
-
-### Comprehensive Security Review (December 2024)
-
-**SECURITY STATUS: ✅ HARDENED**
-
-Completed comprehensive security scan of EngineScript admin control panel and API. All major security vulnerabilities have been addressed and the system has been significantly hardened.
-
-#### ✅ Security Measures Implemented
-
-**Input Validation & Sanitization:**
-- ✅ Comprehensive input validation with whitelisting approach (`validateInput()` functions)
-- ✅ Path validation to prevent directory traversal attacks
-- ✅ Service name validation against allowed services whitelist
-- ✅ Log type validation against comprehensive whitelist (13 log types)
-- ✅ String length limits (255 chars) and dangerous character removal
-- ✅ Output escaping with `htmlspecialchars()` throughout the API
-- ✅ XSS prevention in frontend with dangerous pattern removal
-
-**API Security:**
-- ✅ Proper CORS headers with origin validation (localhost, 127.0.0.1, [::1])
-- ✅ Rate limiting (100 requests per minute per IP with session tracking)
-- ✅ HTTP method restriction (GET only for security)
-- ✅ Comprehensive secure headers (CSP, XSS protection, frame options, etc.)
-- ✅ Request URI validation and sanitization
-- ✅ Preflight CORS request handling
-
-**File System Security:**
-- ✅ `realpath()` validation for all file access operations
-- ✅ Comprehensive path traversal prevention with whitelisted paths
-- ✅ File existence and readability validation before access
-- ✅ Log file size limits (100MB maximum) to prevent resource exhaustion
-- ✅ Restricted file access to predefined system and EngineScript paths only
-- ✅ Safe log reading with proper file handle management
-
-**Command Injection Prevention:**
-- ✅ All shell commands use static strings or `escapeshellarg()` for safety
-- ✅ No user input is directly passed to shell commands
-- ✅ Command outputs are validated and sanitized before use
-- ✅ Error redirection (`2>/dev/null`) to prevent information disclosure
-
-**Log Security:**
-- ✅ Comprehensive log injection prevention with regex pattern removal
-- ✅ Sanitized security event logging with length limits
-- ✅ IP address validation in security logs
-- ✅ Secure log file handling with proper error checking
-
-**Error Handling:**
-- ✅ Secure error messages that don't leak sensitive information
-- ✅ Proper HTTP status codes for all error conditions
-- ✅ Exception handling with security event logging
-- ✅ Graceful degradation for missing system information
-
-#### 🔒 Security Architecture
-
-**Multi-Layer Security Model:**
-1. **Network Layer**: Nginx configuration with optional HTTP basic auth
-2. **Application Layer**: API rate limiting and CORS protection
-3. **Input Layer**: Comprehensive validation and sanitization
-4. **File System Layer**: Path validation and access controls
-5. **Output Layer**: XSS prevention and content escaping
-
-**Principle of Least Privilege:**
-- ✅ API only allows read operations (GET requests)
-- ✅ File access restricted to specific system paths
-- ✅ No database write operations
-- ✅ No file upload/download capabilities
-- ✅ No user account management
-
-#### ⚠️ Security Considerations
-
-**Authentication:**
-- **CURRENT**: No application-level authentication (relies on network-level protection)
-- **RECOMMENDATION**: Nginx HTTP basic auth is available but commented out in config
-- **RATIONALE**: Admin panel intended for localhost/internal use only
-
-**Network Security:**
-- **CURRENT**: HTTPS enforced with self-signed certificates for localhost
-- **RECOMMENDATION**: Use proper SSL certificates in production
-- **CORS**: Restricted to localhost origins only
-
-**Information Disclosure:**
-- **ACCEPTABLE**: System information (versions, status) exposed by design
-- **PROTECTED**: No sensitive credentials or internal paths exposed
-- **LOGGING**: Security events logged without sensitive data
-
-#### 🛡️ Security Testing Results
-
-**Static Code Analysis:** ✅ PASSED
-- All Codacy/CodeQL security warnings resolved
-- No SQL injection vectors (no database writes)
-- No command injection vulnerabilities
-- No path traversal vulnerabilities
-- No XSS vulnerabilities
-
-**Dynamic Testing:** ✅ PASSED
-- Rate limiting functional
-- Input validation effective
-- Path traversal attempts blocked
-- Log injection attempts prevented
-
-**Penetration Testing Checklist:** ✅ COMPLETED
-- ✅ Directory traversal attempts → Blocked
-- ✅ Command injection attempts → Blocked  
-- ✅ XSS injection attempts → Blocked
-- ✅ Log injection attempts → Blocked
-- ✅ Rate limit bypass attempts → Blocked
-- ✅ CORS bypass attempts → Blocked
-
-#### 📊 Risk Assessment
-
-**LOW RISK:**
-- Local admin panel with network-level access control
-- Read-only operations with comprehensive input validation
-- No sensitive data storage or user management
-- Extensive logging for security monitoring
-
-**MITIGATED RISKS:**
-- ✅ Path traversal → Comprehensive path validation
-- ✅ Command injection → Static commands with safe parameters
-- ✅ XSS attacks → Input/output sanitization
-- ✅ CSRF attacks → Read-only API design
-- ✅ DoS attacks → Rate limiting implementation
-
-#### 🔧 Security Maintenance
-
-**Monitoring:**
-- Security events logged to `/var/log/enginescript-api-security.log`
-- Failed requests and suspicious activities tracked
-- Rate limiting violations logged with IP addresses
-
-**Updates:**
-- Regular review of allowed log paths and service names
-- Validation patterns updated as needed
-- Security headers reviewed for current best practices
-
-#### ✅ Final Security Verdict
-
-**SECURITY GRADE: A-**
-
-The EngineScript admin control panel has been successfully hardened with enterprise-grade security measures. The system follows security best practices including defense in depth, input validation, output encoding, and the principle of least privilege. While there is no application-level authentication, this is acceptable for a localhost-only admin interface with network-level protection.
-
-**Recommended for production use** with proper network security controls.
