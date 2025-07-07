@@ -45,6 +45,13 @@ sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/in
 # The nginx config expects /enginescript/api.php for API calls
 # Keep the original api.php in place for direct access
 
+# Create Uptime Robot configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
+    cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
+    chmod 600 /etc/enginescript/uptimerobot.conf
+    chown root:root /etc/enginescript/uptimerobot.conf
+fi
+
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     sed -i '/<div class="tool-card" data-tool="adminer" id="adminer-tool">/,/<\/div>/d' "/var/www/admin/enginescript/index.html"

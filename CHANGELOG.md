@@ -6,7 +6,43 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-06
 
-### 🗑️ LOG VIEWER REMOVAL
+### � UPTIME ROBOT INTEGRATION
+- **Complete Uptime Robot Monitoring Integration**: Added comprehensive website uptime monitoring to the admin control panel
+  - **Backend API Implementation**: Full Uptime Robot API integration in `uptimerobot.php`
+    - Created `UptimeRobotAPI` class with secure API key management
+    - Implemented monitor management (get, create, delete) and account details retrieval
+    - Added formatted status data processing for dashboard display
+    - Secure configuration loading from `/etc/enginescript/uptimerobot.conf`
+    - Comprehensive error handling and API response validation
+    - Support for multiple monitor types (HTTP/HTTPS, Keyword, Ping, Port)
+  - **Admin Dashboard Integration**: Added uptime monitoring section to main dashboard
+    - **API Endpoints**: Added `/api/monitoring/uptime` and `/api/monitoring/uptime/monitors` endpoints
+    - **Real-time Status Display**: Live uptime statistics with automatic refresh
+    - **Monitor Details**: Individual monitor cards showing status, uptime percentage, and response times
+    - **Configuration Guidance**: Built-in setup instructions for users without API keys
+  - **Frontend UI Enhancement**: Modern uptime monitoring interface
+    - **Summary Statistics**: Total monitors, online/offline counts, and average uptime percentage
+    - **Individual Monitor Cards**: Detailed status displays with color-coded indicators
+    - **Responsive Design**: Mobile-optimized layout for uptime monitoring data
+    - **Status Indicators**: Visual dots and badges for up/down/paused states
+    - **Auto-refresh**: Background updates of monitoring data
+  - **Comprehensive Styling**: Modern CSS for uptime monitoring components
+    - **Status Colors**: Green (up), red (down), orange (paused), gray (unknown)
+    - **Interactive Cards**: Hover effects and professional monitor display cards
+    - **Grid Layouts**: Responsive grid system for monitor organization
+    - **Mobile Optimization**: Adaptive layouts for all screen sizes
+  - **Configuration & Documentation**: Complete setup guide and configuration management
+    - **Configuration Template**: Created `/etc/enginescript/uptimerobot.conf` template
+    - **Security**: Proper file permissions (600) for API key protection
+    - **README Documentation**: Comprehensive setup instructions and feature descriptions
+    - **API Key Management**: Secure storage and loading of Uptime Robot credentials
+    - **Installation Integration**: Admin control panel install script automatically deploys configuration template
+  - **Tools Page Integration**: Added Uptime Robot status card to Tools page
+    - **Service Status Indicator**: Shows configured/not configured status
+    - **Monitor Count Display**: Real-time count of active monitors
+    - **Quick Access**: Direct link to Uptime Robot dashboard for management
+
+### �🗑️ LOG VIEWER REMOVAL
 - **Complete Log Viewer Functionality Removal**: Removed all log viewer components from the admin control panel
   - **Backend API Cleanup**: Removed all log-related API endpoints and functions from `api.php`
     - Removed log file validation, path resolution, and content reading functions

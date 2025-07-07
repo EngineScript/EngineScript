@@ -227,6 +227,45 @@
                     </div>
                 </div>
                 
+                <!-- Uptime Monitoring Section -->
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-heartbeat"></i> Website Uptime Monitoring</h3>
+                            <div class="card-actions">
+                                <button class="btn btn-secondary btn-sm" id="uptime-refresh-btn">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="uptime-summary" id="uptime-summary">
+                                <div class="uptime-stat">
+                                    <span class="uptime-number" id="total-monitors">--</span>
+                                    <span class="uptime-label">Total Sites</span>
+                                </div>
+                                <div class="uptime-stat">
+                                    <span class="uptime-number success" id="up-monitors">--</span>
+                                    <span class="uptime-label">Online</span>
+                                </div>
+                                <div class="uptime-stat">
+                                    <span class="uptime-number error" id="down-monitors">--</span>
+                                    <span class="uptime-label">Offline</span>
+                                </div>
+                                <div class="uptime-stat">
+                                    <span class="uptime-number" id="average-uptime">--%</span>
+                                    <span class="uptime-label">Avg Uptime</span>
+                                </div>
+                            </div>
+                            <div class="uptime-monitors" id="uptime-monitors">
+                                <div class="uptime-status">
+                                    <p>Loading uptime monitoring data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- EngineScript Commands Section -->
                 <div class="content-row">
                     <div class="card col-12">
@@ -379,6 +418,34 @@
                         <div class="tool-content">
                             <h3>Adminer</h3>
                             <p>Lightweight database management interface alternative</p>
+                        </div>
+                    </a>
+                    
+                    <div class="tool-card" id="filemanager-tool">
+                        <div class="tool-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>File Manager</h3>
+                            <p>Web-based file browser and management interface</p>
+                            <div class="tool-status" id="filemanager-status">
+                                <span class="status-indicator checking"></span>
+                                <span class="status-text">Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer" class="tool-card">
+                        <div class="tool-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="tool-content">
+                            <h3>Uptime Robot</h3>
+                            <p>Website monitoring and uptime tracking service</p>
+                            <div class="tool-status" id="uptimerobot-status">
+                                <span class="status-indicator checking"></span>
+                                <span class="status-text">Checking...</span>
+                            </div>
                         </div>
                     </a>
                 </div>

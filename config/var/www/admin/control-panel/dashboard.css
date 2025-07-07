@@ -566,6 +566,44 @@ body {
     font-size: 0.875rem;
 }
 
+/* Tool Status */
+.tool-status {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.tool-status .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    display: inline-block;
+}
+
+.tool-status .status-indicator.online {
+    background-color: var(--success-color);
+}
+
+.tool-status .status-indicator.offline {
+    background-color: var(--error-color);
+}
+
+.tool-status .status-indicator.checking {
+    background-color: var(--warning-color);
+    animation: pulse 1.5s infinite;
+}
+
+.tool-status .status-indicator.error {
+    background-color: var(--error-color);
+}
+
+.tool-status .status-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
 /* Commands Grid */
 .commands-grid {
     display: grid;
@@ -735,4 +773,281 @@ button:focus, select:focus, input:focus {
     border-top: 2px solid var(--accent-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+/* Uptime Monitoring Styles */
+.uptime-monitor {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 15px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: "status info stats text";
+    gap: 15px;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.uptime-monitor:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow);
+}
+
+.monitor-status {
+    grid-area: status;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.monitor-status.up .status-dot {
+    background: var(--success-color);
+    box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+}
+
+.monitor-status.down .status-dot {
+    background: var(--error-color);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.monitor-status.paused .status-dot {
+    background: var(--warning-color);
+    box-shadow: 0 0 10px rgba(255, 184, 0, 0.5);
+}
+
+.monitor-status.unknown .status-dot {
+    background: var(--text-muted);
+}
+
+.monitor-info {
+    grid-area: info;
+    min-width: 0;
+}
+
+.monitor-info h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monitor-url {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.monitor-stats {
+    grid-area: stats;
+    display: flex;
+    gap: 20px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    line-height: 1.2;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.monitor-status-text {
+    grid-area: text;
+    text-align: right;
+}
+
+.status-text {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.monitor-status.up .status-text {
+    color: var(--success-color);
+}
+
+.monitor-status.down .status-text {
+    color: var(--error-color);
+}
+
+.monitor-status.paused .status-text {
+    color: var(--warning-color);
+}
+
+.monitor-status.unknown .status-text {
+    color: var(--text-muted);
+}
+
+.last-check {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.uptime-status {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.uptime-status p {
+    margin-bottom: 15px;
+    color: var(--text-secondary);
+}
+
+.uptime-status strong {
+    color: var(--text-primary);
+}
+
+.uptime-status ol {
+    text-align: left;
+    max-width: 500px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+}
+
+.uptime-status ol li {
+    margin-bottom: 8px;
+    padding-left: 5px;
+}
+
+.uptime-status code {
+    background: var(--secondary-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: var(--accent-color);
+}
+
+.uptime-status a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.uptime-status a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+/* Uptime Summary Cards */
+.monitoring-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.monitoring-summary .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.monitoring-summary .metric-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow);
+}
+
+.monitoring-summary .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.monitoring-summary .metric-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Uptime Summary Styles */
+.uptime-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: rgba(0, 212, 170, 0.05);
+    border: 1px solid rgba(0, 212, 170, 0.2);
+    border-radius: var(--border-radius);
+}
+
+.uptime-stat {
+    text-align: center;
+    padding: 10px;
+}
+
+.uptime-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    line-height: 1.2;
+    margin-bottom: 5px;
+}
+
+.uptime-number.success {
+    color: var(--success-color);
+}
+
+.uptime-number.error {
+    color: var(--error-color);
+}
+
+.uptime-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+@media (max-width: 480px) {
+    .uptime-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .uptime-number {
+        font-size: 1.5rem;
+    }
 }

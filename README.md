@@ -157,6 +157,52 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**`es.update`**     |Update EngineScript |
 |**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated |
 
+### Admin Control Panel Features
+
+EngineScript includes a comprehensive web-based admin control panel accessible at `https://your-server-ip/admin` or `https://admin.yourdomain.com`. The control panel provides:
+
+#### Server Monitoring
+- Real-time server statistics (CPU, RAM, disk usage)
+- Service status monitoring (Nginx, PHP, MariaDB, Redis)
+- System activity and security event logging
+
+#### Uptime Monitoring
+EngineScript integrates with **Uptime Robot** to monitor your WordPress websites for uptime and performance:
+
+- **Real-time uptime status** for all monitored websites
+- **Response time monitoring** and alerts
+- **Uptime percentage** tracking with historical data
+- **Automatic status reporting** in the admin dashboard
+
+**Setup Uptime Robot Integration:**
+
+1. Create a free account at [UptimeRobot.com](https://uptimerobot.com/)
+2. Generate an API key in Settings > API Settings (Main API Key)
+3. Configure the API key on your server:
+   ```bash
+   sudo nano /etc/enginescript/uptimerobot.conf
+   ```
+4. Add your API key:
+   ```
+   api_key=your_main_api_key_here
+   ```
+5. Set proper permissions:
+   ```bash
+   sudo chmod 600 /etc/enginescript/uptimerobot.conf
+   ```
+
+Once configured, your uptime monitoring data will automatically appear in the admin control panel.
+
+#### File Management
+- **Tiny File Manager** integration for secure web-based file management
+- Direct access to WordPress files and directories
+- Safe file editing and management interface
+
+#### Tools & Utilities
+- Quick access to common server management tasks
+- One-click service restarts and cache clearing
+- Server information and diagnostics
+
 ### Software EngineScript Utilizes:
 
 |Software|Version|Source|

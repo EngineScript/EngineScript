@@ -261,6 +261,18 @@ switch ($path) {
         handleAlerts();
         break;
     
+    case '/tools/filemanager/status':
+        handleFileManagerStatus();
+        break;
+    
+    case '/monitoring/uptime':
+        handleUptimeStatus();
+        break;
+    
+    case '/monitoring/uptime/monitors':
+        handleUptimeMonitors();
+        break;
+    
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
@@ -398,6 +410,87 @@ function handleAlerts() {
         http_response_code(500);
         logSecurityEvent('Alerts error', $e->getMessage());
         echo json_encode(['error' => 'Unable to retrieve alerts']); // codacy:ignore - echo required for JSON API response
+    }
+}
+
+function handleFileManagerStatus() {
+    try {
+        $fm_file = __DIR__ . '/filemanager.php';
+        $tfm_file = __DIR__ . '/tinyfilemanager.php';
+        
+        $status = [
+            'available' => file_exists($fm_file),
+            'tfm_downloaded' => file_exists($tfm_file),
+            'tfm_age_days' => file_exists($tfm_file) ? round((time() - filemtime($tfm_file)) / (24 * 60 * 60)) : null,
+            'writable_dirs' => [
+                '/var/www' => is_writable('/var/www'),
+                '/tmp' => is_writable('/tmp')
+            ],
+            'url' => '/admin/control-panel/filemanager.php'
+        ];
+        
+        echo json_encode(sanitizeOutput($status)); // codacy:ignore - echo required for JSON API response
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('File manager status error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to retrieve file manager status']); // codacy:ignore - echo required for JSON API response
+    }
+}
+
+function handleUptimeStatus() {
+    try {
+        require_once __DIR__ . '/uptimerobot.php';
+        $uptime = new UptimeRobotAPI();
+        
+        if (!$uptime->isConfigured()) {
+            echo json_encode([
+                'configured' => false,
+                'message' => 'Uptime Robot API key not configured'
+            ]);
+            return;
+        }
+        
+        $monitors = $uptime->getMonitorStatus();
+        $summary = [
+            'configured' => true,
+            'total_monitors' => count($monitors),
+            'up_monitors' => count(array_filter($monitors, function($m) { return $m['status_code'] == 2; })),
+            'down_monitors' => count(array_filter($monitors, function($m) { return in_array($m['status_code'], [8, 9]); })),
+            'average_uptime' => count($monitors) > 0 ? 
+                round(array_sum(array_column($monitors, 'uptime_ratio')) / count($monitors), 2) : 0
+        ];
+        
+        echo json_encode(sanitizeOutput($summary));
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('Uptime status error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to retrieve uptime status', 'configured' => false]);
+    }
+}
+
+function handleUptimeMonitors() {
+    try {
+        require_once __DIR__ . '/uptimerobot.php';
+        $uptime = new UptimeRobotAPI();
+        
+        if (!$uptime->isConfigured()) {
+            echo json_encode([
+                'configured' => false,
+                'monitors' => [],
+                'message' => 'Uptime Robot API key not configured'
+            ]);
+            return;
+        }
+        
+        $monitors = $uptime->getMonitorStatus();
+        echo json_encode([
+            'configured' => true,
+            'monitors' => sanitizeOutput($monitors)
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('Uptime monitors error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to retrieve monitors', 'configured' => false, 'monitors' => []]);
     }
 }
 

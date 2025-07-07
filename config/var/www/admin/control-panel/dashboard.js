@@ -56,6 +56,18 @@ class EngineScriptDashboard {
         }
       });
     }
+
+    // File Manager tool card click
+    const filemanagerTool = document.getElementById("filemanager-tool");
+    if (filemanagerTool) {
+      filemanagerTool.addEventListener("click", () => this.openFileManager());
+    }
+
+    // Uptime refresh button
+    const uptimeRefreshBtn = document.getElementById("uptime-refresh-btn");
+    if (uptimeRefreshBtn) {
+      uptimeRefreshBtn.addEventListener("click", () => this.loadUptimeData());
+    }
   }
   setupNavigation() {
     // Set up single page app navigation
@@ -136,6 +148,9 @@ class EngineScriptDashboard {
         break;
       case "system":
         this.loadSystemInfo();
+        break;
+      case "tools":
+        this.loadToolsData();
         break;
     }
   }
@@ -223,6 +238,9 @@ class EngineScriptDashboard {
 
       // Initialize performance chart
       this.initializePerformanceChart();
+
+      // Load uptime monitoring data
+      this.loadUptimeData();
 
     } catch (error) {
       this.showError(
@@ -968,6 +986,211 @@ class EngineScriptDashboard {
         chart.destroy();
       }
     });
+  }
+
+  // Tools management methods
+  async loadToolsData() {
+    try {
+      await this.checkFileManagerStatus();
+      await this.checkUptimeRobotStatus();
+    } catch (error) {
+      // Silently handle tools loading errors
+    }
+  }
+
+  async checkFileManagerStatus() {
+    try {
+      const status = await this.getApiData("/api/tools/filemanager/status", {});
+      const statusElement = document.getElementById("filemanager-status");
+      
+      if (statusElement) {
+        const indicator = statusElement.querySelector(".status-indicator");
+        const text = statusElement.querySelector(".status-text");
+        
+        if (status.available && status.tfm_downloaded) {
+          indicator.className = "status-indicator online";
+          text.textContent = "Ready";
+        } else {
+          indicator.className = "status-indicator offline";
+          text.textContent = "Setup Required";
+        }
+      }
+    } catch (error) {
+      const statusElement = document.getElementById("filemanager-status");
+      if (statusElement) {
+        const indicator = statusElement.querySelector(".status-indicator");
+        const text = statusElement.querySelector(".status-text");
+        indicator.className = "status-indicator error";
+        text.textContent = "Error";
+      }
+    }
+  }
+
+  openFileManager() {
+    // Open file manager in new tab
+    const url = "/admin/control-panel/filemanager.php";
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  // Uptime monitoring methods
+  async loadUptimeData() {
+    try {
+      await this.loadUptimeSummary();
+      await this.loadUptimeMonitors();
+    } catch (error) {
+      // Silently handle uptime loading errors
+    }
+  }
+
+  async loadUptimeSummary() {
+    try {
+      const summary = await this.getApiData("/api/monitoring/uptime", {});
+      
+      if (summary.configured) {
+        this.setTextContent("total-monitors", summary.total_monitors || 0);
+        this.setTextContent("up-monitors", summary.up_monitors || 0);
+        this.setTextContent("down-monitors", summary.down_monitors || 0);
+        this.setTextContent("average-uptime", (summary.average_uptime || 0) + "%");
+      } else {
+        this.showUptimeNotConfigured();
+      }
+    } catch (error) {
+      this.showUptimeError();
+    }
+  }
+
+  async loadUptimeMonitors() {
+    try {
+      const response = await this.getApiData("/api/monitoring/uptime/monitors", {});
+      const monitorsContainer = document.getElementById("uptime-monitors");
+      
+      if (!monitorsContainer) return;
+      
+      if (!response.configured) {
+        this.showUptimeNotConfigured();
+        return;
+      }
+      
+      const monitors = response.monitors || [];
+      
+      if (monitors.length === 0) {
+        monitorsContainer.innerHTML = '<div class="uptime-status"><p>No monitors configured. Add websites to monitor in your Uptime Robot dashboard.</p></div>';
+        return;
+      }
+      
+      // Clear existing content
+      monitorsContainer.innerHTML = '';
+      
+      monitors.forEach(monitor => {
+        const monitorElement = this.createUptimeMonitorElement(monitor);
+        monitorsContainer.appendChild(monitorElement);
+      });
+      
+    } catch (error) {
+      this.showUptimeError();
+    }
+  }
+
+  createUptimeMonitorElement(monitor) {
+    const monitorDiv = document.createElement("div");
+    monitorDiv.className = "uptime-monitor";
+    
+    const statusClass = this.getUptimeStatusClass(monitor.status_code);
+    
+    monitorDiv.innerHTML = `
+      <div class="monitor-status ${statusClass}">
+        <span class="status-dot"></span>
+      </div>
+      <div class="monitor-info">
+        <h4>${this.sanitizeInput(monitor.name)}</h4>
+        <p class="monitor-url">${this.sanitizeInput(monitor.url)}</p>
+      </div>
+      <div class="monitor-stats">
+        <div class="stat">
+          <span class="stat-value">${monitor.uptime_ratio}%</span>
+          <span class="stat-label">Uptime</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${monitor.response_time}ms</span>
+          <span class="stat-label">Response</span>
+        </div>
+      </div>
+      <div class="monitor-status-text">
+        <span class="status-text">${this.sanitizeInput(monitor.status)}</span>
+        <span class="last-check">${this.sanitizeInput(monitor.last_check)}</span>
+      </div>
+    `;
+    
+    return monitorDiv;
+  }
+
+  getUptimeStatusClass(statusCode) {
+    switch (statusCode) {
+      case 2: return 'up';
+      case 8:
+      case 9: return 'down';
+      case 0: return 'paused';
+      default: return 'unknown';
+    }
+  }
+
+  showUptimeNotConfigured() {
+    const monitorsContainer = document.getElementById("uptime-monitors");
+    if (monitorsContainer) {
+      monitorsContainer.innerHTML = `
+        <div class="uptime-status">
+          <p><strong>Uptime Robot not configured</strong></p>
+          <p>To enable website monitoring:</p>
+          <ol>
+            <li>Create a free account at <a href="https://uptimerobot.com/" target="_blank">UptimeRobot.com</a></li>
+            <li>Get your API key from Settings > API Settings</li>
+            <li>Configure it using: <code>sudo nano /etc/enginescript/uptimerobot.conf</code></li>
+            <li>Add: <code>api_key=your_api_key_here</code></li>
+          </ol>
+        </div>
+      `;
+    }
+    
+    // Reset summary stats
+    this.setTextContent("total-monitors", "--");
+    this.setTextContent("up-monitors", "--");
+    this.setTextContent("down-monitors", "--");
+    this.setTextContent("average-uptime", "--%");
+  }
+
+  showUptimeError() {
+    const monitorsContainer = document.getElementById("uptime-monitors");
+    if (monitorsContainer) {
+      monitorsContainer.innerHTML = '<div class="uptime-status"><p>Error loading uptime monitoring data. Please check your configuration and try again.</p></div>';
+    }
+  }
+
+  async checkUptimeRobotStatus() {
+    try {
+      const status = await this.getApiData("/api/monitoring/uptime", {});
+      const statusElement = document.getElementById("uptimerobot-status");
+      
+      if (statusElement) {
+        const indicator = statusElement.querySelector(".status-indicator");
+        const text = statusElement.querySelector(".status-text");
+        
+        if (status.configured) {
+          indicator.className = "status-indicator online";
+          text.textContent = `${status.total_monitors || 0} monitors`;
+        } else {
+          indicator.className = "status-indicator offline";
+          text.textContent = "Not configured";
+        }
+      }
+    } catch (error) {
+      const statusElement = document.getElementById("uptimerobot-status");
+      if (statusElement) {
+        const indicator = statusElement.querySelector(".status-indicator");
+        const text = statusElement.querySelector(".status-text");
+        indicator.className = "status-indicator error";
+        text.textContent = "Error";
+      }
+    }
   }
 }
 
