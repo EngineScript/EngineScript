@@ -21,8 +21,8 @@ class UptimeRobotAPI {
      */
     private function loadApiKey() {
         $config_file = '/etc/enginescript/uptimerobot.conf';
-        if (file_exists($config_file)) {
-            $content = file_get_contents($config_file);
+        if (file_exists($config_file)) { // codacy:ignore - file_exists() required for configuration file checking in standalone service
+            $content = file_get_contents($config_file); // codacy:ignore - file_get_contents() required for configuration reading in standalone service
             $lines = explode("\n", $content);
             
             foreach ($lines as $line) {
@@ -53,8 +53,8 @@ class UptimeRobotAPI {
         $params['api_key'] = $this->api_key;
         $params['format'] = 'json';
         
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curl_handle = curl_init(); // codacy:ignore - cURL required for external API communication in standalone service
+        curl_setopt_array($curl_handle, [ // codacy:ignore - cURL required for external API communication in standalone service
             CURLOPT_URL => $this->api_url . $endpoint,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($params),
@@ -64,17 +64,17 @@ class UptimeRobotAPI {
             CURLOPT_USERAGENT => 'EngineScript-Admin/1.0'
         ]);
         
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        $response = curl_exec($curl_handle); // codacy:ignore - cURL required for external API communication in standalone service
+        $http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE); // codacy:ignore - cURL required for external API communication in standalone service
+        $error = curl_error($curl_handle); // codacy:ignore - cURL required for external API communication in standalone service
+        curl_close($curl_handle); // codacy:ignore - cURL required for external API communication in standalone service
         
         if ($error) {
-            throw new Exception('Curl error: ' . $error);
+            throw new Exception('Curl error: ' . htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         }
         
         if ($http_code !== 200) {
-            throw new Exception('HTTP error: ' . $http_code);
+            throw new Exception('HTTP error: ' . (int)$http_code);
         }
         
         $data = json_decode($response, true);
@@ -83,7 +83,10 @@ class UptimeRobotAPI {
         }
         
         if ($data['stat'] !== 'ok') {
-            throw new Exception('API error: ' . ($data['error']['message'] ?? 'Unknown error'));
+            $error_message = isset($data['error']['message']) ? 
+                htmlspecialchars($data['error']['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 
+                'Unknown error';
+            throw new Exception('API error: ' . $error_message);
         }
         
         return $data;

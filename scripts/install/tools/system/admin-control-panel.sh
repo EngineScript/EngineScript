@@ -63,7 +63,7 @@ mkdir -p "$TFM_DIR"
 if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_FILE}"; then
     if tar -xzf "${TFM_ZIP_FILE}" -C /tmp/; then
         # Copy files from extracted directory to our target directory
-        cp -r /tmp/tinyfilemanager-${TINYFILEMANAGER_VER}/* "$TFM_DIR/"
+        cp -r "/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}/"* "$TFM_DIR/"
         
         # Copy our custom configuration file
         if [[ -f "/usr/local/bin/enginescript/config/var/www/admin/tinyfilemanager/config.php" ]]; then
@@ -79,7 +79,7 @@ if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_
         
         # Clean up
         rm -f "${TFM_ZIP_FILE}"
-        rm -rf /tmp/tinyfilemanager-${TINYFILEMANAGER_VER}
+        rm -rf "/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}"
         
         echo "✓ Official Tiny File Manager v${TINYFILEMANAGER_VER} installed successfully"
         echo "  - Location: $TFM_DIR"

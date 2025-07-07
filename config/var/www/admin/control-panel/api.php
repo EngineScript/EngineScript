@@ -416,9 +416,8 @@ function handleAlerts() {
 function handleFileManagerStatus() {
     try {
         // Load EngineScript variables to get current version
-        $variables = [];
-        if (file_exists('/usr/local/bin/enginescript/enginescript-variables.txt')) {
-            $content = file_get_contents('/usr/local/bin/enginescript/enginescript-variables.txt');
+        if (file_exists('/usr/local/bin/enginescript/enginescript-variables.txt')) { // codacy:ignore - file_exists() required for version checking in standalone service
+            $content = file_get_contents('/usr/local/bin/enginescript/enginescript-variables.txt'); // codacy:ignore - file_get_contents() required for version reading in standalone service
             preg_match('/TINYFILEMANAGER_VER="([^"]*)"/', $content, $matches);
             $current_version = isset($matches[1]) ? $matches[1] : '2.6';
         } else {
@@ -429,11 +428,11 @@ function handleFileManagerStatus() {
         $tfm_config = '/var/www/admin/enginescript/tinyfilemanager/config.php';
         
         $status = [
-            'available' => file_exists($tfm_file),
-            'config_exists' => file_exists($tfm_config),
+            'available' => file_exists($tfm_file), // codacy:ignore - file_exists() required for status checking in standalone service
+            'config_exists' => file_exists($tfm_config), // codacy:ignore - file_exists() required for status checking in standalone service
             'writable_dirs' => [
-                '/var/www' => is_writable('/var/www'),
-                '/tmp' => is_writable('/tmp')
+                '/var/www' => is_writable('/var/www'), // codacy:ignore - is_writable() required for permission checking in standalone service
+                '/tmp' => is_writable('/tmp') // codacy:ignore - is_writable() required for permission checking in standalone service
             ],
             'url' => '/tinyfilemanager/tinyfilemanager.php',
             'version' => $current_version
@@ -449,11 +448,11 @@ function handleFileManagerStatus() {
 
 function handleUptimeStatus() {
     try {
-        require_once __DIR__ . '/uptimerobot.php';
+        require_once __DIR__ . '/uptimerobot.php'; // codacy:ignore - require_once needed for class loading in standalone service
         $uptime = new UptimeRobotAPI();
         
         if (!$uptime->isConfigured()) {
-            echo json_encode([
+            echo json_encode([ // codacy:ignore - echo required for JSON API response
                 'configured' => false,
                 'message' => 'Uptime Robot API key not configured'
             ]);
@@ -464,27 +463,27 @@ function handleUptimeStatus() {
         $summary = [
             'configured' => true,
             'total_monitors' => count($monitors),
-            'up_monitors' => count(array_filter($monitors, function($m) { return $m['status_code'] == 2; })),
-            'down_monitors' => count(array_filter($monitors, function($m) { return in_array($m['status_code'], [8, 9]); })),
+            'up_monitors' => count(array_filter($monitors, function($monitor) { return $monitor['status_code'] == 2; })),
+            'down_monitors' => count(array_filter($monitors, function($monitor) { return in_array($monitor['status_code'], [8, 9]); })),
             'average_uptime' => count($monitors) > 0 ? 
                 round(array_sum(array_column($monitors, 'uptime_ratio')) / count($monitors), 2) : 0
         ];
         
-        echo json_encode(sanitizeOutput($summary));
+        echo json_encode(sanitizeOutput($summary)); // codacy:ignore - echo required for JSON API response
     } catch (Exception $e) {
         http_response_code(500);
         logSecurityEvent('Uptime status error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve uptime status', 'configured' => false]);
+        echo json_encode(['error' => 'Unable to retrieve uptime status', 'configured' => false]); // codacy:ignore - echo required for JSON API response
     }
 }
 
 function handleUptimeMonitors() {
     try {
-        require_once __DIR__ . '/uptimerobot.php';
+        require_once __DIR__ . '/uptimerobot.php'; // codacy:ignore - require_once needed for class loading in standalone service
         $uptime = new UptimeRobotAPI();
         
         if (!$uptime->isConfigured()) {
-            echo json_encode([
+            echo json_encode([ // codacy:ignore - echo required for JSON API response
                 'configured' => false,
                 'monitors' => [],
                 'message' => 'Uptime Robot API key not configured'
@@ -493,14 +492,14 @@ function handleUptimeMonitors() {
         }
         
         $monitors = $uptime->getMonitorStatus();
-        echo json_encode([
+        echo json_encode([ // codacy:ignore - echo required for JSON API response
             'configured' => true,
             'monitors' => sanitizeOutput($monitors)
         ]);
     } catch (Exception $e) {
         http_response_code(500);
         logSecurityEvent('Uptime monitors error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve monitors', 'configured' => false, 'monitors' => []]);
+        echo json_encode(['error' => 'Unable to retrieve monitors', 'configured' => false, 'monitors' => []]); // codacy:ignore - echo required for JSON API response
     }
 }
 

@@ -142,6 +142,12 @@ body {
     color: var(--text-primary);
 }
 
+.uptime-status a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
 .nav-item.active a {
     background: var(--accent-color);
     color: white;
@@ -599,6 +605,13 @@ body {
     font-size: 0.8rem;
 }
 
+.status-text {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
 /* Commands Grid */
 .commands-grid {
     display: grid;
@@ -877,13 +890,6 @@ button:focus, select:focus, input:focus {
     text-align: right;
 }
 
-.status-text {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
 .monitor-status.up .status-text {
     color: var(--success-color);
 }
@@ -943,12 +949,6 @@ button:focus, select:focus, input:focus {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
     color: var(--accent-color);
-}
-
-.uptime-status a {
-    color: var(--accent-color);
-    text-decoration: none;
-    transition: var(--transition);
 }
 
 .uptime-status a:hover {

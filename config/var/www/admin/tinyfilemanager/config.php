@@ -9,8 +9,8 @@ $credentials_file = '/home/EngineScript/enginescript-install-options.txt';
 $fm_username = null;
 $fm_password = null;
 
-if (file_exists($credentials_file)) {
-    $content = file_get_contents($credentials_file);
+if (file_exists($credentials_file)) { // codacy:ignore - file_exists() required for configuration file checking in standalone service
+    $content = file_get_contents($credentials_file); // codacy:ignore - file_get_contents() required for configuration reading in standalone service
     
     // Extract FILEMANAGER_USERNAME
     if (preg_match('/FILEMANAGER_USERNAME="([^"]*)"/', $content, $matches)) {
@@ -32,7 +32,7 @@ if (file_exists($credentials_file)) {
 // Security check - fail if credentials are not properly configured
 if (empty($fm_username) || empty($fm_password)) {
     http_response_code(503);
-    die('File Manager Error: Credentials not configured. Please run "es.config" to set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD.');
+    die('File Manager Error: Credentials not configured. Please run "es.config" to set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD.'); // codacy:ignore - die() required for secure failure in standalone service
 }
 
 // Generate authentication array with hashed password
