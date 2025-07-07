@@ -435,7 +435,7 @@ function handleFileManagerStatus() {
                 '/var/www' => is_writable('/var/www'),
                 '/tmp' => is_writable('/tmp')
             ],
-            'url' => '/enginescript/tinyfilemanager/tinyfilemanager.php',
+            'url' => '/tinyfilemanager/tinyfilemanager.php',
             'version' => $current_version
         ];
         

@@ -22,7 +22,7 @@ echo "    'yourusername' => '\$2y\$10\$...' // Use password_hash('yourpassword',
 echo "  );"
 echo ""
 echo "Default credentials: admin/admin"
-echo "Location: /enginescript/tinyfilemanager/tinyfilemanager.php"
+echo "Location: /tinyfilemanager/tinyfilemanager.php"
 echo ""
 read -p "Enter new password (leave blank to generate): " NEW_PASSWORD
 

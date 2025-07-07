@@ -5,6 +5,6 @@
  */
 
 // Redirect to the official TinyFileManager installation
-header('Location: /enginescript/tinyfilemanager/');
+header('Location: /tinyfilemanager/');
 exit;
 ?>

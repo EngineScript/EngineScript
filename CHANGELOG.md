@@ -1,4 +1,34 @@
-# Chan## 2025-07-07
+# Changelog
+
+All notable changes to EngineScript will be documented in this file.
+
+Changes are organized by date, with the most recent changes listed first.
+
+## 2025-07-07
+
+### � URL PATH CORRECTION
+- **File Manager URL Fix**: Corrected TinyFileManager URL paths for admin subdomain
+  - **Path Structure**: Fixed URL to match nginx admin subdomain configuration
+    - Changed from `/enginescript/tinyfilemanager/tinyfilemanager.php` to `/tinyfilemanager/tinyfilemanager.php`
+    - Admin subdomain nginx root is `/var/www/admin/enginescript`, so `/tinyfilemanager/` maps correctly
+    - File system paths remain at `/var/www/admin/enginescript/tinyfilemanager/` (unchanged)
+  - **Updated References**: Fixed URLs across all components
+    - Control panel HTML link now uses correct `/tinyfilemanager/tinyfilemanager.php`
+    - API endpoint returns correct URL structure for frontend
+    - Simple redirect in filemanager.php uses proper path
+    - Installation script displays correct access URL
+    - Password reset script shows correct location path
+
+### �🐛 CONFIGURATION PARSING FIX
+- **Uptime Robot Configuration**: Fixed PHP syntax error in configuration file parsing
+  - **Parse Error Resolution**: Replaced `parse_ini_file()` with robust manual parsing in `uptimerobot.php`
+    - Fixed "syntax error, unexpected '('" error on line 15 of uptimerobot.conf
+    - Custom parsing handles comments and special characters properly
+    - Eliminates dependency on strict INI file format requirements
+  - **Configuration Cleanup**: Removed problematic characters from uptimerobot.conf comments
+    - Removed URL with special characters that caused parsing issues
+    - Simplified comment format to prevent future parsing problems
+    - Maintained all essential configuration information
 
 ### 🏷️ OFFICIAL RELEASE INTEGRATION
 - **Version Management**: Switched TinyFileManager to official tagged releases instead of master branch

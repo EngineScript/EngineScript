@@ -22,8 +22,22 @@ class UptimeRobotAPI {
     private function loadApiKey() {
         $config_file = '/etc/enginescript/uptimerobot.conf';
         if (file_exists($config_file)) {
-            $config = parse_ini_file($config_file);
-            return isset($config['api_key']) ? $config['api_key'] : null;
+            $content = file_get_contents($config_file);
+            $lines = explode("\n", $content);
+            
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line) || strpos($line, '#') === 0) {
+                    continue; // Skip empty lines and comments
+                }
+                
+                if (strpos($line, '=') !== false) {
+                    list($key, $value) = explode('=', $line, 2);
+                    if (trim($key) === 'api_key') {
+                        return trim($value);
+                    }
+                }
+            }
         }
         return null;
     }
