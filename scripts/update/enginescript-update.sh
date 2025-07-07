@@ -51,6 +51,33 @@ echo ""
 
 # Admin Control Panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+
+# Create /etc/enginescript directory if it doesn't exist
+if [[ ! -d "/etc/enginescript" ]]; then
+    echo "Creating EngineScript configuration directory..."
+    mkdir -p /etc/enginescript
+    chmod 755 /etc/enginescript
+    chown www-data:www-data /etc/enginescript
+    echo "✓ EngineScript configuration directory created"
+fi
+
+# Create File Manager configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
+    echo "Creating File Manager configuration file..."
+    cp /usr/local/bin/enginescript/config/etc/enginescript/filemanager.conf /etc/enginescript/filemanager.conf
+    chmod 600 /etc/enginescript/filemanager.conf
+    chown www-data:www-data /etc/enginescript/filemanager.conf
+    echo "✓ File Manager configuration template created"
+fi
+
+# Create Uptime Robot configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
+    cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
+    chmod 600 /etc/enginescript/uptimerobot.conf
+    chown www-data:www-data /etc/enginescript/uptimerobot.conf
+fi
+
+# Set proper ownership for web server access
 chown -R www-data:www-data /var/www/admin/enginescript
 chown -R www-data:www-data /etc/enginescript
 
@@ -66,6 +93,10 @@ cp /var/www/admin/enginescript/api.php /var/www/admin/enginescript/api/index.php
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     sed -i '/<div class="tool-card" data-tool="adminer" id="adminer-tool">/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
 fi
+
+# Update configuration files from main credentials file
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
 
 # Update both EngineScript plugins for each site in sites.sh
 SITES_FILE="/home/EngineScript/sites-list/sites.sh"

@@ -83,57 +83,6 @@ $fm_root_path = isset($fm_config['fm_root_path']) && !empty($fm_config['fm_root_
 $fm_max_upload = isset($fm_config['fm_max_upload_size']) && !empty($fm_config['fm_max_upload_size']) ? (int)$fm_config['fm_max_upload_size'] : 104857600;
 $fm_readonly = isset($fm_config['fm_readonly']) && $fm_config['fm_readonly'] === 'true' ? true : false;
 
-// Security configuration for Tiny File Manager
-$CONFIG = [
-    // Authentication
-    'auth' => true,
-    'auth_users' => array(
-        $fm_username => $fm_password_hash
-    ),
-    
-    // Directories configuration
-    'root_path' => $fm_root_path,
-    'root_url' => '',
-    'show_hidden_files' => false,
-    'hide_Cols' => false,
-    'readonly' => $fm_readonly,
-    
-    // Upload settings
-    'upload_extension' => 'zip,rar,7z,tar,gz,txt,pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,svg,mp3,mp4,avi,mov,wmv,sql',
-    'max_upload_size_bytes' => $fm_max_upload,
-    'upload_overwrite' => false,
-    
-    // Security settings
-    'exclude_items' => array(
-        '.htaccess',
-        '.htpasswd',
-        'wp-config.php',
-        '*.log',
-        '/etc',
-        '/var/log',
-        '/root',
-        '/home'
-    ),
-    'exclude_regex' => '/^\.|^wp-config\.php$|\.log$/',
-    
-    // UI settings
-    'theme' => 'dark',
-    'sticky_navbar' => true,
-    'default_timezone' => 'UTC',
-    'datetime_format' => 'Y-m-d H:i:s',
-    'error_reporting' => false,
-    'show_php_info' => false,
-    'show_php_ver' => false,
-    'check_updates' => false
-];
-
-// Set configuration constants for Tiny File Manager
-foreach ($CONFIG as $key => $value) {
-    if (!defined('FM_' . strtoupper($key))) {
-        define('FM_' . strtoupper($key), $value);
-    }
-}
-
 // Additional security headers
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
@@ -159,8 +108,21 @@ if (!file_exists($tfm_file) || (time() - filemtime($tfm_file)) > (30 * 24 * 60 *
     }
 }
 
-// Include Tiny File Manager
+// Modify TFM file to use our credentials
 if (file_exists($tfm_file)) {
+    $tfm_content = file_get_contents($tfm_file);
+    
+    // Replace the hardcoded auth_users array with our credentials
+    $new_auth_array = '$auth_users = array(\'' . $fm_username . '\' => \'' . $fm_password_hash . '\');';
+    
+    // Pattern to match the existing $auth_users array (handles multi-line arrays)
+    $pattern = '/\$auth_users\s*=\s*array\s*\([^;]*\);/s';
+    
+    if (preg_match($pattern, $tfm_content)) {
+        $tfm_content = preg_replace($pattern, $new_auth_array, $tfm_content);
+        file_put_contents($tfm_file, $tfm_content);
+    }
+    
     include $tfm_file;
 } else {
     die('Tiny File Manager not found. Please check installation.');
