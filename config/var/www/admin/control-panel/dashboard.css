@@ -31,7 +31,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, #2a2a2a 100%);
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #2a2a2d 100%);
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
@@ -1050,4 +1050,18 @@ button:focus, select:focus, input:focus {
     .uptime-number {
         font-size: 1.5rem;
     }
+}
+
+/* File Manager specific styling */
+#filemanager-tool {
+    position: relative;
+}
+
+#filemanager-tool:hover {
+    cursor: pointer;
+}
+
+#filemanager-tool:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }

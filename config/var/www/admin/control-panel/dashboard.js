@@ -60,7 +60,12 @@ class EngineScriptDashboard {
     // File Manager tool card click
     const filemanagerTool = document.getElementById("filemanager-tool");
     if (filemanagerTool) {
-      filemanagerTool.addEventListener("click", () => this.openFileManager());
+      filemanagerTool.style.cursor = "pointer";
+      filemanagerTool.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("File Manager card clicked");
+        this.openFileManager();
+      });
     }
 
     // Uptime refresh button
@@ -1027,9 +1032,21 @@ class EngineScriptDashboard {
   }
 
   openFileManager() {
-    // Open file manager in new tab
-    const url = "/admin/control-panel/filemanager.php";
-    window.open(url, "_blank", "noopener,noreferrer");
+    try {
+      // Open file manager in new tab
+      const url = "/filemanager.php";
+      const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+      
+      // Check if popup was blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
+        // Popup was blocked, try alternative method
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error("Error opening file manager:", error);
+      // Fallback to same window navigation
+      window.location.href = "/filemanager.php";
+    }
   }
 
   // Uptime monitoring methods
