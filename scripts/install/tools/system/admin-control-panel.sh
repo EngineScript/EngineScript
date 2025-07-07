@@ -58,6 +58,15 @@ else
     echo "Warning: Failed to download Tiny File Manager. File manager will attempt auto-download on first access."
 fi
 
+# Create /etc/enginescript directory if it doesn't exist
+if [[ ! -d "/etc/enginescript" ]]; then
+    echo "Creating EngineScript configuration directory..."
+    mkdir -p /etc/enginescript
+    chmod 755 /etc/enginescript
+    chown root:root /etc/enginescript
+    echo "✓ EngineScript configuration directory created"
+fi
+
 # Create File Manager configuration file if it doesn't exist
 if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
     echo "Creating File Manager configuration file..."
