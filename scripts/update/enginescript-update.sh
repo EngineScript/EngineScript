@@ -51,6 +51,8 @@ echo ""
 
 # Admin Control Panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+chown -R www-data:www-data /var/www/admin/enginescript
+chown -R www-data:www-data /etc/enginescript
 
 # Substitute frontend dependency versions
 sed -i "s|{CHARTJS_VER}|${CHARTJS_VER}|g" /var/www/admin/enginescript/index.html

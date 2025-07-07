@@ -63,7 +63,9 @@ if [[ ! -d "/etc/enginescript" ]]; then
     echo "Creating EngineScript configuration directory..."
     mkdir -p /etc/enginescript
     chmod 755 /etc/enginescript
-    chown root:root /etc/enginescript
+    chown -R www-data:www-data /var/www/admin/enginescript
+    chown -R www-data:www-data /etc/enginescript
+
     echo "✓ EngineScript configuration directory created"
 fi
 
@@ -72,7 +74,7 @@ if [[ ! -f "/etc/enginescript/filemanager.conf" ]]; then
     echo "Creating File Manager configuration file..."
     cp /usr/local/bin/enginescript/config/etc/enginescript/filemanager.conf /etc/enginescript/filemanager.conf
     chmod 600 /etc/enginescript/filemanager.conf
-    chown root:root /etc/enginescript/filemanager.conf
+    chown -R www-data:www-data /etc/enginescript/filemanager.conf
     echo "✓ File Manager configuration template created"
 fi
 
@@ -80,7 +82,7 @@ fi
 if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
     chmod 600 /etc/enginescript/uptimerobot.conf
-    chown root:root /etc/enginescript/uptimerobot.conf
+    chown -R www-data:www-data /etc/enginescript/uptimerobot.conf
 fi
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
