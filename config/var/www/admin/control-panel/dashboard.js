@@ -57,16 +57,8 @@ class EngineScriptDashboard {
       });
     }
 
-    // File Manager tool card click
-    const filemanagerTool = document.getElementById("filemanager-tool");
-    if (filemanagerTool) {
-      filemanagerTool.style.cursor = "pointer";
-      filemanagerTool.addEventListener("click", (e) => {
-        e.preventDefault();
-        console.log("File Manager card clicked");
-        this.openFileManager();
-      });
-    }
+    // File Manager tool card is now a direct HTML link
+    // Status checking handled separately
 
     // Uptime refresh button
     const uptimeRefreshBtn = document.getElementById("uptime-refresh-btn");
@@ -1028,24 +1020,6 @@ class EngineScriptDashboard {
         indicator.className = "status-indicator error";
         text.textContent = "Error";
       }
-    }
-  }
-
-  openFileManager() {
-    try {
-      // Open file manager in new tab
-      const url = "/filemanager.php";
-      const newWindow = window.open(url, "_blank", "noopener,noreferrer");
-      
-      // Check if popup was blocked
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
-        // Popup was blocked, try alternative method
-        window.location.href = url;
-      }
-    } catch (error) {
-      console.error("Error opening file manager:", error);
-      // Fallback to same window navigation
-      window.location.href = "/filemanager.php";
     }
   }
 

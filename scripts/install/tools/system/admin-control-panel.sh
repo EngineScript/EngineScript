@@ -45,6 +45,19 @@ sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/in
 # The nginx config expects /enginescript/api.php for API calls
 # Keep the original api.php in place for direct access
 
+# Download Tiny File Manager for the file manager tool
+echo "Downloading Tiny File Manager..."
+TFM_URL="https://raw.githubusercontent.com/prasathmani/tinyfilemanager/master/tinyfilemanager.php"
+TFM_FILE="/var/www/admin/enginescript/tinyfilemanager.php"
+
+# Download TFM with error handling
+if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_URL}" -o "${TFM_FILE}"; then
+    chmod 644 "${TFM_FILE}"
+    echo "Tiny File Manager downloaded successfully."
+else
+    echo "Warning: Failed to download Tiny File Manager. File manager will attempt auto-download on first access."
+fi
+
 # Create Uptime Robot configuration file if it doesn't exist
 if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf

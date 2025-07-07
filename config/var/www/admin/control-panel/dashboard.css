@@ -1051,17 +1051,3 @@ button:focus, select:focus, input:focus {
         font-size: 1.5rem;
     }
 }
-
-/* File Manager specific styling */
-#filemanager-tool {
-    position: relative;
-}
-
-#filemanager-tool:hover {
-    cursor: pointer;
-}
-
-#filemanager-tool:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}

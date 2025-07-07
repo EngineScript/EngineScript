@@ -6,6 +6,22 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-06
 
+### 📁 TINY FILE MANAGER FIXES
+- **File Manager Integration Improvements**: Fixed clicking and installation issues with Tiny File Manager
+  - **HTML Link Conversion**: Converted file manager card from JavaScript click handler to direct HTML link
+    - **Reliable Navigation**: File manager now opens in new tab using standard HTML `<a>` tag
+    - **Better Compatibility**: Eliminates popup blocker issues and JavaScript-related failures
+    - **User Experience**: Consistent behavior with other tool cards in the admin panel
+  - **Automatic Installation**: Enhanced install script to download Tiny File Manager during setup
+    - **Pre-installation**: TFM is now downloaded during admin control panel installation
+    - **Error Handling**: Graceful fallback if download fails during installation
+    - **File Permissions**: Proper permissions (644) set on downloaded TFM file
+    - **Path Correction**: Fixed API endpoint URL path to match nginx routing
+  - **Status Checking**: Improved file manager status detection in admin dashboard
+    - **Real-time Status**: Dashboard shows accurate availability of file manager
+    - **Installation Verification**: Checks for both wrapper script and TFM core file
+    - **Directory Permissions**: Validates write permissions for file operations
+
 ### � UPTIME ROBOT INTEGRATION
 - **Complete Uptime Robot Monitoring Integration**: Added comprehensive website uptime monitoring to the admin control panel
   - **Backend API Implementation**: Full Uptime Robot API integration in `uptimerobot.php`

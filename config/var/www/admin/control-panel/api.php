@@ -426,7 +426,7 @@ function handleFileManagerStatus() {
                 '/var/www' => is_writable('/var/www'),
                 '/tmp' => is_writable('/tmp')
             ],
-            'url' => '/admin/control-panel/filemanager.php'
+            'url' => '/filemanager.php'
         ];
         
         echo json_encode(sanitizeOutput($status)); // codacy:ignore - echo required for JSON API response
