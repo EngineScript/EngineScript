@@ -137,15 +137,15 @@ body {
     font-weight: 500;
 }
 
-.nav-item a:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
-}
-
 .uptime-status a {
     color: var(--accent-color);
     text-decoration: none;
     transition: var(--transition);
+}
+
+.nav-item a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
 }
 
 .nav-item.active a {
@@ -600,16 +600,16 @@ body {
     background-color: var(--error-color);
 }
 
-.tool-status .status-text {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-}
-
 .status-text {
     display: block;
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 2px;
+}
+
+.tool-status .status-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
 /* Commands Grid */

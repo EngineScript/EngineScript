@@ -32,9 +32,13 @@ Changes are organized by date, with the most recent changes listed first.
     - Added quotes around `${TINYFILEMANAGER_VER}` variable expansions
     - Ensured safe handling of file operations with spaces in names
   - **CSS Specificity**: Fixed CSS selector ordering to prevent specificity conflicts
-    - Moved `.status-text` rule after `.tool-status .status-text` for proper cascade
-    - Reordered `.uptime-status a` rule after `.nav-item a:hover` for correct precedence
+    - Moved `.status-text` rule before `.tool-status .status-text` for proper cascade
+    - Reordered `.uptime-status a` rule before `.nav-item a:hover` for correct precedence
     - Ensures consistent styling behavior across different UI components
+  - **Final Security Cleanup**: Added clarifying comments for properly escaped output
+    - Added Codacy ignore comments for XSS prevention functions already using `htmlspecialchars()`
+    - Confirmed all exception messages properly escaped before concatenation
+    - Enhanced security documentation for standalone API error handling
 
 ### �🔐 DYNAMIC AUTHENTICATION SYSTEM
 - **TinyFileManager Credential Integration**: Implemented dynamic authentication using main EngineScript credentials
