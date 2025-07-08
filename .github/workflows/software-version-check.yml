@@ -54,7 +54,7 @@ jobs:
               CHANGES_DETECTED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
               local software_name=${var_name%_VER}
-              CHANGELOG_BODY="${CHANGELOG_BODY}| ${software_name} | ${current_ver} | ${new_ver} |\n"
+              CHANGELOG_BODY="${CHANGELOG_BODY}| ${software_name} | ${current_ver} | ${new_ver} |\\n"
             fi
           }
           
