@@ -111,6 +111,20 @@ mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
 mkdir -p "/home/EngineScript/temp/site-import/database-file"
 mkdir -p "/home/EngineScript/temp/site-import/root-directory"
 
+# Create /etc/enginescript directory if it doesn't exist
+if [[ ! -d "/etc/enginescript" ]]; then
+    echo "Creating EngineScript configuration directory..."
+    mkdir -p "/etc/enginescript"
+    echo "✓ EngineScript configuration directory created"
+fi
+
+# Create /var/www/admin/enginescript/ if it doesn't exist
+if [[ ! -d "/var/www/admin/enginescript/" ]]; then
+    echo "Creating EngineScript admin directory..."
+    mkdir -p "/var/www/admin/enginescript"
+    echo "✓ EngineScript admin directory created"
+fi
+
 # EngineScript Logs
 # Create EngineScript logs
 mkdir -p "/var/log/EngineScript"

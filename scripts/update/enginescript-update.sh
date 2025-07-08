@@ -11,11 +11,20 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Return to /usr/src
+cd /usr/src
+
+# --------------------------------------------------------
+# Update EngineScript
+
+# Copy EngineScript
 cd /usr/local/bin/enginescript
 git fetch origin master
 git reset --hard origin/master
@@ -45,49 +54,40 @@ echo "============================================================="
 echo ""
 echo ""
 
+
+# --------------------------------------------------------
 # Updating files from previous versions
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh
 
+
+# --------------------------------------------------------
+# Update EngineScript Frontend
+
 # Admin Control Panel
-cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
 
-# Create /etc/enginescript directory if it doesn't exist
-if [[ ! -d "/etc/enginescript" ]]; then
-    echo "Creating EngineScript configuration directory..."
-    mkdir -p /etc/enginescript
-    chmod 755 /etc/enginescript
-    chown www-data:www-data /etc/enginescript
-    echo "✓ EngineScript configuration directory created"
-fi
+# Install phpinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh
 
-# Create Uptime Robot configuration file if it doesn't exist
-if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
-    cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
-    chmod 600 /etc/enginescript/uptimerobot.conf
-    chown www-data:www-data /etc/enginescript/uptimerobot.conf
-fi
+# Install phpSysinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh
 
-# Set proper ownership for web server access
-chown -R www-data:www-data /var/www/admin/enginescript
-chown -R www-data:www-data /etc/enginescript
+# Install Tiny File Manager
+/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh
 
-# Substitute frontend dependency versions
-sed -i "s|{CHARTJS_VER}|${CHARTJS_VER}|g" /var/www/admin/enginescript/index.html
-sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/index.html
-
-# Create API directory and setup
-mkdir -p /var/www/admin/enginescript/api
-cp /var/www/admin/enginescript/api.php /var/www/admin/enginescript/api/index.php
-
-# Remove Adminer tool card if INSTALL_ADMINER=0
-if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
-    sed -i '/<div class="tool-card" data-tool="adminer" id="adminer-tool">/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
-fi
+# Install UptimeRobot API
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobit-api-install.sh
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
 /usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
+
+# Set permissions for EngineScript frontend directories
+set_enginescript_frontend_permissions
+
+# ---------------------------------------------------------
+# Update EngineScript plugins
 
 # Update both EngineScript plugins for each site in sites.sh
 SITES_FILE="/home/EngineScript/sites-list/sites.sh"

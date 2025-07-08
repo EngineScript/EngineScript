@@ -14,8 +14,10 @@ source /home/EngineScript/enginescript-install-options.txt
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
+
 #----------------------------------------------------------------------------------
 # Start Main Script
+
 
 #------------------------------------------------
 # Media Tools
@@ -33,6 +35,7 @@ debug_pause "pngout"
 /usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "zImageOptimizer"
+
 
 #------------------------------------------------
 # MySQL Tools
@@ -65,9 +68,11 @@ if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
     echo "Skipping phpMyAdmin install"
 fi
 
+
 #------------------------------------------------
 # Nginx Tools
 #------------------------------------------------
+
 
 #------------------------------------------------
 # PHP Tools
@@ -75,6 +80,7 @@ fi
 
 # OpCache-GUI
 #/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
+
 
 #------------------------------------------------
 # Security Tools
@@ -101,19 +107,53 @@ debug_pause "Wordfence CLI"
 print_last_errors
 debug_pause "WPScan"
 
+
 #------------------------------------------------
-# System Tools
+# Frontend Tools
 #------------------------------------------------
 
 # Admin Control Panel
-/usr/local/bin/enginescript/scripts/install/tools/system/admin-control-panel.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Admin Control Panel"
+
+# Install phpinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "phpinfo"
+
+# Install phpSysinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "phpSysinfo"
+
+# Install Tiny File Manager
+/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Tiny File Manager"
+
+# Install UptimeRobot API
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobit-api-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "UptimeRobot API"
+
+# Update configuration files from main credentials file
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
+
+# Set permissions for EngineScript frontend directories
+set_enginescript_frontend_permissions
+
+
+#------------------------------------------------
+# System Tools
+#------------------------------------------------
 
 # Testssl.sh
 /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Testssl.sh"
+
 
 #------------------------------------------------
 # WordPress Tools
@@ -123,6 +163,7 @@ debug_pause "Testssl.sh"
 /usr/local/bin/enginescript/scripts/install/tools/wordpress/wp-cli.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "WP-CLI"
+
 
 #------------------------------------------------
 # Cloud Backups

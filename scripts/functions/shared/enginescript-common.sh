@@ -246,3 +246,16 @@ function validate_url() {
         return 1
     fi
 }
+
+# Set permissions for EngineScript frontend directories and files
+function set_enginescript_frontend_permissions() {
+    # Set permissions for /var/www/admin/enginescript
+    find /var/www/admin/enginescript -type d -print0 | sudo xargs -0 chmod 0755
+    find /var/www/admin/enginescript -type f -print0 | sudo xargs -0 chmod 0644
+    chown -R www-data:www-data /var/www/admin/enginescript
+
+    # Set permissions for /etc/enginescript
+    find /etc/enginescript -type d -print0 | sudo xargs -0 chmod 0755
+    find /etc/enginescript -type f -print0 | sudo xargs -0 chmod 0644
+    chown -R www-data:www-data /etc/enginescript
+}

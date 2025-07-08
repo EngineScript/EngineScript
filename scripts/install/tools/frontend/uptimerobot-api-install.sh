@@ -18,4 +18,23 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Start Emergency Automatic Upgrade
+# Return to /usr/src
+cd /usr/src
+
+# Install Uptime Robot API Key
+# Create Uptime Robot configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
+    cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
+    chmod 600 /etc/enginescript/uptimerobot.conf
+    chown -R www-data:www-data /etc/enginescript/uptimerobot.conf
+fi
+
+# Update configuration files from main credentials file
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
+
+# Set permissions for the EngineScript frontend
+set_enginescript_frontend_permissions
+
+# Return to /usr/src
+cd /usr/src

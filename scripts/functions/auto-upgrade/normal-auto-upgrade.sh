@@ -11,13 +11,12 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
 
 # Check if es.sites alias is missing and add it if needed
 if ! grep -q "alias es.sites=" /root/.bashrc; then
@@ -47,3 +46,56 @@ if [[ -f "$CREDENTIALS_FILE" ]]; then
 else
     echo "Warning: EngineScript credentials file not found at $CREDENTIALS_FILE"
 fi
+
+# Create /etc/enginescript directory if it doesn't exist
+if [[ ! -d "/etc/enginescript" ]]; then
+    echo "Creating EngineScript configuration directory..."
+    mkdir -p /etc/enginescript
+    chmod 755 /etc/enginescript
+    chown www-data:www-data /etc/enginescript
+    echo "✓ EngineScript configuration directory created"
+fi
+
+# Create Uptime Robot configuration file if it doesn't exist
+if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
+    cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
+    chmod 600 /etc/enginescript/uptimerobot.conf
+    chown www-data:www-data /etc/enginescript/uptimerobot.conf
+fi
+
+
+# Create /etc/enginescript directory if it doesn't exist
+if [[ ! -d "/etc/enginescript" ]]; then
+    echo "Creating EngineScript configuration directory..."
+    mkdir -p "/etc/enginescript"
+    echo "✓ EngineScript configuration directory created"
+fi
+
+# Create /var/www/admin/enginescript/ if it doesn't exist
+if [[ ! -d "/var/www/admin/enginescript/" ]]; then
+    echo "Creating EngineScript admin directory..."
+    mkdir -p "/var/www/admin/enginescript"
+    echo "✓ EngineScript admin directory created"
+fi
+
+# Admin Control Panel
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
+
+# Install phpinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh
+
+# Install phpSysinfo
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh
+
+# Install Tiny File Manager
+/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh
+
+# Install UptimeRobot API
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobit-api-install.sh
+
+# Update configuration files from main credentials file
+echo "Updating configuration files with user credentials..."
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
+
+# Set permissions for EngineScript frontend directories
+set_enginescript_frontend_permissions
