@@ -11,6 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
@@ -65,7 +67,7 @@ EOFMYSQLSECURE
 
 # Copy MariaDB Config
 systemctl stop mariadb.service
-cp -rf /usr/local/bin/enginescript/config/etc/mysql/mariadb.cnf /etc/mysql/mariadb.cnf
+cp -rf /usr/local/bin/enginescript/config/etc/mysql/my.cnf /etc/mysql/my.cnf
 
 # Create Logs
 touch /var/log/mysql/mysql-error.log
@@ -101,6 +103,8 @@ else
   echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
   exit 1
 fi
+
+mariadbd --print-defaults
 
 echo ""
 echo "============================================================="

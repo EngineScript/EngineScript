@@ -22,7 +22,7 @@ echo ""
 
 # Check MariaDB configuration
 echo "Checking MariaDB configuration..."
-echo "Open files limit in config: $(grep 'open_files_limit' /etc/mysql/mariadb.cnf || echo 'Not found')"
+echo "Open files limit in config: $(grep 'open_files_limit' /etc/mysql/my.cnf || echo 'Not found')"
 echo "SystemD override file exists: $([ -f /etc/systemd/system/mariadb.service.d/enginescript-limits.conf ] && echo 'Yes' || echo 'No')"
 echo ""
 
@@ -57,7 +57,7 @@ echo ""
 
 # Check if configuration placeholders are replaced
 echo "Configuration placeholder check:"
-grep -E "(SED[A-Z]+|SEDMYSQL)" /etc/mysql/mariadb.cnf | head -5
+grep -E "(SED[A-Z]+|SEDMYSQL)" /etc/mysql/my.cnf | head -5
 echo ""
 
 # Attempt to fix common issues

@@ -15,7 +15,6 @@ source /home/EngineScript/enginescript-install-options.txt
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
@@ -29,5 +28,31 @@ curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -
 apt update --allow-releaseinfo-change -y
 sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
 
+# Restart Service
+systemctl daemon-reload
+systemctl start mariadb.service
+
+# Check if services are running
+# MariaDB Service Check
+STATUS="$(systemctl is-active mariadb)"
+if [[ "${STATUS}" == "active" ]]; then
+  echo "PASSED: MariaDB is running."
+else
+  echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
+  exit 1
+fi
+
+# MySQL Service Check
+STATUS="$(systemctl is-active mysql)"
+if [[ "${STATUS}" == "active" ]]; then
+  echo "PASSED: MySQL is running."
+  echo "MARIADB=1" >> /var/log/EngineScript/install-log.txt
+else
+  echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
+  exit 1
+fi
+
 # MariaDB Database Upgrade
 mariadb-upgrade --force
+
+mariadbd --print-defaults

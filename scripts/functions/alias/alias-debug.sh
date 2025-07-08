@@ -290,6 +290,10 @@ debug_print "\`\`\`\n" "\`\`\`\n"
 # Database Versions
 debug_print "\n### Database Versions\n" "\n### Database Versions\n"
 debug_print "MariaDB: $(mariadb -V)" "MariaDB: \`$(mariadb -V)\`"
+mariadbd --print-defaults 2>/dev/null | grep -E 'socket|port' | while read -r line; do
+    debug_print "MariaDB Config: ${line}" "MariaDB Config: \`${line}\`"
+done    
+
 debug_print "Redis: $(redis-server --version)" "Redis: \`$(redis-server --version)\`"
 
 # Service Status

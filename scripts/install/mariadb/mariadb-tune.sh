@@ -47,73 +47,73 @@ if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
 fi
 
 # tmp_table_size & max_heap_table_size
-sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
+sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
 
 # Max Connections
 # Scales to be near the MariaDB default value on a 4GB server
-sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/my.cnf
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    sed -i "s|SEDLBS|32|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDLBS|32|g" /etc/mysql/my.cnf
   else
-    sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDLBS|64|g" /etc/mysql/my.cnf
 fi
 
 # Use the calculated SEDLBSM variable for log buffer size
-sed -i "s|SEDLBSM|${SEDLBSM}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDLBSM|${SEDLBSM}|g" /etc/mysql/my.cnf
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    sed -i "s|SEDTCS|256|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDTCS|256|g" /etc/mysql/my.cnf
   else
-    sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/my.cnf
 fi
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    sed -i "s|SEDTOC|2000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDTOC|2000|g" /etc/mysql/my.cnf
   else
-    sed -i "s|SEDTOC|4000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDTOC|4000|g" /etc/mysql/my.cnf
 fi
 
 # For Servers with 1GB RAM
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ]];
   then
-    sed -i "s|SEDINOF|1000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDINOF|1000|g" /etc/mysql/my.cnf
 fi
 
 # For Servers with 2GB RAM
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]];
   then
-    sed -i "s|SEDINOF|2000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDINOF|2000|g" /etc/mysql/my.cnf
 fi
 
 # For Servers with 4GB RAM
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]];
   then
-    sed -i "s|SEDINOF|4000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDINOF|4000|g" /etc/mysql/my.cnf
 fi
 
 # For Servers with 8GB RAM+
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ]];
   then
-    sed -i "s|SEDINOF|8000|g" /etc/mysql/mariadb.cnf
+    sed -i "s|SEDINOF|8000|g" /etc/mysql/my.cnf
 fi
 
-sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/mariadb.cnf
-sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/mariadb.cnf
+sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/my.cnf
 
 # IOPS Benchmark
 
 # Define variables
 TEST_FILE="/tmp/fio_test_file"
-MARIADB_CONFIG="/etc/mysql/mariadb.cnf"
+MARIADB_CONFIG="/etc/mysql/my.cnf"
 IOPS_AVG_VAR="SEDAVGIOPS"  # Placeholder for avg IOPS
 IOPS_MAX_VAR="SEDMAXIOPS"  # Placeholder for max IOPS
 
