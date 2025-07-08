@@ -91,7 +91,7 @@ fi
 /usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh
 
 # Install UptimeRobot API
-/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobit-api-install.sh
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
