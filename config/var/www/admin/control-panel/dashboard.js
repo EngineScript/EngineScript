@@ -848,6 +848,7 @@ class EngineScriptDashboard {
     // Use whitelist approach for maximum security
     // Only allow alphanumeric characters, spaces, and safe punctuation
     let sanitized = String(input)
+      // codacy:ignore:javascript:S6443 - Control character removal is intentional for security sanitization
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove all control characters
       .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
       .replace(/\s+/g, " ") // Normalize whitespace
@@ -886,8 +887,9 @@ class EngineScriptDashboard {
     }
     
     // Basic URL validation and sanitization
-    const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(?:\:[0-9]+)?(?:\/[^\s]*)?$/;
+    const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?(?:\/\S*)?$/;
     const sanitized = String(input)
+      // codacy:ignore:javascript:S6443 - Control character removal is intentional for security sanitization
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
       .trim()
       .substring(0, 2048); // Limit URL length

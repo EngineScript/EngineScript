@@ -29,6 +29,10 @@ Changes are organized by date, with the most recent changes listed first.
   - **Error Visibility**: Comprehensive error logging for debugging while maintaining security
   - **Fallback States**: Graceful degradation maintains functionality during API failures
   - **Memory Management**: Proper cleanup of charts and timers in destroy() method
+  - **Regex Optimization**: Fixed Codacy issues with regex patterns for better code quality
+    - Removed unnecessary escape characters in URL validation patterns
+    - Replaced `[0-9]` with `\d` and `[^\s]` with `\S` for cleaner regex patterns
+    - Added ignore comments for intentional control character removal (security feature)
 
 ### 🔧 GITHUB ACTIONS WORKFLOW IMPROVEMENTS
 - **Software Version Monitoring**: Enhanced automated version checking and update notifications
