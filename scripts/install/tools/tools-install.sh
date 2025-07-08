@@ -133,7 +133,7 @@ print_last_errors
 debug_pause "Tiny File Manager"
 
 # Install UptimeRobot API
-/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobit-api-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "UptimeRobot API"
 
