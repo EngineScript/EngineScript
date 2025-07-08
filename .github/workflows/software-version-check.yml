@@ -183,7 +183,7 @@ jobs:
           NGINX_HEADER_API_RESPONSE=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags)
           echo "::debug::NGINX Headers API Response: $(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0:3]')"
           
-          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
+          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[].name' | grep -v 'rc' | sed 's/v//' | sort -V | tail -n 1)
           echo "::debug::Parsed NGINX Headers version: '$LATEST_NGINX_HEADER'"
           
           if [[ -n "$LATEST_NGINX_HEADER" && "$LATEST_NGINX_HEADER" != "null" ]]; then

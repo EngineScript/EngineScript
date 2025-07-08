@@ -212,77 +212,75 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 ||
 ||
 |**Web Server**|
-|NGINX MAINLINE|1.27.5|https://nginx.org/en/download.html |
-|NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge |
-|NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module |
-|NGINX PATCH: Dynamic TLS Records|Latest |https://github.com/kn007/patch|
-|OPENSSL|3.4.1|https://www.openssl.org/source/ |
-|PCRE2|10.45|https://github.com/PCRE2Project/pcre2/releases |
-|ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib |
+|NGINX MAINLINE|1.29.0|https://nginx.org/en/download.html|
+|NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge|
+|NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module|
+|NGINX PATCH: Dynamic TLS Records|Latest|https://github.com/kn007/patch|
+|OPENSSL|3.4.1|https://www.openssl.org/source/|
+|PCRE2|10.45|https://github.com/PCRE2Project/pcre2/releases|
+|ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib|
 ||
 ||
 |**Script Processing**|
-|PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php |
+|PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php|
 ||
 ||
 |**MySQL Database**|
-|MARIADB|11.4.5|https://mariadb.org/download/ |
+|MARIADB|11.4.5|https://mariadb.org/download/|
 ||
 ||
 |**Database Management**|
 |ADMINER|||
-|PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/ |
+|PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/|
 ||
 ||
 |**Admin Control Panel**|
-|Chart.js|4.5.0|https://github.com/chartjs/Chart.js |
-|Font Awesome|6.7.2|https://github.com/FortAwesome/Font-Awesome |
+|Chart.js|4.5.0|https://github.com/chartjs/Chart.js|
+|Font Awesome|6.7.2|https://github.com/FortAwesome/Font-Awesome|
 ||
 ||
 |**Object Cache**|
-|REDIS|Latest|https://redis.io/ |
+|REDIS|Latest|https://redis.io/|
 ||
 ||
 |**Content Management System (CMS)**|
-|WORDPRESS | Latest |https://wordpress.org |
-|WP-CLI | Latest |https://github.com/wp-cli/wp-cli |
-|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command |
-|WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check |
-|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/ |
+|WORDPRESS | Latest |https://wordpress.org|
+|WP-CLI | Latest |https://github.com/wp-cli/wp-cli|
+|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command|
+|WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check|
+|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/|
 |PLUGIN: EngineScript: Simple Site Exporter| 1.5.8 | [https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter) |
 |PLUGIN: EngineScript: Simple WP Optimizer| 1.5.4 | [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
-|PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/ |
-|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/ |
-|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/ |
-|PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/ |
-|PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/ |
-|PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/ |
-|PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/ |
-|PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/ |
-|PLUGIN: WP OPcache *(recommended)*| Latest | https://wordpress.org/plugins/flush-opcache/ |
+|PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/|
+|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/|
+|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/|
+|PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/|
+|PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/|
+|PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/|
+|PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/|
+|PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/|
+|PLUGIN: WP OPcache *(recommended)*| Latest | https://wordpress.org/plugins/flush-opcache/|
 ||
 ||
 |**Security**|
-|MALDETECT|Latest|https://www.rfxn.com/projects/linux-malware-detect/ |
-|PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder |
-|UNCOMPLICATED FIREWALL (UFW) || Bundled with Ubuntu |
-|WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases |
-|WPSCAN|Latest|https://wpscan.com/ |
+|MALDETECT|Latest|https://www.rfxn.com/projects/linux-malware-detect/|
+|PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder|
+|UNCOMPLICATED FIREWALL (UFW) || Bundled with Ubuntu|
+|WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases|
+|WPSCAN|Latest|https://wpscan.com/|
 ||
 ||
 |**Development Tools**|
-|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html |
-|ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer |
+|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html|
+|ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer|
 ||
 ||
 |**Backup Software**|
-|LOCAL BACKUPS|| Bash Scripts |
-|AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/ |
+|LOCAL BACKUPS|| Bash Scripts|
+|AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/|
 ||
 ||
 |**Misc Supplemental Software**|
-|LIBURING|2.9|https://github.com/axboe/liburing |
-|MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl |
-|ZLIB|1.3.1|https://github.com/madler/zlib |
-
-----------
+|LIBURING|2.9|https://github.com/axboe/liburing|
+|MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl|
+|ZLIB|1.3.1|https://github.com/madler/zlib|
