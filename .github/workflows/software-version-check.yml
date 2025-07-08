@@ -28,9 +28,9 @@ jobs:
       - name: Check Software Versions
         id: version-check
         run: |
-          # Initialize changes flag and changelog variable
+          # Initialize changes flag and changelog
           CHANGES_DETECTED=false
-          CHANGELOG_BODY=""
+          CHANGELOG_CONTENT=""
           
           # Function to compare version numbers
           version_gt() {
@@ -49,12 +49,19 @@ jobs:
             local new_ver=$2
             local current_ver=$(get_current_version "$var_name")
             
+            # Handle special case where current version is "null" or empty
             if [[ -n "$new_ver" && ( "$current_ver" = "null" || -z "$current_ver" || $(version_gt "$new_ver" "$current_ver") ) ]]; then
-              sed -i "s/${var_name}=\".*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
+              # Update version in enginescript-variables.txt directly
+              sed -i "s/^${var_name}=\".*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
               CHANGES_DETECTED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
-              local software_name=${var_name%_VER}
-              CHANGELOG_BODY="${CHANGELOG_BODY}| ${software_name} | ${current_ver} | ${new_ver} |\\n"
+              
+              # Add to changelog
+              if [[ -z "$CHANGELOG_CONTENT" ]]; then
+                CHANGELOG_CONTENT="| ${var_name} | ${current_ver} | ${new_ver} |"
+              else
+                CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| ${var_name} | ${current_ver} | ${new_ver} |"
+              fi
             fi
           }
           
@@ -69,8 +76,11 @@ jobs:
           echo "::debug::Fetching SSE Plugin version..."
           SSE_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Site-Exporter/releases/latest)
           echo "::debug::SSE API Response: $SSE_API_RESPONSE"
+          
           LATEST_SSE=$(echo "$SSE_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
           echo "::debug::Parsed SSE version: '$LATEST_SSE'"
+          
+          # Only check version if we got a valid response
           if [[ -n "$LATEST_SSE" && "$LATEST_SSE" != "null" ]]; then
             check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
           else
@@ -81,8 +91,11 @@ jobs:
           echo "::debug::Fetching SWPO Plugin version..."
           SWPO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Optimizer/releases/latest)
           echo "::debug::SWPO API Response: $SWPO_API_RESPONSE"
+          
           LATEST_SWPO=$(echo "$SWPO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
           echo "::debug::Parsed SWPO version: '$LATEST_SWPO'"
+          
+          # Only check version if we got a valid response
           if [[ -n "$LATEST_SWPO" && "$LATEST_SWPO" != "null" ]]; then
             check_version "SWPO_PLUGIN_VER" "$LATEST_SWPO"
           else
@@ -93,8 +106,10 @@ jobs:
           echo "::debug::Fetching PCRE2 version..."
           PCRE2_API_RESPONSE=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest)
           echo "::debug::PCRE2 API Response: $PCRE2_API_RESPONSE"
+          
           LATEST_PCRE2=$(echo "$PCRE2_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/pcre2-//')
           echo "::debug::Parsed PCRE2 version: '$LATEST_PCRE2'"
+          
           if [[ -n "$LATEST_PCRE2" && "$LATEST_PCRE2" != "null" ]]; then
             check_version "PCRE2_VER" "$LATEST_PCRE2"
           else
@@ -105,6 +120,7 @@ jobs:
           echo "::debug::Fetching OpenSSL version..."
           OPENSSL_API_RESPONSE=$(curl -s https://api.github.com/repos/openssl/openssl/releases)
           echo "::debug::OpenSSL API Response: $(echo "$OPENSSL_API_RESPONSE" | jq -r '.[0:3]')"
+          
           LATEST_OPENSSL=$(echo "$OPENSSL_API_RESPONSE" | 
             jq -r '.[].tag_name // empty' | 
             grep '^openssl-3\.4\.[0-9]*$' | 
@@ -112,18 +128,30 @@ jobs:
             tail -n 1 | 
             sed 's/openssl-//')
           echo "::debug::Parsed OpenSSL version: '$LATEST_OPENSSL'"
+          
           if [[ -n "$LATEST_OPENSSL" && "$LATEST_OPENSSL" != "null" ]]; then
             check_version "OPENSSL_VER" "$LATEST_OPENSSL"
           else
             echo "::warning::Failed to fetch OpenSSL version, keeping current version"
           fi
           
-          # NGINX
-          LATEST_NGINX=$(curl -s https://nginx.org/en/download.html | 
-            grep -o 'nginx-[0-9]\.[0-9]*\.[0-9]*\.tar\.gz' | 
-            head -n 1 | 
+          # NGINX (1.29.x series - mainline)
+          echo "::debug::Fetching NGINX version..."
+          NGINX_HTML_RESPONSE=$(curl -s https://nginx.org/en/download.html)
+          echo "::debug::NGINX HTML Response fetched"
+          
+          LATEST_NGINX=$(echo "$NGINX_HTML_RESPONSE" | 
+            grep -o 'nginx-1\.29\.[0-9]*\.tar\.gz' | 
+            sort -V | 
+            tail -n 1 | 
             sed 's/nginx-\(.*\)\.tar\.gz/\1/')
-          check_version "NGINX_VER" "$LATEST_NGINX"
+          echo "::debug::Parsed NGINX version: '$LATEST_NGINX'"
+          
+          if [[ -n "$LATEST_NGINX" && "$LATEST_NGINX" != "null" ]]; then
+            check_version "NGINX_VER" "$LATEST_NGINX"
+          else
+            echo "::warning::Failed to fetch NGINX version, keeping current version"
+          fi
           
           # phpMyAdmin
           LATEST_PMA=$(curl -s https://www.phpmyadmin.net/downloads/ | 
@@ -135,8 +163,10 @@ jobs:
           echo "::debug::Fetching Zlib version..."
           ZLIB_API_RESPONSE=$(curl -s https://api.github.com/repos/madler/zlib/tags)
           echo "::debug::Zlib API Response: $(echo "$ZLIB_API_RESPONSE" | jq -r '.[0:3]')"
+          
           LATEST_ZLIB=$(echo "$ZLIB_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
           echo "::debug::Parsed Zlib version: '$LATEST_ZLIB'"
+          
           if [[ -n "$LATEST_ZLIB" && "$LATEST_ZLIB" != "null" ]]; then
             check_version "ZLIB_VER" "$LATEST_ZLIB"
           else
@@ -147,8 +177,10 @@ jobs:
           echo "::debug::Fetching liburing version..."
           LIBURING_API_RESPONSE=$(curl -s https://api.github.com/repos/axboe/liburing/tags)
           echo "::debug::liburing API Response: $(echo "$LIBURING_API_RESPONSE" | jq -r '.[0:3]')"
+          
           LATEST_LIBURING=$(echo "$LIBURING_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/liburing-//')
           echo "::debug::Parsed liburing version: '$LATEST_LIBURING'"
+          
           if [[ -n "$LATEST_LIBURING" && "$LATEST_LIBURING" != "null" ]]; then
             check_version "LIBURING_VER" "$LATEST_LIBURING"
           else
@@ -159,8 +191,10 @@ jobs:
           echo "::debug::Fetching NGINX Headers More Module version..."
           NGINX_HEADER_API_RESPONSE=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags)
           echo "::debug::NGINX Headers API Response: $(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0:3]')"
-          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[].name' | grep -v 'rc' | sed 's/v//' | sort -V | tail -n 1)
+          
+          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
           echo "::debug::Parsed NGINX Headers version: '$LATEST_NGINX_HEADER'"
+          
           if [[ -n "$LATEST_NGINX_HEADER" && "$LATEST_NGINX_HEADER" != "null" ]]; then
             check_version "NGINX_HEADER_VER" "$LATEST_NGINX_HEADER"
           else
@@ -171,8 +205,10 @@ jobs:
           echo "::debug::Fetching NGINX Cache Purge Module version..."
           NGINX_PURGE_API_RESPONSE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags)
           echo "::debug::NGINX Purge API Response: $(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0:3]')"
+          
           LATEST_NGINX_PURGE=$(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/[^0-9\.]//g')
           echo "::debug::Parsed NGINX Purge version: '$LATEST_NGINX_PURGE'"
+          
           if [[ -n "$LATEST_NGINX_PURGE" && "$LATEST_NGINX_PURGE" != "null" ]]; then
             check_version "NGINX_PURGE_VER" "$LATEST_NGINX_PURGE"
           else
@@ -183,12 +219,20 @@ jobs:
           echo "::debug::Fetching NGINX Dynamic TLS Records Patch SHA..."
           LATEST_NGINX_DYN_TLS_PATCH_SHA=$(curl -sL https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch | sha256sum | awk '{print $1}')
           echo "::debug::Fetched patch SHA: '$LATEST_NGINX_DYN_TLS_PATCH_SHA'"
-          CURRENT_NGINX_DYN_TLS_PATCH_SHA=$(grep '^NGINX_DYN_TLS_PATCH_SHA=' enginescript-variables.txt | cut -d'"' -f2)
+          
+          CURRENT_NGINX_DYN_TLS_PATCH_SHA=$(get_current_version "NGINX_DYN_TLS_PATCH_SHA")
+          
           if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]]; then
-            sed -i "s/NGINX_DYN_TLS_PATCH_SHA=\".*\"/NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"/" enginescript-variables.txt
+            sed -i "s/^NGINX_DYN_TLS_PATCH_SHA=\".*\"/NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"/" enginescript-variables.txt
             CHANGES_DETECTED=true
             echo "::notice::NGINX_DYN_TLS_PATCH_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_SHA"
-            CHANGELOG_BODY="${CHANGELOG_BODY}| NGINX DYN TLS PATCH | SHA updated | N/A |\n"
+            
+            # Add to changelog
+            if [[ -z "$CHANGELOG_CONTENT" ]]; then
+              CHANGELOG_CONTENT="| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | ${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}... |"
+            else
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | ${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}... |"
+            fi
           else
             if [[ -z "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ]]; then
               echo "::warning::Failed to fetch NGINX Dynamic TLS Records Patch, keeping current SHA"
@@ -199,8 +243,10 @@ jobs:
           echo "::debug::Fetching Chart.js version..."
           CHARTJS_API_RESPONSE=$(curl -s https://api.github.com/repos/chartjs/Chart.js/releases/latest)
           echo "::debug::Chart.js API Response: $CHARTJS_API_RESPONSE"
+          
           LATEST_CHARTJS=$(echo "$CHARTJS_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
           echo "::debug::Parsed Chart.js version: '$LATEST_CHARTJS'"
+          
           if [[ -n "$LATEST_CHARTJS" && "$LATEST_CHARTJS" != "null" ]]; then
             check_version "CHARTJS_VER" "$LATEST_CHARTJS"
           else
@@ -211,8 +257,10 @@ jobs:
           echo "::debug::Fetching Font Awesome version..."
           FONTAWESOME_API_RESPONSE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases/latest)
           echo "::debug::Font Awesome API Response: $FONTAWESOME_API_RESPONSE"
+          
           LATEST_FONTAWESOME=$(echo "$FONTAWESOME_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/[^0-9\.]//g')
           echo "::debug::Parsed Font Awesome version: '$LATEST_FONTAWESOME'"
+          
           if [[ -n "$LATEST_FONTAWESOME" && "$LATEST_FONTAWESOME" != "null" ]]; then
             check_version "FONTAWESOME_VER" "$LATEST_FONTAWESOME"
           else
@@ -223,26 +271,33 @@ jobs:
           echo "::debug::Fetching TinyFileManager version..."
           TFM_API_RESPONSE=$(curl -s https://api.github.com/repos/prasathmani/tinyfilemanager/releases/latest)
           echo "::debug::TinyFileManager API Response: $TFM_API_RESPONSE"
+          
           LATEST_TFM=$(echo "$TFM_API_RESPONSE" | jq -r '.tag_name // empty')
           echo "::debug::Parsed TinyFileManager version: '$LATEST_TFM'"
+          
           if [[ -n "$LATEST_TFM" && "$LATEST_TFM" != "null" ]]; then
             check_version "TINYFILEMANAGER_VER" "$LATEST_TFM"
           else
             echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
           fi
           
-          # Update date and generate changelog if changes were detected
+          # Update date and output results
           if [[ "$CHANGES_DETECTED" = true ]]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
             NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
-            sed -i "s/VARIABLES_DATE=\".*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+            sed -i "s/^VARIABLES_DATE=\".*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
             
-            # Generate changelog for PR body
-            FULL_CHANGELOG="The following software versions have been updated:\n\n| Software | Current | New |\n|----------|---------|-----|\n${CHANGELOG_BODY}"
-            
+            # Generate changelog
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
-            echo -e "$FULL_CHANGELOG" >> $GITHUB_OUTPUT
+            echo "The following software versions have been updated:" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "| Software | Current | New |" >> $GITHUB_OUTPUT
+            echo "|----------|---------|-----|" >> $GITHUB_OUTPUT
+            echo -e "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Pull Request
