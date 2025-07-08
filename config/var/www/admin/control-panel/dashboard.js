@@ -270,6 +270,7 @@ class EngineScriptDashboard {
       this.setTextContent("disk-usage", sanitizedStats.disk);
       this.setTextContent("cpu-usage", sanitizedStats.cpu);
     } catch (error) {
+      console.error('Failed to load system stats:', error);
       // Set fallback values
       this.setTextContent("sites-count", "0");
       this.setTextContent("memory-usage", "0%");
@@ -297,7 +298,19 @@ class EngineScriptDashboard {
           }
         }
       } catch (error) {
-        // Silently handle service status errors
+        console.error(`Failed to load status for service ${service}:`, error);
+        // Set fallback offline status
+        const element = document.getElementById(`${service}-status`);
+        if (element) {
+          const statusIcon = element.querySelector(".service-status i");
+          const versionSpan = element.querySelector(".service-version");
+          if (statusIcon) {
+            statusIcon.className = "fas fa-circle offline";
+          }
+          if (versionSpan) {
+            versionSpan.textContent = "Error";
+          }
+        }
       }
     }
   }
@@ -320,7 +333,24 @@ class EngineScriptDashboard {
         });
       }
     } catch (error) {
-      // Silently handle recent activity errors
+      console.error('Failed to load recent activity:', error);
+      // Show fallback message
+      const activityList = document.getElementById("recent-activity");
+      if (activityList) {
+        activityList.innerHTML = "";
+        const fallbackDiv = document.createElement("div");
+        fallbackDiv.className = "activity-item";
+        
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "activity-content";
+        
+        const message = document.createElement("p");
+        message.textContent = "Unable to load recent activity";
+        
+        contentDiv.appendChild(message);
+        fallbackDiv.appendChild(contentDiv);
+        activityList.appendChild(fallbackDiv);
+      }
     }
   }
     
@@ -351,7 +381,18 @@ class EngineScriptDashboard {
         }
       }
     } catch (error) {
-      // Silently handle system alerts errors
+      console.error('Failed to load system alerts:', error);
+      // Show fallback alert
+      const alertList = document.getElementById("system-alerts");
+      if (alertList) {
+        alertList.innerHTML = '';
+        const errorAlert = this.createAlertElement({
+          message: "Unable to load system alerts",
+          time: "Just now",
+          type: "error",
+        });
+        alertList.appendChild(errorAlert);
+      }
     }
   }
     
@@ -388,7 +429,34 @@ class EngineScriptDashboard {
         }
       }
     } catch (error) {
-      // Silently handle sites loading errors
+      console.error('Failed to load sites:', error);
+      // Show error message to user
+      const sitesGrid = document.getElementById("sites-grid");
+      if (sitesGrid) {
+        sitesGrid.innerHTML = "";
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "site-card";
+        
+        const headerDiv = document.createElement("div");
+        headerDiv.className = "site-header";
+        
+        const title = document.createElement("h3");
+        title.textContent = "Error Loading Sites";
+        
+        headerDiv.appendChild(title);
+        
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "site-info";
+        
+        const message = document.createElement("p");
+        message.textContent = "Unable to load WordPress sites data.";
+        
+        infoDiv.appendChild(message);
+        
+        errorDiv.appendChild(headerDiv);
+        errorDiv.appendChild(infoDiv);
+        sitesGrid.appendChild(errorDiv);
+      }
     }
   }
     
@@ -430,7 +498,24 @@ class EngineScriptDashboard {
       this.initializeResourceChart();
 
     } catch (error) {
-      // Silently handle system info errors
+      console.error('Failed to load system information:', error);
+      // Show fallback system info
+      const systemInfo = document.getElementById("system-info");
+      if (systemInfo) {
+        systemInfo.innerHTML = "";
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "info-item";
+        
+        const label = document.createElement("strong");
+        label.textContent = "Error:";
+        
+        const value = document.createElement("span");
+        value.textContent = "Unable to load system information";
+        
+        errorDiv.appendChild(label);
+        errorDiv.appendChild(value);
+        systemInfo.appendChild(errorDiv);
+      }
     }
   }
     
@@ -528,6 +613,7 @@ class EngineScriptDashboard {
       const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
       this.createPerformanceChart(chartData);
     } catch (error) {
+      console.error('Failed to load performance chart data:', error);
       // Use fallback data if API fails
       this.loadFallbackChart(timerange);
     }
@@ -671,6 +757,7 @@ class EngineScriptDashboard {
 
       return data;
     } catch (error) {
+      console.error('API request failed:', error);
       // Return fallback value on error
       return fallback;
     }
@@ -688,6 +775,7 @@ class EngineScriptDashboard {
 
       return data[service] || { online: false, version: "Unknown" };
     } catch (error) {
+      console.error(`Failed to get service status for ${service}:`, error);
       return { online: false, version: "Error" };
     }
   }
@@ -772,12 +860,45 @@ class EngineScriptDashboard {
 
   sanitizeNumeric(input, fallback = "0") {
     const cleaned = String(input || "").replace(/[^\d.-]/g, "");
+    const parsed = parseFloat(cleaned);
+    
+    // Check if it's a valid number and within reasonable bounds
+    if (isNaN(parsed) || !isFinite(parsed)) {
+      return fallback;
+    }
+    
+    // Reasonable bounds for dashboard metrics
+    if (parsed < 0 || parsed > 999999) {
+      return fallback;
+    }
+    
     return cleaned || fallback;
   }
 
   sanitizePercentage(input, fallback = "0%") {
     const cleaned = String(input || "").replace(/[^\d.%]/g, "");
     return cleaned || fallback;
+  }
+
+  sanitizeUrl(input, fallback = "") {
+    if (typeof input !== "string") {
+      return fallback;
+    }
+    
+    // Basic URL validation and sanitization
+    const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(?:\:[0-9]+)?(?:\/[^\s]*)?$/;
+    const sanitized = String(input)
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
+      .trim()
+      .substring(0, 2048); // Limit URL length
+    
+    // Check if it matches basic URL pattern
+    if (!urlPattern.test(sanitized)) {
+      return fallback;
+    }
+    
+    // Remove dangerous patterns
+    return this.removeDangerousPatterns(sanitized);
   }
     
   setTextContent(elementId, content) {
@@ -914,11 +1035,15 @@ class EngineScriptDashboard {
     infoDiv.className = "site-info";
 
     const wpInfo = document.createElement("p");
-    wpInfo.innerHTML = "<strong>WordPress:</strong> ";
+    const wpLabel = document.createElement("strong");
+    wpLabel.textContent = "WordPress: ";
+    wpInfo.appendChild(wpLabel);
     wpInfo.appendChild(document.createTextNode(this.sanitizeInput(site.wp_version) || "Unknown"));
 
     const sslInfo = document.createElement("p");
-    sslInfo.innerHTML = "<strong>SSL:</strong> ";
+    const sslLabel = document.createElement("strong");
+    sslLabel.textContent = "SSL: ";
+    sslInfo.appendChild(sslLabel);
     sslInfo.appendChild(document.createTextNode(this.sanitizeInput(site.ssl_status) || "Unknown"));
 
     infoDiv.appendChild(wpInfo);
@@ -996,7 +1121,9 @@ class EngineScriptDashboard {
       await this.loadUptimeSummary();
       await this.loadUptimeMonitors();
     } catch (error) {
-      // Silently handle uptime loading errors
+      console.error('Failed to load uptime monitoring data:', error);
+      // Show fallback uptime error state
+      this.showUptimeError();
     }
   }
 
@@ -1013,6 +1140,7 @@ class EngineScriptDashboard {
         this.showUptimeNotConfigured();
       }
     } catch (error) {
+      console.error('Failed to load uptime summary:', error);
       this.showUptimeError();
     }
   }
@@ -1032,7 +1160,15 @@ class EngineScriptDashboard {
       const monitors = response.monitors || [];
       
       if (monitors.length === 0) {
-        monitorsContainer.innerHTML = '<div class="uptime-status"><p>No monitors configured. Add websites to monitor in your Uptime Robot dashboard.</p></div>';
+        monitorsContainer.innerHTML = "";
+        const statusDiv = document.createElement("div");
+        statusDiv.className = "uptime-status";
+        
+        const message = document.createElement("p");
+        message.textContent = "No monitors configured. Add websites to monitor in your Uptime Robot dashboard.";
+        
+        statusDiv.appendChild(message);
+        monitorsContainer.appendChild(statusDiv);
         return;
       }
       
@@ -1045,6 +1181,7 @@ class EngineScriptDashboard {
       });
       
     } catch (error) {
+      console.error('Failed to load uptime monitors:', error);
       this.showUptimeError();
     }
   }
@@ -1055,29 +1192,79 @@ class EngineScriptDashboard {
     
     const statusClass = this.getUptimeStatusClass(monitor.status_code);
     
-    monitorDiv.innerHTML = `
-      <div class="monitor-status ${statusClass}">
-        <span class="status-dot"></span>
-      </div>
-      <div class="monitor-info">
-        <h4>${this.sanitizeInput(monitor.name)}</h4>
-        <p class="monitor-url">${this.sanitizeInput(monitor.url)}</p>
-      </div>
-      <div class="monitor-stats">
-        <div class="stat">
-          <span class="stat-value">${monitor.uptime_ratio}%</span>
-          <span class="stat-label">Uptime</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">${monitor.response_time}ms</span>
-          <span class="stat-label">Response</span>
-        </div>
-      </div>
-      <div class="monitor-status-text">
-        <span class="status-text">${this.sanitizeInput(monitor.status)}</span>
-        <span class="last-check">${this.sanitizeInput(monitor.last_check)}</span>
-      </div>
-    `;
+    // Create elements programmatically to avoid XSS vulnerabilities
+    const statusDiv = document.createElement("div");
+    statusDiv.className = `monitor-status ${statusClass}`;
+    
+    const statusDot = document.createElement("span");
+    statusDot.className = "status-dot";
+    statusDiv.appendChild(statusDot);
+    
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "monitor-info";
+    
+    const nameH4 = document.createElement("h4");
+    nameH4.textContent = this.sanitizeInput(monitor.name);
+    
+    const urlP = document.createElement("p");
+    urlP.className = "monitor-url";
+    urlP.textContent = this.sanitizeUrl(monitor.url);
+    
+    infoDiv.appendChild(nameH4);
+    infoDiv.appendChild(urlP);
+    
+    const statsDiv = document.createElement("div");
+    statsDiv.className = "monitor-stats";
+    
+    const uptimeStatDiv = document.createElement("div");
+    uptimeStatDiv.className = "stat";
+    
+    const uptimeValue = document.createElement("span");
+    uptimeValue.className = "stat-value";
+    uptimeValue.textContent = this.sanitizeNumeric(monitor.uptime_ratio, "0") + "%";
+    
+    const uptimeLabel = document.createElement("span");
+    uptimeLabel.className = "stat-label";
+    uptimeLabel.textContent = "Uptime";
+    
+    uptimeStatDiv.appendChild(uptimeValue);
+    uptimeStatDiv.appendChild(uptimeLabel);
+    
+    const responseStatDiv = document.createElement("div");
+    responseStatDiv.className = "stat";
+    
+    const responseValue = document.createElement("span");
+    responseValue.className = "stat-value";
+    responseValue.textContent = this.sanitizeNumeric(monitor.response_time, "0") + "ms";
+    
+    const responseLabel = document.createElement("span");
+    responseLabel.className = "stat-label";
+    responseLabel.textContent = "Response";
+    
+    responseStatDiv.appendChild(responseValue);
+    responseStatDiv.appendChild(responseLabel);
+    
+    statsDiv.appendChild(uptimeStatDiv);
+    statsDiv.appendChild(responseStatDiv);
+    
+    const statusTextDiv = document.createElement("div");
+    statusTextDiv.className = "monitor-status-text";
+    
+    const statusText = document.createElement("span");
+    statusText.className = "status-text";
+    statusText.textContent = this.sanitizeInput(monitor.status);
+    
+    const lastCheck = document.createElement("span");
+    lastCheck.className = "last-check";
+    lastCheck.textContent = this.sanitizeInput(monitor.last_check);
+    
+    statusTextDiv.appendChild(statusText);
+    statusTextDiv.appendChild(lastCheck);
+    
+    monitorDiv.appendChild(statusDiv);
+    monitorDiv.appendChild(infoDiv);
+    monitorDiv.appendChild(statsDiv);
+    monitorDiv.appendChild(statusTextDiv);
     
     return monitorDiv;
   }
@@ -1095,18 +1282,61 @@ class EngineScriptDashboard {
   showUptimeNotConfigured() {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
-      monitorsContainer.innerHTML = `
-        <div class="uptime-status">
-          <p><strong>Uptime Robot not configured</strong></p>
-          <p>To enable website monitoring:</p>
-          <ol>
-            <li>Create a free account at <a href="https://uptimerobot.com/" target="_blank">UptimeRobot.com</a></li>
-            <li>Get your API key from Settings > API Settings</li>
-            <li>Configure it using: <code>sudo nano /etc/enginescript/uptimerobot.conf</code></li>
-            <li>Add: <code>api_key=your_api_key_here</code></li>
-          </ol>
-        </div>
-      `;
+      // Clear existing content
+      monitorsContainer.innerHTML = '';
+      
+      // Create status div
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "uptime-status";
+      
+      // Create title
+      const titleP = document.createElement("p");
+      const titleStrong = document.createElement("strong");
+      titleStrong.textContent = "Uptime Robot not configured";
+      titleP.appendChild(titleStrong);
+      
+      // Create instructions
+      const instrP = document.createElement("p");
+      instrP.textContent = "To enable website monitoring:";
+      
+      // Create ordered list
+      const ol = document.createElement("ol");
+      
+      // Create list items
+      const li1 = document.createElement("li");
+      li1.textContent = "Create a free account at ";
+      const link = document.createElement("a");
+      link.href = "https://uptimerobot.com/";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "UptimeRobot.com";
+      li1.appendChild(link);
+      
+      const li2 = document.createElement("li");
+      li2.textContent = "Get your API key from Settings > API Settings";
+      
+      const li3 = document.createElement("li");
+      li3.textContent = "Configure it using: ";
+      const code1 = document.createElement("code");
+      code1.textContent = "sudo nano /etc/enginescript/uptimerobot.conf";
+      li3.appendChild(code1);
+      
+      const li4 = document.createElement("li");
+      li4.textContent = "Add: ";
+      const code2 = document.createElement("code");
+      code2.textContent = "api_key=your_api_key_here";
+      li4.appendChild(code2);
+      
+      ol.appendChild(li1);
+      ol.appendChild(li2);
+      ol.appendChild(li3);
+      ol.appendChild(li4);
+      
+      statusDiv.appendChild(titleP);
+      statusDiv.appendChild(instrP);
+      statusDiv.appendChild(ol);
+      
+      monitorsContainer.appendChild(statusDiv);
     }
     
     // Reset summary stats
@@ -1119,7 +1349,15 @@ class EngineScriptDashboard {
   showUptimeError() {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
-      monitorsContainer.innerHTML = '<div class="uptime-status"><p>Error loading uptime monitoring data. Please check your configuration and try again.</p></div>';
+      monitorsContainer.innerHTML = "";
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "uptime-status";
+      
+      const message = document.createElement("p");
+      message.textContent = "Error loading uptime monitoring data. Please check your configuration and try again.";
+      
+      statusDiv.appendChild(message);
+      monitorsContainer.appendChild(statusDiv);
     }
   }
 

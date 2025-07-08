@@ -70,9 +70,9 @@ jobs:
               
               # Add to changelog
               if [[ -z "$CHANGELOG_CONTENT" ]]; then
-                CHANGELOG_CONTENT="| ${var_name} | ${current_ver} | ${new_ver} |"
+                CHANGELOG_CONTENT="| ${var_name} | ${current_ver} | **${new_ver}** |"
               else
-                CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| ${var_name} | ${current_ver} | ${new_ver} |"
+                CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| ${var_name} | ${current_ver} | **${new_ver}** |"
               fi
             else
               echo "::debug::No update needed for $var_name"
@@ -252,9 +252,9 @@ jobs:
             
             # Add to changelog
             if [[ -z "$CHANGELOG_CONTENT" ]]; then
-              CHANGELOG_CONTENT="| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | ${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}... |"
+              CHANGELOG_CONTENT="| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | **${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}...** |"
             else
-              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | ${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}... |"
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_SHA:0:12}... | **${LATEST_NGINX_DYN_TLS_PATCH_SHA:0:12}...** |"
             fi
           else
             if [[ -z "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ]]; then
