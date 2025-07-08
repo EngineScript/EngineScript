@@ -18,13 +18,33 @@ source /home/EngineScript/enginescript-install-options.txt
 
 # Tune MariaDB
 
-# Open Files Limit
-sed -i "s|# LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
-sed -i "s|LimitNOFILE=32768|LimitNOFILE=60556|g" /usr/lib/systemd/system/mariadb.service
+# Open Files Limit - Use systemd override instead of modifying main service file
+# Create override directory if it doesn't exist
+mkdir -p "/etc/systemd/system/mariadb.service.d"
+
+# Create override file for MariaDB service limits
+cat > /etc/systemd/system/mariadb.service.d/enginescript-limits.conf << 'EOF'
+[Service]
+# EngineScript MariaDB Performance Tuning
+LimitNOFILE=60556
+LimitMEMLOCK=524288
+
+# Environment variables to prevent startup errors
+Environment="MYSQLD_OPTS="
+Environment="_WSREP_NEW_CLUSTER="
+EOF
 
 # Set Memory Variables
 SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
+
+# Log Buffer Size variable calculation
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
+  then
+    SEDLBSM="32M"
+  else
+    SEDLBSM="64M"
+fi
 
 # tmp_table_size & max_heap_table_size
 sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/mariadb.cnf
@@ -40,6 +60,9 @@ if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   else
     sed -i "s|SEDLBS|64|g" /etc/mysql/mariadb.cnf
 fi
+
+# Use the calculated SEDLBSM variable for log buffer size
+sed -i "s|SEDLBSM|${SEDLBSM}|g" /etc/mysql/mariadb.cnf
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
@@ -120,6 +143,9 @@ echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
 # Modify MariaDB config for max IOPS
 sed -i "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_MAX_VAR updated to $max_iops."
+
+# Reload systemd daemon to apply the new override configuration
+systemctl daemon-reload
 
 
 # References:
