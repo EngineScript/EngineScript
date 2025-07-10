@@ -1006,16 +1006,25 @@ class EngineScriptDashboard {
     });
   }
     
-  createSiteElement(site) {
+  // Helper method to create site card structure - eliminates duplication
+  createSiteCardStructure(titleText) {
     const siteDiv = document.createElement("div");
     siteDiv.className = "site-card";
 
-    // Site header
     const headerDiv = document.createElement("div");
     headerDiv.className = "site-header";
 
     const title = document.createElement("h3");
-    title.textContent = this.sanitizeInput(site.domain);
+    title.textContent = titleText;
+
+    headerDiv.appendChild(title);
+    siteDiv.appendChild(headerDiv);
+
+    return { siteDiv, headerDiv };
+  }
+  
+  createSiteElement(site) {
+    const { siteDiv, headerDiv } = this.createSiteCardStructure(this.sanitizeInput(site.domain));
 
     const statusDiv = document.createElement("div");
     statusDiv.className = "site-status";
@@ -1028,8 +1037,6 @@ class EngineScriptDashboard {
 
     statusDiv.appendChild(statusIndicator);
     statusDiv.appendChild(statusText);
-
-    headerDiv.appendChild(title);
     headerDiv.appendChild(statusDiv);
 
     // Site info
@@ -1050,24 +1057,13 @@ class EngineScriptDashboard {
 
     infoDiv.appendChild(wpInfo);
     infoDiv.appendChild(sslInfo);
-
-    siteDiv.appendChild(headerDiv);
     siteDiv.appendChild(infoDiv);
 
     return siteDiv;
   }
     
   createNoSitesElement() {
-    const siteDiv = document.createElement("div");
-    siteDiv.className = "site-card";
-
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "site-header";
-
-    const title = document.createElement("h3");
-    title.textContent = "No sites found";
-
-    headerDiv.appendChild(title);
+    const { siteDiv } = this.createSiteCardStructure("No sites found");
 
     const infoDiv = document.createElement("div");
     infoDiv.className = "site-info";
@@ -1076,13 +1072,11 @@ class EngineScriptDashboard {
     message.textContent = "No WordPress sites are currently configured.";
 
     infoDiv.appendChild(message);
-
-    siteDiv.appendChild(headerDiv);
     siteDiv.appendChild(infoDiv);
 
     return siteDiv;
   }
-
+  
   createInfoElement(label, value) {
     const infoDiv = document.createElement("div");
     infoDiv.className = "info-item";

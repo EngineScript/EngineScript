@@ -18,6 +18,11 @@ Changes are organized by date, with the most recent changes listed first.
   - **Capped `innodb_log_file_size`**: Added logic to cap `innodb_log_file_size` at 512MB
   - **Automated `innodb_buffer_pool_instances`**: Added logic to automatically set `innodb_buffer_pool_instances` based on CPU cores
 
+### 🔧 CODE QUALITY IMPROVEMENTS
+- **JavaScript Code Refactoring**: Eliminated code duplication in admin dashboard
+  - **Removed Duplication**: Created shared `createSiteCardStructure()` helper method to eliminate duplication between `createSiteElement()` and `createNoSitesElement()` methods
+  - **Improved Maintainability**: Consolidated common site card creation logic into reusable component
+
 ## 2025-07-08
 
 ### 🔒️ ADMIN DASHBOARD SECURITY ENHANCEMENTS
