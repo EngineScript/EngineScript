@@ -6,7 +6,7 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # EngineScript Version
-VARIABLES_DATE="JUL0825"
+VARIABLES_DATE="JUL1025"
 
 # Software Versions
 LIBURING_VER="2.11"
