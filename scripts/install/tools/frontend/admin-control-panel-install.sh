@@ -34,10 +34,6 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
 fi
 
-# Update configuration files from main credentials file
-echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
-
 # Set permissions for the EngineScript frontend
 set_enginescript_frontend_permissions
 

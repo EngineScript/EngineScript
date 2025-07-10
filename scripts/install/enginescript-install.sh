@@ -495,12 +495,6 @@ fi
 print_last_errors
 debug_pause "Tools"
 
-# Update Configuration Files
-echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Configuration Update"
-
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh

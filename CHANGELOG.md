@@ -4,6 +4,20 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-10
+
+### 🚀 MARIADB PERFORMANCE OPTIMIZATIONS
+- **InnoDB-Only Environment**: Optimized MariaDB configuration for InnoDB-only environments
+  - **Removed MyISAM Settings**: Disabled all MyISAM-related settings to free up memory
+  - **Modern InnoDB Settings**: Added modern InnoDB settings for better performance on multi-core systems
+  - **Enabled Performance Schema**: Enabled performance schema for better monitoring capabilities
+- **MariaDB 11.8 Compatibility**: Updated configuration to ensure compatibility with MariaDB 11.8
+  - **Replaced Deprecated Settings**: Replaced `log_warnings` with `log_error_verbosity`
+  - **Tuned Connection Settings**: Optimized `wait_timeout` and `max_connect_errors` for better performance
+- **Tuning Script Improvements**: Enhanced `mariadb-tune.sh` script for better performance tuning
+  - **Capped `innodb_log_file_size`**: Added logic to cap `innodb_log_file_size` at 512MB
+  - **Automated `innodb_buffer_pool_instances`**: Added logic to automatically set `innodb_buffer_pool_instances` based on CPU cores
+
 ## 2025-07-08
 
 ### 🔒️ ADMIN DASHBOARD SECURITY ENHANCEMENTS
@@ -48,6 +62,14 @@ Changes are organized by date, with the most recent changes listed first.
     - Enhanced regex patterns for NGINX mainline, NGINX Headers More, and Simple WP Optimizer
     - Better handling of pre-release versions and release candidates
     - More reliable parsing of GitHub API responses for version information
+  - **Conditional Date Updates**: Added logic to only update timestamps when software versions actually change
+    - Implemented separate tracking for software version changes vs. other workflow changes
+    - Date updates now only occur when actual software versions are updated, not on every workflow run
+    - Prevents unnecessary pull requests when no actual version changes have occurred
+  - **Selective Changelog Updates**: Enhanced changelog generation to only highlight actually updated versions
+    - Only software versions that were actually updated are included in the changelog
+    - Proper bolding applied to updated version numbers in the changelog table
+    - Cleaner, more focused changelog entries that don't include unchanged versions
 
 ## 2025-07-07
 
@@ -824,16 +846,4 @@ Changes are organized by date, with the most recent changes listed first.
   - Enhanced `nginx-update.sh` with comprehensive error logging and debug pauses using shared functions
   - Fixed remaining conditional expressions (`[ ]` → `[[ ]]`) in `vhost-import.sh` for consistency
   - All scripts now use consistent error handling, service management, and debugging patterns
-- **Conditional Expression Standardization**: Replaced all `[ ]` (test) conditional expressions with `[[ ]]` (keyword) throughout the entire codebase
-  - Updated all installation scripts (enginescript-install.sh, nginx-install.sh, php-install.sh, mariadb-install.sh, redis-install.sh, gcc-install.sh, etc.)
-  - Updated all function scripts (backup scripts, cron scripts, vhost scripts, security scripts, alias scripts, etc.)
-  - Updated all utility and tool installation scripts (ufw-cloudflare.sh, zlib-install.sh, tools-install.sh, etc.)
-  - Modernizes shell scripting practices and improves readability and maintainability
-  - `[[ ]]` provides better string handling, pattern matching, and is less error-prone than `[ ]`
-- **Shell Scripts**: Standardized shebang line in `scripts/functions/alias/alias-debug.sh` to use `#!/usr/bin/env bash` for consistency across all shell scripts
-- **Function Deduplication**: Created shared functions library at `scripts/functions/shared/enginescript-common.sh` to consolidate duplicated functions
-  - Consolidated `debug_pause()` and `print_last_errors()` functions from `scripts/install/enginescript-install.sh` and `scripts/install/nginx/nginx-install.sh`
-  - Consolidated `restart_service()`, `restart_php_fpm()`, and `clear_cache()` functions from `scripts/functions/alias/alias-cache.sh` and `scripts/functions/alias/alias-restart.sh`
-  - Updated `scripts/install/enginescript-install.sh`, `scripts/install/nginx/nginx-install.sh`, `scripts/install/tools/tools-install.sh`, `scripts/functions/alias/alias-cache.sh`, and `scripts/functions/alias/alias-restart.sh` to source the shared library
-  - Removed duplicate function definitions from individual scripts, improving maintainability and consistency
 

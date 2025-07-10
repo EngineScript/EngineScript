@@ -105,6 +105,13 @@ fi
 sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/my.cnf
+
+# Cap innodb_log_file_size at 512MB
+if [[ "${SERVER_MEMORY_TOTAL_10}" -gt 512 ]]; then
+  SERVER_MEMORY_TOTAL_10=512
+fi
+sed -i "s|SEDMYSQL10PERCENT|${SERVER_MEMORY_TOTAL_10}|g" /etc/mysql/my.cnf
+
 sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/my.cnf

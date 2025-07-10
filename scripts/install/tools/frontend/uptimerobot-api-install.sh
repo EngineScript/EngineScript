@@ -29,10 +29,6 @@ if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     chown -R www-data:www-data /etc/enginescript/uptimerobot.conf
 fi
 
-# Update configuration files from main credentials file
-echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
-
 # Set permissions for the EngineScript frontend
 set_enginescript_frontend_permissions
 

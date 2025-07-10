@@ -30,6 +30,7 @@ jobs:
         run: |
           # Initialize changes flag and changelog
           CHANGES_DETECTED=false
+          SOFTWARE_VERSIONS_CHANGED=false
           CHANGELOG_CONTENT=""
           
           # Function to compare version numbers
@@ -66,6 +67,7 @@ jobs:
               # Update version in enginescript-variables.txt directly
               sed -i "s/^${var_name}=\"[^\"]*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
               CHANGES_DETECTED=true
+              SOFTWARE_VERSIONS_CHANGED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
               
               # Add to changelog
@@ -248,6 +250,7 @@ jobs:
           if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]]; then
             sed -i "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"/" enginescript-variables.txt
             CHANGES_DETECTED=true
+            SOFTWARE_VERSIONS_CHANGED=true
             echo "::notice::NGINX_DYN_TLS_PATCH_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_SHA"
             
             # Add to changelog
@@ -307,8 +310,12 @@ jobs:
           # Update date and output results
           if [[ "$CHANGES_DETECTED" = true ]]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
-            sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+            
+            # Only update the date if software versions actually changed
+            if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
+              NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
+              sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+            fi
             
             # Generate changelog
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
