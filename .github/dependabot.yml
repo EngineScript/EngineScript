@@ -5,7 +5,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
       day: "monday"
       time: "09:00"
     # Set custom labels on pull requests
@@ -13,6 +13,7 @@ updates:
       - "dependencies"
       - "security"
       - "automated"
+      - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
     # Assign reviewers automatically
@@ -23,3 +24,38 @@ updates:
       actions:
         patterns:
           - "*"
+
+  # Updates for Composer dependencies (PHP packages)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      day: "monday"
+      time: "09:00"
+    # Set custom labels on pull requests
+    labels:
+      - "dependencies"
+      - "php"
+      - "automated"
+      - "maintenance"
+    # Limit the number of open PRs
+    open-pull-requests-limit: 10
+    # Assign reviewers automatically
+    reviewers:
+      - "EngineScript"
+    # Group updates by dependency type
+    groups:
+      # Group all dev dependencies together
+      dev-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "development"
+      # Group production dependencies (if any are added later)
+      production-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "production"
+    # Allow updates to all dependency types
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
