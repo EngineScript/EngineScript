@@ -310,13 +310,16 @@ jobs:
           # Update date and output results
           if [[ "$CHANGES_DETECTED" = true ]]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            
+
             # Only update the date if software versions actually changed
             if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
               NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
               sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+              echo "software_versions_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "software_versions_changed=false" >> $GITHUB_OUTPUT
             fi
-            
+
             # Generate changelog
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
             echo "The following software versions have been updated:" >> $GITHUB_OUTPUT
@@ -328,10 +331,11 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "software_versions_changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Pull Request
-        if: steps.version-check.outputs.changes_detected == 'true'
+        if: steps.version-check.outputs.software_versions_changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
