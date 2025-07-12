@@ -42,7 +42,6 @@ echo "EngineScript Configuration Update"
 echo "================================="
 
 # Update configurations
-update_filemanager_config
 update_uptimerobot_config
 
 echo ""
