@@ -289,9 +289,17 @@ debug_print "\`\`\`\n" "\`\`\`\n"
 # Database Versions
 debug_print "\n### Database Versions\n" "\n### Database Versions\n"
 debug_print "MariaDB: $(mariadb -V)" "MariaDB: \`$(mariadb -V)\`"
-mariadbd --print-defaults 2>/dev/null | grep -E 'socket|port' | while read -r line; do
-    debug_print "MariaDB Config: ${line}" "MariaDB Config: \`${line}\`"
-done    
+
+debug_print "\n#### MariaDB Server Configuration\n" "#### MariaDB Server Configuration\n"
+debug_print "The following variables are loaded from the .cnf files:\n" "The following variables are loaded from the .cnf files:\n"
+debug_print "\`\`\`" "\`\`\`"
+MARIADB_VARS=$(sudo -u mysql mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p')
+if [[ -n "$MARIADB_VARS" ]]; then
+    debug_print "${MARIADB_VARS}" "${MARIADB_VARS}"
+else
+    debug_print "Unable to retrieve MariaDB variables. Check permissions or if mariadbd is in PATH for mysql user." "Unable to retrieve MariaDB variables. Check permissions or if mariadbd is in PATH for mysql user."
+fi
+debug_print "\`\`\`\n" "\`\`\`\n"
 
 debug_print "Redis: $(redis-server --version)" "Redis: \`$(redis-server --version)\`"
 

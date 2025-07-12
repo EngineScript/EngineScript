@@ -55,4 +55,4 @@ fi
 # MariaDB Database Upgrade
 mariadb-upgrade --force
 
-mariadbd --print-defaults
+mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'

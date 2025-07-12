@@ -79,9 +79,9 @@ jobs:
             fi
           }
           
-          # MariaDB (11.4.x series)
+          # MariaDB (11.8.x series)
           LATEST_MARIADB=$(curl -sL https://downloads.mariadb.org/mariadb/+releases/ | 
-            grep -oP '11\.4\.[0-9]+(?=/)' | 
+            grep -oP '11\.8\.[0-9]+(?=/)' | 
             sort -V | 
             tail -n1)
           check_version "MARIADB_VER" "$LATEST_MARIADB"
@@ -349,6 +349,7 @@ jobs:
         run: |
           #!/usr/bin/env bash
           set -e
+          set -x
           
           # Helper: get value from enginescript-variables.txt
           get_var() {
@@ -371,6 +372,22 @@ jobs:
           CHARTJS_VER=$(get_var CHARTJS_VER)
           FONTAWESOME_VER=$(get_var FONTAWESOME_VER)
 
+          # --- Debug: Check if variables are empty ---
+          if [ -z "$NGINX_VER" ]; then echo "NGINX_VER is empty"; fi
+          if [ -z "$NGINX_PURGE_VER" ]; then echo "NGINX_PURGE_VER is empty"; fi
+          if [ -z "$NGINX_HEADER_VER" ]; then echo "NGINX_HEADER_VER is empty"; fi
+          if [ -z "$OPENSSL_VER" ]; then echo "OPENSSL_VER is empty"; fi
+          if [ -z "$PCRE2_VER" ]; then echo "PCRE2_VER is empty"; fi
+          if [ -z "$ZLIB_VER" ]; then echo "ZLIB_VER is empty"; fi
+          if [ -z "$LIBURING_VER" ]; then echo "LIBURING_VER is empty"; fi
+          if [ -z "$PHPMYADMIN_VER" ]; then echo "PHPMYADMIN_VER is empty"; fi
+          if [ -z "$MARIADB_VER" ]; then echo "MARIADB_VER is empty"; fi
+          if [ -z "$SSE_PLUGIN_VER" ]; then echo "SSE_PLUGIN_VER is empty"; fi
+          if [ -z "$SWPO_PLUGIN_VER" ]; then echo "SWPO_PLUGIN_VER is empty"; fi
+          if [ -z "$CHARTJS_VER" ]; then echo "CHARTJS_VER is empty"; fi
+          if [ -z "$FONTAWESOME_VER" ]; then echo "FONTAWESOME_VER is empty"; fi
+          # --- End Debug ---
+
           # Get patch date (Last-Modified header or today)
           PATCH_URL="https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch"
           PATCH_DATE=$(curl -sI "$PATCH_URL" | grep -i '^last-modified:' | cut -d' ' -f2- | tr -d '\r')
@@ -389,7 +406,7 @@ jobs:
             -e "/|NGINX PATCH: Dynamic TLS Records|/s/|[^|]*|/|$PATCH_DATE_FMT|/2" \
             -e "/|OPENSSL|/s/|[^|]*|/|$OPENSSL_VER|/2" \
             -e "/|PCRE2|/s/|[^|]*|/|$PCRE2_VER|/2" \
-            -e "/|ZLIB-Cloudflare|/s/|[^|]*|/|$ZLIB_VER|/2" \
+            -e "/^|ZLIB|/s/|[^|]*|/|$ZLIB_VER|/2" \
             -e "/|LIBURING|/s/|[^|]*|/|$LIBURING_VER|/2" \
             -e "/|PHPMYADMIN|/s/|[^|]*|/|$PHPMYADMIN_VER|/2" \
             -e "/|MARIADB|/s/|[^|]*|/|$MARIADB_VER|/2" \
@@ -398,3 +415,7 @@ jobs:
             -e "/|Chart.js|/s/|[^|]*|/|$CHARTJS_VER|/2" \
             -e "/|Font Awesome|/s/|[^|]*|/|$FONTAWESOME_VER|/2" \
             README.md
+            
+          echo "--- README.md content after sed ---"
+          cat README.md
+          echo "--- End of README.md content ---"
