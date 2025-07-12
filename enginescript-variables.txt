@@ -3,6 +3,8 @@
 ######################################################################
 # Note: This file resets whenever EngineScript is updated.
 
+# Variable Date: 07/12/2025
+
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # Software Versions
