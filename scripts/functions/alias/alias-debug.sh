@@ -158,7 +158,6 @@ get_server_info
 debug_print "## Basic Information\n" "## Basic Information\n"
 debug_print "| Component | Value |" "| Component | Value |"
 debug_print "|-----------|--------|" "|-----------|--------|"
-debug_print "Variables File Date | ${VARIABLES_DATE}" "| Variables File Date | \`${VARIABLES_DATE}\` |"
 debug_print "Architecture | ${BIT_TYPE}-bit" "| Architecture | \`${BIT_TYPE}-bit\` |"
 debug_print "Ubuntu Version | ${UBUNTU_TYPE} ${UBUNTU_VERSION} (${UBUNTU_CODENAME})" "| Ubuntu Version | \`${UBUNTU_TYPE} ${UBUNTU_VERSION} (${UBUNTU_CODENAME})\` |"
 

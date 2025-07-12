@@ -881,8 +881,7 @@ echo "Issuing SSL Certificate via ACME.sh (ZeroSSL)..."
 --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
 --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
 
-# Print version and date for logs
-echo "EngineScript Date: ${VARIABLES_DATE}"
+# Print date for logs
 echo "System Date: $(date)"
 
 # --- Database and File Handling ---

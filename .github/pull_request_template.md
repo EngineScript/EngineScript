@@ -18,7 +18,6 @@ labels: automated, dependencies
 ### Verification Checklist
 - [ ] Version numbers are correctly formatted
 - [ ] Version numbers are stable releases (not beta/RC)
-- [ ] VARIABLES_DATE has been updated
 - [ ] No syntax errors in variables file
 
 ### Notes

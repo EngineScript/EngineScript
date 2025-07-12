@@ -566,8 +566,7 @@ mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
 --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
 
-# Print verion and date for logs
-echo "EngineScript Date: ${VARIABLES_DATE}"
+# Print date for logs
 echo "System Date: $(date)"
 
 # Domain Creation Variables

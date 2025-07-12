@@ -304,12 +304,8 @@ jobs:
             echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
           fi
           
-          # Update date and output results if software versions changed
+          # Output results if software versions changed
           if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
-            # Update the date when software versions actually changed
-            NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
-            sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
-            
             echo "software_versions_changed=true" >> $GITHUB_OUTPUT
             
             # Generate changelog

@@ -60,7 +60,6 @@ fi
 # Configuration File Check
 echo -e "${BOLD}\n\n--------------------\nConfiguration Review\n--------------------${NORMAL}"
 echo -e "${BOLD}\nServer Information:${NORMAL}"
-echo "Variables File Date = $VARIABLES_DATE"
 echo "Script Run Date = $DT"
 echo "CPU Count = $CPU_COUNT"
 echo "32bit or 64bit = $BIT_TYPE"
