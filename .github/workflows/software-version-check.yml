@@ -28,8 +28,7 @@ jobs:
       - name: Check Software Versions
         id: version-check
         run: |
-          # Initialize changes flag and changelog
-          CHANGES_DETECTED=false
+          # Initialize software versions changed flag and changelog
           SOFTWARE_VERSIONS_CHANGED=false
           CHANGELOG_CONTENT=""
           
@@ -66,7 +65,6 @@ jobs:
               echo "::debug::Version update detected for $var_name"
               # Update version in enginescript-variables.txt directly
               sed -i "s/^${var_name}=\"[^\"]*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
-              CHANGES_DETECTED=true
               SOFTWARE_VERSIONS_CHANGED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
               
@@ -247,9 +245,8 @@ jobs:
           
           CURRENT_NGINX_DYN_TLS_PATCH_SHA=$(get_current_version "NGINX_DYN_TLS_PATCH_SHA")
           
-          if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_SHA" != "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" ]]; then
+          if [[ "$CURRENT_NGINX_DYN_TLS_PATCH_SHA" != "$LATEST_NGINX_DYN_TLS_PATCH_SHA" ]]; then
             sed -i "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_SHA\"/" enginescript-variables.txt
-            CHANGES_DETECTED=true
             SOFTWARE_VERSIONS_CHANGED=true
             echo "::notice::NGINX_DYN_TLS_PATCH_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_SHA"
             
@@ -307,19 +304,14 @@ jobs:
             echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
           fi
           
-          # Update date and output results
-          if [[ "$CHANGES_DETECTED" = true ]]; then
-            echo "changes_detected=true" >> $GITHUB_OUTPUT
-
-            # Only update the date if software versions actually changed
-            if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
-              NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
-              sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
-              echo "software_versions_changed=true" >> $GITHUB_OUTPUT
-            else
-              echo "software_versions_changed=false" >> $GITHUB_OUTPUT
-            fi
-
+          # Update date and output results if software versions changed
+          if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
+            # Update the date when software versions actually changed
+            NEW_DATE=$(date +'%b%d%y' | tr '[:lower:]' '[:upper:]')
+            sed -i "s/^VARIABLES_DATE=\"[^\"]*\"/VARIABLES_DATE=\"$NEW_DATE\"/" enginescript-variables.txt
+            
+            echo "software_versions_changed=true" >> $GITHUB_OUTPUT
+            
             # Generate changelog
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
             echo "The following software versions have been updated:" >> $GITHUB_OUTPUT
@@ -330,7 +322,6 @@ jobs:
             echo "" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "changes_detected=false" >> $GITHUB_OUTPUT
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
           fi
 
@@ -354,7 +345,7 @@ jobs:
             dependencies
 
       - name: Update Software Version Table in README
-        if: steps.version-check.outputs.changes_detected == 'true'
+        if: steps.version-check.outputs.software_versions_changed == 'true'
         run: |
           #!/usr/bin/env bash
           set -e
