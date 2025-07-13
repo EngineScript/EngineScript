@@ -329,21 +329,21 @@ jobs:
             PATCH_DATE=$(curl -sI "$PATCH_URL" | grep -i '^last-modified:' | cut -d' ' -f2- | tr -d '\r' || date +'%b %d %Y')
             PATCH_DATE_FMT=$(date -d "$PATCH_DATE" +'%b %d %Y' 2>/dev/null || echo "$PATCH_DATE")
 
-            sed -i \
-              -e "/|NGINX MAINLINE|/s/|[^|]*|/|$(get_current_version NGINX_VER)|/2" \
-              -e "/|NGINX CACHE PURGE|/s/|[^|]*|/|$(get_current_version NGINX_PURGE_VER)|/2" \
-              -e "/|NGINX HEADERS MORE|/s/|[^|]*|/|$(get_current_version NGINX_HEADER_VER)|/2" \
-              -e "/|NGINX PATCH: Dynamic TLS Records|/s/|[^|]*|/|$PATCH_DATE_FMT|/2" \
-              -e "/|OPENSSL|/s/|[^|]*|/|$(get_current_version OPENSSL_VER)|/2" \
-              -e "/|PCRE2|/s/|[^|]*|/|$(get_current_version PCRE2_VER)|/2" \
-              -e "/^|ZLIB|/s/|[^|]*|/|$(get_current_version ZLIB_VER)|/2" \
-              -e "/|LIBURING|/s/|[^|]*|/|$(get_current_version LIBURING_VER)|/2" \
-              -e "/|PHPMYADMIN|/s/|[^|]*|/|$(get_current_version PHPMYADMIN_VER)|/2" \
-              -e "/|MARIADB|/s/|[^|]*|/|$(get_current_version MARIADB_VER)|/2" \
-              -e "/|PLUGIN: EngineScript: Simple Site Exporter|/s/|[^|]*|/|$(get_current_version SSE_PLUGIN_VER)|/2" \
-              -e "/|PLUGIN: EngineScript: Simple WP Optimizer|/s/|[^|]*|/|$(get_current_version SWPO_PLUGIN_VER)|/2" \
-              -e "/|Chart.js|/s/|[^|]*|/|$(get_current_version CHARTJS_VER)|/2" \
-              -e "/|Font Awesome|/s/|[^|]*|/|$(get_current_version FONTAWESOME_VER)|/2" \
+            sed -i -E \
+              -e "s#^(\\|NGINX MAINLINE\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
+              -e "s#^(\\|NGINX CACHE PURGE\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
+              -e "s#^(\\|NGINX HEADERS MORE\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
+              -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1$PATCH_DATE_FMT#" \
+              -e "s#^(\\|OPENSSL\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
+              -e "s#^(\\|PCRE2\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
+              -e "s#^(\\|ZLIB\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
+              -e "s#^(\\|LIBURING\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
+              -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
+              -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
+              -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
+              -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
+              -e "s#^(\\|Chart\\.js\\|)[^|]*#\1$(get_current_version CHARTJS_VER)#" \
+              -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
               README.md
           else
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
