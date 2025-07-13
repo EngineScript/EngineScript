@@ -214,9 +214,9 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |**Web Server**|
 |NGINX MAINLINE|1.29.0|https://nginx.org/en/download.html|
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge|
-|NGINX HEADERS MORE|0.38|https://github.com/openresty/headers-more-nginx-module|
-|NGINX PATCH: Dynamic TLS Records|Latest|https://github.com/kn007/patch|
-|OPENSSL|3.4.1|https://www.openssl.org/source/|
+|NGINX HEADERS MORE|0.39|https://github.com/openresty/headers-more-nginx-module|
+|NGINX PATCH: Dynamic TLS Records|Jul 13 2025|https://github.com/kn007/patch|
+|OPENSSL|3.4.2|https://www.openssl.org/source/|
 |PCRE2|10.45|https://github.com/PCRE2Project/pcre2/releases|
 |ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib|
 ||
@@ -226,7 +226,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 ||
 ||
 |**MySQL Database**|
-|MARIADB|11.4.5|https://mariadb.org/download/|
+|MARIADB|11.8.2|https://mariadb.org/download/|
 ||
 ||
 |**Database Management**|
@@ -249,8 +249,8 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command|
 |WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check|
 |PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/|
-|PLUGIN: EngineScript: Simple Site Exporter| 1.5.8 | [https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter) |
-|PLUGIN: EngineScript: Simple WP Optimizer| 1.5.4 | [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
+|PLUGIN: EngineScript: Simple Site Exporter|1.8.1| [https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter) |
+|PLUGIN: EngineScript: Simple WP Optimizer|1.5.11| [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/|
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/|
 |PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/|
@@ -281,6 +281,6 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 ||
 ||
 |**Misc Supplemental Software**|
-|LIBURING|2.9|https://github.com/axboe/liburing|
+|LIBURING|2.11|https://github.com/axboe/liburing|
 |MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl|
 |ZLIB|1.3.1|https://github.com/madler/zlib|
