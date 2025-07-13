@@ -3,13 +3,13 @@
 ######################################################################
 # Note: This file resets whenever EngineScript is updated.
 
-# Variable Date: 07/12/2025
+# Variable Date: 07/13/2025
 
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # Software Versions
 LIBURING_VER="2.11"
-MARIADB_VER="11.4.7"
+MARIADB_VER="11.8.2"
 NGINX_DYN_TLS_PATCH_SHA="1eeff69434585b2417e5d5c49e0479c8b22b205192f60b638a5b6c589152c40b"
 NGINX_HEADER_VER="0.39"
 NGINX_PURGE_VER="2.5.3"
