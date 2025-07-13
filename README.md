@@ -237,6 +237,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |**Admin Control Panel**|
 |Chart.js|4.5.0|https://github.com/chartjs/Chart.js|
 |Font Awesome|6.7.2|https://github.com/FortAwesome/Font-Awesome|
+|TinyFileManager|2.6|https://github.com/prasathmani/tinyfilemanager|
 ||
 ||
 |**Object Cache**|

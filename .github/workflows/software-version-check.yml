@@ -324,16 +324,11 @@ jobs:
 
             # Update README.md table directly in this step
             echo "Updating README.md..."
-            # We use the new version variables that are already in memory
-            PATCH_URL="https://github.com/kn007/patch/raw/master/nginx_dynamic_tls_records.patch"
-            PATCH_DATE=$(curl -sI "$PATCH_URL" | grep -i '^last-modified:' | cut -d' ' -f2- | tr -d '\r' || date +'%b %d %Y')
-            PATCH_DATE_FMT=$(date -d "$PATCH_DATE" +'%b %d %Y' 2>/dev/null || echo "$PATCH_DATE")
-
             sed -i -E \
               -e "s#^(\\|NGINX MAINLINE\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
               -e "s#^(\\|NGINX CACHE PURGE\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
               -e "s#^(\\|NGINX HEADERS MORE\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
-              -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1$PATCH_DATE_FMT#" \
+              -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1Latest#" \
               -e "s#^(\\|OPENSSL\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
               -e "s#^(\\|PCRE2\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
               -e "s#^(\\|ZLIB\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
@@ -344,6 +339,7 @@ jobs:
               -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
               -e "s#^(\\|Chart\\.js\\|)[^|]*#\1$(get_current_version CHARTJS_VER)#" \
               -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
+              -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
               README.md
           else
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
