@@ -22,10 +22,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# EngineScript Update (Makes sure we're installing latest Nginx)
-/usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "EngineScript Update"
+# Prompt for EngineScript Update
+prompt_yes_no_exit "Do you want to update EngineScript before continuing?" \
+    "This will ensure you have the latest core scripts and variables." \
+    "/usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log" \
+    "EngineScript Update"
 
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
