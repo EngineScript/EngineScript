@@ -23,10 +23,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Prompt for EngineScript Update
-prompt_yes_no_exit "Do you want to update EngineScript before continuing?" \
-    "This will ensure you have the latest core scripts and variables." \
-    "/usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log" \
-    "EngineScript Update"
+    if prompt_yes_no "Do you want to update EngineScript before continuing? This will ensure you have the latest core scripts and variables."; then
+        /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
+    else
+        echo "Skipping EngineScript update."
+    fi
 
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
