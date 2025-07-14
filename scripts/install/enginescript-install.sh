@@ -72,7 +72,6 @@ echo "ENGINESCRIPT_AUTO_UPDATE = $ENGINESCRIPT_AUTO_UPDATE"
 echo "ADMIN_SUBDOMAIN = $ADMIN_SUBDOMAIN"
 echo "INSTALL_ADMINER = $INSTALL_ADMINER"
 echo "INSTALL_PHPMYADMIN = $INSTALL_PHPMYADMIN"
-echo "NGINX_SECURE_ADMIN = $NGINX_SECURE_ADMIN" 
 echo "SHOW_ENGINESCRIPT_HEADER = $SHOW_ENGINESCRIPT_HEADER"
 echo "DAILY_LOCAL_DATABASE_BACKUP = $DAILY_LOCAL_DATABASE_BACKUP"
 echo "HOURLY_LOCAL_DATABASE_BACKUP = $HOURLY_LOCAL_DATABASE_BACKUP"
@@ -85,8 +84,8 @@ echo -e "${BOLD}\nUser Credentials:${NORMAL}"
 echo "S3_BUCKET_NAME = $S3_BUCKET_NAME"
 echo "CF_GLOBAL_API_KEY = $CF_GLOBAL_API_KEY"
 echo "CF_ACCOUNT_EMAIL = $CF_ACCOUNT_EMAIL"
-echo "NGINX_USERNAME = $NGINX_USERNAME"
-echo "NGINX_PASSWORD = $NGINX_PASSWORD"
+echo "ADMIN_CONTROL_PANEL_USERNAME = $ADMIN_CONTROL_PANEL_USERNAME"
+echo "ADMIN_CONTROL_PANEL_PASSWORD = $ADMIN_CONTROL_PANEL_PASSWORD"
 echo "MARIADB_ADMIN_PASSWORD = $MARIADB_ADMIN_PASSWORD"
 echo "PHPMYADMIN_USERNAME = $PHPMYADMIN_USERNAME"
 echo "PHPMYADMIN_PASSWORD = $PHPMYADMIN_PASSWORD"
@@ -216,29 +215,6 @@ if [[ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ]];
 	then
     echo -e "\nWARNING:\n\nWP_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_PASSWORD to something more secure.\n"
     exit
-fi
-
-# Check Admin Subdomain Security Configuration
-if [[ "$ADMIN_SUBDOMAIN" = 1 ]] && [[ "$NGINX_SECURE_ADMIN" = 0 ]]; then
-    echo -e "\n${BOLD}WARNING: Security Configuration Issue${NORMAL}"
-    echo "You have enabled the Admin Subdomain (ADMIN_SUBDOMAIN=1) but disabled Nginx password protection for it (NGINX_SECURE_ADMIN=0)."
-    echo "This is insecure as it would expose tools like phpMyAdmin or Adminer publicly."
-    echo ""
-    
-    # Use enhanced validation for admin subdomain security
-    if prompt_yes_no "Do you want to enable Nginx password protection for the admin subdomain?" "y" 300; then
-        echo "Enabling Nginx password protection for the admin subdomain..."
-        sed -i 's/^NGINX_SECURE_ADMIN=0/NGINX_SECURE_ADMIN=1/' /home/EngineScript/enginescript-install-options.txt
-        NGINX_SECURE_ADMIN=1 # Update variable in current script scope
-        echo "NGINX_SECURE_ADMIN has been set to 1 in enginescript-install-options.txt."
-        sleep 2
-    else
-        echo "Disabling the admin subdomain due to security concerns..."
-        sed -i 's/^ADMIN_SUBDOMAIN=1/ADMIN_SUBDOMAIN=0/' /home/EngineScript/enginescript-install-options.txt
-        ADMIN_SUBDOMAIN=0 # Update variable in current script scope
-        echo "ADMIN_SUBDOMAIN has been set to 0 in enginescript-install-options.txt."
-        sleep 2
-    fi
 fi
 
 # Install Check

@@ -82,17 +82,6 @@ AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 # Note: This does NOT affect other recommended plugins (Nginx Helper, Redis, etc.)
 INSTALL_ENGINESCRIPT_PLUGINS=1
 
-####################
-# Security Options #
-####################
-# 0 = disabled
-# 1 = enabled
-
-## Secure Admin Control Panel ##
-# When set to 1, this will enable a primary password protection layer that prompts visitors to your admin pages such as phpMyAdmin.
-# Recommended: 1
-NGINX_SECURE_ADMIN=1
-
 ## Show EngineScript Header ##
 # Enable if you want to show off that your server is running EngineScript.
 # Recommended: 0
@@ -174,11 +163,11 @@ WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER"
 
-## Nginx Password Protection (Recommended) ##
-# This adds a second layer of security to the Admin Control Panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
-# Requires NGINX_SECURE_ADMIN=1 be set in the options towards the top of this file.
-NGINX_USERNAME="PLACEHOLDER"
-NGINX_PASSWORD="PLACEHOLDER"
+## Admin Control Panel Login (Required) ##
+# These credentials secure access to the Admin Control Panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
+# All admin tools including phpMyAdmin, file manager, and server management require these credentials.
+ADMIN_CONTROL_PANEL_USERNAME="PLACEHOLDER"
+ADMIN_CONTROL_PANEL_PASSWORD="PLACEHOLDER"
 
 ## MariaDB (Required) ##
 # We've set MariaDB to always use root as the username.

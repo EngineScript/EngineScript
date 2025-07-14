@@ -222,7 +222,7 @@ debug_print "Install Adminer | ${INSTALL_ADMINER}" "| Install Adminer | \`${INST
 debug_print "Expanded PHP | ${INSTALL_EXPANDED_PHP}" "| Expanded PHP | \`${INSTALL_EXPANDED_PHP}\` |"
 debug_print "HTTP/3 | ${INSTALL_HTTP3}" "| HTTP/3 | \`${INSTALL_HTTP3}\` |"
 debug_print "phpMyAdmin | ${INSTALL_PHPMYADMIN}" "| phpMyAdmin | \`${INSTALL_PHPMYADMIN}\` |"
-debug_print "Secure Admin | ${NGINX_SECURE_ADMIN}" "| Secure Admin | \`${NGINX_SECURE_ADMIN}\` |"
+debug_print "Auto Emergency | ${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" "| Auto Emergency | \`${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}\` |"
 debug_print "Show Header | ${SHOW_ENGINESCRIPT_HEADER}" "| Show Header | \`${SHOW_ENGINESCRIPT_HEADER}\` |"
 
 # Backup Settings

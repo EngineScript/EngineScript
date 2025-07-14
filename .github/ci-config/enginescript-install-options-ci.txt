@@ -70,10 +70,6 @@ INSTALL_ENGINESCRIPT_PLUGINS=0
 # 0 = disabled
 # 1 = enabled
 
-## Secure Admin Control Panel ##
-# Disable for CI testing
-NGINX_SECURE_ADMIN=0
-
 ## Show EngineScript Header ##
 # Disable for CI testing
 SHOW_ENGINESCRIPT_HEADER=0
@@ -118,6 +114,10 @@ DB_ROOT_PASSWORD="CI_Test_Password_123"
 DB_USER="ci_test_user"
 DB_PASSWORD="CI_Test_DB_Pass_456"
 DB_NAME="ci_test_database"
+
+# Test admin control panel credentials
+ADMIN_CONTROL_PANEL_USERNAME="ci_admin"
+ADMIN_CONTROL_PANEL_PASSWORD="CI_Admin_Pass_789"
 
 # Test SSL settings (use self-signed for CI)
 SSL_MODE="self-signed"
