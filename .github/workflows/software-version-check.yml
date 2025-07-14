@@ -341,6 +341,24 @@ jobs:
               -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
               -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
               README.md
+
+            # Update CI variables file to keep it in sync
+            echo "Updating enginescript-variables-ci.txt..."
+            sed -i \
+              -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
+              -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
+              -e "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_SHA)\"/" \
+              -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
+              -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
+              -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \
+              -e "s/^OPENSSL_VER=\"[^\"]*\"/OPENSSL_VER=\"$(get_current_version OPENSSL_VER)\"/" \
+              -e "s/^PCRE2_VER=\"[^\"]*\"/PCRE2_VER=\"$(get_current_version PCRE2_VER)\"/" \
+              -e "s/^PHP_VER=\"[^\"]*\"/PHP_VER=\"$(get_current_version PHP_VER)\"/" \
+              -e "s/^PHPMYADMIN_VER=\"[^\"]*\"/PHPMYADMIN_VER=\"$(get_current_version PHPMYADMIN_VER)\"/" \
+              -e "s/^ZLIB_VER=\"[^\"]*\"/ZLIB_VER=\"$(get_current_version ZLIB_VER)\"/" \
+              -e "s/^SSE_PLUGIN_VER=\"[^\"]*\"/SSE_PLUGIN_VER=\"$(get_current_version SSE_PLUGIN_VER)\"/" \
+              -e "s/^SWPO_PLUGIN_VER=\"[^\"]*\"/SWPO_PLUGIN_VER=\"$(get_current_version SWPO_PLUGIN_VER)\"/" \
+              .github/ci-config/enginescript-variables-ci.txt
           else
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
           fi
