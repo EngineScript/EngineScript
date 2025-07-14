@@ -234,6 +234,18 @@ else
     echo "Note: Only PHP ${NEW_PHP_VER} is configured for use with Nginx."
 fi
 
+# Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+
+# Display PHP version and modules
+echo -e "\n\n=-=-=-=-=-=-=-=-=-\nPHP Info\n=-=-=-=-=-=-=-=-=-\n"
+php -version
+echo ""
+php -m
+
+# Final message
+echo ""
 echo ""
 echo "============================================================="
 echo ""
@@ -251,7 +263,3 @@ fi
 echo ""
 echo "============================================================="
 echo ""
-
-# Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
