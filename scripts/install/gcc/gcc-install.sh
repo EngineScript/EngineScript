@@ -23,20 +23,9 @@ update-alternatives --remove-all gcc
 echo "Ignore the error above on fresh installs."
 
 UBUNTU_VERSION="$(lsb_release -sr)"
-if [[ "${UBUNTU_VERSION}" == "22.04" ]];
-  then
-    # Install GCC for Ubuntu 22.04
-    apt install g++-11 gcc-11 g++-12 gcc-12 -y
-
-    # Create new GCC alternatives
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 --slave /usr/bin/g++ g++ /usr/bin/g++-12 --slave /usr/bin/gcov gcov /usr/bin/gcov-12
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 90 --slave /usr/bin/g++ g++ /usr/bin/g++-11 --slave /usr/bin/gcov gcov /usr/bin/gcov-11
-fi
-
-UBUNTU_VERSION="$(lsb_release -sr)"
 if [[ "${UBUNTU_VERSION}" == "24.04" ]];
   then
-    # Install GCC for Ubuntu 22.04
+    # Install GCC for Ubuntu 24.04
     apt install g++-13 gcc-13 g++-14 gcc-14 -y
 
     # Create new GCC alternatives

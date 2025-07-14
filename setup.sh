@@ -31,20 +31,19 @@ fi
 LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
 
 if [[ "$LINUX_TYPE" != "Ubuntu" ]]; then
-  echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 22.04 or 24.04"
+  echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04"
   exit 1
 else
   echo "Detected Linux Type: $LINUX_TYPE"
 fi
 
-# Check if Ubuntu is LTS Release (22.04 or 24.04). If not, exit.
+# Check if Ubuntu is 24.04 LTS Release. If not, exit.
 UBUNTU_VERSION="$(lsb_release -sr)"
-Jammy=22.04
 Noble=24.04
 
-if (( $(bc <<<"$UBUNTU_VERSION != $Jammy && $UBUNTU_VERSION != $Noble") )); then
+if (( $(bc <<<"$UBUNTU_VERSION != $Noble") )); then
   echo "ALERT:"
-  echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using an Ubuntu LTS release (version 22.04 or 24.04)"
+  echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using Ubuntu 24.04 LTS"
   exit 1
 else
   echo "Current Ubuntu Version: $UBUNTU_VERSION"

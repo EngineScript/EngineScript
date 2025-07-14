@@ -106,10 +106,6 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 # Version Specific Repositories
 UBUNTU_VERSION="$(lsb_release -sr)"
-if [[ "${UBUNTU_VERSION}" == "22.04" ]]; then
-  echo "Not adding any additional repositories for Ubuntu Jammy 22.04"
-  # phpMyAdmin
-  #add-apt-repository -yn ppa:phpmyadmin/ppa
-else
+if [[ "${UBUNTU_VERSION}" == "24.04" ]]; then
   echo "Skipping repos that don't support Ubuntu Noble 24.04"
 fi

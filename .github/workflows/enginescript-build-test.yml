@@ -118,7 +118,7 @@ jobs:
           UBUNTU_VERSION="$(lsb_release -sr)"
           
           if [ "$LINUX_TYPE" != "Ubuntu" ]; then
-            echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 22.04 or 24.04" | sudo tee -a /tmp/ci-logs/setup.log
+            echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04" | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           fi
           echo "✅ Detected Linux Type: $LINUX_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
