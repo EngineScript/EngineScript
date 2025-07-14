@@ -4,6 +4,37 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-14
+
+### 🔧 ADMIN CONTROL PANEL IMPROVEMENTS
+- **Mobile Navigation**: Added hamburger menu for mobile access to admin control panel navigation
+  - **Responsive Design**: Fixed left navigation column visibility on mobile devices
+  - **Toggle Functionality**: Implemented mobile menu toggle with overlay for better user experience
+  - **CSS Enhancements**: Added responsive styling for mobile navigation accessibility
+
+### 🔍 SERVICE STATUS DETECTION
+- **PHP Service Status**: Fixed PHP service status detection in admin control panel
+  - **Service Name Correction**: Updated service detection to properly check `php8.4-fpm` and `php8.3-fpm` services
+  - **Fallback Logic**: Implemented proper fallback from PHP 8.4 to 8.3 service detection
+  - **Status Accuracy**: Resolved red status display issue when PHP service is actually running
+
+### 🔐 SECURITY CONFIGURATION CHANGES
+- **Mandatory Admin Protection**: Admin control panel is now always password protected
+  - **Variable Removal**: Removed `NGINX_SECURE_ADMIN` configuration option (security is now mandatory)
+  - **Variable Renaming**: Updated `NGINX_USERNAME`/`NGINX_PASSWORD` to `ADMIN_CONTROL_PANEL_USERNAME`/`ADMIN_CONTROL_PANEL_PASSWORD`
+  - **Auto-Migration**: Added automatic migration script in `normal-auto-upgrade.sh` to update existing installations
+  - **Configuration Updates**: Updated all scripts and references to use new variable names
+  - **CI Configuration**: Updated CI testing configuration with new admin panel credentials
+
+### 🐧 UBUNTU VERSION SUPPORT
+- **Ubuntu 24.04 Only**: Removed support for Ubuntu 22.04 LTS
+  - **Setup Script**: Updated version checks to only allow Ubuntu 24.04 installations
+  - **Documentation**: Removed Ubuntu 22.04 references from README and instruction files
+  - **GCC Installation**: Updated GCC installation script to remove Ubuntu 22.04 specific packages
+  - **Repository Management**: Simplified repository installation by removing Ubuntu 22.04 specific logic
+  - **CI Workflows**: Updated GitHub Actions workflows to reflect Ubuntu 24.04 only support
+  - **Coding Standards**: Updated copilot instructions to reflect single Ubuntu version support
+
 ## 2025-07-11
 
 ### 📦 PROJECT STRUCTURE ENHANCEMENTS
