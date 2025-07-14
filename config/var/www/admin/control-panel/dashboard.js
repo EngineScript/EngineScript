@@ -29,6 +29,24 @@ class EngineScriptDashboard {
   }
 
   setupEventListeners() {
+    // Mobile menu toggle
+    const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+    if (mobileMenuToggle) {
+      mobileMenuToggle.addEventListener("click", () => this.toggleMobileMenu());
+    }
+
+    // Close mobile menu when clicking outside
+    document.addEventListener("click", (e) => {
+      const sidebar = document.querySelector(".sidebar");
+      const mobileToggle = document.getElementById("mobile-menu-toggle");
+      
+      if (sidebar && sidebar.classList.contains("mobile-open") && 
+          !sidebar.contains(e.target) && 
+          !mobileToggle.contains(e.target)) {
+        this.closeMobileMenu();
+      }
+    });
+
     // Navigation
     document.querySelectorAll(".nav-item").forEach((item) => {
       item.addEventListener("click", (e) => {
@@ -36,6 +54,8 @@ class EngineScriptDashboard {
         const page = this.sanitizeInput(item.dataset.page);
         if (this.allowedPages.includes(page)) {
           this.navigateToPage(page);
+          // Close mobile menu after navigation
+          this.closeMobileMenu();
         }
       });
     });
@@ -163,6 +183,20 @@ class EngineScriptDashboard {
         dashboard.style.display = "flex";
       }, 500);
     }, 1500);
+  }
+
+  toggleMobileMenu() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) {
+      sidebar.classList.toggle("mobile-open");
+    }
+  }
+
+  closeMobileMenu() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) {
+      sidebar.classList.remove("mobile-open");
+    }
   }
     
   startClock() {

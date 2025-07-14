@@ -52,7 +52,7 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 
 ## System Administration Standards
 
-- Ensure compatibility with Ubuntu 24.04 LTS (primary) and Ubuntu 22.04 LTS (supported).
+- Ensure compatibility with Ubuntu 24.04 LTS.
 - Follow Linux Filesystem Hierarchy Standard (FHS) for file placement.
 - Use systemd for service management and configuration.
 - Implement proper backup and restoration procedures.
@@ -77,7 +77,7 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 ## Supported Software Versions
 
 - This project supports modern server software versions:
-  - Ubuntu 24.04 LTS (primary) and Ubuntu 22.04 LTS (supported)
+  - Ubuntu 24.04 LTS
   - Nginx (latest mainline, compiled from source)
   - PHP 8.4+ (latest stable recommended)
   - MariaDB 11.8+ (latest LTS recommended)
