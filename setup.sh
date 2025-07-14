@@ -153,7 +153,7 @@ if [[ "${ALIAS}" = 1 ]];
 fi
 
 # Cleanup
-apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' 'php8\.1.*' 'php8\.2.*' 'php8\.3.*' -y
+apt-get remove apache2* php7* php8* -y
 
 # Update & Upgrade
 apt update --allow-releaseinfo-change -y

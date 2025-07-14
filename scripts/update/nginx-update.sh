@@ -101,7 +101,11 @@ if [[ "${NGINX_SECURE_ADMIN}" == "1" ]];
     echo ""
 fi
 
-restart_service "nginx stop" || systemctl stop nginx
+# Stop Nginx service before replacing binary to avoid "Text file busy" error
+if systemctl is-active --quiet nginx; then
+    echo "Stopping Nginx service for binary replacement..."
+    systemctl stop nginx
+fi
 
 # Remove .default Files
 rm -rf /etc/nginx/{*.default,*.dpkg-dist}
@@ -109,10 +113,20 @@ rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 # Remove debug symbols
 strip -s /usr/sbin/nginx*
 
-restart_service "nginx"
+systemctl start nginx
 
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nNginx Info\n=-=-=-=-=-=-=-=-=-\n"
 nginx -Vv
 echo ""
 echo "Nginx Executable Properties:"
 checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
+
+# Nginx Service Check
+STATUS="$(systemctl is-active nginx)"
+if [[ "${STATUS}" == "active" ]]; then
+  echo "PASSED: Nginx is running."
+  echo "NGINX=1" >> /var/log/EngineScript/install-log.txt
+else
+  echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
+    exit 1
+fi

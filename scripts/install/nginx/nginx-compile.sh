@@ -11,6 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+#Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
@@ -109,7 +111,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -fPIC -march=native --release" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers -fPIC -march=native" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \
@@ -156,7 +158,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls enable-tls1_2 enable-tls1_3 no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers zlib -fPIC -march=native --release" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers -fPIC -march=native" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \
@@ -187,6 +189,12 @@ fi
 make -j"${CPU_COUNT}"
 find "/usr/src/nginx-${NGINX_VER}" | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
 make install
+
+# Stop Nginx service before replacing binary to avoid "Text file busy" error
+if systemctl is-active --quiet nginx; then
+    echo "Stopping Nginx service for binary replacement..."
+    systemctl stop nginx
+fi
 
 # Remove .default Files
 rm -rf /etc/nginx/{*.default,*.dpkg-dist}

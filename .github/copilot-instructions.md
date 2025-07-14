@@ -79,8 +79,8 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - This project supports modern server software versions:
   - Ubuntu 24.04 LTS (primary) and Ubuntu 22.04 LTS (supported)
   - Nginx (latest mainline, compiled from source)
-  - PHP 8.3+ (latest stable recommended)
-  - MariaDB 11.4+ (latest LTS recommended)
+  - PHP 8.4+ (latest stable recommended)
+  - MariaDB 11.8+ (latest LTS recommended)
   - Redis (latest stable)
   - WordPress 6.5+ (when installing WordPress sites)
 - Do not use features or functions that are not available in the minimum supported versions.

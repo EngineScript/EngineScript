@@ -120,8 +120,17 @@ function validateInputPath($input) {
 
 function validateInputService($input) {
     // Only allow known service names
-    $allowed_services = ['nginx', 'php8.3-fpm', 'mariadb', 'redis-server'];
+    $allowed_services = ['nginx', 'php8.4-fpm', 'php8.3-fpm', 'mariadb', 'redis-server'];
     return in_array($input, $allowed_services, true) ? $input : false;
+}
+
+function getPhpServiceStatus() {
+    // Check PHP 8.4 first, then fall back to 8.3
+    $php84_status = getServiceStatus('php8.4-fpm');
+    if ($php84_status === 'active') {
+        return $php84_status;
+    }
+    return getServiceStatus('php8.3-fpm');
 }
 
 function validateInput($input, $type = 'string', $max_length = 255) {
@@ -360,7 +369,7 @@ function handleServicesStatus() {
     try {
         $services = [
             'nginx' => getServiceStatus('nginx'),
-            'php' => getServiceStatus('php8.3-fpm'),
+            'php' => getPhpServiceStatus(),
             'mysql' => getServiceStatus('mariadb'),
             'redis' => getServiceStatus('redis-server')
         ];
@@ -743,6 +752,7 @@ function getServiceVersion($service) {
     switch ($service) {
         case 'nginx':
             return getNginxVersion();
+        case 'php8.4-fpm':
         case 'php8.3-fpm':
             return getPhpVersion();
         case 'mariadb':

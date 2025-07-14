@@ -65,6 +65,11 @@ INSTALL_HTTP3=0
 # SOAP, SQLite3
 INSTALL_EXPANDED_PHP=0
 
+## Keep PHP 8.3 Installation ##
+# Set to 1 to keep PHP 8.3 alongside PHP 8.4 during upgrade
+# Set to 0 to remove PHP 8.3 after upgrading to PHP 8.4 (recommended)
+INSTALL_PHP83=0
+
 # Automatically perform lossless compression on all images on each domain.
 # This script will remember which files have previously been compressed on the server, but will not be able to know if this was performed on a site from another server.
 # Do not enable this feature if you have an image compression plugin or do lossless compression on images prior to uploading them to your site.
@@ -99,9 +104,9 @@ SHOW_ENGINESCRIPT_HEADER=0
 # 0 = disabled
 # 1 = enabled
 
-# Amazon S3 backups require the local backups
-# settings below to be enabled. If you want hourly, daily, and weekly
-# backups to the cloud, be sure to set the corresponding local options.
+# Note:
+# Amazon S3 backups require the local backups settings below to be enabled.
+# If you want hourly, daily, and weekly backups to the cloud, set local backups accordingly.
 
 ## Local Backup ##
 DAILY_LOCAL_DATABASE_BACKUP=1
@@ -116,13 +121,14 @@ WEEKLY_S3_WPCONTENT_BACKUP=0
 
 ## Amazon S3 Cloud Backup Bucket Name (Optional) ##
 # Instructions:
-#   User creation:
-#     Follow ONLY sections 2 and 3:
-#     https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
-#     Sections: "Create an IAM User" and "Create Access Keys for the new User"
 #
-#   Bucket creation:
-#     https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
+# User creation:
+# Follow ONLY sections 2 and 3:
+# https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user
+# Sections: "Create an IAM User" and "Create Access Keys for the new User"
+#
+# Bucket creation:
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
 S3_BUCKET_NAME="PLACEHOLDER"
 
 ############
@@ -131,7 +137,7 @@ S3_BUCKET_NAME="PLACEHOLDER"
 
 ## Cloudflare (Required) ##
 # Instructions:
-#   Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
+# Retrieve your Cloudflare Global API Key at https://dash.cloudflare.com/profile/api-tokens
 CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
@@ -146,6 +152,11 @@ PUSHBULLET_TOKEN="PLACEHOLDER"
 # Sign up for a free account personal use account at:
 # https://ubuntu.com/pro
 UBUNTU_PRO_TOKEN="PLACEHOLDER"
+
+## Uptime Robot (Optional) ##
+# API key for Uptime Robot website monitoring service
+# Get your API key from: https://uptimerobot.com/dashboard (Settings > API Settings)
+UPTIMEROBOT_API_KEY="PLACEHOLDER"
 
 ## WP Scan (Optional) ##
 # This is used to scan WordPress for known vulnerabilities.
@@ -184,11 +195,6 @@ PHPMYADMIN_PASSWORD="PLACEHOLDER"
 # Allows secure file browsing and management through the admin control panel
 FILEMANAGER_USERNAME="PLACEHOLDER"
 FILEMANAGER_PASSWORD="PLACEHOLDER"
-
-## Uptime Robot (Optional) ##
-# API key for Uptime Robot website monitoring service
-# Get your API key from: https://uptimerobot.com/dashboard (Settings > API Settings)
-UPTIMEROBOT_API_KEY="PLACEHOLDER"
 
 # DONE
 # Proceed to: Step 3 - Main Install Process
