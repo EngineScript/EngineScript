@@ -19,10 +19,17 @@ Changes are organized by date, with the most recent changes listed first.
   - **CSS Enhancements**: Added responsive styling for mobile navigation accessibility
 
 ### 🔍 SERVICE STATUS DETECTION
-- **PHP Service Status**: Fixed PHP service status detection in admin control panel
-  - **Service Name Correction**: Updated service detection to properly check `php8.4-fpm` and `php8.3-fpm` services
-  - **Fallback Logic**: Implemented proper fallback from PHP 8.4 to 8.3 service detection
-  - **Status Accuracy**: Resolved red status display issue when PHP service is actually running
+- **Dynamic PHP Service Detection**: Completely revamped PHP service status detection in admin control panel
+  - **Flexible Pattern Matching**: Supports various PHP-FPM service naming conventions (php-fpm, php8.4-fpm, php-fpm8.4, etc.)
+  - **Version-Agnostic Detection**: Implemented dynamic discovery of any PHP-FPM service without hardcoding versions
+  - **Automatic Discovery**: Uses systemctl to find active services containing both "php" and "fpm" in their names
+  - **Future-Proof**: Will work with any PHP version or naming convention without code updates
+  - **Fallback Logic**: Gracefully handles cases where no PHP-FPM service is found
+  - **Security Hardening**: Implemented strict input validation and command injection prevention
+  - **Robust Pattern Matching**: Accepts php + optional text + fpm + optional text patterns
+  - **Command Safety**: Eliminated shell pipeline injection by parsing systemctl output in PHP
+  - **Service Name Validation**: Added character filtering and length limits for service names
+  - **Audit Logging**: Added security logging for PHP service detection events
 
 ### 🔐 SECURITY CONFIGURATION CHANGES
 - **Mandatory Admin Protection**: Admin control panel is now always password protected

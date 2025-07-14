@@ -119,18 +119,91 @@ function validateInputPath($input) {
 }
 
 function validateInputService($input) {
-    // Only allow known service names
-    $allowed_services = ['nginx', 'php8.4-fpm', 'php8.3-fpm', 'mariadb', 'redis-server'];
-    return in_array($input, $allowed_services, true) ? $input : false;
+    // Allow known service names and PHP-FPM service patterns
+    $allowed_services = ['nginx', 'mariadb', 'redis-server'];
+    
+    // Check if it's in the allowed list
+    if (in_array($input, $allowed_services, true)) {
+        return $input;
+    }
+    
+    // Allow PHP-FPM services with flexible patterns:
+    // php-fpm, php8.4-fpm, php-fpm8.4, php84-fpm, etc.
+    // Pattern: php + optional version/text + fpm + optional version/text
+    if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $input)) {
+        return $input;
+    }
+    
+    return false;
 }
 
 function getPhpServiceStatus() {
-    // Check PHP 8.4 first, then fall back to 8.3
-    $php84_status = getServiceStatus('php8.4-fpm');
-    if ($php84_status === 'active') {
-        return $php84_status;
+    // Dynamically find any running PHP-FPM service
+    $php_service = findActivePhpFpmService();
+    if ($php_service) {
+        // Log successful PHP service detection for security auditing
+        error_log("EngineScript API: PHP service detected: " . $php_service, 3, '/var/log/enginescript-api-security.log');
+        return getServiceStatus($php_service);
     }
-    return getServiceStatus('php8.3-fpm');
+    
+    // Log when no PHP service is found for troubleshooting
+    error_log("EngineScript API: No active PHP-FPM service found", 3, '/var/log/enginescript-api-security.log');
+    
+    // Fallback: return offline status if no PHP-FPM service found
+    return [
+        'status' => 'offline',
+        'version' => 'Not Found',
+        'online' => false
+    ];
+}
+
+function findActivePhpFpmService() {
+    // Use a safer approach: get list of active services first, then filter in PHP
+    $command = "systemctl list-units --type=service --state=active --no-legend --plain 2>/dev/null";
+    $services_output = shell_exec($command); // codacy:ignore - shell_exec() required for service discovery in standalone API
+    
+    if ($services_output === null) {
+        return null;
+    }
+    
+    // Parse services in PHP for better security control
+    $lines = explode("\n", trim($services_output));
+    foreach ($lines as $line) {
+        if (empty(trim($line))) {
+            continue;
+        }
+        
+        // Extract service name (first column) with additional safety checks
+        $parts = preg_split('/\s+/', trim($line));
+        if (empty($parts[0]) || strlen($parts[0]) > 50) { // Prevent excessively long service names
+            continue;
+        }
+        
+        $service_name = $parts[0];
+        
+        // Additional security: ensure service name contains only allowed characters
+        if (!preg_match('/^[a-zA-Z0-9\.\-_]+$/', $service_name)) {
+            continue;
+        }
+        
+        // Remove .service suffix if present
+        $service_name = preg_replace('/\.service$/', '', $service_name);
+        
+        // Check if it contains both "php" and "fpm" (case insensitive) - FIXED TYPO
+        if (stripos($service_name, 'php') !== false && stripos($service_name, 'fpm') !== false) {
+            // Validate the service name matches our flexible pattern for PHP-FPM services
+            // Pattern: php + optional version/text + fpm + optional version/text
+            if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service_name)) {
+                // Double-check that it's actually active before returning
+                $status = getSystemServiceStatus($service_name);
+                if ($status === 'active') {
+                    return $service_name;
+                }
+            }
+        }
+    }
+    
+    return null;
 }
 
 function validateInput($input, $type = 'string', $max_length = 255) {
@@ -752,14 +825,16 @@ function getServiceVersion($service) {
     switch ($service) {
         case 'nginx':
             return getNginxVersion();
-        case 'php8.4-fpm':
-        case 'php8.3-fpm':
-            return getPhpVersion();
         case 'mariadb':
             return getMariadbVersion();
         case 'redis-server':
             return getRedisVersion();
         default:
+            // Check if it's any PHP-FPM service (with flexible pattern matching)
+            // Matches: php-fpm, php8.4-fpm, php-fpm8.4, php84-fpm, etc.
+            if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service)) {
+                return getPhpVersion();
+            }
             return 'Unknown';
     }
 }
