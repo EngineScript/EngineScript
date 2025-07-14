@@ -48,7 +48,7 @@
             "EngineScript\\": "src/"
         },
         "files": [
-            "config/var/www/admin/control-panel/api.php"
+            "config/var/www/admin/enginescript/api.php"
         ]
     },
     "autoload-dev": {

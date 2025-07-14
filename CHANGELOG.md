@@ -6,7 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-14
 
-### 🔧 ADMIN CONTROL PANEL IMPROVEMENTS
+### � ADMIN CONTROL PANEL CRITICAL FIX
+- **Dashboard Loading Issue**: Fixed admin control panel failing to load with infinite "Loading Dashboard..." spinner
+  - **Nginx Configuration**: Corrected root directory from `/var/www/admin/enginescript` to `/var/www/admin/control-panel`
+  - **API Routing**: Fixed API endpoint routing that was preventing JavaScript from communicating with PHP backend
+  - **File Location**: Resolved mismatch between nginx configuration and actual control panel file locations
+
+### �🔧 ADMIN CONTROL PANEL IMPROVEMENTS
 - **Mobile Navigation**: Added hamburger menu for mobile access to admin control panel navigation
   - **Responsive Design**: Fixed left navigation column visibility on mobile devices
   - **Toggle Functionality**: Implemented mobile menu toggle with overlay for better user experience
