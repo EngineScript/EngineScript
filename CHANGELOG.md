@@ -1,4 +1,21 @@
-# Changelog
+# Chan## 2025-07-14
+
+### 🚨 NGINX BUILD SYSTEM CRITICAL FIXES
+- **Permission Issues Resolved**: Fixed critical permission errors preventing nginx from starting
+  - **Directory Creation**: Ensured all nginx directories exist before setting permissions
+  - **SSL Certificate Permissions**: Added proper ownership and permissions for SSL certificate files
+  - **Service User Management**: Added www-data user creation if missing
+  - **Log Directory Access**: Fixed permission denied errors for nginx error and access logs
+- **Service Management**: Enhanced nginx service installation and startup process
+  - **Configuration Testing**: Added nginx configuration validation before service startup
+  - **Service Status Verification**: Implemented proper service status checking and error reporting
+  - **Startup Sequence**: Improved service start sequence with proper error handling
+- **Compilation Warnings Reduction**: Minimized OpenSSL compilation warnings
+  - **Padlock Engine**: Disabled problematic padlock engine causing buffer overflow warnings
+  - **Compiler Flags**: Added warning suppression flags for stringop-overflow in OpenSSL
+  - **Build Optimization**: Maintained security while reducing build noise
+
+### 🚨 ADMIN CONTROL PANEL CRITICAL FIXog
 
 All notable changes to EngineScript will be documented in this file.
 

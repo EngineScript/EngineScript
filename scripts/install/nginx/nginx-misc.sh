@@ -11,6 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+#Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
@@ -20,16 +22,21 @@ source /home/EngineScript/enginescript-install-options.txt
 cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf
 
-# Assign Permissions
-chown -R www-data:www-data /etc/nginx
-chown -R www-data:www-data /tmp/nginx_proxy
-chown -R www-data:www-data /usr/lib/nginx/modules
-chown -R www-data:www-data /var/cache/nginx
-chown -R www-data:www-data /var/lib/nginx
-chown -R www-data:www-data /var/log/domains
-chown -R www-data:www-data /var/log/nginx
-chown -R www-data:www-data /var/www
-chmod 775 /var/cache/nginx
+# Create nginx user and group if they don't exist
+if ! id "www-data" &>/dev/null; then
+    useradd -r -s /bin/false www-data
+fi
+
+# Ensure all necessary directories exist
+mkdir -p /var/log/nginx
+mkdir -p /var/log/domains
+mkdir -p /var/cache/nginx
+mkdir -p /var/lib/nginx/{body,fastcgi,proxy}
+mkdir -p /tmp/nginx_proxy
+mkdir -p /usr/lib/nginx/modules
+
+# Assign Permissions BEFORE nginx tries to start
+set_nginx_permissions
 
 # Logrotate - Nginx and Domains
 cp -rf /usr/local/bin/enginescript/config/etc/logrotate.d/nginx /etc/logrotate.d/nginx

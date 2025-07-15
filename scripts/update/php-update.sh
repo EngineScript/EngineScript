@@ -136,19 +136,8 @@ mkdir -p /var/log/php
 touch "/var/log/opcache/opcache.log"
 touch "/var/log/php/php${NEW_PHP_VER}-fpm.log"
 
-# Set permissions
-find "/var/log/php" -type d,f -exec chmod 775 {} \;
-find "/var/log/opcache" -type d,f -exec chmod 775 {} \;
-find "/etc/php" -type d,f -exec chmod 775 {} \;
-chmod 775 /var/cache/opcache
-chmod 775 /var/cache/php-sessions
-chmod 775 /var/cache/wsdlcache
-chown -R www-data:www-data /var/cache/opcache
-chown -R www-data:www-data /var/cache/php-sessions
-chown -R www-data:www-data /var/cache/wsdlcache
-chown -R www-data:www-data /var/log/opcache
-chown -R www-data:www-data /var/log/php
-chown -R www-data:www-data /etc/php
+# Assign PHP Permissions
+set_php_permissions
 
 # Update Nginx configuration to use new PHP version
 echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."

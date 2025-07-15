@@ -15,7 +15,6 @@ source /home/EngineScript/enginescript-install-options.txt
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
@@ -82,18 +81,8 @@ touch "/var/log/php/php${PHP_VER}-fpm.log"
 #touch /var/log/php/php-www.log
 #touch /var/log/php/php-fpm.log
 
-find "/var/log/php" -type d,f -exec chmod 775 {} \;
-find "/var/log/opcache" -type d,f -exec chmod 775 {} \;
-find "/etc/php" -type d,f -exec chmod 775 {} \;
-chmod 775 /var/cache/opcache
-chmod 775 /var/cache/php-sessions
-chmod 775 /var/cache/wsdlcache
-chown -R www-data:www-data /var/cache/opcache
-chown -R www-data:www-data /var/cache/php-sessions
-chown -R www-data:www-data /var/cache/wsdlcache
-chown -R www-data:www-data /var/log/opcache
-chown -R www-data:www-data /var/log/php
-chown -R www-data:www-data /etc/php
+# Assign PHP Permissions
+set_php_permissions
 
 # Restart PHP
 restart_service "php${PHP_VER}-fpm"

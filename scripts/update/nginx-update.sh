@@ -109,6 +109,18 @@ rm -rf /etc/nginx/{*.default,*.dpkg-dist}
 # Remove debug symbols
 strip -s /usr/sbin/nginx*
 
+# Assign Nginx Permissions
+set_nginx_permissions
+
+# Verify nginx configuration before starting
+echo "Testing nginx configuration..."
+if ! /usr/sbin/nginx -t; then
+    echo "ERROR: Nginx configuration test failed!"
+    echo "Please check the configuration and fix any issues before starting nginx."
+    exit 1
+fi
+
+# Start Nginx Service
 systemctl start nginx
 
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nNginx Info\n=-=-=-=-=-=-=-=-=-\n"
@@ -124,5 +136,6 @@ if [[ "${STATUS}" == "active" ]]; then
   echo "NGINX=1" >> /var/log/EngineScript/install-log.txt
 else
   echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
+    systemctl status nginx
     exit 1
 fi

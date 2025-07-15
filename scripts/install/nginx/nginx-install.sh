@@ -14,6 +14,7 @@ source /home/EngineScript/enginescript-install-options.txt
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
+
 #----------------------------------------------------------------------------------
 # Start Main Script
 
@@ -81,6 +82,9 @@ debug_pause "SSL"
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-admin-password.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Admin Password"
+
+# Assign Permissions BEFORE nginx tries to start
+set_nginx_permissions
 
 # Install Nginx Service
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-service.sh 2>> /tmp/enginescript_install_errors.log

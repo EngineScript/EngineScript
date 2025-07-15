@@ -259,3 +259,43 @@ function set_enginescript_frontend_permissions() {
     find /etc/enginescript -type f -print0 | sudo xargs -0 chmod 0644
     chown -R www-data:www-data /etc/enginescript
 }
+
+# Set permissions for Nginx directories and files
+function set_nginx_permissions() {
+    chown -R www-data:www-data /etc/nginx
+    chown -R www-data:www-data /tmp/nginx_proxy
+    chown -R www-data:www-data /usr/lib/nginx/modules
+    chown -R www-data:www-data /var/cache/nginx
+    chown -R www-data:www-data /var/lib/nginx
+    chown -R www-data:www-data /var/log/domains
+    chown -R www-data:www-data /var/log/nginx
+    chown -R www-data:www-data /var/www
+    chmod 775 /var/cache/nginx
+    chmod 755 /var/log/nginx
+    chmod 755 /var/log/domains
+
+    # Set proper permissions for SSL certificates
+    if [ -d "/etc/nginx/ssl" ]; then
+        chown -R root:www-data /etc/nginx/ssl
+        chmod -R 750 /etc/nginx/ssl
+        find /etc/nginx/ssl -name "*.key" -exec chmod 640 {} \;
+        find /etc/nginx/ssl -name "*.crt" -exec chmod 644 {} \;
+        find /etc/nginx/ssl -name "*.pem" -exec chmod 644 {} \;
+    fi
+}
+
+# Set permissions for PHP directories and files
+function set_php_permissions() {
+    find "/var/log/php" -type d,f -exec chmod 775 {} \;
+    find "/var/log/opcache" -type d,f -exec chmod 775 {} \;
+    find "/etc/php" -type d,f -exec chmod 775 {} \;
+    chmod 775 /var/cache/opcache
+    chmod 775 /var/cache/php-sessions
+    chmod 775 /var/cache/wsdlcache
+    chown -R www-data:www-data /var/cache/opcache
+    chown -R www-data:www-data /var/cache/php-sessions
+    chown -R www-data:www-data /var/cache/wsdlcache
+    chown -R www-data:www-data /var/log/opcache
+    chown -R www-data:www-data /var/log/php
+    chown -R www-data:www-data /etc/php
+}

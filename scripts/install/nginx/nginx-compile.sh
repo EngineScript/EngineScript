@@ -111,7 +111,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers -fPIC -march=native" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers no-engine-padlock -fPIC -march=native" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \
@@ -158,7 +158,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --builddir=nginx-${NGINX_VER} \
       --with-cc-opt="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4" \
       --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG" \
-      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers -fPIC -march=native" \
+      --with-openssl-opt="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-tls-deprecated-ec no-weak-ssl-ciphers no-engine-padlock -fPIC -march=native" \
       --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
       --with-libatomic \
       --with-file-aio \

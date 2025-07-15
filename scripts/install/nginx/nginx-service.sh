@@ -30,6 +30,28 @@ fi
 rm -rf /usr/lib/systemd/system/nginx.service
 cp -rf /usr/local/bin/enginescript/config/etc/systemd/system/nginx.service /etc/systemd/system/nginx.service
 chmod 644 /etc/systemd/system/nginx.service
+
+# Reload systemd and enable nginx
 systemctl daemon-reload
 systemctl enable nginx
+
+# Verify nginx configuration before starting
+echo "Testing nginx configuration..."
+if ! /usr/sbin/nginx -t; then
+    echo "ERROR: Nginx configuration test failed!"
+    echo "Please check the configuration and fix any issues before starting nginx."
+    exit 1
+fi
+
+# Start nginx service
+echo "Starting nginx service..."
 systemctl start nginx
+
+# Verify nginx is running
+if systemctl is-active --quiet nginx; then
+    echo "PASSED: Nginx is running."
+else
+    echo "ERROR: Failed to start nginx service."
+    systemctl status nginx
+    exit 1
+fi

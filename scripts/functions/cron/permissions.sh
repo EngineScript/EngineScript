@@ -11,6 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------
@@ -43,28 +45,10 @@ do
 done
 
 # Assign Nginx Permissions
-chown -R www-data:www-data /etc/nginx
-chown -R www-data:www-data /tmp/nginx_proxy
-chown -R www-data:www-data /usr/lib/nginx/modules
-chown -R www-data:www-data /var/cache/nginx
-chown -R www-data:www-data /var/lib/nginx
-chown -R www-data:www-data /var/log/domains
-chown -R www-data:www-data /var/www
-chmod 775 /var/cache/nginx
+set_nginx_permissions
 
 # Assign PHP Permissions
-find /var/log/php -type d,f -exec chmod 775 {} \;
-find /var/log/opcache -type d,f -exec chmod 775 {} \;
-find /etc/php -type d,f -exec chmod 775 {} \;
-chmod 775 /var/cache/opcache
-chmod 775 /var/cache/php-sessions
-chmod 775 /var/cache/wsdlcache
-chown -R www-data:www-data /var/cache/opcache
-chown -R www-data:www-data /var/cache/php-sessions
-chown -R www-data:www-data /var/cache/wsdlcache
-chown -R www-data:www-data /var/log/opcache
-chown -R www-data:www-data /var/log/php
-chown -R www-data:www-data /etc/php
+set_php_permissions
 
 # Ensure correct socket ownership and permissions
 chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
