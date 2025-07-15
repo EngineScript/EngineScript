@@ -306,10 +306,6 @@ jobs:
           
           # Output results if software versions changed
           if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
-            # Update the date on line 6 when software versions actually changed
-            NEW_DATE=$(date +'%m/%d/%Y')
-            sed -i "6s|# Variable Date:.*|# Variable Date: $NEW_DATE|" enginescript-variables.txt
-            
             echo "software_versions_changed=true" >> $GITHUB_OUTPUT
             
             # Generate changelog
