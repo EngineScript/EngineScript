@@ -93,8 +93,15 @@ rm -f /tmp/cpu_capabilities.txt
 # Define compiler and linker flags as variables for easier maintenance
 CC_OPT_FLAGS="$CPU_SPECIFIC_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat -Wimplicit-fallthrough=0 -Wno-error=pointer-sign -Wno-implicit-function-declaration -Wno-int-conversion -Wno-cast-function-type -Wno-deprecated-declarations -Wno-error=date-time -Wno-error=strict-aliasing -Wno-format-extra-args --param=ssp-buffer-size=4"
 LD_OPT_FLAGS="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG"
-OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-ssl3-method no-tls1_1-method no-weak-ssl-ciphers -fPIC -march=native"
-# When OpenSSL 3.5 is more stable with Nginx, add flag: no-tls-deprecated-ec
+
+# Set OpenSSL test flag based on debug mode
+if [[ "${DEBUG_INSTALL}" == "1" ]]; then
+    OPENSSL_TESTS_FLAG=""
+else
+    OPENSSL_TESTS_FLAG="no-tests"
+fi
+
+OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-deprecated no-psk no-srp no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
 
 if [[ "${INSTALL_HTTP3}" == "1" ]];
   then
