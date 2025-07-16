@@ -12,6 +12,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Code Deduplication**: Eliminated duplicate flag definitions between HTTP2 and HTTP3 build configurations
   - **Maintenance Simplification**: Changes to compiler flags now only need to be made in one location
   - **Build Consistency**: Ensures identical optimization flags are used for both HTTP2 and HTTP3 builds
+  - **Debug Mode Integration**: Made OpenSSL `no-tests` flag conditional based on debug mode setting
 - **OpenSSL Version Management**: Moved back to OpenSSL 3.4.x series for stability
   - **Version Rollback**: Changed from OpenSSL 3.5.x to 3.4.x series due to compatibility issues
   - **CI Configuration**: Updated both main and CI variable files to use OpenSSL 3.4.0
@@ -21,6 +22,16 @@ Changes are organized by date, with the most recent changes listed first.
   - **File Permissions**: Ensured nginx error log file exists with correct permissions (644)
   - **Test Execution**: Fixed nginx configuration test by running with proper root privileges
   - **Permission Denied Errors**: Eliminated "Permission denied" errors for nginx.error.log and nginx.pid files
+
+### 🚨 ADMIN CONTROL PANEL LOGGING FIX
+- **API Security Log Permissions**: Fixed critical permission denied errors in admin control panel API
+  - **Log File Location**: Moved API security log from `/var/log/enginescript-api-security.log` to `/var/log/EngineScript/enginescript-api-security.log`
+  - **Proper Directory Structure**: Aligned API logging with EngineScript's standard log directory structure
+  - **Permission Management**: Added proper www-data ownership and 644 permissions for API security log
+  - **Installation Integration**: Added API security log creation to setup.sh with proper permissions
+  - **CI Environment**: Updated GitHub Actions build test to include API security log file creation
+  - **Logrotate Integration**: API security log is now automatically included in logrotate configuration
+  - **Fix Script**: Created `fix-api-security-log.sh` script for existing installations to resolve permission issues immediately
 
 ## 2025-07-14
 

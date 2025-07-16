@@ -182,6 +182,7 @@ jobs:
           sudo touch "/var/log/EngineScript/vhost-import.log"
           sudo touch "/var/log/EngineScript/vhost-install.log"
           sudo touch "/var/log/EngineScript/vhost-remove.log"
+          sudo touch "/var/log/EngineScript/enginescript-api-security.log"
           echo "✅ Log files created" | sudo tee -a /tmp/ci-logs/setup.log
           
           # Skip logrotate setup (not needed for CI)

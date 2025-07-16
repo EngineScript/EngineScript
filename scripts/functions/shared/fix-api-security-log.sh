@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
 #----------------------------------------------------------------------------------
-# EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
+# EngineScript - Fix API Security Log Permissions
 #----------------------------------------------------------------------------------
 # Website:      https://EngineScript.com
 # GitHub:       https://github.com/Enginescript/EngineScript
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
-
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
-
-
+# This script fixes the API security log file permissions issue
+# Run this script if you're seeing permission denied errors for enginescript-api-security.log
 #----------------------------------------------------------------------------------
-# Start Main Script
+
+# Check if running as root
+if [[ "${EUID}" -ne 0 ]]; then
+    echo "This script must be run as root (use sudo)"
+    exit 1
+fi
 
 echo "🔧 Fixing EngineScript API Security Log Permissions..."
 

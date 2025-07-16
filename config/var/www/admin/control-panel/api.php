@@ -142,12 +142,12 @@ function getPhpServiceStatus() {
     $php_service = findActivePhpFpmService();
     if ($php_service) {
         // Log successful PHP service detection for security auditing
-        error_log("EngineScript API: PHP service detected: " . $php_service, 3, '/var/log/enginescript-api-security.log');
+        error_log("EngineScript API: PHP service detected: " . $php_service, 3, '/var/log/EngineScript/enginescript-api-security.log');
         return getServiceStatus($php_service);
     }
     
     // Log when no PHP service is found for troubleshooting
-    error_log("EngineScript API: No active PHP-FPM service found", 3, '/var/log/enginescript-api-security.log');
+    error_log("EngineScript API: No active PHP-FPM service found", 3, '/var/log/EngineScript/enginescript-api-security.log');
     
     // Fallback: return offline status if no PHP-FPM service found
     return [
@@ -262,7 +262,7 @@ function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_S
     $log_entry .= " - IP: " . $client_ip . "\n";
     
     // Log to a secure location
-    $log_file = '/var/log/enginescript-api-security.log';
+    $log_file = '/var/log/EngineScript/enginescript-api-security.log';
     error_log($log_entry, 3, $log_file);
 }
 
