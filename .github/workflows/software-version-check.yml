@@ -134,14 +134,14 @@ jobs:
             echo "::warning::Failed to fetch PCRE2 version, keeping current version"
           fi
           
-          # OpenSSL (3.5.x series)
+          # OpenSSL (3.4.x series)
           echo "::debug::Fetching OpenSSL version..."
           OPENSSL_API_RESPONSE=$(curl -s https://api.github.com/repos/openssl/openssl/releases)
           echo "::debug::OpenSSL API Response: $(echo "$OPENSSL_API_RESPONSE" | jq -r '.[0:3]')"
           
           LATEST_OPENSSL=$(echo "$OPENSSL_API_RESPONSE" | 
             jq -r '.[].tag_name // empty' | 
-            grep '^openssl-3\.5\.[0-9]*$' | 
+            grep '^openssl-3\.4\.[0-9]*$' | 
             sort -V | 
             tail -n 1 | 
             sed 's/openssl-//')

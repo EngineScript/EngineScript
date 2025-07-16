@@ -1,4 +1,28 @@
-# Chan## 2025-07-14
+# Changelog
+
+All notable changes to EngineScript will be documented in this file.
+
+Changes are organized by date, with the most recent changes listed first.
+
+## 2025-07-16
+
+### 🔧 NGINX BUILD SYSTEM IMPROVEMENTS
+- **Compiler Flags Refactoring**: Improved nginx compile script maintainability
+  - **Variable Consolidation**: Consolidated `--with-cc-opt`, `--with-ld-opt`, and `--with-openssl-opt` flags into reusable variables
+  - **Code Deduplication**: Eliminated duplicate flag definitions between HTTP2 and HTTP3 build configurations
+  - **Maintenance Simplification**: Changes to compiler flags now only need to be made in one location
+  - **Build Consistency**: Ensures identical optimization flags are used for both HTTP2 and HTTP3 builds
+- **OpenSSL Version Management**: Moved back to OpenSSL 3.4.x series for stability
+  - **Version Rollback**: Changed from OpenSSL 3.5.x to 3.4.x series due to compatibility issues
+  - **CI Configuration**: Updated both main and CI variable files to use OpenSSL 3.4.0
+  - **Automated Tracking**: Modified software version checker to track OpenSSL 3.4.x releases
+- **GitHub Actions CI Fixes**: Resolved nginx build test permission errors
+  - **Directory Creation**: Added proper creation of `/var/log/nginx/` and `/run/nginx/` directories
+  - **File Permissions**: Ensured nginx error log file exists with correct permissions (644)
+  - **Test Execution**: Fixed nginx configuration test by running with proper root privileges
+  - **Permission Denied Errors**: Eliminated "Permission denied" errors for nginx.error.log and nginx.pid files
+
+## 2025-07-14
 
 ### 🚨 NGINX BUILD SYSTEM CRITICAL FIXES
 - **Permission Issues Resolved**: Fixed critical permission errors preventing nginx from starting
@@ -15,15 +39,7 @@
   - **Compiler Flags**: Added warning suppression flags for stringop-overflow in OpenSSL
   - **Build Optimization**: Maintained security while reducing build noise
 
-### 🚨 ADMIN CONTROL PANEL CRITICAL FIXog
-
-All notable changes to EngineScript will be documented in this file.
-
-Changes are organized by date, with the most recent changes listed first.
-
-## 2025-07-14
-
-### � ADMIN CONTROL PANEL CRITICAL FIX
+### 🚨 ADMIN CONTROL PANEL CRITICAL FIX
 - **Dashboard Loading Issue**: Fixed admin control panel failing to load with infinite "Loading Dashboard..." spinner
   - **Nginx Configuration**: Corrected root directory from `/var/www/admin/enginescript` to `/var/www/admin/control-panel`
   - **API Routing**: Fixed API endpoint routing that was preventing JavaScript from communicating with PHP backend

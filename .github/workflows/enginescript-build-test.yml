@@ -533,6 +533,24 @@ jobs:
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           
+          # Create nginx log directory and set permissions before testing
+          echo "📁 Creating nginx log directory..."
+          sudo mkdir -p /var/log/nginx
+          sudo chmod 755 /var/log/nginx
+          sudo chown root:root /var/log/nginx
+          
+          # Create nginx run directory and set permissions
+          echo "📁 Creating nginx run directory..."
+          sudo mkdir -p /run/nginx
+          sudo chmod 755 /run/nginx
+          sudo chown root:root /run/nginx
+          
+          # Ensure nginx error log file exists with proper permissions
+          echo "📝 Creating nginx error log file..."
+          sudo touch /var/log/nginx/nginx.error.log
+          sudo chmod 644 /var/log/nginx/nginx.error.log
+          sudo chown root:root /var/log/nginx/nginx.error.log
+
           cd /usr/local/bin/enginescript/scripts/install
           
           # Build Nginx with custom optimizations
