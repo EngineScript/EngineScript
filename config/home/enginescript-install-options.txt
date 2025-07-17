@@ -56,6 +56,14 @@ ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
 # 0 = disabled
 # 1 = enabled
 
+## HIGH_SECURITY_SSL ##
+# Controls the SSL certificate keylength for all new domains.
+# 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
+# 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
+#
+# If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
+HIGH_SECURITY_SSL=0
+
 ## NGINX HTTP3 Support ##
 # Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
 INSTALL_HTTP3=0

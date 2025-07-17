@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-17
+
+### 🔒 CLOUDFLARE SSL/TLS STRICT MODE ENFORCEMENT
+- **Cloudflare SSL/TLS Security**: Updated both `vhost-install.sh` and `vhost-import.sh` to enforce SSL/TLS encryption mode as `strict` via Cloudflare API.
+  - Ensures all new and imported domains use end-to-end encryption between Cloudflare and the origin server.
+  - Adds PATCH API call to set `settings/ssl` to `strict` for the relevant Cloudflare zone.
+  - Also enables the SSL/TLS recommender feature for best practices.
+
 ## 2025-07-16
 
 ### 🐛 MARIADB SERVICE RESTART POLICY FIX
@@ -743,7 +751,7 @@ Changes are organized by date, with the most recent changes listed first.
     - **Removed Unused Variables**: Fixed Codacy error-prone issues
       - Removed unused `navItems` variable from `setupNavigation()` function
       - Cleaned up variable declarations to eliminate dead code warnings
-- **Comprehensive Security Audit**: Addressed all Codacy security issues and implemented OWASP best practices
+  - **Comprehensive Security Audit**: Addressed all Codacy security issues and implemented OWASP best practices
   - **Input Validation Fixes**: Implemented proper superglobal array access with `isset()` checks
     - Fixed all `$_SERVER`, `$_GET`, and `$_SESSION` array access to use `isset()` validation
     - Enhanced input validation for REQUEST_METHOD, REMOTE_ADDR, HTTP_HOST, HTTP_ORIGIN, and REQUEST_URI

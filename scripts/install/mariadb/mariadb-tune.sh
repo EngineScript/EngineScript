@@ -29,6 +29,8 @@ cat > /etc/systemd/system/mariadb.service.d/enginescript-limits.conf << 'EOF'
 LimitNOFILE=60556
 LimitMEMLOCK=524288
 
+Restart=always
+
 # Environment variables to prevent startup errors
 Environment="MYSQLD_OPTS="
 Environment="_WSREP_NEW_CLUSTER="

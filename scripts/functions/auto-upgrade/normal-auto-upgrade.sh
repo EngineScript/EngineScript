@@ -54,5 +54,20 @@ if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
   systemctl daemon-reload
 fi
 
+# Ensure HIGH_SECURITY_SSL variable exists in install options file
+INSTALL_OPTIONS_FILE="/home/EngineScript/enginescript-install-options.txt"
+if ! grep -q '^HIGH_SECURITY_SSL=' "$INSTALL_OPTIONS_FILE"; then
+  cat <<'EOF' >> "$INSTALL_OPTIONS_FILE"
+
+## HIGH_SECURITY_SSL ##
+# Controls the SSL certificate keylength for all new domains.
+# 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
+# 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
+#
+# If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
+HIGH_SECURITY_SSL=0
+EOF
+fi
+
 echo "✅ EngineScript API Security Log permissions fixed successfully!"
 echo "The API should now be able to write to the security log without permission errors."

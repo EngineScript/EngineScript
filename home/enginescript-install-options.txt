@@ -1,0 +1,10 @@
+# EngineScript Install Options
+#
+# HIGH_SECURITY_SSL controls the SSL certificate keylength for all new domains.
+# 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
+# 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
+#
+# If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
+HIGH_SECURITY_SSL=0
+
+# Add additional install options below as needed.

@@ -15,7 +15,6 @@ source /home/EngineScript/enginescript-install-options.txt
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
@@ -337,7 +336,15 @@ if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
         }"
     fi
 
+
     ## SSL/TLS Settings
+
+    # SSL/TLS Tab: SSL/TLS Encryption Mode
+    curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/ssl" \
+      -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
+      -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      -H "Content-Type: application/json" \
+      --data '{"value":"strict"}'
 
     # Edge Certificates Section: Always Use HTTPS
     curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/settings/always_use_https" \
@@ -549,10 +556,15 @@ if [[ "${INSTALL_HTTP3}" == "1" ]]; then
 fi
 
 # Create Origin Certificate
+SSL_KEYLENGTH="ec-256"
+if [[ "${HIGH_SECURITY_SSL}" == "1" ]]; then
+  SSL_KEYLENGTH="ec-384"
+fi
+
 mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
 # Issue SSL Certificate
-/root/.acme.sh/acme.sh --issue --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ec-384
+/root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ${SSL_KEYLENGTH}
 
 # Install SSL Certificate
 /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
