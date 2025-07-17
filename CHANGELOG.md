@@ -6,6 +6,11 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-07-16
 
+### 🐛 MARIADB SERVICE RESTART POLICY FIX
+- **Systemd Restart Policy**: Updated MariaDB install, update, and auto-upgrade scripts to ensure `/lib/systemd/system/mariadb.service` uses `Restart=always` instead of `Restart=on-abnormal` for improved reliability.
+  - Scripts now automatically patch the systemd service file if needed and reload systemd.
+  - Ensures MariaDB will always restart on failure, not just on abnormal exits.
+  
 ### 🔧 NGINX BUILD SYSTEM IMPROVEMENTS
 - **Compiler Flags Refactoring**: Improved nginx compile script maintainability
   - **Variable Consolidation**: Consolidated `--with-cc-opt`, `--with-ld-opt`, and `--with-openssl-opt` flags into reusable variables

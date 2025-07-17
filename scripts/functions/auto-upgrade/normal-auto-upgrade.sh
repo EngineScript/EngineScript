@@ -48,5 +48,11 @@ if [[ -f "/var/log/enginescript-api-security.log" ]]; then
     echo "✅ Old log file removed"
 fi
 
+# Ensure MariaDB service always restarts on failure
+if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
+  sed -i 's/^Restart=on-abnormal/Restart=always/' /lib/systemd/system/mariadb.service
+  systemctl daemon-reload
+fi
+
 echo "✅ EngineScript API Security Log permissions fixed successfully!"
 echo "The API should now be able to write to the security log without permission errors."

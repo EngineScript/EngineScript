@@ -80,6 +80,12 @@ chown -R mysql:adm /var/log/mysql/mysql.log
 # Tune MariaDB
 /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
 
+# Ensure MariaDB service always restarts on failure
+if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
+  sed -i 's/^Restart=on-abnormal/Restart=always/' /lib/systemd/system/mariadb.service
+  systemctl daemon-reload
+fi
+
 # Restart Service
 systemctl daemon-reload
 systemctl start mariadb.service

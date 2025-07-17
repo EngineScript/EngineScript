@@ -35,6 +35,12 @@ curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -
 apt update --allow-releaseinfo-change -y
 sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
 
+# Ensure MariaDB service always restarts on failure
+if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
+  sed -i 's/^Restart=on-abnormal/Restart=always/' /lib/systemd/system/mariadb.service
+  systemctl daemon-reload
+fi
+
 # Restart Service
 systemctl daemon-reload
 systemctl start mariadb.service
