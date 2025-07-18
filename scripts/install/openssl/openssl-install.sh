@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------------------
 # EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 #----------------------------------------------------------------------------------
@@ -11,6 +12,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 #----------------------------------------------------------------------------------

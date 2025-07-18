@@ -11,6 +11,8 @@
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 # Helper function for retrying add-apt-repository up to 3 times with 5s delay

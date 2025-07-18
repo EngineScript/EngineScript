@@ -7,16 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# Exit immediately if a command exits with a non-zero status
-set -e
-
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
-
 
 
 #----------------------------------------------------------------------------------

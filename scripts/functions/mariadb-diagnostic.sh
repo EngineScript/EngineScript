@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #----------------------------------------------------------------------------------
-# EngineScript - MariaDB Diagnostic and Recovery Script
+# EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 #----------------------------------------------------------------------------------
 # Website:      https://EngineScript.com
 # GitHub:       https://github.com/Enginescript/EngineScript
@@ -9,6 +9,11 @@
 
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
+source /home/EngineScript/enginescript-install-options.txt
+
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
 
 echo "============================================================="
 echo "EngineScript MariaDB Diagnostic Tool"

@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-
-# Add proper error handling
-set -e
-set -o pipefail
-
 #----------------------------------------------------------------------------------
 # EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 #----------------------------------------------------------------------------------
@@ -19,8 +14,13 @@ source /home/EngineScript/enginescript-install-options.txt
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
+
 #----------------------------------------------------------------------------------
 # Start Main Script
+
+# Add proper error handling
+set -e
+set -o pipefail
 
 # Source the list of sites
 SITES_LIST_FILE="/home/EngineScript/sites-list/sites.sh"

@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
+#----------------------------------------------------------------------------------
+# EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
+#----------------------------------------------------------------------------------
+# Website:      https://EngineScript.com
+# GitHub:       https://github.com/Enginescript/EngineScript
+# License:      GPL v3.0
+#----------------------------------------------------------------------------------
+
+# EngineScript Variables
+source /usr/local/bin/enginescript/enginescript-variables.txt
+source /home/EngineScript/enginescript-install-options.txt
+
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
+
+#----------------------------------------------------------------------------------
 
 # Add proper error handling for critical operations
 set -o pipefail
-
-# Source EngineScript variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
 
 # Create temp file with date stamp
 DEBUG_FILE="/tmp/enginescript-debug-$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "unknown").md"

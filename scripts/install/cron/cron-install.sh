@@ -7,10 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# Load Variables
+# EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
 
 # Copy Sites List Template

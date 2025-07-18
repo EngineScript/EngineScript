@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
+#----------------------------------------------------------------------------------
+# EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
+#----------------------------------------------------------------------------------
+# Website:      https://EngineScript.com
+# GitHub:       https://github.com/Enginescript/EngineScript
+# License:      GPL v3.0
+#----------------------------------------------------------------------------------
+
+# EngineScript Variables
+source /usr/local/bin/enginescript/enginescript-variables.txt
+source /home/EngineScript/enginescript-install-options.txt
+
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
+#----------------------------------------------------------------------------------
+
 
 # Define BOLD and NORMAL terminal codes using tput if available
 if command -v tput > /dev/null; then
