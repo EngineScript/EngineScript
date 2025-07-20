@@ -564,7 +564,7 @@ fi
 mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
 # Issue SSL Certificate
-/root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl --ocsp -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ${SSL_KEYLENGTH}
+/root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ${SSL_KEYLENGTH}
 
 # Install SSL Certificate
 /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
