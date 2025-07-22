@@ -18,10 +18,3 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-
-# Ensure OCSP stapling is disabled
-SSL_SHARED_CONF="/etc/nginx/ssl/sslshared.conf"
-if [[ -f "$SSL_SHARED_CONF" ]]; then
-    sed -i 's/ssl_stapling on;/ssl_stapling off;/' "$SSL_SHARED_CONF"
-    sed -i 's/ssl_stapling_verify on;/ssl_stapling_verify off;/' "$SSL_SHARED_CONF"
-fi
