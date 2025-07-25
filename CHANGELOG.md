@@ -4,6 +4,19 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-25
+
+### 🚀 WORDPRESS SITE HEALTH COMPATIBILITY ENHANCEMENT
+- **X-Cache-Enabled Header**: Added `X-Cache-Enabled` HTTP header for improved WordPress Site Health check compatibility.
+  - **Map Directives**: Added nginx map directives to detect cache status and loopback requests in map-cache.conf
+  - **Conditional Header**: X-Cache-Enabled header is only sent for loopback requests when caching is active
+  - **Site Health Integration**: Helps WordPress Site Health feature properly detect caching status during internal requests
+  - **Implementation**: Based on Roots Trellis PR #1513 for WordPress hosting environment best practices
+  - **Cache Detection**: Uses `$upstream_cache_status` to determine if caching is enabled (excludes BYPASS status)
+  - **Loopback Detection**: Automatically identifies when WordPress is making internal requests to itself
+  - **Response Headers**: Added header to existing response-headers.conf for consistent application across all sites
+  - **Auto-Upgrade Integration**: Added upgrade logic to automatically apply changes to existing installations
+
 ## 2025-07-17
 
 ### 🔒 CLOUDFLARE SSL/TLS STRICT MODE ENFORCEMENT
