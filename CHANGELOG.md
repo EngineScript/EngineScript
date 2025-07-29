@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-07-29
+
+### 🔄 AUTO-UPGRADE SYSTEM ENHANCEMENTS
+  - **MariaDB Performance Optimization Updates**: Applies modern MariaDB configuration improvements to existing installations
+    - Replaces deprecated `log_warnings` setting with modern `log_error_verbosity = 2`
+    - Ensures existing installations benefit from MariaDB 11.8+ compatibility improvements
+    
 ## 2025-07-25
 
 ### 🚀 WORDPRESS SITE HEALTH COMPATIBILITY ENHANCEMENT

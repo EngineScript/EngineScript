@@ -626,7 +626,10 @@ mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/fonts"
 mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts"
 
 # Create Languages Directory
-mkdir -p "/var/www/html/wp-content/languages"
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/languages"
+
+# Create Upgrade Temp Backup Directory
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/upgrade-temp-backup"
 
 # Create wp-config.php
 cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${SITE_URL}/html/wp-config.php"

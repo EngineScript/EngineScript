@@ -952,6 +952,9 @@ mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/uploads/fonts"
 # Create Languages Directory
 mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/languages"
 
+# Create Upgrade Temp Backup Directory
+mkdir -p "/var/www/sites/${SITE_URL}/html/wp-content/upgrade-temp-backup"
+
 # --- Create wp-config.php ---
 echo "Creating new wp-config.php with EngineScript settings..."
 cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php" "${TARGET_WP_PATH}/wp-config.php"
