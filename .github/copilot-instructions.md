@@ -25,8 +25,6 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 
 # Coding Standards and Preferences
 
-# Coding Standards and Preferences
-
 ## EngineScript Project Focus
 
 - This project is a LEMP server installation and configuration script for hosting WordPress sites.
@@ -60,19 +58,6 @@ You must read files completely and thoroughly, with a minimum of 1500 lines per 
 - Use secure methods for handling sensitive data (passwords, API keys, etc.).
 - Implement proper file permissions and ownership.
 - Ensure all configurations are production-ready and secure by default.
-
-## Software Version Management
-
-- Track current versions of all major software components:
-  - Nginx (compiled from source with custom optimizations)
-  - PHP (latest stable version)
-  - MariaDB (latest LTS version)
-  - Redis (latest stable version)
-  - OpenSSL (latest stable version)
-  - Various WordPress tools (WP-CLI, Wordfence CLI, etc.)
-- Maintain compatibility matrices for supported software combinations.
-- Implement version checking and update mechanisms.
-- Document minimum and recommended system requirements.
 
 ## Supported Software Versions
 

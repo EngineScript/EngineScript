@@ -318,48 +318,73 @@ jobs:
             echo "" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
 
-            # Update README.md table directly in this step
-            echo "Updating README.md..."
-            sed -i -E \
-              -e "s#^(\\|NGINX MAINLINE\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
-              -e "s#^(\\|NGINX CACHE PURGE\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
-              -e "s#^(\\|NGINX HEADERS MORE\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
-              -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1Latest#" \
-              -e "s#^(\\|OPENSSL\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
-              -e "s#^(\\|PCRE2\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
-              -e "s#^(\\|ZLIB\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
-              -e "s#^(\\|LIBURING\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
-              -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
-              -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
-              -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
-              -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
-              -e "s#^(\\|Chart\\.js\\|)[^|]*#\1$(get_current_version CHARTJS_VER)#" \
-              -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
-              -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
-              README.md
+            # Check if we actually have changes to commit
+            if git diff --quiet; then
+              echo "No actual file changes detected, skipping PR creation"
+              echo "software_versions_changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "File changes detected, proceeding with PR creation"
+              
+              # Update README.md table directly in this step
+              echo "Updating README.md..."
+              sed -i -E \
+                -e "s#^(\\|NGINX MAINLINE\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
+                -e "s#^(\\|NGINX CACHE PURGE\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
+                -e "s#^(\\|NGINX HEADERS MORE\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
+                -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1Latest#" \
+                -e "s#^(\\|OPENSSL\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
+                -e "s#^(\\|PCRE2\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
+                -e "s#^(\\|ZLIB\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
+                -e "s#^(\\|LIBURING\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
+                -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
+                -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
+                -e "s#^(\\|Chart\\.js\\|)[^|]*#\1$(get_current_version CHARTJS_VER)#" \
+                -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
+                -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
+                README.md
 
-            # Update CI variables file to keep it in sync
-            echo "Updating enginescript-variables-ci.txt..."
-            sed -i \
-              -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
-              -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
-              -e "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_SHA)\"/" \
-              -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
-              -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
-              -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \
-              -e "s/^OPENSSL_VER=\"[^\"]*\"/OPENSSL_VER=\"$(get_current_version OPENSSL_VER)\"/" \
-              -e "s/^PCRE2_VER=\"[^\"]*\"/PCRE2_VER=\"$(get_current_version PCRE2_VER)\"/" \
-              -e "s/^PHP_VER=\"[^\"]*\"/PHP_VER=\"$(get_current_version PHP_VER)\"/" \
-              -e "s/^PHPMYADMIN_VER=\"[^\"]*\"/PHPMYADMIN_VER=\"$(get_current_version PHPMYADMIN_VER)\"/" \
-              -e "s/^ZLIB_VER=\"[^\"]*\"/ZLIB_VER=\"$(get_current_version ZLIB_VER)\"/" \
-              -e "s/^SSE_PLUGIN_VER=\"[^\"]*\"/SSE_PLUGIN_VER=\"$(get_current_version SSE_PLUGIN_VER)\"/" \
-              -e "s/^SWPO_PLUGIN_VER=\"[^\"]*\"/SWPO_PLUGIN_VER=\"$(get_current_version SWPO_PLUGIN_VER)\"/" \
-              .github/ci-config/enginescript-variables-ci.txt
+              # Update CI variables file to keep it in sync
+              echo "Updating enginescript-variables-ci.txt..."
+              sed -i \
+                -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
+                -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
+                -e "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_SHA)\"/" \
+                -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
+                -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
+                -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \
+                -e "s/^OPENSSL_VER=\"[^\"]*\"/OPENSSL_VER=\"$(get_current_version OPENSSL_VER)\"/" \
+                -e "s/^PCRE2_VER=\"[^\"]*\"/PCRE2_VER=\"$(get_current_version PCRE2_VER)\"/" \
+                -e "s/^PHP_VER=\"[^\"]*\"/PHP_VER=\"$(get_current_version PHP_VER)\"/" \
+                -e "s/^PHPMYADMIN_VER=\"[^\"]*\"/PHPMYADMIN_VER=\"$(get_current_version PHPMYADMIN_VER)\"/" \
+                -e "s/^ZLIB_VER=\"[^\"]*\"/ZLIB_VER=\"$(get_current_version ZLIB_VER)\"/" \
+                -e "s/^SSE_PLUGIN_VER=\"[^\"]*\"/SSE_PLUGIN_VER=\"$(get_current_version SSE_PLUGIN_VER)\"/" \
+                -e "s/^SWPO_PLUGIN_VER=\"[^\"]*\"/SWPO_PLUGIN_VER=\"$(get_current_version SWPO_PLUGIN_VER)\"/" \
+                .github/ci-config/enginescript-variables-ci.txt
+            fi
           else
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Pull Request
+      - name: Check for existing PR
+        if: steps.version-check.outputs.software_versions_changed == 'true'
+        id: check-pr
+        run: |
+          # Check if there's already an open PR for software version updates
+          EXISTING_PR=$(gh pr list --state open --head update-software-versions --json number --jq '.[0].number // empty')
+          
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "Found existing PR #$EXISTING_PR"
+          else
+            echo "existing_pr=" >> $GITHUB_OUTPUT
+            echo "No existing PR found"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update existing PR or create new one
         if: steps.version-check.outputs.software_versions_changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
@@ -372,8 +397,11 @@ jobs:
             ${{ steps.version-check.outputs.changelog }}
             
             These updates ensure EngineScript uses the latest stable versions of its dependencies.
+            
+            ---
+            *Last updated: ${{ github.run_id }} on ${{ github.run_number }}*
           branch: update-software-versions
-          delete-branch: true
+          delete-branch: false
           labels: |
             automated
             dependencies
