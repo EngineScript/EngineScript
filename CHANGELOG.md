@@ -4,6 +4,22 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-08-25
+
+### 🧪 TEST MODE FEATURE IMPLEMENTATION
+- **TEST_MODE Configuration**: Added new `TEST_MODE` variable to installation configuration file
+  - **Development Branch Access**: When enabled (`TEST_MODE=1`), allows switching to `update-software-versions` branch for testing experimental features
+  - **Production Safety**: Defaults to `0` (disabled) to ensure stable production installations
+  - **Update Script Integration**: Modified `enginescript-update.sh` to respect TEST_MODE setting for branch selection
+  - **Clear Documentation**: Added comprehensive warnings about stability when using test mode
+  - **Safety Boundaries**: Emergency auto-upgrade and initial setup scripts always use stable master branch for reliability
+
+### 🐛 MARIADB CONFIGURATION COMPATIBILITY FIX
+- **MySQL/MariaDB Variable Compatibility**: Fixed MariaDB startup failure due to MySQL-specific configuration
+  - **Variable Correction**: Changed `log_error_verbosity` (MySQL) to `log_warnings` (MariaDB) in my.cnf template
+  - **Auto-Upgrade Integration**: Added sed command to normal-auto-upgrade script to automatically fix existing installations
+  - **Service Reliability**: Resolves MariaDB service exit code 7 failures caused by unknown variable errors
+
 ## 2025-07-29
 
 ### 🔄 AUTO-UPGRADE SYSTEM ENHANCEMENTS

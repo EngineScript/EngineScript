@@ -20,3 +20,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Upgrade Scripts will be found below:
 
+# Fix MariaDB configuration - replace MySQL-specific log_error_verbosity with MariaDB log_warnings
+if [[ -f "/etc/mysql/my.cnf" ]]; then
+    sed -i 's/log_error_verbosity/log_warnings/g' /etc/mysql/my.cnf
+fi
+
