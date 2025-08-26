@@ -50,6 +50,14 @@ ENGINESCRIPT_AUTO_UPDATE=1
 # This script runs hourly, but will not contain any code unless there is a code issue that warrants emergency measures be taken.
 ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
 
+# EngineScript Test Mode
+# When enabled, install and update scripts will use the update-software-versions branch instead of the master branch.
+# This allows testing of experimental features and software version updates before they are released to production.
+# WARNING: Test mode may install unstable software versions. Use only for testing purposes.
+# 0 = Use master branch (stable/production)
+# 1 = Use update-software-versions branch (development/testing)
+TEST_MODE=0
+
 ############################
 # Expanded Server Features #
 ############################

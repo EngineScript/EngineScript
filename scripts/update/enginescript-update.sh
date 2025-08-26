@@ -24,10 +24,19 @@ cd /usr/src
 # --------------------------------------------------------
 # Update EngineScript
 
+# Determine which branch to use based on TEST_MODE setting
+if [[ "${TEST_MODE}" == "1" ]]; then
+    ENGINESCRIPT_BRANCH="update-software-versions"
+    echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
+else
+    ENGINESCRIPT_BRANCH="master"
+    echo "Updating from production branch (master)"
+fi
+
 # Copy EngineScript
 cd /usr/local/bin/enginescript
-git fetch origin master
-git reset --hard origin/master
+git fetch origin "${ENGINESCRIPT_BRANCH}"
+git reset --hard "origin/${ENGINESCRIPT_BRANCH}"
 
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*
