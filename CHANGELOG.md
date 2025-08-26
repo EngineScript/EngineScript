@@ -4,6 +4,18 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-08-26
+
+### 🔧 PNGOUT INSTALLATION RELIABILITY IMPROVEMENTS
+- **Download Timeout Protection**: Enhanced pngout installation script to prevent indefinite hanging
+  - **Primary URL Update**: Updated to use working URL (`https://www.jonof.id.au/files/kenutils/`) as primary download source
+  - **Fallback Mechanism**: Added fallback to original URL if primary fails, ensuring maximum compatibility
+  - **Timeout Handling**: Implemented 30-second timeout with 3 retry attempts per URL to prevent script hanging
+  - **Graceful Failure**: Script continues installation even if pngout download fails from both URLs
+  - **Error Suppression**: Clean output with proper error handling and user feedback
+  - **File Validation**: Added existence checks before attempting binary installation
+  - **Cleanup Integration**: Automatic cleanup of temporary files and extracted directories
+
 ## 2025-08-25
 
 ### 🧪 TEST MODE FEATURE IMPLEMENTATION
