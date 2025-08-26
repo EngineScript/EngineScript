@@ -21,4 +21,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Cleanup
 
 # Remove Apache and old PHP installations
-apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y
+apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y -qq >/dev/null 2>&1
