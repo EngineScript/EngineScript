@@ -9,6 +9,8 @@ on:
       - 'scripts/**'
       - 'config/**'
       - 'enginescript-variables.txt'
+  create:
+    # Run when new branches are created
   workflow_dispatch:
 
 concurrency:
