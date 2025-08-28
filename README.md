@@ -212,12 +212,12 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 ||
 ||
 |**Web Server**|
-|NGINX MAINLINE|1.29.0|https://nginx.org/en/download.html|
+|NGINX MAINLINE|1.29.1|https://nginx.org/en/download.html|
 |NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge|
 |NGINX HEADERS MORE|0.39|https://github.com/openresty/headers-more-nginx-module|
 |NGINX PATCH: Dynamic TLS Records|Latest|https://github.com/kn007/patch|
 |OPENSSL|3.5.2|https://www.openssl.org/source/|
-|PCRE2|10.45|https://github.com/PCRE2Project/pcre2/releases|
+|PCRE2|10.46|https://github.com/PCRE2Project/pcre2/releases|
 |ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib|
 ||
 ||
