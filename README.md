@@ -254,6 +254,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |PLUGIN: EngineScript: Simple WP Optimizer|1.7.0| [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
 |PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/|
 |PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/|
+|PLUGIN: Performance Lab *(downloaded)* | Latest |https://wordpress.org/plugins/performance-lab/|
 |PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/|
 |PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/|
 |PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/|

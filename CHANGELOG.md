@@ -6,6 +6,12 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-08-26
 
+### 🔧 NGINX VERSION CORRECTION
+- **Version Update**: Updated NGINX mainline version to 1.29.1
+  - **Corrected Version**: Changed from 1.29.0 to 1.29.1 to match actual latest release
+  - **Direct Download Link**: Verified availability at https://nginx.org/download/nginx-1.29.1.tar.gz
+  - **GitHub Actions Integration**: Updated software version checker to properly detect 1.29.x series releases
+
 ### 🔧 PNGOUT INSTALLATION RELIABILITY IMPROVEMENTS
 - **Download Timeout Protection**: Enhanced pngout installation script to prevent indefinite hanging
   - **Primary URL Update**: Updated to use working URL (`https://www.jonof.id.au/files/kenutils/`) as primary download source
@@ -74,10 +80,10 @@ Changes are organized by date, with the most recent changes listed first.
   - **Maintenance Simplification**: Changes to compiler flags now only need to be made in one location
   - **Build Consistency**: Ensures identical optimization flags are used for both HTTP2 and HTTP3 builds
   - **Debug Mode Integration**: Made OpenSSL `no-tests` flag conditional based on debug mode setting
-- **OpenSSL Version Management**: Moved back to OpenSSL 3.4.x series for stability
-  - **Version Rollback**: Changed from OpenSSL 3.5.x to 3.4.x series due to compatibility issues
-  - **CI Configuration**: Updated both main and CI variable files to use OpenSSL 3.4.0
-  - **Automated Tracking**: Modified software version checker to track OpenSSL 3.4.x releases
+- **OpenSSL Version Management**: Maintains OpenSSL 3.5.x series for latest features
+  - **Version Consistency**: Ensured all configuration files use OpenSSL 3.5.x series
+  - **CI Configuration**: Updated both main and CI variable files to use OpenSSL 3.5.2
+  - **Automated Tracking**: Modified software version checker to track OpenSSL 3.5.x releases
 - **GitHub Actions CI Fixes**: Resolved nginx build test permission errors
   - **Directory Creation**: Added proper creation of `/var/log/nginx/` and `/run/nginx/` directories
   - **File Permissions**: Ensured nginx error log file exists with correct permissions (644)

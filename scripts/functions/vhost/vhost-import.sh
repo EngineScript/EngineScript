@@ -1067,6 +1067,7 @@ wp plugin install autodescription --allow-root
 wp plugin install flush-opcache --allow-root --activate # Activate this one
 wp plugin install mariadb-health-checks --allow-root --activate # Activate this one
 wp plugin install nginx-helper --allow-root --activate # Activate this one
+wp plugin install performance-lab --allow-root
 wp plugin install php-compatibility-checker --allow-root
 wp plugin install redis-cache --allow-root --activate # Activate this one
 wp plugin install theme-check --allow-root

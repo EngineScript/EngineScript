@@ -712,6 +712,7 @@ wp plugin install autodescription --allow-root
 wp plugin install flush-opcache --allow-root
 wp plugin install mariadb-health-checks --allow-root
 wp plugin install nginx-helper --allow-root
+wp plugin install performance-lab --allow-root
 wp plugin install php-compatibility-checker --allow-root
 wp plugin install redis-cache --allow-root
 wp plugin install theme-check --allow-root
