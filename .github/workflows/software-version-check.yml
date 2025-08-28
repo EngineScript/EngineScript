@@ -154,38 +154,42 @@ jobs:
           fi
           
           # NGINX (1.29.x series - mainline)
-          echo "::debug::Fetching NGINX version..."
-          NGINX_HTML_RESPONSE=$(curl -s https://nginx.org/en/download.html)
-          echo "::debug::NGINX HTML Response fetched"
+          echo "::debug::Fetching NGINX version from GitHub..."
+          NGINX_API_RESPONSE=$(curl -s https://api.github.com/repos/nginx/nginx/tags)
+          echo "::debug::NGINX GitHub API Response: $(echo "$NGINX_API_RESPONSE" | jq -r '.[0:5]')"
           
-          # Debug: Show all nginx versions found
-          echo "::debug::All NGINX versions found:"
-          echo "$NGINX_HTML_RESPONSE" | grep -o 'nginx-[0-9]*\.[0-9]*\.[0-9]*\.tar\.gz' | sort -V | echo "::debug::$(cat)"
-          
-          # Look for the latest 1.29.x version
-          LATEST_NGINX=$(echo "$NGINX_HTML_RESPONSE" | 
-            grep -o 'nginx-1\.29\.[0-9]*\.tar\.gz' | 
+          # Look for the latest 1.29.x version from GitHub tags
+          LATEST_NGINX=$(echo "$NGINX_API_RESPONSE" | 
+            jq -r '.[].name // empty' | 
+            grep -E '^release-1\.29\.[0-9]+$' | 
             sort -V | 
             tail -n 1 | 
-            sed 's/nginx-\(.*\)\.tar\.gz/\1/')
+            sed 's/release-//')
           echo "::debug::Latest 1.29.x version found: '$LATEST_NGINX'"
           
           # If no 1.29.x version found, get the latest mainline (odd minor version)
           if [[ -z "$LATEST_NGINX" ]]; then
             echo "::debug::No 1.29.x version found, looking for latest mainline version..."
-            LATEST_NGINX=$(echo "$NGINX_HTML_RESPONSE" | 
-              grep -o 'nginx-1\.[0-9]*\.[0-9]*\.tar\.gz' | 
-              grep -E 'nginx-1\.(2[579]|3[13579]|4[13579])\.' | 
+            LATEST_NGINX=$(echo "$NGINX_API_RESPONSE" | 
+              jq -r '.[].name // empty' | 
+              grep -E '^release-1\.(2[579]|3[13579]|4[13579])\.[0-9]+$' | 
               sort -V | 
               tail -n 1 | 
-              sed 's/nginx-\(.*\)\.tar\.gz/\1/')
+              sed 's/release-//')
             echo "::debug::Latest mainline version found: '$LATEST_NGINX'"
           fi
           
+          # Verify the version exists on nginx.org before accepting it
           if [[ -n "$LATEST_NGINX" && "$LATEST_NGINX" != "null" ]]; then
-            check_version "NGINX_VER" "$LATEST_NGINX"
+            echo "::debug::Verifying nginx-${LATEST_NGINX}.tar.gz exists on nginx.org..."
+            if curl -s --head "https://nginx.org/download/nginx-${LATEST_NGINX}.tar.gz" | grep -q "200 OK"; then
+              echo "::debug::Confirmed: nginx-${LATEST_NGINX}.tar.gz is available for download"
+              check_version "NGINX_VER" "$LATEST_NGINX"
+            else
+              echo "::warning::nginx-${LATEST_NGINX}.tar.gz not found on nginx.org, keeping current version"
+            fi
           else
-            echo "::warning::Failed to fetch NGINX version, keeping current version"
+            echo "::warning::Failed to fetch NGINX version from GitHub, keeping current version"
           fi
           
           # phpMyAdmin
