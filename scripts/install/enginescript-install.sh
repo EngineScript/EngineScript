@@ -253,13 +253,16 @@ fi
 print_last_errors
 debug_pause "Block Unwanted Packages"
 
-# Enabled Ubuntu Pro Apt Updates
-if [[ "${UBUNTU_PRO_TOKEN}" != PLACEHOLDER ]];
+# Ubuntu Pro Setup
+if [[ "${UBUNTU_PRO}" = 1 ]];
   then
-    pro attach "${UBUNTU_PRO_TOKEN}" 2>> /tmp/enginescript_install_errors.log
+    echo "UBUNTU_PRO script has already run"
+  else
+    /usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh 2>> /tmp/enginescript_install_errors.log
+    echo "UBUNTU_PRO=1" >> /var/log/EngineScript/install-log.txt
 fi
 print_last_errors
-debug_pause "Enable Ubuntu Pro Apt Updates"
+debug_pause "Ubuntu Pro Setup"
 
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log

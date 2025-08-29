@@ -13,6 +13,7 @@ function debug_pause() {
             echo -e "\n[DEBUG] Completed step: ${last_step}"
             echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
             echo -e "If you encountered errors above, you can copy the error text for a GitHub bug report."
+            echo -e "Some text be displayed that just contains general information. Logged output does not always indicate an error."
             echo -e "For more server details, run: es.debug"
             read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
             if [[ -z "$user_input" ]]; then

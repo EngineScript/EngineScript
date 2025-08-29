@@ -4,15 +4,32 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-08-29
+
+### 🔧 UBUNTU PRO INSTALLATION SYSTEM REFACTORING
+
+- **Modular Installation Structure**: Refactored Ubuntu Pro setup to follow EngineScript's standardized component pattern
+  - **New Install Script**: Created dedicated `ubuntu-pro-install.sh` script in `/scripts/install/ubuntu-pro/` directory
+  - **State Tracking Integration**: Added proper `UBUNTU_PRO=1` state variable to installation log for resume capability
+  - **Error Handling Enhancement**: Improved error logging and validation with comprehensive feedback
+  - **Skip Logic Implementation**: Prevents re-running Ubuntu Pro setup if already completed successfully
+  - **ESM Services Automation**: Automatically enables Extended Security Maintenance (ESM) for infra and apps
+  - **Status Display Feature**: Shows Ubuntu Pro subscription status after successful activation
+  - **Configuration Guidance**: Added clear instructions for Ubuntu Pro token setup when not configured
+  - **Debug Integration**: Includes debug pause functionality consistent with other install components
+  - **Code Consistency**: Follows exact same pattern as CRON, ACME, GCC, and other EngineScript components
+
 ## 2025-08-26
 
 ### 🔧 NGINX VERSION CORRECTION
+
 - **Version Update**: Updated NGINX mainline version to 1.29.1
   - **Corrected Version**: Changed from 1.29.0 to 1.29.1 to match actual latest release
-  - **Direct Download Link**: Verified availability at https://nginx.org/download/nginx-1.29.1.tar.gz
+  - **Direct Download Link**: Verified availability at <https://nginx.org/download/nginx-1.29.1.tar.gz>
   - **GitHub Actions Integration**: Updated software version checker to properly detect 1.29.x series releases
 
 ### 🔧 PNGOUT INSTALLATION RELIABILITY IMPROVEMENTS
+
 - **Download Timeout Protection**: Enhanced pngout installation script to prevent indefinite hanging
   - **Primary URL Update**: Updated to use working URL (`https://www.jonof.id.au/files/kenutils/`) as primary download source
   - **Fallback Mechanism**: Added fallback to original URL if primary fails, ensuring maximum compatibility
@@ -25,6 +42,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-08-25
 
 ### 🧪 TEST MODE FEATURE IMPLEMENTATION
+
 - **TEST_MODE Configuration**: Added new `TEST_MODE` variable to installation configuration file
   - **Development Branch Access**: When enabled (`TEST_MODE=1`), allows switching to `update-software-versions` branch for testing experimental features
   - **Production Safety**: Defaults to `0` (disabled) to ensure stable production installations
