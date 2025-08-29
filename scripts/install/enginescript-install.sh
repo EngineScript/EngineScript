@@ -473,6 +473,40 @@ fi
 print_last_errors
 debug_pause "Tools"
 
+# --------------------------------------------------------
+# Final Installation Completion Verification
+echo ""
+echo "============================================================="
+echo "Final Installation Verification"
+echo "============================================================="
+echo ""
+
+# Verify all components completed successfully
+if check_installation_completion "true"; then
+    echo "🎉 SUCCESS: EngineScript installation completed successfully!"
+    echo "🎉 All 24 core components have been installed and verified."
+    echo ""
+    echo "Installation Summary:"
+    echo "✅ System repositories and dependencies"
+    echo "✅ Security and firewall configuration"  
+    echo "✅ Core services (MariaDB, PHP, Redis, Nginx)"
+    echo "✅ SSL/TLS and build environment"
+    echo "✅ System optimization and tools"
+    echo ""
+else
+    echo "⚠️  WARNING: Installation verification detected some incomplete components."
+    echo "⚠️  This may indicate errors during installation that need attention."
+    echo ""
+    echo "RECOMMENDATION:"
+    echo "1. Review /var/log/EngineScript/install-error-log.txt for any errors"
+    echo "2. Use 'es.debug' command after reboot to generate a diagnostic report"
+    echo "3. Consider re-running the installation script to complete missing components"
+    echo ""
+fi
+
+echo "============================================================="
+echo ""
+
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh

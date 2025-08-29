@@ -65,6 +65,16 @@ echo ""
 
 
 # --------------------------------------------------------
+# Check Installation Completion Status
+verify_installation_completion "EngineScript Update"
+
+echo "============================================================="
+echo "Installation Verification Complete - Proceeding with Updates"
+echo "============================================================="
+echo ""
+
+
+# --------------------------------------------------------
 # Updating files from previous versions
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh

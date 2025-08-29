@@ -300,3 +300,83 @@ function set_php_permissions() {
     chown -R www-data:www-data /var/log/php
     chown -R www-data:www-data /etc/php
 }
+
+# Check if all required EngineScript installation components are completed
+# Returns 0 if all components are installed, exits with error if incomplete
+function check_installation_completion() {
+    local install_log="/var/log/EngineScript/install-log.txt"
+    local missing_components=()
+    local quiet_mode="${1:-false}"  # Optional parameter for quiet mode
+    
+    # Source the install log if it exists
+    if [[ -f "$install_log" ]]; then
+        source "$install_log" 2>/dev/null || true
+    else
+        if [[ "$quiet_mode" != "true" ]]; then
+            echo "ERROR: Installation log not found at $install_log"
+            echo "This indicates EngineScript installation was never started or completed."
+            echo "Please run the full installation script first."
+        fi
+        return 1
+    fi
+    
+    # Define all required installation components
+    local required_components=(
+        "REPOS" "REMOVES" "BLOCK" "UBUNTU_PRO" "DEPENDS" "CRON" "ACME" 
+        "GCC" "OPENSSL" "SWAP" "KERNEL_TWEAKS" "KSM" "SFL" "NTP" 
+        "PCRE" "ZLIB" "LIBURING" "UFW" "MARIADB" "PHP" "REDIS" "NGINX" "TOOLS"
+    )
+    
+    # Check each required component
+    for component in "${required_components[@]}"; do
+        local var_name="$component"
+        local var_value="${!var_name:-0}"
+        
+        if [[ "$var_value" != "1" ]]; then
+            missing_components+=("$component")
+        fi
+    done
+    
+    # Return results based on mode
+    if [[ ${#missing_components[@]} -eq 0 ]]; then
+        if [[ "$quiet_mode" != "true" ]]; then
+            echo "✅ SUCCESS: All EngineScript components are installed and completed."
+        fi
+        return 0
+    else
+        if [[ "$quiet_mode" != "true" ]]; then
+            echo "❌ ERROR: EngineScript installation is incomplete."
+            echo "❌ The following components are missing or failed to complete:"
+            echo ""
+            for component in "${missing_components[@]}"; do
+                echo "   - $component"
+            done
+            echo ""
+            echo "RESOLUTION:"
+            echo "1. Run the full EngineScript installation script to complete setup"
+            echo "2. Check /var/log/EngineScript/install-error-log.txt for specific errors"
+            echo "3. Use 'es.debug' command to generate a complete diagnostic report"
+            echo ""
+        fi
+        return 1
+    fi
+}
+
+# Verify installation completion with error handling for scripts that require it
+function verify_installation_completion() {
+    local script_name="${1:-Unknown script}"
+    
+    echo "============================================================="
+    echo "Verifying EngineScript Installation Completion..."
+    echo "============================================================="
+    
+    if check_installation_completion; then
+        echo "✅ Installation verification passed. Proceeding with $script_name..."
+        echo ""
+        return 0
+    else
+        echo ""
+        echo "$script_name cannot proceed until all components are properly installed."
+        exit 1
+    fi
+}
