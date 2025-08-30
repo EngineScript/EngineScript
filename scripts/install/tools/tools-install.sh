@@ -113,7 +113,7 @@ debug_pause "WPScan"
 #------------------------------------------------
 
 # Admin Control Panel
-/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Admin Control Panel"
 
