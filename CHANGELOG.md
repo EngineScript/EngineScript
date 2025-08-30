@@ -4,6 +4,22 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-08-30
+
+### 🔒 UBUNTU PRO SECURITY ENHANCEMENTS
+
+- **Conditional FIPS Updates**: Enhanced Ubuntu Pro script with intelligent FIPS compliance control
+  - **HIGH_SECURITY_SSL Integration**: FIPS updates now only enabled when `HIGH_SECURITY_SSL=1` is configured
+  - **Performance Optimization**: Prevents unnecessary FIPS overhead for standard hosting environments
+  - **Clear User Feedback**: Provides informative messages about security decisions and manual override options
+  - **Flexible Configuration**: Maintains ability to manually enable FIPS updates when needed
+
+- **Improved Logging Visibility**: Enhanced Ubuntu Pro service enable commands output
+  - **Full Command Output**: Removed `/dev/null` redirection for `pro enable` commands
+  - **Better Troubleshooting**: Users can now see detailed status messages and progress indicators
+  - **Enhanced Transparency**: Success messages, warnings, and configuration details are now visible
+  - **Debug Support**: Improved error diagnosis with complete command output
+
 ## 2025-08-29
 
 ### � INSTALLATION COMPLETION VERIFICATION SYSTEM
