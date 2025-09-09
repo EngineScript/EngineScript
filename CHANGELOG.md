@@ -4,6 +4,40 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-09-09
+
+### 🔒 NGINX CACHING SECURITY ENHANCEMENTS
+
+- **Redirect Loop Prevention**: Fixed critical caching vulnerability that could cause infinite redirect loops
+  - **Cache Duration Fix**: Changed `fastcgi_cache_valid 301 302 24h` to `fastcgi_cache_valid 301 302 0` in nginx.conf
+  - **Security Impact**: Prevents cached redirects from causing redirect loops similar to Trellis issue 1550
+  - **Performance Balance**: Maintains caching for other response codes while eliminating redirect caching risks
+
+- **WordPress HTTPS Detection Enhancement**: Improved SSL detection for Cloudflare proxy environments
+  - **FastCGI Parameters**: Added `HTTP_X_FORWARDED_PROTO` and `HTTP_X_FORWARDED_FOR` to fastcgi-modified.conf
+  - **WordPress Compatibility**: Ensures `is_ssl()` and WordPress HTTPS detection work correctly behind Cloudflare
+  - **Security Plugin Support**: Enables proper client IP detection for security plugins and rate limiting
+
+### 🛒 WOOCOMMERCE SESSION BLEEDING PREVENTION
+
+- **Enhanced Session Detection**: Implemented comprehensive WooCommerce session handling to prevent cart data contamination
+  - **Dual Detection System**: Added detection for both incoming session cookies and outgoing Set-Cookie headers
+  - **Session ID Extraction**: Enhanced regex pattern to capture WooCommerce session IDs for cache key safety
+  - **Defense in Depth**: Implemented both cache bypass and session-specific cache keys as safety net approach
+
+- **Cache Key Security**: Maintained `$es_session` variable in FastCGI cache key for additional session isolation
+  - **Session Isolation**: Prevents cross-user cart data contamination through session-specific cache entries
+  - **Safety Net**: Provides protection even if cache bypass logic fails or encounters race conditions
+  - **Future-Proof**: Infrastructure ready for selective WooCommerce caching if needed
+
+### 🧹 CONFIGURATION CLEANUP AND OPTIMIZATION
+
+- **X-Cache-Enabled Logic Simplification**: Temporarily disabled complex X-Cache-Enabled header logic
+  - **Commented Out**: Disabled 3-map-block chain in map-cache.conf and corresponding header output
+  - **Performance Gain**: Reduced unnecessary nginx map processing on every request
+  - **Testing Ready**: Preserved all logic with clear "DISABLED FOR TESTING" notation for future re-enabling
+  - **WordPress Site Health**: May show cosmetic caching warning but no functional impact
+
 ## 2025-08-30
 
 ### 🔒 UBUNTU PRO SECURITY ENHANCEMENTS

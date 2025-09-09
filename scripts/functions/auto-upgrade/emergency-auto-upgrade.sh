@@ -14,6 +14,8 @@ source /home/EngineScript/enginescript-install-options.txt
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
 
+# Verify EngineScript installation is complete before proceeding
+verify_installation_completion
 
 #----------------------------------------------------------------------------------
 # Start Main Script

@@ -59,10 +59,6 @@ define( 'NGINX_HELPER_LOG','true' );
 /* WordPress Cache */
 define( 'WP_CACHE', false ); // Leave this disabled since we use Nginx FastCGI Cache
 
-/* SSL */
-define( 'FORCE_SSL_ADMIN', true );
-define( 'FORCE_SSL_LOGIN', true );
-
 /* Multisite */
 define( 'WP_ALLOW_MULTISITE', false );
 
