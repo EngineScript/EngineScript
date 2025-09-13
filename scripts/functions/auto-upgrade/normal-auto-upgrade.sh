@@ -41,6 +41,7 @@ fi
 # PHP-FPM config - WooCommerce session bleeding prevention
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
     cp "/usr/local/bin/enginescript/config/etc/nginx/globals/php-fpm.conf" "/etc/nginx/globals/php-fpm.conf"
+    sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf
     echo "✓ Updated php-fpm.conf (WooCommerce session security)"
 fi
 
