@@ -63,6 +63,16 @@ Changes are organized by date, with the most recent changes listed first.
   - **Auto-Upgrade Cleanup**: Added automatic removal of existing EngineScript logrotate configurations during upgrades
   - **Selective Approach**: Maintains logrotate for nginx, domains, opcache, and PHP-FPM logs only
 
+### 🌐 CLOUDFLARE IP UPDATER FIXES
+
+- **Missing IP Range Detection**: Fixed critical bug where last IP ranges from Cloudflare's lists were being skipped
+  - **Root Cause**: Bash `while read` loops don't process final line if it lacks trailing newline character
+  - **Technical Fix**: Implemented `while IFS= read -r ip || [[ -n "$ip" ]]` pattern for proper last-line handling
+  - **Complete Coverage**: Now processes all 15 IPv4 ranges (including `131.0.72.0/22`) and 7 IPv6 ranges (including `2c0f:f248::/32`)
+  - **Debug Enhancement**: Added comprehensive logging and validation counters for troubleshooting
+  - **Real IP Detection**: Ensures complete Cloudflare edge server IP coverage for accurate client IP detection
+  - **Auto-Upgrade Integration**: Added automatic Cloudflare IP updates during EngineScript upgrades
+
 ## 2025-08-30
 
 ### 🔒 UBUNTU PRO SECURITY ENHANCEMENTS

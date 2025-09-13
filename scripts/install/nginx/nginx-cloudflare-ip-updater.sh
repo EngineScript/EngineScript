@@ -39,8 +39,10 @@ TEMP_FILE_IPV6="/tmp/cloudflare-ipv6"
 # Validate IPv4 CIDR addresses
 validateIPv4() {
 	regex="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$"
-	while read ip
+	while IFS= read -r ip || [[ -n "$ip" ]]
 	do
+		# Skip empty lines
+		[[ -z "$ip" ]] && continue
 		if [[ ! "$ip" =~ $regex ]]; then
 			echo "FAILED. Reason: Invalid IPv4 address [$ip]"
 			exit 1
@@ -51,8 +53,10 @@ validateIPv4() {
 # Validate IPv6 CIDR addresses
 validateIPv6() {
 	regex="^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$"
-	while read ip
+	while IFS= read -r ip || [[ -n "$ip" ]]
 	do
+		# Skip empty lines
+		[[ -z "$ip" ]] && continue
 		if [[ ! "$ip" =~ $regex ]]; then
 			echo "FAILED. Reason: Invalid IPv6 address [$ip]"
 			exit 1
@@ -81,26 +85,49 @@ else
 fi
 
 # Validate IP addresses
+echo "Validating downloaded IP addresses..."
 validateIPv4
 validateIPv6
+echo "✓ IP validation completed successfully"
+
+# Count downloaded IPs for verification
+IPV4_COUNT=$(wc -l < "$TEMP_FILE_IPV4")
+IPV6_COUNT=$(wc -l < "$TEMP_FILE_IPV6")
+echo "Downloaded $IPV4_COUNT IPv4 ranges and $IPV6_COUNT IPv6 ranges"
+
+# Debug: Show what was actually downloaded
+echo "Debug: IPv4 ranges downloaded:"
+cat "$TEMP_FILE_IPV4"
+echo "Debug: IPv6 ranges downloaded:"
+cat "$TEMP_FILE_IPV6"
 
 # Generate the new config file with the latest IPs
 echo "# CloudFlare IP addresses" > $CLOUDFLARE_NGINX_CONFIG
 echo "# > IPv4" >> $CLOUDFLARE_NGINX_CONFIG
 
-while read ip
+IPV4_PROCESSED=0
+while IFS= read -r ip || [[ -n "$ip" ]]
 do
+	# Skip empty lines
+	[[ -z "$ip" ]] && continue
 	echo "set_real_ip_from $ip;" >> $CLOUDFLARE_NGINX_CONFIG
+	((IPV4_PROCESSED++))
 done< "$TEMP_FILE_IPV4"
 
 echo "# > IPv6" >> $CLOUDFLARE_NGINX_CONFIG
 
-while read ip
+IPV6_PROCESSED=0
+while IFS= read -r ip || [[ -n "$ip" ]]
 do
+	# Skip empty lines
+	[[ -z "$ip" ]] && continue
 	echo "set_real_ip_from $ip;" >> $CLOUDFLARE_NGINX_CONFIG
+	((IPV6_PROCESSED++))
 done < "$TEMP_FILE_IPV6"
 
 echo "real_ip_header CF-Connecting-IP;" >> $CLOUDFLARE_NGINX_CONFIG
+
+echo "Processed $IPV4_PROCESSED IPv4 ranges and $IPV6_PROCESSED IPv6 ranges into config file"
 
 # Clean-up temporary files
 rm $TEMP_FILE_IPV4 $TEMP_FILE_IPV6

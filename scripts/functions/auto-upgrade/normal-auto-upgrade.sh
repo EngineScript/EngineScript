@@ -91,3 +91,10 @@ if [[ -f "/etc/logrotate.d/enginescript" ]]; then
     echo "✓ Removed EngineScript logrotate configuration (preserves install logs)"
 fi
 
+# Update Cloudflare IP ranges to ensure complete coverage (September 2025)
+if [[ -f "/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-ip-updater.sh" ]]; then
+    echo "Updating Cloudflare IP ranges..."
+    bash /usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare-ip-updater.sh
+    echo "✓ Updated Cloudflare IP ranges (complete coverage including latest ranges)"
+fi
+
