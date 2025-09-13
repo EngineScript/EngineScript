@@ -218,7 +218,7 @@ if [[ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ]];
 fi
 
 # Install Check
-source /var/log/EngineScript/install-log.txt
+source /var/log/EngineScript/install-log.log
 
 # Repositories
 if [[ "${REPOS}" = 1 ]];
@@ -226,7 +226,7 @@ if [[ "${REPOS}" = 1 ]];
     echo "REPOS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "REPOS=1" >> /var/log/EngineScript/install-log.txt
+    echo "REPOS=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Install Repositories"
@@ -237,7 +237,7 @@ if [[ "${REMOVES}" = 1 ]];
     echo "REMOVES script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh 2>> /tmp/enginescript_install_errors.log
-    echo "REMOVES=1" >> /var/log/EngineScript/install-log.txt
+    echo "REMOVES=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Remove Preinstalled Software"
@@ -248,7 +248,7 @@ if [[ "${BLOCK}" = 1 ]];
     echo "BLOCK script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/block/package-block.sh 2>> /tmp/enginescript_install_errors.log
-    echo "BLOCK=1" >> /var/log/EngineScript/install-log.txt
+    echo "BLOCK=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Block Unwanted Packages"
@@ -259,7 +259,7 @@ if [[ "${UBUNTU_PRO}" = 1 ]];
     echo "UBUNTU_PRO script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "UBUNTU_PRO=1" >> /var/log/EngineScript/install-log.txt
+    echo "UBUNTU_PRO=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Ubuntu Pro Setup"
@@ -285,7 +285,7 @@ if [[ "${CRON}" = 1 ]];
     echo "CRON script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "CRON=1" >> /var/log/EngineScript/install-log.txt
+    echo "CRON=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Cron"
@@ -296,7 +296,7 @@ if [[ "${ACME}" = 1 ]];
     echo "ACME.sh script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "ACME=1" >> /var/log/EngineScript/install-log.txt
+    echo "ACME=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "ACME.sh"
@@ -307,7 +307,7 @@ if [[ "${GCC}" = 1 ]];
     echo "GCC script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "GCC=1" >> /var/log/EngineScript/install-log.txt
+    echo "GCC=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "GCC"
@@ -318,7 +318,7 @@ if [[ "${OPENSSL}" = 1 ]];
     echo "OPENSSL script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "OPENSSL=1" >> /var/log/EngineScript/install-log.txt
+    echo "OPENSSL=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "OpenSSL"
@@ -329,7 +329,7 @@ if [[ "${SWAP}" = 1 ]];
     echo "SWAP script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "SWAP=1" >> /var/log/EngineScript/install-log.txt
+    echo "SWAP=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Swap"
@@ -340,7 +340,7 @@ if [[ "${KERNEL_TWEAKS}" = 1 ]];
     echo "KERNEL TWEAKS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.txt
+    echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Kernel Tweaks"
@@ -351,7 +351,7 @@ if [[ "${KSM}" = 1 ]];
     echo "KSM script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh 2>> /tmp/enginescript_install_errors.log
-    echo "KSM=1" >> /var/log/EngineScript/install-log.txt
+    echo "KSM=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Kernel Samepage Merging"
@@ -362,7 +362,7 @@ if [[ "${SFL}" = 1 ]];
     echo "SYSTEM FILE LIMITS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh 2>> /tmp/enginescript_install_errors.log
-    echo "SFL=1" >> /var/log/EngineScript/install-log.txt
+    echo "SFL=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Raising System File Limits"
@@ -373,7 +373,7 @@ if [[ "${NTP}" = 1 ]];
     echo "NTP script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh 2>> /tmp/enginescript_install_errors.log
-    echo "NTP=1" >> /var/log/EngineScript/install-log.txt
+    echo "NTP=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "NTP"
@@ -384,7 +384,7 @@ if [[ "${PCRE}" = 1 ]];
     echo "PCRE script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "PCRE=1" >> /var/log/EngineScript/install-log.txt
+    echo "PCRE=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "PCRE"
@@ -395,7 +395,7 @@ if [[ "${ZLIB}" = 1 ]];
     echo "ZLIB script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "ZLIB=1" >> /var/log/EngineScript/install-log.txt
+    echo "ZLIB=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "zlib"
@@ -406,7 +406,7 @@ if [[ "${LIBURING}" = 1 ]];
     echo "LIBURING script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "LIBURING=1" >> /var/log/EngineScript/install-log.txt
+    echo "LIBURING=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "liburing"
@@ -417,7 +417,7 @@ if [[ "${UFW}" = 1 ]];
     echo "UFW script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "UFW=1" >> /var/log/EngineScript/install-log.txt
+    echo "UFW=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "UFW"
@@ -468,7 +468,7 @@ if [[ "${TOOLS}" = 1 ]];
     echo "TOOLS script has already run."
   else
     /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "TOOLS=1" >> /var/log/EngineScript/install-log.txt
+    echo "TOOLS=1" >> /var/log/EngineScript/install-log.log
 fi
 print_last_errors
 debug_pause "Tools"
@@ -498,7 +498,7 @@ else
     echo "⚠️  This may indicate errors during installation that need attention."
     echo ""
     echo "RECOMMENDATION:"
-    echo "1. Review /var/log/EngineScript/install-error-log.txt for any errors"
+    echo "1. Review /var/log/EngineScript/install-error-log.log for any errors"
     echo "2. Use 'es.debug' command after reboot to generate a diagnostic report"
     echo "3. Consider re-running the installation script to complete missing components"
     echo ""

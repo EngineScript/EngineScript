@@ -129,7 +129,7 @@ checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
 STATUS="$(systemctl is-active nginx)"
 if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Nginx is running."
-  echo "NGINX=1" >> /var/log/EngineScript/install-log.txt
+  echo "NGINX=1" >> /var/log/EngineScript/install-log.log
 else
   echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
     systemctl status nginx

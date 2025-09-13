@@ -59,7 +59,7 @@ fi
 STATUS="$(systemctl is-active mysql)"
 if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: MySQL is running."
-  echo "MARIADB=1" >> /var/log/EngineScript/install-log.txt
+  echo "MARIADB=1" >> /var/log/EngineScript/install-log.log
 else
   echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
   exit 1

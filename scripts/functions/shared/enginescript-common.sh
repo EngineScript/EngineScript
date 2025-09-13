@@ -32,7 +32,7 @@ function debug_pause() {
 function print_last_errors() {
     # Always append errors to persistent log if any
     if [[ -s /tmp/enginescript_install_errors.log ]]; then
-        cat /tmp/enginescript_install_errors.log >> /var/log/EngineScript/install-error-log.txt
+        cat /tmp/enginescript_install_errors.log >> /var/log/EngineScript/install-error-log.log
     fi
     # Only show errors to user if debug mode is enabled
     if [[ "${DEBUG_INSTALL}" == "1" ]] && [[ -s /tmp/enginescript_install_errors.log ]]; then
@@ -304,7 +304,7 @@ function set_php_permissions() {
 # Check if all required EngineScript installation components are completed
 # Returns 0 if all components are installed, exits with error if incomplete
 function check_installation_completion() {
-    local install_log="/var/log/EngineScript/install-log.txt"
+    local install_log="/var/log/EngineScript/install-log.log"
     local missing_components=()
     local quiet_mode="${1:-false}"  # Optional parameter for quiet mode
     
@@ -354,7 +354,7 @@ function check_installation_completion() {
             echo ""
             echo "RESOLUTION:"
             echo "1. Run the full EngineScript installation script to complete setup"
-            echo "2. Check /var/log/EngineScript/install-error-log.txt for specific errors"
+            echo "2. Check /var/log/EngineScript/install-error-log.log for specific errors"
             echo "3. Use 'es.debug' command to generate a complete diagnostic report"
             echo ""
         fi

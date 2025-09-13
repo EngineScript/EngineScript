@@ -1,4 +1,4 @@
-/var/log/EngineScript/*.log /var/log/EngineScript/*.txt {
+/var/log/EngineScript/*.log {
     monthly
     missingok
     rotate 6
@@ -7,13 +7,6 @@
     notifempty
     create 0644 root root
     sharedscripts
-
-    prerotate
-        if [ "$1" = "/var/log/EngineScript/install-log.txt" ] || [ "$1" = "/var/log/EngineScript/install-error-log.txt" ]; then
-            # Skip rotation for install log and install error log
-            exit 0
-        fi
-    endscript
 
     postrotate
     endscript

@@ -38,6 +38,31 @@ Changes are organized by date, with the most recent changes listed first.
   - **Testing Ready**: Preserved all logic with clear "DISABLED FOR TESTING" notation for future re-enabling
   - **WordPress Site Health**: May show cosmetic caching warning but no functional impact
 
+### 🔄 AUTO-UPGRADE SYSTEM IMPLEMENTATION
+
+- **Configuration Auto-Deployment**: Implemented comprehensive auto-upgrade system for EngineScript configuration updates
+  - **Nginx Configuration Updates**: Auto-deployment of nginx.conf and global configuration files during upgrades
+  - **SSL Header Cleanup**: Automatic wp-config.php SSL header cleanup to prevent Cloudflare conflicts
+  - **Safe Installation Path**: Ensures upgrade system works from `/usr/local/bin/enginescript/` installation directory
+  - **Future-Ready**: Infrastructure prepared for automated deployment of future configuration improvements
+
+### 📋 INSTALL LOG STANDARDIZATION
+
+- **File Extension Consistency**: Standardized all install log files to use `.log` extension instead of `.txt`
+  - **Logrotate Compatibility**: Changed `install-log.txt` and `install-error-log.txt` to `.log` extensions
+  - **System Integration**: Prevents install logs from being rotated by logrotate, preserving install state tracking
+  - **Codebase-Wide Update**: Updated 50+ files across entire EngineScript system for consistency
+  - **GitHub Workflow**: Updated CI/CD workflows to create `.log` files instead of `.txt`
+  - **Documentation Sync**: Updated all documentation and configuration references to reflect new extensions
+
+### 🚫 LOGROTATE SERVICE DISABLING
+
+- **EngineScript Logrotate Removal**: Disabled installation of EngineScript-specific logrotate configuration
+  - **Install Log Preservation**: Prevents important install tracking logs from being automatically rotated
+  - **System Safety**: Avoids interference with critical system logs and installation state tracking
+  - **Auto-Upgrade Cleanup**: Added automatic removal of existing EngineScript logrotate configurations during upgrades
+  - **Selective Approach**: Maintains logrotate for nginx, domains, opcache, and PHP-FPM logs only
+
 ## 2025-08-30
 
 ### 🔒 UBUNTU PRO SECURITY ENHANCEMENTS

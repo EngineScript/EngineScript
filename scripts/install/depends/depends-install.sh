@@ -174,4 +174,4 @@ update-alternatives --set editor /bin/nano
 #chmod +x /usr/local/bin/cht.sh
 
 # Mark the installation as complete
-echo "DEPENDS=1" >> /var/log/EngineScript/install-log.txt
+echo "DEPENDS=1" >> /var/log/EngineScript/install-log.log

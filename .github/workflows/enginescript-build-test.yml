@@ -178,8 +178,8 @@ jobs:
           
           # Create EngineScript log files (already done in earlier step, but ensure completeness)
           echo "📊 Creating log files..." | sudo tee -a /tmp/ci-logs/setup.log
-          sudo touch "/var/log/EngineScript/install-error-log.txt"
-          sudo touch "/var/log/EngineScript/install-log.txt"
+          sudo touch "/var/log/EngineScript/install-error-log.log"
+          sudo touch "/var/log/EngineScript/install-log.log"
           sudo touch "/var/log/EngineScript/vhost-export.log"
           sudo touch "/var/log/EngineScript/vhost-import.log"
           sudo touch "/var/log/EngineScript/vhost-install.log"

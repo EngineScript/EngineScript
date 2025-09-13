@@ -30,7 +30,7 @@ GREEN="\e[32m"
 YELLOW="\e[33m"
 
 # Persistent error log path
-ERROR_LOG="/var/log/EngineScript/install-error-log.txt"
+ERROR_LOG="/var/log/EngineScript/install-error-log.log"
 
 # Function to log errors to persistent error log
 log_error() {
@@ -407,7 +407,7 @@ cat << 'EOF' >> "$DEBUG_FILE"
 EOF
 
 # Append install error log if it exists
-if [[ -f /var/log/EngineScript/install-error-log.txt ]]; then
+if [[ -f /var/log/EngineScript/install-error-log.log ]]; then
     echo -e "\n## EngineScript Install Error Log (Full Contents)\n" >> "$DEBUG_FILE"
-    cat /var/log/EngineScript/install-error-log.txt >> "$DEBUG_FILE"
+    cat /var/log/EngineScript/install-error-log.log >> "$DEBUG_FILE"
 fi

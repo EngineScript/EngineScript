@@ -67,8 +67,8 @@ while true
           ;;
         "EngineScript Install Error Log")
           clear
-          echo "${BOLD}Showing last 30 lines of EngineScript install-error-log.txt.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/EngineScript/install-error-log.txt && read -n 1 -s -r -p "Press any key to continue"
+          echo "${BOLD}Showing last 30 lines of EngineScript install-error-log.log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/EngineScript/install-error-log.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Exit Server Logs")

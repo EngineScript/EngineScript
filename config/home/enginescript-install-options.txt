@@ -19,7 +19,7 @@
 # EngineScript Install Debug Mode
 # Prompts the user to continue or exit after each portion of the install script has run.
 # Debug mode will print any errors that each install script encounters.
-# Regardless of whether debug mode is enabled, EngineScript will generate a complete log of the script errors will be located at touch /var/log/EngineScript/install-error-log.txt
+# Regardless of whether debug mode is enabled, EngineScript will generate a complete log of the script errors will be located at touch /var/log/EngineScript/install-error-log.log
 # Run command es.debug to generate a complete server and error log. This is useful when submitting a GitHub issue.
 DEBUG_INSTALL=0
 

@@ -83,7 +83,7 @@ chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 STATUS="$(systemctl is-active redis)"
 if [[ "${STATUS}" == "active" ]]; then
   echo "PASSED: Redis is running."
-  echo "REDIS=1" >> /var/log/EngineScript/install-log.txt
+  echo "REDIS=1" >> /var/log/EngineScript/install-log.log
 else
   echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
   exit 1

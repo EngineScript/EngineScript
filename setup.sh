@@ -127,8 +127,8 @@ fi
 # EngineScript Logs
 # Create EngineScript logs
 mkdir -p "/var/log/EngineScript"
-touch "/var/log/EngineScript/install-error-log.txt"
-touch "/var/log/EngineScript/install-log.txt"
+touch "/var/log/EngineScript/install-error-log.log"
+touch "/var/log/EngineScript/install-log.log"
 touch "/var/log/EngineScript/vhost-export.log"
 touch "/var/log/EngineScript/vhost-import.log"
 touch "/var/log/EngineScript/vhost-install.log"
@@ -140,21 +140,21 @@ chown -R www-data:www-data "/var/log/EngineScript"
 chmod -R 644 "/var/log/EngineScript"/*.log
 chmod -R 644 "/var/log/EngineScript"/*.txt
 
-# Logrotate - EngineScript Logs
-cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"
-find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
+# Logrotate - EngineScript Logs (DISABLED - preserves install logs)
+# cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"
+# find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
 
 # Return to /usr/src
 cd "/usr/src"
 
 # Create EngineScript Aliases
-source "/var/log/EngineScript/install-log.txt"
+source "/var/log/EngineScript/install-log.log"
 if [[ "${ALIAS}" = 1 ]];
   then
     echo "ALIAS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
-    echo "ALIAS=1" >> /var/log/EngineScript/install-log.txt
+    echo "ALIAS=1" >> /var/log/EngineScript/install-log.log
 fi
 
 # Cleanup
