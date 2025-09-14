@@ -138,7 +138,6 @@ touch "/var/log/EngineScript/enginescript-api-security.log"
 # Set proper permissions for EngineScript logs
 chown -R www-data:www-data "/var/log/EngineScript"
 chmod -R 644 "/var/log/EngineScript"/*.log
-chmod -R 644 "/var/log/EngineScript"/*.txt
 
 # Logrotate - EngineScript Logs (DISABLED - preserves install logs)
 # cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"

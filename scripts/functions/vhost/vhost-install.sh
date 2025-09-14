@@ -707,6 +707,7 @@ cd "/var/www/sites/${SITE_URL}/html"
 wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${SITE_URL}" --title='New Site' --skip-email --allow-root
 
 # WP-CLI Install Plugins
+wp plugin install action-scheduler --allow-root
 wp plugin install app-for-cf --allow-root
 wp plugin install autodescription --allow-root
 wp plugin install flush-opcache --allow-root

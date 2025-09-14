@@ -1062,6 +1062,7 @@ wp rewrite flush --hard --allow-root
 # Install and Activate Essential EngineScript Plugins
 echo "Installing essential plugins..."
 # WP-CLI Install Plugins (Overwrite/update if already present from import)
+wp plugin install action-scheduler --allow-root
 wp plugin install app-for-cf --allow-root
 wp plugin install autodescription --allow-root
 wp plugin install flush-opcache --allow-root --activate # Activate this one
