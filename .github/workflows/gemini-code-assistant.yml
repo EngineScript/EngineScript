@@ -49,19 +49,30 @@ jobs:
           echo "🔍 Debug info: BASE_SHA=$BASE_SHA, HEAD_SHA=$HEAD_SHA"
           
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            # For PRs, get the diff between base and head
+            # For PRs, use git diff as primary method
             PR_BASE_SHA="${{ github.event.pull_request.base.sha }}"
             PR_HEAD_SHA="${{ github.event.pull_request.head.sha }}"
             echo "🔍 PR Debug: BASE=$PR_BASE_SHA, HEAD=$PR_HEAD_SHA"
             
-            curl -s -H "Authorization: token $GITHUB_TOKEN" \
-                 -H "Accept: application/vnd.github.v3.diff" \
-                 "https://api.github.com/repos/$REPO_FULL_NAME/compare/$PR_BASE_SHA..$PR_HEAD_SHA" \
-                 > code_changes.diff
-                 
-            if [ $? -ne 0 ] || [ ! -s code_changes.diff ]; then
-              echo "⚠️ API diff failed, using git diff..."
-              git diff $PR_BASE_SHA..$PR_HEAD_SHA > code_changes.diff
+            # Use git diff as PRIMARY method (more reliable)
+            echo "🔧 Using git diff (primary method)..."
+            if git diff "$PR_BASE_SHA".."$PR_HEAD_SHA" > code_changes.diff 2>git_error.log; then
+              echo "✅ Git diff successful - collected $(wc -l < code_changes.diff) lines"
+            else
+              echo "❌ Git diff failed, trying GitHub API as fallback..."
+              cat git_error.log 2>/dev/null || echo "No git error details"
+              
+              # GitHub API as fallback
+              curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                   -H "Accept: application/vnd.github.v3.diff" \
+                   "https://api.github.com/repos/$REPO_FULL_NAME/compare/$PR_BASE_SHA..$PR_HEAD_SHA" \
+                   > code_changes.diff
+                   
+              if [ -s code_changes.diff ]; then
+                echo "✅ GitHub API fallback successful"
+              else
+                echo "❌ Both methods failed for PR"
+              fi
             fi
             
           elif [ "$EVENT_NAME" = "push" ]; then
@@ -69,32 +80,44 @@ jobs:
             if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
               echo "🔍 Push Debug: Comparing $BASE_SHA to $HEAD_SHA"
               
-              # Try API first with better error checking
-              echo "🌐 Attempting GitHub API diff..."
-              HTTP_CODE=$(curl -s -w "%{http_code}" \
-                   -H "Authorization: token $GITHUB_TOKEN" \
-                   -H "Accept: application/vnd.github.v3.diff" \
-                   "https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA" \
-                   -o code_changes.diff)
-              
-              echo "🔍 API returned HTTP $HTTP_CODE"
-              
-              # Check if API call was successful (200 status and file has content)
-              if [ "$HTTP_CODE" != "200" ] || [ ! -s code_changes.diff ]; then
-                echo "⚠️ API diff failed (HTTP $HTTP_CODE), using git diff..."
-                
-                # Use git diff as fallback  
-                git diff $BASE_SHA..$HEAD_SHA > code_changes.diff
-                
-                # If git diff also fails or is empty, use git show
-                if [ ! -s code_changes.diff ]; then
-                  echo "⚠️ No diff available, showing recent commit changes..."
-                  git show --stat $HEAD_SHA > code_changes.diff
-                  echo "" >> code_changes.diff
-                  git show $HEAD_SHA >> code_changes.diff
-                fi
+              # Use git diff as PRIMARY method (more reliable)
+              echo "🔧 Using git diff (primary method)..."
+              if git diff "$BASE_SHA".."$HEAD_SHA" > code_changes.diff 2>git_error.log; then
+                echo "✅ Git diff successful - collected $(wc -l < code_changes.diff) lines"
               else
-                echo "✅ GitHub API diff successful"
+                echo "❌ Git diff failed, trying GitHub API as fallback..."
+                cat git_error.log 2>/dev/null || echo "No git error details"
+                
+                # GitHub API as fallback only
+                echo "🌐 Attempting GitHub API diff as fallback..."
+                echo "🔍 URL: https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA"
+                
+                HTTP_CODE=$(curl -s -w "%{http_code}" \
+                     -H "Authorization: token $GITHUB_TOKEN" \
+                     -H "Accept: application/vnd.github.v3.diff" \
+                     "https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA" \
+                     -o code_changes.diff 2>api_error.log)
+                
+                if [ "$HTTP_CODE" = "200" ] && [ -s code_changes.diff ]; then
+                  echo "✅ GitHub API fallback successful"
+                else
+                  echo "❌ GitHub API also failed (HTTP $HTTP_CODE)"
+                fi
+              fi
+              
+              # Final fallback: git show if no diff available
+              if [ ! -s code_changes.diff ]; then
+                echo "⚠️ No diff available, showing recent commit changes..."
+                echo "🔧 Running: git show --stat $HEAD_SHA"
+                git show --stat "$HEAD_SHA" > code_changes.diff 2>>git_error.log
+                echo "" >> code_changes.diff
+                git show "$HEAD_SHA" >> code_changes.diff 2>>git_error.log
+                
+                if [ -s code_changes.diff ]; then
+                  echo "✅ Git show successful as final fallback"
+                else
+                  echo "❌ All methods failed - no code changes available"
+                fi
               fi
             else
               echo "📄 Initial commit or no previous commit - showing current files..."
@@ -218,6 +241,14 @@ jobs:
           echo "Provide specific, actionable feedback for server administration improvements." >> analysis_prompt.txt
           echo "" >> analysis_prompt.txt
           
+          # Add the actual code changes
+          if [ "$CHANGES_AVAILABLE" = "true" ]; then
+            echo "Here are the code changes to analyze:" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            cat code_changes.diff >> analysis_prompt.txt
+          else
+            echo "No code changes were detected in this commit." >> analysis_prompt.txt
+          fi          
           # Add the actual code changes
           if [ "$CHANGES_AVAILABLE" = "true" ]; then
             echo "Here are the code changes to analyze:" >> analysis_prompt.txt

@@ -116,30 +116,74 @@ jobs:
 
       - name: Scan Codebase for Context
         id: scan-code
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_FULL_NAME: ${{ github.repository }}
         run: |
           echo "📋 Scanning codebase for relevant context..."
           
-          # Get recent commits for context
-          echo "📜 Recent commits:" > codebase_context.txt
-          git log --oneline -5 >> codebase_context.txt
-          echo "" >> codebase_context.txt
+          # Get recent commits for context with git as primary method
+          echo "📜 Collecting recent commits..." 
+          if git log --oneline -5 > recent_commits.txt 2>git_error.log; then
+            echo "✅ Recent commits collected via git"
+          else
+            echo "⚠️ Failed to get recent commits via git:"
+            cat git_error.log 2>/dev/null || echo "No git error details"
+            echo "No recent commits available" > recent_commits.txt
+          fi
           
-          # Get main script files for context
-          echo "📁 Main script files:" >> codebase_context.txt
-          find . -name "*.sh" -path "./.*" -prune -o -name "*.sh" -print | head -10 | while read file; do
-            if [ -f "$file" ]; then
-              echo "=== $file ===" >> codebase_context.txt
-              head -30 "$file" >> codebase_context.txt
-              echo "" >> codebase_context.txt
+          # Get main plugin files for context using reliable file system operations
+          echo "📁 Collecting plugin file structure..."
+          echo "🔍 Main plugin files:" > codebase_context.txt
+          
+          # Use git ls-files as primary method (more reliable than find)
+          echo "🔧 Using git ls-files (primary method)..."
+          if git ls-files "*.php" | head -10 > found_files.txt 2>git_error.log; then
+            echo "✅ Git ls-files successful"
+            while read file; do
+              if [ -f "$file" ] && [ -n "$file" ]; then
+                echo "=== $file ===" >> codebase_context.txt
+                echo "🔍 Processing: $file"
+                if head -30 "$file" >> codebase_context.txt 2>/dev/null; then
+                  echo "✅ Added content from $file"
+                else
+                  echo "⚠️ Failed to read $file"
+                fi
+                echo "" >> codebase_context.txt
+              fi
+            done < found_files.txt
+          else
+            echo "⚠️ Git ls-files failed, using find as fallback..."
+            cat git_error.log 2>/dev/null || echo "No git error details"
+            
+            # Find as fallback method
+            if find . -name "*.php" -path "./.*" -prune -o -name "*.php" -print 2>/dev/null | head -10 > found_files.txt; then
+              echo "✅ Find fallback successful"
+              while read file; do
+                if [ -f "$file" ] && [ -n "$file" ]; then
+                  echo "=== $file ===" >> codebase_context.txt
+                  head -30 "$file" >> codebase_context.txt 2>/dev/null
+                  echo "" >> codebase_context.txt
+                fi
+              done < found_files.txt
+            else
+              echo "❌ Both git and find methods failed"
+              echo "No PHP files found" >> codebase_context.txt
             fi
-          done
+          fi
           
-          # Check if we collected context
-          if [ -s codebase_context.txt ]; then
+          # Add recent commits to context
+          echo "" >> codebase_context.txt
+          echo "📜 Recent Git History:" >> codebase_context.txt
+          cat recent_commits.txt >> codebase_context.txt
+          
+          # Check if we collected context with better validation
+          if [ -s codebase_context.txt ] && [ $(wc -l < codebase_context.txt) -gt 5 ]; then
             echo "✅ Codebase context collected: $(wc -l < codebase_context.txt) lines"
             echo "context-available=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ No codebase context found"
+            echo "❌ Insufficient codebase context collected"
+            echo "🔍 Context file size: $(wc -l < codebase_context.txt 2>/dev/null || echo '0') lines"
             echo "context-available=false" >> $GITHUB_OUTPUT
           fi
 
@@ -210,6 +254,13 @@ jobs:
             echo "CODEBASE CONTEXT FOR REFERENCE:" >> analysis_prompt.txt
             cat codebase_context.txt >> analysis_prompt.txt
           fi
+          
+          # Add codebase context if available
+          if [ "$CONTEXT_AVAILABLE" = "true" ]; then
+            echo "" >> analysis_prompt.txt
+            echo "CODEBASE CONTEXT FOR REFERENCE:" >> analysis_prompt.txt
+            cat codebase_context.txt >> analysis_prompt.txt
+          fi
 
       - name: Run AI Analysis
         id: ai-analysis
@@ -224,6 +275,7 @@ jobs:
 
           echo "🤖 Starting AI issue analysis with official Google SDK..."
           echo "📝 Prompt file size: $(wc -c < analysis_prompt.txt) bytes"
+          echo "🔑 API key status: $([ -n "$GEMINI_API_KEY" ] && echo "✅ Set" || echo "❌ Missing")"
           
           if node gemini-analyze.js; then
             echo "analysis-success=true" >> $GITHUB_OUTPUT
@@ -233,18 +285,24 @@ jobs:
             echo "❌ AI analysis failed - check logs for details"
           fi
 
-          # Format the response
+          # Format the response with enhanced error handling
           echo "## 🤖 Gemini Issue Analysis" > formatted_response.txt
           echo "" >> formatted_response.txt
+          
           if [ -s gemini_response.txt ]; then
+            echo "📄 Adding analysis results ($(wc -c < gemini_response.txt) characters)"
             cat gemini_response.txt >> formatted_response.txt
           else
-            echo "Analysis completed but no specific recommendations at this time." >> formatted_response.txt
+            echo "⚠️ No analysis results found - adding fallback message"
+            echo "Analysis completed but encountered issues. Please review the issue manually and check the repository for related functionality." >> formatted_response.txt
           fi
           
           echo "" >> formatted_response.txt
           echo "---" >> formatted_response.txt
           echo "*Analysis performed by Gemini AI on $(date)*" >> formatted_response.txt
+          
+          # Debug: Show final response size
+          echo "📊 Final response size: $(wc -c < formatted_response.txt) characters"
 
       - name: Comment on Issue
         uses: actions/github-script@v8
