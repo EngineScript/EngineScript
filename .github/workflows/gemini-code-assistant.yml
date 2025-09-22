@@ -1,0 +1,262 @@
+# Gemini AI-Powered Code Analysis
+# Analyzes code changes in PRs, pushes, and branches - FOCUSES ON CODE CHANGES
+
+name: AI Code Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop, 'feature/*', 'bugfix/*']
+  workflow_dispatch:
+
+# Cancel previous workflow runs for the same context
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-analysis:
+    name: AI Analysis & Assistant
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js for Google AI SDK
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Get Code Changes
+        id: get-changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.before || '' }}
+          HEAD_SHA: ${{ github.sha }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          echo "📋 Collecting code changes for analysis..."
+          echo "🔍 Debug info: BASE_SHA=$BASE_SHA, HEAD_SHA=$HEAD_SHA"
+          
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # For PRs, get the diff between base and head
+            PR_BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            PR_HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "🔍 PR Debug: BASE=$PR_BASE_SHA, HEAD=$PR_HEAD_SHA"
+            
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github.v3.diff" \
+                 "https://api.github.com/repos/$REPO_FULL_NAME/compare/$PR_BASE_SHA..$PR_HEAD_SHA" \
+                 > code_changes.diff
+                 
+            if [ $? -ne 0 ] || [ ! -s code_changes.diff ]; then
+              echo "⚠️ API diff failed, using git diff..."
+              git diff $PR_BASE_SHA..$PR_HEAD_SHA > code_changes.diff
+            fi
+            
+          elif [ "$EVENT_NAME" = "push" ]; then
+            # For pushes, get the diff from the previous commit
+            if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+              echo "🔍 Push Debug: Comparing $BASE_SHA to $HEAD_SHA"
+              
+              # Try API first with better error checking
+              echo "🌐 Attempting GitHub API diff..."
+              HTTP_CODE=$(curl -s -w "%{http_code}" \
+                   -H "Authorization: token $GITHUB_TOKEN" \
+                   -H "Accept: application/vnd.github.v3.diff" \
+                   "https://api.github.com/repos/$REPO_FULL_NAME/compare/$BASE_SHA..$HEAD_SHA" \
+                   -o code_changes.diff)
+              
+              echo "🔍 API returned HTTP $HTTP_CODE"
+              
+              # Check if API call was successful (200 status and file has content)
+              if [ "$HTTP_CODE" != "200" ] || [ ! -s code_changes.diff ]; then
+                echo "⚠️ API diff failed (HTTP $HTTP_CODE), using git diff..."
+                
+                # Use git diff as fallback  
+                git diff $BASE_SHA..$HEAD_SHA > code_changes.diff
+                
+                # If git diff also fails or is empty, use git show
+                if [ ! -s code_changes.diff ]; then
+                  echo "⚠️ No diff available, showing recent commit changes..."
+                  git show --stat $HEAD_SHA > code_changes.diff
+                  echo "" >> code_changes.diff
+                  git show $HEAD_SHA >> code_changes.diff
+                fi
+              else
+                echo "✅ GitHub API diff successful"
+              fi
+            else
+              echo "📄 Initial commit or no previous commit - showing current files..."
+              git show --name-only $HEAD_SHA | head -10 | while read file; do
+                if [ -f "$file" ]; then
+                  echo "=== $file ===" >> code_changes.diff
+                  head -50 "$file" >> code_changes.diff
+                  echo "" >> code_changes.diff
+                fi
+              done
+            fi
+          else
+            echo "No code changes available for this event type" > code_changes.diff
+          fi
+          
+          # Check if we got changes
+          if [ -s code_changes.diff ]; then
+            echo "✅ Code changes collected: $(wc -l < code_changes.diff) lines"
+            echo "changes-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ No code changes found"
+            echo "changes-available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Google AI SDK and Create Analysis Script
+        run: |
+          echo "🔧 Installing Google AI SDK..."
+          npm install @google/generative-ai
+          
+          echo "📦 Creating Gemini analysis script..."
+          cat > gemini-analyze.js << 'SCRIPT_EOF'
+          const { GoogleGenerativeAI } = require('@google/generative-ai');
+          const fs = require('fs');
+          
+          async function analyzeCode() {
+            try {
+              const apiKey = process.env.GEMINI_API_KEY;
+              if (!apiKey) {
+                throw new Error('GEMINI_API_KEY environment variable not found');
+              }
+              
+              console.log('🔑 API key configured, length:', apiKey.length);
+              console.log('🤖 Initializing Gemini AI...');
+              
+              const genAI = new GoogleGenerativeAI(apiKey);
+              const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              
+              const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
+              console.log('📝 Prompt loaded, size:', prompt.length, 'characters');
+              
+              console.log('🚀 Generating analysis...');
+              const result = await model.generateContent(prompt);
+              const response = await result.response;
+              const text = response.text();
+              
+              fs.writeFileSync('ai_analysis_result.txt', text);
+              console.log('✅ Analysis completed successfully');
+              console.log('📄 Result size:', text.length, 'characters');
+              
+            } catch (error) {
+              console.error('❌ Gemini analysis failed:', error.message);
+              console.error('🔍 Full error details:', error);
+              
+              const fallbackContent = [
+                '## 🤖 AI Analysis Status',
+                '',
+                'The automated AI analysis encountered an issue: ' + error.message,
+                '',
+                'This may be due to:',
+                '- API key configuration issues',
+                '- Network connectivity problems',
+                '- Gemini API rate limits or service issues',
+                '- Invalid prompt format or size',
+                '',
+                '### Manual Review Recommended',
+                'Please conduct a manual code review focusing on:',
+                '- Linux security best practices',
+                '- Bash scripting standards compliance',
+                '- LEMP stack performance considerations',
+                '- Server automation requirements',
+                '- Nginx, PHP, MariaDB, Redis security configurations',
+                '',
+                'The PR can still be reviewed and merged based on manual inspection.'
+              ].join('\n');
+              
+              fs.writeFileSync('ai_analysis_result.txt', fallbackContent);
+              process.exit(1);
+            }
+          }
+          
+          analyzeCode().catch(error => {
+            console.error('Fatal error:', error);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+          
+          echo "✅ Analysis script created successfully"
+
+      - name: Create Analysis Prompt
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || format('Push Analysis - {0}', github.ref_name) }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
+          CHANGES_AVAILABLE: ${{ steps.get-changes.outputs.changes-available }}
+        run: |
+          echo "📝 Creating analysis prompt..."
+          echo "You are an expert Linux system administrator, bash scripting specialist, and LEMP stack automation consultant." > analysis_prompt.txt
+          echo "" >> analysis_prompt.txt
+          echo "CRITICAL INSTRUCTION: FOCUS ON THE CODE CHANGES AND PROVIDE SECURITY AND CONFIGURATION ANALYSIS." >> analysis_prompt.txt
+          echo "Analyze what was changed, added, or removed and review those specific server automation modifications." >> analysis_prompt.txt
+          echo "" >> analysis_prompt.txt
+          echo "Context: $PR_TITLE by @$PR_AUTHOR" >> analysis_prompt.txt
+          echo "" >> analysis_prompt.txt
+          echo "Please analyze this EngineScript server automation code for:" >> analysis_prompt.txt
+          echo "1. Security vulnerabilities in bash scripts and server configurations" >> analysis_prompt.txt
+          echo "2. Linux system administration best practices compliance" >> analysis_prompt.txt
+          echo "3. LEMP stack performance and security considerations" >> analysis_prompt.txt
+          echo "4. Server automation and deployment best practice recommendations" >> analysis_prompt.txt
+          echo "5. Nginx, PHP, MariaDB, and Redis configuration correctness" >> analysis_prompt.txt
+          echo "6. Cloudflare integration and SSL/TLS security" >> analysis_prompt.txt
+          echo "" >> analysis_prompt.txt
+          echo "Provide specific, actionable feedback for server administration improvements." >> analysis_prompt.txt
+          echo "" >> analysis_prompt.txt
+          
+          # Add the actual code changes
+          if [ "$CHANGES_AVAILABLE" = "true" ]; then
+            echo "Here are the code changes to analyze:" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            cat code_changes.diff >> analysis_prompt.txt
+          else
+            echo "No code changes were detected in this commit." >> analysis_prompt.txt
+          fi
+
+      - name: Run AI Analysis
+        id: ai-analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "🤖 Starting AI analysis with official Google SDK..."
+          echo "📝 Prompt file size: $(wc -c < analysis_prompt.txt) bytes"
+          
+          if node gemini-analyze.js; then
+            echo "analysis-success=true" >> $GITHUB_OUTPUT
+            echo "✅ AI analysis completed successfully"
+          else
+            echo "analysis-success=false" >> $GITHUB_OUTPUT
+            echo "❌ AI analysis failed - check logs for details"
+          fi
+
+      - name: Output Analysis Results
+        env:
+          PR_NUMBER: ${{ github.event.number || '' }}
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "📊 Analysis Results for $EVENT_NAME event:"
+          echo "============================================================"
+          
+          if [ -f ai_analysis_result.txt ]; then
+            cat ai_analysis_result.txt
+          else
+            echo "❌ Analysis result file not found"
+          fi
+          
+          echo "============================================================"
+          echo "✅ Analysis output complete"

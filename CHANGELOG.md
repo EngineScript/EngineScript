@@ -167,6 +167,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Safety Boundaries**: Emergency auto-upgrade and initial setup scripts always use stable master branch for reliability
 
 ### 🐛 MARIADB CONFIGURATION COMPATIBILITY FIX
+
 - **MySQL/MariaDB Variable Compatibility**: Fixed MariaDB startup failure due to MySQL-specific configuration
   - **Variable Correction**: Changed `log_error_verbosity` (MySQL) to `log_warnings` (MariaDB) in my.cnf template
   - **Auto-Upgrade Integration**: Added sed command to normal-auto-upgrade script to automatically fix existing installations
@@ -175,13 +176,15 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-29
 
 ### 🔄 AUTO-UPGRADE SYSTEM ENHANCEMENTS
-  - **MariaDB Performance Optimization Updates**: Applies modern MariaDB configuration improvements to existing installations
-    - Replaces deprecated `log_warnings` setting with modern `log_error_verbosity = 2`
-    - Ensures existing installations benefit from MariaDB 11.8+ compatibility improvements
-    
+
+- **MariaDB Performance Optimization Updates**: Applies modern MariaDB configuration improvements to existing installations
+  - Replaces deprecated `log_warnings` setting with modern `log_error_verbosity = 2`
+  - Ensures existing installations benefit from MariaDB 11.8+ compatibility improvements
+
 ## 2025-07-25
 
 ### 🚀 WORDPRESS SITE HEALTH COMPATIBILITY ENHANCEMENT
+
 - **X-Cache-Enabled Header**: Added `X-Cache-Enabled` HTTP header for improved WordPress Site Health check compatibility.
   - **Map Directives**: Added nginx map directives to detect cache status and loopback requests in map-cache.conf
   - **Conditional Header**: X-Cache-Enabled header is only sent for loopback requests when caching is active
@@ -195,6 +198,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-17
 
 ### 🔒 CLOUDFLARE SSL/TLS STRICT MODE ENFORCEMENT
+
 - **Cloudflare SSL/TLS Security**: Updated both `vhost-install.sh` and `vhost-import.sh` to enforce SSL/TLS encryption mode as `strict` via Cloudflare API.
   - Ensures all new and imported domains use end-to-end encryption between Cloudflare and the origin server.
   - Adds PATCH API call to set `settings/ssl` to `strict` for the relevant Cloudflare zone.
@@ -203,11 +207,13 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-16
 
 ### 🐛 MARIADB SERVICE RESTART POLICY FIX
+
 - **Systemd Restart Policy**: Updated MariaDB install, update, and auto-upgrade scripts to ensure `/lib/systemd/system/mariadb.service` uses `Restart=always` instead of `Restart=on-abnormal` for improved reliability.
   - Scripts now automatically patch the systemd service file if needed and reload systemd.
   - Ensures MariaDB will always restart on failure, not just on abnormal exits.
-  
+
 ### 🔧 NGINX BUILD SYSTEM IMPROVEMENTS
+
 - **Compiler Flags Refactoring**: Improved nginx compile script maintainability
   - **Variable Consolidation**: Consolidated `--with-cc-opt`, `--with-ld-opt`, and `--with-openssl-opt` flags into reusable variables
   - **Code Deduplication**: Eliminated duplicate flag definitions between HTTP2 and HTTP3 build configurations

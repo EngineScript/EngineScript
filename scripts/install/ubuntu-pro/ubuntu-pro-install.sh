@@ -7,15 +7,16 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# Ubuntu Pro Installation Script
-# This script enables Ubuntu Pro subscription if a valid token is provided
-
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt
 
+# Source shared functions library
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+
+
 #----------------------------------------------------------------------------------
-# Ubuntu Pro Setup
+# Start Main Script
 
 echo ""
 echo "============================================="

@@ -1,0 +1,270 @@
+name: Gemini Issue Assistant
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install Google AI SDK and Create Analysis Script
+        run: |
+          echo "🔧 Installing Google AI SDK..."
+          npm install @google/generative-ai
+          
+          echo "📦 Creating Gemini analysis script..."
+          cat > gemini-analyze.js << 'SCRIPT_EOF'
+          const { GoogleGenerativeAI } = require('@google/generative-ai');
+          const fs = require('fs');
+          
+          async function analyzeIssue() {
+            try {
+              const apiKey = process.env.GEMINI_API_KEY;
+              if (!apiKey) {
+                throw new Error('GEMINI_API_KEY environment variable not found');
+              }
+              
+              console.log('🔑 API key configured, length:', apiKey.length);
+              console.log('🤖 Initializing Gemini AI...');
+              
+              const genAI = new GoogleGenerativeAI(apiKey);
+              const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              
+              const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
+              console.log('📝 Prompt loaded, size:', prompt.length, 'characters');
+              
+              console.log('🚀 Generating analysis...');
+              const result = await model.generateContent(prompt);
+              const response = await result.response;
+              const text = response.text();
+              
+              fs.writeFileSync('gemini_response.txt', text);
+              console.log('✅ Analysis completed successfully');
+              console.log('📄 Result size:', text.length, 'characters');
+              
+            } catch (error) {
+              console.error('❌ Gemini analysis failed:', error.message);
+              console.error('🔍 Full error details:', error);
+              
+              const fallbackContent = [
+                '## 🤖 AI Analysis Status',
+                '',
+                'The automated AI analysis encountered an issue: ' + error.message,
+                '',
+                'This may be due to:',
+                '- API key configuration issues',
+                '- Network connectivity problems',
+                '- Gemini API rate limits or service issues',
+                '- Invalid prompt format or size',
+                '',
+                '### Manual Review Recommended',
+                'Please review this issue manually and check the repository for related code.',
+                ''
+              ].join('\n');
+              
+              fs.writeFileSync('gemini_response.txt', fallbackContent);
+              process.exit(1);
+            }
+          }
+          
+          analyzeIssue().catch(error => {
+            console.error('Fatal error:', error);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+          
+          echo "✅ Analysis script created successfully"
+
+      - name: Determine analysis type
+        id: analysis-type
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          if [ "$EVENT_NAME" = "issues" ]; then
+            echo "type=issue-analysis" >> $GITHUB_OUTPUT
+            echo "Issue: $ISSUE_TITLE"
+            echo "Author: $ISSUE_AUTHOR"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            echo "type=comment-analysis" >> $GITHUB_OUTPUT
+            echo "Comment on issue: $ISSUE_TITLE"
+            echo "Comment author: $COMMENT_AUTHOR"
+          else
+            echo "type=skip" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Scan Codebase for Context
+        id: scan-code
+        run: |
+          echo "📋 Scanning codebase for relevant context..."
+          
+          # Get recent commits for context
+          echo "📜 Recent commits:" > codebase_context.txt
+          git log --oneline -5 >> codebase_context.txt
+          echo "" >> codebase_context.txt
+          
+          # Get main script files for context
+          echo "📁 Main script files:" >> codebase_context.txt
+          find . -name "*.sh" -path "./.*" -prune -o -name "*.sh" -print | head -10 | while read file; do
+            if [ -f "$file" ]; then
+              echo "=== $file ===" >> codebase_context.txt
+              head -30 "$file" >> codebase_context.txt
+              echo "" >> codebase_context.txt
+            fi
+          done
+          
+          # Check if we collected context
+          if [ -s codebase_context.txt ]; then
+            echo "✅ Codebase context collected: $(wc -l < codebase_context.txt) lines"
+            echo "context-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ No codebase context found"
+            echo "context-available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create analysis prompt
+        env:
+          ANALYSIS_TYPE: ${{ steps.analysis-type.outputs.type }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          CONTEXT_AVAILABLE: ${{ steps.scan-code.outputs.context-available }}
+        run: |
+          # Skip analysis if not relevant
+          if [ "$ANALYSIS_TYPE" = "skip" ]; then
+            echo "No relevant issue activity. Skipping analysis." > analysis_prompt.txt
+            echo "analysis-skipped=true" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ "$ANALYSIS_TYPE" = "issue-analysis" ]; then
+            # Create issue-focused prompt - FOCUS ON USER'S PROBLEM FIRST
+            echo "You are an expert Linux system administrator and LEMP stack automation specialist helping users solve server configuration problems." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS FIRST ON UNDERSTANDING THE USER'S ISSUE." >> analysis_prompt.txt
+            echo "Then scan the codebase to find potential solutions or identify configuration-related causes." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ISSUE DETAILS:" >> analysis_prompt.txt
+            echo "Title: $ISSUE_TITLE" >> analysis_prompt.txt
+            echo "Author: @$ISSUE_AUTHOR" >> analysis_prompt.txt
+            echo "Description:" >> analysis_prompt.txt
+            echo "$ISSUE_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS APPROACH:" >> analysis_prompt.txt
+            echo "1. Understand the server administration problem/request thoroughly" >> analysis_prompt.txt
+            echo "2. Scan the bash scripts and configuration files for related functionality" >> analysis_prompt.txt
+            echo "3. Identify potential configuration-based solutions or fixes" >> analysis_prompt.txt
+            echo "4. Check for existing similar server automation functionality" >> analysis_prompt.txt
+            echo "5. Provide actionable system administration recommendations" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "REPOSITORY CONTEXT: EngineScript LEMP server automation (Ubuntu 24.04 LTS, Nginx, PHP 8.4+, MariaDB 11.8+, Redis, Cloudflare integration)" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+          elif [ "$ANALYSIS_TYPE" = "comment-analysis" ]; then
+            # Create comment-focused prompt - FOCUS ON CONVERSATION CONTEXT
+            echo "You are an expert Linux system administrator and LEMP stack automation specialist analyzing a server configuration discussion." > analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "CRITICAL INSTRUCTION: FOCUS ON THE CONVERSATION CONTEXT AND NEW INFORMATION." >> analysis_prompt.txt
+            echo "Analyze the new comment in relation to the original server administration issue and provide relevant insights." >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ORIGINAL ISSUE:" >> analysis_prompt.txt
+            echo "Title: $ISSUE_TITLE" >> analysis_prompt.txt
+            echo "Description: $ISSUE_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "NEW COMMENT:" >> analysis_prompt.txt
+            echo "Author: @$COMMENT_AUTHOR" >> analysis_prompt.txt
+            echo "Content: $COMMENT_BODY" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "ANALYSIS FOCUS:" >> analysis_prompt.txt
+            echo "1. How does this comment relate to the original server configuration issue?" >> analysis_prompt.txt
+            echo "2. What new server administration information or clarification is provided?" >> analysis_prompt.txt
+            echo "3. Are there bash script or configuration file implications from this comment?" >> analysis_prompt.txt
+            echo "4. What follow-up server administration actions are suggested?" >> analysis_prompt.txt
+            echo "" >> analysis_prompt.txt
+            echo "REPOSITORY CONTEXT: EngineScript LEMP server automation (Ubuntu 24.04 LTS, Nginx, PHP 8.4+, MariaDB 11.8+, Redis, Cloudflare integration)" >> analysis_prompt.txt
+          fi
+          
+          # Add codebase context if available
+          if [ "$CONTEXT_AVAILABLE" = "true" ]; then
+            echo "" >> analysis_prompt.txt
+            echo "CODEBASE CONTEXT FOR REFERENCE:" >> analysis_prompt.txt
+            cat codebase_context.txt >> analysis_prompt.txt
+          fi
+
+      - name: Run AI Analysis
+        id: ai-analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANALYSIS_SKIPPED: ${{ steps.analysis-type.outputs.analysis-skipped }}
+        run: |
+          if [ "$ANALYSIS_SKIPPED" = "true" ]; then
+            echo "Analysis skipped"
+            exit 0
+          fi
+
+          echo "🤖 Starting AI issue analysis with official Google SDK..."
+          echo "📝 Prompt file size: $(wc -c < analysis_prompt.txt) bytes"
+          
+          if node gemini-analyze.js; then
+            echo "analysis-success=true" >> $GITHUB_OUTPUT
+            echo "✅ AI analysis completed successfully"
+          else
+            echo "analysis-success=false" >> $GITHUB_OUTPUT
+            echo "❌ AI analysis failed - check logs for details"
+          fi
+
+          # Format the response
+          echo "## 🤖 Gemini Issue Analysis" > formatted_response.txt
+          echo "" >> formatted_response.txt
+          if [ -s gemini_response.txt ]; then
+            cat gemini_response.txt >> formatted_response.txt
+          else
+            echo "Analysis completed but no specific recommendations at this time." >> formatted_response.txt
+          fi
+          
+          echo "" >> formatted_response.txt
+          echo "---" >> formatted_response.txt
+          echo "*Analysis performed by Gemini AI on $(date)*" >> formatted_response.txt
+
+      - name: Comment on Issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let response = '';
+            if (fs.existsSync('formatted_response.txt')) {
+              response = fs.readFileSync('formatted_response.txt', 'utf8');
+            } else {
+              response = '## 🤖 Gemini Issue Analysis\n\nAnalysis completed. Please review the codebase for potential solutions to this issue.';
+            }
+
+            // Get the issue number
+            const issueNumber = context.issue.number;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: response
+            });
