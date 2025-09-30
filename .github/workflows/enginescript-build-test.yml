@@ -707,6 +707,89 @@ jobs:
           EOF
           fi
 
+      - name: Create GitHub Annotations and Summary
+        if: always()
+        env:
+          OVERALL_STATUS: ${{ steps.report-test-results.outputs.OVERALL_STATUS }}
+          NGINX_STATUS: ${{ steps.report-test-results.outputs.NGINX_STATUS }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "📝 Creating GitHub annotations and job summary..."
+          
+          # Add test summary to job summary (already created in test-summary.md)
+          if [ -f /tmp/ci-logs/test-summary.md ]; then
+            cat /tmp/ci-logs/test-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Create GitHub annotations for build results
+          echo "🔍 Creating annotations for build results..."
+          
+          # Overall build status annotation
+          if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
+            echo "::notice title=Build Success::EngineScript Nginx build completed successfully for $EVENT_NAME event. All components built and configured correctly."
+          else
+            echo "::warning title=Build Failed::EngineScript Nginx build failed for $EVENT_NAME event. Check job summary for detailed error information."
+          fi
+          
+          # Component-specific annotations
+          if [ "$NGINX_STATUS" = "✅ Success" ]; then
+            echo "::notice title=Nginx Build Success::Nginx compiled and installed successfully with custom optimizations."
+          else
+            echo "::error title=Nginx Build Failed::Nginx build or installation failed. Review nginx.log for compilation errors."
+          fi
+          
+          # Check for specific issues in build logs and create targeted annotations
+          if [ -f /tmp/ci-logs/nginx.log ]; then
+            # Check for compilation errors
+            if grep -qi "error:\|fatal error:\|compilation terminated" /tmp/ci-logs/nginx.log 2>/dev/null; then
+              echo "::error title=Nginx Compilation Error::Nginx build encountered compilation errors. Check nginx.log for details."
+            fi
+            
+            # Check for missing dependencies
+            if grep -qi "not found\|cannot find\|missing" /tmp/ci-logs/nginx.log 2>/dev/null; then
+              echo "::warning title=Missing Dependencies::Nginx build detected missing dependencies. Review depends.log and nginx.log."
+            fi
+            
+            # Check for configuration issues
+            if grep -qi "configuration error\|invalid configuration" /tmp/ci-logs/nginx.log 2>/dev/null; then
+              echo "::error title=Nginx Configuration Error::Nginx configuration validation failed. Check nginx.conf syntax."
+            fi
+          fi
+          
+          # Check setup log for system issues
+          if [ -f /tmp/ci-logs/setup.log ]; then
+            if grep -qi "error\|failed" /tmp/ci-logs/setup.log 2>/dev/null; then
+              echo "::warning title=Setup Issues Detected::Base system setup encountered errors. Review setup.log for details."
+            fi
+          fi
+          
+          # Check dependencies log for package issues
+          if [ -f /tmp/ci-logs/depends.log ]; then
+            if grep -qi "unable to install\|package.*not available\|failed to fetch" /tmp/ci-logs/depends.log 2>/dev/null; then
+              echo "::error title=Dependency Installation Failed::Critical dependencies failed to install. Review depends.log."
+            fi
+          fi
+          
+          # Disk space warnings
+          AVAILABLE_SPACE=$(df -h / | tail -1 | awk '{print $4}')
+          AVAILABLE_SPACE_NUM=$(df / | tail -1 | awk '{print $4}')
+          if [ "$AVAILABLE_SPACE_NUM" -lt 1048576 ]; then  # Less than 1GB
+            echo "::warning title=Low Disk Space::Available disk space is low ($AVAILABLE_SPACE). This may affect build performance."
+          fi
+          
+          # Memory warnings
+          AVAILABLE_MEM=$(free -m | grep '^Mem:' | awk '{print $7}')
+          if [ "$AVAILABLE_MEM" -lt 512 ]; then  # Less than 512MB
+            echo "::warning title=Low Memory::Available memory is low (${AVAILABLE_MEM}MB). This may affect build performance."
+          fi
+          
+          # Summary annotation with actionable information
+          if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
+            echo "::notice title=Build Complete::All build steps completed successfully. Logs available in workflow artifacts for 7 days."
+          else
+            echo "::error title=Build Failed - Action Required::Build failed. Review error annotations above and check uploaded logs for detailed diagnostics."
+          fi
+
       - name: Create Issue Report for Failed Build
         if: failure() && steps.report-test-results.outputs.TEST_FAILED == 'true'
         uses: actions/github-script@v8

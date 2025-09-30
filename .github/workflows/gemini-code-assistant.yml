@@ -163,12 +163,62 @@ jobs:
               console.log('🤖 Initializing Gemini AI...');
               
               const genAI = new GoogleGenerativeAI(apiKey);
-              const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              
+              // Try different model names prioritizing quality first, then fallback on rate limits
+              // Order: 2.5 models (highest quality) -> 2.0 models (higher RPM) -> legacy
+              const modelNames = [
+                "gemini-2.5-pro",             // 5 RPM, 250K TPM - Highest quality
+                "gemini-2.5-flash",           // 10 RPM, 250K TPM - Best 2.5 balance
+                "gemini-2.5-flash-preview",   // 10 RPM, 250K TPM - Latest 2.5 features
+                "gemini-2.5-flash-lite",      // 15 RPM, 250K TPM - Faster 2.5
+                "gemini-2.5-flash-lite-preview", // 15 RPM, 250K TPM - Latest 2.5 lite
+                "gemini-2.0-flash",           // 15 RPM, 1M TPM - Good 2.0 balance
+                "gemini-2.0-flash-lite",      // 30 RPM, 1M TPM - Highest RPM fallback
+                "gemini-1.5-flash",           // 15 RPM, 250K TPM - DEPRECATED fallback
+                "gemini-pro"                  // Legacy final fallback
+              ];
+              
+              let model = null;
+              let modelUsed = null;
+              
+              for (const modelName of modelNames) {
+                try {
+                  console.log('🔧 Trying model:', modelName);
+                  model = genAI.getGenerativeModel({ model: modelName });
+                  
+                  // Test the model with a small request to check availability/rate limits
+                  console.log('🧪 Testing model availability...');
+                  await model.generateContent("test");
+                  
+                  modelUsed = modelName;
+                  console.log('✅ Successfully initialized and tested model:', modelName);
+                  break;
+                } catch (modelError) {
+                  console.log('❌ Model', modelName, 'failed:', modelError.message);
+                  
+                  // Check for rate limit errors specifically
+                  if (modelError.message && (
+                    modelError.message.includes('rate limit') || 
+                    modelError.message.includes('quota') ||
+                    modelError.message.includes('429') ||
+                    modelError.status === 429
+                  )) {
+                    console.log('⚠️ Rate limit detected, trying next model with higher RPM...');
+                  } else if (modelError.message && modelError.message.includes('404')) {
+                    console.log('⚠️ Model not found, trying next available model...');
+                  }
+                  continue;
+                }
+              }
+              
+              if (!model) {
+                throw new Error('No supported Gemini model could be initialized');
+              }
               
               const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
               console.log('📝 Prompt loaded, size:', prompt.length, 'characters');
               
-              console.log('🚀 Generating analysis...');
+              console.log('🚀 Generating analysis with model:', modelUsed);
               const result = await model.generateContent(prompt);
               const response = await result.response;
               const text = response.text();
@@ -176,6 +226,7 @@ jobs:
               fs.writeFileSync('ai_analysis_result.txt', text);
               console.log('✅ Analysis completed successfully');
               console.log('📄 Result size:', text.length, 'characters');
+              console.log('🤖 Model used:', modelUsed);
               
             } catch (error) {
               console.error('❌ Gemini analysis failed:', error.message);
@@ -248,14 +299,6 @@ jobs:
             cat code_changes.diff >> analysis_prompt.txt
           else
             echo "No code changes were detected in this commit." >> analysis_prompt.txt
-          fi          
-          # Add the actual code changes
-          if [ "$CHANGES_AVAILABLE" = "true" ]; then
-            echo "Here are the code changes to analyze:" >> analysis_prompt.txt
-            echo "" >> analysis_prompt.txt
-            cat code_changes.diff >> analysis_prompt.txt
-          else
-            echo "No code changes were detected in this commit." >> analysis_prompt.txt
           fi
 
       - name: Run AI Analysis
@@ -291,3 +334,100 @@ jobs:
           
           echo "============================================================"
           echo "✅ Analysis output complete"
+
+      - name: Create GitHub Annotations and Summary
+        if: always()
+        env:
+          ANALYSIS_SUCCESS: ${{ steps.ai-analysis.outputs.analysis-success }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "📝 Creating GitHub annotations and job summary..."
+          
+          # Create job summary with analysis results
+          echo "## 🤖 AI Code Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** $EVENT_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $([ "$ANALYSIS_SUCCESS" = "true" ] && echo "✅ Success" || echo "⚠️ Warning")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f ai_analysis_result.txt ]; then
+            # Add analysis results to job summary
+            echo "### Analysis Details" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat ai_analysis_result.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            
+            # Create GitHub annotations for key findings
+            echo "🔍 Creating annotations for key findings..."
+            
+            # Create notice annotation with summary
+            echo "::notice title=AI Analysis Complete::EngineScript LEMP automation analysis completed for $EVENT_NAME event. Check job summary for detailed results."
+            
+            # Parse analysis results for security issues and create annotations
+            if grep -qi "security\|vulnerability\|exploit\|injection\|privilege escalation\|unsafe\|hardening" ai_analysis_result.txt 2>/dev/null; then
+              echo "::warning title=Security Review Required::AI analysis detected potential security concerns in bash scripts or server configuration. Review analysis details in job summary."
+            fi
+            
+            # Check for bash scripting best practices
+            if grep -qi "bash\|shell\|script\|quoting\|variable expansion\|error handling\|set -e" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Bash Scripting Standards::AI analysis found bash scripting recommendations. Check job summary for best practices."
+            fi
+            
+            # Check for nginx configuration issues
+            if grep -qi "nginx\|configuration\|directive\|server block\|location block\|ssl\|tls" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Nginx Configuration::AI analysis found nginx configuration recommendations. Check job summary for details."
+            fi
+            
+            # Check for performance and optimization issues
+            if grep -qi "performance\|optimization\|slow\|inefficient\|caching\|redis\|opcache" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Performance Optimization::AI analysis found LEMP stack performance optimization opportunities. Check job summary for details."
+            fi
+            
+            # Check for PHP configuration issues
+            if grep -qi "php\|php-fpm\|php.ini\|memory_limit\|upload_max\|post_max" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=PHP Configuration::AI analysis found PHP/PHP-FPM configuration recommendations. Check job summary for details."
+            fi
+            
+            # Check for MariaDB/MySQL issues
+            if grep -qi "mariadb\|mysql\|database\|sql\|innodb\|query" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Database Configuration::AI analysis found MariaDB configuration recommendations. Check job summary for details."
+            fi
+            
+            # Check for Cloudflare integration issues
+            if grep -qi "cloudflare\|cdn\|dns\|real.*ip\|proxy" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Cloudflare Integration::AI analysis found Cloudflare integration recommendations. Check job summary for details."
+            fi
+            
+            # Check for system administration best practices
+            if grep -qi "systemd\|service\|permissions\|ownership\|chmod\|chown\|directory structure" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=System Administration::AI analysis found system administration recommendations. Check job summary for details."
+            fi
+            
+            # Extract specific line-by-line feedback if available
+            if grep -E "line [0-9]+|:[0-9]+:" ai_analysis_result.txt 2>/dev/null; then
+              echo "::notice title=Line-Specific Feedback::AI analysis provided line-specific recommendations for bash scripts. See job summary for details."
+            fi
+            
+            # Check analysis length and create appropriate annotation
+            ANALYSIS_SIZE=$(wc -c < ai_analysis_result.txt)
+            if [ "$ANALYSIS_SIZE" -gt 1000 ]; then
+              echo "::notice title=Detailed Analysis Available::Comprehensive AI analysis completed ($ANALYSIS_SIZE characters). Full results available in job summary."
+            else
+              echo "::notice title=Quick Analysis Complete::AI analysis completed with brief feedback. See job summary for details."
+            fi
+            
+          else
+            echo "### ❌ Analysis Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The AI analysis could not be completed. This may be due to:" >> $GITHUB_STEP_SUMMARY
+            echo "- API configuration issues" >> $GITHUB_STEP_SUMMARY
+            echo "- Network connectivity problems" >> $GITHUB_STEP_SUMMARY
+            echo "- Service availability" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please conduct manual code review." >> $GITHUB_STEP_SUMMARY
+            
+            echo "::error title=AI Analysis Failed::Unable to complete automated analysis. Manual review required."
+          fi
+          
+          echo "✅ GitHub annotations and summary created successfully"
