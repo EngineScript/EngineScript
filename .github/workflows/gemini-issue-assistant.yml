@@ -47,12 +47,62 @@ jobs:
               console.log('🤖 Initializing Gemini AI...');
               
               const genAI = new GoogleGenerativeAI(apiKey);
-              const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              
+              // Try different model names prioritizing quality first, then fallback on rate limits
+              // Order: 2.5 models (highest quality) -> 2.0 models (higher RPM) -> legacy
+              const modelNames = [
+                "gemini-2.5-pro",             // 5 RPM, 250K TPM - Highest quality
+                "gemini-2.5-flash",           // 10 RPM, 250K TPM - Best 2.5 balance
+                "gemini-2.5-flash-preview",   // 10 RPM, 250K TPM - Latest 2.5 features
+                "gemini-2.5-flash-lite",      // 15 RPM, 250K TPM - Faster 2.5
+                "gemini-2.5-flash-lite-preview", // 15 RPM, 250K TPM - Latest 2.5 lite
+                "gemini-2.0-flash",           // 15 RPM, 1M TPM - Good 2.0 balance
+                "gemini-2.0-flash-lite",      // 30 RPM, 1M TPM - Highest RPM fallback
+                "gemini-1.5-flash",           // 15 RPM, 250K TPM - DEPRECATED fallback
+                "gemini-pro"                  // Legacy final fallback
+              ];
+              
+              let model = null;
+              let modelUsed = null;
+              
+              for (const modelName of modelNames) {
+                try {
+                  console.log('🔧 Trying model:', modelName);
+                  model = genAI.getGenerativeModel({ model: modelName });
+                  
+                  // Test the model with a small request to check availability/rate limits
+                  console.log('🧪 Testing model availability...');
+                  await model.generateContent("test");
+                  
+                  modelUsed = modelName;
+                  console.log('✅ Successfully initialized and tested model:', modelName);
+                  break;
+                } catch (modelError) {
+                  console.log('❌ Model', modelName, 'failed:', modelError.message);
+                  
+                  // Check for rate limit errors specifically
+                  if (modelError.message && (
+                    modelError.message.includes('rate limit') || 
+                    modelError.message.includes('quota') ||
+                    modelError.message.includes('429') ||
+                    modelError.status === 429
+                  )) {
+                    console.log('⚠️ Rate limit detected, trying next model with higher RPM...');
+                  } else if (modelError.message && modelError.message.includes('404')) {
+                    console.log('⚠️ Model not found, trying next available model...');
+                  }
+                  continue;
+                }
+              }
+              
+              if (!model) {
+                throw new Error('No supported Gemini model could be initialized');
+              }
               
               const prompt = fs.readFileSync('analysis_prompt.txt', 'utf8');
               console.log('📝 Prompt loaded, size:', prompt.length, 'characters');
               
-              console.log('🚀 Generating analysis...');
+              console.log('🚀 Generating analysis with model:', modelUsed);
               const result = await model.generateContent(prompt);
               const response = await result.response;
               const text = response.text();
