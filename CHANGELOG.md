@@ -4,6 +4,18 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-10-02
+
+### 🖥️ DIGITALOCEAN REMOTE CONSOLE SUPPORT
+
+- **DigitalOcean Droplet Agent Installation**: Added optional support for DigitalOcean's Recovery Console feature
+  - **Configuration Option**: New `INSTALL_DIGITALOCEAN_REMOTE_CONSOLE` option in install options file (default: 0)
+  - **Official Agent**: Installs DigitalOcean's official Droplet Agent via `repos-droplet.digitalocean.com/install.sh`
+  - **Recovery Console Access**: Enables remote console access through DigitalOcean control panel for emergency recovery
+  - **Safe Default**: Disabled by default to avoid unnecessary installations on non-DigitalOcean servers
+  - **Installation Integration**: Integrated into main install script after NTP configuration step
+  - **Error Handling**: Gracefully handles installation failures without breaking main installation process
+
 ## 2025-09-09
 
 ### 🔒 NGINX CACHING SECURITY ENHANCEMENTS

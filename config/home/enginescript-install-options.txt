@@ -103,6 +103,13 @@ INSTALL_ENGINESCRIPT_PLUGINS=1
 # Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
 
+## DigitalOcean Remote Console ##
+# Install DigitalOcean's Droplet Agent for remote console access
+# This enables the Recovery Console feature in the DigitalOcean control panel
+# Only useful if your server is hosted on DigitalOcean
+# Recommended: 0 (unless on DigitalOcean)
+INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
+
 ##################
 # Backup Options #
 ##################
