@@ -106,30 +106,24 @@ if [[ "${NGINX_HASH_BUCKET}" = 128 ]];
 fi
 
 # HTTP3
-if [[ "${INSTALL_HTTP3}" = 1 ]];
-  then
-    sed -i "s|#http3 on;|http3 on;|g" /etc/nginx/nginx.conf
+if [[ "${INSTALL_HTTP3}" = 1 ]]; then
+  sed -i "s|#http3 on;|http3 on;|g" /etc/nginx/nginx.conf
+  sed -i "s|#http3_max_concurrent_streams|http3_max_concurrent_streams|g" /etc/nginx/nginx.conf
+  sed -i "s|#http3_stream_buffer_size|http3_stream_buffer_size|g" /etc/nginx/nginx.conf
+  sed -i "s|#quic_bpf on|quic_bpf on|g" /etc/nginx/nginx.conf
+  sed -i "s|#quic_retry on|quic_retry on|g" /etc/nginx/nginx.conf
+  sed -i "s|#add_header Alt-Svc|add_header Alt-Svc|g" /etc/nginx/globals/response-headers.conf
+  sed -i "s|#add_header x-quic|add_header x-quic|g" /etc/nginx/globals/response-headers.conf
+  sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/globals/admin.localhost.conf"
+  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/globals/admin.localhost.conf"
 fi
 
-if [[ "${INSTALL_HTTP3}" = 1 ]];
-  then
-    sed -i "s|#quic_bpf on|quic_bpf on|g" /etc/nginx/nginx.conf
+# HTTP3 - QUIC GSO (requires hardware support check)
+if [[ "${INSTALL_HTTP3}" = 1 ]] && ethtool -k eth0 | grep "tx-gso-robust: on"; then
+  sed -i "s|#quic_gso on|quic_gso on|g" /etc/nginx/nginx.conf
 fi
 
-if [[ "${INSTALL_HTTP3}" = 1 ]] && ethtool -k eth0 | grep "tx-gso-robust: on";
-  then
-    sed -i "s|#quic_gso on|quic_gso on|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${INSTALL_HTTP3}" = 1 ]];
-  then
-    sed -i "s|#quic_retry on|quic_retry on|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${INSTALL_HTTP3}" = 1 ]];
-  then
-    sed -i "s|#add_header Alt-Svc|add_header Alt-Svc|g" /etc/nginx/globals/response-headers.conf
-fi
 
 # References:
 # https://www.cloudbees.com/blog/tuning-nginx
+# https://serverfault.com/questions/1153941/does-anyone-have-a-best-practices-guide-for-nginx-with-http3-quic/1172800#1172800

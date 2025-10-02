@@ -96,9 +96,9 @@ LD_OPT_FLAGS="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG"
 
 # Set OpenSSL test flag based on debug mode
 if [[ "${DEBUG_INSTALL}" == "1" ]]; then
-    OPENSSL_TESTS_FLAG=""
+  OPENSSL_TESTS_FLAG=""
 else
-    OPENSSL_TESTS_FLAG="no-tests"
+  OPENSSL_TESTS_FLAG="no-tests"
 fi
 
 OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-deprecated no-psk no-srp no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
