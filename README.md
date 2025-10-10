@@ -37,6 +37,7 @@ EngineScript is meant to be run as the root user on a fresh VPS. Setup will remo
 ### Step 1 - Initial Install
 
 Run the following command:
+
 ```shell
 bash <(curl -s https://raw.githubusercontent.com/EngineScript/EngineScript/master/setup.sh)
 ```
@@ -46,6 +47,7 @@ bash <(curl -s https://raw.githubusercontent.com/EngineScript/EngineScript/maste
 After the initial setup script has run, you'll need to alter the install options file. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
 
 Run the following command:
+
 ```shell
 es.config
 ```
@@ -55,6 +57,7 @@ es.config
 Once you've filled out the configuration file with your personal settings, continue with the main installation process.
 
 Run the following command:
+
 ```shell
 es.install
 ```
@@ -85,12 +88,12 @@ Although we do our best to automate this process, there are a few settings that 
 
 For Cloudflare to support compression from origin, the following features must be disabled:
 
-* Email Obfuscation
-* Rocket Loader
-* Server Side Excludes (SSE)
-* Mirage
-* HTML Minification (JavaScript and CSS can remain enabled)
-* Automatic HTTPS Rewrites
+- Email Obfuscation
+- Rocket Loader
+- Server Side Excludes (SSE)
+- Mirage
+- HTML Minification (JavaScript and CSS can remain enabled)
+- Automatic HTTPS Rewrites
 
 For more information, see [This is Brotli from Origin](https://blog.cloudflare.com/this-is-brotli-from-origin/).
 
@@ -113,7 +116,7 @@ We've also developed a basic plugin that disables some bloat from the default Wo
 
 ----------
 
-## Sponsors:
+## Sponsors
 
 EngineScript development is supported by:
 
@@ -127,46 +130,48 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 |Location|Usage|
 |-|-|
-|**/etc/mysql**                  |MySQL (MariaDB) config |
-|**/etc/nginx**                  |Nginx config |
-|**/etc/php**                    |PHP config |
-|**/etc/redis**                  |Redis config |
-|**/home/EngineScript**          |EngineScript user directories |
-|**/usr/local/bin/enginescript** |EngineScript source |
-|**/var/lib/mysql**              |MySQL database |
-|**/var/log**                    |Server logs |
-|**/var/www/admin/enginescript** |Tools that may be accessed via server IP address or admin.YOURDOMAIN subdomain |
-|**/var/www/sites/*YOURDOMAIN*/html** |Root directory for your WordPress installation |
+|**/etc/mysql**                  |MySQL (MariaDB) config|
+|**/etc/nginx**                  |Nginx config|
+|**/etc/php**                    |PHP config|
+|**/etc/redis**                  |Redis config|
+|**/home/EngineScript**          |EngineScript user directories|
+|**/usr/local/bin/enginescript** |EngineScript source|
+|**/var/lib/mysql**              |MySQL database|
+|**/var/log**                    |Server logs|
+|**/var/www/admin/enginescript** |Tools that may be accessed via server IP address or admin.YOURDOMAIN subdomain|
+|**/var/www/sites/*YOURDOMAIN*/html**|Root directory for your WordPress installation|
 
 ### EngineScript Commands
 
 |Command|Function|
 |-|-|
-|**`es.backup`**     |Runs the backup script to backup all domains locally and *optionally* in the cloud |
-|**`es.cache`**      |Clear FastCGI Cache, OpCache, and Redis *(server-wide)* |
-|**`es.config`**     |Opens the configuration file in Nano |
-|**`es.debug`**      |Displays debug information for EngineScript |
-|**`es.help`**       |Displays EngineScript commands and locations |
-|**`es.images`**     |Losslessly compress all images in the WordPress /uploads directory *(server-wide)* |
-|**`es.info`**       |Displays server information |
-|**`es.install`**    |Runs the main EngineScript installation script |
-|**`es.menu`**       |EngineScript menu |
-|**`es.permissions`** |Resets the permissions of all files in the WordPress directory *(server-wide)* |
-|**`es.restart`**    |Restart Nginx and PHP |
-|**`es.sites`**      |Lists all WordPress sites installed on the server with status information |
-|**`es.update`**     |Update EngineScript |
-|**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated |
+|**`es.backup`**     |Runs the backup script to backup all domains locally and *optionally* in the cloud|
+|**`es.cache`**      |Clear FastCGI Cache, OpCache, and Redis *(server-wide)*|
+|**`es.config`**     |Opens the configuration file in Nano|
+|**`es.debug`**      |Displays debug information for EngineScript|
+|**`es.help`**       |Displays EngineScript commands and locations|
+|**`es.images`**     |Losslessly compress all images in the WordPress /uploads directory *(server-wide)*|
+|**`es.info`**       |Displays server information|
+|**`es.install`**    |Runs the main EngineScript installation script|
+|**`es.menu`**       |EngineScript menu|
+|**`es.permissions`**|Resets the permissions of all files in the WordPress directory *(server-wide)*|
+|**`es.restart`**    |Restart Nginx and PHP|
+|**`es.sites`**      |Lists all WordPress sites installed on the server with status information|
+|**`es.update`**     |Update EngineScript|
+|**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated|
 
 ### Admin Control Panel Features
 
 EngineScript includes a comprehensive web-based admin control panel accessible at `https://your-server-ip/admin` or `https://admin.yourdomain.com`. The control panel provides:
 
 #### Server Monitoring
+
 - Real-time server statistics (CPU, RAM, disk usage)
 - Service status monitoring (Nginx, PHP, MariaDB, Redis)
 - System activity and security event logging
 
 #### Uptime Monitoring
+
 EngineScript integrates with **Uptime Robot** to monitor your WordPress websites for uptime and performance:
 
 - **Real-time uptime status** for all monitored websites
@@ -179,14 +184,19 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 1. Create a free account at [UptimeRobot.com](https://uptimerobot.com/)
 2. Generate an API key in Settings > API Settings (Main API Key)
 3. Configure the API key on your server:
+
    ```bash
    sudo nano /etc/enginescript/uptimerobot.conf
    ```
+
 4. Add your API key:
-   ```
+
+   ```text
    api_key=your_main_api_key_here
    ```
+
 5. Set proper permissions:
+
    ```bash
    sudo chmod 600 /etc/enginescript/uptimerobot.conf
    ```
@@ -194,95 +204,76 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 Once configured, your uptime monitoring data will automatically appear in the admin control panel.
 
 #### File Management
+
 - **Tiny File Manager** integration for secure web-based file management
 - Direct access to WordPress files and directories
 - Safe file editing and management interface
 
 #### Tools & Utilities
+
 - Quick access to common server management tasks
 - One-click service restarts and cache clearing
 - Server information and diagnostics
 
-### Software EngineScript Utilizes:
+### Software EngineScript Utilizes
 
 |Software|Version|Source|
 |-|-|-|
-| 	**Certificate Management**		|
-|ACME.sh|Latest|https://get.acme.sh |
-||
-||
-|**Web Server**|
-|NGINX MAINLINE|1.29.1|https://nginx.org/en/download.html|
-|NGINX CACHE PURGE|2.5.3|https://github.com/nginx-modules/ngx_cache_purge|
-|NGINX HEADERS MORE|0.39|https://github.com/openresty/headers-more-nginx-module|
-|NGINX PATCH: Dynamic TLS Records|Latest|https://github.com/kn007/patch|
-|OPENSSL|3.5.2|https://www.openssl.org/source/|
-|PCRE2|10.46|https://github.com/PCRE2Project/pcre2/releases|
-|ZLIB-Cloudflare|Latest|https://github.com/cloudflare/zlib|
-||
-||
-|**Script Processing**|
-|PHP|8.3|https://launchpad.net/~ondrej/+archive/ubuntu/php|
-||
-||
-|**MySQL Database**|
-|MARIADB|11.8.3|https://mariadb.org/download/|
-||
-||
-|**Database Management**|
+|**Certificate Management**|||
+|ACME.sh|Latest|<https://get.acme.sh>|
+|**Web Server**|||
+|NGINX MAINLINE|1.29.1|<https://nginx.org/en/download.html>|
+|NGINX CACHE PURGE|2.5.3|<https://github.com/nginx-modules/ngx_cache_purge>|
+|NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
+|NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/kn007/patch>|
+|OPENSSL|3.5.2|<https://www.openssl.org/source/>|
+|PCRE2|10.46|<https://github.com/PCRE2Project/pcre2/releases>|
+|ZLIB-Cloudflare|Latest|<https://github.com/cloudflare/zlib>|
+|**Script Processing**|||
+|PHP|8.3|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
+|**MySQL Database**|||
+|MARIADB|11.8.3|<https://mariadb.org/download/>|
+|**Database Management**|||
 |ADMINER|||
-|PHPMYADMIN|5.2.2|https://www.phpmyadmin.net/downloads/|
-||
-||
-|**Admin Control Panel**|
-|Chart.js|4.5.0|https://github.com/chartjs/Chart.js|
-|Font Awesome|7.0.1|https://github.com/FortAwesome/Font-Awesome|
-|TinyFileManager|2.6|https://github.com/prasathmani/tinyfilemanager|
-||
-||
-|**Object Cache**|
-|REDIS|Latest|https://redis.io/|
-||
-||
-|**Content Management System (CMS)**|
-|WORDPRESS | Latest |https://wordpress.org|
-|WP-CLI | Latest |https://github.com/wp-cli/wp-cli|
-|WP-CLI: doctor-command | Latest |https://github.com/wp-cli/doctor-command|
-|WP-CLI: WP Launch Check | Latest |https://github.com/pantheon-systems/wp_launch_check|
-|PLUGIN: App for Cloudflare| Latest |https://wordpress.org/plugins/app-for-cf/|
-|PLUGIN: EngineScript: Simple Site Exporter|1.9.0| [https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter) |
-|PLUGIN: EngineScript: Simple WP Optimizer|1.7.0| [https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer) |
-|PLUGIN: MariaDB Health Checks *(recommended)* | Latest |https://wordpress.org/plugins/mariadb-health-checks/|
-|PLUGIN: Nginx Helper *(required)* | Latest |https://wordpress.org/plugins/nginx-helper/|
-|PLUGIN: Performance Lab *(downloaded)* | Latest |https://wordpress.org/plugins/performance-lab/|
-|PLUGIN: PHP Compatibility Checker| Latest |https://wordpress.org/plugins/php-compatibility-checker/|
-|PLUGIN: Redis Object Cache *(recommended)*| Latest |https://wordpress.org/plugins/redis-cache/|
-|PLUGIN: The SEO Framework *(recommended)*| Latest |https://wordpress.org/plugins/autodescription/|
-|PLUGIN: Theme Check| Latest |https://wordpress.org/plugins/theme-check/|
-|PLUGIN: WP Crontrol| Latest |https://wordpress.org/plugins/wp-crontrol/|
-|PLUGIN: WP Mail SMTP| Latest |https://wordpress.org/plugins/wp-mail-smtp/|
-|PLUGIN: WP OPcache *(recommended)*| Latest | https://wordpress.org/plugins/flush-opcache/|
-||
-||
-|**Security**|
-|MALDETECT|Latest|https://www.rfxn.com/projects/linux-malware-detect/|
-|PHP-MALWARE-FINDER|Latest|https://github.com/nbs-system/php-malware-finder|
-|UNCOMPLICATED FIREWALL (UFW) || Bundled with Ubuntu|
-|WORDFENCE CLI||https://github.com/wordfence/wordfence-cli/releases|
-|WPSCAN|Latest|https://wpscan.com/|
-||
-||
-|**Development Tools**|
-|PNGOUT|20200115|http://www.jonof.id.au/kenutils.html|
-|ZIMAGEOPTIMIZER|Latest|https://github.com/zevilz/zImageOptimizer|
-||
-||
-|**Backup Software**|
-|LOCAL BACKUPS|| Bash Scripts|
-|AMAZON AWS CLI|Latest|https://aws.amazon.com/cli/|
-||
-||
-|**Misc Supplemental Software**|
-|LIBURING|2.12|https://github.com/axboe/liburing|
-|MYSQLTUNER|Latest|https://github.com/major/MySQLTuner-perl|
-|ZLIB|1.3.1|https://github.com/madler/zlib|
+|PHPMYADMIN|5.2.2|<https://www.phpmyadmin.net/downloads/>|
+|**Admin Control Panel**|||
+|Chart.js|4.5.0|<https://github.com/chartjs/Chart.js>|
+|Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
+|TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
+|**Object Cache**|||
+|REDIS|Latest|<https://redis.io/>|
+|**Content Management System (CMS)**|||
+|WORDPRESS||<https://wordpress.org>|
+|WP-CLI||<https://github.com/wp-cli/wp-cli>|
+|WP-CLI: doctor-command||<https://github.com/wp-cli/doctor-command>|
+|WP-CLI: WP Launch Check||<https://github.com/pantheon-systems/wp_launch_check>|
+|PLUGIN: App for Cloudflare||<https://wordpress.org/plugins/app-for-cf/>|
+|PLUGIN: Action Scheduler||<https://wordpress.org/plugins/action-scheduler/>|
+|PLUGIN: EngineScript: Simple Site Exporter||[https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter)|
+|PLUGIN: EngineScript: Simple WP Optimizer|1.7.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
+|PLUGIN: MariaDB Health Checks *(recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
+|PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
+|PLUGIN: Performance Lab||<https://wordpress.org/plugins/performance-lab/>|
+|PLUGIN: PHP Compatibility Checker|Latest|<https://wordpress.org/plugins/php-compatibility-checker/>|
+|PLUGIN: Redis Object Cache *(recommended)*||<https://wordpress.org/plugins/redis-cache/>|
+|PLUGIN: The SEO Framework *(recommended)*||<https://wordpress.org/plugins/autodescription/>|
+|PLUGIN: Theme Check||<https://wordpress.org/plugins/theme-check/>|
+|PLUGIN: WP Crontrol||<https://wordpress.org/plugins/wp-crontrol/>|
+|PLUGIN: WP Mail SMTP||<https://wordpress.org/plugins/wp-mail-smtp/>|
+|PLUGIN: WP OPcache *(recommended)*||<https://wordpress.org/plugins/flush-opcache/>|
+|**Security**|||
+|MALDETECT|Latest|<https://www.rfxn.com/projects/linux-malware-detect/>|
+|PHP-MALWARE-FINDER|Latest|<https://github.com/nbs-system/php-malware-finder>|
+|UNCOMPLICATED FIREWALL (UFW)||Bundled with Ubuntu|
+|WORDFENCE CLI||<https://github.com/wordfence/wordfence-cli/releases>|
+|WPSCAN|Latest|<https://wpscan.com/>|
+|**Development Tools**|||
+|PNGOUT|20200115|<http://www.jonof.id.au/kenutils.html>|
+|ZIMAGEOPTIMIZER|Latest|<https://github.com/zevilz/zImageOptimizer>|
+|**Backup Software**|||
+|LOCAL BACKUPS||Bash Scripts|
+|AMAZON AWS CLI|Latest|<https://aws.amazon.com/cli/>|
+|**Misc Supplemental Software**|||
+|LIBURING|2.12|<https://github.com/axboe/liburing>|
+|MYSQLTUNER|Latest|<https://github.com/major/MySQLTuner-perl>|
+|ZLIB|1.3.1|<https://github.com/madler/zlib>|

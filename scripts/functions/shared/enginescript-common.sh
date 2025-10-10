@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
+#----------------------------------------------------------------------------------
+# EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
+#----------------------------------------------------------------------------------
+# Website:      https://EngineScript.com
+# GitHub:       https://github.com/Enginescript/EngineScript
+# License:      GPL v3.0
+#----------------------------------------------------------------------------------
+# Shared Virtual Host Functions
+# This file contains common functions used by both vhost-install.sh and vhost-import.sh
+#----------------------------------------------------------------------------------
 
-# EngineScript Common Functions Library
-# Shared functions used across multiple EngineScript components
-# This library consolidates commonly duplicated functions to maintain consistency
 
 # Debug pause function
 # Prompts the user to continue if DEBUG_INSTALL is set and not 0/empty
@@ -28,6 +35,8 @@ function debug_pause() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # Print errors from the last script section if any
 function print_last_errors() {
     # Always append errors to persistent log if any
@@ -46,15 +55,157 @@ function print_last_errors() {
     > /tmp/enginescript_install_errors.log
 }
 
-# Function to clear cache from a directory
-function clear_cache() {
-    local cache_path="$1"
-    echo "Clearing ${cache_path} Cache"
-    rm -rf "${cache_path}"/* || {
-        echo "Error: Failed to clear ${cache_path} cache."
+
+# ----------------------------------------------------------------
+# Clear Nginx cache directory
+function clear_nginx_cache() {
+    echo "Clearing Nginx Cache"
+    rm -rf /var/cache/nginx/* || {
+        echo "Error: Failed to clear Nginx cache."
     }
 }
 
+
+# ----------------------------------------------------------------
+# Clear PHP OpCache directory
+function clear_opcache() {
+    echo "Clearing PHP OpCache"
+    rm -rf /var/cache/opcache/* || {
+        echo "Error: Failed to clear PHP OpCache."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Clear Redis object cache
+function clear_redis_cache() {
+    echo "Clearing Redis Object Cache"
+    redis-cli FLUSHALL ASYNC || {
+        echo "Error: Failed to clear Redis cache."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Flush WordPress cache (single site)
+function flush_wordpress_cache() {
+    echo "Flushing WordPress Cache"
+    wp cache flush --allow-root || {
+        echo "Error: Failed to flush WordPress cache."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Flush WordPress rewrite rules (single site)
+function flush_wordpress_rewrites() {
+    echo "Flushing WordPress Rewrite Rules"
+    wp rewrite flush --hard --allow-root || {
+        echo "Error: Failed to flush WordPress rewrite rules."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Delete WordPress transients (single site)
+function clear_wordpress_transients() {
+    echo "Deleting WordPress Transients"
+    wp transient delete --all --allow-root || {
+        echo "Error: Failed to delete WordPress transients."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Purge Nginx cache for a single site using Nginx Helper plugin
+function purge_nginx_helper_cache() {
+    echo "Purging Nginx Cache via Nginx Helper Plugin"
+    wp nginx-helper purge-all --allow-root || {
+        echo "Error: Failed to purge Nginx cache via plugin."
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Clear all WordPress caches for a single site (cache + rewrites)
+function clear_wordpress_caches() {
+    clear_wordpress_transients
+    flush_wordpress_cache
+    flush_wordpress_rewrites
+    purge_nginx_helper_cache
+}
+
+
+# ----------------------------------------------------------------
+# Clear WordPress transients for all sites
+function clear_all_transients() {
+    # Source sites list
+    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+        source /home/EngineScript/sites-list/sites.sh
+        for site in "${SITES[@]}"; do
+            echo "Deleting ${site} Transients"
+            cd "/var/www/sites/$site/html" || {
+                echo "Error: Failed to change directory to /var/www/sites/$site/html"
+                continue
+            }
+            clear_wordpress_transients
+        done
+    else
+        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Purge Nginx cache for all sites using Nginx Helper plugin
+function purge_all_nginx_helper_caches() {
+    # Source sites list
+    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+        source /home/EngineScript/sites-list/sites.sh
+        for site in "${SITES[@]}"; do
+            echo "Purging Nginx Cache for ${site}"
+            cd "/var/www/sites/$site/html" || {
+                echo "Error: Failed to change directory to /var/www/sites/$site/html"
+                continue
+            }
+            purge_nginx_helper_cache
+        done
+    else
+        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Clear WordPress caches for all sites (cache + rewrites)
+function clear_all_wordpress_caches() {
+    # Source sites list
+    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+        source /home/EngineScript/sites-list/sites.sh
+        for site in "${SITES[@]}"; do
+            echo "Clearing WordPress caches for ${site}"
+            cd "/var/www/sites/$site/html" || {
+                echo "Error: Failed to change directory to /var/www/sites/$site/html"
+                continue
+            }
+            clear_wordpress_caches
+        done
+    else
+        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Clear all system caches (Nginx, OpCache, Redis)
+function clear_all_system_caches() {
+    clear_nginx_cache
+    clear_opcache
+    clear_redis_cache
+}
+
+
+# ----------------------------------------------------------------
 # Function to restart a service
 function restart_service() {
     local service_name="$1"
@@ -64,6 +215,8 @@ function restart_service() {
     }
 }
 
+
+# ----------------------------------------------------------------
 # Function to restart PHP-FPM service
 function restart_php_fpm() {
     local php_versions=("8.1" "8.2" "8.3" "8.4")
@@ -76,6 +229,8 @@ function restart_php_fpm() {
     echo "Error: No active PHP-FPM service found."
 }
 
+
+# ----------------------------------------------------------------
 # Enhanced input validation functions
 # Prompts user with timeout and exit options for basic continuation
 function prompt_continue() {
@@ -104,6 +259,8 @@ function prompt_continue() {
     done
 }
 
+
+# ----------------------------------------------------------------
 # Prompts user for yes/no confirmation with validation and timeout
 function prompt_yes_no() {
     local prompt_text="$1"
@@ -157,6 +314,8 @@ function prompt_yes_no() {
     done
 }
 
+
+# ----------------------------------------------------------------
 # Prompts user for text input with validation and timeout
 function prompt_input() {
     local prompt_text="$1"
@@ -212,6 +371,8 @@ function prompt_input() {
     done
 }
 
+
+# ----------------------------------------------------------------
 # Domain name validation function
 function validate_domain() {
     local domain="$1"
@@ -224,6 +385,8 @@ function validate_domain() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # Email validation function
 function validate_email() {
     local email="$1"
@@ -236,6 +399,8 @@ function validate_email() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # URL validation function
 function validate_url() {
     local url="$1"
@@ -248,6 +413,8 @@ function validate_url() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # Set permissions for EngineScript frontend directories and files
 function set_enginescript_frontend_permissions() {
     # Set permissions for /var/www/admin/enginescript
@@ -261,6 +428,8 @@ function set_enginescript_frontend_permissions() {
     chown -R www-data:www-data /etc/enginescript
 }
 
+
+# ----------------------------------------------------------------
 # Set permissions for Nginx directories and files
 function set_nginx_permissions() {
     chown -R www-data:www-data /etc/nginx
@@ -285,6 +454,8 @@ function set_nginx_permissions() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # Set permissions for PHP directories and files
 function set_php_permissions() {
     find "/var/log/php" -type d,f -exec chmod 775 {} \;
@@ -301,6 +472,8 @@ function set_php_permissions() {
     chown -R www-data:www-data /etc/php
 }
 
+
+# ----------------------------------------------------------------
 # Check if all required EngineScript installation components are completed
 # Returns 0 if all components are installed, exits with error if incomplete
 function check_installation_completion() {
@@ -362,6 +535,8 @@ function check_installation_completion() {
     fi
 }
 
+
+# ----------------------------------------------------------------
 # Verify installation completion with error handling for scripts that require it
 function verify_installation_completion() {
     local script_name="${1:-Unknown script}"

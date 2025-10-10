@@ -20,13 +20,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 echo -e "\nRestarting Services\n\n"
 
-clear_cache "/var/cache/nginx"
-clear_cache "/var/cache/opcache"
-echo "Clearing Redis Object Cache"
-redis-cli FLUSHALL ASYNC || {
-    echo "Error: Failed to clear Redis cache."
-}
+# Clear system caches before restarting
+clear_all_system_caches
 
+# Restart services
 restart_service "nginx"
 restart_php_fpm
 restart_service "redis-server"
