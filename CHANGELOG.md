@@ -18,6 +18,16 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **Static Files Cache Control**: Enhanced cache control headers for static assets
 - **Plugin Installation Options**: Added granular control over WordPress plugin installation
+  - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (Simple WP Optimizer, Simple Site Exporter)
+  - **INSTALL_EXTRA_WP_PLUGINS**: New option to control optional recommended plugins (action-scheduler, app-for-cf, autodescription, etc.)
+  - **Core Plugins Always Installed**: Essential plugins (nginx-helper, redis-cache, flush-opcache, mariadb-health-checks) remain mandatory
+  - **Enhanced Flexibility**: Allows customization while maintaining critical functionality
+
+### 🔄 NGINX PATCH SOURCE UPDATE
+
+- **Dynamic TLS Records Patch Source**: Updated to use nginx-modules/ngx_http_tls_dyn_size repository
+  - **New Source**: Changed from `https://github.com/kn007/patch` to `https://github.com/nginx-modules/ngx_http_tls_dyn_size`
+  - **Documentation**: Updated README.md and patch file comments to reflect the correct upstream source
 
 ## 2025-10-02
 

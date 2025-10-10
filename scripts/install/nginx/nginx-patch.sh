@@ -22,4 +22,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Patch Nginx
 cd "/usr/src/nginx-${NGINX_VER}"
-patch -p1 < /usr/local/bin/enginescript/patches/nginx/nginx.patch
+patch -p1 < /usr/local/bin/enginescript/patches/nginx/nginx_dyn_tls.patch
