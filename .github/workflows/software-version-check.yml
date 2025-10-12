@@ -371,8 +371,8 @@ jobs:
               sed -i \
                 -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
                 -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
-                -e "s/^NGINX_DYN_TLS_PATCH_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_SHA)\"/" \
-                -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
+                -e "s/^NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_COMMIT_SHA)\"/" \
+                -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \\
                 -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
                 -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \
                 -e "s/^OPENSSL_VER=\"[^\"]*\"/OPENSSL_VER=\"$(get_current_version OPENSSL_VER)\"/" \
