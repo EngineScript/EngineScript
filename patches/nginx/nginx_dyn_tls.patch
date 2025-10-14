@@ -256,5 +256,3 @@ index c69c8ffd2..1d7e63e2b 100644
 +    size_t                          dyn_rec_size_hi;
 +    ngx_uint_t                      dyn_rec_threshold;
  } ngx_http_ssl_srv_conf_t;
- 
- 
