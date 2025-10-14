@@ -35,6 +35,7 @@ fi
 
 # Copy EngineScript
 cd /usr/local/bin/enginescript
+echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
 git fetch origin "${ENGINESCRIPT_BRANCH}"
 git reset --hard "origin/${ENGINESCRIPT_BRANCH}"
 

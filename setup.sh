@@ -84,8 +84,8 @@ if [[ -d "/usr/local/bin/enginescript" ]]; then
   rm -rf /usr/local/bin/enginescript
 fi
 
-# EngineScript Git Clone
-git clone --depth 1 https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
+# EngineScript Git Clone (full clone to allow branch switching)
+git clone https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
 
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*
