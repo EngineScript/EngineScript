@@ -4,6 +4,32 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-10-14
+
+### 🔧 UPDATE SYSTEM IMPROVEMENTS
+
+- **Test Mode Branch Switching**: Fixed `enginescript-update.sh` to properly switch between branches
+  - **Full Git Clone**: Changed `setup.sh` to use full git clone instead of shallow clone for better branch support
+  - **Improved Branch Handling**: Update script now correctly fetches and switches to test branch (`update-software-versions`) when `TEST_MODE=1`
+  - **Forced Checkout**: Added `-f` flag to git checkout to handle local file changes during updates
+  - **FETCH_HEAD Usage**: Simplified git reset logic using `FETCH_HEAD` for more reliable branch switching
+
+### 🔨 BUILD SYSTEM FIXES
+
+- **Nginx Patch Format**: Fixed trailing newline in `nginx_dyn_tls.patch` to eliminate patch warning
+  - **Warning Eliminated**: Resolved "patch unexpectedly ends in middle of line" warning during nginx compilation
+  - **Format Compliance**: Patch file now follows proper formatting conventions with trailing newline
+
+## 2025-10-12
+
+### � ADMIN CONSOLE SECURITY ENHANCEMENT
+
+- **IP Address Access Restriction**: Removed admin console locations from localhost configuration
+  - **Security Improvement**: Direct IP address access now returns 204 No Content instead of serving admin control panel
+  - **Configuration Simplification**: Streamlined `admin.localhost.conf` by removing `/admin`, `/api`, and `/phpinfo` location blocks
+  - **Access Method**: Admin control panel access now requires proper domain configuration
+  - **Risk Mitigation**: Prevents unauthorized discovery and access attempts via direct IP addresses
+
 ## 2025-10-10
 
 ### 📝 DOCUMENTATION IMPROVEMENTS

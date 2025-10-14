@@ -88,11 +88,6 @@ if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
     echo ""
 fi
 
-# Enable admin panel authentication (always enabled now)
-sed -i "s|#satisfy any|satisfy any|g" /etc/nginx/admin/admin.localhost.conf
-sed -i "s|#auth_basic|auth_basic|g" /etc/nginx/admin/admin.localhost.conf
-sed -i "s|#allow |allow |g" /etc/nginx/admin/admin.localhost.conf
-
 # Stop Nginx service before replacing binary to avoid "Text file busy" error
 if systemctl is-active --quiet nginx; then
     echo "Stopping Nginx service for binary replacement..."

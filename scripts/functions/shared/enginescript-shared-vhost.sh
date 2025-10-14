@@ -90,11 +90,6 @@ create_nginx_vhost() {
       echo ""
   fi
 
-  # Secure Admin Subdomain (always enabled now)
-  sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
-  sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
-  sed -i "s|#allow |allow |g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
-
   # Enable HTTP/3 if configured
   if [[ "${INSTALL_HTTP3}" == "1" ]]; then
     sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"

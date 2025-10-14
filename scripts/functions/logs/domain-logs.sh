@@ -25,6 +25,8 @@ echo "${BOLD}Showing last 20 lines of Nginx error log for ${d}.${NORMAL}" | boxe
 tail -n20 "/var/log/domains/${d}/${d}-nginx-error.log"
 echo "${BOLD}Showing last 20 lines of WordPress error log for ${d}.${NORMAL}" | boxes -a c -d shell -p a1l2
 tail -n20 "/var/log/domains/${d}/${d}-wp-error.log"
+echo "${BOLD}Showing last 20 lines of Admin Control Panel access log for ${d}.${NORMAL}" | boxes -a c -d shell -p a1l2
+tail -n20 "/var/log/domains/${d}/${d}-nginx-access.log"
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

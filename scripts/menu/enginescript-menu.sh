@@ -29,7 +29,6 @@ while true
     echo "==============================================================="
     echo ""
     echo "Admin Control Panels:"
-    echo "via IP: https://${IP_ADDRESS}/admin"
     echo "via Domain: https://admin.YOURDOMAIN.TLD"
     echo ""
     echo "Helpful Commands:"

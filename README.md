@@ -277,3 +277,8 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |LIBURING|2.12|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
 |ZLIB|1.3.1|<https://github.com/madler/zlib>|
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=EngineScript/EngineScript&type=Date)](https://www.star-history.com/#EngineScript/EngineScript&Date)
+

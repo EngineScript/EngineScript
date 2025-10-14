@@ -99,11 +99,6 @@ if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
     echo ""
 fi
 
-# Enable admin panel authentication (always enabled now)
-sed -i "s|#satisfy any|satisfy any|g" "/etc/nginx/admin/admin.localhost.conf"
-sed -i "s|#auth_basic|auth_basic|g" "/etc/nginx/admin/admin.localhost.conf"
-sed -i "s|#allow |allow |g" "/etc/nginx/admin/admin.localhost.conf"
-
 # Nginx Service Check
 STATUS="$(systemctl is-active nginx)"
 if [[ "${STATUS}" == "active" ]]; then
