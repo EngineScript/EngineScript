@@ -223,7 +223,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
 |NGINX MAINLINE|1.29.2|<https://nginx.org/en/download.html>|
-|NGINX CACHE PURGE|2.5.3|<https://github.com/nginx-modules/ngx_cache_purge>|
+|NGINX CACHE PURGE|2.5.4|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
 |OPENSSL|3.5.4|<https://www.openssl.org/source/>|
