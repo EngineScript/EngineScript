@@ -36,6 +36,7 @@ DIRS=(
     "/var/lib/nginx/fastcgi"
     "/var/lib/nginx/proxy"
     "/var/log/domains"
+    "/var/log/nginx"
     "/var/www/admin/enginescript"
     "/var/www/sites"
 )

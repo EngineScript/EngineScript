@@ -27,14 +27,6 @@ if ! id "www-data" &>/dev/null; then
     useradd -r -s /bin/false www-data
 fi
 
-# Ensure all necessary directories exist
-mkdir -p /var/log/nginx
-mkdir -p /var/log/domains
-mkdir -p /var/cache/nginx
-mkdir -p /var/lib/nginx/{body,fastcgi,proxy}
-mkdir -p /tmp/nginx_proxy
-mkdir -p /usr/lib/nginx/modules
-
 # Assign Permissions BEFORE nginx tries to start
 set_nginx_permissions
 

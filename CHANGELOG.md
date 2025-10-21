@@ -4,6 +4,27 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-10-21
+
+### 🔄 CACHE MANAGEMENT IMPROVEMENTS
+
+- **Enhanced FastCGI Cache Clearing**: Improved `clear_nginx_cache()` function with proper worker signaling
+  - **Reliable Deletion**: Uses find command to delete cached files while preserving directory structure
+  - **Worker Notification**: Added nginx reload signal to notify worker processes of cache changes
+  - **Robust Error Handling**: Enhanced validation and directory existence checking
+  - **Cookie Map Expansion**: Added 11 missing cookies to `map-cache.conf` for comprehensive cache bypass coverage:
+    - **Authentication**: `amazon_Login_`, `duo_wordpress_auth_cookie`, `duo_secure_wordpress_auth_cookie`
+    - **Session Management**: `S+ESS`, `SimpleSAML`, `PHPSESSID`, `bookly`, `fbs`
+    - **Community Features**: `bp_completed_create_steps`, `bp_new_group_id`
+  - **Map Organization**: Alphabetized entire cookie map for improved maintainability and duplicate prevention
+  - **Pattern Coverage**: Total of 40+ cookie patterns now cover authentication, sessions, shopping carts, memberships, and plugin-specific cookies
+
+### 🐛 BUILD SYSTEM IMPROVEMENTS
+
+- **Patch Format Compliance**: Fixed nginx patches to comply with POSIX standards
+  - **Trailing Newline**: Ensured all patch files end with proper newline character
+  - **Warning Resolution**: Eliminated "patch unexpectedly ends in middle of line" warnings during compilation
+
 ## 2025-10-14
 
 ### 🔧 UPDATE SYSTEM IMPROVEMENTS

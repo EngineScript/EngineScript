@@ -59,10 +59,25 @@ function print_last_errors() {
 # ----------------------------------------------------------------
 # Clear Nginx cache directory
 function clear_nginx_cache() {
-    echo "Clearing Nginx Cache"
-    rm -rf /var/cache/nginx/* || {
-        echo "Error: Failed to clear Nginx cache."
-    }
+    echo "Clearing Nginx FastCGI Cache"
+    
+    if [ -d "/var/cache/nginx" ]; then
+        # Delete cache files while preserving directory structure
+        find /var/cache/nginx -type f -delete 2>/dev/null || {
+            echo "Error: Failed to clear Nginx cache."
+            return 1
+        }
+        
+        # Signal Nginx to reload cache state
+        if command -v nginx >/dev/null 2>&1; then
+            nginx -s reload 2>/dev/null || true
+        fi
+        
+        echo "Nginx cache cleared successfully"
+    else
+        echo "Warning: Nginx cache directory not found at /var/cache/nginx"
+        return 1
+    fi
 }
 
 
