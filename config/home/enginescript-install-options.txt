@@ -10,30 +10,93 @@
 #| At console, type: es.config
 #| At console, type /home/EngineScript/enginescript-install-options.txt
 
+
 ###################
 # Install Options #
 ###################
 # 0 = disabled
 # 1 = enabled
 
-# EngineScript Install Debug Mode
+## EngineScript Install Debug Mode ##
 # Prompts the user to continue or exit after each portion of the install script has run.
 # Debug mode will print any errors that each install script encounters.
 # Regardless of whether debug mode is enabled, EngineScript will generate a complete log of the script errors will be located at touch /var/log/EngineScript/install-error-log.log
 # Run command es.debug to generate a complete server and error log. This is useful when submitting a GitHub issue.
 DEBUG_INSTALL=0
 
-# Admin Subdomain (Recommended)
+## Admin Subdomain (Recommended) ##
 # This will add an admin subdomain (example: admin.wordpresstesting.com) to your site, allowing you to access your server's admin control panel directly from any site installed on your server. You can also access it directly via your server's IP address.
 ADMIN_SUBDOMAIN=1
 
-# phpMyAdmin (Recommended)
+## phpMyAdmin (Recommended) ##
 # Access MySQL databases and make changes to them. An essential tool.
 INSTALL_PHPMYADMIN=1
 
-# Adminer
+## Adminer ##
 # Adminer is a phpMyAdmin alternative.
 INSTALL_ADMINER=0
+
+## High Security SSL ##
+# Controls the SSL certificate keylength for all new domains.
+# 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
+# 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
+#
+# If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
+HIGH_SECURITY_SSL=0
+
+## NGINX HTTP3 Support ##
+# Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
+INSTALL_HTTP3=0
+
+## Expanded PHP Extensions Support ##
+# Adds the following extensions to the standard PHP configuration:
+# SOAP, SQLite3
+INSTALL_EXPANDED_PHP=0
+
+## Keep PHP 8.3 Installation ##
+# Set to 1 to keep PHP 8.3 alongside PHP 8.4 during upgrade
+# Set to 0 to remove PHP 8.3 after upgrading to PHP 8.4 (recommended)
+INSTALL_PHP83=0
+
+## Automatic Lossless Image Optimization ##
+# Automatically perform lossless compression on all images on each domain.
+# This script will remember which files have previously been compressed on the server, but will not be able to know if this was performed on a site from another server.
+# Do not enable this feature if you have an image compression plugin or do lossless compression on images prior to uploading them to your site.
+AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
+
+## Install EngineScript Custom Plugins ##
+# When enabled, EngineScript will install its two custom plugins during site creation:
+# 1. Simple WP Optimizer - Basic WordPress performance optimizations (header cleanup, etc.)
+# 2. Simple Site Exporter - Makes it easy to export sites to new EngineScript servers
+# Note: This does NOT affect other recommended plugins (Nginx Helper, Redis, etc.)
+INSTALL_ENGINESCRIPT_PLUGINS=1
+
+## Install Extra WordPress Plugins ##
+# When enabled, EngineScript will install additional recommended WordPress plugins during site creation:
+# action-scheduler, app-for-cf, autodescription, performance-lab, php-compatibility-checker, theme-check, wp-crontrol, wp-mail-smtp
+# These are optional but recommended for enhanced functionality, debugging, and development
+# Note: Core plugins (flush-opcache, mariadb-health-checks, nginx-helper, redis-cache) are always installed
+INSTALL_EXTRA_WP_PLUGINS=1
+
+## Show EngineScript Header ##
+# Enable if you want to show off that your server is running EngineScript.
+# Recommended: 0
+SHOW_ENGINESCRIPT_HEADER=0
+
+## DigitalOcean Remote Console ##
+# Install DigitalOcean's Droplet Agent for remote console access
+# This enables the Recovery Console feature in the DigitalOcean control panel
+# Only useful if your server is hosted on DigitalOcean
+# Recommended: 0 (unless on DigitalOcean)
+INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
+
+## DigitalOcean Metrics Agent ##
+# Install DigitalOcean's Metrics Agent for enhanced server monitoring
+# This enables detailed CPU, memory, disk, and bandwidth metrics in the DigitalOcean control panel
+# Only useful if your server is hosted on DigitalOcean
+# Recommended: 0 (unless on DigitalOcean)
+INSTALL_DIGITALOCEAN_METRICS_AGENT=0
+
 
 ########################
 # EngineScript Updates #
@@ -58,64 +121,6 @@ ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
 # 1 = Use update-software-versions branch (development/testing)
 TEST_MODE=0
 
-############################
-# Expanded Server Features #
-############################
-# 0 = disabled
-# 1 = enabled
-
-## HIGH_SECURITY_SSL ##
-# Controls the SSL certificate keylength for all new domains.
-# 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
-# 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
-#
-# If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
-HIGH_SECURITY_SSL=0
-
-## NGINX HTTP3 Support ##
-# Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
-INSTALL_HTTP3=0
-
-## Expanded PHP Extensions Support ##
-# Adds the following extensions to the standard PHP configuration:
-# SOAP, SQLite3
-INSTALL_EXPANDED_PHP=0
-
-## Keep PHP 8.3 Installation ##
-# Set to 1 to keep PHP 8.3 alongside PHP 8.4 during upgrade
-# Set to 0 to remove PHP 8.3 after upgrading to PHP 8.4 (recommended)
-INSTALL_PHP83=0
-
-# Automatically perform lossless compression on all images on each domain.
-# This script will remember which files have previously been compressed on the server, but will not be able to know if this was performed on a site from another server.
-# Do not enable this feature if you have an image compression plugin or do lossless compression on images prior to uploading them to your site.
-AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
-
-# Install EngineScript Custom Plugins
-# When enabled, EngineScript will install its two custom plugins during site creation:
-# 1. Simple WP Optimizer - Basic WordPress performance optimizations (header cleanup, etc.)
-# 2. Simple Site Exporter - Makes it easy to export sites to new EngineScript servers
-# Note: This does NOT affect other recommended plugins (Nginx Helper, Redis, etc.)
-INSTALL_ENGINESCRIPT_PLUGINS=1
-
-# Install Extra WordPress Plugins
-# When enabled, EngineScript will install additional recommended WordPress plugins during site creation:
-# action-scheduler, app-for-cf, autodescription, performance-lab, php-compatibility-checker, theme-check, wp-crontrol, wp-mail-smtp
-# These are optional but recommended for enhanced functionality, debugging, and development
-# Note: Core plugins (flush-opcache, mariadb-health-checks, nginx-helper, redis-cache) are always installed
-INSTALL_EXTRA_WP_PLUGINS=1
-
-## Show EngineScript Header ##
-# Enable if you want to show off that your server is running EngineScript.
-# Recommended: 0
-SHOW_ENGINESCRIPT_HEADER=0
-
-## DigitalOcean Remote Console ##
-# Install DigitalOcean's Droplet Agent for remote console access
-# This enables the Recovery Console feature in the DigitalOcean control panel
-# Only useful if your server is hosted on DigitalOcean
-# Recommended: 0 (unless on DigitalOcean)
-INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
 
 ##################
 # Backup Options #
@@ -150,6 +155,7 @@ WEEKLY_S3_WPCONTENT_BACKUP=0
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html
 S3_BUCKET_NAME="PLACEHOLDER"
 
+
 ############
 # API KEYS #
 ############
@@ -181,6 +187,7 @@ UPTIMEROBOT_API_KEY="PLACEHOLDER"
 # This is used to scan WordPress for known vulnerabilities.
 # Create your token at https://wpscan.com/api
 WPSCANAPI="PLACEHOLDER"
+
 
 ####################
 # User Credentials #

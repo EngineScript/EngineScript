@@ -384,7 +384,7 @@ if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" = "1" ]]; then
     then
       echo "DigitalOcean Remote Console script has already run."
     else
-      /usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-console-install.sh 2>> /tmp/enginescript_install_errors.log
+      /usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh 2>> /tmp/enginescript_install_errors.log
       echo "DO_CONSOLE=1" >> /var/log/EngineScript/install-log.log
   fi
   print_last_errors

@@ -48,3 +48,33 @@ echo "============================================================="
 echo "DigitalOcean Remote Console Installation Complete"
 echo "============================================================="
 echo ""
+
+# Check if DigitalOcean Metrics Agent installation is enabled
+if [[ "${INSTALL_DIGITALOCEAN_METRICS_AGENT}" == "1" ]]; then
+    echo "============================================================="
+    echo "Installing DigitalOcean Metrics Agent"
+    echo "============================================================="
+    echo ""
+    
+    # Download and execute DigitalOcean's official metrics agent installation script
+    echo "Downloading and installing DigitalOcean Metrics Agent..."
+    if curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash; then
+        echo "✅ DigitalOcean Metrics Agent installed successfully"
+        echo ""
+        echo "Enhanced server metrics are now available in your DigitalOcean control panel."
+        echo ""
+    else
+        echo "❌ Failed to install DigitalOcean Metrics Agent"
+        echo "This is not critical and does not affect server functionality."
+        echo ""
+    fi
+    
+    echo "============================================================="
+    echo "DigitalOcean Metrics Agent Installation Complete"
+    echo "============================================================="
+    echo ""
+else
+    echo "DigitalOcean Metrics Agent installation is disabled in configuration."
+    echo "Skipping metrics agent installation..."
+    echo ""
+fi

@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-10-23
+
+### 🖥️ DIGITALOCEAN MONITORING ENHANCEMENT
+
+- **DigitalOcean Metrics Agent Support**: Added optional support for enhanced server monitoring
+
 ## 2025-10-21
 
 ### 🔄 CACHE MANAGEMENT IMPROVEMENTS
