@@ -162,7 +162,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 ### Admin Control Panel Features
 
-EngineScript includes a comprehensive web-based admin control panel accessible at `https://your-server-ip/admin` or `https://admin.yourdomain.com`. The control panel provides:
+EngineScript includes a comprehensive web-based admin control panel accessible at `https://admin.yourdomain.com`. The control panel provides:
 
 #### Server Monitoring
 
