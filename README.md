@@ -222,12 +222,12 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.29.2|<https://nginx.org/en/download.html>|
+|NGINX MAINLINE|1.29.3|<https://nginx.org/en/download.html>|
 |NGINX CACHE PURGE|2.5.4|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
 |OPENSSL|3.5.4|<https://www.openssl.org/source/>|
-|PCRE2|10.46|<https://github.com/PCRE2Project/pcre2/releases>|
+|PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB-Cloudflare||<https://github.com/cloudflare/zlib>|
 |**Script Processing**|||
 |PHP|8.3|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
@@ -250,7 +250,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |PLUGIN: App for Cloudflare||<https://wordpress.org/plugins/app-for-cf/>|
 |PLUGIN: Action Scheduler||<https://wordpress.org/plugins/action-scheduler/>|
 |PLUGIN: EngineScript: Simple Site Exporter|1.9.1|[https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter)|
-|PLUGIN: EngineScript: Simple WP Optimizer|1.7.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
+|PLUGIN: EngineScript: Simple WP Optimizer|1.8.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
 |PLUGIN: MariaDB Health Checks *(recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
 |PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
 |PLUGIN: Performance Lab||<https://wordpress.org/plugins/performance-lab/>|
