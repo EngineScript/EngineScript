@@ -24,18 +24,14 @@ SSE_PLUGIN_VER="1.9.1"
 SWPO_PLUGIN_VER="1.8.0"
 
 # Frontend Dependencies  
-CHARTJS_VER="4.5.0"
-FONTAWESOME_VER="6.7.2"
+CHARTJS_VER="4.5.1"
+FONTAWESOME_VER="7.1.0"
 TINYFILEMANAGER_VER="2.6"
-
-# Old Software Versions
-OLDPHP="8.0"
-OLDPCRE="8.45"
 
 # System Information (CI Static Values)
 BIT_TYPE="x86_64"
 CPU_COUNT="2"
-DT="12-25-24"
+DT="$(date +"%m-%d-%y")"
 IP_ADDRESS="127.0.0.1"
 UBUNTU_TYPE="Ubuntu"
 UBUNTU_CODENAME="noble"

@@ -22,12 +22,7 @@ clear
 echo ""
 echo "----------------------------------------------------------"
 echo "${BOLD}Nginx Admin Authentication:${NORMAL}"
-echo ""
-echo "Please note: We've self-signed an SSL certificate for your IP address."
-echo "We want to protect the Admin Control Panel by requesting login credentials from all visitors"
-echo "You'll get an untrusted SSL warning in your browser when visiting your server IP."
-echo "Set a rule within your browser to allow access anyway."
-echo ""
+echo "----------------------------------------------------------"
 
 # Set Restricted Access Password
 printf "%s:%s\n" "${ADMIN_CONTROL_PANEL_USERNAME}" "$(openssl passwd -apr1 "${ADMIN_CONTROL_PANEL_PASSWORD}")" >> /etc/nginx/restricted-access/.htpasswd

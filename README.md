@@ -230,7 +230,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB-Cloudflare||<https://github.com/cloudflare/zlib>|
 |**Script Processing**|||
-|PHP|8.3|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
+|PHP|8.4|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
 |**MySQL Database**|||
 |MARIADB|11.8.3|<https://mariadb.org/download/>|
 |**Database Management**|||
@@ -269,7 +269,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |WPSCAN||<https://wpscan.com/>|
 |**Development Tools**|||
 |PNGOUT|20200115|<http://www.jonof.id.au/kenutils.html>|
-|ZIMAGEOPTIMIZER|Latst|<https://github.com/zevilz/zImageOptimizer>|
+|ZIMAGEOPTIMIZER||<https://github.com/zevilz/zImageOptimizer>|
 |**Backup Software**|||
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
@@ -281,4 +281,3 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=EngineScript/EngineScript&type=Date)](https://www.star-history.com/#EngineScript/EngineScript&Date)
-

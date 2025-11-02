@@ -28,10 +28,6 @@ CHARTJS_VER="4.5.1"
 FONTAWESOME_VER="7.1.0"
 TINYFILEMANAGER_VER="2.6"
 
-# Old Software Versions
-OLDPHP="8.0"
-OLDPCRE="8.45"
-
 # System Information
 BIT_TYPE="$(uname -m)"
 CPU_COUNT="$(nproc --all)"
@@ -67,4 +63,3 @@ SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"
 # Shell text formatting
 BOLD="$(tput bold)"
 NORMAL="$(tput sgr0)"
-
