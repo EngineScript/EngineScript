@@ -4,6 +4,31 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-02
+
+### 🔒 SECURITY IMPROVEMENTS
+
+- **HTTPS Redirect Security**: Fixed Host header manipulation vulnerability in default admin vhost
+  - **Change**: HTTPS redirect now uses `$server_name` instead of `$host` variable
+  - **Impact**: Prevents phishing attacks via Host header injection
+
+- **IP Validation Enhancement**: Added comprehensive validation for external IP detection
+  - **Primary Source**: ipinfo.io with 5-second timeout
+  - **Validation**: Regex format check + octet range validation (0-255)
+  - **Backup Source**: Automatic fallback to icanhazip.com if primary fails
+  - **Impact**: Prevents malformed data injection into Cloudflare API calls
+
+### ⚡ PERFORMANCE OPTIMIZATIONS
+
+- **SSL Buffer Optimization**: Reduced SSL buffer size for improved performance
+  - **Change**: `ssl_buffer_size` reduced from 16k to 4k
+  - **Impact**: Lower memory usage and improved TTFB for small responses
+
+- **Static File Caching**: Improved robots.txt caching strategy
+  - **Change**: robots.txt now cached for 1 hour instead of no-cache
+  - **Headers**: Added `Cache-Control: public, max-age=3600` with 1h expires
+  - **Impact**: Reduced server load from bot traffic
+
 ## 2025-10-23
 
 ### 🖥️ DIGITALOCEAN MONITORING ENHANCEMENT

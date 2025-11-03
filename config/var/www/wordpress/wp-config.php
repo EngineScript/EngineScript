@@ -142,13 +142,6 @@ define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, 
 //define( 'COMPRESS_SCRIPTS', true );
 //define( 'ENFORCE_GZIP', true );
 
-/* Security Headers */
-// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
-//header( 'X-Frame-Options: SAMEORIGIN' );
-//header( 'X-Content-Type-Options: nosniff' );
-//header( 'Referrer-Policy: no-referrer' );
-//header( 'Expect-CT enforce; max-age=3600' );
-
 /* Theme Check Plugin */
 // https://wordpress.org/plugins/theme-check/
 // WP_DEBUG should also be set to true if you want to use this

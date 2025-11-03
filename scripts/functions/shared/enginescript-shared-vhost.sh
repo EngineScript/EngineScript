@@ -228,8 +228,33 @@ configure_cloudflare_settings() {
 
       ## DNS Settings
       
-      # Get server's current public IP address
-      SERVER_IP=$(curl -s https://ipinfo.io/ip)
+      # Get server's current public IP address with validation
+      echo "Detecting server public IP address..."
+      SERVER_IP=$(curl -s --max-time 5 https://ipinfo.io/ip)
+      
+      # Validate IP format
+      if ! [[ "$SERVER_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        echo "WARNING: Invalid IP from ipinfo.io (${SERVER_IP}), trying backup source..."
+        SERVER_IP=$(curl -s --max-time 5 https://icanhazip.com)
+        
+        # Validate backup IP
+        if ! [[ "$SERVER_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+          echo "ERROR: Could not obtain valid IP address from any source"
+          echo "Received: ${SERVER_IP}"
+          exit 1
+        fi
+      fi
+      
+      # Validate IP octets are within valid range (0-255)
+      IFS='.' read -ra OCTETS <<< "$SERVER_IP"
+      for octet in "${OCTETS[@]}"; do
+        if [[ $octet -gt 255 ]]; then
+          echo "ERROR: Invalid IP address octet: $octet in $SERVER_IP"
+          exit 1
+        fi
+      done
+      
+      echo "✓ Server IP detected: ${SERVER_IP}"
       
       # Check if A record exists and matches server IP
       A_RECORD_INFO=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=A&name=${DOMAIN}" \
