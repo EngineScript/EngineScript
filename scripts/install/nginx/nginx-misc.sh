@@ -22,6 +22,16 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf
 
+# Enable unsafe file blocking if configured
+if [[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" ]]; then
+    sed -i 's|^  #\("~\*\\.\(?:asc\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i 's|^  #\("~\*(Gemfile\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i 's|^  #\("~\*(changelog\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i 's|^  #\("~\*gems\\.\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i 's|^  #\("~\*/wp-content/updraft/\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i 's|^  #\("~\*/wp-content/uploads/\.\*\\.\|  \1|' /etc/nginx/globals/map-cache.conf
+fi
+
 # Create nginx user and group if they don't exist
 if ! id "www-data" &>/dev/null; then
     useradd -r -s /bin/false www-data

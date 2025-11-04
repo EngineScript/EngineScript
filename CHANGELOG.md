@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-03
+
+### 🔧 CONFIGURATION IMPROVEMENTS
+
+- **Optional Unsafe File Blocking**: Made FastCGI cache unsafe file blocking configurable
+
 ## 2025-11-02
 
 ### 🔒 SECURITY IMPROVEMENTS

@@ -83,6 +83,12 @@ INSTALL_EXTRA_WP_PLUGINS=1
 # Recommended: 0
 SHOW_ENGINESCRIPT_HEADER=0
 
+## Nginx Unsafe File Blocking ##
+# Blocks access to potentially unsafe file types and locations in FastCGI cache
+# When enabled, blocks: .env, .log, .ini, wp-config.php, composer.json, backup files, etc.
+# Disable if you need to access these files through the web (not recommended for security)
+NGINX_BLOCK_UNSAFE_FILES=0
+
 ## DigitalOcean Remote Console ##
 # Install DigitalOcean's Droplet Agent for remote console access
 # This enables the Recovery Console feature in the DigitalOcean control panel
