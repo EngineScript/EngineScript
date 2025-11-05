@@ -24,10 +24,8 @@ apt install -qy redis redis-server redis-tools
 # Setup Redis
 #mkdir -p /run/redis
 #mkdir -p /var/lib/redis
-#mkdir -p /var/log/redis
 touch /var/log/redis/redis-server.log
-find /var/lib/redis -type d,f -exec chmod 775 {} \;
-find /var/lib/redis -type d,f -exec chmod 775 {} \;
+find /var/lib/redis -type d -o -type f -exec chmod 775 {} \;
 chmod 775 /run/redis
 chmod 775 /var/lib/redis
 chmod 775 /var/log/redis
@@ -74,6 +72,8 @@ usermod -aG redis www-data
 systemctl daemon-reload
 restart_service "redis-server"
 systemctl enable redis-server
+
+sleep 3
 
 # Ensure correct socket ownership and permissions
 chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true

@@ -30,7 +30,7 @@ fi
 git clone https://github.com/testssl/testssl.sh.git /usr/local/bin/testssl.sh
 
 # Permissions
-find /usr/local/bin/testssl.sh -type d,f -exec chmod 755 {} \;
+find /usr/local/bin/testssl.sh -exec chmod 755 {} \;
 chown -R root:root /usr/local/bin/testssl.sh
 find /usr/local/bin/testssl.sh -type f -iname "*.sh" -exec chmod +x {} \;
 

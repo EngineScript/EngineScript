@@ -27,7 +27,7 @@ dos2unix /home/EngineScript/enginescript-install-options.txt
 dos2unix /usr/local/bin/enginescript/*
 
 # Set directory and file permissions to 755
-find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+find /usr/local/bin/enginescript -exec chmod 755 {} \;
 
 # Set ownership
 chown -R root:root /usr/local/bin/enginescript

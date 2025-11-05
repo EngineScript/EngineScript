@@ -473,9 +473,9 @@ function set_nginx_permissions() {
 # ----------------------------------------------------------------
 # Set permissions for PHP directories and files
 function set_php_permissions() {
-    find "/var/log/php" -type d,f -exec chmod 775 {} \;
-    find "/var/log/opcache" -type d,f -exec chmod 775 {} \;
-    find "/etc/php" -type d,f -exec chmod 775 {} \;
+    find "/var/log/php" -exec chmod 775 {} \;
+    find "/var/log/opcache" -exec chmod 775 {} \;
+    find "/etc/php" -exec chmod 775 {} \;
     chmod 775 /var/cache/opcache
     chmod 775 /var/cache/php-sessions
     chmod 775 /var/cache/wsdlcache

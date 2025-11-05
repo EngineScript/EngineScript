@@ -28,7 +28,7 @@ fi
 
 # Install zImageOptimizer
 git clone --depth 1 "https://github.com/zevilz/zImageOptimizer.git" -b master "/usr/local/bin/zimageoptimizer"
-find "/usr/local/bin/zimageoptimizer" -type d,f -exec chmod 755 {} \;
+find "/usr/local/bin/zimageoptimizer" -exec chmod 755 {} \;
 
 # Return to /usr/src
 cd /usr/src

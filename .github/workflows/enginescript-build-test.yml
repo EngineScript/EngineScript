@@ -171,7 +171,7 @@ jobs:
           
           # Set directory and file permissions
           echo "🔧 Setting permissions..." | sudo tee -a /tmp/ci-logs/setup.log
-          sudo find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          sudo find /usr/local/bin/enginescript -exec chmod 755 {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           sudo chown -R root:root /usr/local/bin/enginescript 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           sudo find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Permissions set correctly" | sudo tee -a /tmp/ci-logs/setup.log

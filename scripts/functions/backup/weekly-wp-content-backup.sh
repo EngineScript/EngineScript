@@ -55,5 +55,5 @@ do
     fi
 
       # Remove Old Backups
-    find "/home/EngineScript/site-backups/$i/wp-content" -type d,f -mtime +7 | xargs rm -fR
+    find "/home/EngineScript/site-backups/$i/wp-content" -mtime +7 | xargs rm -fR
 done

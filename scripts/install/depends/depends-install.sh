@@ -169,9 +169,5 @@ apt install -qy $packages || {
 # Nano
 update-alternatives --set editor /bin/nano
 
-# Cheat.sh
-#curl https://cht.sh/:cht.sh | sudo tee /usr/local/bin/cht.sh
-#chmod +x /usr/local/bin/cht.sh
-
 # Mark the installation as complete
 echo "DEPENDS=1" >> /var/log/EngineScript/install-log.log

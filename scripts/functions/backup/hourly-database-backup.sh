@@ -56,6 +56,6 @@ do
     fi
 
     # Remove Old Backups
-    find "/home/EngineScript/site-backups/$i/database/hourly" -type d,f -mtime +1 | xargs rm -fR
+    find "/home/EngineScript/site-backups/$i/database/hourly" -mtime +1 | xargs rm -fR
 
 done

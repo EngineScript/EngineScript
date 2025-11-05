@@ -64,6 +64,6 @@ do
     fi
 
   # Remove Old Backups
-    find "/home/EngineScript/site-backups/$i/database/daily" -type d,f -mtime +30 | xargs rm -fR
-    find "/home/EngineScript/site-backups/$i/wp-config" -type d,f -mtime +30 | xargs rm -fR
+    find "/home/EngineScript/site-backups/$i/database/daily" -mtime +30 | xargs rm -fR
+    find "/home/EngineScript/site-backups/$i/wp-config" -mtime +30 | xargs rm -fR
 done
