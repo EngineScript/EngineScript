@@ -13,6 +13,7 @@ Changes are organized by date, with the most recent changes listed first.
 ### ⚡ PERFORMANCE IMPROVEMENTS
 
 - **Removed Loading Delay**: Eliminated hardcoded 1.5s loading screen delay for faster perceived performance
+- **Skeleton Loaders**: Added animated skeleton placeholders across all dashboard pages while data loads
 
 ## 2025-11-03
 

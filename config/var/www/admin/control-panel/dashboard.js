@@ -275,6 +275,13 @@ class EngineScriptDashboard {
   // Data Loading Methods
   async loadOverviewData() {
     try {
+      // Show skeleton loaders while loading
+      this.showSkeletonStats();
+      this.showSkeletonServiceStatus();
+      this.showSkeletonActivityList();
+      this.showSkeletonAlerts();
+      this.showSkeletonChart("performance-chart-container");
+
       // Load system stats
       await this.loadSystemStats();
 
@@ -462,6 +469,7 @@ class EngineScriptDashboard {
     
   async loadSites() {
     try {
+      this.showSkeletonSites();
       const sites = await this.getApiData("/api/sites", []);
       const sitesGrid = document.getElementById("sites-grid");
 
@@ -516,6 +524,7 @@ class EngineScriptDashboard {
     
   async loadSystemInfo() {
     try {
+      this.showSkeletonSystemInfo();
       const sysInfo = await this.getApiData("/api/system/info", {});
       const systemInfo = document.getElementById("system-info");
 
@@ -1002,6 +1011,108 @@ class EngineScriptDashboard {
     const element = document.getElementById(elementId);
     if (element) {
       element.textContent = String(content || "");
+    }
+  }
+
+  // Skeleton loader helpers
+  showSkeletonStat(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.innerHTML = '<div class="skeleton skeleton-stat"></div>';
+    }
+  }
+
+  showSkeletonStats() {
+    this.showSkeletonStat("sites-count");
+    this.showSkeletonStat("memory-usage");
+    this.showSkeletonStat("disk-usage");
+    this.showSkeletonStat("cpu-usage");
+  }
+
+  showSkeletonChart(chartContainerId) {
+    const container = document.getElementById(chartContainerId);
+    if (container) {
+      container.innerHTML = '<div class="skeleton-chart"></div>';
+    }
+  }
+
+  showSkeletonServiceStatus() {
+    const services = ["nginx", "php", "mysql", "redis"];
+    services.forEach(service => {
+      const element = document.getElementById(`${service}-status`);
+      if (element) {
+        element.innerHTML = `
+          <div class="skeleton-row">
+            <div class="skeleton-circle"></div>
+            <div style="flex: 1;">
+              <div class="skeleton skeleton-text short"></div>
+              <div class="skeleton skeleton-text short" style="width: 50%;"></div>
+            </div>
+          </div>
+        `;
+      }
+    });
+  }
+
+  showSkeletonActivityList() {
+    const activityList = document.getElementById("recent-activity");
+    if (activityList) {
+      let html = '';
+      for (let i = 0; i < 3; i++) {
+        html += `
+          <div class="skeleton-card">
+            <div class="skeleton skeleton-text short"></div>
+            <div class="skeleton skeleton-text" style="width: 40%;"></div>
+          </div>
+        `;
+      }
+      activityList.innerHTML = html;
+    }
+  }
+
+  showSkeletonAlerts() {
+    const alertList = document.getElementById("system-alerts");
+    if (alertList) {
+      let html = '';
+      for (let i = 0; i < 2; i++) {
+        html += `
+          <div class="skeleton-card">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        `;
+      }
+      alertList.innerHTML = html;
+    }
+  }
+
+  showSkeletonSites() {
+    const sitesGrid = document.getElementById("sites-grid");
+    if (sitesGrid) {
+      let html = '';
+      for (let i = 0; i < 3; i++) {
+        html += `
+          <div class="skeleton-card">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        `;
+      }
+      sitesGrid.innerHTML = html;
+    }
+  }
+
+  showSkeletonSystemInfo() {
+    const systemInfo = document.getElementById("system-info");
+    if (systemInfo) {
+      let html = '';
+      for (let i = 0; i < 8; i++) {
+        html += `
+          <div class="skeleton skeleton-text"></div>
+        `;
+      }
+      systemInfo.innerHTML = html;
     }
   }
     
