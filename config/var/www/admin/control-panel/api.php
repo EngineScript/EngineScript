@@ -46,13 +46,18 @@ if (in_array($origin_host, $allowed_origins, true) ||
 }
 
 header('Access-Control-Allow-Methods: GET, OPTIONS'); // codacy:ignore - CORS header required
-header('Access-Control-Allow-Headers: Content-Type, X-Requested-With'); // codacy:ignore - CORS header required
+header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required
 header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
 
 // Rate limiting (basic implementation) - session functions required for API rate limiting
 if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status() required for session management in standalone API
     session_start(); // codacy:ignore - session_start() required for rate limiting functionality
+}
+
+// Initialize CSRF token if not exists
+if (!isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF protection
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // codacy:ignore - random_bytes() required for cryptographic token generation
 }
 $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
@@ -293,6 +298,10 @@ if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
 
 // Route handling
 switch ($path) {
+    case '/csrf-token':
+        handleCsrfToken();
+        break;
+    
     case '/system/stats':
         handleSystemStats();
         break;
@@ -359,6 +368,25 @@ switch ($path) {
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
         break;
+}
+
+function handleCsrfToken() {
+    try {
+        // Return the current CSRF token
+        if (isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF token response
+            echo json_encode([
+                'csrf_token' => $_SESSION['csrf_token'], // codacy:ignore - Direct $_SESSION access required for CSRF token response
+                'token_name' => '_csrf_token'
+            ]); // codacy:ignore - echo required for JSON API response
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Unable to generate CSRF token']); // codacy:ignore - echo required for JSON API response
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('CSRF token error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to generate CSRF token']); // codacy:ignore - echo required for JSON API response
+    }
 }
 
 function handleSystemStats() {

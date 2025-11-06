@@ -9,6 +9,7 @@ class EngineScriptDashboard {
     this.refreshInterval = 30000; // 30 seconds
     this.charts = {};
     this.refreshTimer = null;
+    this.csrfToken = null; // CSRF token for future state-changing requests
 
     // Security configurations
     this.maxRefreshInterval = 300000; // 5 minutes max
@@ -24,8 +25,26 @@ class EngineScriptDashboard {
     this.setupEventListeners();
     this.setupNavigation();
     this.startClock();
+    this.loadCsrfToken(); // Load CSRF token before other API calls
     this.loadInitialData();
     this.hideLoadingScreen();
+  }
+
+  async loadCsrfToken() {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        this.csrfToken = data.csrf_token;
+      } else {
+        console.warn('Failed to load CSRF token');
+      }
+    } catch (error) {
+      console.error('Error loading CSRF token:', error);
+    }
   }
 
   setupEventListeners() {
@@ -173,16 +192,17 @@ class EngineScriptDashboard {
   }
     
   hideLoadingScreen() {
-    setTimeout(() => {
-      const loadingScreen = document.getElementById("loading-screen");
-      const dashboard = document.getElementById("dashboard");
+    // Hide loading screen immediately, no artificial delay
+    const loadingScreen = document.getElementById("loading-screen");
+    const dashboard = document.getElementById("dashboard");
 
+    if (loadingScreen && dashboard) {
       loadingScreen.style.opacity = "0";
       setTimeout(() => {
         loadingScreen.style.display = "none";
         dashboard.style.display = "flex";
-      }, 500);
-    }, 1500);
+      }, 500); // Fade out animation only
+    }
   }
 
   toggleMobileMenu() {
@@ -767,7 +787,16 @@ class EngineScriptDashboard {
         return fallback;
       }
 
-      const response = await fetch(endpoint);
+      const headers = {};
+      if (this.csrfToken) {
+        headers['X-CSRF-Token'] = this.csrfToken;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: headers,
+        credentials: 'include'
+      });
 
       if (!response.ok) {
         throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
@@ -794,6 +823,38 @@ class EngineScriptDashboard {
       console.error('API request failed:', error);
       // Return fallback value on error
       return fallback;
+    }
+  }
+
+  async postApiData(endpoint, data = {}) {
+    try {
+      // Check if fetch is available
+      if (typeof fetch === "undefined" || this.isOperaMini()) {
+        return { error: 'Fetch not supported' };
+      }
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (this.csrfToken) {
+        headers['X-CSRF-Token'] = this.csrfToken;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error posting to ${endpoint}:`, error);
+      return { error: error.message };
     }
   }
 

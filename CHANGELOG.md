@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-06
+
+### 🔒 SECURITY IMPROVEMENTS
+
+- **CSRF Token Protection**: Added cryptographic CSRF token generation and validation for API endpoints
+
+### ⚡ PERFORMANCE IMPROVEMENTS
+
+- **Removed Loading Delay**: Eliminated hardcoded 1.5s loading screen delay for faster perceived performance
+
 ## 2025-11-03
 
 ### 🔧 CONFIGURATION IMPROVEMENTS
