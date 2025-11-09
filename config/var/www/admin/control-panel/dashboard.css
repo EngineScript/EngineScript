@@ -76,6 +76,7 @@ body {
     0% {
         background-position: -1000px 0;
     }
+
     100% {
         background-position: 1000px 0;
     }
@@ -1173,4 +1174,63 @@ button:focus, select:focus, input:focus {
     .uptime-number {
         font-size: 1.5rem;
     }
+}
+
+/* Empty States */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.6;
+    margin-top: 10px;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.empty-state-message {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    max-width: 400px;
+}
+
+.empty-state-action {
+    margin-top: 20px;
+}
+
+.empty-state-action .btn {
+    min-width: 150px;
+}
+
+/* Empty State Variants */
+.empty-state.success .empty-state-icon {
+    color: var(--success-color);
+}
+
+.empty-state.warning .empty-state-icon {
+    color: var(--warning-color);
+}
+
+.empty-state.info .empty-state-icon {
+    color: var(--info-color);
+}
+
+.empty-state.error .empty-state-icon {
+    color: var(--error-color);
 }

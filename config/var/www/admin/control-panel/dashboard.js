@@ -381,40 +381,29 @@ class EngineScriptDashboard {
       const activities = await this.getApiData("/api/activity/recent", []);
       const activityList = document.getElementById("recent-activity");
 
-      if (activityList && Array.isArray(activities) && activities.length > 0) {
-        // Clear existing content
-        activityList.innerHTML = "";
+      if (activityList) {
+        if (Array.isArray(activities) && activities.length > 0) {
+          // Clear existing content
+          activityList.innerHTML = "";
 
-        // Validate and render each activity safely
-        activities.forEach((activity) => {
-          if (this.isValidActivity(activity)) {
-            const activityElement = this.createActivityElement(activity);
-            activityList.appendChild(activityElement);
-          }
-        });
+          // Validate and render each activity safely
+          activities.forEach((activity) => {
+            if (this.isValidActivity(activity)) {
+              const activityElement = this.createActivityElement(activity);
+              activityList.appendChild(activityElement);
+            }
+          });
+        } else {
+          // Show empty state
+          this.showEmptyActivity();
+        }
       }
     } catch (error) {
       console.error('Failed to load recent activity:', error);
-      // Show fallback message
-      const activityList = document.getElementById("recent-activity");
-      if (activityList) {
-        activityList.innerHTML = "";
-        const fallbackDiv = document.createElement("div");
-        fallbackDiv.className = "activity-item";
-        
-        const contentDiv = document.createElement("div");
-        contentDiv.className = "activity-content";
-        
-        const message = document.createElement("p");
-        message.textContent = "Unable to load recent activity";
-        
-        contentDiv.appendChild(message);
-        fallbackDiv.appendChild(contentDiv);
-        activityList.appendChild(fallbackDiv);
-      }
+      this.showEmptyActivity();
     }
   }
-    
+
   async loadSystemAlerts() {
     try {
       const alerts = await this.getApiData("/api/alerts", []);
@@ -432,28 +421,13 @@ class EngineScriptDashboard {
             }
           });
         } else {
-          // Create default "all systems operational" alert
-          const defaultAlert = this.createAlertElement({
-            message: "All systems operational",
-            time: "Just now",
-            type: "info",
-          });
-          alertList.appendChild(defaultAlert);
+          // Show empty state for all systems operational
+          this.showEmptyAlerts();
         }
       }
     } catch (error) {
       console.error('Failed to load system alerts:', error);
-      // Show fallback alert
-      const alertList = document.getElementById("system-alerts");
-      if (alertList) {
-        alertList.innerHTML = '';
-        const errorAlert = this.createAlertElement({
-          message: "Unable to load system alerts",
-          time: "Just now",
-          type: "error",
-        });
-        alertList.appendChild(errorAlert);
-      }
+      this.showEmptyAlerts();
     }
   }
     
@@ -562,23 +536,7 @@ class EngineScriptDashboard {
 
     } catch (error) {
       console.error('Failed to load system information:', error);
-      // Show fallback system info
-      const systemInfo = document.getElementById("system-info");
-      if (systemInfo) {
-        systemInfo.innerHTML = "";
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "info-item";
-        
-        const label = document.createElement("strong");
-        label.textContent = "Error:";
-        
-        const value = document.createElement("span");
-        value.textContent = "Unable to load system information";
-        
-        errorDiv.appendChild(label);
-        errorDiv.appendChild(value);
-        systemInfo.appendChild(errorDiv);
-      }
+      this.showErrorSystemInfo();
     }
   }
     
@@ -1115,6 +1073,93 @@ class EngineScriptDashboard {
       systemInfo.innerHTML = html;
     }
   }
+
+  // Empty state helpers
+  createEmptyState(type, icon, title, message, actionText = null, actionCallback = null) {
+    const emptyState = document.createElement('div');
+    emptyState.className = `empty-state ${type}`;
+    
+    let html = `
+      <i class="fas fa-${icon} empty-state-icon"></i>
+      <h3 class="empty-state-title">${this.sanitizeInput(title)}</h3>
+      <p class="empty-state-message">${this.sanitizeInput(message)}</p>
+    `;
+    
+    if (actionText && actionCallback) {
+      html += `
+        <div class="empty-state-action">
+          <button class="btn btn-primary" data-action="empty-state-action">${this.sanitizeInput(actionText)}</button>
+        </div>
+      `;
+    }
+    
+    emptyState.innerHTML = html;
+    
+    if (actionText && actionCallback) {
+      const btn = emptyState.querySelector('[data-action="empty-state-action"]');
+      btn.addEventListener('click', actionCallback);
+    }
+    
+    return emptyState;
+  }
+
+  showEmptyActivity() {
+    const activityList = document.getElementById("recent-activity");
+    if (activityList) {
+      const emptyState = this.createEmptyState(
+        'info',
+        'history',
+        'No Recent Activity',
+        'Activity will appear here as the system runs'
+      );
+      activityList.innerHTML = '';
+      activityList.appendChild(emptyState);
+    }
+  }
+
+  showEmptyAlerts() {
+    const alertList = document.getElementById("system-alerts");
+    if (alertList) {
+      const emptyState = this.createEmptyState(
+        'success',
+        'check-circle',
+        'All Systems Operational',
+        'No alerts at this time'
+      );
+      alertList.innerHTML = '';
+      alertList.appendChild(emptyState);
+    }
+  }
+
+  showEmptyUptimeMonitors() {
+    const uptimeContainer = document.getElementById("uptime-summary");
+    if (uptimeContainer) {
+      const emptyState = this.createEmptyState(
+        'warning',
+        'radar',
+        'Uptime Monitoring Not Configured',
+        'Set up Uptime Robot monitoring to track site availability'
+      );
+      uptimeContainer.innerHTML = '';
+      uptimeContainer.appendChild(emptyState);
+    }
+  }
+
+  showErrorSystemInfo() {
+    const systemInfo = document.getElementById("system-info");
+    if (systemInfo) {
+      const emptyState = this.createEmptyState(
+        'error',
+        'exclamation-circle',
+        'Unable to Load System Information',
+        'There was an error retrieving system data',
+        'Retry',
+        () => this.loadSystemInfo()
+      );
+      systemInfo.innerHTML = '';
+      systemInfo.appendChild(emptyState);
+    }
+  }
     
   isValidActivity(activity) {
     return (
@@ -1363,14 +1408,13 @@ class EngineScriptDashboard {
       
       if (monitors.length === 0) {
         monitorsContainer.innerHTML = "";
-        const statusDiv = document.createElement("div");
-        statusDiv.className = "uptime-status";
-        
-        const message = document.createElement("p");
-        message.textContent = "No monitors configured. Add websites to monitor in your Uptime Robot dashboard.";
-        
-        statusDiv.appendChild(message);
-        monitorsContainer.appendChild(statusDiv);
+        const emptyState = this.createEmptyState(
+          'warning',
+          'clock',
+          'No Monitors Configured',
+          'Add websites to monitor in your Uptime Robot dashboard'
+        );
+        monitorsContainer.appendChild(emptyState);
         return;
       }
       
