@@ -42,7 +42,7 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🐛 BUG FIXES
 
 - **Service Status Display**: Fixed service status not loading on dashboard
-  - Updated API call from `/services/status` to `/api/services/status` 
+  - Updated API call from `/services/status` to `/api/services/status`
   - Added nginx rewrite rule for `/services/*` endpoints in admin.your-domain.conf
   - Fixed skeleton loader to preserve HTML structure instead of replacing it
   - Optimized service status loading to fetch all services in one API call
@@ -83,7 +83,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-02
 
-### 🔒 SECURITY IMPROVEMENTS
+### 🔒 SECURITY IMPROVEMENT
 
 - **HTTPS Redirect Security**: Fixed Host header manipulation vulnerability in default admin vhost
   - **Change**: HTTPS redirect now uses `$server_name` instead of `$host` variable
@@ -163,11 +163,11 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 📝 DOCUMENTATION IMPROVEMENTS
 
-  - **Enhanced Readability**: Improved overall document structure and formatting consistency
+- **Enhanced Readability**: Improved overall document structure and formatting consistency
 
 ### 🛠️ CODE ORGANIZATION
 
-  - **Maintainability**: Enhanced code organization following project style standards
+- **Maintainability**: Enhanced code organization following project style standards
 
 ### ⚙️ CONFIGURATION ENHANCEMENTS
 
@@ -423,6 +423,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Permission Denied Errors**: Eliminated "Permission denied" errors for nginx.error.log and nginx.pid files
 
 ### 🚨 ADMIN CONTROL PANEL LOGGING FIX
+
 - **API Security Log Permissions**: Fixed critical permission denied errors in admin control panel API
   - **Log File Location**: Moved API security log from `/var/log/enginescript-api-security.log` to `/var/log/EngineScript/enginescript-api-security.log`
   - **Proper Directory Structure**: Aligned API logging with EngineScript's standard log directory structure
@@ -435,6 +436,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-14
 
 ### 🚨 NGINX BUILD SYSTEM CRITICAL FIXES
+
 - **Permission Issues Resolved**: Fixed critical permission errors preventing nginx from starting
   - **Directory Creation**: Ensured all nginx directories exist before setting permissions
   - **SSL Certificate Permissions**: Added proper ownership and permissions for SSL certificate files
@@ -450,18 +452,21 @@ Changes are organized by date, with the most recent changes listed first.
   - **Build Optimization**: Maintained security while reducing build noise
 
 ### 🚨 ADMIN CONTROL PANEL CRITICAL FIX
+
 - **Dashboard Loading Issue**: Fixed admin control panel failing to load with infinite "Loading Dashboard..." spinner
   - **Nginx Configuration**: Corrected root directory from `/var/www/admin/enginescript` to `/var/www/admin/control-panel`
   - **API Routing**: Fixed API endpoint routing that was preventing JavaScript from communicating with PHP backend
   - **File Location**: Resolved mismatch between nginx configuration and actual control panel file locations
 
 ### �🔧 ADMIN CONTROL PANEL IMPROVEMENTS
+
 - **Mobile Navigation**: Added hamburger menu for mobile access to admin control panel navigation
   - **Responsive Design**: Fixed left navigation column visibility on mobile devices
   - **Toggle Functionality**: Implemented mobile menu toggle with overlay for better user experience
   - **CSS Enhancements**: Added responsive styling for mobile navigation accessibility
 
 ### 🔍 SERVICE STATUS DETECTION
+
 - **Dynamic PHP Service Detection**: Completely revamped PHP service status detection in admin control panel
   - **Flexible Pattern Matching**: Supports various PHP-FPM service naming conventions (php-fpm, php8.4-fpm, php-fpm8.4, etc.)
   - **Version-Agnostic Detection**: Implemented dynamic discovery of any PHP-FPM service without hardcoding versions
@@ -475,6 +480,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Audit Logging**: Added security logging for PHP service detection events
 
 ### 🔐 SECURITY CONFIGURATION CHANGES
+
 - **Mandatory Admin Protection**: Admin control panel is now always password protected
   - **Variable Removal**: Removed `NGINX_SECURE_ADMIN` configuration option (security is now mandatory)
   - **Variable Renaming**: Updated `NGINX_USERNAME`/`NGINX_PASSWORD` to `ADMIN_CONTROL_PANEL_USERNAME`/`ADMIN_CONTROL_PANEL_PASSWORD`
@@ -483,6 +489,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **CI Configuration**: Updated CI testing configuration with new admin panel credentials
 
 ### 🐧 UBUNTU VERSION SUPPORT
+
 - **Ubuntu 24.04 Only**: Removed support for Ubuntu 22.04 LTS
   - **Setup Script**: Updated version checks to only allow Ubuntu 24.04 installations
   - **Documentation**: Removed Ubuntu 22.04 references from README and instruction files
@@ -494,6 +501,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-11
 
 ### 📦 PROJECT STRUCTURE ENHANCEMENTS
+
 - **Composer Integration**: Added comprehensive `composer.json` configuration for PHP dependency management
   - **PSR-4 Autoloading**: Configured namespace autoloading with `EngineScript\\` mapped to `scripts/` directory
   - **Development Dependencies**: Added PHPUnit for testing, PHPStan for static analysis, and PHP-CS-Fixer for code formatting
@@ -504,6 +512,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-10
 
 ### 🚀 MARIADB PERFORMANCE OPTIMIZATIONS
+
 - **InnoDB-Only Environment**: Optimized MariaDB configuration for InnoDB-only environments
   - **Removed MyISAM Settings**: Disabled all MyISAM-related settings to free up memory
   - **Modern InnoDB Settings**: Added modern InnoDB settings for better performance on multi-core systems
@@ -516,6 +525,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Automated `innodb_buffer_pool_instances`**: Added logic to automatically set `innodb_buffer_pool_instances` based on CPU cores
 
 ### 🔧 CODE QUALITY IMPROVEMENTS
+
 - **JavaScript Code Refactoring**: Eliminated code duplication in admin dashboard
   - **Removed Duplication**: Created shared `createSiteCardStructure()` helper method to eliminate duplication between `createSiteElement()` and `createNoSitesElement()` methods
   - **Improved Maintainability**: Consolidated common site card creation logic into reusable component
@@ -523,6 +533,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-08
 
 ### 🔒️ ADMIN DASHBOARD SECURITY ENHANCEMENTS
+
 - **JavaScript Security Hardening**: Comprehensive security improvements to admin dashboard JavaScript code
   - **XSS Prevention**: Fixed multiple cross-site scripting vulnerabilities in dashboard.js
     - Replaced unsafe `innerHTML` template literals with secure programmatic DOM element creation
@@ -551,6 +562,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Added ignore comments for intentional control character removal (security feature)
 
 ### 🔧 GITHUB ACTIONS WORKFLOW IMPROVEMENTS
+
 - **Software Version Monitoring**: Enhanced automated version checking and update notifications
   - **Workflow Refactoring**: Completely refactored software-version-check.yml workflow
     - Eliminated temp file dependencies for more reliable version tracking
@@ -576,6 +588,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-07
 
 ### 🔧 MARIADB INSTALLATION & CONFIGURATION FIXES
+
 - **MariaDB Startup Issues Resolved**: Fixed critical MariaDB service startup failures
   - **SystemD Environment Variables**: Added proper environment variable definitions to prevent startup errors
     - Created systemd override file at `/etc/systemd/system/mariadb.service.d/enginescript-limits.conf`
@@ -600,6 +613,7 @@ Changes are organized by date, with the most recent changes listed first.
   - Located at `/usr/local/bin/enginescript/scripts/functions/mariadb-diagnostic.sh`
 
 ### 🔒️ SECURITY HARDENING & CODE QUALITY
+
 - **PHP Security Compliance**: Enhanced PHP code security to follow best practices and address static analysis findings
   - **XSS Prevention**: Added proper HTML escaping for all output variables in exception messages
     - Error messages from external APIs now use `htmlspecialchars()` with `ENT_QUOTES | ENT_SUBSTITUTE` flags
@@ -634,6 +648,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Enhanced security documentation for standalone API error handling
 
 ### �🔐 DYNAMIC AUTHENTICATION SYSTEM
+
 - **TinyFileManager Credential Integration**: Implemented dynamic authentication using main EngineScript credentials
   - **Automatic Credential Loading**: TinyFileManager now reads username/password from `/home/EngineScript/enginescript-install-options.txt`
     - Parses `FILEMANAGER_USERNAME` and `FILEMANAGER_PASSWORD` variables from main configuration
@@ -653,6 +668,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Removed static credential references from documentation
 
 ### 🔐 PASSWORD HASH CORRECTION
+
 - **TinyFileManager Authentication**: Fixed password hash generation for proper authentication
   - **Correct Hash Format**: Updated default password hash to use proper PHP `password_hash()` format
     - Changed default password from admin/admin to admin/test with correctly generated hash
@@ -665,6 +681,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Clarified that PHP5+ `password_hash()` with `PASSWORD_DEFAULT` is required
 
 ### 🔗 URL PATH CORRECTION
+
 - **File Manager URL Fix**: Corrected TinyFileManager URL paths for admin subdomain
   - **Path Structure**: Fixed URL to match nginx admin subdomain configuration
     - Changed from `/enginescript/tinyfilemanager/tinyfilemanager.php` to `/tinyfilemanager/tinyfilemanager.php`
@@ -678,6 +695,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Password reset script shows correct location path
 
 ### �🐛 CONFIGURATION PARSING FIX
+
 - **Uptime Robot Configuration**: Fixed PHP syntax error in configuration file parsing
   - **Parse Error Resolution**: Replaced `parse_ini_file()` with robust manual parsing in `uptimerobot.php`
     - Fixed "syntax error, unexpected '('" error on line 15 of uptimerobot.conf
@@ -689,6 +707,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Maintained all essential configuration information
 
 ### 🏷️ OFFICIAL RELEASE INTEGRATION
+
 - **Version Management**: Switched TinyFileManager to official tagged releases instead of master branch
   - **Release Tracking**: Added `TINYFILEMANAGER_VER="2.6"` to `enginescript-variables.txt`
     - Uses official GitHub release tags instead of master branch
@@ -708,62 +727,10 @@ Changes are organized by date, with the most recent changes listed first.
     - Proper TAR.GZ extraction instead of ZIP for better compatibility
     - Removed filemanager.conf creation from installation and update scripts
 
-### 🔄 COMPLETE FILE MANAGER OVERHAULog
-
-All notable changes to EngineScript will be documented in this file.
-
-Changes are organized by date, with the most recent changes listed first.
-
-## 2025-07-07
-
-### � COMPLETE FILE MANAGER OVERHAUL
-- **Official TinyFileManager Integration**: Completely replaced custom wrapper with official GitHub repository
-  - **Repository Download**: Now downloads and extracts the complete official TinyFileManager from GitHub
-    - Downloads latest master branch as ZIP from `https://github.com/prasathmani/tinyfilemanager/archive/refs/heads/master.zip`
-    - Extracts to `/var/www/admin/enginescript/tinyfilemanager/` directory
-    - Includes all official files, documentation, and features from the upstream project
-  - **Custom Configuration Removal**: Eliminated complex custom authentication wrapper entirely
-    - Removed `filemanager.php` custom wrapper with 100+ lines of authentication logic
-    - Simplified to basic redirect: `header('Location: /enginescript/tinyfilemanager/');`
-    - No more rate limiting, session management, or custom security headers in wrapper
-  - **Native Configuration**: Uses official TinyFileManager configuration system
-    - Created `/config/var/www/admin/tinyfilemanager/config.php` with basic EngineScript defaults
-    - Default credentials: admin/admin (users can edit config.php directly)
-    - Root path restricted to `/var/www` for security
-    - Standard TinyFileManager settings with sensible defaults
-  - **Installation Simplification**: Streamlined installation process in admin control panel script
-    - Downloads official ZIP archive instead of single PHP file
-    - Extracts complete project structure with proper permissions
-    - Copies EngineScript configuration file during installation
-    - Comprehensive error handling for download and extraction
-  - **Legacy System Deprecation**: Marked custom configuration system as legacy
-    - Updated `update-config-files.sh` to indicate native configuration usage
-    - Removed dependency on `/etc/enginescript/filemanager.conf`
-    - Simplified to direct editing of TinyFileManager's native config.php
-
-### �🔧 FILE MANAGER SIMPLIFICATION
-- **Password Wrapper Removal**: Removed complex password wrapper and authentication workarounds from file manager
-  - **Configuration Cleanup**: Removed `fm_password_hash` from file manager configuration file
-    - Simplified `/config/etc/enginescript/filemanager.conf` to use basic username/password authentication
-    - Removed automatic password hashing functionality that was causing compatibility issues
-    - Streamlined configuration to focus on basic authentication settings
-  - **PHP Authentication Simplification**: Removed complex password validation and hashing logic from `filemanager.php`
-    - Eliminated password hash validation and placeholder checking routines
-    - Removed dependency on PHP password_hash() function for authentication
-    - Simplified credential loading to use direct username/password from configuration
-    - Added basic default values (admin/admin) for immediate functionality
-  - **Update Script Cleanup**: Removed password hashing logic from configuration update script
-    - Simplified `update-config-files.sh` to handle basic credential updates without hashing
-    - Removed PHP password_hash() calls that were causing authentication failures
-    - Streamlined credential transfer from main configuration to file manager config
-  - **Back to Basics Approach**: Returned to simple, straightforward file manager authentication
-    - Eliminated complex authentication wrapper that was preventing proper login
-    - Focused on reliable, basic authentication mechanism
-    - Removed unnecessary security layers that were creating usability issues
-
 ## 2025-07-06
 
 ### �🔧 DASHBOARD UX IMPROVEMENTS
+
 - **Tool Card Status Simplification**: Removed "checking..." status indicators from admin dashboard tool cards
   - **File Manager Card**: Removed dynamic status checking and "Checking..." text from file manager tool card
     - Removed `checkFileManagerStatus()` function and related status display logic
@@ -782,6 +749,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Enhanced user experience with immediate access to tool cards
 
 ### � AUTO-UPGRADE CREDENTIAL MANAGEMENT
+
 - **Missing Credential Detection**: Enhanced auto-upgrade script to add missing credential placeholders to existing installations
   - **File Manager Credentials**: Automatically adds `FILEMANAGER_USERNAME` and `FILEMANAGER_PASSWORD` placeholders if missing
     - Detects existing installations missing file manager credential entries
@@ -801,6 +769,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Graceful handling of missing credentials file with appropriate warnings
 
 ### � CREDENTIALS SYSTEM INTEGRATION
+
 - **Unified Credentials Management**: Integrated file manager and uptime monitor into main EngineScript credentials system
   - **Main Credentials File**: Added `FILEMANAGER_USERNAME`, `FILEMANAGER_PASSWORD`, and `UPTIMEROBOT_API_KEY` to `/home/EngineScript/enginescript-install-options.txt`
   - **Configuration Updater**: Created `/scripts/functions/shared/update-config-files.sh` to populate .conf files from main credentials
@@ -811,6 +780,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Consistency**: Follows existing EngineScript pattern for credential management across all services
 
 ### �📁 TINY FILE MANAGER FIXES
+
 - **File Manager Integration Improvements**: Fixed clicking and installation issues with Tiny File Manager
   - **HTML Link Conversion**: Converted file manager card from JavaScript click handler to direct HTML link
     - **Reliable Navigation**: File manager now opens in new tab using standard HTML `<a>` tag
@@ -836,6 +806,7 @@ Changes are organized by date, with the most recent changes listed first.
     - **Default Fallback**: Graceful fallback to default credentials if config is missing
 
 ### � UPTIME ROBOT INTEGRATION
+
 - **Complete Uptime Robot Monitoring Integration**: Added comprehensive website uptime monitoring to the admin control panel
   - **Backend API Implementation**: Full Uptime Robot API integration in `uptimerobot.php`
     - Created `UptimeRobotAPI` class with secure API key management
@@ -872,6 +843,7 @@ Changes are organized by date, with the most recent changes listed first.
     - **Quick Access**: Direct link to Uptime Robot dashboard for management
 
 ### �🗑️ LOG VIEWER REMOVAL
+
 - **Complete Log Viewer Functionality Removal**: Removed all log viewer components from the admin control panel
   - **Backend API Cleanup**: Removed all log-related API endpoints and functions from `api.php`
     - Removed log file validation, path resolution, and content reading functions
@@ -904,6 +876,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-06 (Previous Updates)
 
 ### � FINAL LOG VIEWER VERIFICATION & ENHANCEMENTS
+
 - **Log Viewer Functionality Verification**: Completed comprehensive verification of log file access and display
   - **Improved Log Content Sanitization**: Enhanced sanitization to preserve log formatting while maintaining security
     - Removed overly restrictive character filtering that was removing common log symbols
@@ -932,6 +905,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Added specific handling for different log types (system, service, EngineScript logs)
 
 ### �🔧 CODE QUALITY IMPROVEMENTS
+
 - **Performance Chart Enhancements**: Implemented real system performance data and fixed chart sizing issues
   - **Real Data Integration**: Added `/api/system/performance` endpoint to provide actual CPU, memory, and disk usage data
     - Replaced random sample data with real system metrics from current usage values
@@ -1016,10 +990,11 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-05
 
 ### 🎨 ADMIN CONTROL PANEL REFACTORING
+
 - **UI Simplification and Security Focus**: Comprehensive refactoring of the admin control panel to remove security-related features and improve user experience
-    - Removed Security dashboard page and navigation item
-    - Removed all security status monitoring (SSL, firewall, malware scanning)
-    - Simplified UI to focus on core server administration tasks
+- Removed Security dashboard page and navigation item
+- Removed all security status monitoring (SSL, firewall, malware scanning)
+- Simplified UI to focus on core server administration tasks
   - **Removed Backup Features**: Eliminated all backup-related functionality from the control panel
     - Removed Backups dashboard page and navigation item
     - Removed backup status monitoring and backup information from site cards
@@ -1038,6 +1013,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Removed all references to security and backup features from navigation
 
 ### 🛡️ API SECURITY HARDENING
+
 - **Critical Security Fixes**: Addressed all GitHub security alerts and Codacy issues
   - **Log Injection Prevention**: Fixed log injection vulnerability in `logSecurityEvent()` function
     - Added input sanitization for all log entries to prevent log injection attacks
@@ -1071,7 +1047,8 @@ Changes are organized by date, with the most recent changes listed first.
     - Reduced computational overhead while improving security posture
     - Implemented defense-in-depth with both character whitelisting and pattern blacklisting
 
-### 🔧 CODE QUALITY IMPROVEMENTS
+### 🔧 CODE QUALITY IMPROVEMENT
+
 - **Code Style and Standards Compliance**: Fixed multiple code style issues across admin control panel files
   - **API.php Code Quality**: Addressed unused variables and naming convention issues
     - Removed unused `$buffer` variable from log reading function
@@ -1160,6 +1137,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Added comprehensive error handling for failed shell operations
 
 ### 🔍 WORDPRESS VERSION DETECTION
+
 - **Enhanced Site Monitoring**: Implemented automatic WordPress version detection for all sites
   - **Version Scanning**: Added `getWordPressVersion()` function to detect WordPress versions from `wp-includes/version.php`
   - **Document Root Detection**: Enhanced nginx configuration parsing to extract document root paths
@@ -1171,6 +1149,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Performance Optimization**: Efficient version detection that minimizes disk I/O operations
 
 ### 🧹 CODE CLEANUP AND OPTIMIZATION
+
 - **Removed Legacy Endpoints**: Cleaned up API endpoints to match simplified frontend
   - Removed `/security/status` endpoint and related handler functions
   - Removed `/backups` endpoint and related backup monitoring functions
@@ -1185,6 +1164,7 @@ Changes are organized by date, with the most recent changes listed first.
   - Eliminated dead code and unused variables
 
 ### 📚 DOCUMENTATION UPDATES
+
 - **Updated Control Panel Documentation**: Revised README.md to reflect simplified feature set
   - Removed all references to security and backup features
   - Updated API documentation to match current endpoints
@@ -1197,6 +1177,7 @@ Changes are organized by date, with the most recent changes listed first.
 ## 2025-07-01
 
 ### 🎨 ADMIN CONTROL PANEL MODERNIZATION
+
 - **Complete Admin Dashboard Redesign**: Fully modernized the admin control panel with a professional, interactive dashboard
   - **Modern UI/UX**: Replaced basic HTML template with responsive, dark-themed dashboard using modern CSS Grid and Flexbox
   - **Interactive Features**: Added real-time system monitoring, service status indicators, and performance charts
@@ -1244,6 +1225,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Future Roadmap**: Planned enhancements including authentication, WebSocket integration, and advanced monitoring
 
 ### 🔧 NEW ENGINESCRIPT COMMAND
+
 - **Added es.sites Command**: New EngineScript alias to list all WordPress sites installed on the server
   - **Site Discovery**: Automatically discovers all WordPress installations in `/var/www/sites/*/html`
   - **Status Checking**: Tests HTTPS/HTTP connectivity for each site with color-coded status indicators
@@ -1255,6 +1237,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Usage Instructions**: Provides helpful commands for further site management
 
 ### 🛡️ SECURITY & AUTOMATION IMPROVEMENTS
+
 - **Frontend Dashboard Security**: Completed comprehensive security audit and hardening of the JavaScript dashboard
   - **Input Validation & Sanitization**: Implemented strict client-side input validation with parameter whitelisting
     - Added validation for page names, log types, time ranges, and tool names against predefined whitelists
@@ -1288,6 +1271,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Monitoring Integration**: Enhanced security monitoring and logging procedures
 
 ### 🔧 CODE QUALITY
+
 - **CI/CD Workflow Enhancement**: Comprehensively improved the GitHub Actions software-version-check workflow
   - **Robust Error Handling**: Added comprehensive error handling for all GitHub API calls to prevent "null" version values
     - Enhanced SSE_PLUGIN, SWPO_PLUGIN, PCRE2, OpenSSL, Zlib, liburing, NGINX modules with proper null checking
@@ -1348,4 +1332,3 @@ Changes are organized by date, with the most recent changes listed first.
   - Enhanced `nginx-update.sh` with comprehensive error logging and debug pauses using shared functions
   - Fixed remaining conditional expressions (`[ ]` → `[[ ]]`) in `vhost-import.sh` for consistency
   - All scripts now use consistent error handling, service management, and debugging patterns
-
