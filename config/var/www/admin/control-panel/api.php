@@ -815,8 +815,8 @@ function getMetricsHistorical($timerange = '24h') {
     });
     
     // Sort by timestamp (oldest first)
-    usort($filtered_metrics, function($a, $b) {
-        return $a['timestamp'] - $b['timestamp'];
+    usort($filtered_metrics, function($metric_a, $metric_b) {
+        return $metric_a['timestamp'] - $metric_b['timestamp'];
     });
     
     // Prepare data for chart
