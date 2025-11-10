@@ -631,8 +631,18 @@ class EngineScriptDashboard {
 
   async loadPerformanceChartData(timerange) {
     try {
-      const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
-      this.createPerformanceChart(chartData);
+      // Try to load real historical metrics first
+      const metricsData = await this.getApiData(`/api/metrics/historical?timerange=${timerange}`, null);
+      
+      // Check if we got valid historical data
+      if (metricsData && metricsData.success && metricsData.count > 0) {
+        // Use real historical metrics
+        this.createPerformanceChart(metricsData);
+      } else {
+        // Fall back to simulated performance data
+        const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
+        this.createPerformanceChart(chartData);
+      }
     } catch (error) {
       console.error('Failed to load performance chart data:', error);
       // Use fallback data if API fails

@@ -4,6 +4,26 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-09
+
+### 📊 METRICS & MONITORING
+
+- **Metrics Collection System**: Implemented JSON-based metrics collection for dashboard performance tracking
+  - **Cron Job**: Collects CPU, memory, and disk usage every 5 minutes
+  - **Storage**: 7-day rolling window with auto-rotation (2,016 data points max)
+  - **File-based**: Simple JSON at `/var/lib/enginescript/metrics.json` (no database overhead)
+  - **Validation**: Metric values sanitized and verified as valid percentages
+  - **Retention**: Automatic cleanup of entries older than 7 days
+- **Historical Metrics API**: Added `/api/metrics/historical` endpoint for retrieving stored performance data
+  - **Time Ranges**: Supports 1h, 6h, 24h, and 7d views
+  - **Filtering**: Returns only metrics within requested timeframe
+  - **Fallback**: Returns current values when no historical data available
+  - **Format**: Chart-ready data with timestamps, CPU, memory, and disk arrays
+- **Real Performance Charts**: Updated dashboard to display actual historical metrics instead of simulated data
+  - **Smart Loading**: Attempts real metrics first, falls back to simulated if unavailable
+  - **Seamless Integration**: Works with existing chart infrastructure
+  - **Multi-range Support**: Displays 1h, 6h, 24h, or 7d historical data
+
 ## 2025-11-06
 
 ### 🔒 SECURITY IMPROVEMENTS

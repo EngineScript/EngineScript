@@ -364,6 +364,14 @@ switch ($path) {
         handleUptimeMonitors();
         break;
     
+    case '/metrics/historical':
+        $timerange = isset($_GET['timerange']) ? validateInput($_GET['timerange'], 'string', 10) : '24h'; // codacy:ignore - Direct $_GET access required, wp_unslash() not available
+        if (!in_array($timerange, ['1h', '6h', '24h', '7d'], true)) {
+            $timerange = '24h';
+        }
+        handleMetricsHistorical($timerange);
+        break;
+    
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
@@ -463,6 +471,17 @@ function handlePerformanceData($timerange) {
         http_response_code(500);
         logSecurityEvent('Performance data error', $e->getMessage());
         echo json_encode(['error' => 'Unable to retrieve performance data']); // codacy:ignore - echo required for JSON API response
+    }
+}
+
+function handleMetricsHistorical($timerange) {
+    try {
+        $metrics_data = getMetricsHistorical($timerange);
+        echo json_encode($metrics_data); // codacy:ignore - echo required for JSON API response
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('Metrics historical error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to retrieve historical metrics']); // codacy:ignore - echo required for JSON API response
     }
 }
 
@@ -726,6 +745,120 @@ function getPerformanceData($timerange = '24h') {
         $data['cpu'][] = max(0, min(100, $current_cpu + $cpu_variation));
         $data['memory'][] = max(0, min(100, $current_memory + $memory_variation));
         $data['disk'][] = max(0, min(100, $current_disk + $disk_variation));
+    }
+    
+    return $data;
+}
+
+function getMetricsHistorical($timerange = '24h') {
+    $metrics_file = '/var/lib/enginescript/metrics.json';
+    
+    // Check if metrics file exists
+    if (!file_exists($metrics_file)) { // codacy:ignore - file_exists() required for metrics file checking in standalone API
+        return [
+            'success' => false,
+            'error' => 'Metrics file not found',
+            'labels' => [],
+            'cpu' => [],
+            'memory' => [],
+            'disk' => []
+        ];
+    }
+    
+    // Read metrics file
+    $metrics_json = file_get_contents($metrics_file); // codacy:ignore - file_get_contents() required for metrics reading in standalone API
+    if ($metrics_json === false) {
+        return [
+            'success' => false,
+            'error' => 'Unable to read metrics file',
+            'labels' => [],
+            'cpu' => [],
+            'memory' => [],
+            'disk' => []
+        ];
+    }
+    
+    $all_metrics = json_decode($metrics_json, true);
+    if (!is_array($all_metrics)) {
+        return [
+            'success' => false,
+            'error' => 'Invalid metrics data',
+            'labels' => [],
+            'cpu' => [],
+            'memory' => [],
+            'disk' => []
+        ];
+    }
+    
+    // Calculate cutoff time based on timerange
+    $cutoff_time = time();
+    switch ($timerange) {
+        case '1h':
+            $cutoff_time -= 3600; // 1 hour
+            break;
+        case '6h':
+            $cutoff_time -= 21600; // 6 hours
+            break;
+        case '24h':
+            $cutoff_time -= 86400; // 24 hours
+            break;
+        case '7d':
+            $cutoff_time -= 604800; // 7 days
+            break;
+        default:
+            $cutoff_time -= 86400; // Default 24 hours
+    }
+    
+    // Filter metrics by timerange
+    $filtered_metrics = array_filter($all_metrics, function($metric) use ($cutoff_time) {
+        return isset($metric['timestamp']) && $metric['timestamp'] >= $cutoff_time;
+    });
+    
+    // Sort by timestamp (oldest first)
+    usort($filtered_metrics, function($a, $b) {
+        return $a['timestamp'] - $b['timestamp'];
+    });
+    
+    // Prepare data for chart
+    $data = [
+        'success' => true,
+        'labels' => [],
+        'cpu' => [],
+        'memory' => [],
+        'disk' => [],
+        'count' => count($filtered_metrics)
+    ];
+    
+    foreach ($filtered_metrics as $metric) {
+        // Format timestamp based on timerange
+        if ($timerange === '7d') {
+            // For 7 days, show date + time
+            $data['labels'][] = date('M j, H:i', $metric['timestamp']);
+        } elseif ($timerange === '24h') {
+            // For 24 hours, show time
+            $data['labels'][] = date('H:i', $metric['timestamp']);
+        } else {
+            // For shorter ranges, show time
+            $data['labels'][] = date('H:i', $metric['timestamp']);
+        }
+        
+        // Add metric values (ensure they're numbers)
+        $data['cpu'][] = isset($metric['cpu']) ? (float)$metric['cpu'] : 0;
+        $data['memory'][] = isset($metric['memory']) ? (float)$metric['memory'] : 0;
+        $data['disk'][] = isset($metric['disk']) ? (float)$metric['disk'] : 0;
+    }
+    
+    // If no data found, return current values
+    if (empty($data['cpu'])) {
+        $current_cpu = (float)str_replace('%', '', getCpuUsage());
+        $current_memory = (float)str_replace('%', '', getMemoryUsage());
+        $current_disk = (float)str_replace('%', '', getDiskUsage());
+        
+        $data['labels'][] = date('H:i');
+        $data['cpu'][] = $current_cpu;
+        $data['memory'][] = $current_memory;
+        $data['disk'][] = $current_disk;
+        $data['count'] = 1;
     }
     
     return $data;
