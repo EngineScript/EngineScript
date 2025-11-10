@@ -146,13 +146,8 @@ function getPhpServiceStatus() {
     // Dynamically find any running PHP-FPM service
     $php_service = findActivePhpFpmService();
     if ($php_service) {
-        // Log successful PHP service detection for security auditing
-        error_log("EngineScript API: PHP service detected: " . $php_service, 3, '/var/log/EngineScript/enginescript-api-security.log');
         return getServiceStatus($php_service);
     }
-    
-    // Log when no PHP service is found for troubleshooting
-    error_log("EngineScript API: No active PHP-FPM service found", 3, '/var/log/EngineScript/enginescript-api-security.log');
     
     // Fallback: return offline status if no PHP-FPM service found
     return [
@@ -372,8 +367,6 @@ function handleSystemInfo() {
         $info = [
             'os' => getOsInfo(),
             'kernel' => getKernelVersion(),
-            'memory_total' => getTotalMemory(),
-            'disk_total' => getTotalDisk(),
             'network' => getNetworkInfo()
         ];
         echo json_encode(sanitizeOutput($info)); // codacy:ignore - echo required for JSON API response
@@ -577,24 +570,6 @@ function getKernelVersion() {
         logSecurityEvent('Kernel version error', $e->getMessage());
     }
     return 'Unknown';
-}
-
-function getTotalMemory() {
-    $meminfo = file_get_contents('/proc/meminfo'); // codacy:ignore - file_get_contents() required for memory info reading in standalone API
-    if ($meminfo && preg_match('/MemTotal:\s+(\d+)/', $meminfo, $matches)) {
-        $memory_mb = round($matches[1] / 1024);
-        return $memory_mb . ' MB';
-    }
-    return 'N/A';
-}
-
-function getTotalDisk() {
-    $bytes = disk_total_space('/'); // codacy:ignore - disk_total_space() required for disk info in standalone API
-    if ($bytes) {
-        $disk_gb = round($bytes / (1024 * 1024 * 1024), 1);
-        return $disk_gb . ' GB';
-    }
-    return 'N/A';
 }
 
 function getNetworkInfo() {

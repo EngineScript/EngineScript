@@ -13,6 +13,17 @@ Changes are organized by date, with the most recent changes listed first.
   - Removed collect-metrics.sh collection script
   - Removed metrics setup call from admin-control-panel-install.sh
   - Removed unused stat-card and performance-chart CSS styles
+- **System Page Simplification**: Removed load average and resource usage display from System tab
+  - Removed Resource Usage card and chart from system page
+  - Removed load average, memory total, and disk total fields from system info
+  - Removed resource chart initialization code from dashboard.js
+  - Removed unused chart methods from charts.js module
+  - Streamlined system info to show only OS, kernel, and network details
+- **Dashboard Cleanup**: Removed unused Recent Activity and System Alerts sections
+  - Removed Recent Activity and System Alerts cards from overview page
+  - Removed loadRecentActivity() and loadSystemAlerts() methods
+  - Removed skeleton loaders and empty state handlers for activity and alerts
+  - Removed /api/activity/recent and /api/alerts endpoint calls
 
 ### 🐛 BUG FIXES
 

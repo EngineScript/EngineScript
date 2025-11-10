@@ -306,17 +306,9 @@ class EngineScriptDashboard {
     try {
       // Show skeleton loaders while loading
       this.showSkeletonServiceStatus();
-      this.showSkeletonActivityList();
-      this.showSkeletonAlerts();
 
       // Load service status
       await this.loadServiceStatus();
-
-      // Load recent activity
-      await this.loadRecentActivity();
-
-      // Load system alerts
-      await this.loadSystemAlerts();
 
       // Load uptime monitoring data
       this.loadUptimeData();
@@ -365,62 +357,7 @@ class EngineScriptDashboard {
     }
   }
     
-  async loadRecentActivity() {
-    try {
-      const activities = await this.getApiData("/api/activity/recent", []);
-      const activityList = document.getElementById("recent-activity");
-
-      if (activityList) {
-        if (Array.isArray(activities) && activities.length > 0) {
-          // Clear existing content
-          activityList.innerHTML = "";
-
-          // Validate and render each activity safely
-          activities.forEach((activity) => {
-            if (this.isValidActivity(activity)) {
-              const activityElement = this.createActivityElement(activity);
-              activityList.appendChild(activityElement);
-            }
-          });
-        } else {
-          // Show empty state
-          this.showEmptyActivity();
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load recent activity:', error);
-      this.showEmptyActivity();
-    }
-  }
-
   async loadSystemAlerts() {
-    try {
-      const alerts = await this.getApiData("/api/alerts", []);
-      const alertList = document.getElementById("system-alerts");
-
-      if (alertList) {
-        // Clear existing content
-        alertList.innerHTML = "";
-
-        if (Array.isArray(alerts) && alerts.length > 0) {
-          alerts.forEach((alert) => {
-            if (this.isValidAlert(alert)) {
-              const alertElement = this.createAlertElement(alert);
-              alertList.appendChild(alertElement);
-            }
-          });
-        } else {
-          // Show empty state for all systems operational
-          this.showEmptyAlerts();
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load system alerts:', error);
-      this.showEmptyAlerts();
-    }
-  }
-    
-  getAlertIcon(type) {
     return this.utils.getAlertIcon(type);
   }
     
@@ -499,13 +436,9 @@ class EngineScriptDashboard {
             value: this.sanitizeInput(sysInfo.kernel) || "Loading...",
           },
           {
-            label: "Uptime",
-            value: this.sanitizeInput(sysInfo.uptime) || "Loading...",
-          },
-          { label: "Load Average", value: this.sanitizeInput(sysInfo.load) || "Loading..." },
-          { label: "Memory Total", value: this.sanitizeInput(sysInfo.memory_total) || "Loading..." },
-          { label: "Disk Total", value: this.sanitizeInput(sysInfo.disk_total) || "Loading..." },
-          { label: "Network", value: this.sanitizeInput(sysInfo.network) || "Loading..." }
+            label: "Network",
+            value: this.sanitizeInput(sysInfo.network) || "Loading..."
+          }
         ];
 
         infoItems.forEach(item => {
@@ -514,24 +447,11 @@ class EngineScriptDashboard {
         });
       }
 
-      // Initialize resource usage chart
-      this.initializeResourceChart();
-
     } catch (error) {
       console.error('Failed to load system information:', error);
       this.showErrorSystemInfo();
     }
   }
-    
-
-
-
-    
-  initializeResourceChart() {
-    this.charts.initializeResourceChart();
-  }
-    
-
     
   // API Methods - Delegated to module
   async getApiData(endpoint, fallback) {
@@ -593,38 +513,6 @@ class EngineScriptDashboard {
     });
   }
 
-  showSkeletonActivityList() {
-    const activityList = document.getElementById("recent-activity");
-    if (activityList) {
-      let html = '';
-      for (let i = 0; i < 3; i++) {
-        html += `
-          <div class="skeleton-card">
-            <div class="skeleton skeleton-text short"></div>
-            <div class="skeleton skeleton-text" style="width: 40%;"></div>
-          </div>
-        `;
-      }
-      activityList.innerHTML = html;
-    }
-  }
-
-  showSkeletonAlerts() {
-    const alertList = document.getElementById("system-alerts");
-    if (alertList) {
-      let html = '';
-      for (let i = 0; i < 2; i++) {
-        html += `
-          <div class="skeleton-card">
-            <div class="skeleton skeleton-text"></div>
-            <div class="skeleton skeleton-text short"></div>
-          </div>
-        `;
-      }
-      alertList.innerHTML = html;
-    }
-  }
-
   showSkeletonSites() {
     const sitesGrid = document.getElementById("sites-grid");
     if (sitesGrid) {
@@ -646,7 +534,7 @@ class EngineScriptDashboard {
     const systemInfo = document.getElementById("system-info");
     if (systemInfo) {
       let html = '';
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 3; i++) {
         html += `
           <div class="skeleton skeleton-text"></div>
         `;
@@ -682,34 +570,6 @@ class EngineScriptDashboard {
     }
     
     return emptyState;
-  }
-
-  showEmptyActivity() {
-    const activityList = document.getElementById("recent-activity");
-    if (activityList) {
-      const emptyState = this.createEmptyState(
-        'info',
-        'history',
-        'No Recent Activity',
-        'Activity will appear here as the system runs'
-      );
-      activityList.innerHTML = '';
-      activityList.appendChild(emptyState);
-    }
-  }
-
-  showEmptyAlerts() {
-    const alertList = document.getElementById("system-alerts");
-    if (alertList) {
-      const emptyState = this.createEmptyState(
-        'success',
-        'check-circle',
-        'All Systems Operational',
-        'No alerts at this time'
-      );
-      alertList.innerHTML = '';
-      alertList.appendChild(emptyState);
-    }
   }
 
   showEmptyUptimeMonitors() {
