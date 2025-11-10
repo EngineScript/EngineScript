@@ -37,7 +37,7 @@ set -e
 METRICS_DIR="/var/lib/enginescript"
 METRICS_FILE="${METRICS_DIR}/metrics.json"
 COLLECT_SCRIPT="/usr/local/bin/enginescript-collect-metrics"
-SOURCE_SCRIPT="scripts/functions/metrics/collect-metrics.sh"
+SOURCE_SCRIPT="/usr/local/bin/enginescript/scripts/functions/metrics/collect-metrics.sh"
 CRON_JOB_NAME="enginescript-collect-metrics"
 CRON_SCHEDULE="*/5 * * * *"
 

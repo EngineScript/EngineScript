@@ -36,7 +36,7 @@ Coding standards, domain knowledge, and preferences that AI should follow.
 - All scripts written in **Bash** following Unix/Linux best practices
 - Use proper error handling: `set -e`, appropriate exit codes, comprehensive error checking
 - Variable naming: `UPPER_CASE` for globals, `lower_case` for locals
-- Include shebang lines: `# ! /usr/bin/env bash` (standard bash shebang)
+- Include shebang lines: `#!/usr/bin/env bash` (standard bash shebang)
 - Proper quoting to prevent word splitting and glob expansion
 - Function-based organization to avoid repetition
 - Comprehensive logging and user feedback during installation
