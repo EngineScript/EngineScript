@@ -28,8 +28,12 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🐛 BUG FIXES
 
 - **Service Status Display**: Fixed service status not loading on dashboard
-  - Updated API call from `/services/status` to `/api/services/status` in modules/api.js
+  - Updated API call from `/services/status` to `/api/services/status` 
   - Added nginx rewrite rule for `/services/*` endpoints in admin.your-domain.conf
+  - Fixed skeleton loader to preserve HTML structure instead of replacing it
+  - Optimized service status loading to fetch all services in one API call
+  - Added error logging for debugging service status issues
+  - Disabled Cloudflare Rocket Loader for dashboard.js and Chart.js to prevent ES6 module conflicts
 
 ## 2025-11-09
 
