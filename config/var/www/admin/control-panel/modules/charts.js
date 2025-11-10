@@ -1,8 +1,6 @@
 // EngineScript Admin Dashboard - Charts Module
 // Handles Chart.js initialization and management
 
-/* global Chart */
-
 export class DashboardCharts {
   constructor() {
     this.charts = {};

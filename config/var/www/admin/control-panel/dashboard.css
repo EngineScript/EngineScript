@@ -447,11 +447,17 @@ body {
     margin-bottom: 2rem;
 }
 
-/* Service Status Cards */
-.service-card {
-    background: var(--card-bg);
+/* Service Status List */
+.service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.service-item {
+    background: rgba(255, 255, 255, 0.03);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 1.25rem;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -460,56 +466,56 @@ body {
     position: relative;
 }
 
-.service-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+.service-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-color);
 }
 
-.service-icon {
-    width: 50px;
-    height: 50px;
+.service-item .service-icon {
+    width: 48px;
+    height: 48px;
     background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-    border-radius: 50%;
+    border-radius: var(--border-radius);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
 
-.service-icon i {
+.service-item .service-icon i {
     font-size: 1.5rem;
     color: white;
 }
 
-.service-content {
+.service-item .service-content {
     flex: 1;
 }
 
-.service-content h4 {
-    font-size: 0.875rem;
+.service-item .service-content h4 {
+    font-size: 1rem;
     font-weight: 600;
     margin: 0 0 0.25rem 0;
     color: var(--text-primary);
 }
 
-.service-version {
+.service-item .service-version {
     color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.service-item .service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.service-item .service-status i {
     font-size: 0.75rem;
 }
 
-.service-status {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-}
-
-.service-status i {
-    font-size: 0.625rem;
-}
-
-.service-status .online { color: var(--success-color); }
-.service-status .offline { color: var(--error-color); }
-.service-status .warning { color: var(--warning-color); }
+.service-item .service-status .online { color: var(--success-color); }
+.service-item .service-status .offline { color: var(--error-color); }
+.service-item .service-status .warning { color: var(--warning-color); }
 
 /* Activity Lists */
 .activity-list, .alert-list {

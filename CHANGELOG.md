@@ -8,12 +8,22 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🎨 UI/UX IMPROVEMENTS
 
-- **Service Status Redesign**: Converted service status from large card to compact header layout
-  - Changed from single large card to 4 separate service cards displayed in a row
-  - Added service-specific icons (server, PHP, database, memory)
-  - Moved status indicator to top-right corner of each card
-  - Improved visual hierarchy with gradient icon backgrounds
-  - More efficient use of screen space, reducing vertical scroll
+- **Dashboard Layout Redesign**: Complete restructure of Overview page with 50/50 split layout
+  - **Service Status Panel**: Converted from horizontal header cards to vertical list display
+    - Left panel (50% width) with "Service Status" card header
+    - Services displayed vertically as list items with improved spacing
+    - Changed icon style from circular to rounded square with gradient backgrounds
+    - Larger service names and version text for better readability
+    - Status indicators now inline with hover effects
+  - **Uptime Monitoring Panel**: Right panel (50% width) maintains existing functionality
+    - Side-by-side equal width layout for better space utilization
+    - Both panels use col-6 class for perfect 50/50 split
+    - Consistent card styling with headers and body sections
+  - **Responsive Design**: Maintained responsive breakpoints for mobile compatibility
+  - **CSS Updates**: Replaced .service-card styles with .service-item and .service-list
+    - New .service-list container with vertical flex layout
+    - .service-item with subtle background and border hover effects
+    - Improved visual hierarchy and spacing throughout
 - **Uptime Monitoring Display**: Fixed display issues with uptime monitoring data
   - Offline count now explicitly shows 0 when no sites are down (instead of blank)
   - Uptime and response stats only display when they have meaningful values (>0)

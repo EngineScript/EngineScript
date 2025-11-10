@@ -1,8 +1,6 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-/* global Chart */
-
 import { DashboardAPI } from './modules/api.js?v=2025.11.10.3';
 import { DashboardState } from './modules/state.js?v=2025.11.10.3';
 import { DashboardCharts } from './modules/charts.js?v=2025.11.10.3';
@@ -223,7 +221,7 @@ class EngineScriptDashboard {
       // Number keys 1-4 - Quick page navigation
       if (event.key >= "1" && event.key <= "4" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
         const pages = ["overview", "sites", "system", "tools"];
-        const pageIndex = parseInt(event.key) - 1;
+        const pageIndex = parseInt(event.key, 10) - 1;
         if (pageIndex < pages.length) {
           this.navigateToPage(pages[pageIndex]);
         }
@@ -369,10 +367,6 @@ class EngineScriptDashboard {
         }
       });
     }
-  }
-    
-  async loadSystemAlerts() {
-    return this.utils.getAlertIcon(type);
   }
     
   async loadSites() {
