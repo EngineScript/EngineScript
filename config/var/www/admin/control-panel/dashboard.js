@@ -3,10 +3,10 @@
 
 /* global Chart */
 
-import { DashboardAPI } from './modules/api.js';
-import { DashboardState } from './modules/state.js';
-import { DashboardCharts } from './modules/charts.js';
-import { DashboardUtils } from './modules/utils.js';
+import { DashboardAPI } from './modules/api.js?v=2025.11.10';
+import { DashboardState } from './modules/state.js?v=2025.11.10';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.10';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.10';
 
 class EngineScriptDashboard {
   constructor() {
@@ -323,25 +323,39 @@ class EngineScriptDashboard {
 
     
   async loadServiceStatus() {
-    const services = ["nginx", "php", "mysql", "redis"];
+    try {
+      // Fetch all services at once
+      const response = await fetch("/api/services/status");
+      
+      if (!response.ok) {
+        console.error('Service status API error:', response.status, response.statusText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const services = await response.json();
+      console.log('Service status response:', services);
 
-    for (const service of services) {
-      try {
-        const status = await this.getServiceStatus(service);
+      // Update each service
+      ["nginx", "php", "mysql", "redis"].forEach(service => {
+        const status = services[service];
         const element = document.getElementById(`${service}-status`);
 
-        if (element) {
+        if (element && status) {
           const statusIcon = element.querySelector(".service-status i");
           const versionSpan = element.querySelector(".service-version");
 
-          statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
+          if (statusIcon) {
+            statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
+          }
           if (versionSpan && status.version) {
             versionSpan.textContent = `v${status.version}`;
           }
         }
-      } catch (error) {
-        console.error(`Failed to load status for service ${service}:`, error);
-        // Set fallback offline status
+      });
+    } catch (error) {
+      console.error('Failed to load service status:', error);
+      // Set all services to error state
+      ["nginx", "php", "mysql", "redis"].forEach(service => {
         const element = document.getElementById(`${service}-status`);
         if (element) {
           const statusIcon = element.querySelector(".service-status i");
@@ -353,7 +367,7 @@ class EngineScriptDashboard {
             versionSpan.textContent = "Error";
           }
         }
-      }
+      });
     }
   }
     
@@ -500,15 +514,15 @@ class EngineScriptDashboard {
     services.forEach(service => {
       const element = document.getElementById(`${service}-status`);
       if (element) {
-        element.innerHTML = `
-          <div class="skeleton-row">
-            <div class="skeleton-circle"></div>
-            <div style="flex: 1;">
-              <div class="skeleton skeleton-text short"></div>
-              <div class="skeleton skeleton-text short" style="width: 50%;"></div>
-            </div>
-          </div>
-        `;
+        const statusIcon = element.querySelector(".service-status i");
+        const versionSpan = element.querySelector(".service-version");
+        
+        if (statusIcon) {
+          statusIcon.className = "fas fa-circle";
+        }
+        if (versionSpan) {
+          versionSpan.textContent = "v--";
+        }
       }
     });
   }
