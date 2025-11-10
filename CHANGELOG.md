@@ -27,7 +27,9 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🐛 BUG FIXES
 
-- **Service Status Display**: Fixed API endpoint path in modules/api.js to correctly fetch service status for nginx, php, mysql, and redis
+- **Service Status Display**: Fixed service status not loading on dashboard
+  - Updated API call from `/services/status` to `/api/services/status` in modules/api.js
+  - Added nginx rewrite rule for `/services/*` endpoints in admin.your-domain.conf
 
 ## 2025-11-09
 

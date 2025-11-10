@@ -110,7 +110,7 @@ export class DashboardAPI {
         return { online: false, version: "Unavailable" };
       }
 
-      const response = await fetch("/services/status");
+      const response = await fetch("/api/services/status");
       const data = await response.json();
 
       return data[service] || { online: false, version: "Unknown" };
