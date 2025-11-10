@@ -3,20 +3,25 @@
 
 /* global Chart */
 
+import { DashboardAPI } from './modules/api.js';
+import { DashboardState } from './modules/state.js';
+import { DashboardCharts } from './modules/charts.js';
+import { DashboardUtils } from './modules/utils.js';
+
 class EngineScriptDashboard {
   constructor() {
-    this.currentPage = "overview";
-    this.refreshInterval = 30000; // 30 seconds
-    this.charts = {};
-    this.refreshTimer = null;
-    this.csrfToken = null; // CSRF token for future state-changing requests
+    // Initialize modules
+    this.api = new DashboardAPI();
+    this.state = new DashboardState();
+    this.charts = new DashboardCharts();
+    this.utils = new DashboardUtils();
 
-    // Security configurations
-    this.maxRefreshInterval = 300000; // 5 minutes max
-    this.minRefreshInterval = 5000; // 5 seconds min
-    this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
-    this.allowedPages = ["overview", "sites", "system", "tools"];
-    this.allowedTools = ["phpmyadmin", "phpinfo", "phpsysinfo", "adminer"];
+    // Legacy property references for compatibility
+    this.currentPage = this.state.currentPage;
+    this.refreshInterval = this.state.refreshInterval;
+    this.allowedTimeRanges = this.state.allowedTimeRanges;
+    this.allowedPages = this.state.allowedPages;
+    this.allowedTools = this.state.allowedTools;
 
     this.init();
   }
@@ -25,26 +30,9 @@ class EngineScriptDashboard {
     this.setupEventListeners();
     this.setupNavigation();
     this.startClock();
-    this.loadCsrfToken(); // Load CSRF token before other API calls
+    this.api.loadCsrfToken(); // Load CSRF token before other API calls
     this.loadInitialData();
     this.hideLoadingScreen();
-  }
-
-  async loadCsrfToken() {
-    try {
-      const response = await fetch('/api/csrf-token', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        this.csrfToken = data.csrf_token;
-      } else {
-        console.warn('Failed to load CSRF token');
-      }
-    } catch (error) {
-      console.error('Error loading CSRF token:', error);
-    }
   }
 
   setupEventListeners() {
@@ -71,7 +59,7 @@ class EngineScriptDashboard {
       item.addEventListener("click", (e) => {
         e.preventDefault();
         const page = this.sanitizeInput(item.dataset.page);
-        if (this.allowedPages.includes(page)) {
+        if (this.state.isValidPage(page)) {
           this.navigateToPage(page);
           // Close mobile menu after navigation
           this.closeMobileMenu();
@@ -85,16 +73,8 @@ class EngineScriptDashboard {
       refreshBtn.addEventListener("click", () => this.refreshData());
     }
 
-    // Chart timerange selector
-    const chartTimerange = document.getElementById("chart-timerange");
-    if (chartTimerange) {
-      chartTimerange.addEventListener("change", (e) => {
-        const timeRange = this.sanitizeInput(e.target.value);
-        if (this.allowedTimeRanges.includes(timeRange)) {
-          this.updatePerformanceChart(timeRange);
-        }
-      });
-    }
+    // Keyboard shortcuts
+    this.setupKeyboardShortcuts();
 
     // File Manager tool card is now a direct HTML link
     // Status checking handled separately
@@ -119,7 +99,7 @@ class EngineScriptDashboard {
 
   navigateToPage(pageName) {
     // Validate page name
-    if (!this.allowedPages.includes(pageName)) {
+    if (!this.state.isValidPage(pageName)) {
       return;
     }
 
@@ -156,22 +136,17 @@ class EngineScriptDashboard {
 
     // Load page-specific data
     this.loadPageData(pageName);
-    this.currentPage = pageName;
+    this.state.setCurrentPage(pageName);
+    this.currentPage = this.state.getCurrentPage();
   }
 
   getPageTitle(pageName) {
-    const titles = {
-      overview: "Overview",
-      sites: "WordPress Sites",
-      system: "System Information",
-      tools: "Admin Tools",
-    };
-    return titles[pageName] || "Dashboard";
+    return this.state.getPageTitle(pageName);
   }
     
   loadPageData(pageName) {
     // Validate page name
-    if (!this.allowedPages.includes(pageName)) {
+    if (!this.state.isValidPage(pageName)) {
       return;
     }
 
@@ -218,6 +193,59 @@ class EngineScriptDashboard {
       sidebar.classList.remove("mobile-open");
     }
   }
+
+  setupKeyboardShortcuts() {
+    document.addEventListener("keydown", (event) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (event.target.tagName === "INPUT" || 
+          event.target.tagName === "TEXTAREA" || 
+          event.target.isContentEditable) {
+        return;
+      }
+
+      // ESC - Close mobile menu
+      if (event.key === "Escape") {
+        this.closeMobileMenu();
+      }
+
+      // Ctrl+R or F5 - Refresh data (prevent default browser refresh)
+      if ((event.ctrlKey && event.key === "r") || event.key === "F5") {
+        event.preventDefault();
+        this.refreshData();
+      }
+
+      // Arrow keys - Navigate between pages
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        this.navigateWithKeys(event.key === "ArrowRight");
+      }
+
+      // Number keys 1-4 - Quick page navigation
+      if (event.key >= "1" && event.key <= "4" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+        const pages = ["overview", "sites", "system", "tools"];
+        const pageIndex = parseInt(event.key) - 1;
+        if (pageIndex < pages.length) {
+          this.navigateToPage(pages[pageIndex]);
+        }
+      }
+    });
+  }
+
+  navigateWithKeys(forward) {
+    const pages = ["overview", "sites", "system", "tools"];
+    const currentIndex = pages.indexOf(this.state.getCurrentPage());
+    
+    if (currentIndex === -1) return;
+    
+    let nextIndex;
+    if (forward) {
+      nextIndex = (currentIndex + 1) % pages.length;
+    } else {
+      nextIndex = (currentIndex - 1 + pages.length) % pages.length;
+    }
+    
+    this.navigateToPage(pages[nextIndex]);
+  }
     
   startClock() {
     const updateClock = () => {
@@ -244,14 +272,15 @@ class EngineScriptDashboard {
     this.updateLastRefresh();
 
     // Set up auto-refresh
-    this.refreshTimer = setInterval(() => {
+    const timer = setInterval(() => {
       this.refreshData();
-    }, this.refreshInterval);
+    }, this.state.refreshInterval);
+    this.state.setRefreshTimer(timer);
   }
     
   refreshData() {
     this.showRefreshAnimation();
-    this.loadPageData(this.currentPage);
+    this.loadPageData(this.state.getCurrentPage());
     this.updateLastRefresh();
   }
     
@@ -276,14 +305,9 @@ class EngineScriptDashboard {
   async loadOverviewData() {
     try {
       // Show skeleton loaders while loading
-      this.showSkeletonStats();
       this.showSkeletonServiceStatus();
       this.showSkeletonActivityList();
       this.showSkeletonAlerts();
-      this.showSkeletonChart("performance-chart-container");
-
-      // Load system stats
-      await this.loadSystemStats();
 
       // Load service status
       await this.loadServiceStatus();
@@ -293,9 +317,6 @@ class EngineScriptDashboard {
 
       // Load system alerts
       await this.loadSystemAlerts();
-
-      // Initialize performance chart
-      this.initializePerformanceChart();
 
       // Load uptime monitoring data
       this.loadUptimeData();
@@ -307,39 +328,7 @@ class EngineScriptDashboard {
     }
   }
     
-  async loadSystemStats() {
-    try {
-      // Simulate API calls - In real implementation, these would be actual API endpoints
-      const stats = {
-        sites: await this.getApiData("/api/sites/count", "0"),
-        memory: await this.getApiData("/api/system/memory", "0%"),
-        disk: await this.getApiData("/api/system/disk", "0%"),
-        cpu: await this.getApiData("/api/system/cpu", "0%"),
-      };
 
-      // Validate and sanitize numeric values
-      const sanitizedStats = {
-        sites: this.sanitizeNumeric(stats.sites, "0"),
-        memory: this.sanitizePercentage(stats.memory, "0%"),
-        disk: this.sanitizePercentage(stats.disk, "0%"),
-        cpu: this.sanitizePercentage(stats.cpu, "0%"),
-      };
-
-      // Update stat cards safely
-      this.setTextContent("sites-count", sanitizedStats.sites);
-      this.setTextContent("memory-usage", sanitizedStats.memory);
-      this.setTextContent("disk-usage", sanitizedStats.disk);
-      this.setTextContent("cpu-usage", sanitizedStats.cpu);
-    } catch (error) {
-      console.error('Failed to load system stats:', error);
-      // Set fallback values
-      this.setTextContent("sites-count", "0");
-      this.setTextContent("memory-usage", "0%");
-      this.setTextContent("disk-usage", "0%");
-      this.setTextContent("cpu-usage", "0%");
-      throw error; // Re-throw to be caught by loadOverviewData
-    }
-  }
     
   async loadServiceStatus() {
     const services = ["nginx", "php", "mysql", "redis"];
@@ -432,13 +421,7 @@ class EngineScriptDashboard {
   }
     
   getAlertIcon(type) {
-    const icons = {
-      info: "fa-info-circle",
-      warning: "fa-exclamation-triangle",
-      error: "fa-exclamation-circle",
-      success: "fa-check-circle",
-    };
-    return icons[type] || "fa-info-circle";
+    return this.utils.getAlertIcon(type);
   }
     
   async loadSites() {
@@ -540,469 +523,57 @@ class EngineScriptDashboard {
     }
   }
     
-  initializePerformanceChart() {
-    const ctx = document.getElementById("performance-chart");
-    if (!ctx || typeof Chart === "undefined") return;
 
-    // Destroy existing chart if it exists
-    if (this.charts.performance) {
-      this.charts.performance.destroy();
-    }
 
-    // Load real performance data
-    this.loadPerformanceChartData("24h");
-  }
 
-  createPerformanceChartConfig(chartData) {
-    return {
-      type: "line",
-      data: {
-        labels: chartData.labels || [],
-        datasets: [
-          {
-            label: "CPU %",
-            data: chartData.cpu || [],
-            borderColor: "#00d4aa",
-            backgroundColor: "rgba(0, 212, 170, 0.1)",
-            tension: 0.4,
-          },
-          {
-            label: "Memory %",
-            data: chartData.memory || [],
-            borderColor: "#00a8ff",
-            backgroundColor: "rgba(0, 168, 255, 0.1)",
-            tension: 0.4,
-          },
-          {
-            label: "Disk %",
-            data: chartData.disk || [],
-            borderColor: "#ffb800",
-            backgroundColor: "rgba(255, 184, 0, 0.1)",
-            tension: 0.4,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-          duration: 0, // Disable animation to prevent sizing issues
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            min: 0,
-            grid: {
-              color: "#444444",
-            },
-            ticks: {
-              color: "#b3b3b3",
-              stepSize: 25, // Force consistent scale steps
-            },
-          },
-          x: {
-            grid: {
-              color: "#444444",
-            },
-            ticks: {
-              color: "#b3b3b3",
-            },
-          },
-        },
-        plugins: {
-          legend: {
-            labels: {
-              color: "#b3b3b3",
-            },
-          },
-        },
-      },
-    };
-  }
-
-  createPerformanceChart(chartData) {
-    const ctx = document.getElementById("performance-chart");
-    if (!ctx || typeof Chart === "undefined") return;
-
-    const config = this.createPerformanceChartConfig(chartData);
-    this.charts.performance = new Chart(ctx, config);
-  }
-
-  async loadPerformanceChartData(timerange) {
-    try {
-      // Try to load real historical metrics first
-      const metricsData = await this.getApiData(`/api/metrics/historical?timerange=${timerange}`, null);
-      
-      // Check if we got valid historical data
-      if (metricsData && metricsData.success && metricsData.count > 0) {
-        // Use real historical metrics
-        this.createPerformanceChart(metricsData);
-      } else {
-        // Fall back to simulated performance data
-        const chartData = await this.getApiData(`/api/system/performance?timerange=${timerange}`, this.generateFallbackData(timerange));
-        this.createPerformanceChart(chartData);
-      }
-    } catch (error) {
-      console.error('Failed to load performance chart data:', error);
-      // Use fallback data if API fails
-      this.loadFallbackChart(timerange);
-    }
-  }
-
-  loadFallbackChart(timerange) {
-    const chartData = this.generateFallbackData(timerange);
-    this.createPerformanceChart(chartData);
-  }
     
   initializeResourceChart() {
-    const ctx = document.getElementById("resource-chart");
-    if (!ctx || typeof Chart === "undefined") return;
-
-    // Destroy existing chart if it exists
-    if (this.charts.resource) {
-      this.charts.resource.destroy();
-    }
-
-    this.charts.resource = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: ["Used", "Free"],
-        datasets: [
-          {
-            label: "Memory Usage",
-            data: [30, 70], // Sample data
-            backgroundColor: ["#00d4aa", "#444444"],
-            borderWidth: 0,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: "#b3b3b3",
-            },
-          },
-        },
-      },
-    });
+    this.charts.initializeResourceChart();
   }
     
-  updatePerformanceChart(timerange) {
-    // Validate timerange
-    if (!this.allowedTimeRanges.includes(timerange)) {
-      return;
-    }
 
-    if (!this.charts.performance) {
-      this.loadPerformanceChartData(timerange);
-      return;
-    }
-
-    // Load new data for the selected timerange
-    this.loadPerformanceChartData(timerange);
-  }
     
-  generateFallbackData(timerange) {
-    const points = timerange === "1h" ? 12 : timerange === "6h" ? 24 : timerange === "24h" ? 24 : 48;
-    const labels = [];
-    const cpu = [];
-    const memory = [];
-    const disk = [];
-
-    for (let i = 0; i < points; i++) {
-      // Generate time labels
-      const time = new Date();
-      if (timerange === "1h") {
-        time.setMinutes(time.getMinutes() - (points - i) * 5);
-        labels.push(time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-      } else if (timerange === "6h") {
-        time.setMinutes(time.getMinutes() - (points - i) * 15);
-        labels.push(time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
-      } else {
-        time.setHours(time.getHours() - (points - i));
-        labels.push(time.toLocaleTimeString("en-US", { hour: "2-digit" }) + ":00");
-      }
-
-      // Generate sample fallback data with realistic patterns (not random)
-      const baseTime = Date.now() - ((points - i) * (timerange === "1h" ? 5 : timerange === "6h" ? 15 : 60) * 60000);
-      const hourOfDay = new Date(baseTime).getHours();
-      
-      // Create realistic CPU patterns based on time of day
-      let baseCpu = 15;
-      if (hourOfDay >= 9 && hourOfDay <= 17) baseCpu = 25; // Business hours
-      if (hourOfDay >= 18 && hourOfDay <= 22) baseCpu = 20; // Evening
-      cpu.push(baseCpu + Math.sin(i * 0.5) * 5); // Gentle variation
-      
-      // Memory usage typically more stable
-      memory.push(45 + Math.sin(i * 0.3) * 8);
-      
-      // Disk usage very stable
-      disk.push(65 + Math.sin(i * 0.1) * 2);
-    }
-
-    return { labels, cpu, memory, disk };
-  }
-    
-  // Browser compatibility helper
-  isOperaMini() {
-    return (
-      typeof navigator !== "undefined" &&
-      navigator.userAgent &&
-      navigator.userAgent.indexOf("Opera Mini") > -1
-    );
-  }
-
-  // API Methods
+  // API Methods - Delegated to module
   async getApiData(endpoint, fallback) {
-    try {
-      // Check if fetch is available and supported (Opera Mini compatibility)
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return fallback;
-      }
-
-      const headers = {};
-      if (this.csrfToken) {
-        headers['X-CSRF-Token'] = this.csrfToken;
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: headers,
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Handle different response formats
-      if (endpoint.includes("/system/memory") && data.usage) {
-        return data.usage;
-      }
-      if (endpoint.includes("/system/disk") && data.usage) {
-        return data.usage;
-      }
-      if (endpoint.includes("/system/cpu") && data.usage) {
-        return data.usage;
-      }
-      if (endpoint.includes("/sites/count") && data.count !== undefined) {
-        return data.count.toString();
-      }
-
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      // Return fallback value on error
-      return fallback;
-    }
+    return this.api.getApiData(endpoint, fallback);
   }
 
   async postApiData(endpoint, data = {}) {
-    try {
-      // Check if fetch is available
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: 'Fetch not supported' };
-      }
-
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      if (this.csrfToken) {
-        headers['X-CSRF-Token'] = this.csrfToken;
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: headers,
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`Error posting to ${endpoint}:`, error);
-      return { error: error.message };
-    }
+    return this.api.postApiData(endpoint, data);
   }
 
   async getServiceStatus(service) {
-    try {
-      // Check if fetch is available and supported (Opera Mini compatibility)
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { online: false, version: "Unavailable" };
-      }
-
-      const response = await fetch("/api/services/status");
-      const data = await response.json();
-
-      return data[service] || { online: false, version: "Unknown" };
-    } catch (error) {
-      console.error(`Failed to get service status for ${service}:`, error);
-      return { online: false, version: "Error" };
-    }
+    return this.api.getServiceStatus(service);
   }
     
   showError(message) {
-    // Sanitize error message
-    const sanitizedMessage = this.sanitizeInput(message) || "An unknown error occurred";
-
-    // Create a simple error notification
-    const notification = document.createElement("div");
-    notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--error-color);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            z-index: 10000;
-            max-width: 300px;
-        `;
-    notification.textContent = sanitizedMessage;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, 5000);
+    this.utils.showError(message);
   }
     
-  // Security Helper Methods
-  removeDangerousPatterns(input) {
-    // Common security patterns that should be removed from all inputs
-    const dangerousPatterns = [
-      /javascript/gi,
-      /vbscript/gi,
-      /data:/gi,
-      /about:/gi,
-      /file:/gi,
-      /<script/gi,
-      /<iframe/gi,
-      /<object/gi,
-      /<embed/gi,
-      /<link/gi,
-      /<meta/gi,
-      /on\w+=/gi,
-      /expression/gi,
-      /eval/gi,
-      /alert/gi,
-      /prompt/gi,
-      /confirm/gi,
-      /<\/script/gi,
-      /<\/iframe/gi,
-    ];
-
-    let sanitized = input;
-    dangerousPatterns.forEach((pattern) => {
-      sanitized = sanitized.replace(pattern, "");
-    });
-
-    return sanitized;
-  }
-
+  // Utility methods - Delegated to module
   sanitizeInput(input) {
-    if (typeof input !== "string") {
-      return String(input || "");
-    }
-
-    // Use whitelist approach for maximum security
-    // Only allow alphanumeric characters, spaces, and safe punctuation
-    let sanitized = String(input)
-      // codacy:ignore:javascript:S6443 - Control character removal is intentional for security sanitization
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove all control characters
-      .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
-      .replace(/\s+/g, " ") // Normalize whitespace
-      .trim()
-      .substring(0, 1000); // Limit length
-
-    // Remove dangerous patterns using shared method
-    return this.removeDangerousPatterns(sanitized);
+    return this.utils.sanitizeInput(input);
   }
 
   sanitizeNumeric(input, fallback = "0") {
-    const cleaned = String(input || "").replace(/[^\d.-]/g, "");
-    const parsed = parseFloat(cleaned);
-    
-    // Check if it's a valid number and within reasonable bounds
-    if (isNaN(parsed) || !isFinite(parsed)) {
-      return fallback;
-    }
-    
-    // Reasonable bounds for dashboard metrics
-    if (parsed < 0 || parsed > 999999) {
-      return fallback;
-    }
-    
-    return cleaned || fallback;
+    return this.utils.sanitizeNumeric(input, fallback);
   }
 
   sanitizePercentage(input, fallback = "0%") {
-    const cleaned = String(input || "").replace(/[^\d.%]/g, "");
-    return cleaned || fallback;
+    return this.utils.sanitizePercentage(input, fallback);
   }
 
   sanitizeUrl(input, fallback = "") {
-    if (typeof input !== "string") {
-      return fallback;
-    }
-    
-    // Basic URL validation and sanitization
-    const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?(?:\/\S*)?$/;
-    const sanitized = String(input)
-      // codacy:ignore:javascript:S6443 - Control character removal is intentional for security sanitization
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
-      .trim()
-      .substring(0, 2048); // Limit URL length
-    
-    // Check if it matches basic URL pattern
-    if (!urlPattern.test(sanitized)) {
-      return fallback;
-    }
-    
-    // Remove dangerous patterns
-    return this.removeDangerousPatterns(sanitized);
+    return this.utils.sanitizeUrl(input, fallback);
   }
-    
+
   setTextContent(elementId, content) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.textContent = String(content || "");
-    }
+    this.utils.setTextContent(elementId, content);
   }
 
   // Skeleton loader helpers
-  showSkeletonStat(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.innerHTML = '<div class="skeleton skeleton-stat"></div>';
-    }
-  }
 
-  showSkeletonStats() {
-    this.showSkeletonStat("sites-count");
-    this.showSkeletonStat("memory-usage");
-    this.showSkeletonStat("disk-usage");
-    this.showSkeletonStat("cpu-usage");
-  }
 
-  showSkeletonChart(chartContainerId) {
-    const container = document.getElementById(chartContainerId);
-    if (container) {
-      container.innerHTML = '<div class="skeleton-chart"></div>';
-    }
-  }
 
   showSkeletonServiceStatus() {
     const services = ["nginx", "php", "mysql", "redis"];
@@ -1172,77 +743,21 @@ class EngineScriptDashboard {
   }
     
   isValidActivity(activity) {
-    return (
-      activity &&
-      typeof activity === "object" &&
-      typeof activity.message === "string" &&
-      typeof activity.time === "string" &&
-      activity.message.length > 0 &&
-      activity.message.length < 500
-    );
+    return this.utils.isValidActivity(activity);
   }
 
   isValidAlert(alert) {
-    const validTypes = ["info", "warning", "error", "success"];
-    return (
-      alert &&
-      typeof alert === "object" &&
-      typeof alert.message === "string" &&
-      typeof alert.time === "string" &&
-      (!alert.type || validTypes.includes(alert.type)) &&
-      alert.message.length > 0 &&
-      alert.message.length < 500
-    );
+    return this.utils.isValidAlert(alert);
   }
 
   isValidSite(site) {
-    return (
-      site &&
-      typeof site === "object" &&
-      typeof site.domain === "string" &&
-      site.domain.length > 0 &&
-      site.domain.length < 255 &&
-      /^[a-zA-Z0-9.-]+$/.test(site.domain)
-    ); // Basic domain validation
+    return this.utils.isValidSite(site);
   }
     
-  // Helper method for creating content elements with icon, message, and time
-  createContentElement(config) {
-    const { containerClass, iconClass, contentClass, messageText, timeText, timeClass, iconType } = config;
-
-    const containerDiv = document.createElement("div");
-    containerDiv.className = containerClass;
-
-    const iconDiv = document.createElement("div");
-    iconDiv.className = iconClass;
-
-    const icon = document.createElement("i");
-    icon.className = `fas ${iconType}`;
-    iconDiv.appendChild(icon);
-
-    const contentDiv = document.createElement("div");
-    contentDiv.className = contentClass;
-
-    const message = document.createElement("p");
-    message.textContent = this.sanitizeInput(messageText);
-
-    const time = document.createElement("span");
-    time.className = timeClass;
-    time.textContent = this.sanitizeInput(timeText);
-
-    contentDiv.appendChild(message);
-    contentDiv.appendChild(time);
-
-    containerDiv.appendChild(iconDiv);
-    containerDiv.appendChild(contentDiv);
-
-    return containerDiv;
-  }
-
   createActivityElement(activity) {
     const iconClass = this.sanitizeInput(activity.icon) || "fa-info-circle";
     
-    return this.createContentElement({
+    return this.utils.createContentElement({
       containerClass: "activity-item",
       iconClass: "activity-icon",
       contentClass: "activity-content",
@@ -1256,7 +771,7 @@ class EngineScriptDashboard {
   createAlertElement(alert) {
     const alertType = this.sanitizeInput(alert.type) || "info";
 
-    return this.createContentElement({
+    return this.utils.createContentElement({
       containerClass: `alert-item ${alertType}`,
       iconClass: `alert-icon ${alertType}`,
       contentClass: "alert-content",
@@ -1356,15 +871,8 @@ class EngineScriptDashboard {
     
   // Cleanup method
   destroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-    }
-
-    Object.values(this.charts).forEach((chart) => {
-      if (chart && chart.destroy) {
-        chart.destroy();
-      }
-    });
+    this.state.clearRefreshTimer();
+    this.charts.destroy();
   }
 
   // Tools management methods

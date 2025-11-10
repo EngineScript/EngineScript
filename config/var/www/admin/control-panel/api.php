@@ -302,32 +302,8 @@ switch ($path) {
         handleCsrfToken();
         break;
     
-    case '/system/stats':
-        handleSystemStats();
-        break;
-    
     case '/system/info':
         handleSystemInfo();
-        break;
-    
-    case '/system/memory':
-        handleMemoryUsage();
-        break;
-    
-    case '/system/disk':
-        handleDiskUsage();
-        break;
-    
-    case '/system/cpu':
-        handleCpuUsage();
-        break;
-    
-    case '/system/performance':
-        $timerange = isset($_GET['timerange']) ? validateInput($_GET['timerange'], 'string', 10) : '24h'; // codacy:ignore - Direct $_GET access required, wp_unslash() not available
-        if (!in_array($timerange, ['1h', '6h', '24h', '48h'], true)) {
-            $timerange = '24h';
-        }
-        handlePerformanceData($timerange);
         break;
     
     case '/services/status':
@@ -364,14 +340,6 @@ switch ($path) {
         handleUptimeMonitors();
         break;
     
-    case '/metrics/historical':
-        $timerange = isset($_GET['timerange']) ? validateInput($_GET['timerange'], 'string', 10) : '24h'; // codacy:ignore - Direct $_GET access required, wp_unslash() not available
-        if (!in_array($timerange, ['1h', '6h', '24h', '7d'], true)) {
-            $timerange = '24h';
-        }
-        handleMetricsHistorical($timerange);
-        break;
-    
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
@@ -397,30 +365,13 @@ function handleCsrfToken() {
     }
 }
 
-function handleSystemStats() {
-    try {
-        $stats = [
-            'cpu' => getCpuUsage(),
-            'memory' => getMemoryUsage(),
-            'disk' => getDiskUsage(),
-            'uptime' => getUptime(),
-            'load' => getLoadAverage()
-        ];
-        echo json_encode(sanitizeOutput($stats)); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('System stats error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve system stats']); // codacy:ignore - echo required for JSON API response
-    }
-}
+
 
 function handleSystemInfo() {
     try {
         $info = [
             'os' => getOsInfo(),
             'kernel' => getKernelVersion(),
-            'uptime' => getUptime(),
-            'load' => getLoadAverage(),
             'memory_total' => getTotalMemory(),
             'disk_total' => getTotalDisk(),
             'network' => getNetworkInfo()
@@ -433,57 +384,15 @@ function handleSystemInfo() {
     }
 }
 
-function handleMemoryUsage() {
-    try {
-        echo json_encode(['usage' => sanitizeOutput(getMemoryUsage())]); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Memory usage error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve memory usage']); // codacy:ignore - echo required for JSON API response
-    }
-}
 
-function handleDiskUsage() {
-    try {
-        echo json_encode(['usage' => sanitizeOutput(getDiskUsage())]); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Disk usage error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve disk usage']); // codacy:ignore - echo required for JSON API response
-    }
-}
 
-function handleCpuUsage() {
-    try {
-        echo json_encode(['usage' => sanitizeOutput(getCpuUsage())]); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('CPU usage error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve CPU usage']); // codacy:ignore - echo required for JSON API response
-    }
-}
 
-function handlePerformanceData($timerange) {
-    try {
-        $performance_data = getPerformanceData($timerange);
-        echo json_encode(sanitizeOutput($performance_data)); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Performance data error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve performance data']); // codacy:ignore - echo required for JSON API response
-    }
-}
 
-function handleMetricsHistorical($timerange) {
-    try {
-        $metrics_data = getMetricsHistorical($timerange);
-        echo json_encode($metrics_data); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Metrics historical error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve historical metrics']); // codacy:ignore - echo required for JSON API response
-    }
-}
+
+
+
+
+
 
 function handleServicesStatus() {
     try {
@@ -633,236 +542,18 @@ function handleUptimeMonitors() {
 }
 
 // System information functions
-function getCpuUsage() {
-    try {
-        $load = sys_getloadavg(); // codacy:ignore - sys_getloadavg() required for CPU load monitoring in standalone API
-        if ($load !== false) {
-            // Use safe method to get CPU cores without shell_exec
-            $cpu_cores = 1; // Default fallback
-            if (file_exists('/proc/cpuinfo')) { // codacy:ignore - file_exists() required for system monitoring in standalone API
-                $cpuinfo = file_get_contents('/proc/cpuinfo'); // codacy:ignore - file_get_contents() required for CPU info reading in standalone API
-                $cpu_cores = substr_count($cpuinfo, 'processor');
-                $cpu_cores = max(1, $cpu_cores); // Ensure at least 1 core
-            }
-            
-            $cpu_usage = ($load[0] / $cpu_cores) * 100;
-            return min(100, max(0, round($cpu_usage, 1))) . '%';
-        }
-    } catch (Exception $e) {
-        logSecurityEvent('CPU usage error', $e->getMessage());
-    }
-    return 'N/A';
-}
 
-function getMemoryUsage() {
-    $meminfo = file_get_contents('/proc/meminfo'); // codacy:ignore - file_get_contents() required for memory info reading in standalone API
-    if ($meminfo) {
-        preg_match('/MemTotal:\s+(\d+)/', $meminfo, $total);
-        preg_match('/MemAvailable:\s+(\d+)/', $meminfo, $available);
-        
-        if ($total && $available) {
-            $total_mb = $total[1] / 1024;
-            $available_mb = $available[1] / 1024;
-            $used_mb = $total_mb - $available_mb;
-            $usage_percent = ($used_mb / $total_mb) * 100;
-            return round($usage_percent, 1) . '%';
-        }
-    }
-    return 'N/A';
-}
 
-function getDiskUsage() {
-    $bytes = disk_total_space('/'); // codacy:ignore - disk_total_space() required for disk usage monitoring in standalone API
-    $free_bytes = disk_free_space('/'); // codacy:ignore - disk_free_space() required for disk usage monitoring in standalone API
-    if ($bytes && $free_bytes) {
-        $used_bytes = $bytes - $free_bytes;
-        $usage_percent = ($used_bytes / $bytes) * 100;
-        return round($usage_percent, 1) . '%';
-    }
-    return 'N/A';
-}
 
-function getUptime() {
-    $uptime = file_get_contents('/proc/uptime'); // codacy:ignore - file_get_contents() required for uptime reading in standalone API
-    if ($uptime) {
-        $seconds = (float)explode(' ', $uptime)[0];
-        $days = floor($seconds / 86400);
-        $hours = floor(($seconds % 86400) / 3600);
-        $minutes = floor(($seconds % 3600) / 60);
-        return "{$days}d {$hours}h {$minutes}m";
-    }
-    return 'N/A';
-}
 
-function getLoadAverage() {
-    $load = sys_getloadavg(); // codacy:ignore - sys_getloadavg() required for load average monitoring in standalone API
-    if ($load !== false) {
-        return round($load[0], 2) . ', ' . round($load[1], 2) . ', ' . round($load[2], 2);
-    }
-    return 'N/A';
-}
 
-function getPerformanceData($timerange = '24h') {
-    // Calculate time points based on timerange
-    $points = $timerange === '1h' ? 12 : ($timerange === '6h' ? 24 : ($timerange === '24h' ? 24 : 48));
-    $interval_minutes = $timerange === '1h' ? 5 : ($timerange === '6h' ? 15 : 60);
-    
-    $data = [
-        'labels' => [],
-        'cpu' => [],
-        'memory' => [],
-        'disk' => []
-    ];
-    
-    // Get current values
-    $current_cpu = (float)str_replace('%', '', getCpuUsage());
-    $current_memory = (float)str_replace('%', '', getMemoryUsage());
-    $current_disk = (float)str_replace('%', '', getDiskUsage());
-    
-    // NOTE: For production use, implement a metrics storage system (e.g., InfluxDB, Prometheus)
-    // to store historical performance data. This current implementation provides realistic
-    // data based on current system state with some historical variation for demonstration.
-    // 
-    // Recommended improvement: Add a cron job to collect metrics every minute and store
-    // them in a lightweight database or time-series format for accurate historical data.
-    
-    for ($i = $points - 1; $i >= 0; $i--) {
-        $time = time() - ($i * $interval_minutes * 60);
-        
-        // Generate time labels
-        if ($timerange === '1h' || $timerange === '6h') {
-            $data['labels'][] = date('H:i', $time);
-        } else {
-            $data['labels'][] = date('H:00', $time);
-        }
-        
-        // Generate realistic performance data based on current values
-        // Add some variation but keep it realistic
-        $cpu_variation = ($i === 0) ? 0 : rand(-10, 10); // Current value at end
-        $memory_variation = ($i === 0) ? 0 : rand(-5, 5);
-        $disk_variation = 0; // Disk usage typically doesn't change much
-        
-        $data['cpu'][] = max(0, min(100, $current_cpu + $cpu_variation));
-        $data['memory'][] = max(0, min(100, $current_memory + $memory_variation));
-        $data['disk'][] = max(0, min(100, $current_disk + $disk_variation));
-    }
-    
-    return $data;
-}
 
-function getMetricsHistorical($timerange = '24h') {
-    $metrics_file = '/var/lib/enginescript/metrics.json';
-    
-    // Check if metrics file exists
-    if (!file_exists($metrics_file)) { // codacy:ignore - file_exists() required for metrics file checking in standalone API
-        return [
-            'success' => false,
-            'error' => 'Metrics file not found',
-            'labels' => [],
-            'cpu' => [],
-            'memory' => [],
-            'disk' => []
-        ];
-    }
-    
-    // Read metrics file
-    $metrics_json = file_get_contents($metrics_file); // codacy:ignore - file_get_contents() required for metrics reading in standalone API
-    if ($metrics_json === false) {
-        return [
-            'success' => false,
-            'error' => 'Unable to read metrics file',
-            'labels' => [],
-            'cpu' => [],
-            'memory' => [],
-            'disk' => []
-        ];
-    }
-    
-    $all_metrics = json_decode($metrics_json, true);
-    if (!is_array($all_metrics)) {
-        return [
-            'success' => false,
-            'error' => 'Invalid metrics data',
-            'labels' => [],
-            'cpu' => [],
-            'memory' => [],
-            'disk' => []
-        ];
-    }
-    
-    // Calculate cutoff time based on timerange
-    $cutoff_time = time();
-    switch ($timerange) {
-        case '1h':
-            $cutoff_time -= 3600; // 1 hour
-            break;
-        case '6h':
-            $cutoff_time -= 21600; // 6 hours
-            break;
-        case '24h':
-            $cutoff_time -= 86400; // 24 hours
-            break;
-        case '7d':
-            $cutoff_time -= 604800; // 7 days
-            break;
-        default:
-            $cutoff_time -= 86400; // Default 24 hours
-    }
-    
-    // Filter metrics by timerange
-    $filtered_metrics = array_filter($all_metrics, function($metric) use ($cutoff_time) {
-        return isset($metric['timestamp']) && $metric['timestamp'] >= $cutoff_time;
-    });
-    
-    // Sort by timestamp (oldest first)
-    usort($filtered_metrics, function($metric_a, $metric_b) {
-        return $metric_a['timestamp'] - $metric_b['timestamp'];
-    });
-    
-    // Prepare data for chart
-    $data = [
-        'success' => true,
-        'labels' => [],
-        'cpu' => [],
-        'memory' => [],
-        'disk' => [],
-        'count' => count($filtered_metrics)
-    ];
-    
-    foreach ($filtered_metrics as $metric) {
-        // Format timestamp based on timerange
-        if ($timerange === '7d') {
-            // For 7 days, show date + time
-            $data['labels'][] = date('M j, H:i', $metric['timestamp']);
-        } elseif ($timerange === '24h') {
-            // For 24 hours, show time
-            $data['labels'][] = date('H:i', $metric['timestamp']);
-        } else {
-            // For shorter ranges, show time
-            $data['labels'][] = date('H:i', $metric['timestamp']);
-        }
-        
-        // Add metric values (ensure they're numbers)
-        $data['cpu'][] = isset($metric['cpu']) ? (float)$metric['cpu'] : 0;
-        $data['memory'][] = isset($metric['memory']) ? (float)$metric['memory'] : 0;
-        $data['disk'][] = isset($metric['disk']) ? (float)$metric['disk'] : 0;
-    }
-    
-    // If no data found, return current values
-    if (empty($data['cpu'])) {
-        $current_cpu = (float)str_replace('%', '', getCpuUsage());
-        $current_memory = (float)str_replace('%', '', getMemoryUsage());
-        $current_disk = (float)str_replace('%', '', getDiskUsage());
-        
-        $data['labels'][] = date('H:i');
-        $data['cpu'][] = $current_cpu;
-        $data['memory'][] = $current_memory;
-        $data['disk'][] = $current_disk;
-        $data['count'] = 1;
-    }
-    
-    return $data;
-}
+
+
+
+
+
+
 
 function getOsInfo() {
     $os_release = file_get_contents('/etc/os-release'); // codacy:ignore - file_get_contents() required for OS info reading in standalone API

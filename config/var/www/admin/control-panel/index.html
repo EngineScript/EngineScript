@@ -77,69 +77,9 @@
 
             <!-- Overview Page -->
             <div class="page-content" id="overview-page">
-                <!-- Quick Stats -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-globe"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="sites-count">--</h3>
-                            <p>Active Sites</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-memory"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="memory-usage">--%</h3>
-                            <p>Memory Usage</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-hdd"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="disk-usage">--%</h3>
-                            <p>Disk Usage</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-microchip"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="cpu-usage">--%</h3>
-                            <p>CPU Usage</p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- System Health -->
                 <div class="content-row">
-                    <div class="card col-8">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-line"></i> System Performance</h3>
-                            <div class="card-actions">
-                                <select id="chart-timerange">
-                                    <option value="1h">Last Hour</option>
-                                    <option value="6h">Last 6 Hours</option>
-                                    <option value="24h" selected>Last 24 Hours</option>
-                                    <option value="7d">Last 7 Days</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="performance-chart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="card col-4">
+                    <div class="card col-12">
                         <div class="card-header">
                             <h3><i class="fas fa-heartbeat"></i> Service Status</h3>
                         </div>
@@ -450,6 +390,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="dashboard.js"></script>
+    <script type="module" src="dashboard.js"></script>
 </body>
 </html>

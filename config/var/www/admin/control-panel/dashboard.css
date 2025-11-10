@@ -414,6 +414,11 @@ body {
     padding: 1.5rem;
 }
 
+/* Ensure chart containers have proper height */
+.card-body:has(canvas) {
+    min-height: 420px;
+}
+
 .card-actions select {
     background: var(--secondary-bg);
     color: var(--text-primary);
@@ -440,51 +445,6 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
-}
-
-/* Stat Cards */
-.stat-card {
-    background: var(--card-bg);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--border-color);
-    transition: var(--transition);
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-}
-
-.stat-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.stat-content h3 {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-    color: var(--accent-color);
-}
-
-.stat-content p {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    font-weight: 500;
 }
 
 /* Service Status */
@@ -767,8 +727,9 @@ body {
 }
 
 /* Chart Containers */
-#performance-chart, #resource-chart {
-    max-height: 300px;
+#resource-chart {
+    height: 300px !important;
+    width: 100% !important;
 }
 
 /* Responsive Design */

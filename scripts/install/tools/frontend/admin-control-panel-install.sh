@@ -37,9 +37,5 @@ fi
 # Set permissions for the EngineScript frontend
 set_enginescript_frontend_permissions
 
-# Setup metrics collection system
-echo "Setting up metrics collection system..."
-/usr/local/bin/enginescript/scripts/install/metrics/setup-metrics.sh 2>> /tmp/enginescript_install_errors.log
-
 # Return to /usr/src
 cd /usr/src

@@ -4,25 +4,29 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-10
+
+### 🗑️ REMOVALS
+
+- **Metrics Collection System**: Removed unused metrics collection system
+  - Removed setup-metrics.sh installation script
+  - Removed collect-metrics.sh collection script
+  - Removed metrics setup call from admin-control-panel-install.sh
+  - Removed unused stat-card and performance-chart CSS styles
+
+### 🐛 BUG FIXES
+
+- **Service Status Display**: Fixed API endpoint path in modules/api.js to correctly fetch service status for nginx, php, mysql, and redis
+
 ## 2025-11-09
 
-### 📊 METRICS & MONITORING
+### 🏗️ CODE QUALITY IMPROVEMENTS
 
-- **Metrics Collection System**: Implemented JSON-based metrics collection for dashboard performance tracking
-  - **Cron Job**: Collects CPU, memory, and disk usage every 5 minutes
-  - **Storage**: 7-day rolling window with auto-rotation (2,016 data points max)
-  - **File-based**: Simple JSON at `/var/lib/enginescript/metrics.json` (no database overhead)
-  - **Validation**: Metric values sanitized and verified as valid percentages
-  - **Retention**: Automatic cleanup of entries older than 7 days
-- **Historical Metrics API**: Added `/api/metrics/historical` endpoint for retrieving stored performance data
-  - **Time Ranges**: Supports 1h, 6h, 24h, and 7d views
-  - **Filtering**: Returns only metrics within requested timeframe
-  - **Fallback**: Returns current values when no historical data available
-  - **Format**: Chart-ready data with timestamps, CPU, memory, and disk arrays
-- **Real Performance Charts**: Updated dashboard to display actual historical metrics instead of simulated data
-  - **Smart Loading**: Attempts real metrics first, falls back to simulated if unavailable
-  - **Seamless Integration**: Works with existing chart infrastructure
-  - **Multi-range Support**: Displays 1h, 6h, 24h, or 7d historical data
+- **Modular JavaScript Architecture**: Refactored monolithic dashboard.js (1,697 lines) into ES6 modules (api.js, state.js, charts.js, utils.js) for improved maintainability and separation of concerns
+
+### ⌨️ USER EXPERIENCE IMPROVEMENTS
+
+- **Keyboard Shortcuts**: Added comprehensive keyboard navigation for faster dashboard control (ESC closes menu, Ctrl+R/F5 refreshes, arrow keys navigate pages, 1-4 keys jump to specific pages)
 
 ## 2025-11-06
 
