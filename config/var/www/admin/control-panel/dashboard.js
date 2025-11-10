@@ -3,10 +3,10 @@
 
 /* global Chart */
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.10';
-import { DashboardState } from './modules/state.js?v=2025.11.10';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.10';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.10';
+import { DashboardAPI } from './modules/api.js?v=2025.11.10.3';
+import { DashboardState } from './modules/state.js?v=2025.11.10.3';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.10.3';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.10.3';
 
 class EngineScriptDashboard {
   constructor() {
@@ -523,6 +523,8 @@ class EngineScriptDashboard {
         if (versionSpan) {
           versionSpan.textContent = "v--";
         }
+        // Remove any error styling
+        element.style.opacity = "1";
       }
     });
   }
@@ -773,7 +775,9 @@ class EngineScriptDashboard {
       if (summary.configured) {
         this.setTextContent("total-monitors", summary.total_monitors || 0);
         this.setTextContent("up-monitors", summary.up_monitors || 0);
-        this.setTextContent("down-monitors", summary.down_monitors || 0);
+        // Explicitly show 0 for offline (down_monitors)
+        const downCount = summary.down_monitors !== undefined ? summary.down_monitors : 0;
+        this.setTextContent("down-monitors", downCount);
         this.setTextContent("average-uptime", (summary.average_uptime || 0) + "%");
       } else {
         this.showUptimeNotConfigured();
@@ -851,39 +855,49 @@ class EngineScriptDashboard {
     infoDiv.appendChild(nameH4);
     infoDiv.appendChild(urlP);
     
-    const statsDiv = document.createElement("div");
-    statsDiv.className = "monitor-stats";
+    // Only show stats if they have meaningful values
+    const hasStats = monitor.uptime_ratio > 0 || monitor.response_time > 0;
     
-    const uptimeStatDiv = document.createElement("div");
-    uptimeStatDiv.className = "stat";
-    
-    const uptimeValue = document.createElement("span");
-    uptimeValue.className = "stat-value";
-    uptimeValue.textContent = this.sanitizeNumeric(monitor.uptime_ratio, "0") + "%";
-    
-    const uptimeLabel = document.createElement("span");
-    uptimeLabel.className = "stat-label";
-    uptimeLabel.textContent = "Uptime";
-    
-    uptimeStatDiv.appendChild(uptimeValue);
-    uptimeStatDiv.appendChild(uptimeLabel);
-    
-    const responseStatDiv = document.createElement("div");
-    responseStatDiv.className = "stat";
-    
-    const responseValue = document.createElement("span");
-    responseValue.className = "stat-value";
-    responseValue.textContent = this.sanitizeNumeric(monitor.response_time, "0") + "ms";
-    
-    const responseLabel = document.createElement("span");
-    responseLabel.className = "stat-label";
-    responseLabel.textContent = "Response";
-    
-    responseStatDiv.appendChild(responseValue);
-    responseStatDiv.appendChild(responseLabel);
-    
-    statsDiv.appendChild(uptimeStatDiv);
-    statsDiv.appendChild(responseStatDiv);
+    if (hasStats) {
+      const statsDiv = document.createElement("div");
+      statsDiv.className = "monitor-stats";
+      
+      if (monitor.uptime_ratio > 0) {
+        const uptimeStatDiv = document.createElement("div");
+        uptimeStatDiv.className = "stat";
+        
+        const uptimeValue = document.createElement("span");
+        uptimeValue.className = "stat-value";
+        uptimeValue.textContent = this.sanitizeNumeric(monitor.uptime_ratio, "0") + "%";
+        
+        const uptimeLabel = document.createElement("span");
+        uptimeLabel.className = "stat-label";
+        uptimeLabel.textContent = "Uptime";
+        
+        uptimeStatDiv.appendChild(uptimeValue);
+        uptimeStatDiv.appendChild(uptimeLabel);
+        statsDiv.appendChild(uptimeStatDiv);
+      }
+      
+      if (monitor.response_time > 0) {
+        const responseStatDiv = document.createElement("div");
+        responseStatDiv.className = "stat";
+        
+        const responseValue = document.createElement("span");
+        responseValue.className = "stat-value";
+        responseValue.textContent = this.sanitizeNumeric(monitor.response_time, "0") + "ms";
+        
+        const responseLabel = document.createElement("span");
+        responseLabel.className = "stat-label";
+        responseLabel.textContent = "Response";
+        
+        responseStatDiv.appendChild(responseValue);
+        responseStatDiv.appendChild(responseLabel);
+        statsDiv.appendChild(responseStatDiv);
+      }
+      
+      monitorDiv.appendChild(statsDiv);
+    }
     
     const statusTextDiv = document.createElement("div");
     statusTextDiv.className = "monitor-status-text";
@@ -892,16 +906,10 @@ class EngineScriptDashboard {
     statusText.className = "status-text";
     statusText.textContent = this.sanitizeInput(monitor.status);
     
-    const lastCheck = document.createElement("span");
-    lastCheck.className = "last-check";
-    lastCheck.textContent = this.sanitizeInput(monitor.last_check);
-    
     statusTextDiv.appendChild(statusText);
-    statusTextDiv.appendChild(lastCheck);
     
     monitorDiv.appendChild(statusDiv);
     monitorDiv.appendChild(infoDiv);
-    monitorDiv.appendChild(statsDiv);
     monitorDiv.appendChild(statusTextDiv);
     
     return monitorDiv;

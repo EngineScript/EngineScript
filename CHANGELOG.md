@@ -6,6 +6,20 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-10
 
+### 🎨 UI/UX IMPROVEMENTS
+
+- **Service Status Redesign**: Converted service status from large card to compact header layout
+  - Changed from single large card to 4 separate service cards displayed in a row
+  - Added service-specific icons (server, PHP, database, memory)
+  - Moved status indicator to top-right corner of each card
+  - Improved visual hierarchy with gradient icon backgrounds
+  - More efficient use of screen space, reducing vertical scroll
+- **Uptime Monitoring Display**: Fixed display issues with uptime monitoring data
+  - Offline count now explicitly shows 0 when no sites are down (instead of blank)
+  - Uptime and response stats only display when they have meaningful values (>0)
+  - Removed "Unknown" last check text that appeared below status
+  - Cleaner monitor cards with only relevant information
+
 ### 🗑️ REMOVALS
 
 - **Metrics Collection System**: Removed unused metrics collection system

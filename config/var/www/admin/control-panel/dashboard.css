@@ -447,36 +447,64 @@ body {
     margin-bottom: 2rem;
 }
 
-/* Service Status */
-.service-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.service-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--secondary-bg);
+/* Service Status Cards */
+.service-card {
+    background: var(--card-bg);
     border-radius: var(--border-radius);
-    margin-bottom: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     border: 1px solid var(--border-color);
+    transition: var(--transition);
+    position: relative;
 }
 
-.service-info strong {
-    display: block;
-    margin-bottom: 0.25rem;
+.service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.service-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-content {
+    flex: 1;
+}
+
+.service-content h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
 }
 
 .service-version {
     color: var(--text-muted);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
+}
+
+.service-status {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
 }
 
 .service-status i {
-    font-size: 0.875rem;
+    font-size: 0.625rem;
 }
 
 .service-status .online { color: var(--success-color); }

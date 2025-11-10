@@ -12,7 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="dashboard.css?v=2025.11.10">
+    <link rel="stylesheet" href="dashboard.css?v=2025.11.10.2">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -77,54 +77,57 @@
 
             <!-- Overview Page -->
             <div class="page-content" id="overview-page">
-                <!-- System Health -->
+                <!-- Service Status Header -->
                 <div class="content-row">
-                    <div class="card col-12">
-                        <div class="card-header">
-                            <h3><i class="fas fa-heartbeat"></i> Service Status</h3>
+                    <div class="service-card col-3" id="nginx-status">
+                        <div class="service-icon">
+                            <i class="fas fa-server"></i>
                         </div>
-                        <div class="card-body">
-                            <div class="service-list">
-                                <div class="service-item" id="nginx-status">
-                                    <div class="service-info">
-                                        <strong>Nginx</strong>
-                                        <span class="service-version">v--</span>
-                                    </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="service-item" id="php-status">
-                                    <div class="service-info">
-                                        <strong>PHP-FPM</strong>
-                                        <span class="service-version">v--</span>
-                                    </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="service-item" id="mysql-status">
-                                    <div class="service-info">
-                                        <strong>MariaDB</strong>
-                                        <span class="service-version">v--</span>
-                                    </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="service-item" id="redis-status">
-                                    <div class="service-info">
-                                        <strong>Redis</strong>
-                                        <span class="service-version">v--</span>
-                                    </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="service-content">
+                            <h4>Nginx</h4>
+                            <span class="service-version">v--</span>
+                        </div>
+                        <div class="service-status">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card col-3" id="php-status">
+                        <div class="service-icon">
+                            <i class="fab fa-php"></i>
+                        </div>
+                        <div class="service-content">
+                            <h4>PHP-FPM</h4>
+                            <span class="service-version">v--</span>
+                        </div>
+                        <div class="service-status">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card col-3" id="mysql-status">
+                        <div class="service-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="service-content">
+                            <h4>MariaDB</h4>
+                            <span class="service-version">v--</span>
+                        </div>
+                        <div class="service-status">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card col-3" id="redis-status">
+                        <div class="service-icon">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="service-content">
+                            <h4>Redis</h4>
+                            <span class="service-version">v--</span>
+                        </div>
+                        <div class="service-status">
+                            <i class="fas fa-circle"></i>
                         </div>
                     </div>
                 </div>
@@ -340,6 +343,6 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2025.11.10" data-cfasync="false"></script>
+    <script type="module" src="dashboard.js?v=2025.11.10.3" data-cfasync="false"></script>
 </body>
 </html>
