@@ -32,7 +32,12 @@ Changes are organized by date, with the most recent changes listed first.
   - Service cards with color-coded status and descriptive messages
   - Responsive grid layout matching dashboard design
   - Fallback UI for API errors and disabled services
-- **Cache Version**: Updated to v=2025.11.11.2
+- **User Experience**: 
+  - Service status cards are clickable links that open official status pages in new tabs
+  - Cloudflare card links to https://www.cloudflarestatus.com/
+  - DigitalOcean card links to https://status.digitalocean.com/
+  - Cards show cursor pointer and enhanced hover effects for better interactivity
+- **Cache Version**: Updated to v=2025.11.11.3
 
 ## 2025-11-10
 

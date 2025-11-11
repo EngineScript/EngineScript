@@ -459,6 +459,27 @@ body {
     color: white;
 }
 
+.service-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .service-item {
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--border-radius);
@@ -478,22 +499,6 @@ body {
 
 .service-item .service-content {
     flex: 1;
-}
-
-.service-item .service-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-    border-radius: var(--border-radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.service-item .service-icon i {
-    font-size: 1.5rem;
-    color: white;
 }
 
 .service-item .service-content h4 {
@@ -1227,20 +1232,29 @@ button:focus, select:focus, input:focus {
 }
 
 .external-service-card {
+    display: block;
     background: var(--card-bg);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     padding: 1.5rem;
     transition: var(--transition);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
 
 .external-service-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow);
+    border-color: var(--accent-color);
 }
 
 .external-service-card.error {
     opacity: 0.7;
+}
+
+.external-service-card.error:hover {
+    opacity: 0.85;
 }
 
 .service-header {

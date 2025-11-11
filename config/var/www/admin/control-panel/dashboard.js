@@ -826,8 +826,11 @@ class EngineScriptDashboard {
         throw new Error('Invalid API response format');
       }
 
-      const serviceDiv = document.createElement("div");
-      serviceDiv.className = "external-service-card";
+      const serviceLink = document.createElement("a");
+      serviceLink.href = "https://www.cloudflarestatus.com/";
+      serviceLink.target = "_blank";
+      serviceLink.rel = "noopener noreferrer";
+      serviceLink.className = "external-service-card";
       
       const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
       const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
@@ -856,9 +859,9 @@ class EngineScriptDashboard {
       infoDiv.appendChild(statusSpan);
       headerDiv.appendChild(iconDiv);
       headerDiv.appendChild(infoDiv);
-      serviceDiv.appendChild(headerDiv);
+      serviceLink.appendChild(headerDiv);
       
-      container.appendChild(serviceDiv);
+      container.appendChild(serviceLink);
     } catch (error) {
       console.error('Failed to load Cloudflare status:', error);
       
@@ -869,9 +872,12 @@ class EngineScriptDashboard {
         errorMessage = 'Service unavailable';
       }
       
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "external-service-card error";
-      errorDiv.innerHTML = `
+      const errorLink = document.createElement("a");
+      errorLink.href = "https://www.cloudflarestatus.com/";
+      errorLink.target = "_blank";
+      errorLink.rel = "noopener noreferrer";
+      errorLink.className = "external-service-card error";
+      errorLink.innerHTML = `
         <div class="service-header">
           <div class="service-icon cloudflare-icon">
             <i class="fas fa-cloud"></i>
@@ -884,7 +890,7 @@ class EngineScriptDashboard {
           </div>
         </div>
       `;
-      container.appendChild(errorDiv);
+      container.appendChild(errorLink);
     }
   }
 
@@ -908,8 +914,11 @@ class EngineScriptDashboard {
         throw new Error('Invalid API response format');
       }
 
-      const serviceDiv = document.createElement("div");
-      serviceDiv.className = "external-service-card";
+      const serviceLink = document.createElement("a");
+      serviceLink.href = "https://status.digitalocean.com/";
+      serviceLink.target = "_blank";
+      serviceLink.rel = "noopener noreferrer";
+      serviceLink.className = "external-service-card";
       
       const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
       const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
@@ -938,9 +947,9 @@ class EngineScriptDashboard {
       infoDiv.appendChild(statusSpan);
       headerDiv.appendChild(iconDiv);
       headerDiv.appendChild(infoDiv);
-      serviceDiv.appendChild(headerDiv);
+      serviceLink.appendChild(headerDiv);
       
-      container.appendChild(serviceDiv);
+      container.appendChild(serviceLink);
     } catch (error) {
       console.error('Failed to load DigitalOcean status:', error);
       
@@ -951,9 +960,12 @@ class EngineScriptDashboard {
         errorMessage = 'Service unavailable';
       }
       
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "external-service-card error";
-      errorDiv.innerHTML = `
+      const errorLink = document.createElement("a");
+      errorLink.href = "https://status.digitalocean.com/";
+      errorLink.target = "_blank";
+      errorLink.rel = "noopener noreferrer";
+      errorLink.className = "external-service-card error";
+      errorLink.innerHTML = `
         <div class="service-header">
           <div class="service-icon digitalocean-icon">
             <i class="fas fa-layer-group"></i>
@@ -966,7 +978,7 @@ class EngineScriptDashboard {
           </div>
         </div>
       `;
-      container.appendChild(errorDiv);
+      container.appendChild(errorLink);
     }
   }
 
