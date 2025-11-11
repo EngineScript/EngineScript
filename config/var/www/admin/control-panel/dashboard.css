@@ -668,11 +668,6 @@ body {
     margin-bottom: 1rem;
 }
 
-.tool-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
 .tool-content h3 {
     margin-bottom: 0.5rem;
     color: var(--text-primary);
