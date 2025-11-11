@@ -21,6 +21,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Consistent card styling with headers and body sections
     - Removed Average Uptime stat (always showed 0%)
     - Summary now shows: Total Sites, Online, Offline (3-column layout)
+    - Total Sites metric now uses complementary info-blue styling to distinguish from Online/Offline states
   - **Responsive Design**: Maintained responsive breakpoints for mobile compatibility
   - **CSS Updates**: Replaced .service-card styles with .service-item and .service-list
     - New .service-list container with vertical flex layout

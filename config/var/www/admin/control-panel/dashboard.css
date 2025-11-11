@@ -454,6 +454,11 @@ body {
     gap: 1rem;
 }
 
+.tool-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
 .service-item {
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--border-radius);
@@ -480,11 +485,6 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-}
-
-.tool-icon i {
-    font-size: 1.5rem;
-    color: white;
 }
 
 .service-item .service-icon i {
@@ -1137,7 +1137,7 @@ button:focus, select:focus, input:focus {
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--accent-color);
+    color: var(--info-color);
     line-height: 1.2;
     margin-bottom: 5px;
 }
