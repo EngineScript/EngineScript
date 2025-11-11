@@ -772,7 +772,6 @@ class EngineScriptDashboard {
         // Explicitly show 0 for offline (down_monitors)
         const downCount = summary.down_monitors !== undefined ? summary.down_monitors : 0;
         this.setTextContent("down-monitors", downCount);
-        this.setTextContent("average-uptime", (summary.average_uptime || 0) + "%");
       } else {
         this.showUptimeNotConfigured();
       }
@@ -982,8 +981,7 @@ class EngineScriptDashboard {
     // Reset summary stats
     this.setTextContent("total-monitors", "--");
     this.setTextContent("up-monitors", "--");
-    this.setTextContent("down-monitors", "--");
-    this.setTextContent("average-uptime", "--%");
+    this.setTextContent("down-monitors", "0");
   }
 
   showUptimeError() {

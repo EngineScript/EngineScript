@@ -15,17 +15,20 @@ Changes are organized by date, with the most recent changes listed first.
     - Changed icon style from circular to rounded square with gradient backgrounds
     - Larger service names and version text for better readability
     - Status indicators now inline with hover effects
-  - **Uptime Monitoring Panel**: Right panel (50% width) maintains existing functionality
+  - **Uptime Monitoring Panel**: Right panel (50% width) with streamlined statistics
     - Side-by-side equal width layout for better space utilization
     - Both panels use col-6 class for perfect 50/50 split
     - Consistent card styling with headers and body sections
+    - Removed Average Uptime stat (always showed 0%)
+    - Summary now shows: Total Sites, Online, Offline (3-column layout)
   - **Responsive Design**: Maintained responsive breakpoints for mobile compatibility
   - **CSS Updates**: Replaced .service-card styles with .service-item and .service-list
     - New .service-list container with vertical flex layout
     - .service-item with subtle background and border hover effects
     - Improved visual hierarchy and spacing throughout
 - **Uptime Monitoring Display**: Fixed display issues with uptime monitoring data
-  - Offline count now explicitly shows 0 when no sites are down (instead of blank)
+  - Offline count always shows a number (0 when no sites are down, never blank)
+  - Fixed edge case where Offline field would show "--" instead of 0
   - Uptime and response stats only display when they have meaningful values (>0)
   - Removed "Unknown" last check text that appeared below status
   - Cleaner monitor cards with only relevant information
