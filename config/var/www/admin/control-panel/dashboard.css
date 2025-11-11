@@ -623,6 +623,10 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
+.site-info {
+    padding: 1.5rem;
+}
+
 .site-card.loading {
     opacity: 0.6;
 }
