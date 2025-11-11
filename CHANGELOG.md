@@ -28,6 +28,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Improved visual hierarchy and spacing throughout
 - **Uptime Monitoring Display**: Fixed display issues with uptime monitoring data
   - Offline count always shows a number (0 when no sites are down, never blank)
+  - Updated text rendering utility to treat numeric zero as valid content (prevents blank display)
   - Fixed edge case where Offline field would show "--" instead of 0
   - Uptime and response stats only display when they have meaningful values (>0)
   - Removed "Unknown" last check text that appeared below status

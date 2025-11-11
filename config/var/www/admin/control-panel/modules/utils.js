@@ -100,7 +100,8 @@ export class DashboardUtils {
   setTextContent(elementId, content) {
     const element = document.getElementById(elementId);
     if (element) {
-      element.textContent = String(content || "");
+      const safeContent = content ?? "";
+      element.textContent = String(safeContent);
     }
   }
 

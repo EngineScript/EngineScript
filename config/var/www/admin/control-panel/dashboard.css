@@ -482,6 +482,11 @@ body {
     flex-shrink: 0;
 }
 
+.tool-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
 .service-item .service-icon i {
     font-size: 1.5rem;
     color: white;
@@ -489,6 +494,16 @@ body {
 
 .service-item .service-content {
     flex: 1;
+}
+
+.monitor-info h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .service-item .service-content h4 {
@@ -957,16 +972,6 @@ button:focus, select:focus, input:focus {
 .monitor-info {
     grid-area: info;
     min-width: 0;
-}
-
-.monitor-info h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .monitor-url {

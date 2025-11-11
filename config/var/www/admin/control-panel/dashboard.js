@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.10.3';
-import { DashboardState } from './modules/state.js?v=2025.11.10.3';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.10.3';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.10.3';
+import { DashboardAPI } from './modules/api.js?v=2025.11.10.7';
+import { DashboardState } from './modules/state.js?v=2025.11.10.7';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.10.7';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.10.7';
 
 class EngineScriptDashboard {
   constructor() {
@@ -76,12 +76,6 @@ class EngineScriptDashboard {
 
     // File Manager tool card is now a direct HTML link
     // Status checking handled separately
-
-    // Uptime refresh button
-    const uptimeRefreshBtn = document.getElementById("uptime-refresh-btn");
-    if (uptimeRefreshBtn) {
-      uptimeRefreshBtn.addEventListener("click", () => this.loadUptimeData());
-    }
   }
   setupNavigation() {
     // Set up single page app navigation
@@ -499,6 +493,14 @@ class EngineScriptDashboard {
     this.utils.setTextContent(elementId, content);
   }
 
+  normalizeMonitorCount(value) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue) && numericValue >= 0) {
+      return Math.floor(numericValue);
+    }
+    return 0;
+  }
+
   // Skeleton loader helpers
 
 
@@ -767,10 +769,12 @@ class EngineScriptDashboard {
       const summary = await this.getApiData("/api/monitoring/uptime", {});
       
       if (summary.configured) {
-        this.setTextContent("total-monitors", summary.total_monitors || 0);
-        this.setTextContent("up-monitors", summary.up_monitors || 0);
-        // Explicitly show 0 for offline (down_monitors)
-        const downCount = summary.down_monitors !== undefined ? summary.down_monitors : 0;
+        const totalCount = this.normalizeMonitorCount(summary.total_monitors);
+        const upCount = this.normalizeMonitorCount(summary.up_monitors);
+        const downCount = this.normalizeMonitorCount(summary.down_monitors);
+
+        this.setTextContent("total-monitors", totalCount);
+        this.setTextContent("up-monitors", upCount);
         this.setTextContent("down-monitors", downCount);
       } else {
         this.showUptimeNotConfigured();
@@ -981,7 +985,7 @@ class EngineScriptDashboard {
     // Reset summary stats
     this.setTextContent("total-monitors", "--");
     this.setTextContent("up-monitors", "--");
-    this.setTextContent("down-monitors", "0");
+    this.setTextContent("down-monitors", 0);
   }
 
   showUptimeError() {
@@ -997,6 +1001,7 @@ class EngineScriptDashboard {
       statusDiv.appendChild(message);
       monitorsContainer.appendChild(statusDiv);
     }
+    this.setTextContent("down-monitors", 0);
   }
 
 }
