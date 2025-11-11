@@ -10,7 +10,8 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **External Services Tab**: New dashboard tab for monitoring external service status
   - Displays real-time status from Cloudflare and DigitalOcean status pages
-  - Automatically enabled when INSTALL_CLOUDFLARE or INSTALL_DIGITALOCEAN_* options are set
+  - Cloudflare status always displayed (required EngineScript component)
+  - DigitalOcean status shown when INSTALL_DIGITALOCEAN_* options are enabled
   - Uses official Statuspage.io API endpoints for reliable status data
   - Shows service health with color-coded status indicators (green/yellow/red)
   - Graceful handling for disabled services (displays empty state)
@@ -23,7 +24,8 @@ Changes are organized by date, with the most recent changes listed first.
   - Cloudflare: `https://www.cloudflarestatus.com/api/v2/status.json`
   - DigitalOcean: `https://status.digitalocean.com/api/v2/status.json`
 - **Configuration Detection**:
-  - Reads enginescript-install-options.txt to determine enabled services
+  - Cloudflare: Always enabled (required component)
+  - DigitalOcean: Reads enginescript-install-options.txt for INSTALL_DIGITALOCEAN_REMOTE_CONSOLE or INSTALL_DIGITALOCEAN_METRICS_AGENT
   - New `/api/external-services/config` endpoint returns enabled service list
 - **Frontend**:
   - New navigation item "External Services" with cloud icon

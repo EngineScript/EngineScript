@@ -476,6 +476,10 @@ body {
     border-color: var(--accent-color);
 }
 
+.service-item .service-content {
+    flex: 1;
+}
+
 .service-item .service-icon {
     width: 48px;
     height: 48px;
@@ -490,20 +494,6 @@ body {
 .service-item .service-icon i {
     font-size: 1.5rem;
     color: white;
-}
-
-.service-item .service-content {
-    flex: 1;
-}
-
-.monitor-info h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .service-item .service-content h4 {
@@ -1274,7 +1264,7 @@ button:focus, select:focus, input:focus {
 }
 
 .service-icon.digitalocean-icon {
-    background: linear-gradient(135deg, #0080ff, #0055cc);
+    background: linear-gradient(135deg, #0080ff, #05c);
 }
 
 .service-icon i {

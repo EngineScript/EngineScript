@@ -1006,12 +1006,13 @@ function getSystemAlerts() {
 }
 
 function getExternalServicesConfig() {
+    // Cloudflare is always enabled as it's a required component
     $config = [
-        'cloudflare' => false,
+        'cloudflare' => true,
         'digitalocean' => false
     ];
     
-    // Read enginescript configuration
+    // Read enginescript configuration for DigitalOcean options
     $config_file = '/home/EngineScript/enginescript-install-options.txt'; // codacy:ignore - file_get_contents() required for config reading in standalone API
     if (file_exists($config_file)) { // codacy:ignore - file_exists() required for config checking in standalone API
         $config_content = file_get_contents($config_file); // codacy:ignore - file_get_contents() required for config reading in standalone API
@@ -1019,11 +1020,6 @@ function getExternalServicesConfig() {
         
         foreach ($config_lines as $line) {
             $line = trim($line);
-            if (strpos($line, 'INSTALL_CLOUDFLARE=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
-                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
-                    $config['cloudflare'] = true;
-                }
-            }
             if (strpos($line, 'INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
                 if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
                     $config['digitalocean'] = true;
