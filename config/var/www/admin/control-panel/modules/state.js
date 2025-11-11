@@ -11,7 +11,7 @@ export class DashboardState {
     this.maxRefreshInterval = 300000; // 5 minutes max
     this.minRefreshInterval = 5000; // 5 seconds min
     this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
-    this.allowedPages = ["overview", "sites", "system", "tools"];
+    this.allowedPages = ["overview", "sites", "system", "external-services", "tools"];
     this.allowedTools = ["phpmyadmin", "phpinfo", "phpsysinfo", "adminer"];
   }
 

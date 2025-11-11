@@ -1227,3 +1227,96 @@ button:focus, select:focus, input:focus {
 .empty-state.error .empty-state-icon {
     color: var(--error-color);
 }
+
+/* External Services */
+.external-services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.external-service-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    transition: var(--transition);
+}
+
+.external-service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.external-service-card.error {
+    opacity: 0.7;
+}
+
+.service-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.service-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.service-icon.cloudflare-icon {
+    background: linear-gradient(135deg, #f38020, #f4a020);
+}
+
+.service-icon.digitalocean-icon {
+    background: linear-gradient(135deg, #0080ff, #0055cc);
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-info {
+    flex: 1;
+}
+
+.service-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.service-status.status-success {
+    color: var(--success-color);
+}
+
+.service-status.status-warning {
+    color: var(--warning-color);
+}
+
+.service-status.status-error {
+    color: var(--error-color);
+}
+
+.loading-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+

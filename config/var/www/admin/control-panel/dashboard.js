@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.10.7';
-import { DashboardState } from './modules/state.js?v=2025.11.10.7';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.10.7';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.10.7';
+import { DashboardAPI } from './modules/api.js?v=2025.11.11.1';
+import { DashboardState } from './modules/state.js?v=2025.11.11.1';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.11.1';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.11.1';
 
 class EngineScriptDashboard {
   constructor() {
@@ -152,6 +152,9 @@ class EngineScriptDashboard {
       case "system":
         this.loadSystemInfo();
         break;
+      case "external-services":
+        this.loadExternalServices();
+        break;
       case "tools":
         this.loadToolsData();
         break;
@@ -212,9 +215,9 @@ class EngineScriptDashboard {
         this.navigateWithKeys(event.key === "ArrowRight");
       }
 
-      // Number keys 1-4 - Quick page navigation
-      if (event.key >= "1" && event.key <= "4" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-        const pages = ["overview", "sites", "system", "tools"];
+      // Number keys 1-5 - Quick page navigation
+      if (event.key >= "1" && event.key <= "5" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+        const pages = ["overview", "sites", "system", "external-services", "tools"];
         const pageIndex = parseInt(event.key, 10) - 1;
         if (pageIndex < pages.length) {
           this.navigateToPage(pages[pageIndex]);
@@ -224,7 +227,7 @@ class EngineScriptDashboard {
   }
 
   navigateWithKeys(forward) {
-    const pages = ["overview", "sites", "system", "tools"];
+    const pages = ["overview", "sites", "system", "external-services", "tools"];
     const currentIndex = pages.indexOf(this.state.getCurrentPage());
     
     if (currentIndex === -1) return;
@@ -750,6 +753,221 @@ class EngineScriptDashboard {
   // Tools management methods
   async loadToolsData() {
     // Tools are now static links - no status checking needed
+  }
+
+  // External services monitoring
+  async loadExternalServices() {
+    try {
+      const container = document.getElementById("external-services-grid");
+      if (!container) return;
+
+      container.innerHTML = "";
+
+      // Fetch enabled services from API
+      const enabledServices = await this.getApiData("/api/external-services/config", {});
+      
+      if (!enabledServices || Object.keys(enabledServices).length === 0) {
+        const noServicesDiv = document.createElement("div");
+        noServicesDiv.className = "empty-state";
+        noServicesDiv.innerHTML = `
+          <div class="empty-state-icon">
+            <i class="fas fa-cloud-sun"></i>
+          </div>
+          <h3>No External Services Configured</h3>
+          <p>No external service monitoring is currently enabled. Configure INSTALL_CLOUDFLARE or INSTALL_DIGITALOCEAN options to enable monitoring.</p>
+        `;
+        container.appendChild(noServicesDiv);
+        return;
+      }
+
+      // Fetch and display each enabled service
+      if (enabledServices.cloudflare) {
+        await this.loadCloudflareStatus(container);
+      }
+      if (enabledServices.digitalocean) {
+        await this.loadDigitalOceanStatus(container);
+      }
+    } catch (error) {
+      console.error('Failed to load external services:', error);
+      const container = document.getElementById("external-services-grid");
+      if (container) {
+        container.innerHTML = "";
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "error-state";
+        errorDiv.innerHTML = `
+          <div class="error-icon">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <h3>Error Loading External Services</h3>
+          <p>Failed to fetch external service status. Please try again later.</p>
+        `;
+        container.appendChild(errorDiv);
+      }
+    }
+  }
+
+  async loadCloudflareStatus(container) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch("https://www.cloudflarestatus.com/api/v2/status.json", {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data.status || !data.status.indicator) {
+        throw new Error('Invalid API response format');
+      }
+
+      const serviceDiv = document.createElement("div");
+      serviceDiv.className = "external-service-card";
+      
+      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
+      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+
+      // Create elements safely without innerHTML to prevent XSS
+      const headerDiv = document.createElement("div");
+      headerDiv.className = "service-header";
+      
+      const iconDiv = document.createElement("div");
+      iconDiv.className = "service-icon cloudflare-icon";
+      iconDiv.innerHTML = '<i class="fas fa-cloud"></i>';
+      
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "service-info";
+      
+      const h3 = document.createElement("h3");
+      h3.textContent = "Cloudflare";
+      
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `service-status status-${statusColor}`;
+      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+      statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
+      
+      infoDiv.appendChild(h3);
+      infoDiv.appendChild(statusSpan);
+      headerDiv.appendChild(iconDiv);
+      headerDiv.appendChild(infoDiv);
+      serviceDiv.appendChild(headerDiv);
+      
+      container.appendChild(serviceDiv);
+    } catch (error) {
+      console.error('Failed to load Cloudflare status:', error);
+      
+      let errorMessage = 'Unable to fetch status';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message && error.message.startsWith('HTTP error!')) {
+        errorMessage = 'Service unavailable';
+      }
+      
+      const errorDiv = document.createElement("div");
+      errorDiv.className = "external-service-card error";
+      errorDiv.innerHTML = `
+        <div class="service-header">
+          <div class="service-icon cloudflare-icon">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <div class="service-info">
+            <h3>Cloudflare</h3>
+            <span class="service-status status-error">
+              <i class="fas fa-times-circle"></i> ${errorMessage}
+            </span>
+          </div>
+        </div>
+      `;
+      container.appendChild(errorDiv);
+    }
+  }
+
+  async loadDigitalOceanStatus(container) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch("https://status.digitalocean.com/api/v2/status.json", {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data.status || !data.status.indicator) {
+        throw new Error('Invalid API response format');
+      }
+
+      const serviceDiv = document.createElement("div");
+      serviceDiv.className = "external-service-card";
+      
+      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
+      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+
+      // Create elements safely without innerHTML to prevent XSS
+      const headerDiv = document.createElement("div");
+      headerDiv.className = "service-header";
+      
+      const iconDiv = document.createElement("div");
+      iconDiv.className = "service-icon digitalocean-icon";
+      iconDiv.innerHTML = '<i class="fas fa-layer-group"></i>';
+      
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "service-info";
+      
+      const h3 = document.createElement("h3");
+      h3.textContent = "DigitalOcean";
+      
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `service-status status-${statusColor}`;
+      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+      statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
+      
+      infoDiv.appendChild(h3);
+      infoDiv.appendChild(statusSpan);
+      headerDiv.appendChild(iconDiv);
+      headerDiv.appendChild(infoDiv);
+      serviceDiv.appendChild(headerDiv);
+      
+      container.appendChild(serviceDiv);
+    } catch (error) {
+      console.error('Failed to load DigitalOcean status:', error);
+      
+      let errorMessage = 'Unable to fetch status';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message && error.message.startsWith('HTTP error!')) {
+        errorMessage = 'Service unavailable';
+      }
+      
+      const errorDiv = document.createElement("div");
+      errorDiv.className = "external-service-card error";
+      errorDiv.innerHTML = `
+        <div class="service-header">
+          <div class="service-icon digitalocean-icon">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <div class="service-info">
+            <h3>DigitalOcean</h3>
+            <span class="service-status status-error">
+              <i class="fas fa-times-circle"></i> ${errorMessage}
+            </span>
+          </div>
+        </div>
+      `;
+      container.appendChild(errorDiv);
+    }
   }
 
   // Uptime monitoring methods

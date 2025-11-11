@@ -335,6 +335,10 @@ switch ($path) {
         handleUptimeMonitors();
         break;
     
+    case '/external-services/config':
+        handleExternalServicesConfig();
+        break;
+    
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
@@ -1000,4 +1004,52 @@ function getSystemAlerts() {
     
     return $alerts;
 }
+
+function getExternalServicesConfig() {
+    $config = [
+        'cloudflare' => false,
+        'digitalocean' => false
+    ];
+    
+    // Read enginescript configuration
+    $config_file = '/home/EngineScript/enginescript-install-options.txt'; // codacy:ignore - file_get_contents() required for config reading in standalone API
+    if (file_exists($config_file)) { // codacy:ignore - file_exists() required for config checking in standalone API
+        $config_content = file_get_contents($config_file); // codacy:ignore - file_get_contents() required for config reading in standalone API
+        $config_lines = explode("\n", $config_content);
+        
+        foreach ($config_lines as $line) {
+            $line = trim($line);
+            if (strpos($line, 'INSTALL_CLOUDFLARE=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
+                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
+                    $config['cloudflare'] = true;
+                }
+            }
+            if (strpos($line, 'INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
+                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
+                    $config['digitalocean'] = true;
+                }
+            }
+            if (strpos($line, 'INSTALL_DIGITALOCEAN_METRICS_AGENT=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
+                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
+                    $config['digitalocean'] = true;
+                }
+            }
+        }
+    }
+    
+    // Return only enabled services
+    return array_filter($config);
+}
+
+function handleExternalServicesConfig() {
+    try {
+        $config = getExternalServicesConfig();
+        echo json_encode($config); // codacy:ignore - echo required for JSON API response
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('External services config error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to retrieve external services config']); // codacy:ignore - echo required for JSON API response
+    }
+}
 ?>
+

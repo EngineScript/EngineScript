@@ -4,6 +4,34 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-11
+
+### 🌐 NEW FEATURE: External Services Monitoring
+
+- **External Services Tab**: New dashboard tab for monitoring external service status
+  - Displays real-time status from Cloudflare and DigitalOcean status pages
+  - Automatically enabled when INSTALL_CLOUDFLARE or INSTALL_DIGITALOCEAN_* options are set
+  - Uses official Statuspage.io API endpoints for reliable status data
+  - Shows service health with color-coded status indicators (green/yellow/red)
+  - Graceful handling for disabled services (displays empty state)
+  - Error handling for API failures with user-friendly messages
+  - Fetches data directly from external APIs with proper CORS handling
+
+### 📊 Technical Implementation
+
+- **API Endpoints**:
+  - Cloudflare: `https://www.cloudflarestatus.com/api/v2/status.json`
+  - DigitalOcean: `https://status.digitalocean.com/api/v2/status.json`
+- **Configuration Detection**:
+  - Reads enginescript-install-options.txt to determine enabled services
+  - New `/api/external-services/config` endpoint returns enabled service list
+- **Frontend**:
+  - New navigation item "External Services" with cloud icon
+  - Service cards with color-coded status and descriptive messages
+  - Responsive grid layout matching dashboard design
+  - Fallback UI for API errors and disabled services
+- **Cache Version**: Updated to v=2025.11.11.2
+
 ## 2025-11-10
 
 ### 🎨 UI/UX IMPROVEMENTS

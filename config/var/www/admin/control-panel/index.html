@@ -12,7 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="dashboard.css?v=2025.11.10.8">
+    <link rel="stylesheet" href="dashboard.css?v=2025.11.11.2">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -42,6 +42,9 @@
                 </li>
                 <li class="nav-item" data-page="system">
                     <a href="#"><i class="fas fa-cogs"></i> System</a>
+                </li>
+                <li class="nav-item" data-page="external-services">
+                    <a href="#"><i class="fas fa-cloud"></i> External Services</a>
                 </li>
                 <li class="nav-item" data-page="tools">
                     <a href="#"><i class="fas fa-tools"></i> Tools</a>
@@ -269,6 +272,20 @@
                 </div>
             </div>
 
+            <!-- External Services Page -->
+            <div class="page-content" id="external-services-page" style="display: none;">
+                <div class="page-header">
+                    <h2>External Services Status</h2>
+                </div>
+                
+                <div class="external-services-grid" id="external-services-grid">
+                    <!-- Services will be dynamically loaded here -->
+                    <div class="loading-message">
+                        <p>Loading external services status...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tools Page -->
             <div class="page-content" id="tools-page" style="display: none;">
                 <div class="page-header">
@@ -342,6 +359,6 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2025.11.10.7" data-cfasync="false"></script>
+    <script type="module" src="dashboard.js?v=2025.11.11.2" data-cfasync="false"></script>
 </body>
 </html>
