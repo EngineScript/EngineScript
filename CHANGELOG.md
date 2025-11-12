@@ -451,7 +451,7 @@ Changes are organized by date, with the most recent changes listed first.
   - Service cards with color-coded status and descriptive messages
   - Responsive grid layout matching dashboard design
   - Fallback UI for API errors and disabled services
-- **User Experience**: 
+- **User Experience**:
   - Service status cards are clickable links that open official status pages in new tabs
   - Cloudflare card links to https://www.cloudflarestatus.com/
   - DigitalOcean card links to https://status.digitalocean.com/
