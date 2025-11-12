@@ -6,6 +6,52 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-12
 
+### ♻️ REFACTOR: Client-Side Cookie Storage for Preferences
+
+- **Migrated from Server-Side to Client-Side Storage**:
+  - Preferences now stored in browser cookies instead of server JSON files
+  - Cookie name: `servicePreferences` with 1-year expiration
+  - Simplifies architecture and removes server-side storage complexity
+  - Better for multi-tenant/hosted scenarios where server storage is undesirable
+  - Settings remain private to user's browser
+
+- **Removed Server-Side Components**:
+  - Removed `/api/external-services/preferences` endpoint (GET/POST)
+  - Removed `getPreferencesFile()`, `getUserServicePreferences()`, `saveUserServicePreferences()` functions
+  - Removed `handleExternalServicesPreferences()` handler
+  - Removed `/home/EngineScript/.admin-preferences/` directory requirement
+  - Removed CSRF protection for preferences (no longer needed - client-only)
+  - API reverted to GET-only (no POST endpoints needed)
+
+- **Updated Frontend Methods**:
+  - Replaced `loadServicePreferences()` with cookie-based version (synchronous)
+  - Replaced `updateServicePreference()` to save to cookie directly (no API calls)
+  - Added `getCookie()`, `setCookie()`, `deleteCookie()` helper methods
+  - Removed localStorage fallback (cookies are primary storage)
+  - Removed server API calls for preferences
+  - Cookies use `SameSite=Lax` for security
+
+- **Limitations**:
+  - Preferences don't sync across different browsers/devices
+  - Cookie storage limited to ~4KB (sufficient for 8 boolean flags)
+  - Clearing browser cookies resets preferences to defaults
+
+- **Cache Version**: Updated to v=2025.11.12.3
+
+### 🐛 BUG FIXES: Service Preferences & External Services
+
+- **Fixed Critical 500 Error** on preferences POST endpoint:
+- **Fixed CORS Issues** with external service status APIs:
+
+- **UI/UX Improvements** for service settings:
+  - Settings moved to collapsible panel at top of External Services page
+  - Panel starts collapsed by default to reduce visual clutter
+  - Click gear icon/button to expand/collapse settings
+  - Chevron icon animates to indicate panel state
+  - Much cleaner presentation than inline settings box
+
+- **Cache Version**: Updated to v=2025.11.12.2
+
 ### 🔒 SECURITY: Service Preferences Hardening
 
 - **Critical Security Improvements** to service preferences system:
@@ -80,7 +126,7 @@ Changes are organized by date, with the most recent changes listed first.
   - Settings persist until user explicitly disables services
   - Resetting browser cache or changing IP resets to defaults
 
-- **Cache Version**: Updated to v=2025.11.12.1
+- **Cache Version**: Was v=2025.11.12.1 (security hardening)
 
 ### 2025-11-11 (Previous)
 
@@ -92,14 +138,14 @@ Changes are organized by date, with the most recent changes listed first.
   - Zero code changes needed to add new services - purely configuration driven
   
 - **Extended Service Coverage**: Now monitors 8 critical external services
-  - **Cloudflare** (Always enabled): CDN, DNS, and DDoS protection status
-  - **DigitalOcean** (Optional): Cloud infrastructure and managed services status
-  - **AWS** (Optional): Amazon Web Services status - when AWS monitoring enabled
-  - **GitHub** (Optional): GitHub platform and API status
-  - **Let's Encrypt** (Optional): SSL/TLS certificate authority status
-  - **Mailgun** (Optional): Email delivery service status
-  - **Stripe** (Optional): Payment processing service status
-  - **Vimeo** (Optional): Video hosting service status
+  - **Cloudflare** : CDN, DNS, and DDoS protection status
+  - **DigitalOcean** : Cloud infrastructure and managed services status
+  - **AWS** : Amazon Web Services status - when AWS monitoring enabled
+  - **GitHub** : GitHub platform and API status
+  - **Let's Encrypt** : SSL/TLS certificate authority status
+  - **Mailgun** : Email delivery service status
+  - **Stripe** : Payment processing service status
+  - **Vimeo** : Video hosting service status
 
 - **Architectural Improvements**:
   - Removed 177 lines of duplicate code (individual service methods)
@@ -107,25 +153,6 @@ Changes are organized by date, with the most recent changes listed first.
   - Service definitions object enables adding new services without code changes
   - Unified error handling, timeout management, and styling across all services
   - All services use 10-second timeout with proper error recovery
-
-- **Configuration Detection**:
-  - AWS: Checks INSTALL_AWS_MONITORING flag
-  - GitHub: Checks EXTERNAL_SERVICES_GITHUB flag
-  - Let's Encrypt: Checks EXTERNAL_SERVICES_LETSENCRYPT flag
-  - Mailgun: Checks EXTERNAL_SERVICES_MAILGUN flag
-  - Stripe: Checks EXTERNAL_SERVICES_STRIPE flag
-  - Vimeo: Checks EXTERNAL_SERVICES_VIMEO flag
-  - Configuration read from enginescript-install-options.txt via `/api/external-services/config` endpoint
-
-- **Enhanced UI Elements**:
-  - Added branded gradient backgrounds for all 8 services
-  - AWS: Orange gradient (#ff9900 → #ffa500)
-  - GitHub: Dark gray gradient (#24292e → #424242)
-  - Let's Encrypt: Green gradient (#33a542 → #4cb548)
-  - Mailgun: Purple gradient (#a020f0 → #b833f5)
-  - Stripe: Blue gradient (#0055de → #0066ff)
-  - Vimeo: Cyan gradient (#1ab7ea → #0099cc)
-  - All service cards clickable, opening respective status pages in new tabs
 
 - **Performance & Reliability**:
   - Parallel API requests for all enabled services (no sequential delays)

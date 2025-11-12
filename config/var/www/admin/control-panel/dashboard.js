@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.12.1';
-import { DashboardState } from './modules/state.js?v=2025.11.12.1';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.12.1';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.12.1';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.3';
+import { DashboardState } from './modules/state.js?v=2025.11.12.3';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.3';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.3';
 
 class EngineScriptDashboard {
   constructor() {
@@ -763,17 +763,13 @@ class EngineScriptDashboard {
 
       container.innerHTML = "";
 
-      // Fetch enabled services and user preferences from API
+      // Fetch enabled services from API
       const response = await this.getApiData("/api/external-services/config", {});
       
       let services = response.services || response;
-      let preferences = response.preferences || {};
       
-      // Load preferences from cache or server
-      const cachedPrefs = await this.loadServicePreferences();
-      if (cachedPrefs) {
-        preferences = cachedPrefs;
-      }
+      // Load preferences from cookie (client-side only)
+      let preferences = this.loadServicePreferences() || {};
 
       if (!services || Object.keys(services).length === 0) {
         const noServicesDiv = document.createElement("div");
@@ -790,75 +786,107 @@ class EngineScriptDashboard {
       }
 
       // Service definitions with API endpoints, names, icons, and URLs
+      // Note: Some services don't support CORS and will need to be proxied or removed
       const serviceDefinitions = {
         cloudflare: {
           name: 'Cloudflare',
           api: 'https://www.cloudflarestatus.com/api/v2/status.json',
           url: 'https://www.cloudflarestatus.com/',
           icon: 'fa-cloud',
-          color: 'cloudflare-icon'
+          color: 'cloudflare-icon',
+          corsEnabled: true
         },
         digitalocean: {
           name: 'DigitalOcean',
           api: 'https://status.digitalocean.com/api/v2/status.json',
           url: 'https://status.digitalocean.com/',
           icon: 'fa-layer-group',
-          color: 'digitalocean-icon'
-        },
-        aws: {
-          name: 'AWS',
-          api: 'https://status.aws.amazon.com/api/v2/status.json',
-          url: 'https://status.aws.amazon.com/',
-          icon: 'fa-cube',
-          color: 'aws-icon'
+          color: 'digitalocean-icon',
+          corsEnabled: true
         },
         github: {
           name: 'GitHub',
           api: 'https://www.githubstatus.com/api/v2/status.json',
           url: 'https://www.githubstatus.com/',
           icon: 'fa-github',
-          color: 'github-icon'
-        },
-        letsencrypt: {
-          name: "Let's Encrypt",
-          api: 'https://letsencrypt.status.io/api/v2/status.json',
-          url: 'https://letsencrypt.status.io/',
-          icon: 'fa-lock',
-          color: 'letsencrypt-icon'
+          color: 'github-icon',
+          corsEnabled: true
         },
         mailgun: {
           name: 'Mailgun',
           api: 'https://status.mailgun.com/api/v2/status.json',
           url: 'https://status.mailgun.com/',
           icon: 'fa-envelope',
-          color: 'mailgun-icon'
+          color: 'mailgun-icon',
+          corsEnabled: true
+        },
+        aws: {
+          name: 'AWS',
+          api: null, // CORS blocked
+          url: 'https://health.aws.amazon.com/health/status',
+          icon: 'fa-cube',
+          color: 'aws-icon',
+          corsEnabled: false,
+          statusText: 'Visit status page'
+        },
+        letsencrypt: {
+          name: "Let's Encrypt",
+          api: null, // No public API endpoint
+          url: 'https://letsencrypt.status.io/',
+          icon: 'fa-lock',
+          color: 'letsencrypt-icon',
+          corsEnabled: false,
+          statusText: 'Visit status page'
         },
         stripe: {
           name: 'Stripe',
-          api: 'https://status.stripe.com/api/v2/status.json',
+          api: null, // CORS blocked
           url: 'https://status.stripe.com/',
           icon: 'fa-credit-card',
-          color: 'stripe-icon'
+          color: 'stripe-icon',
+          corsEnabled: false,
+          statusText: 'Visit status page'
         },
         vimeo: {
           name: 'Vimeo',
-          api: 'https://status.vimeo.com/api/v2/status.json',
+          api: null, // CORS blocked
           url: 'https://status.vimeo.com/',
           icon: 'fa-play-circle',
-          color: 'vimeo-icon'
+          color: 'vimeo-icon',
+          corsEnabled: false,
+          statusText: 'Visit status page'
         }
       };
 
-      // Add settings panel at the top
+      // Add collapsible settings panel at the top
       const settingsPanel = document.createElement("div");
       settingsPanel.className = "external-services-settings";
-      settingsPanel.innerHTML = `
+      
+      const settingsToggle = document.createElement("button");
+      settingsToggle.className = "settings-toggle-btn";
+      settingsToggle.innerHTML = `
+        <i class="fas fa-cog"></i>
+        <span>Service Settings</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      `;
+      
+      const settingsContent = document.createElement("div");
+      settingsContent.className = "settings-content collapsed";
+      settingsContent.innerHTML = `
         <div class="settings-header">
-          <h3><i class="fas fa-sliders-h"></i> Service Visibility</h3>
           <p>Toggle services to show/hide on the dashboard</p>
         </div>
         <div class="settings-grid" id="services-toggles"></div>
       `;
+      
+      settingsToggle.addEventListener("click", () => {
+        const isCollapsed = settingsContent.classList.toggle("collapsed");
+        const icon = settingsToggle.querySelector(".toggle-icon");
+        icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
+      });
+      
+      settingsPanel.appendChild(settingsToggle);
+      settingsPanel.appendChild(settingsContent);
       container.appendChild(settingsPanel);
 
       const togglesContainer = document.getElementById("services-toggles");
@@ -886,7 +914,13 @@ class EngineScriptDashboard {
           
           // Only load service if enabled
           if (isEnabled) {
-            await this.loadStatusPageService(container, serviceKey, serviceDefinitions[serviceKey]);
+            const serviceDef = serviceDefinitions[serviceKey];
+            if (serviceDef.corsEnabled && serviceDef.api) {
+              await this.loadStatusPageService(container, serviceKey, serviceDef);
+            } else {
+              // Display static card for services without CORS support
+              this.displayStaticServiceCard(container, serviceKey, serviceDef);
+            }
           }
         }
       }
@@ -909,38 +943,56 @@ class EngineScriptDashboard {
     }
   }
 
-  async loadServicePreferences() {
+  loadServicePreferences() {
     try {
-      // Check localStorage first
-      const cached = localStorage.getItem('servicePreferences');
-      if (cached) {
+      // Try to load from cookie first
+      const cookiePrefs = this.getCookie('servicePreferences');
+      if (cookiePrefs) {
         try {
-          const parsed = JSON.parse(cached);
+          const parsed = JSON.parse(decodeURIComponent(cookiePrefs));
           // Validate it's an object with expected structure
           if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
             return parsed;
           }
         } catch (parseError) {
-          console.error('Failed to parse cached preferences:', parseError);
-          // Clear invalid cache
-          localStorage.removeItem('servicePreferences');
+          console.error('Failed to parse cookie preferences:', parseError);
+          // Clear invalid cookie
+          this.deleteCookie('servicePreferences');
         }
       }
       
-      // Fetch from server
-      const prefs = await this.getApiData("/api/external-services/preferences", {});
-      if (prefs && typeof prefs === 'object' && prefs !== null) {
-        try {
-          localStorage.setItem('servicePreferences', JSON.stringify(prefs));
-        } catch (storageError) {
-          console.error('Failed to cache preferences:', storageError);
-        }
-        return prefs;
-      }
+      // Return null if no valid preferences found - will use defaults
+      return null;
     } catch (error) {
       console.error('Failed to load service preferences:', error);
+      return null;
+    }
+  }
+
+  getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
+  }
+
+  setCookie(name, value, days = 365) {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    // Set cookie with SameSite=Lax for security
+    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+  }
+
+  deleteCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   }
 
   async updateServicePreference(serviceKey, isEnabled) {
@@ -952,14 +1004,14 @@ class EngineScriptDashboard {
         return;
       }
       
-      // Get current preferences from localStorage
+      // Get current preferences from cookie
       let preferences = {};
-      const cached = localStorage.getItem('servicePreferences');
-      if (cached) {
+      const cookiePrefs = this.getCookie('servicePreferences');
+      if (cookiePrefs) {
         try {
-          preferences = JSON.parse(cached);
+          preferences = JSON.parse(decodeURIComponent(cookiePrefs));
         } catch (e) {
-          console.error('Failed to parse cached preferences:', e);
+          console.error('Failed to parse cookie preferences:', e);
           preferences = {};
         }
       }
@@ -967,43 +1019,50 @@ class EngineScriptDashboard {
       // Update the preference
       preferences[serviceKey] = Boolean(isEnabled);
       
-      // Get CSRF token
-      const csrfToken = this.api.getCsrfToken();
-      if (!csrfToken) {
-        console.error('CSRF token not available');
-        alert('Security token not available. Please refresh the page.');
-        return;
-      }
+      // Save to cookie (1 year expiration)
+      this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(preferences)), 365);
       
-      // Save to server
-      const response = await fetch('/api/external-services/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({ preferences: preferences })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.preferences) {
-          // Update cache
-          localStorage.setItem('servicePreferences', JSON.stringify(result.preferences));
-          // Reload the services display
-          await this.loadExternalServices();
-        }
-      } else if (response.status === 403) {
-        console.error('CSRF validation failed');
-        alert('Security validation failed. Please refresh the page and try again.');
-      } else {
-        console.error('Failed to save preference, status:', response.status);
-        alert('Failed to save preference. Please try again.');
-      }
+      // Reload the services display
+      await this.loadExternalServices();
     } catch (error) {
       console.error('Failed to update service preference:', error);
       alert('Failed to save preference. Please try again.');
     }
+  }
+
+  // Display static service card for services without CORS support
+  displayStaticServiceCard(container, serviceKey, serviceDef) {
+    const serviceLink = document.createElement("a");
+    serviceLink.href = serviceDef.url;
+    serviceLink.target = "_blank";
+    serviceLink.rel = "noopener noreferrer";
+    serviceLink.className = "external-service-card static";
+    
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "service-header";
+    
+    const iconDiv = document.createElement("div");
+    iconDiv.className = `service-icon ${serviceDef.color}`;
+    iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+    
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "service-info";
+    
+    const h3 = document.createElement("h3");
+    h3.textContent = serviceDef.name;
+    
+    const statusSpan = document.createElement("span");
+    statusSpan.className = "service-status status-info";
+    statusSpan.innerHTML = `<i class="fas fa-external-link-alt"></i> `;
+    statusSpan.appendChild(document.createTextNode(serviceDef.statusText || 'Visit status page'));
+    
+    infoDiv.appendChild(h3);
+    infoDiv.appendChild(statusSpan);
+    headerDiv.appendChild(iconDiv);
+    headerDiv.appendChild(infoDiv);
+    serviceLink.appendChild(headerDiv);
+    
+    container.appendChild(serviceLink);
   }
 
   // Generic Statuspage.io service loader

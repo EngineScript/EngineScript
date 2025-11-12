@@ -1236,21 +1236,47 @@ button:focus, select:focus, input:focus {
     background: var(--card-bg);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    padding: 1.5rem;
+    overflow: hidden;
+}
+
+.settings-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.settings-toggle-btn:hover {
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.settings-toggle-btn .toggle-icon {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.settings-content {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.settings-content.collapsed {
+    max-height: 0;
+    padding: 0 1.5rem;
 }
 
 .settings-header {
-    margin-bottom: 1.5rem;
-}
-
-.settings-header h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .settings-header p {
@@ -1320,6 +1346,18 @@ button:focus, select:focus, input:focus {
 
 .external-service-card.error:hover {
     opacity: 0.85;
+}
+
+.external-service-card.static {
+    opacity: 0.9;
+}
+
+.external-service-card.static:hover {
+    opacity: 1;
+}
+
+.service-status.status-info {
+    color: var(--info-color);
 }
 
 .service-header {
