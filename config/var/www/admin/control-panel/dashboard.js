@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.12.15';
-import { DashboardState } from './modules/state.js?v=2025.11.12.15';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.12.15';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.12.15';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.16';
+import { DashboardState } from './modules/state.js?v=2025.11.12.16';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.16';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.16';
 
 class EngineScriptDashboard {
   constructor() {
@@ -1317,11 +1317,12 @@ class EngineScriptDashboard {
       wistia: {
         name: 'Wistia',
         category: 'Media & Content',
-        api: 'https://status.wistia.com/summary.json',
+        feedType: 'wistia',
         url: 'https://status.wistia.com/',
         icon: 'fa-play-circle',
         color: 'wistia-icon',
-        corsEnabled: true
+        corsEnabled: false,
+        useFeed: true
       },
       
       // GAMING

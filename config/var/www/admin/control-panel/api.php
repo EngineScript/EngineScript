@@ -1050,6 +1050,11 @@ function parseStatusFeed($feedUrl) {
             $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
             $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
             
+            // Strip CDATA tags if present (e.g., Brevo feed)
+            $title = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $title);
+            $content = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $content);
+            $summary = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $summary);
+            
             // Get entry timestamp
             $entryDate = null;
             if (isset($latestEntry->updated)) {
@@ -1061,7 +1066,8 @@ function parseStatusFeed($feedUrl) {
             // Check if entry is within 48 hours (172800 seconds)
             $isRecent = ($entryDate && (time() - $entryDate) <= 172800);
             
-            $description = !empty($content) ? $content : (!empty($summary) ? $summary : $title);
+            // For Brevo and similar feeds, prefer title only
+            $description = !empty($title) ? $title : (!empty($content) ? $content : $summary);
             
             // Only show status if entry is within 48 hours, otherwise show operational
             if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
@@ -1115,6 +1121,150 @@ function parseStatusFeed($feedUrl) {
         }
         
         return $status;
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
+ * Parse Google Workspace incidents JSON API
+ */
+function parseGoogleWorkspaceIncidents($apiUrl) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript Admin Dashboard'
+            ]
+        ]);
+        
+        $response = file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (!$data || empty($data)) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Get the first incident (most recent)
+        $latestIncident = reset($data);
+        
+        // Extract first line of description
+        $description = isset($latestIncident['external_desc']) ? $latestIncident['external_desc'] : '';
+        $firstLine = strtok($description, "\n");
+        
+        if (empty($firstLine)) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Determine severity
+        $indicator = 'minor';
+        if (isset($latestIncident['severity'])) {
+            $severity = strtolower($latestIncident['severity']);
+            if (in_array($severity, ['high', 'critical'])) {
+                $indicator = 'major';
+            }
+        }
+        
+        return [
+            'indicator' => $indicator,
+            'description' => strip_tags($firstLine)
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
+ * Parse Wistia summary JSON API
+ */
+function parseWistiaSummary($apiUrl) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript Admin Dashboard'
+            ]
+        ]);
+        
+        $response = file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (!$data || !isset($data['page'])) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        // Check page status
+        $pageStatus = isset($data['page']['status']) ? strtoupper($data['page']['status']) : 'UNKNOWN';
+        
+        // If no issues, return operational
+        if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Check for active incidents
+        if (isset($data['activeIncidents']) && !empty($data['activeIncidents'])) {
+            $latestIncident = reset($data['activeIncidents']);
+            $name = isset($latestIncident['name']) ? $latestIncident['name'] : 'Service Issue';
+            
+            // Determine severity from impact
+            $indicator = 'minor';
+            if (isset($latestIncident['impact'])) {
+                $impact = strtoupper($latestIncident['impact']);
+                if (in_array($impact, ['MAJOROUTAGE', 'CRITICAL'])) {
+                    $indicator = 'major';
+                }
+            }
+            
+            return [
+                'indicator' => $indicator,
+                'description' => strip_tags($name)
+            ];
+        }
+        
+        // Has issues but no active incidents listed
+        if ($pageStatus === 'HASISSUES') {
+            return [
+                'indicator' => 'minor',
+                'description' => 'Service Experiencing Issues'
+            ];
+        }
+        
+        return [
+            'indicator' => 'none',
+            'description' => 'All Systems Operational'
+        ];
         
     } catch (Exception $e) {
         return [
@@ -1279,6 +1429,18 @@ function handleStatusFeed() {
             return;
         }
         
+        if ($feedType === 'googleworkspace') {
+            $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        if ($feedType === 'wistia') {
+            $status = parseWistiaSummary('https://status.wistia.com/summary.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
         // Whitelist allowed RSS/Atom feeds for security
         $allowedFeeds = [
             'stripe' => 'https://www.stripestatus.com/history.atom',
@@ -1290,7 +1452,6 @@ function handleStatusFeed() {
             'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
             'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
             'googlesearch' => 'https://status.search.google.com/en/feed.atom',
-            'googleworkspace' => 'https://www.google.com/appsstatus/dashboard/en/feed.atom',
             'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
             'paypal' => 'https://www.paypal-status.com/feed/atom',
             'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',

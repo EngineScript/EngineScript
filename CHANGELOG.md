@@ -6,7 +6,28 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-12
 
-### 🔧 IMPROVEMENT: JSON API Feed Support for Vultr, Postmark & Wistia
+### 🔧 IMPROVEMENT: Enhanced Feed Parsing & JSON API Integration
+
+- **Google Workspace JSON API Integration**:
+  - Migrated from Atom feed to official incidents JSON API
+  - API URL: `https://www.google.com/appsstatus/dashboard/incidents.json`
+  - Displays first line of incident description for cleaner status messages
+  - Severity detection based on incident severity field (high/critical → major)
+  - Added `parseGoogleWorkspaceIncidents()` function with proper error handling
+
+- **Wistia JSON API Integration**:
+  - Migrated from incorrect API endpoint to proper summary JSON API
+  - API URL: `https://status.wistia.com/summary.json`
+  - Displays active incident names directly (e.g., "Some search and filtering requests may fail to succeed")
+  - Severity detection based on impact field (MAJOROUTAGE/CRITICAL → major)
+  - Added `parseWistiaSummary()` function with comprehensive status checking
+  - Fixed 404 errors caused by non-existent `/public-api/v1/status.json` endpoint
+
+- **Brevo Feed Enhancement**:
+  - Enhanced CDATA tag stripping from Atom feed titles
+  - Now properly extracts clean text from `<![CDATA[...]]>` wrapped content
+  - Displays incident title only (e.g., "Issue with plan manager" instead of HTML wrapped version)
+  - Improved regex pattern to handle all CDATA variations
 
 - **Vultr JSON API Integration**:
   - Migrated from RSS feed to official JSON API (`https://status.vultr.com/alerts.json`)
@@ -20,18 +41,12 @@ Changes are organized by date, with the most recent changes listed first.
   - API URL: `https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned`
   - Excludes planned maintenance and past incidents
   - Provides cleaner status information focused on active issues
-
-- **Wistia API Correction**:
-  - Fixed incorrect API endpoint (was using non-existent `/public-api/v1/status.json`)
-  - Updated to correct endpoint: `https://status.wistia.com/summary.json`
-  - Resolves 404 errors and enables proper status monitoring
   
 - **Implementation Details**:
-  - Added `parseVultrAlerts()` function for Vultr's JSON API parsing
-  - Added `parsePostmarkNotices()` function for Postmark's Notices API parsing
-  - Both functions include proper error handling and timeout management
-  - Severity detection based on subject/title keyword matching
-  - Cache Version: Updated to v=2025.11.12.15
+  - All JSON API parsers include 10-second timeout and proper error handling
+  - Consistent severity detection across all services
+  - Enhanced feed parser with CDATA stripping for cleaner text extraction
+  - Cache Version: Updated to v=2025.11.12.16
 
 ### 🔧 IMPROVEMENT: Time-Based Feed Filtering
 
