@@ -759,7 +759,8 @@ class EngineScriptDashboard {
   async loadExternalServices() {
     try {
       const container = document.getElementById("external-services-grid");
-      if (!container) return;
+      const settingsContainer = document.getElementById("external-services-settings");
+      if (!container || !settingsContainer) return;
 
       container.innerHTML = "";
 
@@ -770,6 +771,7 @@ class EngineScriptDashboard {
       
       // Load preferences from cookie (client-side only)
       let preferences = this.loadServicePreferences() || {};
+      let serviceOrder = this.getServiceOrder();
 
       if (!services || Object.keys(services).length === 0) {
         const noServicesDiv = document.createElement("div");
@@ -785,145 +787,65 @@ class EngineScriptDashboard {
         return;
       }
 
-      // Service definitions with API endpoints, names, icons, and URLs
-      // Note: Some services don't support CORS and will need to be proxied or removed
-      const serviceDefinitions = {
-        cloudflare: {
-          name: 'Cloudflare',
-          api: 'https://www.cloudflarestatus.com/api/v2/status.json',
-          url: 'https://www.cloudflarestatus.com/',
-          icon: 'fa-cloud',
-          color: 'cloudflare-icon',
-          corsEnabled: true
-        },
-        digitalocean: {
-          name: 'DigitalOcean',
-          api: 'https://status.digitalocean.com/api/v2/status.json',
-          url: 'https://status.digitalocean.com/',
-          icon: 'fa-layer-group',
-          color: 'digitalocean-icon',
-          corsEnabled: true
-        },
-        github: {
-          name: 'GitHub',
-          api: 'https://www.githubstatus.com/api/v2/status.json',
-          url: 'https://www.githubstatus.com/',
-          icon: 'fa-github',
-          color: 'github-icon',
-          corsEnabled: true
-        },
-        mailgun: {
-          name: 'Mailgun',
-          api: 'https://status.mailgun.com/api/v2/status.json',
-          url: 'https://status.mailgun.com/',
-          icon: 'fa-envelope',
-          color: 'mailgun-icon',
-          corsEnabled: true
-        },
-        aws: {
-          name: 'AWS',
-          api: null, // CORS blocked
-          url: 'https://health.aws.amazon.com/health/status',
-          icon: 'fa-cube',
-          color: 'aws-icon',
-          corsEnabled: false,
-          statusText: 'Visit status page'
-        },
-        letsencrypt: {
-          name: "Let's Encrypt",
-          api: null, // No public API endpoint
-          url: 'https://letsencrypt.status.io/',
-          icon: 'fa-lock',
-          color: 'letsencrypt-icon',
-          corsEnabled: false,
-          statusText: 'Visit status page'
-        },
-        stripe: {
-          name: 'Stripe',
-          api: null, // CORS blocked
-          url: 'https://status.stripe.com/',
-          icon: 'fa-credit-card',
-          color: 'stripe-icon',
-          corsEnabled: false,
-          statusText: 'Visit status page'
-        },
-        vimeo: {
-          name: 'Vimeo',
-          api: null, // CORS blocked
-          url: 'https://status.vimeo.com/',
-          icon: 'fa-play-circle',
-          color: 'vimeo-icon',
-          corsEnabled: false,
-          statusText: 'Visit status page'
+      // Get service definitions
+      const serviceDefinitions = this.getServiceDefinitions();
+
+      // Render settings panel in dedicated container
+      this.renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences);
+
+      // Get service keys in custom order
+      let orderedServiceKeys = serviceOrder.filter(key => services[key]);
+      // Add any new services not in the saved order
+      Object.keys(services).forEach(key => {
+        if (!orderedServiceKeys.includes(key)) {
+          orderedServiceKeys.push(key);
         }
-      };
-
-      // Add collapsible settings panel at the top
-      const settingsPanel = document.createElement("div");
-      settingsPanel.className = "external-services-settings";
-      
-      const settingsToggle = document.createElement("button");
-      settingsToggle.className = "settings-toggle-btn";
-      settingsToggle.innerHTML = `
-        <i class="fas fa-cog"></i>
-        <span>Service Settings</span>
-        <i class="fas fa-chevron-down toggle-icon"></i>
-      `;
-      
-      const settingsContent = document.createElement("div");
-      settingsContent.className = "settings-content collapsed";
-      settingsContent.innerHTML = `
-        <div class="settings-header">
-          <p>Toggle services to show/hide on the dashboard</p>
-        </div>
-        <div class="settings-grid" id="services-toggles"></div>
-      `;
-      
-      settingsToggle.addEventListener("click", () => {
-        const isCollapsed = settingsContent.classList.toggle("collapsed");
-        const icon = settingsToggle.querySelector(".toggle-icon");
-        icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
       });
-      
-      settingsPanel.appendChild(settingsToggle);
-      settingsPanel.appendChild(settingsContent);
-      container.appendChild(settingsPanel);
 
-      const togglesContainer = document.getElementById("services-toggles");
+      // Check if any services are enabled (must be explicitly set to true)
+      const enabledServices = orderedServiceKeys.filter(key => {
+        return serviceDefinitions[key] && preferences[key] === true;
+      });
 
-      // Fetch and display each service
-      for (const [serviceKey, isAvailable] of Object.entries(services)) {
+      // If no services are enabled, show empty state
+      if (enabledServices.length === 0) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "empty-state";
+        emptyState.innerHTML = `
+          <div class="empty-state-icon">
+            <i class="fas fa-toggle-off"></i>
+          </div>
+          <h3>No Services Selected</h3>
+          <p>Click the "Service Settings" button above to enable external service monitoring.</p>
+        `;
+        container.appendChild(emptyState);
+        return;
+      }
+
+      // Fetch and display each enabled service in order
+      for (const serviceKey of orderedServiceKeys) {
         if (serviceDefinitions[serviceKey]) {
-          const isEnabled = preferences[serviceKey] !== false;
-          
-          // Add toggle
-          const toggleLabel = document.createElement("label");
-          toggleLabel.className = "service-toggle";
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = isEnabled;
-          checkbox.dataset.service = serviceKey;
-          checkbox.addEventListener("change", () => this.updateServicePreference(serviceKey, checkbox.checked));
-          
-          const serviceName = document.createElement("span");
-          serviceName.textContent = serviceDefinitions[serviceKey].name;
-          
-          toggleLabel.appendChild(checkbox);
-          toggleLabel.appendChild(serviceName);
-          togglesContainer.appendChild(toggleLabel);
+          const isEnabled = preferences[serviceKey] === true;
           
           // Only load service if enabled
           if (isEnabled) {
             const serviceDef = serviceDefinitions[serviceKey];
-            if (serviceDef.corsEnabled && serviceDef.api) {
+            if (serviceDef.useFeed) {
+              // Load from RSS/Atom feed via backend proxy
+              await this.loadFeedService(container, serviceKey, serviceDef);
+            } else if (serviceDef.corsEnabled && serviceDef.api) {
+              // Load from API directly
               await this.loadStatusPageService(container, serviceKey, serviceDef);
             } else {
-              // Display static card for services without CORS support
+              // Display static link card
               this.displayStaticServiceCard(container, serviceKey, serviceDef);
             }
           }
         }
       }
+      
+      // Enable drag and drop for service cards
+      this.enableServiceDragDrop(container);
     } catch (error) {
       console.error('Failed to load external services:', error);
       const container = document.getElementById("external-services-grid");
@@ -995,11 +917,681 @@ class EngineScriptDashboard {
     document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   }
 
+  // Get service order from cookie
+  getServiceOrder() {
+    const orderCookie = this.getCookie('serviceOrder');
+    if (orderCookie) {
+      try {
+        return JSON.parse(decodeURIComponent(orderCookie));
+      } catch (e) {
+        console.error('Failed to parse service order:', e);
+      }
+    }
+    // Default alphabetical order by category
+    return [
+      // Hosting & Infrastructure
+      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'hostinger', 'kinsta', 'linode', 
+      'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wpvip',
+      // Developer Tools
+      'github', 'gitlab', 'notion', 'postmark', 'twilio',
+      // Payment Processing
+      'coinbase', 'paypal', 'recurly', 'square', 'stripe',
+      // Communication
+      'brevo', 'discord', 'mailgun', 'slack', 'zoom',
+      // E-Commerce
+      'intuit', 'shopify',
+      // Media & Content
+      'automattic', 'dropbox', 'reddit', 'udemy', 'vimeo', 'wistia',
+      // Gaming
+      'epicgames',
+      // AI & Machine Learning
+      'openai',
+      // Advertising
+      'googleads', 'googlesearch', 'googleworkspace', 'microsoftads',
+      // Security
+      'letsencrypt', 'cloudflareflare'
+    ];
+  }
+
+  // Save service order to cookie
+  saveServiceOrder(orderArray) {
+    this.setCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
+  }
+
+  // Get all service definitions
+  getServiceDefinitions() {
+    return {
+      // HOSTING & INFRASTRUCTURE
+      aws: {
+        name: 'AWS',
+        category: 'Hosting & Infrastructure',
+        url: 'https://health.aws.amazon.com/health/status',
+        icon: 'fa-server',
+        color: 'aws-icon',
+        corsEnabled: false,
+        statusText: 'Visit status page'
+      },
+      cloudflare: {
+        name: 'Cloudflare',
+        category: 'Hosting & Infrastructure',
+        api: 'https://www.cloudflarestatus.com/api/v2/status.json',
+        url: 'https://www.cloudflarestatus.com/',
+        icon: 'fa-cloud',
+        color: 'cloudflare-icon',
+        corsEnabled: true
+      },
+      cloudways: {
+        name: 'Cloudways',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.cloudways.com/api/v2/status.json',
+        url: 'https://status.cloudways.com/',
+        icon: 'fa-cloud-upload-alt',
+        color: 'cloudways-icon',
+        corsEnabled: true
+      },
+      digitalocean: {
+        name: 'DigitalOcean',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.digitalocean.com/api/v2/status.json',
+        url: 'https://status.digitalocean.com/',
+        icon: 'fa-water',
+        color: 'digitalocean-icon',
+        corsEnabled: true
+      },
+      googlecloud: {
+        name: 'Google Cloud',
+        category: 'Hosting & Infrastructure',
+        feedType: 'googlecloud',
+        url: 'https://status.cloud.google.com/',
+        icon: 'fa-google',
+        color: 'google-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      hostinger: {
+        name: 'Hostinger',
+        category: 'Hosting & Infrastructure',
+        api: 'https://statuspage.hostinger.com/api/v2/status.json',
+        url: 'https://statuspage.hostinger.com/',
+        icon: 'fa-h-square',
+        color: 'hostinger-icon',
+        corsEnabled: true
+      },
+      kinsta: {
+        name: 'Kinsta',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.kinsta.com/api/v2/status.json',
+        url: 'https://status.kinsta.com/',
+        icon: 'fa-bolt',
+        color: 'kinsta-icon',
+        corsEnabled: true
+      },
+      linode: {
+        name: 'Linode',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.linode.com/api/v2/status.json',
+        url: 'https://status.linode.com/',
+        icon: 'fa-cube',
+        color: 'linode-icon',
+        corsEnabled: true
+      },
+      oracle: {
+        name: 'Oracle Cloud',
+        category: 'Hosting & Infrastructure',
+        feedType: 'oracle',
+        url: 'https://ocistatus.oraclecloud.com/',
+        icon: 'fa-database',
+        color: 'oracle-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      ovh: {
+        name: 'OVH Cloud',
+        category: 'Hosting & Infrastructure',
+        feedType: 'ovh',
+        url: 'https://public-cloud.status-ovhcloud.com/',
+        icon: 'fa-cloud',
+        color: 'ovh-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      scaleway: {
+        name: 'Scaleway',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.scaleway.com/api/v2/status.json',
+        url: 'https://status.scaleway.com/',
+        icon: 'fa-layer-group',
+        color: 'scaleway-icon',
+        corsEnabled: true
+      },
+      upcloud: {
+        name: 'UpCloud',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.upcloud.com/api/v2/status.json',
+        url: 'https://status.upcloud.com/',
+        icon: 'fa-arrow-up',
+        color: 'upcloud-icon',
+        corsEnabled: true
+      },
+      vercel: {
+        name: 'Vercel',
+        category: 'Hosting & Infrastructure',
+        api: 'https://www.vercel-status.com/api/v2/status.json',
+        url: 'https://www.vercel-status.com/',
+        icon: 'fa-triangle',
+        color: 'vercel-icon',
+        corsEnabled: true
+      },
+      vultr: {
+        name: 'Vultr',
+        category: 'Hosting & Infrastructure',
+        feedType: 'vultr',
+        url: 'https://status.vultr.com/',
+        icon: 'fa-bolt',
+        color: 'vultr-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      wpvip: {
+        name: 'WordPress VIP',
+        category: 'Hosting & Infrastructure',
+        feedType: 'wpvip',
+        url: 'https://wpvipstatus.com/',
+        icon: 'fa-wordpress',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      
+      // DEVELOPER TOOLS
+      github: {
+        name: 'GitHub',
+        category: 'Developer Tools',
+        api: 'https://www.githubstatus.com/api/v2/status.json',
+        url: 'https://www.githubstatus.com/',
+        icon: 'fa-github',
+        color: 'github-icon',
+        corsEnabled: true
+      },
+      gitlab: {
+        name: 'GitLab',
+        category: 'Developer Tools',
+        feedType: 'gitlab',
+        url: 'https://status.gitlab.com/',
+        icon: 'fa-gitlab',
+        color: 'gitlab-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      notion: {
+        name: 'Notion',
+        category: 'Developer Tools',
+        api: 'https://www.notion-status.com/api/v2/status.json',
+        url: 'https://www.notion-status.com/',
+        icon: 'fa-file-alt',
+        color: 'notion-icon',
+        corsEnabled: true
+      },
+      postmark: {
+        name: 'Postmark',
+        category: 'Developer Tools',
+        api: 'https://status.postmarkapp.com/api/v2/status.json',
+        url: 'https://status.postmarkapp.com/',
+        icon: 'fa-paper-plane',
+        color: 'postmark-icon',
+        corsEnabled: true
+      },
+      twilio: {
+        name: 'Twilio',
+        category: 'Developer Tools',
+        api: 'https://status.twilio.com/api/v2/status.json',
+        url: 'https://status.twilio.com/',
+        icon: 'fa-sms',
+        color: 'twilio-icon',
+        corsEnabled: true
+      },
+      
+      // PAYMENT PROCESSING
+      coinbase: {
+        name: 'Coinbase',
+        category: 'Payment Processing',
+        api: 'https://status.coinbase.com/api/v2/status.json',
+        url: 'https://status.coinbase.com/',
+        icon: 'fa-bitcoin',
+        color: 'coinbase-icon',
+        corsEnabled: true
+      },
+      paypal: {
+        name: 'PayPal',
+        category: 'Payment Processing',
+        feedType: 'paypal',
+        url: 'https://www.paypal-status.com/product/production',
+        icon: 'fa-paypal',
+        color: 'paypal-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      recurly: {
+        name: 'Recurly',
+        category: 'Payment Processing',
+        feedType: 'recurly',
+        url: 'https://status.recurly.com/',
+        icon: 'fa-repeat',
+        color: 'recurly-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      square: {
+        name: 'Square',
+        category: 'Payment Processing',
+        feedType: 'square',
+        url: 'https://www.issquareup.com/',
+        icon: 'fa-square',
+        color: 'square-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      stripe: {
+        name: 'Stripe',
+        category: 'Payment Processing',
+        feedType: 'stripe',
+        url: 'https://status.stripe.com/',
+        icon: 'fa-credit-card',
+        color: 'stripe-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      
+      // COMMUNICATION
+      discord: {
+        name: 'Discord',
+        category: 'Communication',
+        api: 'https://discordstatus.com/api/v2/status.json',
+        url: 'https://discordstatus.com/',
+        icon: 'fa-discord',
+        color: 'discord-icon',
+        corsEnabled: true
+      },
+      brevo: {
+        name: 'Brevo',
+        category: 'Communication',
+        feedType: 'brevo',
+        url: 'https://status.brevo.com/',
+        icon: 'fa-envelope-open',
+        color: 'brevo-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      mailgun: {
+        name: 'Mailgun',
+        category: 'Communication',
+        api: 'https://status.mailgun.com/api/v2/status.json',
+        url: 'https://status.mailgun.com/',
+        icon: 'fa-envelope',
+        color: 'mailgun-icon',
+        corsEnabled: true
+      },
+      slack: {
+        name: 'Slack',
+        category: 'Communication',
+        feedType: 'slack',
+        url: 'https://slack-status.com/',
+        icon: 'fa-slack',
+        color: 'slack-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      zoom: {
+        name: 'Zoom',
+        category: 'Communication',
+        api: 'https://www.zoomstatus.com/api/v2/status.json',
+        url: 'https://www.zoomstatus.com/',
+        icon: 'fa-video',
+        color: 'zoom-icon',
+        corsEnabled: true
+      },
+      
+      // E-COMMERCE
+      intuit: {
+        name: 'Intuit',
+        category: 'E-Commerce',
+        api: 'https://status.developer.intuit.com/api/v2/status.json',
+        url: 'https://status.developer.intuit.com/',
+        icon: 'fa-calculator',
+        color: 'intuit-icon',
+        corsEnabled: true
+      },
+      shopify: {
+        name: 'Shopify',
+        category: 'E-Commerce',
+        api: 'https://www.shopifystatus.com/api/v2/status.json',
+        url: 'https://www.shopifystatus.com/',
+        icon: 'fa-shopping-bag',
+        color: 'shopify-icon',
+        corsEnabled: true
+      },
+      
+      // MEDIA & CONTENT
+      automattic: {
+        name: 'Automattic',
+        category: 'Media & Content',
+        feedType: 'automattic',
+        url: 'https://automatticstatus.com/',
+        icon: 'fa-wordpress-simple',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      dropbox: {
+        name: 'Dropbox',
+        category: 'Media & Content',
+        api: 'https://status.dropbox.com/api/v2/status.json',
+        url: 'https://status.dropbox.com/',
+        icon: 'fa-dropbox',
+        color: 'dropbox-icon',
+        corsEnabled: true
+      },
+      reddit: {
+        name: 'Reddit',
+        category: 'Media & Content',
+        api: 'https://www.redditstatus.com/api/v2/status.json',
+        url: 'https://www.redditstatus.com/',
+        icon: 'fa-reddit',
+        color: 'reddit-icon',
+        corsEnabled: true
+      },
+      udemy: {
+        name: 'Udemy',
+        category: 'Media & Content',
+        api: 'https://status.udemy.com/api/v2/status.json',
+        url: 'https://status.udemy.com/',
+        icon: 'fa-graduation-cap',
+        color: 'udemy-icon',
+        corsEnabled: true
+      },
+      vimeo: {
+        name: 'Vimeo',
+        category: 'Media & Content',
+        api: 'https://www.vimeostatus.com/api/v2/status.json',
+        url: 'https://status.vimeo.com/',
+        icon: 'fa-vimeo',
+        color: 'vimeo-icon',
+        corsEnabled: true
+      },
+      wistia: {
+        name: 'Wistia',
+        category: 'Media & Content',
+        api: 'https://status.wistia.com/public-api/v1/status.json',
+        url: 'https://status.wistia.com/',
+        icon: 'fa-play-circle',
+        color: 'wistia-icon',
+        corsEnabled: true
+      },
+      
+      // GAMING
+      epicgames: {
+        name: 'Epic Games',
+        category: 'Gaming',
+        api: 'https://status.epicgames.com/api/v2/status.json',
+        url: 'https://status.epicgames.com/',
+        icon: 'fa-gamepad',
+        color: 'epic-icon',
+        corsEnabled: true
+      },
+      
+      // AI & MACHINE LEARNING
+      openai: {
+        name: 'OpenAI',
+        category: 'AI & Machine Learning',
+        url: 'https://status.openai.com/',
+        icon: 'fa-brain',
+        color: 'openai-icon',
+        corsEnabled: false,
+        statusText: 'Visit status page'
+      },
+      
+      // ADVERTISING
+      googleads: {
+        name: 'Google Ads',
+        category: 'Advertising',
+        feedType: 'googleads',
+        url: 'https://ads.google.com/status/publisher/',
+        icon: 'fa-ad',
+        color: 'google-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      googlesearch: {
+        name: 'Google Search Console',
+        category: 'Advertising',
+        feedType: 'googlesearch',
+        url: 'https://status.search.google.com/',
+        icon: 'fa-search',
+        color: 'google-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      googleworkspace: {
+        name: 'Google Workspace',
+        category: 'Advertising',
+        feedType: 'googleworkspace',
+        url: 'https://www.google.com/appsstatus/dashboard/',
+        icon: 'fa-google',
+        color: 'google-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      microsoftads: {
+        name: 'Microsoft Advertising',
+        category: 'Advertising',
+        feedType: 'microsoftads',
+        url: 'https://status.ads.microsoft.com/',
+        icon: 'fa-microsoft',
+        color: 'microsoft-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      
+      // SECURITY
+      letsencrypt: {
+        name: "Let's Encrypt",
+        category: 'Security',
+        feedType: 'letsencrypt',
+        url: 'https://letsencrypt.status.io/',
+        icon: 'fa-lock',
+        color: 'letsencrypt-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      cloudflareflare: {
+        name: 'Cloudflare Flare',
+        category: 'Security',
+        feedType: 'cloudflare-flare',
+        url: 'https://status.flare.io/',
+        icon: 'fa-shield-alt',
+        color: 'cloudflare-icon',
+        corsEnabled: false,
+        useFeed: true
+      }
+    };
+  }
+
+  // Render the settings panel
+  renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences) {
+    settingsContainer.innerHTML = "";
+    
+    const settingsToggle = document.createElement("button");
+    settingsToggle.className = "settings-toggle-btn";
+    settingsToggle.innerHTML = `
+      <i class="fas fa-cog"></i>
+      <span>Service Settings</span>
+      <i class="fas fa-chevron-down toggle-icon"></i>
+    `;
+    
+    const settingsContent = document.createElement("div");
+    settingsContent.className = "settings-content collapsed";
+    
+    const settingsHeader = document.createElement("div");
+    settingsHeader.className = "settings-header";
+    settingsHeader.innerHTML = `<p>Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Services are organized by category.</p>`;
+    
+    settingsContent.appendChild(settingsHeader);
+    
+    settingsToggle.addEventListener("click", () => {
+      const isCollapsed = settingsContent.classList.toggle("collapsed");
+      const icon = settingsToggle.querySelector(".toggle-icon");
+      icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
+    });
+    
+    settingsContainer.appendChild(settingsToggle);
+    settingsContainer.appendChild(settingsContent);
+
+    // Group services by category
+    const categories = {};
+    for (const [serviceKey, isAvailable] of Object.entries(services)) {
+      if (serviceDefinitions[serviceKey]) {
+        const category = serviceDefinitions[serviceKey].category || 'Other';
+        if (!categories[category]) {
+          categories[category] = [];
+        }
+        categories[category].push(serviceKey);
+      }
+    }
+
+    // Render each category
+    const categoryOrder = [
+      'Hosting & Infrastructure',
+      'Developer Tools',
+      'Payment Processing',
+      'Communication',
+      'E-Commerce',
+      'Media & Content',
+      'Gaming',
+      'AI & Machine Learning',
+      'Advertising',
+      'Security',
+      'Other'
+    ];
+
+    categoryOrder.forEach(categoryName => {
+      if (categories[categoryName]) {
+        const categorySection = document.createElement("div");
+        categorySection.className = "settings-category";
+        
+        const categoryTitle = document.createElement("h4");
+        categoryTitle.className = "category-title";
+        categoryTitle.textContent = categoryName;
+        categorySection.appendChild(categoryTitle);
+        
+        const categoryGrid = document.createElement("div");
+        categoryGrid.className = "settings-grid";
+        
+        // Sort services alphabetically within category
+        categories[categoryName].sort((a, b) => {
+          return serviceDefinitions[a].name.localeCompare(serviceDefinitions[b].name);
+        });
+        
+        categories[categoryName].forEach(serviceKey => {
+          const isEnabled = preferences[serviceKey] === true;
+          
+          const toggleLabel = document.createElement("label");
+          toggleLabel.className = "service-toggle";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = isEnabled;
+          checkbox.dataset.service = serviceKey;
+          checkbox.addEventListener("change", () => this.updateServicePreference(serviceKey, checkbox.checked));
+          
+          const serviceName = document.createElement("span");
+          serviceName.textContent = serviceDefinitions[serviceKey].name;
+          
+          toggleLabel.appendChild(checkbox);
+          toggleLabel.appendChild(serviceName);
+          categoryGrid.appendChild(toggleLabel);
+        });
+        
+        categorySection.appendChild(categoryGrid);
+        settingsContent.appendChild(categorySection);
+      }
+    });
+  }
+
+  // Enable drag and drop for service cards
+  enableServiceDragDrop(container) {
+    const cards = container.querySelectorAll('.external-service-card');
+    let draggedElement = null;
+    
+    cards.forEach(card => {
+      card.draggable = true;
+      
+      card.addEventListener('dragstart', (e) => {
+        draggedElement = card;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', card.innerHTML);
+      });
+      
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        
+        // Remove drag-over class from all cards
+        cards.forEach(c => c.classList.remove('drag-over'));
+        
+        // Save new order
+        const newOrder = Array.from(container.children)
+          .filter(child => child.classList.contains('external-service-card'))
+          .map(child => child.dataset.serviceKey);
+        
+        this.saveServiceOrder(newOrder);
+      });
+      
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const afterElement = this.getDragAfterElement(container, e.clientY);
+        if (afterElement == null) {
+          container.appendChild(draggedElement);
+        } else {
+          container.insertBefore(draggedElement, afterElement);
+        }
+      });
+      
+      card.addEventListener('dragenter', (e) => {
+        if (e.target.classList.contains('external-service-card') && e.target !== draggedElement) {
+          e.target.classList.add('drag-over');
+        }
+      });
+      
+      card.addEventListener('dragleave', (e) => {
+        if (e.target.classList.contains('external-service-card')) {
+          e.target.classList.remove('drag-over');
+        }
+      });
+    });
+  }
+
+  // Get the element that should be placed after the dragged element
+  getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.external-service-card:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
   async updateServicePreference(serviceKey, isEnabled) {
     try {
-      // Validate service key
-      const validServices = ['cloudflare', 'digitalocean', 'aws', 'github', 'letsencrypt', 'mailgun', 'stripe', 'vimeo'];
-      if (!validServices.includes(serviceKey)) {
+      // Get all service definitions to validate
+      const serviceDefinitions = this.getServiceDefinitions();
+      if (!serviceDefinitions[serviceKey]) {
         console.error('Invalid service key:', serviceKey);
         return;
       }
@@ -1022,11 +1614,50 @@ class EngineScriptDashboard {
       // Save to cookie (1 year expiration)
       this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(preferences)), 365);
       
-      // Reload the services display
-      await this.loadExternalServices();
+      // Re-render services without reloading settings panel
+      const container = document.getElementById("external-services-grid");
+      if (container) {
+        // Clear only the service cards
+        container.innerHTML = "";
+        
+        // Get service data
+        const services = await this.getExternalServicesAvailability();
+        const serviceOrder = this.getServiceOrder();
+        
+        // Get service keys in custom order
+        let orderedServiceKeys = serviceOrder.filter(key => services[key]);
+        Object.keys(services).forEach(key => {
+          if (!orderedServiceKeys.includes(key)) {
+            orderedServiceKeys.push(key);
+          }
+        });
+        
+        // Re-render enabled services (must be explicitly enabled)
+        for (const serviceKey of orderedServiceKeys) {
+          if (serviceDefinitions[serviceKey]) {
+            const isServiceEnabled = preferences[serviceKey] === true;
+            
+            if (isServiceEnabled) {
+              const serviceDef = serviceDefinitions[serviceKey];
+              if (serviceDef.useFeed) {
+                await this.loadFeedService(container, serviceKey, serviceDef);
+              } else if (serviceDef.corsEnabled && serviceDef.api) {
+                await this.loadStatusPageService(container, serviceKey, serviceDef);
+              } else {
+                this.displayStaticServiceCard(container, serviceKey, serviceDef);
+              }
+            }
+          }
+        }
+        
+        // Re-enable drag and drop
+        this.enableServiceDragDrop(container);
+      }
+      
+      this.showNotification("Preference updated successfully", "success");
     } catch (error) {
       console.error('Failed to update service preference:', error);
-      alert('Failed to save preference. Please try again.');
+      this.showNotification("Failed to update preference", "error");
     }
   }
 
@@ -1037,6 +1668,7 @@ class EngineScriptDashboard {
     serviceLink.target = "_blank";
     serviceLink.rel = "noopener noreferrer";
     serviceLink.className = "external-service-card static";
+    serviceLink.dataset.serviceKey = serviceKey;
     
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
@@ -1091,6 +1723,7 @@ class EngineScriptDashboard {
       serviceLink.target = "_blank";
       serviceLink.rel = "noopener noreferrer";
       serviceLink.className = "external-service-card";
+      serviceLink.dataset.serviceKey = serviceKey;
       
       const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
       const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
@@ -1136,6 +1769,109 @@ class EngineScriptDashboard {
       errorLink.target = "_blank";
       errorLink.rel = "noopener noreferrer";
       errorLink.className = "external-service-card error";
+      errorLink.dataset.serviceKey = serviceKey;
+      
+      const errorHeaderDiv = document.createElement("div");
+      errorHeaderDiv.className = "service-header";
+      
+      const errorIconDiv = document.createElement("div");
+      errorIconDiv.className = `service-icon ${serviceDef.color}`;
+      errorIconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+      
+      const errorInfoDiv = document.createElement("div");
+      errorInfoDiv.className = "service-info";
+      
+      const errorH3 = document.createElement("h3");
+      errorH3.textContent = serviceDef.name;
+      
+      const errorStatusSpan = document.createElement("span");
+      errorStatusSpan.className = "service-status status-error";
+      errorStatusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
+      errorStatusSpan.appendChild(document.createTextNode(errorMessage));
+      
+      errorInfoDiv.appendChild(errorH3);
+      errorInfoDiv.appendChild(errorStatusSpan);
+      errorHeaderDiv.appendChild(errorIconDiv);
+      errorHeaderDiv.appendChild(errorInfoDiv);
+      errorLink.appendChild(errorHeaderDiv);
+      
+      container.appendChild(errorLink);
+    }
+  }
+
+  // Load service status from RSS/Atom feed via backend proxy
+  async loadFeedService(container, serviceKey, serviceDef) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(`/api?endpoint=/external-services/feed&feed=${serviceDef.feedType}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data.status) {
+        throw new Error('Invalid feed response format');
+      }
+
+      const serviceLink = document.createElement("a");
+      serviceLink.href = serviceDef.url;
+      serviceLink.target = "_blank";
+      serviceLink.rel = "noopener noreferrer";
+      serviceLink.className = "external-service-card";
+      serviceLink.dataset.serviceKey = serviceKey;
+      
+      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
+      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+
+      const headerDiv = document.createElement("div");
+      headerDiv.className = "service-header";
+      
+      const iconDiv = document.createElement("div");
+      iconDiv.className = `service-icon ${serviceDef.color}`;
+      iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+      
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "service-info";
+      
+      const h3 = document.createElement("h3");
+      h3.textContent = serviceDef.name;
+      
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `service-status status-${statusColor}`;
+      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+      statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
+      
+      infoDiv.appendChild(h3);
+      infoDiv.appendChild(statusSpan);
+      headerDiv.appendChild(iconDiv);
+      headerDiv.appendChild(infoDiv);
+      serviceLink.appendChild(headerDiv);
+      
+      container.appendChild(serviceLink);
+    } catch (error) {
+      console.error(`Failed to load ${serviceDef.name} feed status:`, error);
+      
+      let errorMessage = 'Unable to fetch status';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message && error.message.startsWith('HTTP error!')) {
+        errorMessage = 'Service unavailable';
+      }
+      
+      const errorLink = document.createElement("a");
+      errorLink.href = serviceDef.url;
+      errorLink.target = "_blank";
+      errorLink.rel = "noopener noreferrer";
+      errorLink.className = "external-service-card error";
+      errorLink.dataset.serviceKey = serviceKey;
       
       const errorHeaderDiv = document.createElement("div");
       errorHeaderDiv.className = "service-header";

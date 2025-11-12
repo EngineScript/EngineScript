@@ -333,6 +333,10 @@ switch ($path) {
         handleExternalServicesConfig();
         break;
     
+    case '/external-services/feed':
+        handleStatusFeed();
+        break;
+    
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
@@ -999,17 +1003,227 @@ function getSystemAlerts() {
     return $alerts;
 }
 
+/**
+ * Parse RSS/Atom feed and extract status information
+ * @param string $feedUrl The URL of the RSS/Atom feed
+ * @return array Status information with indicator and description
+ */
+function parseStatusFeed($feedUrl) {
+    try {
+        // Set up context with timeout and user agent
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript-StatusMonitor/1.0',
+                'ignore_errors' => true
+            ]
+        ]);
+        
+        // Fetch feed content
+        $feedContent = @file_get_contents($feedUrl, false, $context); // codacy:ignore - file_get_contents required for feed fetching
+        
+        if ($feedContent === false) {
+            throw new Exception('Failed to fetch feed');
+        }
+        
+        // Suppress XML errors and parse
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($feedContent);
+        libxml_clear_errors();
+        
+        if ($xml === false) {
+            throw new Exception('Failed to parse XML');
+        }
+        
+        $status = [
+            'indicator' => 'none',
+            'description' => 'All Systems Operational'
+        ];
+        
+        // Check if it's an Atom feed
+        if (isset($xml->entry)) {
+            $latestEntry = $xml->entry[0];
+            $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
+            $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
+            $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
+            
+            $description = !empty($content) ? $content : (!empty($summary) ? $summary : $title);
+            
+            // Analyze title/content for status indicators
+            if (preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+                $status['indicator'] = 'none';
+                $status['description'] = 'All Systems Operational';
+            } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
+                $status['indicator'] = 'major';
+                $status['description'] = strip_tags($description);
+            } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
+                $status['indicator'] = 'minor';
+                $status['description'] = strip_tags($description);
+            } else {
+                $status['description'] = strip_tags($title);
+            }
+        }
+        // Check if it's an RSS feed
+        elseif (isset($xml->channel->item)) {
+            $latestItem = $xml->channel->item[0];
+            $title = isset($latestItem->title) ? (string)$latestItem->title : '';
+            $description = isset($latestItem->description) ? (string)$latestItem->description : '';
+            
+            // Analyze title/description for status indicators
+            if (preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+                $status['indicator'] = 'none';
+                $status['description'] = 'All Systems Operational';
+            } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
+                $status['indicator'] = 'major';
+                $status['description'] = strip_tags(!empty($description) ? $description : $title);
+            } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
+                $status['indicator'] = 'minor';
+                $status['description'] = strip_tags(!empty($description) ? $description : $title);
+            } else {
+                $status['description'] = strip_tags($title);
+            }
+        }
+        
+        // Truncate long descriptions
+        if (strlen($status['description']) > 200) {
+            $status['description'] = substr($status['description'], 0, 197) . '...';
+        }
+        
+        return $status;
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
+ * Handle RSS/Atom feed status requests
+ */
+function handleStatusFeed() {
+    try {
+        // Validate feed parameter
+        if (!isset($_GET['feed']) || empty($_GET['feed'])) { // codacy:ignore - Direct $_GET access required
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing feed parameter']); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        $feedType = $_GET['feed']; // codacy:ignore - Direct $_GET access required
+        
+        // Whitelist allowed feeds for security
+        $allowedFeeds = [
+            'stripe' => 'https://www.stripestatus.com/history.atom',
+            'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
+            'cloudflare-flare' => 'https://status.flare.io/history/rss',
+            'slack' => 'https://slack-status.com/feed/atom',
+            'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+            'square' => 'https://www.issquareup.com/united-states/feed.atom',
+            'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
+            'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
+            'googlesearch' => 'https://status.search.google.com/en/feed.atom',
+            'googleworkspace' => 'https://www.google.com/appsstatus/dashboard/en/feed.atom',
+            'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
+            'paypal' => 'https://www.paypal-status.com/feed/atom',
+            'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
+            'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
+            'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
+            'vultr' => 'https://status.vultr.com/feed/incidents.json',
+            'brevo' => 'https://status.brevo.com/feed.atom',
+            'automattic' => 'https://automatticstatus.com/rss',
+            'wpvip' => 'https://wpvipstatus.com/rss'
+        ];
+        
+        if (!isset($allowedFeeds[$feedType])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid feed type']); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        $feedUrl = $allowedFeeds[$feedType];
+        
+        // Parse feed and return status
+        $status = parseStatusFeed($feedUrl);
+        
+        echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('Status feed error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to fetch status feed']); // codacy:ignore - echo required for JSON response
+    }
+}
+
 function getExternalServicesConfig() {
-    // All services are always enabled by default
+    // All services available - user preferences stored client-side in cookies
     $config = [
-        'cloudflare' => true,
-        'digitalocean' => true,
+        // Hosting & Infrastructure
         'aws' => true,
+        'cloudflare' => true,
+        'cloudways' => true,
+        'digitalocean' => true,
+        'googlecloud' => true,
+        'hostinger' => true,
+        'kinsta' => true,
+        'linode' => true,
+        'oracle' => true,
+        'ovh' => true,
+        'scaleway' => true,
+        'upcloud' => true,
+        'vercel' => true,
+        'vultr' => true,
+        'wpvip' => true,
+        
+        // Developer Tools
         'github' => true,
-        'letsencrypt' => true,
-        'mailgun' => true,
+        'gitlab' => true,
+        'notion' => true,
+        'postmark' => true,
+        'twilio' => true,
+        
+        // Payment Processing
+        'coinbase' => true,
+        'paypal' => true,
+        'recurly' => true,
+        'square' => true,
         'stripe' => true,
-        'vimeo' => true
+        
+        // Communication
+        'brevo' => true,
+        'discord' => true,
+        'mailgun' => true,
+        'slack' => true,
+        'zoom' => true,
+        
+        // E-Commerce
+        'intuit' => true,
+        'shopify' => true,
+        
+        // Media & Content
+        'automattic' => true,
+        'dropbox' => true,
+        'reddit' => true,
+        'udemy' => true,
+        'vimeo' => true,
+        'wistia' => true,
+        
+        // Gaming
+        'epicgames' => true,
+        
+        // AI & Machine Learning
+        'openai' => true,
+        
+        // Advertising
+        'googleads' => true,
+        'googlesearch' => true,
+        'googleworkspace' => true,
+        'microsoftads' => true,
+        
+        // Security
+        'letsencrypt' => true,
+        'cloudflareflare' => true
     ];
     
     return $config;

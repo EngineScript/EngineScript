@@ -6,6 +6,150 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-12
 
+### ➕ ADDITION: WordPress & Email Service Monitoring
+
+- **New Services Added** (3 additional services):
+  - **Brevo** (Communication): Email marketing and transactional email service with RSS feed support
+  - **Automattic** (Media & Content): WordPress.com parent company status monitoring
+  - **WordPress VIP** (Hosting & Infrastructure): Enterprise WordPress hosting platform status
+  
+- **Feed Integration**:
+  - Brevo: `https://status.brevo.com/feed.atom`
+  - Automattic: `https://automatticstatus.com/rss`
+  - WordPress VIP: `https://wpvipstatus.com/rss`
+  
+- **Total Services**: Now 53 services across 10 categories
+
+- **Cache Version**: Updated to v=2025.11.12.7
+
+### 📦 EXPANSION: 40+ Additional Services & Category Organization
+
+- **Massive Service Expansion** (from 8 to 50+ services):
+  - **Hosting & Infrastructure** (14 services): AWS, Cloudflare, Cloudways, DigitalOcean, Google Cloud, Hostinger, Kinsta, Linode, Oracle Cloud, OVH Cloud, Scaleway, UpCloud, Vercel, Vultr
+  - **Developer Tools** (5 services): GitHub, GitLab, Notion, Postmark, Twilio
+  - **Payment Processing** (5 services): Coinbase, PayPal, Recurly, Square, Stripe
+  - **Communication** (4 services): Discord, Mailgun, Slack, Zoom
+  - **E-Commerce** (2 services): Intuit, Shopify
+  - **Media & Content** (5 services): Dropbox, Reddit, Udemy, Vimeo, Wistia
+  - **Gaming** (1 service): Epic Games
+  - **AI & Machine Learning** (1 service): OpenAI
+  - **Advertising** (4 services): Google Ads, Google Search Console, Google Workspace, Microsoft Advertising
+  - **Security** (2 services): Let's Encrypt, Cloudflare Flare
+
+- **Category Organization**:
+  - Settings panel now groups services by category with headers
+  - Categories styled with accent color borders and uppercase titles
+  - Services sorted alphabetically within each category
+  - Improved readability with visual separation
+
+- **No Default Services**:
+  - Changed behavior: no services enabled by default
+  - First visit shows empty state message: "No Services Selected"
+  - Encourages users to select only services they need
+  - Reduces API load and improves dashboard performance
+  - Users can enable services via "Service Settings" button
+
+- **Additional Feed Support**:
+  - Added feed URLs for: Slack, GitLab, Square, Recurly, Google services, Microsoft Ads, PayPal, Oracle, OVH, Vultr
+  - Total of 16 services now using RSS/Atom feeds
+  - Backend whitelist updated with all new feed endpoints
+
+- **Code Refactoring**:
+  - Extracted service definitions into `getServiceDefinitions()` method (eliminates duplication)
+  - Simplified preference validation (dynamic check against all definitions)
+  - Default service order now includes all 50+ services
+  - Updated backend config to return all available services
+
+- **CSS Enhancements**:
+  - `.settings-category`: Section styling for category blocks
+  - `.category-title`: Accent-colored headers with borders
+  - `.settings-grid`: Adjusted for better service toggle layout
+
+- **Cache Version**: Updated to v=2025.11.12.6
+
+### 🔗 INTEGRATION: RSS/Atom Feed Support for External Services
+
+- **RSS/Atom Feed Parsing**:
+  - Added backend feed parser to extract status from RSS/Atom feeds
+  - Parses both RSS 2.0 and Atom feed formats
+  - Extracts status indicators from feed titles and descriptions
+  - Pattern matching for operational, minor, and major incidents
+  - Automatic truncation of long descriptions (200 character limit)
+
+- **Feed-Enabled Services**:
+  - **Stripe**: Uses Atom feed from `https://www.stripestatus.com/history.atom`
+  - **Let's Encrypt**: Uses RSS feed from `https://letsencrypt.status.io/pages/.../rss`
+  - Services now display real-time status instead of static "Visit status page" links
+  - Feed data proxied through backend to avoid CORS restrictions
+
+- **Vimeo API Integration**:
+  - Updated Vimeo to use direct API at `https://www.vimeostatus.com/api`
+  - Now displays live status like other API-enabled services
+  - Removed from static link-only services
+
+- **AWS Status**:
+  - Remains as static link (requires enterprise account for API access)
+  - Only service still showing "Visit status page"
+
+- **Backend Updates** (api.php):
+  - Added `parseStatusFeed($feedUrl)`: RSS/Atom XML parser with libxml
+  - Added `handleStatusFeed()`: Secure feed proxy endpoint with whitelist
+  - New route: `/external-services/feed?feed={type}`
+  - Feed types: `stripe`, `letsencrypt`, `cloudflare-flare`
+  - 10-second timeout on feed fetches
+  - Error handling for malformed XML and network failures
+
+- **Frontend Updates** (dashboard.js):
+  - Added `loadFeedService()`: Fetches status from backend feed proxy
+  - Updated service definitions with `useFeed` flag and `feedType` parameter
+  - Service loading logic now handles three types: API, Feed, and Static
+  - Feed services display identical to API services (consistent UX)
+  - Error states handle feed fetch failures gracefully
+
+- **Cache Version**: Updated to v=2025.11.12.5
+
+### ✨ UI/UX: Service Settings Header & Drag-and-Drop Reordering
+
+- **Improved Settings Panel Layout**:
+  - Settings panel now renders as full-width header above service cards
+  - Removed from inline grid layout for better visual separation
+  - Settings panel stays open when toggling service checkboxes (no more collapse)
+  - Persistent panel state improves user experience
+  - Updated instructions: "Toggle services to show/hide on the dashboard. Drag service cards to reorder them."
+
+- **Drag-and-Drop Service Reordering**:
+  - Service cards now fully draggable with HTML5 Drag and Drop API
+  - Custom order persisted in `serviceOrder` cookie (1-year expiration)
+  - Visual feedback during drag operations:
+    - `cursor: grab` on service cards (changes to `grabbing` when dragging)
+    - `.dragging` class reduces opacity to 0.5
+    - `.drag-over` class shows dashed accent border
+  - Service order syncs across page reloads
+  - Default order: Cloudflare, DigitalOcean, AWS, GitHub, Let's Encrypt, Mailgun, Stripe, Vimeo
+
+- **Service Card Enhancements**:
+  - Added `data-service-key` attribute to all service cards for drag identification
+  - Cards respond to dragstart, dragover, dragenter, dragleave, dragend events
+  - Smart positioning logic calculates correct drop location
+  - Order automatically saved after drag completion
+
+- **Updated Methods** (dashboard.js):
+  - Added `getServiceOrder()`: Reads custom order from cookie, falls back to default
+  - Added `saveServiceOrder()`: Persists order array to cookie
+  - Added `renderServiceSettings()`: Dedicated method for settings panel rendering
+  - Added `enableServiceDragDrop()`: Configures all drag-and-drop event handlers
+  - Added `getDragAfterElement()`: Calculates correct insertion point during drag
+  - Refactored `updateServicePreference()`: Re-renders services without collapsing settings panel
+  - Refactored `loadExternalServices()`: Uses dedicated settings container, respects custom order
+
+- **CSS Updates** (dashboard.css):
+  - `.external-services-settings`: Reduced margin-bottom to 1.5rem, added border-bottom
+  - `.external-service-card`: Added `cursor: grab` and `:active { cursor: grabbing }`
+  - `.external-service-card.dragging`: opacity 0.5, grabbing cursor
+  - `.external-service-card.drag-over`: dashed border, subtle background highlight
+
+- **Cache Version**: Updated to v=2025.11.12.4
+
 ### ♻️ REFACTOR: Client-Side Cookie Storage for Preferences
 
 - **Migrated from Server-Side to Client-Side Storage**:

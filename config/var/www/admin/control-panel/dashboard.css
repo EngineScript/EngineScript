@@ -1232,10 +1232,11 @@ button:focus, select:focus, input:focus {
 }
 
 .external-services-settings {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     background: var(--card-bg);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
     overflow: hidden;
 }
 
@@ -1284,10 +1285,29 @@ button:focus, select:focus, input:focus {
     color: var(--text-secondary);
 }
 
+.settings-category {
+    margin-bottom: 1.5rem;
+}
+
+.settings-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
 .settings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
 }
 
 .service-toggle {
@@ -1331,7 +1351,21 @@ button:focus, select:focus, input:focus {
     transition: var(--transition);
     text-decoration: none;
     color: inherit;
-    cursor: pointer;
+    cursor: grab;
+}
+
+.external-service-card:active {
+    cursor: grabbing;
+}
+
+.external-service-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.external-service-card.drag-over {
+    border: 2px dashed var(--accent-color);
+    background: rgba(0, 212, 170, 0.05);
 }
 
 .external-service-card:hover {
