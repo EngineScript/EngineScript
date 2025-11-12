@@ -1231,6 +1231,71 @@ button:focus, select:focus, input:focus {
     margin-bottom: 2rem;
 }
 
+.external-services-settings {
+    margin-bottom: 2rem;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+}
+
+.settings-header {
+    margin-bottom: 1.5rem;
+}
+
+.settings-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.settings-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.service-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.service-toggle:hover {
+    border-color: var(--accent-color);
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.service-toggle input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--accent-color);
+    width: 18px;
+    height: 18px;
+}
+
+.service-toggle span {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
 .external-service-card {
     display: block;
     background: var(--card-bg);
@@ -1279,6 +1344,30 @@ button:focus, select:focus, input:focus {
 
 .service-icon.digitalocean-icon {
     background: linear-gradient(135deg, #0080ff, #05c);
+}
+
+.service-icon.aws-icon {
+    background: linear-gradient(135deg, #ff9900, #ffa500);
+}
+
+.service-icon.github-icon {
+    background: linear-gradient(135deg, #24292e, #424242);
+}
+
+.service-icon.letsencrypt-icon {
+    background: linear-gradient(135deg, #33a542, #4cb548);
+}
+
+.service-icon.mailgun-icon {
+    background: linear-gradient(135deg, #a020f0, #b833f5);
+}
+
+.service-icon.stripe-icon {
+    background: linear-gradient(135deg, #0055de, #0066ff);
+}
+
+.service-icon.vimeo-icon {
+    background: linear-gradient(135deg, #1ab7ea, #0099cc);
 }
 
 .service-icon i {

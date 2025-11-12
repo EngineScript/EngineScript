@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.11.1';
-import { DashboardState } from './modules/state.js?v=2025.11.11.1';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.11.1';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.11.1';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.1';
+import { DashboardState } from './modules/state.js?v=2025.11.12.1';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.1';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.1';
 
 class EngineScriptDashboard {
   constructor() {
@@ -755,7 +755,7 @@ class EngineScriptDashboard {
     // Tools are now static links - no status checking needed
   }
 
-  // External services monitoring
+  // External services monitoring with dynamic service configuration
   async loadExternalServices() {
     try {
       const container = document.getElementById("external-services-grid");
@@ -763,10 +763,19 @@ class EngineScriptDashboard {
 
       container.innerHTML = "";
 
-      // Fetch enabled services from API
-      const enabledServices = await this.getApiData("/api/external-services/config", {});
+      // Fetch enabled services and user preferences from API
+      const response = await this.getApiData("/api/external-services/config", {});
       
-      if (!enabledServices || Object.keys(enabledServices).length === 0) {
+      let services = response.services || response;
+      let preferences = response.preferences || {};
+      
+      // Load preferences from cache or server
+      const cachedPrefs = await this.loadServicePreferences();
+      if (cachedPrefs) {
+        preferences = cachedPrefs;
+      }
+
+      if (!services || Object.keys(services).length === 0) {
         const noServicesDiv = document.createElement("div");
         noServicesDiv.className = "empty-state";
         noServicesDiv.innerHTML = `
@@ -774,18 +783,112 @@ class EngineScriptDashboard {
             <i class="fas fa-cloud-sun"></i>
           </div>
           <h3>No External Services Configured</h3>
-          <p>No external service monitoring is currently enabled. Configure INSTALL_CLOUDFLARE or INSTALL_DIGITALOCEAN options to enable monitoring.</p>
+          <p>No external service monitoring is currently enabled.</p>
         `;
         container.appendChild(noServicesDiv);
         return;
       }
 
-      // Fetch and display each enabled service
-      if (enabledServices.cloudflare) {
-        await this.loadCloudflareStatus(container);
-      }
-      if (enabledServices.digitalocean) {
-        await this.loadDigitalOceanStatus(container);
+      // Service definitions with API endpoints, names, icons, and URLs
+      const serviceDefinitions = {
+        cloudflare: {
+          name: 'Cloudflare',
+          api: 'https://www.cloudflarestatus.com/api/v2/status.json',
+          url: 'https://www.cloudflarestatus.com/',
+          icon: 'fa-cloud',
+          color: 'cloudflare-icon'
+        },
+        digitalocean: {
+          name: 'DigitalOcean',
+          api: 'https://status.digitalocean.com/api/v2/status.json',
+          url: 'https://status.digitalocean.com/',
+          icon: 'fa-layer-group',
+          color: 'digitalocean-icon'
+        },
+        aws: {
+          name: 'AWS',
+          api: 'https://status.aws.amazon.com/api/v2/status.json',
+          url: 'https://status.aws.amazon.com/',
+          icon: 'fa-cube',
+          color: 'aws-icon'
+        },
+        github: {
+          name: 'GitHub',
+          api: 'https://www.githubstatus.com/api/v2/status.json',
+          url: 'https://www.githubstatus.com/',
+          icon: 'fa-github',
+          color: 'github-icon'
+        },
+        letsencrypt: {
+          name: "Let's Encrypt",
+          api: 'https://letsencrypt.status.io/api/v2/status.json',
+          url: 'https://letsencrypt.status.io/',
+          icon: 'fa-lock',
+          color: 'letsencrypt-icon'
+        },
+        mailgun: {
+          name: 'Mailgun',
+          api: 'https://status.mailgun.com/api/v2/status.json',
+          url: 'https://status.mailgun.com/',
+          icon: 'fa-envelope',
+          color: 'mailgun-icon'
+        },
+        stripe: {
+          name: 'Stripe',
+          api: 'https://status.stripe.com/api/v2/status.json',
+          url: 'https://status.stripe.com/',
+          icon: 'fa-credit-card',
+          color: 'stripe-icon'
+        },
+        vimeo: {
+          name: 'Vimeo',
+          api: 'https://status.vimeo.com/api/v2/status.json',
+          url: 'https://status.vimeo.com/',
+          icon: 'fa-play-circle',
+          color: 'vimeo-icon'
+        }
+      };
+
+      // Add settings panel at the top
+      const settingsPanel = document.createElement("div");
+      settingsPanel.className = "external-services-settings";
+      settingsPanel.innerHTML = `
+        <div class="settings-header">
+          <h3><i class="fas fa-sliders-h"></i> Service Visibility</h3>
+          <p>Toggle services to show/hide on the dashboard</p>
+        </div>
+        <div class="settings-grid" id="services-toggles"></div>
+      `;
+      container.appendChild(settingsPanel);
+
+      const togglesContainer = document.getElementById("services-toggles");
+
+      // Fetch and display each service
+      for (const [serviceKey, isAvailable] of Object.entries(services)) {
+        if (serviceDefinitions[serviceKey]) {
+          const isEnabled = preferences[serviceKey] !== false;
+          
+          // Add toggle
+          const toggleLabel = document.createElement("label");
+          toggleLabel.className = "service-toggle";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = isEnabled;
+          checkbox.dataset.service = serviceKey;
+          checkbox.addEventListener("change", () => this.updateServicePreference(serviceKey, checkbox.checked));
+          
+          const serviceName = document.createElement("span");
+          serviceName.textContent = serviceDefinitions[serviceKey].name;
+          
+          toggleLabel.appendChild(checkbox);
+          toggleLabel.appendChild(serviceName);
+          togglesContainer.appendChild(toggleLabel);
+          
+          // Only load service if enabled
+          if (isEnabled) {
+            await this.loadStatusPageService(container, serviceKey, serviceDefinitions[serviceKey]);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load external services:', error);
@@ -806,100 +909,110 @@ class EngineScriptDashboard {
     }
   }
 
-  async loadCloudflareStatus(container) {
+  async loadServicePreferences() {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      const response = await fetch("https://www.cloudflarestatus.com/api/v2/status.json", {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Check localStorage first
+      const cached = localStorage.getItem('servicePreferences');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          // Validate it's an object with expected structure
+          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (parseError) {
+          console.error('Failed to parse cached preferences:', parseError);
+          // Clear invalid cache
+          localStorage.removeItem('servicePreferences');
+        }
       }
       
-      const data = await response.json();
-      
-      if (!data || !data.status || !data.status.indicator) {
-        throw new Error('Invalid API response format');
+      // Fetch from server
+      const prefs = await this.getApiData("/api/external-services/preferences", {});
+      if (prefs && typeof prefs === 'object' && prefs !== null) {
+        try {
+          localStorage.setItem('servicePreferences', JSON.stringify(prefs));
+        } catch (storageError) {
+          console.error('Failed to cache preferences:', storageError);
+        }
+        return prefs;
       }
-
-      const serviceLink = document.createElement("a");
-      serviceLink.href = "https://www.cloudflarestatus.com/";
-      serviceLink.target = "_blank";
-      serviceLink.rel = "noopener noreferrer";
-      serviceLink.className = "external-service-card";
-      
-      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
-      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
-      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
-
-      // Create elements safely without innerHTML to prevent XSS
-      const headerDiv = document.createElement("div");
-      headerDiv.className = "service-header";
-      
-      const iconDiv = document.createElement("div");
-      iconDiv.className = "service-icon cloudflare-icon";
-      iconDiv.innerHTML = '<i class="fas fa-cloud"></i>';
-      
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "service-info";
-      
-      const h3 = document.createElement("h3");
-      h3.textContent = "Cloudflare";
-      
-      const statusSpan = document.createElement("span");
-      statusSpan.className = `service-status status-${statusColor}`;
-      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
-      statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
-      
-      infoDiv.appendChild(h3);
-      infoDiv.appendChild(statusSpan);
-      headerDiv.appendChild(iconDiv);
-      headerDiv.appendChild(infoDiv);
-      serviceLink.appendChild(headerDiv);
-      
-      container.appendChild(serviceLink);
     } catch (error) {
-      console.error('Failed to load Cloudflare status:', error);
-      
-      let errorMessage = 'Unable to fetch status';
-      if (error.name === 'AbortError') {
-        errorMessage = 'Request timed out';
-      } else if (error.message && error.message.startsWith('HTTP error!')) {
-        errorMessage = 'Service unavailable';
+      console.error('Failed to load service preferences:', error);
+    }
+    return null;
+  }
+
+  async updateServicePreference(serviceKey, isEnabled) {
+    try {
+      // Validate service key
+      const validServices = ['cloudflare', 'digitalocean', 'aws', 'github', 'letsencrypt', 'mailgun', 'stripe', 'vimeo'];
+      if (!validServices.includes(serviceKey)) {
+        console.error('Invalid service key:', serviceKey);
+        return;
       }
       
-      const errorLink = document.createElement("a");
-      errorLink.href = "https://www.cloudflarestatus.com/";
-      errorLink.target = "_blank";
-      errorLink.rel = "noopener noreferrer";
-      errorLink.className = "external-service-card error";
-      errorLink.innerHTML = `
-        <div class="service-header">
-          <div class="service-icon cloudflare-icon">
-            <i class="fas fa-cloud"></i>
-          </div>
-          <div class="service-info">
-            <h3>Cloudflare</h3>
-            <span class="service-status status-error">
-              <i class="fas fa-times-circle"></i> ${errorMessage}
-            </span>
-          </div>
-        </div>
-      `;
-      container.appendChild(errorLink);
+      // Get current preferences from localStorage
+      let preferences = {};
+      const cached = localStorage.getItem('servicePreferences');
+      if (cached) {
+        try {
+          preferences = JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached preferences:', e);
+          preferences = {};
+        }
+      }
+      
+      // Update the preference
+      preferences[serviceKey] = Boolean(isEnabled);
+      
+      // Get CSRF token
+      const csrfToken = this.api.getCsrfToken();
+      if (!csrfToken) {
+        console.error('CSRF token not available');
+        alert('Security token not available. Please refresh the page.');
+        return;
+      }
+      
+      // Save to server
+      const response = await fetch('/api/external-services/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ preferences: preferences })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.preferences) {
+          // Update cache
+          localStorage.setItem('servicePreferences', JSON.stringify(result.preferences));
+          // Reload the services display
+          await this.loadExternalServices();
+        }
+      } else if (response.status === 403) {
+        console.error('CSRF validation failed');
+        alert('Security validation failed. Please refresh the page and try again.');
+      } else {
+        console.error('Failed to save preference, status:', response.status);
+        alert('Failed to save preference. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to update service preference:', error);
+      alert('Failed to save preference. Please try again.');
     }
   }
 
-  async loadDigitalOceanStatus(container) {
+  // Generic Statuspage.io service loader
+  async loadStatusPageService(container, serviceKey, serviceDef) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch("https://status.digitalocean.com/api/v2/status.json", {
+      const response = await fetch(serviceDef.api, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -915,7 +1028,7 @@ class EngineScriptDashboard {
       }
 
       const serviceLink = document.createElement("a");
-      serviceLink.href = "https://status.digitalocean.com/";
+      serviceLink.href = serviceDef.url;
       serviceLink.target = "_blank";
       serviceLink.rel = "noopener noreferrer";
       serviceLink.className = "external-service-card";
@@ -924,19 +1037,18 @@ class EngineScriptDashboard {
       const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
       const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
 
-      // Create elements safely without innerHTML to prevent XSS
       const headerDiv = document.createElement("div");
       headerDiv.className = "service-header";
       
       const iconDiv = document.createElement("div");
-      iconDiv.className = "service-icon digitalocean-icon";
-      iconDiv.innerHTML = '<i class="fas fa-layer-group"></i>';
+      iconDiv.className = `service-icon ${serviceDef.color}`;
+      iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
       
       const infoDiv = document.createElement("div");
       infoDiv.className = "service-info";
       
       const h3 = document.createElement("h3");
-      h3.textContent = "DigitalOcean";
+      h3.textContent = serviceDef.name;
       
       const statusSpan = document.createElement("span");
       statusSpan.className = `service-status status-${statusColor}`;
@@ -951,7 +1063,7 @@ class EngineScriptDashboard {
       
       container.appendChild(serviceLink);
     } catch (error) {
-      console.error('Failed to load DigitalOcean status:', error);
+      console.error(`Failed to load ${serviceDef.name} status:`, error);
       
       let errorMessage = 'Unable to fetch status';
       if (error.name === 'AbortError') {
@@ -961,23 +1073,35 @@ class EngineScriptDashboard {
       }
       
       const errorLink = document.createElement("a");
-      errorLink.href = "https://status.digitalocean.com/";
+      errorLink.href = serviceDef.url;
       errorLink.target = "_blank";
       errorLink.rel = "noopener noreferrer";
       errorLink.className = "external-service-card error";
-      errorLink.innerHTML = `
-        <div class="service-header">
-          <div class="service-icon digitalocean-icon">
-            <i class="fas fa-layer-group"></i>
-          </div>
-          <div class="service-info">
-            <h3>DigitalOcean</h3>
-            <span class="service-status status-error">
-              <i class="fas fa-times-circle"></i> ${errorMessage}
-            </span>
-          </div>
-        </div>
-      `;
+      
+      const errorHeaderDiv = document.createElement("div");
+      errorHeaderDiv.className = "service-header";
+      
+      const errorIconDiv = document.createElement("div");
+      errorIconDiv.className = `service-icon ${serviceDef.color}`;
+      errorIconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+      
+      const errorInfoDiv = document.createElement("div");
+      errorInfoDiv.className = "service-info";
+      
+      const errorH3 = document.createElement("h3");
+      errorH3.textContent = serviceDef.name;
+      
+      const errorStatusSpan = document.createElement("span");
+      errorStatusSpan.className = "service-status status-error";
+      errorStatusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
+      errorStatusSpan.appendChild(document.createTextNode(errorMessage));
+      
+      errorInfoDiv.appendChild(errorH3);
+      errorInfoDiv.appendChild(errorStatusSpan);
+      errorHeaderDiv.appendChild(errorIconDiv);
+      errorHeaderDiv.appendChild(errorInfoDiv);
+      errorLink.appendChild(errorHeaderDiv);
+      
       container.appendChild(errorLink);
     }
   }

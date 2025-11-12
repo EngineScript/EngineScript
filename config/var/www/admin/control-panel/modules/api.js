@@ -23,6 +23,10 @@ export class DashboardAPI {
     }
   }
 
+  getCsrfToken() {
+    return this.csrfToken;
+  }
+
   isOperaMini() {
     return (
       Object.prototype.toString.call(window.operamini) === "[object OperaMini]"

@@ -87,15 +87,38 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     die(); // codacy:ignore - die() required for CORS termination
 }
 
-// Only allow GET requests for security
-if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') { // codacy:ignore - Direct $_SERVER access required for request validation
+// Get the request URI and method first
+$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+
+// Check if endpoint is passed as a query parameter
+$endpoint_param = isset($_GET['endpoint']) ? $_GET['endpoint'] : ''; // codacy:ignore - Direct $_GET access required
+$path = '';
+if (!empty($endpoint_param)) {
+    $path = '/' . ltrim($endpoint_param, '/');
+} else {
+    $path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
+    if ($path !== false) {
+        $path = str_replace('/api', '', $path);
+    }
+}
+
+// Allow POST only for preferences endpoint, GET for all others
+$allowed_post_endpoints = ['/external-services/preferences'];
+if (!isset($_SERVER['REQUEST_METHOD'])) { // codacy:ignore - Direct $_SERVER access required for request validation
     http_response_code(405);
     die(json_encode(['error' => 'Method not allowed'])); // codacy:ignore - die() required for security termination
 }
 
-// Get the request URI and method
-$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
-$request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($path, $allowed_post_endpoints, true)) { // codacy:ignore - Direct $_SERVER access required
+    http_response_code(405);
+    die(json_encode(['error' => 'Method not allowed'])); // codacy:ignore - die() required for security termination
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['REQUEST_METHOD'] !== 'POST') { // codacy:ignore - Direct $_SERVER access required
+    http_response_code(405);
+    die(json_encode(['error' => 'Method not allowed'])); // codacy:ignore - die() required for security termination
+}
 
 // Input validation and sanitization
 // Input validation and sanitization helper
@@ -337,6 +360,10 @@ switch ($path) {
     
     case '/external-services/config':
         handleExternalServicesConfig();
+        break;
+    
+    case '/external-services/preferences':
+        handleExternalServicesPreferences();
         break;
     
     default:
@@ -1006,45 +1033,223 @@ function getSystemAlerts() {
 }
 
 function getExternalServicesConfig() {
-    // Cloudflare is always enabled as it's a required component
+    // All services are always enabled by default
     $config = [
         'cloudflare' => true,
-        'digitalocean' => false
+        'digitalocean' => true,
+        'aws' => true,
+        'github' => true,
+        'letsencrypt' => true,
+        'mailgun' => true,
+        'stripe' => true,
+        'vimeo' => true
     ];
     
-    // Read enginescript configuration for DigitalOcean options
-    $config_file = '/home/EngineScript/enginescript-install-options.txt'; // codacy:ignore - file_get_contents() required for config reading in standalone API
-    if (file_exists($config_file)) { // codacy:ignore - file_exists() required for config checking in standalone API
-        $config_content = file_get_contents($config_file); // codacy:ignore - file_get_contents() required for config reading in standalone API
-        $config_lines = explode("\n", $config_content);
-        
-        foreach ($config_lines as $line) {
-            $line = trim($line);
-            if (strpos($line, 'INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
-                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
-                    $config['digitalocean'] = true;
+    return $config;
+}
+
+function getPreferencesFile() {
+    // Use hashed client IP as identifier for preferences (privacy + works across domains)
+    $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1'; // codacy:ignore - Direct $_SERVER access required
+    $safe_ip = preg_replace('/[^0-9a-fA-F:\.]/', '', $client_ip); // Sanitize IP for hashing
+    
+    // Hash the IP for privacy (one-way hash prevents IP recovery from filename)
+    $hashed_ip = hash('sha256', $safe_ip);
+    
+    $prefs_dir = '/home/EngineScript/.admin-preferences';
+    $prefs_file = $prefs_dir . '/' . $hashed_ip . '.json';
+    
+    // Validate the full path to prevent directory traversal
+    $real_dir = realpath($prefs_dir); // codacy:ignore - realpath() required for path validation
+    if ($real_dir === false) {
+        // Directory doesn't exist yet, create it
+        if (!is_dir($prefs_dir)) { // codacy:ignore - is_dir() required for directory checking
+            mkdir($prefs_dir, 0700, true); // codacy:ignore - mkdir() required for preference storage
+        }
+        $real_dir = realpath($prefs_dir); // codacy:ignore - realpath() required for path validation
+    }
+    
+    // Ensure the preferences file is within the expected directory
+    if ($real_dir === false || strpos($prefs_file, $real_dir . '/') !== 0) {
+        logSecurityEvent('Path traversal attempt in preferences', $prefs_file);
+        return false;
+    }
+    
+    return $prefs_file;
+}
+
+function getUserServicePreferences() {
+    // Get default preferences (all services enabled)
+    $defaults = [
+        'cloudflare' => true,
+        'digitalocean' => true,
+        'aws' => true,
+        'github' => true,
+        'letsencrypt' => true,
+        'mailgun' => true,
+        'stripe' => true,
+        'vimeo' => true
+    ];
+    
+    $prefs_file = getPreferencesFile();
+    
+    // Check for path traversal error
+    if ($prefs_file === false) {
+        return $defaults;
+    }
+    
+    if (file_exists($prefs_file)) { // codacy:ignore - file_exists() required for preference checking
+        $json_content = file_get_contents($prefs_file); // codacy:ignore - file_get_contents() required for preference reading
+        if ($json_content !== false) {
+            $user_prefs = json_decode($json_content, true);
+            // Validate JSON decode succeeded and returned array
+            if (is_array($user_prefs) && json_last_error() === JSON_ERROR_NONE) {
+                // Only merge valid boolean values for known services
+                $valid_services = array_keys($defaults);
+                $filtered_prefs = [];
+                foreach ($valid_services as $service) {
+                    if (isset($user_prefs[$service]) && is_bool($user_prefs[$service])) {
+                        $filtered_prefs[$service] = $user_prefs[$service];
+                    }
                 }
-            }
-            if (strpos($line, 'INSTALL_DIGITALOCEAN_METRICS_AGENT=') === 0) { // codacy:ignore - strpos() required for string matching in standalone API
-                if (strpos($line, '=1') !== false) { // codacy:ignore - strpos() required for parsing in standalone API
-                    $config['digitalocean'] = true;
-                }
+                return array_merge($defaults, $filtered_prefs);
             }
         }
     }
     
-    // Return only enabled services
-    return array_filter($config);
+    return $defaults;
+}
+
+function saveUserServicePreferences($preferences) {
+    // Validate preferences
+    if (!is_array($preferences)) {
+        logSecurityEvent('Invalid preferences type', gettype($preferences));
+        return false;
+    }
+    
+    // Prevent excessively large preference objects (DOS prevention)
+    if (count($preferences) > 50) {
+        logSecurityEvent('Excessive preferences count', count($preferences));
+        return false;
+    }
+    
+    // Only allow valid service keys
+    $valid_services = ['cloudflare', 'digitalocean', 'aws', 'github', 'letsencrypt', 'mailgun', 'stripe', 'vimeo'];
+    $filtered_prefs = [];
+    
+    foreach ($valid_services as $service) {
+        if (isset($preferences[$service])) {
+            // Strict boolean validation
+            if (!is_bool($preferences[$service])) {
+                $filtered_prefs[$service] = (bool)$preferences[$service];
+            } else {
+                $filtered_prefs[$service] = $preferences[$service];
+            }
+        }
+    }
+    
+    // Don't save if no valid preferences
+    if (empty($filtered_prefs)) {
+        return false;
+    }
+    
+    $prefs_file = getPreferencesFile();
+    
+    // Check for path traversal error
+    if ($prefs_file === false) {
+        return false;
+    }
+    
+    $json_content = json_encode($filtered_prefs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    
+    // Validate JSON encoding succeeded
+    if ($json_content === false || json_last_error() !== JSON_ERROR_NONE) {
+        logSecurityEvent('JSON encoding failed', json_last_error_msg());
+        return false;
+    }
+    
+    // Use LOCK_EX to prevent race conditions
+    if (file_put_contents($prefs_file, $json_content, LOCK_EX) !== false) { // codacy:ignore - file_put_contents() required for preference storage
+        chmod($prefs_file, 0600); // codacy:ignore - chmod() required for preference file security
+        return true;
+    }
+    
+    return false;
 }
 
 function handleExternalServicesConfig() {
     try {
         $config = getExternalServicesConfig();
-        echo json_encode($config); // codacy:ignore - echo required for JSON API response
+        $preferences = getUserServicePreferences();
+        
+        // Return all available services with user preferences
+        echo json_encode(['services' => $config, 'preferences' => $preferences]); // codacy:ignore - echo required for JSON API response
     } catch (Exception $e) {
         http_response_code(500);
         logSecurityEvent('External services config error', $e->getMessage());
         echo json_encode(['error' => 'Unable to retrieve external services config']); // codacy:ignore - echo required for JSON API response
+    }
+}
+
+function handleExternalServicesPreferences() {
+    try {
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') { // codacy:ignore - Direct $_SERVER access required
+            $preferences = getUserServicePreferences();
+            echo json_encode($preferences); // codacy:ignore - echo required for JSON API response
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') { // codacy:ignore - Direct $_SERVER access required
+            // CSRF Protection for POST requests
+            $csrf_token = null;
+            if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) { // codacy:ignore - Direct $_SERVER access required for CSRF validation
+                $csrf_token = $_SERVER['HTTP_X_CSRF_TOKEN']; // codacy:ignore - Direct $_SERVER access required
+            }
+            
+            if (!isset($_SESSION['csrf_token']) || $csrf_token !== $_SESSION['csrf_token']) { // codacy:ignore - Direct $_SESSION access required for CSRF validation
+                http_response_code(403);
+                logSecurityEvent('CSRF token validation failed', 'Preferences POST');
+                echo json_encode(['error' => 'Invalid CSRF token']); // codacy:ignore - echo required for JSON API response
+                return;
+            }
+            
+            $input = file_get_contents('php://input'); // codacy:ignore - file_get_contents() required for request body reading
+            
+            // Validate input size (prevent DOS)
+            if (strlen($input) > 10240) { // 10KB max
+                http_response_code(413);
+                logSecurityEvent('Excessive POST body size', strlen($input));
+                echo json_encode(['error' => 'Request too large']); // codacy:ignore - echo required for JSON API response
+                return;
+            }
+            
+            $data = json_decode($input, true);
+            
+            // Validate JSON decode
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                logSecurityEvent('Invalid JSON in preferences POST', json_last_error_msg());
+                echo json_encode(['error' => 'Invalid JSON format']); // codacy:ignore - echo required for JSON API response
+                return;
+            }
+            
+            if (!is_array($data) || !isset($data['preferences'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid preferences format']); // codacy:ignore - echo required for JSON API response
+                return;
+            }
+            
+            if (saveUserServicePreferences($data['preferences'])) {
+                echo json_encode(['success' => true, 'preferences' => getUserServicePreferences()]); // codacy:ignore - echo required for JSON API response
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to save preferences']); // codacy:ignore - echo required for JSON API response
+            }
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']); // codacy:ignore - echo required for JSON API response
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('External services preferences error', $e->getMessage());
+        echo json_encode(['error' => 'Unable to process preferences']); // codacy:ignore - echo required for JSON API response
     }
 }
 ?>

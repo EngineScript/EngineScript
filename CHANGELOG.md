@@ -4,7 +4,157 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2025-11-11
+## 2025-11-12
+
+### 🔒 SECURITY: Service Preferences Hardening
+
+- **Critical Security Improvements** to service preferences system:
+  - **CSRF Protection**: POST requests now require valid CSRF token in X-CSRF-Token header
+  - **IP Anonymization**: Client IPs now hashed with SHA-256 before storage (one-way hash)
+  - **Path Traversal Prevention**: Full realpath validation on preference file paths
+  - **Input Validation**: Strict validation on all preference data (type checking, size limits)
+  - **JSON Validation**: Comprehensive JSON encode/decode error checking
+  - **DOS Prevention**: Request body size limited to 10KB, preference count limited to 50
+  - **Race Condition Prevention**: File write operations use LOCK_EX for atomic writes
+  - **XSS Prevention**: All DOM manipulation uses createElement/textContent (no innerHTML with user data)
+  - **Method Validation**: POST only allowed for preferences endpoint, GET for all others
+  - **Error Logging**: All security validation failures logged to security event log
+
+- **Backend Improvements** (api.php):
+  - Hashed IP filenames: `/home/EngineScript/.admin-preferences/[sha256-hash].json`
+  - Added `getPreferencesFile()` with directory traversal protection
+  - Enhanced `getUserServicePreferences()` with JSON validation and type checking
+  - Enhanced `saveUserServicePreferences()` with strict validation and error logging
+  - Updated `handleExternalServicesPreferences()` with CSRF validation and size limits
+  - Global method check refactored to allow POST for specific endpoints
+
+- **Frontend Improvements** (dashboard.js):
+  - CSRF token sent with all POST requests via X-CSRF-Token header
+  - Service key validation before updating preferences
+  - Enhanced JSON parse error handling with cache cleanup
+  - XSS-safe error display using DOM manipulation
+  - User-friendly error messages for security failures (403 CSRF errors)
+  - Boolean type coercion for all preference values
+
+- **API Module Improvements** (api.js):
+  - Added `getCsrfToken()` method for retrieving stored CSRF token
+  - CSRF token automatically loaded on dashboard initialization
+
+### 🎛️ NEW FEATURE: User-Configurable Service Visibility
+
+- **Service Preferences System**: Users can now customize which external services to display
+  - All 8 services now default to **always enabled and shown**
+  - Settings panel at top of External Services tab with visibility toggles
+  - Users can click toggles to show/hide individual services
+  - Preferences persist **across all admin domains** (IP-based with privacy protection)
+  - Settings saved server-side at `/home/EngineScript/.admin-preferences/[hashed-ip].json`
+
+- **Architecture Improvements**:
+  - Backend: All services always available (`/api/external-services/config`)
+  - Separate preferences API endpoint: `/api/external-services/preferences` (GET/POST)
+  - Client IP-based storage ensures preferences follow user across different admin domains
+  - localStorage caching reduces server requests while maintaining consistency
+  - Automatic localStorage invalidation when server preferences differ
+
+- **Frontend Enhancements**:
+  - New settings panel with styled toggle controls
+  - Toggle grid layout adapts to available space
+  - Visual feedback on toggle hover with accent color highlighting
+  - Real-time service display updates when toggling
+  - Graceful error handling if preferences API fails
+
+- **API Endpoints**:
+  - `GET /api/external-services/config`: Returns all available services
+  - `GET /api/external-services/preferences`: Returns user's saved preferences (reads from file)
+  - `POST /api/external-services/preferences`: Saves user preferences with JSON body
+  - Directory `/home/EngineScript/.admin-preferences/` created automatically with 0700 permissions
+
+- **Security Considerations**:
+  - Preference files stored with restrictive permissions (0600)
+  - IP address sanitized for filename (removes invalid characters)
+  - Only valid service keys accepted in preferences
+  - Settings isolated per IP address (security consideration: IP-based tracking)
+
+- **Default Behavior**:
+  - First-time visitors see all 8 services enabled
+  - Settings persist until user explicitly disables services
+  - Resetting browser cache or changing IP resets to defaults
+
+- **Cache Version**: Updated to v=2025.11.12.1
+
+### 2025-11-11 (Previous)
+
+### 🌐 EXPANDED: External Services Monitoring - Now Supporting 8 Services
+
+- **Multi-Service Architecture**: Refactored external services system to support unlimited services
+  - Previously: Hardcoded loaders for Cloudflare and DigitalOcean (220+ lines of duplicate code)
+  - Now: Generic, scalable service loader supporting any Statuspage.io-based service
+  - Zero code changes needed to add new services - purely configuration driven
+  
+- **Extended Service Coverage**: Now monitors 8 critical external services
+  - **Cloudflare** (Always enabled): CDN, DNS, and DDoS protection status
+  - **DigitalOcean** (Optional): Cloud infrastructure and managed services status
+  - **AWS** (Optional): Amazon Web Services status - when AWS monitoring enabled
+  - **GitHub** (Optional): GitHub platform and API status
+  - **Let's Encrypt** (Optional): SSL/TLS certificate authority status
+  - **Mailgun** (Optional): Email delivery service status
+  - **Stripe** (Optional): Payment processing service status
+  - **Vimeo** (Optional): Video hosting service status
+
+- **Architectural Improvements**:
+  - Removed 177 lines of duplicate code (individual service methods)
+  - Implemented single generic loadStatusPageService() method for all services
+  - Service definitions object enables adding new services without code changes
+  - Unified error handling, timeout management, and styling across all services
+  - All services use 10-second timeout with proper error recovery
+
+- **Configuration Detection**:
+  - AWS: Checks INSTALL_AWS_MONITORING flag
+  - GitHub: Checks EXTERNAL_SERVICES_GITHUB flag
+  - Let's Encrypt: Checks EXTERNAL_SERVICES_LETSENCRYPT flag
+  - Mailgun: Checks EXTERNAL_SERVICES_MAILGUN flag
+  - Stripe: Checks EXTERNAL_SERVICES_STRIPE flag
+  - Vimeo: Checks EXTERNAL_SERVICES_VIMEO flag
+  - Configuration read from enginescript-install-options.txt via `/api/external-services/config` endpoint
+
+- **Enhanced UI Elements**:
+  - Added branded gradient backgrounds for all 8 services
+  - AWS: Orange gradient (#ff9900 → #ffa500)
+  - GitHub: Dark gray gradient (#24292e → #424242)
+  - Let's Encrypt: Green gradient (#33a542 → #4cb548)
+  - Mailgun: Purple gradient (#a020f0 → #b833f5)
+  - Stripe: Blue gradient (#0055de → #0066ff)
+  - Vimeo: Cyan gradient (#1ab7ea → #0099cc)
+  - All service cards clickable, opening respective status pages in new tabs
+
+- **Performance & Reliability**:
+  - Parallel API requests for all enabled services (no sequential delays)
+  - Graceful degradation if service API is unreachable
+  - XSS protection for all service displays via DOM creation
+  - HTTP validation and JSON parsing error handling
+  - User-friendly timeout messages if service status slow to respond
+
+- **Cache Version**: Updated to v=2025.11.11.4
+
+### Technical Details
+
+- **Frontend Changes** (dashboard.js):
+  - New loadExternalServices() method with service definitions object
+  - Generic loadStatusPageService(container, serviceKey, serviceDef) for any Statuspage.io service
+  - Eliminated loadCloudflareStatus() and loadDigitalOceanStatus() methods
+  - Reduced service-specific code complexity while improving maintainability
+  
+- **Backend Changes** (api.php):
+  - Updated getExternalServicesConfig() to detect all 8 services
+  - Reads configuration options from enginescript-install-options.txt
+  - Returns only enabled services to frontend
+  
+- **Styling Changes** (dashboard.css):
+  - Added .aws-icon, .github-icon, .letsencrypt-icon, .mailgun-icon, .stripe-icon, .vimeo-icon gradients
+  - Brand-accurate colors for each service
+  - Consistent with existing Cloudflare and DigitalOcean styling
+
+## Previous 2025-11-11 Entry
 
 ### 🌐 NEW FEATURE: External Services Monitoring
 
