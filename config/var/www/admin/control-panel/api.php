@@ -1050,10 +1050,21 @@ function parseStatusFeed($feedUrl) {
             $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
             $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
             
+            // Get entry timestamp
+            $entryDate = null;
+            if (isset($latestEntry->updated)) {
+                $entryDate = strtotime((string)$latestEntry->updated);
+            } elseif (isset($latestEntry->published)) {
+                $entryDate = strtotime((string)$latestEntry->published);
+            }
+            
+            // Check if entry is within 48 hours (172800 seconds)
+            $isRecent = ($entryDate && (time() - $entryDate) <= 172800);
+            
             $description = !empty($content) ? $content : (!empty($summary) ? $summary : $title);
             
-            // Analyze title/content for status indicators
-            if (preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+            // Only show status if entry is within 48 hours, otherwise show operational
+            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
@@ -1072,8 +1083,19 @@ function parseStatusFeed($feedUrl) {
             $title = isset($latestItem->title) ? (string)$latestItem->title : '';
             $description = isset($latestItem->description) ? (string)$latestItem->description : '';
             
-            // Analyze title/description for status indicators
-            if (preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+            // Get item timestamp
+            $itemDate = null;
+            if (isset($latestItem->pubDate)) {
+                $itemDate = strtotime((string)$latestItem->pubDate);
+            } elseif (isset($latestItem->children('http://purl.org/dc/elements/1.1/')->date)) {
+                $itemDate = strtotime((string)$latestItem->children('http://purl.org/dc/elements/1.1/')->date);
+            }
+            
+            // Check if item is within 48 hours (172800 seconds)
+            $isRecent = ($itemDate && (time() - $itemDate) <= 172800);
+            
+            // Only show status if item is within 48 hours, otherwise show operational
+            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
@@ -1103,6 +1125,134 @@ function parseStatusFeed($feedUrl) {
 }
 
 /**
+ * Parse Vultr alerts JSON API
+ */
+function parseVultrAlerts($apiUrl) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript Admin Dashboard'
+            ]
+        ]);
+        
+        $response = file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (!$data || !isset($data['service_alerts'])) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Check for ongoing alerts only
+        $ongoingAlerts = array_filter($data['service_alerts'], function($alert) {
+            return isset($alert['status']) && $alert['status'] === 'ongoing';
+        });
+        
+        if (empty($ongoingAlerts)) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Get the most recent ongoing alert
+        $latestAlert = reset($ongoingAlerts);
+        $subject = isset($latestAlert['subject']) ? $latestAlert['subject'] : 'Service Alert';
+        
+        // Determine severity from subject
+        $indicator = 'minor';
+        if (preg_match('/outage|down|major|critical|offline/i', $subject)) {
+            $indicator = 'major';
+        }
+        
+        return [
+            'indicator' => $indicator,
+            'description' => strip_tags($subject)
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
+ * Parse Postmark notices API
+ */
+function parsePostmarkNotices($apiUrl) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript Admin Dashboard'
+            ]
+        ]);
+        
+        $response = file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (!$data || !isset($data['notices'])) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Filter for current unplanned notices
+        $currentUnplanned = array_filter($data['notices'], function($notice) {
+            $isUnplanned = isset($notice['type']) && $notice['type'] === 'unplanned';
+            $isPresent = isset($notice['timeline_state']) && $notice['timeline_state'] === 'present';
+            return $isUnplanned && $isPresent;
+        });
+        
+        if (empty($currentUnplanned)) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+        
+        // Get the most recent current unplanned notice
+        $latestNotice = reset($currentUnplanned);
+        $title = isset($latestNotice['title']) ? $latestNotice['title'] : 'Unplanned Incident';
+        
+        // Determine severity from title
+        $indicator = 'minor';
+        if (preg_match('/outage|down|major|critical|offline/i', $title)) {
+            $indicator = 'major';
+        }
+        
+        return [
+            'indicator' => $indicator,
+            'description' => strip_tags($title)
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
  * Handle RSS/Atom feed status requests
  */
 function handleStatusFeed() {
@@ -1116,14 +1266,26 @@ function handleStatusFeed() {
         
         $feedType = $_GET['feed']; // codacy:ignore - Direct $_GET access required
         
-        // Whitelist allowed feeds for security
+        // Handle special JSON API feeds
+        if ($feedType === 'vultr') {
+            $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        if ($feedType === 'postmark') {
+            $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        // Whitelist allowed RSS/Atom feeds for security
         $allowedFeeds = [
             'stripe' => 'https://www.stripestatus.com/history.atom',
             'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
             'cloudflare-flare' => 'https://status.flare.io/history/rss',
             'slack' => 'https://slack-status.com/feed/atom',
             'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
-            'postmark' => 'https://status.postmarkapp.com/history.atom',
             'square' => 'https://www.issquareup.com/united-states/feed.atom',
             'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
             'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
@@ -1134,7 +1296,6 @@ function handleStatusFeed() {
             'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
             'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
             'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
-            'vultr' => 'https://status.vultr.com/feed/incidents.json',
             'brevo' => 'https://status.brevo.com/feed.atom',
             'automattic' => 'https://automatticstatus.com/rss',
             'wpvip' => 'https://wpvipstatus.com/rss'

@@ -6,6 +6,44 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-12
 
+### 🔧 IMPROVEMENT: JSON API Feed Support for Vultr, Postmark & Wistia
+
+- **Vultr JSON API Integration**:
+  - Migrated from RSS feed to official JSON API (`https://status.vultr.com/alerts.json`)
+  - Now only displays **ongoing** alerts (filters out resolved incidents)
+  - Uses Alert Schema with proper status field checking
+  - More accurate real-time status monitoring
+  
+- **Postmark JSON API Integration**:
+  - Migrated from Atom feed to official Notices API
+  - Now only displays **current unplanned** incidents using API filters
+  - API URL: `https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned`
+  - Excludes planned maintenance and past incidents
+  - Provides cleaner status information focused on active issues
+
+- **Wistia API Correction**:
+  - Fixed incorrect API endpoint (was using non-existent `/public-api/v1/status.json`)
+  - Updated to correct endpoint: `https://status.wistia.com/summary.json`
+  - Resolves 404 errors and enables proper status monitoring
+  
+- **Implementation Details**:
+  - Added `parseVultrAlerts()` function for Vultr's JSON API parsing
+  - Added `parsePostmarkNotices()` function for Postmark's Notices API parsing
+  - Both functions include proper error handling and timeout management
+  - Severity detection based on subject/title keyword matching
+  - Cache Version: Updated to v=2025.11.12.15
+
+### 🔧 IMPROVEMENT: Time-Based Feed Filtering
+
+- **48-Hour Feed Age Filter**:
+  - RSS/Atom feed entries now filtered by published/updated date
+  - Only displays status messages if entry is within past 48 hours
+  - Older entries automatically show "All Systems Operational"
+  - Prevents stale incident messages from showing in dashboard
+  - Supports both Atom (`published`/`updated`) and RSS (`pubDate`) timestamp formats
+  - Falls back to DC namespace date element for RSS feeds if pubDate missing
+  - Cache Version: Updated to v=2025.11.12.14
+
 ### 🔧 IMPROVEMENT: Service Settings Save Button & API Fixes
 
 - **Save Button Implementation**:

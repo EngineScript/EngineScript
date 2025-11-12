@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.12.13';
-import { DashboardState } from './modules/state.js?v=2025.11.12.13';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.12.13';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.12.13';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.15';
+import { DashboardState } from './modules/state.js?v=2025.11.12.15';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.15';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.15';
 
 class EngineScriptDashboard {
   constructor() {
@@ -1317,7 +1317,7 @@ class EngineScriptDashboard {
       wistia: {
         name: 'Wistia',
         category: 'Media & Content',
-        api: 'https://status.wistia.com/public-api/v1/status.json',
+        api: 'https://status.wistia.com/summary.json',
         url: 'https://status.wistia.com/',
         icon: 'fa-play-circle',
         color: 'wistia-icon',
