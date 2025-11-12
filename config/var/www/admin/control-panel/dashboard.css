@@ -1289,6 +1289,44 @@ button:focus, select:focus, input:focus {
     margin-bottom: 1.5rem;
 }
 
+.settings-save-btn {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: var(--accent);
+    color: var(--card-bg);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.settings-save-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--text-secondary);
+}
+
+.settings-save-btn.has-changes {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.settings-save-btn:not(:disabled):hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
 .settings-category:last-child {
     margin-bottom: 0;
 }

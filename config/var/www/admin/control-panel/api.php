@@ -92,14 +92,16 @@ $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; //
 $request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 
 // Check if endpoint is passed as a query parameter
-$endpoint_param = isset($_GET['endpoint']) ? $_GET['endpoint'] : ''; // codacy:ignore - Direct $_GET access required
+$endpoint_param = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : ''; // codacy:ignore - Direct $_GET access required
 $path = '';
 if (!empty($endpoint_param)) {
     $path = '/' . ltrim($endpoint_param, '/');
+    $path = rtrim($path, '/'); // Remove trailing slashes
 } else {
     $path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
     if ($path !== false) {
         $path = str_replace('/api', '', $path);
+        $path = rtrim($path, '/'); // Remove trailing slashes
     }
 }
 
@@ -339,7 +341,8 @@ switch ($path) {
     
     default:
         http_response_code(404);
-        echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
+        error_log("API 404 - Path not matched: " . $path); // Debug logging
+        echo json_encode(['error' => 'Endpoint not found', 'path' => $path]); // codacy:ignore - echo required for JSON API response
         break;
 }
 
@@ -1120,6 +1123,7 @@ function handleStatusFeed() {
             'cloudflare-flare' => 'https://status.flare.io/history/rss',
             'slack' => 'https://slack-status.com/feed/atom',
             'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+            'postmark' => 'https://status.postmarkapp.com/history.atom',
             'square' => 'https://www.issquareup.com/united-states/feed.atom',
             'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
             'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',

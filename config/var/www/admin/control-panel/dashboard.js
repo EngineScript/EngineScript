@@ -764,31 +764,24 @@ class EngineScriptDashboard {
 
       container.innerHTML = "";
 
-      // Fetch enabled services from API
-      const response = await this.getApiData("/api/external-services/config", {});
+      // Get service definitions first (always available)
+      const serviceDefinitions = this.getServiceDefinitions();
       
+      // Try to fetch from API, but fall back to definitions if it fails
+      const response = await this.getApiData("/api?endpoint=/external-services/config", {});
       let services = response.services || response;
+      
+      // If API failed or returned empty, use all services from definitions
+      if (!services || Object.keys(services).length === 0) {
+        services = {};
+        Object.keys(serviceDefinitions).forEach(key => {
+          services[key] = true;
+        });
+      }
       
       // Load preferences from cookie (client-side only)
       let preferences = this.loadServicePreferences() || {};
       let serviceOrder = this.getServiceOrder();
-
-      if (!services || Object.keys(services).length === 0) {
-        const noServicesDiv = document.createElement("div");
-        noServicesDiv.className = "empty-state";
-        noServicesDiv.innerHTML = `
-          <div class="empty-state-icon">
-            <i class="fas fa-cloud-sun"></i>
-          </div>
-          <h3>No External Services Configured</h3>
-          <p>No external service monitoring is currently enabled.</p>
-        `;
-        container.appendChild(noServicesDiv);
-        return;
-      }
-
-      // Get service definitions
-      const serviceDefinitions = this.getServiceDefinitions();
 
       // Render settings panel in dedicated container
       this.renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences);
@@ -1135,11 +1128,12 @@ class EngineScriptDashboard {
       postmark: {
         name: 'Postmark',
         category: 'Developer Tools',
-        api: 'https://status.postmarkapp.com/api/v2/status.json',
+        feedType: 'postmark',
         url: 'https://status.postmarkapp.com/',
         icon: 'fa-paper-plane',
         color: 'postmark-icon',
-        corsEnabled: true
+        corsEnabled: false,
+        useFeed: true
       },
       twilio: {
         name: 'Twilio',
@@ -1433,9 +1427,12 @@ class EngineScriptDashboard {
     
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
-    settingsHeader.innerHTML = `<p>Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Services are organized by category.</p>`;
+    settingsHeader.innerHTML = `<p>Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Click "Save Changes" to apply. Services are organized by category.</p>`;
     
     settingsContent.appendChild(settingsHeader);
+    
+    // Track pending changes
+    const pendingChanges = {};
     
     settingsToggle.addEventListener("click", () => {
       const isCollapsed = settingsContent.classList.toggle("collapsed");
@@ -1500,7 +1497,11 @@ class EngineScriptDashboard {
           checkbox.type = "checkbox";
           checkbox.checked = isEnabled;
           checkbox.dataset.service = serviceKey;
-          checkbox.addEventListener("change", () => this.updateServicePreference(serviceKey, checkbox.checked));
+          checkbox.addEventListener("change", () => {
+            pendingChanges[serviceKey] = checkbox.checked;
+            saveButton.disabled = false;
+            saveButton.classList.add('has-changes');
+          });
           
           const serviceName = document.createElement("span");
           serviceName.textContent = serviceDefinitions[serviceKey].name;
@@ -1514,6 +1515,23 @@ class EngineScriptDashboard {
         settingsContent.appendChild(categorySection);
       }
     });
+    
+    // Add save button
+    const saveButton = document.createElement("button");
+    saveButton.className = "settings-save-btn";
+    saveButton.disabled = true;
+    saveButton.innerHTML = `<i class="fas fa-save"></i> Save Changes`;
+    saveButton.addEventListener("click", async () => {
+      if (Object.keys(pendingChanges).length > 0) {
+        await this.saveServicePreferences(pendingChanges);
+        pendingChanges.length = 0;
+        Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
+        saveButton.disabled = true;
+        saveButton.classList.remove('has-changes');
+      }
+    });
+    
+    settingsContent.appendChild(saveButton);
   }
 
   // Enable drag and drop for service cards
@@ -1587,14 +1605,10 @@ class EngineScriptDashboard {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
   }
 
-  async updateServicePreference(serviceKey, isEnabled) {
+  async saveServicePreferences(changes) {
     try {
       // Get all service definitions to validate
       const serviceDefinitions = this.getServiceDefinitions();
-      if (!serviceDefinitions[serviceKey]) {
-        console.error('Invalid service key:', serviceKey);
-        return;
-      }
       
       // Get current preferences from cookie
       let preferences = {};
@@ -1608,8 +1622,12 @@ class EngineScriptDashboard {
         }
       }
       
-      // Update the preference
-      preferences[serviceKey] = Boolean(isEnabled);
+      // Update all pending preferences
+      Object.keys(changes).forEach(serviceKey => {
+        if (serviceDefinitions[serviceKey]) {
+          preferences[serviceKey] = Boolean(changes[serviceKey]);
+        }
+      });
       
       // Save to cookie (1 year expiration)
       this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(preferences)), 365);
@@ -1654,10 +1672,10 @@ class EngineScriptDashboard {
         this.enableServiceDragDrop(container);
       }
       
-      this.showNotification("Preference updated successfully", "success");
+      this.showNotification("Preferences saved successfully", "success");
     } catch (error) {
-      console.error('Failed to update service preference:', error);
-      this.showNotification("Failed to update preference", "error");
+      console.error('Failed to save service preferences:', error);
+      this.showNotification("Failed to save preferences", "error");
     }
   }
 
@@ -1805,8 +1823,9 @@ class EngineScriptDashboard {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch(`/api?endpoint=/external-services/feed&feed=${serviceDef.feedType}`, {
-        signal: controller.signal
+      const response = await fetch(`/api?endpoint=/external-services/feed&feed=${encodeURIComponent(serviceDef.feedType)}`, {
+        signal: controller.signal,
+        credentials: 'include'
       });
       clearTimeout(timeoutId);
       

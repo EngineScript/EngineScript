@@ -6,6 +6,32 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-12
 
+### 🔧 IMPROVEMENT: Service Settings Save Button & API Fixes
+
+- **Save Button Implementation**:
+  - Added "Save Changes" button to service settings panel
+  - Changes are now batched instead of applying instantly
+  - Prevents dashboard disruption when toggling multiple services
+  - Button pulses when changes are pending
+  - Shows success/error notifications after saving
+  
+- **API Endpoint Fixes**:
+  - Fixed 404 errors for RSS/Atom feed services
+  - Updated API calls to use proper query parameter format
+  - Improved fallback handling when API is unavailable
+  - Services now load from local definitions if API fails
+  
+- **Postmark Feed Integration**:
+  - Converted from API (CORS blocked) to RSS feed
+  - Added to feed whitelist: `https://status.postmarkapp.com/history.atom`
+  
+- **Enhanced Error Handling**:
+  - All 46 services now display correctly in settings panel
+  - Better fallback behavior for service availability
+  - Improved debugging with error logging
+
+- **Cache Version**: Updated to v=2025.11.12.8
+
 ### ➕ ADDITION: WordPress & Email Service Monitoring
 
 - **New Services Added** (3 additional services):
