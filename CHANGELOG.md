@@ -30,7 +30,9 @@ Changes are organized by date, with the most recent changes listed first.
   - Better fallback behavior for service availability
   - Improved debugging with error logging
 
-- **Cache Version**: Updated to v=2025.11.12.8
+- **Cache Version**: Updated to v=2025.11.12.9
+
+- **UI Fix**: Settings panel now scrollable (80vh max-height with styled scrollbar)
 
 ### ➕ ADDITION: WordPress & Email Service Monitoring
 

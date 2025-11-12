@@ -1265,14 +1265,36 @@ button:focus, select:focus, input:focus {
 }
 
 .settings-content {
-    max-height: 500px;
-    overflow: hidden;
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
     padding: 0 1.5rem 1.5rem 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--card-bg);
+}
+
+.settings-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+    background: var(--card-bg);
+    border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
 }
 
 .settings-content.collapsed {
     max-height: 0;
+    overflow: hidden;
     padding: 0 1.5rem;
 }
 
