@@ -817,26 +817,48 @@ class EngineScriptDashboard {
         return;
       }
 
-      // Fetch and display each enabled service in order
+      // Group enabled services by category
+      const servicesByCategory = {};
       for (const serviceKey of orderedServiceKeys) {
-        if (serviceDefinitions[serviceKey]) {
-          const isEnabled = preferences[serviceKey] === true;
+        if (serviceDefinitions[serviceKey] && preferences[serviceKey] === true) {
+          const serviceDef = serviceDefinitions[serviceKey];
+          const category = serviceDef.category || 'Other';
           
-          // Only load service if enabled
-          if (isEnabled) {
-            const serviceDef = serviceDefinitions[serviceKey];
-            if (serviceDef.useFeed) {
-              // Load from RSS/Atom feed via backend proxy
-              await this.loadFeedService(container, serviceKey, serviceDef);
-            } else if (serviceDef.corsEnabled && serviceDef.api) {
-              // Load from API directly
-              await this.loadStatusPageService(container, serviceKey, serviceDef);
-            } else {
-              // Display static link card
-              this.displayStaticServiceCard(container, serviceKey, serviceDef);
-            }
+          if (!servicesByCategory[category]) {
+            servicesByCategory[category] = [];
+          }
+          servicesByCategory[category].push({ key: serviceKey, def: serviceDef });
+        }
+      }
+
+      // Render services grouped by category
+      for (const category in servicesByCategory) {
+        // Create category header
+        const categoryHeader = document.createElement("div");
+        categoryHeader.className = "service-category-header";
+        categoryHeader.innerHTML = `<h3>${category}</h3>`;
+        container.appendChild(categoryHeader);
+
+        // Create category container
+        const categoryContainer = document.createElement("div");
+        categoryContainer.className = "service-category-grid";
+        categoryContainer.dataset.category = category;
+
+        // Fetch and display each service in the category
+        for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
+          if (serviceDef.useFeed) {
+            // Load from RSS/Atom feed via backend proxy
+            await this.loadFeedService(categoryContainer, serviceKey, serviceDef);
+          } else if (serviceDef.corsEnabled && serviceDef.api) {
+            // Load from API directly
+            await this.loadStatusPageService(categoryContainer, serviceKey, serviceDef);
+          } else {
+            // Display static link card
+            this.displayStaticServiceCard(categoryContainer, serviceKey, serviceDef);
           }
         }
+
+        container.appendChild(categoryContainer);
       }
       
       // Enable drag and drop for service cards
