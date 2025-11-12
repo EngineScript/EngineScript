@@ -1,10 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.12.3';
-import { DashboardState } from './modules/state.js?v=2025.11.12.3';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.12.3';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.12.3';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.13';
+import { DashboardState } from './modules/state.js?v=2025.11.12.13';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.13';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.13';
 
 class EngineScriptDashboard {
   constructor() {
@@ -274,6 +274,8 @@ class EngineScriptDashboard {
   }
     
   refreshData() {
+    // Clear service cache on manual refresh
+    this.state.clearServiceCache();
     this.showRefreshAnimation();
     this.loadPageData(this.state.getCurrentPage());
     this.updateLastRefresh();
@@ -768,7 +770,7 @@ class EngineScriptDashboard {
       const serviceDefinitions = this.getServiceDefinitions();
       
       // Try to fetch from API, but fall back to definitions if it fails
-      const response = await this.getApiData("/api?endpoint=/external-services/config", {});
+      const response = await this.getApiData("/api/external-services/config", {});
       let services = response.services || response;
       
       // If API failed or returned empty, use all services from definitions
@@ -1528,6 +1530,13 @@ class EngineScriptDashboard {
         Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
         saveButton.disabled = true;
         saveButton.classList.remove('has-changes');
+        
+        // Collapse the settings panel
+        settingsContent.classList.add('collapsed');
+        const toggleIcon = settingsToggle.querySelector('.toggle-icon');
+        if (toggleIcon) {
+          toggleIcon.className = 'fas fa-chevron-down toggle-icon';
+        }
       }
     });
     
@@ -1718,19 +1727,28 @@ class EngineScriptDashboard {
   // Generic Statuspage.io service loader
   async loadStatusPageService(container, serviceKey, serviceDef) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // Check cache first
+      let data = this.state.getCachedService(serviceKey);
       
-      const response = await fetch(serviceDef.api, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!data) {
+        // Not in cache, fetch from API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(serviceDef.api, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        data = await response.json();
+        
+        // Cache the response
+        this.state.setCachedService(serviceKey, data);
       }
-      
-      const data = await response.json();
       
       if (!data || !data.status || !data.status.indicator) {
         throw new Error('Invalid API response format');
@@ -1820,20 +1838,29 @@ class EngineScriptDashboard {
   // Load service status from RSS/Atom feed via backend proxy
   async loadFeedService(container, serviceKey, serviceDef) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // Check cache first
+      let data = this.state.getCachedService(serviceKey);
       
-      const response = await fetch(`/api?endpoint=/external-services/feed&feed=${encodeURIComponent(serviceDef.feedType)}`, {
-        signal: controller.signal,
-        credentials: 'include'
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!data) {
+        // Not in cache, fetch from API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`, {
+          signal: controller.signal,
+          credentials: 'include'
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        data = await response.json();
+        
+        // Cache the response
+        this.state.setCachedService(serviceKey, data);
       }
-      
-      const data = await response.json();
       
       if (!data || !data.status) {
         throw new Error('Invalid feed response format');

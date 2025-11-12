@@ -1330,7 +1330,7 @@ button:focus, select:focus, input:focus {
 }
 
 .settings-save-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.6;
     cursor: not-allowed;
     background: var(--text-secondary);
 }

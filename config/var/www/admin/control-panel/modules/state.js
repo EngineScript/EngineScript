@@ -4,7 +4,7 @@
 export class DashboardState {
   constructor() {
     this.currentPage = "overview";
-    this.refreshInterval = 30000; // 30 seconds
+    this.refreshInterval = 300000; // 5 minutes
     this.refreshTimer = null;
 
     // Security configurations
@@ -13,6 +13,10 @@ export class DashboardState {
     this.allowedTimeRanges = ["1h", "6h", "24h", "48h"];
     this.allowedPages = ["overview", "sites", "system", "external-services", "tools"];
     this.allowedTools = ["phpmyadmin", "phpinfo", "phpsysinfo", "adminer"];
+    
+    // Cache management
+    this.serviceCache = {};
+    this.cacheExpiry = 300000; // 5 minutes cache
   }
 
   setCurrentPage(page) {
@@ -61,5 +65,29 @@ export class DashboardState {
       tools: "Admin Tools",
     };
     return titles[pageName] || "Dashboard";
+  }
+
+  // Cache management methods
+  getCachedService(serviceKey) {
+    const cached = this.serviceCache[serviceKey];
+    if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  setCachedService(serviceKey, data) {
+    this.serviceCache[serviceKey] = {
+      data: data,
+      timestamp: Date.now()
+    };
+  }
+
+  clearServiceCache() {
+    this.serviceCache = {};
+  }
+
+  clearCachedService(serviceKey) {
+    delete this.serviceCache[serviceKey];
   }
 }

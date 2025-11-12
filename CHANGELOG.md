@@ -30,9 +30,25 @@ Changes are organized by date, with the most recent changes listed first.
   - Better fallback behavior for service availability
   - Improved debugging with error logging
 
-- **Cache Version**: Updated to v=2025.11.12.9
+- **Cache Version**: Updated to v=2025.11.12.13
 
-- **UI Fix**: Settings panel now scrollable (80vh max-height with styled scrollbar)
+- **Bug Fix**: Corrected API endpoint URLs to match Nginx rewrite rules
+  - Changed from `/api?endpoint=/path` to `/api/path` format
+  - Fixes all 404 errors for feed and config endpoints
+  - Now properly routes through Nginx to api.php
+
+- **UI Improvements**:
+  - Settings panel now scrollable (80vh max-height with styled scrollbar)
+  - Save button more visible (60% opacity when disabled)
+  - Settings panel auto-collapses after saving changes
+  
+- **Performance Enhancements**:
+  - **Service Status Caching**: External service status cached for 5 minutes
+  - Significantly reduces API calls to external service endpoints
+  - Cache automatically cleared when refresh button clicked manually
+  - Dashboard refresh interval increased from 30 seconds to 5 minutes
+  - Prevents interruption while configuring services
+  - Cached responses improve page load speed on subsequent visits
 
 ### ➕ ADDITION: WordPress & Email Service Monitoring
 
