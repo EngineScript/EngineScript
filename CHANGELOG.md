@@ -11,7 +11,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **Google Workspace JSON API Integration**:
   - Migrated from Atom feed to official incidents JSON API
   - API URL: `https://www.google.com/appsstatus/dashboard/incidents.json`
-  - Displays first line of incident description for cleaner status messages
+  - Extracts incident title from `external_desc` field (format: `**Title:**\nActual title`)
+  - Proper regex parsing to handle title formatting variations
   - Severity detection based on incident severity field (high/critical → major)
   - Added `parseGoogleWorkspaceIncidents()` function with proper error handling
 
@@ -46,7 +47,7 @@ Changes are organized by date, with the most recent changes listed first.
   - All JSON API parsers include 10-second timeout and proper error handling
   - Consistent severity detection across all services
   - Enhanced feed parser with CDATA stripping for cleaner text extraction
-  - Cache Version: Updated to v=2025.11.12.16
+  - Cache Version: Updated to v=2025.11.12.17
 
 ### 🔧 IMPROVEMENT: Time-Based Feed Filtering
 

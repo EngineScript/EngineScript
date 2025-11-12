@@ -1161,11 +1161,22 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
         // Get the first incident (most recent)
         $latestIncident = reset($data);
         
-        // Extract first line of description
+        // Extract title from external_desc (format: **Title:**\nActual title text)
         $description = isset($latestIncident['external_desc']) ? $latestIncident['external_desc'] : '';
-        $firstLine = strtok($description, "\n");
         
-        if (empty($firstLine)) {
+        // Parse title - extract text after **Title:** marker
+        $title = '';
+        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
+            $title = trim($matches[1]);
+        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
+            // Fallback: title on same line
+            $title = trim($matches[1]);
+        } else {
+            // No title marker, use first line
+            $title = strtok($description, "\n");
+        }
+        
+        if (empty($title)) {
             return [
                 'indicator' => 'none',
                 'description' => 'All Systems Operational'
@@ -1183,7 +1194,7 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
         
         return [
             'indicator' => $indicator,
-            'description' => strip_tags($firstLine)
+            'description' => strip_tags($title)
         ];
         
     } catch (Exception $e) {

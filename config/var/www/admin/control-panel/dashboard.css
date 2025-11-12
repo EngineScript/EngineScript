@@ -1336,7 +1336,7 @@ button:focus, select:focus, input:focus {
 }
 
 .settings-save-btn.has-changes {
-    animation: pulse 2s ease-in-out infinite;
+    /* Button stays fully visible with green color */
 }
 
 .settings-save-btn:not(:disabled):hover {
@@ -1344,10 +1344,7 @@ button:focus, select:focus, input:focus {
     transform: translateY(-2px);
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-}
+/* Pulse animation removed - button stays fully visible */
 
 .settings-category:last-child {
     margin-bottom: 0;
