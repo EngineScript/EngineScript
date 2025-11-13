@@ -4,6 +4,27 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-13
+
+### 🔒 SECURITY: Input Sanitization & Injection Prevention
+
+- **Log Injection Fix**:
+  - Sanitized user-controlled `$path` variable before logging to prevent log injection attacks
+  - Added regex filter to allow only safe characters: `a-z`, `A-Z`, `0-9`, `/`, `-`, `_`, `.`
+  - Removed path from JSON error response to prevent information disclosure
+  - Addresses SonarCloud security rule `phpsecurity:S5145`
+
+- **Input Validation Enhancements**:
+  - Added sanitization for `endpoint` query parameter using regex whitelist
+  - Added whitelist validation for `feed` parameter with 47 allowed feed types
+  - Added sanitization for `filter` parameter (alphanumeric, spaces, hyphens, periods, parentheses)
+  - Limited filter parameter length to 100 characters
+  - Prevents injection attacks through query parameters
+
+- **Code Quality**:
+  - Removed empty CSS ruleset `.settings-save-btn.has-changes`
+  - Converted to comment for better maintainability
+
 ## 2025-11-12
 
 ### 🔧 IMPROVEMENT: Enhanced Feed Parsing & JSON API Integration

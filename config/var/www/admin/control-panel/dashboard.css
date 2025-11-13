@@ -1356,9 +1356,7 @@ button:focus, select:focus, input:focus {
     background: var(--text-secondary);
 }
 
-.settings-save-btn.has-changes {
-    /* Button stays fully visible with green color */
-}
+/* Button stays fully visible with green color when has-changes class is applied */
 
 .settings-save-btn:not(:disabled):hover {
     background: var(--accent-hover);

@@ -1109,16 +1109,6 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      wpvip: {
-        name: 'WordPress VIP',
-        category: 'Hosting & Infrastructure',
-        feedType: 'wpvip',
-        url: 'https://wpvipstatus.com/',
-        icon: 'fa-wordpress',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
       
       // DEVELOPER TOOLS
       github: {
@@ -1290,12 +1280,57 @@ class EngineScriptDashboard {
       },
       
       // MEDIA & CONTENT
-      automattic: {
-        name: 'Automattic',
+      woocommercepay: {
+        name: 'WooCommerce Pay API',
         category: 'Media & Content',
         feedType: 'automattic',
+        feedFilter: 'WooCommerce Pay API',
         url: 'https://automatticstatus.com/',
-        icon: 'fa-wordpress-simple',
+        icon: 'fa-shopping-cart',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      wpcloudapi: {
+        name: 'WP Cloud API',
+        category: 'Media & Content',
+        feedType: 'automattic',
+        feedFilter: 'WP Cloud API',
+        url: 'https://automatticstatus.com/',
+        icon: 'fa-cloud',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      mailpoet: {
+        name: 'MailPoet Sending Service',
+        category: 'Media & Content',
+        feedType: 'automattic',
+        feedFilter: 'MailPoet Sending Service',
+        url: 'https://automatticstatus.com/',
+        icon: 'fa-envelope',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      jetpackapi: {
+        name: 'Jetpack API',
+        category: 'Media & Content',
+        feedType: 'automattic',
+        feedFilter: 'Jetpack API',
+        url: 'https://automatticstatus.com/',
+        icon: 'fa-rocket',
+        color: 'wordpress-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      wordpressapi: {
+        name: 'WordPress.com API',
+        category: 'Media & Content',
+        feedType: 'automattic',
+        feedFilter: 'WordPress.com API',
+        url: 'https://automatticstatus.com/',
+        icon: 'fa-wordpress',
         color: 'wordpress-icon',
         corsEnabled: false,
         useFeed: true
@@ -1869,7 +1904,12 @@ class EngineScriptDashboard {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         
-        const response = await fetch(`/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`, {
+        let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
+        if (serviceDef.feedFilter) {
+          apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
+        }
+        
+        const response = await fetch(apiUrl, {
           signal: controller.signal,
           credentials: 'include'
         });

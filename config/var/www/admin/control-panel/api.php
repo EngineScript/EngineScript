@@ -93,6 +93,8 @@ $request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD']
 
 // Check if endpoint is passed as a query parameter
 $endpoint_param = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : ''; // codacy:ignore - Direct $_GET access required
+// Sanitize endpoint parameter to prevent injection attacks
+$endpoint_param = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $endpoint_param);
 $path = '';
 if (!empty($endpoint_param)) {
     $path = '/' . ltrim($endpoint_param, '/');
@@ -341,8 +343,10 @@ switch ($path) {
     
     default:
         http_response_code(404);
-        error_log("API 404 - Path not matched: " . $path); // Debug logging
-        echo json_encode(['error' => 'Endpoint not found', 'path' => $path]); // codacy:ignore - echo required for JSON API response
+        // Sanitize path for logging to prevent injection attacks
+        $sanitized_path = preg_replace('/[^a-zA-Z0-9\/\-_.]/', '', $path);
+        error_log("API 404 - Path not matched: " . $sanitized_path);
+        echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
         break;
 }
 
@@ -1009,9 +1013,10 @@ function getSystemAlerts() {
 /**
  * Parse RSS/Atom feed and extract status information
  * @param string $feedUrl The URL of the RSS/Atom feed
+ * @param string|null $filter Optional filter to match specific service name in feed items
  * @return array Status information with indicator and description
  */
-function parseStatusFeed($feedUrl) {
+function parseStatusFeed($feedUrl, $filter = null) {
     try {
         // Set up context with timeout and user agent
         $context = stream_context_create([
@@ -1045,7 +1050,24 @@ function parseStatusFeed($feedUrl) {
         
         // Check if it's an Atom feed
         if (isset($xml->entry)) {
-            $latestEntry = $xml->entry[0];
+            // If filter provided, find matching entry
+            if ($filter !== null) {
+                $latestEntry = null;
+                foreach ($xml->entry as $entry) {
+                    $entryTitle = isset($entry->title) ? (string)$entry->title : '';
+                    if (stripos($entryTitle, $filter) !== false) {
+                        $latestEntry = $entry;
+                        break;
+                    }
+                }
+                // If no matching entry, return operational
+                if ($latestEntry === null) {
+                    return $status;
+                }
+            } else {
+                $latestEntry = $xml->entry[0];
+            }
+            
             $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
             $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
             $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
@@ -1085,7 +1107,24 @@ function parseStatusFeed($feedUrl) {
         }
         // Check if it's an RSS feed
         elseif (isset($xml->channel->item)) {
-            $latestItem = $xml->channel->item[0];
+            // If filter provided, find matching item
+            if ($filter !== null) {
+                $latestItem = null;
+                foreach ($xml->channel->item as $item) {
+                    $itemTitle = isset($item->title) ? (string)$item->title : '';
+                    if (stripos($itemTitle, $filter) !== false) {
+                        $latestItem = $item;
+                        break;
+                    }
+                }
+                // If no matching item, return operational
+                if ($latestItem === null) {
+                    return $status;
+                }
+            } else {
+                $latestItem = $xml->channel->item[0];
+            }
+            
             $title = isset($latestItem->title) ? (string)$latestItem->title : '';
             $description = isset($latestItem->description) ? (string)$latestItem->description : '';
             
@@ -1427,6 +1466,25 @@ function handleStatusFeed() {
         
         $feedType = $_GET['feed']; // codacy:ignore - Direct $_GET access required
         
+        // Whitelist validation for feed types to prevent injection
+        $allowedFeeds = [
+            'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
+            'cloudflare', 'github', 'stripe', 'digitalocean', 'linode',
+            'aws', 'googlecloud', 'azure', 'heroku', 'netlify', 'vercel',
+            'mailgun', 'sendgrid', 'twilio', 'brevo', 'slack', 'discord',
+            'zoom', 'paypal', 'square', 'shopify', 'woocommerce', 'airtable',
+            'notion', 'coinbase', 'binance', 'metamask', 'intuit',
+            'youtube', 'vimeo', 'spotify', 'steam', 'epicgames', 'roblox',
+            'openai', 'anthropic', 'googleads', 'facebookads', 'twitterads',
+            'letsencrypt', 'wordfence'
+        ];
+        
+        if (!in_array($feedType, $allowedFeeds, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid feed type']); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
         // Handle special JSON API feeds
         if ($feedType === 'vultr') {
             $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
@@ -1469,8 +1527,7 @@ function handleStatusFeed() {
             'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
             'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
             'brevo' => 'https://status.brevo.com/feed.atom',
-            'automattic' => 'https://automatticstatus.com/rss',
-            'wpvip' => 'https://wpvipstatus.com/rss'
+            'automattic' => 'https://automatticstatus.com/rss'
         ];
         
         if (!isset($allowedFeeds[$feedType])) {
@@ -1481,8 +1538,22 @@ function handleStatusFeed() {
         
         $feedUrl = $allowedFeeds[$feedType];
         
+        // Get optional filter parameter for feeds like automattic
+        $filter = isset($_GET['filter']) ? $_GET['filter'] : null; // codacy:ignore - Direct $_GET access required
+        
+        // Sanitize filter parameter to prevent injection
+        if ($filter !== null) {
+            // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
+            $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
+            // Limit length to reasonable service name size
+            $filter = substr($filter, 0, 100);
+            if (empty($filter)) {
+                $filter = null;
+            }
+        }
+        
         // Parse feed and return status
-        $status = parseStatusFeed($feedUrl);
+        $status = parseStatusFeed($feedUrl, $filter);
         
         echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
         
@@ -1511,7 +1582,7 @@ function getExternalServicesConfig() {
         'upcloud' => true,
         'vercel' => true,
         'vultr' => true,
-        'wpvip' => true,
+
         
         // Developer Tools
         'github' => true,
