@@ -1467,19 +1467,14 @@ function handleStatusFeed() {
         $feedType = $_GET['feed']; // codacy:ignore - Direct $_GET access required
         
         // Whitelist validation for feed types to prevent injection
-        $allowedFeeds = [
+        $allowedFeedTypes = [
             'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
-            'cloudflare', 'github', 'stripe', 'digitalocean', 'linode',
-            'aws', 'googlecloud', 'azure', 'heroku', 'netlify', 'vercel',
-            'mailgun', 'sendgrid', 'twilio', 'brevo', 'slack', 'discord',
-            'zoom', 'paypal', 'square', 'shopify', 'woocommerce', 'airtable',
-            'notion', 'coinbase', 'binance', 'metamask', 'intuit',
-            'youtube', 'vimeo', 'spotify', 'steam', 'epicgames', 'roblox',
-            'openai', 'anthropic', 'googleads', 'facebookads', 'twitterads',
-            'letsencrypt', 'wordfence'
+            'stripe', 'letsencrypt', 'cloudflare-flare', 'slack', 'gitlab',
+            'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
+            'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo'
         ];
         
-        if (!in_array($feedType, $allowedFeeds, true)) {
+        if (!in_array($feedType, $allowedFeedTypes, true)) {
             http_response_code(400);
             echo json_encode(['error' => 'Invalid feed type']); // codacy:ignore - echo required for JSON response
             return;

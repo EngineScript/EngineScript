@@ -16,7 +16,8 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **Input Validation Enhancements**:
   - Added sanitization for `endpoint` query parameter using regex whitelist
-  - Added whitelist validation for `feed` parameter with 47 allowed feed types
+  - Added whitelist validation for `feed` parameter with accurate feed types
+  - Feed whitelist includes: JSON APIs (vultr, googleworkspace, wistia, postmark) and RSS/Atom feeds (automattic, stripe, letsencrypt, slack, gitlab, square, paypal, googlecloud, brevo, etc.)
   - Added sanitization for `filter` parameter (alphanumeric, spaces, hyphens, periods, parentheses)
   - Limited filter parameter length to 100 characters
   - Prevents injection attacks through query parameters
@@ -24,6 +25,10 @@ Changes are organized by date, with the most recent changes listed first.
 - **Code Quality**:
   - Removed empty CSS ruleset `.settings-save-btn.has-changes`
   - Converted to comment for better maintainability
+
+- **Bug Fix**:
+  - Fixed feed whitelist to include all actual feed types used by services
+  - Restored Automattic services (WooCommerce Pay API, WP Cloud API, MailPoet, Jetpack API, WordPress.com API)
 
 ## 2025-11-12
 
