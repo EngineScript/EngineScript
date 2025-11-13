@@ -1683,6 +1683,7 @@ function getExternalServicesConfig() {
         // AI & Machine Learning
         'anthropic' => true,
         'openai' => true,
+        
         // Advertising
         'googleads' => true,
         'googlesearch' => true,
@@ -1691,13 +1692,6 @@ function getExternalServicesConfig() {
         'metafbs' => true,
         'metalogin' => true,
         'metamarketingapi' => true,
-        'microsoftads' => true,g
-        'openai' => true,
-        
-        // Advertising
-        'googleads' => true,
-        'googlesearch' => true,
-        'googleworkspace' => true,
         'microsoftads' => true,
         
         // Security
