@@ -1417,17 +1417,6 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      // AI & MACHINE LEARNING
-      openai: {
-        name: 'OpenAI',
-        category: 'AI & Machine Learning',
-        url: 'https://status.openai.com/',
-        icon: 'fa-brain',
-        color: 'openai-icon',
-        corsEnabled: false,
-        statusText: 'Visit status page'
-      },
-      
       // ADVERTISING
       googleads: {
         name: 'Google Ads',
@@ -1496,16 +1485,6 @@ class EngineScriptDashboard {
         url: 'https://www.google.com/appsstatus/dashboard/',
         icon: 'fa-google',
         color: 'google-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      microsoftads: {
-        name: 'Microsoft Advertising',
-        category: 'Advertising',
-        feedType: 'microsoftads',
-        url: 'https://status.ads.microsoft.com/',
-        icon: 'fa-microsoft',
-        color: 'microsoft-icon',
         corsEnabled: false,
         useFeed: true
       },
