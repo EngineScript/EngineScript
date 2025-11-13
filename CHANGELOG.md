@@ -6,6 +6,77 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-13
 
+### 🔄 REORGANIZATION: Service Categories
+
+- **Category Rename**:
+  - Renamed "Communication" to "Email & Communication" for better clarity
+  - Updated all service definitions and configuration files
+
+- **Automattic Services Reorganization**:
+  - **WooCommerce Pay API**: Moved to E-Commerce (e-commerce platform API)
+  - **MailPoet Sending Service**: Moved to Email & Communication (email marketing service)
+  - **WordPress.com API**: Moved to Hosting & Infrastructure (hosting platform API)
+  - **Jetpack API**: Moved to Hosting & Infrastructure (WordPress hosting features)
+  - **WP Cloud API**: Moved to Hosting & Infrastructure (cloud hosting API)
+  - Services now properly categorized by their primary function
+
+- **Updated Category Order**:
+  1. Hosting & Infrastructure (now includes WordPress.com, Jetpack, WP Cloud APIs)
+  2. Developer Tools
+  3. Payment Processing
+  4. Email & Communication (renamed from Communication)
+  5. E-Commerce (now includes WooCommerce Pay API)
+  6. Media & Content
+  7. Gaming
+  8. AI & Machine Learning
+  9. Advertising
+  10. Security
+
+### 🔧 CODE QUALITY: Linting and Style Improvements
+
+- **JavaScript Code Style**:
+  - Removed unexpected blank lines between object properties in service definitions
+  - Fixed unused variable `isAvailable` in service iteration loop (changed to destructure only `serviceKey`)
+  - Improved code consistency across service configuration objects
+
+- **CSS Code Style**:
+  - Shortened hex color codes for better readability and reduced file size
+  - Changed `#ff9900` to `#f90` (AWS icon)
+  - Changed `#0066ff` to `#06f` (Stripe icon)
+  - Changed `#0099cc` to `#09c` (Vimeo icon)
+
+### ✨ NEW: Additional Service Status Integrations
+
+- **Communication Services**:
+  - Added SendGrid status monitoring via StatusPage.io JSON API
+  - API endpoint: `https://status.sendgrid.com/api/v2/status.json`
+
+- **Media & Content Services**:
+  - Added Spotify status monitoring via StatusPage.io JSON API
+  - API endpoint: `https://spotify.statuspage.io/api/v2/status.json`
+
+- **AI & Machine Learning Services**:
+  - Added Anthropic (Claude) status monitoring via RSS feed
+  - Feed URL: `https://status.claude.com/history.atom`
+
+- **Advertising Services - Meta Platform Monitoring**:
+  - Added Meta: Facebook & Instagram status monitoring
+  - Added Meta: Marketing API status monitoring
+  - Added Meta: Business Suite status monitoring
+  - Added Meta: Facebook Login status monitoring
+  - All Meta services use individual RSS feeds from `https://metastatus.com/`
+  - Feeds:
+    - `outage-events-feed-fb-ig-shops.rss` (Facebook & Instagram)
+    - `outage-events-feed-marketing-api.rss` (Marketing API)
+    - `outage-events-feed-fbs.rss` (Business Suite)
+    - `outage-events-feed-facebook-login.rss` (Facebook Login)
+
+- **Backend Enhancements**:
+  - Added `parseStatusPageAPI()` function for standard StatusPage.io JSON API parsing
+  - Supports indicator and description fields from StatusPage.io format
+  - Added all new feed types to security whitelist
+  - Total services now: 53+ external service integrations
+
 ### 🔒 SECURITY: Input Sanitization & Injection Prevention
 
 - **Log Injection Fix**:

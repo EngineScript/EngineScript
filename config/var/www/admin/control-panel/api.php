@@ -1453,6 +1453,51 @@ function parsePostmarkNotices($apiUrl) {
 }
 
 /**
+ * Parse standard StatusPage.io JSON API
+ */
+function parseStatusPageAPI($apiUrl) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'EngineScript Admin Dashboard'
+            ]
+        ]);
+        
+        $response = file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to fetch status'
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        if (!$data || !isset($data['status'])) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Unable to parse status'
+            ];
+        }
+        
+        $statusData = $data['status'];
+        $indicator = isset($statusData['indicator']) ? $statusData['indicator'] : 'none';
+        $description = isset($statusData['description']) ? $statusData['description'] : 'All Systems Operational';
+        
+        return [
+            'indicator' => $indicator,
+            'description' => strip_tags($description)
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'indicator' => 'major',
+            'description' => 'Unable to fetch status'
+        ];
+    }
+}
+
+/**
  * Handle RSS/Atom feed status requests
  */
 function handleStatusFeed() {
@@ -1471,7 +1516,8 @@ function handleStatusFeed() {
             'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
             'stripe', 'letsencrypt', 'cloudflare-flare', 'slack', 'gitlab',
             'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
-            'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo'
+            'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
+            'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin'
         ];
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
@@ -1505,6 +1551,18 @@ function handleStatusFeed() {
             return;
         }
         
+        if ($feedType === 'sendgrid') {
+            $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        if ($feedType === 'spotify') {
+            $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
         // Whitelist allowed RSS/Atom feeds for security
         $allowedFeeds = [
             'stripe' => 'https://www.stripestatus.com/history.atom',
@@ -1522,7 +1580,12 @@ function handleStatusFeed() {
             'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
             'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
             'brevo' => 'https://status.brevo.com/feed.atom',
-            'automattic' => 'https://automatticstatus.com/rss'
+            'automattic' => 'https://automatticstatus.com/rss',
+            'anthropic' => 'https://status.claude.com/history.atom',
+            'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
+            'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
+            'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
+            'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss'
         ];
         
         if (!isset($allowedFeeds[$feedType])) {
@@ -1577,8 +1640,10 @@ function getExternalServicesConfig() {
         'upcloud' => true,
         'vercel' => true,
         'vultr' => true,
+        'jetpackapi' => true,
+        'wordpressapi' => true,
+        'wpcloudapi' => true,
 
-        
         // Developer Tools
         'github' => true,
         'gitlab' => true,
@@ -1593,29 +1658,40 @@ function getExternalServicesConfig() {
         'square' => true,
         'stripe' => true,
         
-        // Communication
+        // Email & Communication
         'brevo' => true,
         'discord' => true,
         'mailgun' => true,
+        'mailpoet' => true,
+        'sendgrid' => true,
         'slack' => true,
         'zoom' => true,
         
         // E-Commerce
         'intuit' => true,
         'shopify' => true,
+        'woocommercepay' => true,
         
         // Media & Content
-        'automattic' => true,
         'dropbox' => true,
         'reddit' => true,
+        'spotify' => true,
         'udemy' => true,
         'vimeo' => true,
         'wistia' => true,
         
-        // Gaming
-        'epicgames' => true,
-        
         // AI & Machine Learning
+        'anthropic' => true,
+        'openai' => true,
+        // Advertising
+        'googleads' => true,
+        'googlesearch' => true,
+        'googleworkspace' => true,
+        'metafb' => true,
+        'metafbs' => true,
+        'metalogin' => true,
+        'metamarketingapi' => true,
+        'microsoftads' => true,g
         'openai' => true,
         
         // Advertising

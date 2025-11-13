@@ -1109,7 +1109,6 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      
       // DEVELOPER TOOLS
       github: {
         name: 'GitHub',
@@ -1158,7 +1157,6 @@ class EngineScriptDashboard {
         color: 'twilio-icon',
         corsEnabled: true
       },
-      
       // PAYMENT PROCESSING
       coinbase: {
         name: 'Coinbase',
@@ -1209,11 +1207,10 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      
-      // COMMUNICATION
+      // EMAIL & COMMUNICATION
       discord: {
         name: 'Discord',
-        category: 'Communication',
+        category: 'Email & Communication',
         api: 'https://discordstatus.com/api/v2/status.json',
         url: 'https://discordstatus.com/',
         icon: 'fa-discord',
@@ -1222,7 +1219,7 @@ class EngineScriptDashboard {
       },
       brevo: {
         name: 'Brevo',
-        category: 'Communication',
+        category: 'Email & Communication',
         feedType: 'brevo',
         url: 'https://status.brevo.com/',
         icon: 'fa-envelope-open',
@@ -1232,16 +1229,26 @@ class EngineScriptDashboard {
       },
       mailgun: {
         name: 'Mailgun',
-        category: 'Communication',
+        category: 'Email & Communication',
         api: 'https://status.mailgun.com/api/v2/status.json',
         url: 'https://status.mailgun.com/',
         icon: 'fa-envelope',
         color: 'mailgun-icon',
         corsEnabled: true
       },
+      sendgrid: {
+        name: 'SendGrid',
+        category: 'Email & Communication',
+        feedType: 'sendgrid',
+        url: 'https://status.sendgrid.com/',
+        icon: 'fa-envelope',
+        color: 'sendgrid-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
       slack: {
         name: 'Slack',
-        category: 'Communication',
+        category: 'Email & Communication',
         feedType: 'slack',
         url: 'https://slack-status.com/',
         icon: 'fa-slack',
@@ -1251,14 +1258,13 @@ class EngineScriptDashboard {
       },
       zoom: {
         name: 'Zoom',
-        category: 'Communication',
+        category: 'Email & Communication',
         api: 'https://www.zoomstatus.com/api/v2/status.json',
         url: 'https://www.zoomstatus.com/',
         icon: 'fa-video',
         color: 'zoom-icon',
         corsEnabled: true
       },
-      
       // E-COMMERCE
       intuit: {
         name: 'Intuit',
@@ -1278,11 +1284,10 @@ class EngineScriptDashboard {
         color: 'shopify-icon',
         corsEnabled: true
       },
-      
       // MEDIA & CONTENT
       woocommercepay: {
         name: 'WooCommerce Pay API',
-        category: 'Media & Content',
+        category: 'E-Commerce',
         feedType: 'automattic',
         feedFilter: 'WooCommerce Pay API',
         url: 'https://automatticstatus.com/',
@@ -1293,7 +1298,7 @@ class EngineScriptDashboard {
       },
       wpcloudapi: {
         name: 'WP Cloud API',
-        category: 'Media & Content',
+        category: 'Hosting & Infrastructure',
         feedType: 'automattic',
         feedFilter: 'WP Cloud API',
         url: 'https://automatticstatus.com/',
@@ -1304,7 +1309,7 @@ class EngineScriptDashboard {
       },
       mailpoet: {
         name: 'MailPoet Sending Service',
-        category: 'Media & Content',
+        category: 'Email & Communication',
         feedType: 'automattic',
         feedFilter: 'MailPoet Sending Service',
         url: 'https://automatticstatus.com/',
@@ -1315,7 +1320,7 @@ class EngineScriptDashboard {
       },
       jetpackapi: {
         name: 'Jetpack API',
-        category: 'Media & Content',
+        category: 'Hosting & Infrastructure',
         feedType: 'automattic',
         feedFilter: 'Jetpack API',
         url: 'https://automatticstatus.com/',
@@ -1326,7 +1331,7 @@ class EngineScriptDashboard {
       },
       wordpressapi: {
         name: 'WordPress.com API',
-        category: 'Media & Content',
+        category: 'Hosting & Infrastructure',
         feedType: 'automattic',
         feedFilter: 'WordPress.com API',
         url: 'https://automatticstatus.com/',
@@ -1381,18 +1386,37 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      
-      // GAMING
-      epicgames: {
-        name: 'Epic Games',
-        category: 'Gaming',
-        api: 'https://status.epicgames.com/api/v2/status.json',
-        url: 'https://status.epicgames.com/',
-        icon: 'fa-gamepad',
-        color: 'epic-icon',
-        corsEnabled: true
+      spotify: {
+        name: 'Spotify',
+        category: 'Media & Content',
+        feedType: 'spotify',
+        url: 'https://spotify.statuspage.io/',
+        icon: 'fa-spotify',
+        color: 'spotify-icon',
+        corsEnabled: false,
+        useFeed: true
       },
-      
+      // GAMING
+      // AI & MACHINE LEARNING
+      openai: {
+        name: 'OpenAI',
+        category: 'AI & Machine Learning',
+        url: 'https://status.openai.com/',
+        icon: 'fa-brain',
+        color: 'openai-icon',
+        corsEnabled: false,
+        statusText: 'Visit status page'
+      },
+      anthropic: {
+        name: 'Anthropic (Claude)',
+        category: 'AI & Machine Learning',
+        feedType: 'anthropic',
+        url: 'https://status.claude.com/',
+        icon: 'fa-robot',
+        color: 'anthropic-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
       // AI & MACHINE LEARNING
       openai: {
         name: 'OpenAI',
@@ -1415,13 +1439,53 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      googlesearch: {
-        name: 'Google Search Console',
+      microsoftads: {
+        name: 'Microsoft Advertising',
         category: 'Advertising',
-        feedType: 'googlesearch',
-        url: 'https://status.search.google.com/',
-        icon: 'fa-search',
-        color: 'google-icon',
+        feedType: 'microsoftads',
+        url: 'https://status.ads.microsoft.com/',
+        icon: 'fa-microsoft',
+        color: 'microsoft-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      metafb: {
+        name: 'Meta: Facebook & Instagram',
+        category: 'Advertising',
+        feedType: 'metafb',
+        url: 'https://metastatus.com/',
+        icon: 'fa-facebook',
+        color: 'facebook-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      metamarketingapi: {
+        name: 'Meta: Marketing API',
+        category: 'Advertising',
+        feedType: 'metamarketingapi',
+        url: 'https://metastatus.com/',
+        icon: 'fa-facebook',
+        color: 'facebook-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      metafbs: {
+        name: 'Meta: Business Suite',
+        category: 'Advertising',
+        feedType: 'metafbs',
+        url: 'https://metastatus.com/',
+        icon: 'fa-facebook',
+        color: 'facebook-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      metalogin: {
+        name: 'Meta: Facebook Login',
+        category: 'Advertising',
+        feedType: 'metalogin',
+        url: 'https://metastatus.com/',
+        icon: 'fa-facebook',
+        color: 'facebook-icon',
         corsEnabled: false,
         useFeed: true
       },
@@ -1445,7 +1509,6 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      
       // SECURITY
       letsencrypt: {
         name: "Let's Encrypt",
@@ -1505,7 +1568,7 @@ class EngineScriptDashboard {
 
     // Group services by category
     const categories = {};
-    for (const [serviceKey, isAvailable] of Object.entries(services)) {
+    for (const [serviceKey] of Object.entries(services)) {
       if (serviceDefinitions[serviceKey]) {
         const category = serviceDefinitions[serviceKey].category || 'Other';
         if (!categories[category]) {
@@ -1520,7 +1583,7 @@ class EngineScriptDashboard {
       'Hosting & Infrastructure',
       'Developer Tools',
       'Payment Processing',
-      'Communication',
+      'Email & Communication',
       'E-Commerce',
       'Media & Content',
       'Gaming',

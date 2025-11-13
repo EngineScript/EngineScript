@@ -1491,7 +1491,7 @@ button:focus, select:focus, input:focus {
 }
 
 .service-icon.aws-icon {
-    background: linear-gradient(135deg, #ff9900, #ffa500);
+    background: linear-gradient(135deg, #f90, #fa0);
 }
 
 .service-icon.github-icon {
@@ -1507,11 +1507,31 @@ button:focus, select:focus, input:focus {
 }
 
 .service-icon.stripe-icon {
-    background: linear-gradient(135deg, #0055de, #0066ff);
+    background: linear-gradient(135deg, #0055de, #06f);
 }
 
 .service-icon.vimeo-icon {
-    background: linear-gradient(135deg, #1ab7ea, #0099cc);
+    background: linear-gradient(135deg, #1ab7ea, #09c);
+}
+
+.service-icon.sendgrid-icon {
+    background: linear-gradient(135deg, #1a82e2, #2196f3);
+}
+
+.service-icon.spotify-icon {
+    background: linear-gradient(135deg, #1db954, #1ed760);
+}
+
+.service-icon.anthropic-icon {
+    background: linear-gradient(135deg, #d4a574, #e0b886);
+}
+
+.service-icon.facebook-icon {
+    background: linear-gradient(135deg, #1877f2, #4a9ff5);
+}
+
+.service-icon.wordpress-icon {
+    background: linear-gradient(135deg, #21759b, #2ea2cc);
 }
 
 .service-icon i {
