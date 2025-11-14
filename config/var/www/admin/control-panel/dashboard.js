@@ -5,7 +5,7 @@ import { DashboardAPI } from './modules/api.js?v=2025.11.12.16';
 import { DashboardState } from './modules/state.js?v=2025.11.12.16';
 import { DashboardCharts } from './modules/charts.js?v=2025.11.12.16';
 import { DashboardUtils } from './modules/utils.js?v=2025.11.12.16';
-import { ExternalServicesManager } from './external-services/external-services.js?v=2025.11.14.01';
+// External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
   constructor() {
@@ -14,10 +14,7 @@ class EngineScriptDashboard {
     this.state = new DashboardState();
     this.charts = new DashboardCharts();
     this.utils = new DashboardUtils();
-    this.externalServices = new ExternalServicesManager(
-      '#external-services-grid',
-      '#external-services-settings'
-    );
+    this.externalServices = null; // Lazy loaded when needed
 
     // Legacy property references for compatibility
     this.currentPage = this.state.currentPage;
@@ -158,11 +155,39 @@ class EngineScriptDashboard {
         this.loadSystemInfo();
         break;
       case "external-services":
-        this.externalServices.init();
+        this.loadExternalServices();
         break;
       case "tools":
         this.loadToolsData();
         break;
+    }
+  }
+
+  /**
+   * Lazy load external services module (dynamic import)
+   * Only loads when user navigates to external services page
+   */
+  async loadExternalServices() {
+    try {
+      // If already loaded, just initialize
+      if (this.externalServices) {
+        await this.externalServices.init();
+        return;
+      }
+
+      // Dynamic import - only loads when needed
+      const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.14.01');
+      
+      // Create instance and initialize
+      this.externalServices = new ExternalServicesManager(
+        '#external-services-grid',
+        '#external-services-settings'
+      );
+      
+      await this.externalServices.init();
+    } catch (error) {
+      console.error('Failed to load external services:', error);
+      this.showError('Failed to load external services. Please try again.');
     }
   }
     

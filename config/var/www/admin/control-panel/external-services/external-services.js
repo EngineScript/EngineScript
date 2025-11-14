@@ -12,10 +12,12 @@ export class ExternalServicesManager {
     // State management with cache (5-minute TTL)
     this.serviceCache = new Map();
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+    this.initialized = false; // Track if services have been loaded (lazy loading)
   }
 
   /**
-   * Initialize the external services manager
+   * Initialize the external services manager (lazy loading)
+   * Only loads when user navigates to external services page
    */
   async init() {
     if (!this.container || !this.settingsContainer) {
@@ -23,6 +25,13 @@ export class ExternalServicesManager {
       return;
     }
 
+    // Prevent duplicate initialization - only load once
+    if (this.initialized) {
+      console.log('External services already initialized, skipping reload...');
+      return;
+    }
+
+    this.initialized = true;
     await this.loadExternalServices();
   }
 
@@ -817,10 +826,22 @@ export class ExternalServicesManager {
         const categorySection = document.createElement("div");
         categorySection.className = "settings-category";
         
+        // Category header with toggle all button
+        const categoryHeader = document.createElement("div");
+        categoryHeader.className = "category-header";
+        
         const categoryTitle = document.createElement("h4");
         categoryTitle.className = "category-title";
         categoryTitle.textContent = categoryName;
-        categorySection.appendChild(categoryTitle);
+        
+        const toggleAllBtn = document.createElement("button");
+        toggleAllBtn.className = "category-toggle-all-btn";
+        toggleAllBtn.innerHTML = '<i class="fas fa-check-square"></i> Toggle All';
+        toggleAllBtn.title = `Enable/Disable all ${categoryName} services`;
+        
+        categoryHeader.appendChild(categoryTitle);
+        categoryHeader.appendChild(toggleAllBtn);
+        categorySection.appendChild(categoryHeader);
         
         const categoryGrid = document.createElement("div");
         categoryGrid.className = "settings-grid";
@@ -829,6 +850,9 @@ export class ExternalServicesManager {
         categories[categoryName].sort((a, b) => {
           return serviceDefinitions[a].name.localeCompare(serviceDefinitions[b].name);
         });
+        
+        // Store checkboxes for this category
+        const categoryCheckboxes = [];
         
         categories[categoryName].forEach(serviceKey => {
           const isEnabled = preferences[serviceKey] === true;
@@ -851,6 +875,33 @@ export class ExternalServicesManager {
           toggleLabel.appendChild(checkbox);
           toggleLabel.appendChild(serviceName);
           categoryGrid.appendChild(toggleLabel);
+          
+          // Track checkbox for toggle all functionality
+          categoryCheckboxes.push(checkbox);
+        });
+        
+        // Add toggle all button click handler
+        toggleAllBtn.addEventListener("click", () => {
+          // Check current state - if any are unchecked, enable all; if all checked, disable all
+          const allChecked = categoryCheckboxes.every(cb => cb.checked);
+          const newState = !allChecked;
+          
+          categoryCheckboxes.forEach(checkbox => {
+            checkbox.checked = newState;
+            const serviceKey = checkbox.dataset.service;
+            pendingChanges[serviceKey] = newState;
+          });
+          
+          // Update button appearance
+          const icon = toggleAllBtn.querySelector('i');
+          if (newState) {
+            icon.className = 'fas fa-check-square';
+          } else {
+            icon.className = 'fas fa-square';
+          }
+          
+          saveButton.disabled = false;
+          saveButton.classList.add('has-changes');
         });
         
         categorySection.appendChild(categoryGrid);

@@ -14,6 +14,10 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="dashboard.css?v=2025.11.14.01">
     <link rel="stylesheet" href="external-services/external-services.css?v=2025.11.14.01">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="modulepreload" href="dashboard.js?v=2025.11.14.01" crossorigin="use-credentials">
+    <link rel="modulepreload" href="modules/api.js?v=2025.11.14.01" crossorigin="use-credentials">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -365,6 +369,6 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2025.11.14.01"></script>
+    <script type="module" src="dashboard.js?v=2025.11.14.01" data-cfasync="false"></script>
 </body>
 </html>
