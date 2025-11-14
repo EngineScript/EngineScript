@@ -15,8 +15,8 @@ class EngineScriptDashboard {
     this.charts = new DashboardCharts();
     this.utils = new DashboardUtils();
     this.externalServices = new ExternalServicesManager(
-      'external-services-grid',
-      'external-services-settings'
+      '#external-services-grid',
+      '#external-services-settings'
     );
 
     // Legacy property references for compatibility
