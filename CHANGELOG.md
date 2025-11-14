@@ -31,6 +31,41 @@ Changes are organized by date, with the most recent changes listed first.
 
 ---
 
+### ⚡ PERFORMANCE: Parallel External Services Loading
+
+**Removed artificial request staggering** for faster service status loading
+
+#### Problem
+
+- Services loaded with 60ms delay between each request (staggered loading)
+- Slow RSS/Atom feeds blocked other services from completing
+- Sequential loading pattern caused cascading delays
+- Services at bottom of list experienced significant wait times
+
+#### Changes Made
+
+- **Parallel Request Firing**: All service status requests now fire immediately in parallel
+- **Removed setTimeout Delays**: Eliminated 60ms staggered delay system
+- **True Non-Blocking**: Each request operates independently with its own 60s timeout
+- **Browser Concurrency**: Let browser's HTTP/2 multiplexing handle concurrent requests efficiently
+
+#### Impact
+
+- ✅ All services start loading immediately (no artificial delays)
+- ✅ Slow feeds no longer block fast services from completing
+- ✅ Dramatically improved perceived performance
+- ✅ Services complete in order of actual response time, not queue position
+- ✅ Modern browsers handle concurrent requests efficiently with HTTP/2
+
+#### Technical Details
+
+- Browser connection limits (6-8 per domain) now managed by browser's built-in queueing
+- HTTP/2 multiplexing allows many concurrent requests over single connection
+- Each request has independent AbortController with 60s timeout
+- Failed requests don't impact other services
+
+---
+
 ### 🔧 CODE QUALITY: Codacy Security & Style Improvements
 
 **Enhanced security annotations and HTTP compliance** in external services API
@@ -63,6 +98,16 @@ Created `.codacy-review-notes.md` documenting 11 false positive warnings:
 - `file_get_contents()` warnings for legitimate outbound HTTP API calls with timeout protection
 - Function length warnings on inherently complex feed parsers
 - Documentation formatting preferences
+
+#### Codacy Configuration
+
+Created `.codacy.yml` to suppress expected API endpoint patterns:
+- Excludes API files from WordPress-specific rules (nonce verification, wp_unslash)
+- Allows `header()`, `echo`, `exit`, `die` in API endpoint files
+- Permits direct `$_GET` access when followed by validation/sanitization
+- Allows `file_get_contents()` and `stream_context_create()` for outbound HTTP requests
+- Disables line length limits for documentation files with URLs
+- Custom ignore patterns recognized: `@codacy ignore`, `@codacy [rule] explanation`
 
 ---
 

@@ -509,7 +509,7 @@ function parseStatusPageAPI($apiUrl) {
 function handleStatusFeed() {
     try {
         // Validate feed parameter
-        // codacy:ignore - Direct $_GET access validated against strict whitelist below
+        // @codacy [Direct use of $_GET Superglobal detected] Input validated against strict whitelist below
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
             http_response_code(400);
             header('Content-Type: application/json');
@@ -517,7 +517,7 @@ function handleStatusFeed() {
             exit;
         }
         
-        // codacy:ignore - Input validated against whitelist of allowed feed types
+        // @codacy [Direct use of $_GET Superglobal detected] Input validated against whitelist of allowed feed types
         $feedType = $_GET['feed'];
         
         // Whitelist validation for feed types to prevent injection
@@ -631,7 +631,7 @@ function handleStatusFeed() {
         $feedUrl = $allowedFeeds[$feedType];
         
         // Get optional filter parameter for feeds like automattic
-        // codacy:ignore - Input sanitized below with regex whitelist and length limit
+        // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
         $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
         
         // Sanitize filter parameter to prevent injection

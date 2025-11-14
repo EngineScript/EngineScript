@@ -103,7 +103,6 @@ export class ExternalServicesManager {
         categoryContainer.dataset.category = category;
 
         // Display all cards immediately with loading state, then fetch statuses asynchronously
-        let serviceIndex = 0;
         for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
           // Check if this is a static service (no API or feed)
           if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
@@ -113,24 +112,16 @@ export class ExternalServicesManager {
             // Display card immediately with loading state
             this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
             
-            // Stagger requests to avoid overwhelming browser connection limits
-            // Small delay prevents timeout issues for services at bottom of page
-            const delay = serviceIndex * 60; // 60ms between each request
-            serviceIndex++;
-            
-            // Load status asynchronously without blocking
+            // Fire all requests immediately in parallel - browser and server handle concurrency
+            // Each request is fully independent and non-blocking with its own timeout
             if (serviceDef.useFeed) {
-              setTimeout(() => {
-                this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
-                  console.error(`Failed to load ${serviceDef.name}:`, err);
-                });
-              }, delay);
+              this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
+                console.error(`Failed to load ${serviceDef.name}:`, err);
+              });
             } else if (serviceDef.corsEnabled && serviceDef.api) {
-              setTimeout(() => {
-                this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
-                  console.error(`Failed to load ${serviceDef.name}:`, err);
-                });
-              }, delay);
+              this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
+                console.error(`Failed to load ${serviceDef.name}:`, err);
+              });
             }
           }
         }

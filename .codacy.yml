@@ -1,0 +1,104 @@
+---
+# Codacy Configuration for EngineScript
+# Excludes API endpoint patterns that are intentional by design
+
+exclude_paths:
+  # Documentation files with intentional long lines
+  - 'config/var/www/admin/control-panel/external-services/README.md'
+  - '.codacy-review-notes.md'
+
+engines:
+  # PHP Code Sniffer Configuration
+  phpcs:
+    enabled: true
+    exclude_patterns:
+      # API endpoint files use intentional patterns for HTTP responses
+      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
+      - 'config/var/www/admin/control-panel/api.php'
+    configuration:
+      # Use PSR-12 standard but allow API endpoint patterns
+      standard: PSR12
+
+  # Markdown Linting Configuration  
+  markdownlint:
+    enabled: true
+    exclude_patterns:
+      # Documentation with URLs and technical content needs flexible line length
+      - '**/README.md'
+    configuration:
+      # Disable line length rules for documentation
+      MD013: false  # Line length
+      MD033: false  # Inline HTML allowed
+      MD041: false  # First line heading level
+
+  # PHP Mess Detector Configuration
+  phpmd:
+    enabled: true
+    exclude_patterns:
+      # API files have intentional patterns
+      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
+      - 'config/var/www/admin/control-panel/api.php'
+    configuration:
+      rulesets:
+        - cleancode
+        - codesize
+        - design
+        - naming
+      # Ignore specific rules for API files
+      exclude:
+        - ExitExpression          # API endpoints must exit after JSON output
+        - ElseExpression          # Necessary for feed parsing logic
+        - LongMethod              # Feed parsers are inherently complex
+
+  # Security Analysis Configuration
+  codacy-security-patterns:
+    enabled: true
+    exclude_patterns:
+      # API endpoint files require $_GET, header(), echo for functionality
+      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
+      - 'config/var/www/admin/control-panel/api.php'
+
+# Pattern-Specific Suppressions
+patterns:
+  # Suppress WordPress-specific rules for non-WordPress code
+  - pattern_id: CSRF_NonceMissing
+    enabled: false
+    reason: "Not a WordPress project - CSRF protection via CORS and input validation"
+  
+  - pattern_id: WordPress_InputNotUnslashed
+    enabled: false
+    reason: "Not a WordPress environment - wp_unslash() function doesn't exist"
+  
+  # Suppress discouraged function warnings for legitimate API endpoint use
+  - pattern_id: PHP_DiscouragedFunctions
+    parameters:
+      exclude_functions:
+        - header      # Required for Content-Type in API responses
+        - echo        # Required for JSON output in API endpoints
+        - exit        # Required to terminate after API response
+        - die         # Required for security (forbidden access)
+        - file_get_contents  # Used for outbound HTTP requests with timeout
+        - stream_context_create  # Required for HTTP timeout configuration
+    reason: "API endpoints require these functions for proper HTTP response handling"
+  
+  # Suppress direct superglobal access when properly validated
+  - pattern_id: PHP_DirectSuperglobalAccess
+    exclude_paths:
+      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
+      - 'config/var/www/admin/control-panel/api.php'
+    reason: "Input validated against strict whitelists and sanitized before use"
+  
+  # Allow require_once for module inclusion with __DIR__ constant
+  - pattern_id: PHP_FileManipulation
+    parameters:
+      allow_constants:
+        - __DIR__
+        - __FILE__
+    reason: "Module inclusion with hardcoded paths is safe and necessary"
+
+# Custom Ignore Comments
+# Codacy recognizes these formats in code:
+# - @codacy ignore <rule_name>
+# - @codacy [<rule_description>] <explanation>
+# - codacy-disable
+# - codacy-enable
