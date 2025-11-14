@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Compile Nginx
-cd /usr/src/nginx-${NGINX_VER}
+cd "/usr/src/nginx-${NGINX_VER}"
 
 # Detect best linker: prefer lld, fallback to gold, else use default
 # Further testing needed: https://lld.llvm.org/
@@ -120,16 +120,16 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --modules-path=/etc/nginx/modules \
       --pid-path=/run/nginx.pid \
       --sbin-path=/usr/sbin/nginx \
-      --build=nginx-${NGINX_VER}-${DT}-enginescript \
-      --builddir=nginx-${NGINX_VER} \
+      --build="nginx-${NGINX_VER}-${DT}-enginescript" \
+      --builddir="nginx-${NGINX_VER}" \
       --with-cc-opt="$CC_OPT_FLAGS" \
       --with-ld-opt="$LD_OPT_FLAGS" \
       --with-openssl-opt="$OPENSSL_OPT_FLAGS" \
-      --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
+      --with-openssl="/usr/src/openssl-${OPENSSL_VER}" \
       --with-libatomic \
       --with-file-aio \
       --with-threads \
-      --with-pcre=/usr/src/pcre2-${PCRE2_VER} \
+      --with-pcre="/usr/src/pcre2-${PCRE2_VER}" \
       --with-pcre-jit \
       --with-zlib=/usr/src/zlib-cf \
       --with-zlib-opt=-fPIC \
@@ -137,9 +137,9 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --with-http_v2_module \
       --with-http_v3_module \
       --with-http_realip_module \
-      --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
+      --add-module="/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER}" \
       --add-module=/usr/src/ngx_brotli \
-      --add-module=/usr/src/ngx_cache_purge-${NGINX_PURGE_VER} \
+      --add-module="/usr/src/ngx_cache_purge-${NGINX_PURGE_VER}" \
       --without-http_browser_module \
       --without-http_empty_gif_module \
       --without-http_memcached_module \
@@ -167,25 +167,25 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --modules-path=/etc/nginx/modules \
       --pid-path=/run/nginx.pid \
       --sbin-path=/usr/sbin/nginx \
-      --build=nginx-${NGINX_VER}-${DT}-enginescript \
-      --builddir=nginx-${NGINX_VER} \
-      --with-cc-opt="$CC_OPT_FLAGS" \
-      --with-ld-opt="$LD_OPT_FLAGS" \
-      --with-openssl-opt="$OPENSSL_OPT_FLAGS" \
-      --with-openssl=/usr/src/openssl-${OPENSSL_VER} \
+      --build=\"nginx-${NGINX_VER}-${DT}-enginescript\" \
+      --builddir=\"nginx-${NGINX_VER}\" \
+      --with-cc-opt=\"$CC_OPT_FLAGS\" \
+      --with-ld-opt=\"$LD_OPT_FLAGS\" \
+      --with-openssl-opt=\"$OPENSSL_OPT_FLAGS\" \
+      --with-openssl=\"/usr/src/openssl-${OPENSSL_VER}\" \
       --with-libatomic \
       --with-file-aio \
       --with-threads \
-      --with-pcre=/usr/src/pcre2-${PCRE2_VER} \
+      --with-pcre=\"/usr/src/pcre2-${PCRE2_VER}\" \
       --with-pcre-jit \
       --with-zlib=/usr/src/zlib-cf \
       --with-zlib-opt=-fPIC \
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_realip_module \
-      --add-module=/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER} \
+      --add-module=\"/usr/src/headers-more-nginx-module-${NGINX_HEADER_VER}\" \
       --add-module=/usr/src/ngx_brotli \
-      --add-module=/usr/src/ngx_cache_purge-${NGINX_PURGE_VER} \
+      --add-module=\"/usr/src/ngx_cache_purge-${NGINX_PURGE_VER}\" \
       --without-http_browser_module \
       --without-http_empty_gif_module \
       --without-http_memcached_module \

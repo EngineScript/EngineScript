@@ -31,6 +31,61 @@ Changes are organized by date, with the most recent changes listed first.
 
 ---
 
+### 🔧 CODE QUALITY: Shell Script Variable Quoting
+
+**Fixed 12 unquoted variable expansions** to prevent globbing and word splitting
+
+#### Problem
+
+- Shell variables in paths and URLs were unquoted
+- Could cause issues with filenames containing spaces or special characters
+- Shellcheck warnings: "Double quote to prevent globbing and word splitting"
+
+#### Files Fixed
+
+- **`openssl-update.sh`**: Quoted `${CPU_COUNT}` in make command
+- **`phpmyadmin-update.sh`**: Quoted `${PHPMYADMIN_VER}` in wget, unzip, and mv commands
+- **`mariadb-update.sh`**: Quoted `${MARIADB_VER}` in MariaDB repo setup
+- **`nginx-compile.sh`**: Quoted all version variables in configure flags:
+  - `${NGINX_VER}`, `${DT}`, `${OPENSSL_VER}`, `${PCRE2_VER}`
+  - `${NGINX_HEADER_VER}`, `${NGINX_PURGE_VER}`
+  - Fixed in both HTTP/2 and HTTP/3 configuration sections
+
+#### Impact
+
+- ✅ Prevents potential pathname expansion issues
+- ✅ Safer handling of version strings with special characters
+- ✅ Follows bash best practices
+- ✅ Eliminates shellcheck warnings
+- ✅ No functional changes - defensive programming improvement
+
+---
+
+### 🐛 BUG FIX: Font Awesome ORB Blocking
+
+**Fixed ERR_BLOCKED_BY_ORB error** preventing Font Awesome icons from loading
+
+#### Problem
+
+- Browser's Opaque Response Blocking (ORB) security feature blocked Font Awesome CSS
+- Console error: `all.min.css (failed) net::ERR_BLOCKED_BY_ORB`
+- Icons failed to load, breaking dashboard UI
+
+#### Changes Made
+
+- **Added `crossorigin="anonymous"`** attribute to Font Awesome `<link>` tag
+- Enables proper CORS handling for cross-origin stylesheets
+- Allows browser to validate and load the external CSS resource
+
+#### Impact
+
+- ✅ Font Awesome icons now load correctly
+- ✅ Dashboard UI displays all icon elements properly
+- ✅ Complies with modern browser security policies (ORB)
+- ✅ No performance impact - attribute allows proper resource loading
+
+---
+
 ### ⚡ PERFORMANCE: Parallel External Services Loading
 
 **Removed artificial request staggering** for faster service status loading

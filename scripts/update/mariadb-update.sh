@@ -29,7 +29,7 @@ fi
 rm -rf /etc/apt/sources.list.d/mariadb.list
 
 # Add New MariaDB Repo
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=${MARIADB_VER} --skip-maxscale
+curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale
 
 # Upgrade MariaDB
 apt update --allow-releaseinfo-change -y

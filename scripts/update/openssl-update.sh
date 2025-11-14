@@ -28,7 +28,7 @@ cd "openssl-${OPENSSL_VER}"
 # Compile OpenSSL
 chmod +x ./config
 ./Configure
-make -j${CPU_COUNT}
+make -j"${CPU_COUNT}"
 #make test
 make install
 
