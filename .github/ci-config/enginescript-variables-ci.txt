@@ -25,7 +25,7 @@ SWPO_PLUGIN_VER="1.8.0"
 
 # Frontend Dependencies  
 CHARTJS_VER="4.5.1"
-FONTAWESOME_VER="7.1.0"
+FONTAWESOME_VER="7.0.1"
 TINYFILEMANAGER_VER="2.6"
 
 # System Information (CI Static Values)
