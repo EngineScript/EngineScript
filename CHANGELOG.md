@@ -6,6 +6,20 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-13
 
+### ⚡ PERFORMANCE: Request Management & Timeout Improvements
+
+- **Staggered Request Loading**:
+  - Services now load with 50ms delay between each request
+  - Prevents overwhelming browser connection limits (typically 6 concurrent connections)
+  - Eliminates timeout issues for services at bottom of page
+  - All services get fair chance to load without competing for limited connections
+
+- **Increased Request Timeouts**:
+  - Timeout increased from 10 seconds to 30 seconds for all service requests
+  - Gives slower feeds adequate time to respond
+  - Reduces false "Request timed out" errors for legitimate slow responses
+  - Applied to feed services, API services, and status page services
+
 ### ✨ UX IMPROVEMENTS: Async Loading Pattern
 
 - **Immediate Card Display**:
@@ -28,16 +42,18 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🎯 UX IMPROVEMENTS: Enhanced Drag-and-Drop
 
+- **Simple Swap Behavior**:
+  - Drag a card and drop it directly on another card to swap their positions
+  - No need to drag past cards - just drop on the target card
+  - Dashed border highlights the drop target card while hovering
+  - Cards swap positions immediately when mouse is released
+  - Intuitive behavior matches user expectations
+
 - **Better Detection & Sensitivity**:
   - Drag-and-drop now works reliably when hovering over any part of a card
   - Entire card border area acts as valid drop zone (not just specific hover points)
   - Enhanced collision detection using DOM tree traversal with `while` loops
   - Properly handles dragging over child elements (icons, text, etc.)
-
-- **Improved Insert Logic**:
-  - Calculates midpoint of target card: `rect.top + rect.height / 2`
-  - Inserts before or after based on mouse Y position relative to midpoint
-  - Better visual feedback - cards insert where expected based on cursor position
 
 - **Category Grid Support**:
   - Now operates on `.service-category-grid` elements instead of flat container

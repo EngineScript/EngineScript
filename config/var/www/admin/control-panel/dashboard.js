@@ -842,6 +842,7 @@ class EngineScriptDashboard {
         categoryContainer.dataset.category = category;
 
         // Display all cards immediately with loading state, then fetch statuses asynchronously
+        let serviceIndex = 0;
         for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
           // Check if this is a static service (no API or feed)
           if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
@@ -851,15 +852,24 @@ class EngineScriptDashboard {
             // Display card immediately with loading state
             this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
             
+            // Stagger requests to avoid overwhelming browser connection limits
+            // Small delay prevents timeout issues for services at bottom of page
+            const delay = serviceIndex * 50; // 50ms between each request
+            serviceIndex++;
+            
             // Load status asynchronously without blocking
             if (serviceDef.useFeed) {
-              this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
-                console.error(`Failed to load ${serviceDef.name}:`, err);
-              });
+              setTimeout(() => {
+                this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
+                  console.error(`Failed to load ${serviceDef.name}:`, err);
+                });
+              }, delay);
             } else if (serviceDef.corsEnabled && serviceDef.api) {
-              this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
-                console.error(`Failed to load ${serviceDef.name}:`, err);
-              });
+              setTimeout(() => {
+                this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
+                  console.error(`Failed to load ${serviceDef.name}:`, err);
+                });
+              }, delay);
             }
           }
         }
@@ -1684,6 +1694,7 @@ class EngineScriptDashboard {
     categoryGrids.forEach(grid => {
       const cards = grid.querySelectorAll('.external-service-card');
       let draggedElement = null;
+      let dropTargetElement = null;
       
       cards.forEach(card => {
         card.draggable = true;
@@ -1701,6 +1712,36 @@ class EngineScriptDashboard {
           // Remove drag-over class from all cards
           cards.forEach(c => c.classList.remove('drag-over'));
           
+          // Perform swap if there's a valid drop target
+          if (dropTargetElement && dropTargetElement !== draggedElement && grid.contains(dropTargetElement)) {
+            // Get parent references before swapping
+            const draggedParent = draggedElement.parentNode;
+            const targetParent = dropTargetElement.parentNode;
+            
+            // Only swap if both are in the same grid
+            if (draggedParent === targetParent) {
+              // Get next siblings to preserve position
+              const draggedNext = draggedElement.nextSibling;
+              const targetNext = dropTargetElement.nextSibling;
+              
+              // Swap positions
+              if (draggedNext === dropTargetElement) {
+                // Adjacent: dragged is before target
+                draggedParent.insertBefore(dropTargetElement, draggedElement);
+              } else if (targetNext === draggedElement) {
+                // Adjacent: target is before dragged
+                draggedParent.insertBefore(draggedElement, dropTargetElement);
+              } else {
+                // Not adjacent: swap positions
+                draggedParent.insertBefore(draggedElement, targetNext);
+                targetParent.insertBefore(dropTargetElement, draggedNext);
+              }
+            }
+          }
+          
+          // Reset drop target
+          dropTargetElement = null;
+          
           // Save new order for all cards across all categories
           const allCards = container.querySelectorAll('.external-service-card');
           const newOrder = Array.from(allCards).map(child => child.dataset.serviceKey);
@@ -1710,24 +1751,6 @@ class EngineScriptDashboard {
         card.addEventListener('dragover', (e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
-          
-          // Get the card being dragged over (could be child element)
-          let targetCard = e.target;
-          while (targetCard && !targetCard.classList.contains('external-service-card')) {
-            targetCard = targetCard.parentElement;
-          }
-          
-          if (targetCard && targetCard !== draggedElement && grid.contains(targetCard)) {
-            const rect = targetCard.getBoundingClientRect();
-            const midpoint = rect.top + rect.height / 2;
-            
-            // Insert before or after based on mouse position
-            if (e.clientY < midpoint) {
-              grid.insertBefore(draggedElement, targetCard);
-            } else {
-              grid.insertBefore(draggedElement, targetCard.nextSibling);
-            }
-          }
         });
         
         card.addEventListener('dragenter', (e) => {
@@ -1738,6 +1761,13 @@ class EngineScriptDashboard {
           }
           
           if (targetCard && targetCard !== draggedElement && grid.contains(targetCard)) {
+            // Remove drag-over from previous target
+            if (dropTargetElement && dropTargetElement !== targetCard) {
+              dropTargetElement.classList.remove('drag-over');
+            }
+            
+            // Set new drop target and add visual indicator
+            dropTargetElement = targetCard;
             targetCard.classList.add('drag-over');
           }
         });
@@ -1755,6 +1785,10 @@ class EngineScriptDashboard {
             if (e.clientX < rect.left || e.clientX > rect.right || 
                 e.clientY < rect.top || e.clientY > rect.bottom) {
               targetCard.classList.remove('drag-over');
+              // Clear drop target if leaving
+              if (dropTargetElement === targetCard) {
+                dropTargetElement = null;
+              }
             }
           }
         });
@@ -1934,7 +1968,7 @@ class EngineScriptDashboard {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
         if (serviceDef.feedFilter) {
@@ -2020,7 +2054,7 @@ class EngineScriptDashboard {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         const response = await fetch(serviceDef.api, {
           signal: controller.signal
@@ -2099,7 +2133,7 @@ class EngineScriptDashboard {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         const response = await fetch(serviceDef.api, {
           signal: controller.signal
@@ -2210,7 +2244,7 @@ class EngineScriptDashboard {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
         if (serviceDef.feedFilter) {
