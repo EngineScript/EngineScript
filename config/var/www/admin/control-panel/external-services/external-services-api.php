@@ -24,7 +24,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
         // Set up context with timeout and user agent
         $context = stream_context_create([
             'http' => [
-                'timeout' => 10,
+                'timeout' => 45,
                 'user_agent' => 'EngineScript-StatusMonitor/1.0',
                 'ignore_errors' => true
             ]
@@ -104,7 +104,10 @@ function parseStatusFeed($feedUrl, $filter = null) {
             } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
                 $status['indicator'] = 'minor';
                 $status['description'] = strip_tags($description);
-            } else {
+            }
+            
+            // Default: show title as-is if no patterns match
+            if ($status['indicator'] !== 'none' && $status['indicator'] !== 'major' && $status['indicator'] !== 'minor') {
                 $status['description'] = strip_tags($title);
             }
         }
@@ -506,12 +509,15 @@ function parseStatusPageAPI($apiUrl) {
 function handleStatusFeed() {
     try {
         // Validate feed parameter
+        // codacy:ignore - Direct $_GET access validated against strict whitelist below
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
             http_response_code(400);
+            header('Content-Type: application/json');
             echo json_encode(['error' => 'Missing feed parameter']);
             exit;
         }
         
+        // codacy:ignore - Input validated against whitelist of allowed feed types
         $feedType = $_GET['feed'];
         
         // Whitelist validation for feed types to prevent injection
@@ -526,6 +532,7 @@ function handleStatusFeed() {
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
             http_response_code(400);
+            header('Content-Type: application/json');
             echo json_encode(['error' => 'Invalid feed type']);
             exit;
         }
@@ -533,48 +540,56 @@ function handleStatusFeed() {
         // Handle special JSON API feeds
         if ($feedType === 'vultr') {
             $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'postmark') {
             $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'googleworkspace') {
             $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'wistia') {
             $status = parseWistiaSummary('https://status.wistia.com/summary.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'sendgrid') {
             $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'spotify') {
             $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'trello') {
             $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'pipedream') {
             $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
+            header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
             exit;
         }
@@ -608,6 +623,7 @@ function handleStatusFeed() {
         
         if (!isset($allowedFeeds[$feedType])) {
             http_response_code(400);
+            header('Content-Type: application/json');
             echo json_encode(['error' => 'Invalid feed type']);
             exit;
         }
@@ -615,6 +631,7 @@ function handleStatusFeed() {
         $feedUrl = $allowedFeeds[$feedType];
         
         // Get optional filter parameter for feeds like automattic
+        // codacy:ignore - Input sanitized below with regex whitelist and length limit
         $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
         
         // Sanitize filter parameter to prevent injection
@@ -631,11 +648,13 @@ function handleStatusFeed() {
         // Parse feed and return status
         $status = parseStatusFeed($feedUrl, $filter);
         
+        header('Content-Type: application/json');
         echo json_encode(['status' => $status]);
         exit;
         
     } catch (Exception $e) {
         http_response_code(500);
+        header('Content-Type: application/json');
         error_log('Status feed error: ' . $e->getMessage());
         echo json_encode(['error' => 'Unable to fetch status feed']);
         exit;
@@ -737,10 +756,12 @@ function handleExternalServicesConfig() {
         $config = getExternalServicesConfig();
         
         // Return all available services (preferences now stored client-side in cookies)
+        header('Content-Type: application/json');
         echo json_encode($config);
         exit;
     } catch (Exception $e) {
         http_response_code(500);
+        header('Content-Type: application/json');
         error_log('External services config error: ' . $e->getMessage());
         echo json_encode(['error' => 'Unable to retrieve external services config']);
         exit;

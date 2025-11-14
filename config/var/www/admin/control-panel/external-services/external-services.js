@@ -1132,7 +1132,7 @@ export class ExternalServicesManager {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
         
         let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
         if (serviceDef.feedFilter) {
@@ -1197,7 +1197,7 @@ export class ExternalServicesManager {
       if (!data) {
         // Not in cache, fetch from API
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
         
         const response = await fetch(serviceDef.api, {
           signal: controller.signal

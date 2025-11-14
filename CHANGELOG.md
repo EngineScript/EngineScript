@@ -6,22 +6,85 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-14
 
+### ⚡ PERFORMANCE: Increased Timeouts for Slow External Service Feeds
+
+**Fixed timeout errors** for slow-responding external service feeds (OVH, Vultr, WordPress.com API, WP Cloud API)
+
+#### Problem
+
+- Some external service feeds (OVH, Vultr, Automattic RSS) were timing out after 30 seconds
+- PHP backend had only 10-second timeout for feed fetching
+- Large RSS feeds with filtering (Automattic) required more processing time
+- Users saw "AbortError: signal is aborted without reason" in console
+
+#### Changes Made
+
+- **`external-services-api.php`**: Increased PHP feed fetch timeout from 10s → 45s
+- **`external-services.js`**: Increased JavaScript fetch timeout from 30s → 60s (both feed and StatusPage APIs)
+
+#### Impact
+
+- ✅ Slow feeds now have adequate time to respond
+- ✅ Reduced timeout errors for OVH, Vultr, Automattic services
+- ✅ Better handling of rate-limited or slow external APIs
+- ✅ Improved reliability for international status feeds
+
+---
+
+### 🔧 CODE QUALITY: Codacy Security & Style Improvements
+
+**Enhanced security annotations and HTTP compliance** in external services API
+
+#### Changes Made
+
+- **Security Annotations**: Added Codacy ignore comments with justifications for legitimate direct `$_GET` access
+  - All input validated against strict whitelists (30+ allowed feed types)
+  - Filter parameter sanitized with regex whitelist and 100-character limit
+  - Clear documentation that input validation prevents injection attacks
+
+- **HTTP Compliance**: Added `Content-Type: application/json` headers to all JSON responses
+  - 12 API endpoints now return proper Content-Type headers
+  - Improves client-side parsing and standards compliance
+  - Error responses include proper HTTP status codes + headers
+
+- **CSS Style**: Fixed empty line before keyframe rule in `external-services.css`
+  - Added required empty line before `to` rule (line 412)
+  - Meets CSS style guide requirements
+
+- **Code Optimization**: Simplified conditional logic in `parseStatusFeed()`
+  - Removed unnecessary else clause
+  - Improved code readability and flow
+
+#### False Positives Documented
+
+Created `.codacy-review-notes.md` documenting 11 false positive warnings:
+- CSRF warnings on GET requests (read-only operations, no state modification)
+- WordPress-specific warnings (`wp_unslash`) on non-WordPress code
+- `file_get_contents()` warnings for legitimate outbound HTTP API calls with timeout protection
+- Function length warnings on inherently complex feed parsers
+- Documentation formatting preferences
+
+---
+
 ### 🐛 CRITICAL FIX: External Services API Handler Script Termination
 
 **Fixed 502 Bad Gateway errors** caused by improper script termination in external-services-api.php
 
 #### Problem Identified
+
 - Handler functions (`handleStatusFeed()`, `handleExternalServicesConfig()`) were outputting JSON but not terminating script execution
 - PHP continued executing after `return` statements, causing additional output and 502 errors
 - Closing `?>` tag was present (bad practice for include-only files)
 
 #### Changes Made to `external-services-api.php`
+
 - ✅ Added `exit;` after all `echo json_encode()` statements in `handleStatusFeed()`
 - ✅ Added `exit;` after all `echo json_encode()` statements in `handleExternalServicesConfig()`
 - ✅ Replaced all `return;` with `exit;` in error handlers (12 locations)
 - ✅ Removed closing `?>` tag (PHP best practice)
 
 #### Impact
+
 - **Resolved**: 502 Bad Gateway errors when loading external services
 - **Resolved**: Multiple "AbortError: signal is aborted without reason" errors in browser console
 - **Result**: External services feed requests now complete successfully
