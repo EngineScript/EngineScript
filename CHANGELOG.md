@@ -6,31 +6,107 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-13
 
-### 🔄 REORGANIZATION: Service Categories
+### ✨ UX IMPROVEMENTS: Async Loading Pattern
+
+- **Immediate Card Display**:
+  - Service cards now appear instantly when page loads with service name displayed
+  - Cards show "Loading..." status with spinner icon during initial load
+  - Eliminates blank page experience - users see content immediately
+
+- **Non-Blocking Status Updates**:
+  - Service status updates load independently in parallel using async pattern
+  - No service blocks others from loading - all feeds fetch simultaneously
+  - Each card updates individually when its feed data arrives
+  - Significantly improved page load performance and perceived speed
+
+- **Implementation Details**:
+  - New `displayServiceCardWithLoadingState()` function creates cards immediately
+  - New `updateFeedServiceStatus()` function updates feed-based services asynchronously
+  - New `updateStatusPageServiceStatus()` function updates API-based services asynchronously
+  - Changed from sequential `await` pattern to parallel async with `.catch()` error handling
+  - Cards receive loading state initially, then update to success/error states
+
+### 🎯 UX IMPROVEMENTS: Enhanced Drag-and-Drop
+
+- **Better Detection & Sensitivity**:
+  - Drag-and-drop now works reliably when hovering over any part of a card
+  - Entire card border area acts as valid drop zone (not just specific hover points)
+  - Enhanced collision detection using DOM tree traversal with `while` loops
+  - Properly handles dragging over child elements (icons, text, etc.)
+
+- **Improved Insert Logic**:
+  - Calculates midpoint of target card: `rect.top + rect.height / 2`
+  - Inserts before or after based on mouse Y position relative to midpoint
+  - Better visual feedback - cards insert where expected based on cursor position
+
+- **Category Grid Support**:
+  - Now operates on `.service-category-grid` elements instead of flat container
+  - Maintains category-based organization during drag operations
+  - Uses `getBoundingClientRect()` for accurate bounds checking
+  - Prevents flickering with improved dragenter/dragleave detection
+
+### 🔄 REORGANIZATION: Major Service Recategorization
+
+- **Category Merge - E-Commerce & Payments**:
+  - Combined "Payment Processing" and "E-Commerce" into single "E-Commerce & Payments" category
+  - Logical grouping since payment services support e-commerce functionality
+  - Reduces total categories from 10 to 9 for better organization
 
 - **Category Rename**:
   - Renamed "Communication" to "Email & Communication" for better clarity
   - Updated all service definitions and configuration files
 
-- **Automattic Services Reorganization**:
-  - **WooCommerce Pay API**: Moved to E-Commerce (e-commerce platform API)
-  - **MailPoet Sending Service**: Moved to Email & Communication (email marketing service)
-  - **WordPress.com API**: Moved to Hosting & Infrastructure (hosting platform API)
-  - **Jetpack API**: Moved to Hosting & Infrastructure (WordPress hosting features)
-  - **WP Cloud API**: Moved to Hosting & Infrastructure (cloud hosting API)
-  - Services now properly categorized by their primary function
+- **Service Renames**:
+  - **MailPoet Sending Service** → **MailPoet** (shorter, cleaner name)
+  - **Cloudflare Flare** → **Flare** (removed redundant Cloudflare prefix)
+  - **Meta: Facebook & Instagram** → **Meta: Facebook & Instagram Shops** (clarifies e-commerce focus)
 
-- **Updated Category Order**:
-  1. Hosting & Infrastructure (now includes WordPress.com, Jetpack, WP Cloud APIs)
-  2. Developer Tools
-  3. Payment Processing
-  4. Email & Communication (renamed from Communication)
-  5. E-Commerce (now includes WooCommerce Pay API)
-  6. Media & Content
-  7. Gaming
-  8. AI & Machine Learning
-  9. Advertising
-  10. Security
+- **Developer Tools Recategorization**:
+  - **Postmark**: Moved from Developer Tools → Email & Communication (email delivery service)
+  - **Google Workspace**: Moved from Advertising → Developer Tools (admin console, Gmail, Drive, Meet, Calendar)
+  - **Meta: Facebook Login**: Moved from Advertising → Developer Tools (authentication service)
+
+- **E-Commerce & Payments Consolidation**:
+  - **Meta: Facebook & Instagram Shops**: Moved from Advertising → E-Commerce & Payments
+  - **All Payment Processors**: Moved from Payment Processing → E-Commerce & Payments
+    - Coinbase, PayPal, Recurly, Square, Stripe
+  - **All E-Commerce Platforms**: Merged into E-Commerce & Payments
+    - Intuit, Shopify, WooCommerce Pay
+
+- **Automattic Services (Previously Reorganized)**:
+  - **WooCommerce Pay API**: In E-Commerce & Payments (e-commerce platform API)
+  - **MailPoet**: In Email & Communication (email marketing service)
+  - **WordPress.com API**: In Hosting & Infrastructure (hosting platform API)
+  - **Jetpack API**: In Hosting & Infrastructure (WordPress hosting features)
+  - **WP Cloud API**: In Hosting & Infrastructure (cloud hosting API)
+
+- **Updated Category Order** (Final 9 Categories):
+  1. Hosting & Infrastructure (WordPress.com, Jetpack, WP Cloud APIs)
+  2. Developer Tools (Google Workspace, Meta: Facebook Login, Postmark)
+  3. E-Commerce & Payments (merged - all payment + e-commerce services)
+  4. Email & Communication (renamed - email delivery and communication tools)
+  5. Media & Content
+  6. Gaming
+  7. AI & Machine Learning
+  8. Advertising
+  9. Security
+
+### 🐛 BUG FIXES: Service Configuration
+
+- **Removed Duplicate Service Definitions**:
+  - Fixed duplicate `openai` service definition in configuration
+  - Fixed duplicate `microsoftads` service definition
+  - Removed duplicate Advertising section in backend configuration
+
+- **Fixed PHP Syntax Error**:
+  - Corrected syntax error in `api.php` line 1693: `'microsoftads' => true,g`
+  - Removed extra `g` character causing 500 Internal Server Error
+  - Error was preventing API endpoint from responding correctly
+
+- **Service Order Alphabetization**:
+  - Fixed `jetpackapi` service ordering - now properly alphabetized
+  - Added all missing services to default service order array
+  - Ensures consistent ordering across all categories
 
 ### 🔧 CODE QUALITY: Linting and Style Improvements
 

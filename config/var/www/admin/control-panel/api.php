@@ -1514,7 +1514,7 @@ function handleStatusFeed() {
         // Whitelist validation for feed types to prevent injection
         $allowedFeedTypes = [
             'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
-            'stripe', 'letsencrypt', 'cloudflare-flare', 'slack', 'gitlab',
+            'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
             'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
             'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
             'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin'
@@ -1567,7 +1567,7 @@ function handleStatusFeed() {
         $allowedFeeds = [
             'stripe' => 'https://www.stripestatus.com/history.atom',
             'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
-            'cloudflare-flare' => 'https://status.flare.io/history/rss',
+            'flare' => 'https://status.flare.io/history/rss',
             'slack' => 'https://slack-status.com/feed/atom',
             'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
             'square' => 'https://www.issquareup.com/united-states/feed.atom',
@@ -1632,6 +1632,7 @@ function getExternalServicesConfig() {
         'digitalocean' => true,
         'googlecloud' => true,
         'hostinger' => true,
+        'jetpackapi' => true,
         'kinsta' => true,
         'linode' => true,
         'oracle' => true,
@@ -1640,7 +1641,6 @@ function getExternalServicesConfig() {
         'upcloud' => true,
         'vercel' => true,
         'vultr' => true,
-        'jetpackapi' => true,
         'wordpressapi' => true,
         'wpcloudapi' => true,
 
@@ -1651,26 +1651,26 @@ function getExternalServicesConfig() {
         'postmark' => true,
         'twilio' => true,
         
-        // Payment Processing
+        // E-Commerce & Payments
         'coinbase' => true,
+        'intuit' => true,
+        'metafb' => true,
         'paypal' => true,
         'recurly' => true,
+        'shopify' => true,
         'square' => true,
         'stripe' => true,
+        'woocommercepay' => true,
         
         // Email & Communication
         'brevo' => true,
         'discord' => true,
         'mailgun' => true,
         'mailpoet' => true,
+        'postmark' => true,
         'sendgrid' => true,
         'slack' => true,
         'zoom' => true,
-        
-        // E-Commerce
-        'intuit' => true,
-        'shopify' => true,
-        'woocommercepay' => true,
         
         // Media & Content
         'dropbox' => true,
@@ -1696,7 +1696,7 @@ function getExternalServicesConfig() {
         
         // Security
         'letsencrypt' => true,
-        'cloudflareflare' => true
+        'flare' => true
     ];
     
     return $config;

@@ -844,17 +844,20 @@ class EngineScriptDashboard {
         categoryContainer.className = "service-category-grid";
         categoryContainer.dataset.category = category;
 
-        // Fetch and display each service in the category
+        // Display all cards immediately with loading state, then fetch statuses asynchronously
         for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
+          // Display card immediately with loading state
+          this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
+          
+          // Load status asynchronously without blocking
           if (serviceDef.useFeed) {
-            // Load from RSS/Atom feed via backend proxy
-            await this.loadFeedService(categoryContainer, serviceKey, serviceDef);
+            this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
+              console.error(`Failed to load ${serviceDef.name}:`, err);
+            });
           } else if (serviceDef.corsEnabled && serviceDef.api) {
-            // Load from API directly
-            await this.loadStatusPageService(categoryContainer, serviceKey, serviceDef);
-          } else {
-            // Display static link card
-            this.displayStaticServiceCard(categoryContainer, serviceKey, serviceDef);
+            this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
+              console.error(`Failed to load ${serviceDef.name}:`, err);
+            });
           }
         }
 
@@ -947,26 +950,24 @@ class EngineScriptDashboard {
     // Default alphabetical order by category
     return [
       // Hosting & Infrastructure
-      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'hostinger', 'kinsta', 'linode', 
-      'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wpvip',
+      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'hostinger', 'jetpackapi', 'kinsta', 
+      'linode', 'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wordpressapi', 'wpcloudapi',
       // Developer Tools
-      'github', 'gitlab', 'notion', 'postmark', 'twilio',
-      // Payment Processing
-      'coinbase', 'paypal', 'recurly', 'square', 'stripe',
-      // Communication
-      'brevo', 'discord', 'mailgun', 'slack', 'zoom',
-      // E-Commerce
-      'intuit', 'shopify',
+      'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'postmark', 'twilio',
+      // E-Commerce & Payments
+      'coinbase', 'intuit', 'metafb', 'paypal', 'recurly', 'shopify', 'square', 'stripe', 'woocommercepay',
+      // Email & Communication
+      'brevo', 'discord', 'mailgun', 'mailpoet', 'postmark', 'sendgrid', 'slack', 'zoom',
       // Media & Content
-      'automattic', 'dropbox', 'reddit', 'udemy', 'vimeo', 'wistia',
+      'dropbox', 'reddit', 'spotify', 'udemy', 'vimeo', 'wistia',
       // Gaming
       'epicgames',
       // AI & Machine Learning
-      'openai',
+      'anthropic', 'openai',
       // Advertising
-      'googleads', 'googlesearch', 'googleworkspace', 'microsoftads',
+      'googleads', 'googlesearch', 'metafbs', 'metamarketingapi', 'microsoftads',
       // Security
-      'letsencrypt', 'cloudflareflare'
+      'flare', 'letsencrypt'
     ];
   }
 
@@ -1140,7 +1141,7 @@ class EngineScriptDashboard {
       },
       postmark: {
         name: 'Postmark',
-        category: 'Developer Tools',
+        category: 'Email & Communication',
         feedType: 'postmark',
         url: 'https://status.postmarkapp.com/',
         icon: 'fa-paper-plane',
@@ -1160,7 +1161,7 @@ class EngineScriptDashboard {
       // PAYMENT PROCESSING
       coinbase: {
         name: 'Coinbase',
-        category: 'Payment Processing',
+        category: 'E-Commerce & Payments',
         api: 'https://status.coinbase.com/api/v2/status.json',
         url: 'https://status.coinbase.com/',
         icon: 'fa-bitcoin',
@@ -1169,7 +1170,7 @@ class EngineScriptDashboard {
       },
       paypal: {
         name: 'PayPal',
-        category: 'Payment Processing',
+        category: 'E-Commerce & Payments',
         feedType: 'paypal',
         url: 'https://www.paypal-status.com/product/production',
         icon: 'fa-paypal',
@@ -1179,7 +1180,7 @@ class EngineScriptDashboard {
       },
       recurly: {
         name: 'Recurly',
-        category: 'Payment Processing',
+        category: 'E-Commerce & Payments',
         feedType: 'recurly',
         url: 'https://status.recurly.com/',
         icon: 'fa-repeat',
@@ -1189,7 +1190,7 @@ class EngineScriptDashboard {
       },
       square: {
         name: 'Square',
-        category: 'Payment Processing',
+        category: 'E-Commerce & Payments',
         feedType: 'square',
         url: 'https://www.issquareup.com/',
         icon: 'fa-square',
@@ -1199,7 +1200,7 @@ class EngineScriptDashboard {
       },
       stripe: {
         name: 'Stripe',
-        category: 'Payment Processing',
+        category: 'E-Commerce & Payments',
         feedType: 'stripe',
         url: 'https://status.stripe.com/',
         icon: 'fa-credit-card',
@@ -1268,7 +1269,7 @@ class EngineScriptDashboard {
       // E-COMMERCE
       intuit: {
         name: 'Intuit',
-        category: 'E-Commerce',
+        category: 'E-Commerce & Payments',
         api: 'https://status.developer.intuit.com/api/v2/status.json',
         url: 'https://status.developer.intuit.com/',
         icon: 'fa-calculator',
@@ -1277,7 +1278,7 @@ class EngineScriptDashboard {
       },
       shopify: {
         name: 'Shopify',
-        category: 'E-Commerce',
+        category: 'E-Commerce & Payments',
         api: 'https://www.shopifystatus.com/api/v2/status.json',
         url: 'https://www.shopifystatus.com/',
         icon: 'fa-shopping-bag',
@@ -1287,7 +1288,7 @@ class EngineScriptDashboard {
       // MEDIA & CONTENT
       woocommercepay: {
         name: 'WooCommerce Pay API',
-        category: 'E-Commerce',
+        category: 'E-Commerce & Payments',
         feedType: 'automattic',
         feedFilter: 'WooCommerce Pay API',
         url: 'https://automatticstatus.com/',
@@ -1308,7 +1309,7 @@ class EngineScriptDashboard {
         useFeed: true
       },
       mailpoet: {
-        name: 'MailPoet Sending Service',
+        name: 'MailPoet',
         category: 'Email & Communication',
         feedType: 'automattic',
         feedFilter: 'MailPoet Sending Service',
@@ -1439,8 +1440,8 @@ class EngineScriptDashboard {
         useFeed: true
       },
       metafb: {
-        name: 'Meta: Facebook & Instagram',
-        category: 'Advertising',
+        name: 'Meta: Facebook & Instagram Shops',
+        category: 'E-Commerce & Payments',
         feedType: 'metafb',
         url: 'https://metastatus.com/',
         icon: 'fa-facebook',
@@ -1470,7 +1471,7 @@ class EngineScriptDashboard {
       },
       metalogin: {
         name: 'Meta: Facebook Login',
-        category: 'Advertising',
+        category: 'Developer Tools',
         feedType: 'metalogin',
         url: 'https://metastatus.com/',
         icon: 'fa-facebook',
@@ -1480,7 +1481,7 @@ class EngineScriptDashboard {
       },
       googleworkspace: {
         name: 'Google Workspace',
-        category: 'Advertising',
+        category: 'Developer Tools',
         feedType: 'googleworkspace',
         url: 'https://www.google.com/appsstatus/dashboard/',
         icon: 'fa-google',
@@ -1499,10 +1500,10 @@ class EngineScriptDashboard {
         corsEnabled: false,
         useFeed: true
       },
-      cloudflareflare: {
-        name: 'Cloudflare Flare',
+      flare: {
+        name: 'Flare',
         category: 'Security',
-        feedType: 'cloudflare-flare',
+        feedType: 'flare',
         url: 'https://status.flare.io/',
         icon: 'fa-shield-alt',
         color: 'cloudflare-icon',
@@ -1561,9 +1562,8 @@ class EngineScriptDashboard {
     const categoryOrder = [
       'Hosting & Infrastructure',
       'Developer Tools',
-      'Payment Processing',
+      'E-Commerce & Payments',
       'Email & Communication',
-      'E-Commerce',
       'Media & Content',
       'Gaming',
       'AI & Machine Learning',
@@ -1645,55 +1645,85 @@ class EngineScriptDashboard {
 
   // Enable drag and drop for service cards
   enableServiceDragDrop(container) {
-    const cards = container.querySelectorAll('.external-service-card');
-    let draggedElement = null;
+    const categoryGrids = container.querySelectorAll('.service-category-grid');
     
-    cards.forEach(card => {
-      card.draggable = true;
+    categoryGrids.forEach(grid => {
+      const cards = grid.querySelectorAll('.external-service-card');
+      let draggedElement = null;
       
-      card.addEventListener('dragstart', (e) => {
-        draggedElement = card;
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', card.innerHTML);
-      });
-      
-      card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
+      cards.forEach(card => {
+        card.draggable = true;
         
-        // Remove drag-over class from all cards
-        cards.forEach(c => c.classList.remove('drag-over'));
+        card.addEventListener('dragstart', (e) => {
+          draggedElement = card;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/html', card.innerHTML);
+        });
         
-        // Save new order
-        const newOrder = Array.from(container.children)
-          .filter(child => child.classList.contains('external-service-card'))
-          .map(child => child.dataset.serviceKey);
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          
+          // Remove drag-over class from all cards
+          cards.forEach(c => c.classList.remove('drag-over'));
+          
+          // Save new order for all cards across all categories
+          const allCards = container.querySelectorAll('.external-service-card');
+          const newOrder = Array.from(allCards).map(child => child.dataset.serviceKey);
+          this.saveServiceOrder(newOrder);
+        });
         
-        this.saveServiceOrder(newOrder);
-      });
-      
-      card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          
+          // Get the card being dragged over (could be child element)
+          let targetCard = e.target;
+          while (targetCard && !targetCard.classList.contains('external-service-card')) {
+            targetCard = targetCard.parentElement;
+          }
+          
+          if (targetCard && targetCard !== draggedElement && grid.contains(targetCard)) {
+            const rect = targetCard.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            // Insert before or after based on mouse position
+            if (e.clientY < midpoint) {
+              grid.insertBefore(draggedElement, targetCard);
+            } else {
+              grid.insertBefore(draggedElement, targetCard.nextSibling);
+            }
+          }
+        });
         
-        const afterElement = this.getDragAfterElement(container, e.clientY);
-        if (afterElement == null) {
-          container.appendChild(draggedElement);
-        } else {
-          container.insertBefore(draggedElement, afterElement);
-        }
-      });
-      
-      card.addEventListener('dragenter', (e) => {
-        if (e.target.classList.contains('external-service-card') && e.target !== draggedElement) {
-          e.target.classList.add('drag-over');
-        }
-      });
-      
-      card.addEventListener('dragleave', (e) => {
-        if (e.target.classList.contains('external-service-card')) {
-          e.target.classList.remove('drag-over');
-        }
+        card.addEventListener('dragenter', (e) => {
+          // Find the card element even if hovering over child
+          let targetCard = e.target;
+          while (targetCard && !targetCard.classList.contains('external-service-card')) {
+            targetCard = targetCard.parentElement;
+          }
+          
+          if (targetCard && targetCard !== draggedElement && grid.contains(targetCard)) {
+            targetCard.classList.add('drag-over');
+          }
+        });
+        
+        card.addEventListener('dragleave', (e) => {
+          // Find the card element
+          let targetCard = e.target;
+          while (targetCard && !targetCard.classList.contains('external-service-card')) {
+            targetCard = targetCard.parentElement;
+          }
+          
+          if (targetCard) {
+            // Only remove if we're actually leaving the card
+            const rect = targetCard.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right || 
+                e.clientY < rect.top || e.clientY > rect.bottom) {
+              targetCard.classList.remove('drag-over');
+            }
+          }
+        });
       });
     });
   }
@@ -1825,6 +1855,208 @@ class EngineScriptDashboard {
   }
 
   // Generic Statuspage.io service loader
+  // Display service card immediately with loading state
+  displayServiceCardWithLoadingState(container, serviceKey, serviceDef) {
+    const serviceLink = document.createElement("a");
+    serviceLink.href = serviceDef.url;
+    serviceLink.target = "_blank";
+    serviceLink.rel = "noopener noreferrer";
+    serviceLink.className = "external-service-card loading";
+    serviceLink.dataset.serviceKey = serviceKey;
+    
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "service-header";
+    
+    const iconDiv = document.createElement("div");
+    iconDiv.className = `service-icon ${serviceDef.color}`;
+    iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+    
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "service-info";
+    
+    const h3 = document.createElement("h3");
+    h3.textContent = serviceDef.name;
+    
+    const statusSpan = document.createElement("span");
+    statusSpan.className = "service-status status-loading";
+    statusSpan.innerHTML = `<i class="fas fa-spinner fa-spin"></i> `;
+    statusSpan.appendChild(document.createTextNode("Loading..."));
+    
+    infoDiv.appendChild(h3);
+    infoDiv.appendChild(statusSpan);
+    headerDiv.appendChild(iconDiv);
+    headerDiv.appendChild(infoDiv);
+    serviceLink.appendChild(headerDiv);
+    
+    container.appendChild(serviceLink);
+  }
+
+  // Update feed-based service status asynchronously
+  async updateFeedServiceStatus(serviceKey, serviceDef) {
+    try {
+      // Check cache first
+      let data = this.state.getCachedService(serviceKey);
+      
+      if (!data) {
+        // Not in cache, fetch from API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
+        if (serviceDef.feedFilter) {
+          apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
+        }
+        
+        const response = await fetch(apiUrl, {
+          signal: controller.signal,
+          credentials: 'include'
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        data = await response.json();
+        
+        // Cache the response
+        this.state.setCachedService(serviceKey, data);
+      }
+      
+      if (!data || !data.status) {
+        throw new Error('Invalid feed response format');
+      }
+
+      // Find the card and update it
+      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
+      if (!serviceCard) {
+        console.error(`Card not found for service: ${serviceKey}`);
+        return;
+      }
+      
+      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
+      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+      
+      // Update card class
+      serviceCard.classList.remove("loading", "error");
+      
+      // Update status span
+      const statusSpan = serviceCard.querySelector(".service-status");
+      if (statusSpan) {
+        statusSpan.className = `service-status status-${statusColor}`;
+        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+        statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
+      }
+    } catch (error) {
+      console.error(`Failed to load ${serviceDef.name} feed status:`, error);
+      
+      let errorMessage = 'Unable to fetch status';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message && error.message.startsWith('HTTP error!')) {
+        errorMessage = 'Service unavailable';
+      }
+      
+      // Find the card and update it with error state
+      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
+      if (!serviceCard) {
+        console.error(`Card not found for service: ${serviceKey}`);
+        return;
+      }
+      
+      serviceCard.classList.remove("loading");
+      serviceCard.classList.add("error");
+      
+      const statusSpan = serviceCard.querySelector(".service-status");
+      if (statusSpan) {
+        statusSpan.className = "service-status status-error";
+        statusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
+        statusSpan.appendChild(document.createTextNode(errorMessage));
+      }
+    }
+  }
+
+  // Update StatusPage.io service status asynchronously
+  async updateStatusPageServiceStatus(serviceKey, serviceDef) {
+    try {
+      // Check cache first
+      let data = this.state.getCachedService(serviceKey);
+      
+      if (!data) {
+        // Not in cache, fetch from API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(serviceDef.api, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        data = await response.json();
+        
+        // Cache the response
+        this.state.setCachedService(serviceKey, data);
+      }
+      
+      if (!data || !data.status || !data.status.indicator) {
+        throw new Error('Invalid API response format');
+      }
+
+      // Find the card and update it
+      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
+      if (!serviceCard) {
+        console.error(`Card not found for service: ${serviceKey}`);
+        return;
+      }
+      
+      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
+      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+      
+      // Update card class
+      serviceCard.classList.remove("loading", "error");
+      
+      // Update status span
+      const statusSpan = serviceCard.querySelector(".service-status");
+      if (statusSpan) {
+        statusSpan.className = `service-status status-${statusColor}`;
+        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+        statusSpan.appendChild(document.createTextNode(this.sanitizeInput(data.status.description)));
+      }
+    } catch (error) {
+      console.error(`Failed to load ${serviceDef.name} status:`, error);
+      
+      let errorMessage = 'Unable to fetch status';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message && error.message.startsWith('HTTP error!')) {
+        errorMessage = 'Service unavailable';
+      }
+      
+      // Find the card and update it with error state
+      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
+      if (!serviceCard) {
+        console.error(`Card not found for service: ${serviceKey}`);
+        return;
+      }
+      
+      serviceCard.classList.remove("loading");
+      serviceCard.classList.add("error");
+      
+      const statusSpan = serviceCard.querySelector(".service-status");
+      if (statusSpan) {
+        statusSpan.className = "service-status status-error";
+        statusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
+        statusSpan.appendChild(document.createTextNode(errorMessage));
+      }
+    }
+  }
+
   async loadStatusPageService(container, serviceKey, serviceDef) {
     try {
       // Check cache first
