@@ -91,7 +91,28 @@ Changes are organized by date, with the most recent changes listed first.
   8. Advertising
   9. Security
 
-### 🐛 BUG FIXES: Service Configuration
+### 🐛 BUG FIXES: Service Configuration & Loading
+
+- **Fixed AWS Static Service Display**:
+  - AWS now correctly displays as static card with "Visit status page" link
+  - No longer shows perpetual "Loading..." state
+  - Added logic to detect static services (no API or feed) and render them immediately
+
+- **Fixed OpenAI Service Loading**:
+  - Added Atom feed monitoring: `https://status.openai.com/feed.atom`
+  - Configured to display incident titles like other RSS/Atom feeds
+  - Changed from static card to live status monitoring
+  - No longer stuck at "Loading..." state
+
+- **Removed Loading Screen Spinner**:
+  - Disabled central loading screen spinner that appeared during page load
+  - Dashboard now displays instantly with cards showing async loading states
+  - Eliminates spinning icon that could get stuck if service fails to load
+
+- **Fixed Flare Service Icon**:
+  - Corrected CSS class reference from `cloudflare-icon` to `flare-icon`
+  - Added proper orange gradient styling for Flare icon (#f4862b → #f99f4e)
+  - Service properly displays with correct branding
 
 - **Removed Duplicate Service Definitions**:
   - Fixed duplicate `openai` service definition in configuration
@@ -122,6 +143,15 @@ Changes are organized by date, with the most recent changes listed first.
   - Changed `#0099cc` to `#09c` (Vimeo icon)
 
 ### ✨ NEW: Additional Service Status Integrations
+
+- **Developer Tools**:
+  - Added Trello (Atlassian) status monitoring via StatusPage.io JSON API
+  - API endpoint: `https://trello.status.atlassian.com/api/v2/status.json`
+  - Added Pipedream status monitoring via StatusPage.io JSON API
+  - API endpoint: `https://status.pipedream.com/api/v2/status.json`
+  - Added Codacy status monitoring via RSS feed
+  - Feed URL: `https://status.codacy.com/history.rss`
+  - Displays incident titles only for clear, concise status updates
 
 - **Communication Services**:
   - Added SendGrid status monitoring via StatusPage.io JSON API

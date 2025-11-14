@@ -1526,8 +1526,24 @@ button:focus, select:focus, input:focus {
     background: linear-gradient(135deg, #d4a574, #e0b886);
 }
 
+.service-icon.codacy-icon {
+    background: linear-gradient(135deg, #222, #444);
+}
+
 .service-icon.facebook-icon {
     background: linear-gradient(135deg, #1877f2, #4a9ff5);
+}
+
+.service-icon.flare-icon {
+    background: linear-gradient(135deg, #f4862b, #f99f4e);
+}
+
+.service-icon.pipedream-icon {
+    background: linear-gradient(135deg, #0e1b2e, #1a2942);
+}
+
+.service-icon.trello-icon {
+    background: linear-gradient(135deg, #0079bf, #0091d5);
 }
 
 .service-icon.wordpress-icon {

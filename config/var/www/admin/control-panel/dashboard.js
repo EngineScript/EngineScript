@@ -162,16 +162,13 @@ class EngineScriptDashboard {
   }
     
   hideLoadingScreen() {
-    // Hide loading screen immediately, no artificial delay
+    // Hide loading screen immediately - cards now appear instantly with async loading
     const loadingScreen = document.getElementById("loading-screen");
     const dashboard = document.getElementById("dashboard");
 
     if (loadingScreen && dashboard) {
-      loadingScreen.style.opacity = "0";
-      setTimeout(() => {
-        loadingScreen.style.display = "none";
-        dashboard.style.display = "flex";
-      }, 500); // Fade out animation only
+      loadingScreen.style.display = "none";
+      dashboard.style.display = "flex";
     }
   }
 
@@ -846,18 +843,24 @@ class EngineScriptDashboard {
 
         // Display all cards immediately with loading state, then fetch statuses asynchronously
         for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
-          // Display card immediately with loading state
-          this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
-          
-          // Load status asynchronously without blocking
-          if (serviceDef.useFeed) {
-            this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
-              console.error(`Failed to load ${serviceDef.name}:`, err);
-            });
-          } else if (serviceDef.corsEnabled && serviceDef.api) {
-            this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
-              console.error(`Failed to load ${serviceDef.name}:`, err);
-            });
+          // Check if this is a static service (no API or feed)
+          if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
+            // Display static card immediately (e.g., AWS)
+            this.displayStaticServiceCard(categoryContainer, serviceKey, serviceDef);
+          } else {
+            // Display card immediately with loading state
+            this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
+            
+            // Load status asynchronously without blocking
+            if (serviceDef.useFeed) {
+              this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
+                console.error(`Failed to load ${serviceDef.name}:`, err);
+              });
+            } else if (serviceDef.corsEnabled && serviceDef.api) {
+              this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
+                console.error(`Failed to load ${serviceDef.name}:`, err);
+              });
+            }
           }
         }
 
@@ -953,7 +956,7 @@ class EngineScriptDashboard {
       'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'hostinger', 'jetpackapi', 'kinsta', 
       'linode', 'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wordpressapi', 'wpcloudapi',
       // Developer Tools
-      'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'postmark', 'twilio',
+      'codacy', 'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'pipedream', 'postmark', 'trello', 'twilio',
       // E-Commerce & Payments
       'coinbase', 'intuit', 'metafb', 'paypal', 'recurly', 'shopify', 'square', 'stripe', 'woocommercepay',
       // Email & Communication
@@ -1111,6 +1114,16 @@ class EngineScriptDashboard {
         useFeed: true
       },
       // DEVELOPER TOOLS
+      codacy: {
+        name: 'Codacy',
+        category: 'Developer Tools',
+        feedType: 'codacy',
+        url: 'https://status.codacy.com/',
+        icon: 'fa-code-branch',
+        color: 'codacy-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
       github: {
         name: 'GitHub',
         category: 'Developer Tools',
@@ -1139,6 +1152,16 @@ class EngineScriptDashboard {
         color: 'notion-icon',
         corsEnabled: true
       },
+      pipedream: {
+        name: 'Pipedream',
+        category: 'Developer Tools',
+        feedType: 'pipedream',
+        url: 'https://status.pipedream.com/',
+        icon: 'fa-project-diagram',
+        color: 'pipedream-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
       postmark: {
         name: 'Postmark',
         category: 'Email & Communication',
@@ -1146,6 +1169,16 @@ class EngineScriptDashboard {
         url: 'https://status.postmarkapp.com/',
         icon: 'fa-paper-plane',
         color: 'postmark-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      trello: {
+        name: 'Trello',
+        category: 'Developer Tools',
+        feedType: 'trello',
+        url: 'https://trello.status.atlassian.com/',
+        icon: 'fa-trello',
+        color: 'trello-icon',
         corsEnabled: false,
         useFeed: true
       },
@@ -1402,11 +1435,12 @@ class EngineScriptDashboard {
       openai: {
         name: 'OpenAI',
         category: 'AI & Machine Learning',
+        feedType: 'openai',
         url: 'https://status.openai.com/',
         icon: 'fa-brain',
         color: 'openai-icon',
         corsEnabled: false,
-        statusText: 'Visit status page'
+        useFeed: true
       },
       anthropic: {
         name: 'Anthropic (Claude)',
@@ -1506,7 +1540,7 @@ class EngineScriptDashboard {
         feedType: 'flare',
         url: 'https://status.flare.io/',
         icon: 'fa-shield-alt',
-        color: 'cloudflare-icon',
+        color: 'flare-icon',
         corsEnabled: false,
         useFeed: true
       }

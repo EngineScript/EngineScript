@@ -1517,7 +1517,8 @@ function handleStatusFeed() {
             'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
             'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
             'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
-            'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin'
+            'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
+            'trello', 'pipedream', 'codacy', 'openai'
         ];
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
@@ -1563,6 +1564,18 @@ function handleStatusFeed() {
             return;
         }
         
+        if ($feedType === 'trello') {
+            $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
+        if ($feedType === 'pipedream') {
+            $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
+            echo json_encode(['status' => $status]); // codacy:ignore - echo required for JSON response
+            return;
+        }
+        
         // Whitelist allowed RSS/Atom feeds for security
         $allowedFeeds = [
             'stripe' => 'https://www.stripestatus.com/history.atom',
@@ -1585,7 +1598,9 @@ function handleStatusFeed() {
             'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
             'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
             'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
-            'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss'
+            'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
+            'codacy' => 'https://status.codacy.com/history.rss',
+            'openai' => 'https://status.openai.com/feed.atom'
         ];
         
         if (!isset($allowedFeeds[$feedType])) {
@@ -1645,10 +1660,13 @@ function getExternalServicesConfig() {
         'wpcloudapi' => true,
 
         // Developer Tools
+        'codacy' => true,
         'github' => true,
         'gitlab' => true,
         'notion' => true,
+        'pipedream' => true,
         'postmark' => true,
+        'trello' => true,
         'twilio' => true,
         
         // E-Commerce & Payments
