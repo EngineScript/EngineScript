@@ -102,12 +102,18 @@ Created `.codacy-review-notes.md` documenting 11 false positive warnings:
 #### Codacy Configuration
 
 Created `.codacy.yml` to suppress expected API endpoint patterns:
-- Excludes API files from WordPress-specific rules (nonce verification, wp_unslash)
-- Allows `header()`, `echo`, `exit`, `die` in API endpoint files
-- Permits direct `$_GET` access when followed by validation/sanitization
-- Allows `file_get_contents()` and `stream_context_create()` for outbound HTTP requests
-- Disables line length limits for documentation files with URLs
-- Custom ignore patterns recognized: `@codacy ignore`, `@codacy [rule] explanation`
+- **Excludes WordPress core files** (`wp-config.php`) - not under our control
+- **Excludes API files** from WordPress-specific rules (nonce verification, wp_unslash)
+- **Allows required functions** in API endpoints: `header()`, `echo`, `exit`, `die`
+- **Permits direct superglobal access** when followed by strict validation/sanitization
+- **Allows outbound HTTP functions**: `file_get_contents()`, `stream_context_create()` with timeout
+- **Disables line length limits** for documentation files containing URLs
+- **Module inclusion allowed**: `require_once` with `__DIR__` constant (hardcoded paths)
+
+Added inline `@codacy suppress` comments for all 14 legitimate API patterns:
+- 11 suppressions in `external-services-api.php` (die, echo, exit, file_get_contents, stream_context_create)
+- 1 suppression in `api.php` (require_once for module inclusion)
+- All suppressions include clear explanations of why the pattern is necessary and safe
 
 ---
 

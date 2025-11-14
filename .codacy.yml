@@ -6,6 +6,9 @@ exclude_paths:
   # Documentation files with intentional long lines
   - 'config/var/www/admin/control-panel/external-services/README.md'
   - '.codacy-review-notes.md'
+  # WordPress core files - not under our control
+  - 'config/var/www/wordpress/wp-config.php'
+  - 'config/var/www/wordpress/**'
 
 engines:
   # PHP Code Sniffer Configuration

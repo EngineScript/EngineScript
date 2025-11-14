@@ -337,6 +337,7 @@ switch ($path) {
     case '/external-services/feed':
         // Route to external services API module
         define('ENGINESCRIPT_DASHBOARD', true);
+        // @codacy suppress [require_once statement detected] Module inclusion with __DIR__ constant - hardcoded path, no user input
         require_once __DIR__ . '/external-services/external-services-api.php';
         if ($path === '/external-services/config') {
             handleExternalServicesConfig();

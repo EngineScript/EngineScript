@@ -10,6 +10,7 @@
 // Security: Prevent direct access
 if (!defined('ENGINESCRIPT_DASHBOARD')) {
     http_response_code(403);
+    // @codacy suppress [Use of die language construct is discouraged] Required for security - unauthorized access prevention
     die('Direct access forbidden');
 }
 
@@ -22,6 +23,7 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 function parseStatusFeed($feedUrl, $filter = null) {
     try {
         // Set up context with timeout and user agent
+        // @codacy suppress [The use of function stream_context_create() is discouraged] Required for HTTP timeout configuration on outbound requests
         $context = stream_context_create([
             'http' => [
                 'timeout' => 45,
@@ -31,6 +33,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
         ]);
         
         // Fetch feed content
+        // @codacy suppress [The use of function file_get_contents() is discouraged] Used for outbound HTTP requests with timeout protection - not file system access
         $feedContent = @file_get_contents($feedUrl, false, $context);
         
         if ($feedContent === false) {
@@ -187,6 +190,7 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
             ]
         ]);
         
+        // @codacy suppress [The use of function file_get_contents() is discouraged] Outbound HTTP request to external API with timeout
         $response = file_get_contents($apiUrl, false, $context);
         if ($response === false) {
             return [
@@ -513,7 +517,9 @@ function handleStatusFeed() {
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
             http_response_code(400);
             header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
             echo json_encode(['error' => 'Missing feed parameter']);
+            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
             exit;
         }
         
@@ -533,7 +539,9 @@ function handleStatusFeed() {
         if (!in_array($feedType, $allowedFeedTypes, true)) {
             http_response_code(400);
             header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
             echo json_encode(['error' => 'Invalid feed type']);
+            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
             exit;
         }
         
@@ -541,6 +549,7 @@ function handleStatusFeed() {
         if ($feedType === 'vultr') {
             $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
             header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON response
             echo json_encode(['status' => $status]);
             exit;
         }
@@ -632,6 +641,7 @@ function handleStatusFeed() {
         
         // Get optional filter parameter for feeds like automattic
         // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
+        // @codacy suppress [not unslashed before sanitization] Not WordPress - wp_unslash() doesn't exist in standalone PHP
         $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
         
         // Sanitize filter parameter to prevent injection
@@ -757,12 +767,14 @@ function handleExternalServicesConfig() {
         
         // Return all available services (preferences now stored client-side in cookies)
         header('Content-Type: application/json');
+        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON response
         echo json_encode($config);
         exit;
     } catch (Exception $e) {
         http_response_code(500);
         header('Content-Type: application/json');
         error_log('External services config error: ' . $e->getMessage());
+        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
         echo json_encode(['error' => 'Unable to retrieve external services config']);
         exit;
     }
