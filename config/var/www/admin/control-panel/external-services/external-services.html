@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngineScript External Services - Integration Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1, h2, h3 {
+            color: #00d4aa;
+        }
+        pre {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #444;
+        }
+        code {
+            background: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00d4aa;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 12px;
+            border: 1px solid #444;
+        }
+        .note {
+            background: rgba(0, 212, 170, 0.1);
+            border-left: 4px solid #00d4aa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: rgba(255, 184, 0, 0.1);
+            border-left: 4px solid #ffb800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>EngineScript External Services Module</h1>
+    <p>Complete integration guide and HTML template documentation for the external services monitoring module.</p>
+
+    <div class="section">
+        <h2>📋 Overview</h2>
+        <p>The External Services module provides real-time status monitoring for 60+ external services including hosting providers, payment processors, developer tools, and more. Features include:</p>
+        <ul>
+            <li>✅ Real-time status monitoring from StatusPage.io APIs and RSS/Atom feeds</li>
+            <li>✅ Drag-and-drop card reordering with persistent preferences</li>
+            <li>✅ Client-side preference storage using cookies (no backend required)</li>
+            <li>✅ 5-minute caching for improved performance</li>
+            <li>✅ Categorized service organization</li>
+            <li>✅ Staggered async loading to prevent browser connection limits</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🏗️ Required DOM Structure</h2>
+        <p>Your dashboard page must include these container elements:</p>
+        
+        <h3>1. Settings Container</h3>
+        <pre><code>&lt;!-- Service Settings Panel --&gt;
+&lt;div id="external-services-settings" class="external-services-settings"&gt;
+    &lt;!-- Settings content will be dynamically rendered here --&gt;
+&lt;/div&gt;</code></pre>
+
+        <h3>2. Services Grid Container</h3>
+        <pre><code>&lt;!-- Services Display Grid --&gt;
+&lt;div id="external-services-grid" class="external-services-grid"&gt;
+    &lt;!-- Service cards will be dynamically rendered here --&gt;
+&lt;/div&gt;</code></pre>
+
+        <div class="note">
+            <strong>Note:</strong> The settings container should appear above the grid container for optimal UX.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📦 Complete Integration Example</h2>
+        <p>Full HTML page structure with external services integration:</p>
+
+        <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Dashboard - External Services&lt;/title&gt;
+    
+    &lt;!-- CSS Dependencies --&gt;
+    &lt;link rel="stylesheet" href="dashboard.css"&gt;
+    &lt;link rel="stylesheet" href="external-services/external-services.css"&gt;
+    
+    &lt;!-- Font Awesome for icons --&gt;
+    &lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="page-content" id="external-services-page" style="display: none;"&gt;
+        &lt;div class="page-header"&gt;
+            &lt;h2&gt;External Services Status&lt;/h2&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Service Settings Panel --&gt;
+        &lt;div id="external-services-settings" class="external-services-settings"&gt;
+            &lt;!-- Dynamically rendered by ExternalServicesManager --&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Services Grid --&gt;
+        &lt;div id="external-services-grid" class="external-services-grid"&gt;
+            &lt;!-- Dynamically rendered by ExternalServicesManager --&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- JavaScript Dependencies (ES6 Modules) --&gt;
+    &lt;script type="module"&gt;
+        import { ExternalServicesManager } from './external-services/external-services.js';
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const servicesManager = new ExternalServicesManager(
+                '#external-services-grid',
+                '#external-services-settings'
+            );
+            
+            await servicesManager.init();
+        });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>🔌 API Endpoints Required</h2>
+        <p>The module requires these API endpoints to be available:</p>
+
+        <h3>1. External Services Config</h3>
+        <pre><code>GET /api/external-services/config
+
+Response:
+{
+    "aws": true,
+    "cloudflare": true,
+    "github": true,
+    ...
+}</code></pre>
+
+        <h3>2. Status Feed Proxy</h3>
+        <pre><code>GET /api/external-services/feed?feed={feedType}&amp;filter={optional}
+
+Parameters:
+- feed: Required feed type (stripe, github, etc.)
+- filter: Optional service name filter
+
+Response:
+{
+    "status": {
+        "indicator": "none|minor|major",
+        "description": "Status message"
+    }
+}</code></pre>
+
+        <div class="note">
+            <strong>Security:</strong> Both endpoints implement strict whitelisting and input validation. See <code>external-services-api.php</code> for implementation details.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🎨 CSS Variables</h2>
+        <p>The module uses these CSS custom properties (already defined in dashboard.css):</p>
+
+        <pre><code>:root {
+    --primary-bg: #1a1a1a;
+    --secondary-bg: #2d2d2d;
+    --card-bg: #333;
+    --accent-color: #00d4aa;
+    --accent-hover: #00c49a;
+    --text-primary: #fff;
+    --text-secondary: #b3b3b3;
+    --border-color: #444;
+    --success-color: #00d4aa;
+    --warning-color: #ffb800;
+    --error-color: #f44;
+    --info-color: #00a8ff;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>💾 Client-Side Storage</h2>
+        <p>User preferences are stored in cookies with 1-year expiration:</p>
+
+        <h3>Cookie Structure</h3>
+        <ul>
+            <li><code>servicePreferences</code> - JSON object of enabled/disabled services</li>
+            <li><code>serviceOrder</code> - Array of service keys in custom order</li>
+        </ul>
+
+        <pre><code>// Example servicePreferences cookie value:
+{
+    "github": true,
+    "stripe": true,
+    "aws": false,
+    ...
+}
+
+// Example serviceOrder cookie value:
+["github", "stripe", "cloudflare", ...]</code></pre>
+
+        <div class="note">
+            <strong>Privacy:</strong> All preferences are stored client-side. No server-side user tracking.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔧 JavaScript API</h2>
+        <p>Public methods available on the ExternalServicesManager instance:</p>
+
+        <h3>Constructor</h3>
+        <pre><code>const manager = new ExternalServicesManager(
+    containerSelector,      // CSS selector for service cards container
+    settingsContainerSelector  // CSS selector for settings panel
+);</code></pre>
+
+        <h3>Public Methods</h3>
+        <pre><code>// Initialize and load services
+await manager.init();
+
+// Clear cache and reload
+manager.clearCache();
+await manager.loadExternalServices();
+
+// Manual preference management
+const prefs = manager.loadServicePreferences();
+manager.setCookie('servicePreferences', JSON.stringify(newPrefs), 365);</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Customization</h2>
+        
+        <h3>Adding New Services</h3>
+        <p>To add a new service, update the <code>getServiceDefinitions()</code> method in <code>external-services.js</code>:</p>
+
+        <pre><code>newservice: {
+    name: 'Service Name',
+    category: 'Hosting & Infrastructure',
+    api: 'https://status.example.com/api/v2/status.json',  // For StatusPage.io
+    url: 'https://status.example.com/',
+    icon: 'fa-icon-name',
+    color: 'service-icon-class',
+    corsEnabled: true  // false for feed-based services
+}</code></pre>
+
+        <h3>For Feed-Based Services</h3>
+        <pre><code>newservice: {
+    name: 'Service Name',
+    category: 'Developer Tools',
+    feedType: 'newservice',  // Add to whitelist in API
+    url: 'https://status.example.com/',
+    icon: 'fa-icon-name',
+    color: 'service-icon-class',
+    corsEnabled: false,
+    useFeed: true
+}</code></pre>
+
+        <div class="warning">
+            <strong>Security:</strong> Always add feed types to the whitelist in <code>external-services-api.php</code> before using them.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📱 Responsive Design</h2>
+        <p>The module is fully responsive with breakpoints:</p>
+
+        <ul>
+            <li><strong>Desktop (> 768px):</strong> Multi-column grid layout</li>
+            <li><strong>Mobile (≤ 768px):</strong> Single column stacked layout</li>
+        </ul>
+
+        <p>Drag-and-drop reordering works on both desktop and mobile (touch events supported).</p>
+    </div>
+
+    <div class="section">
+        <h2>⚡ Performance Features</h2>
+        
+        <h3>Caching Strategy</h3>
+        <ul>
+            <li>5-minute TTL for service status data</li>
+            <li>In-memory Map cache for current session</li>
+            <li>Cache cleared on preference changes</li>
+        </ul>
+
+        <h3>Async Loading</h3>
+        <ul>
+            <li>Cards displayed immediately with loading state</li>
+            <li>Status fetched asynchronously (60ms stagger between requests)</li>
+            <li>Prevents browser connection limit issues</li>
+            <li>Non-blocking UI updates</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🐛 Debugging</h2>
+        <p>Enable console logging for troubleshooting:</p>
+
+        <pre><code>// Check if manager is initialized
+console.log(window.externalServicesManager);
+
+// View cached services
+console.log(manager.serviceCache);
+
+// Check current preferences
+console.log(manager.loadServicePreferences());
+
+// View service order
+console.log(manager.getServiceOrder());</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>✅ Browser Compatibility</h2>
+        <p>Tested and compatible with:</p>
+        <ul>
+            <li>✅ Chrome/Edge 90+</li>
+            <li>✅ Firefox 88+</li>
+            <li>✅ Safari 14+</li>
+            <li>✅ Mobile browsers (iOS Safari, Chrome Mobile)</li>
+        </ul>
+
+        <p><strong>Requirements:</strong> ES6 modules, Fetch API, CSS Grid, Custom Properties</p>
+    </div>
+
+    <div class="section">
+        <h2>📚 File Structure</h2>
+        <pre><code>config/var/www/admin/control-panel/
+├── external-services/
+│   ├── external-services.js          # Main ES6 module class
+│   ├── external-services.css         # Styles for service cards & settings
+│   ├── external-services-api.php     # Backend feed parsing & API handlers
+│   └── external-services.html        # This integration guide
+├── modules/
+│   └── utils.js                      # Shared utilities (required import)
+└── api.php                           # Main API router (includes external-services-api.php)</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>🔐 Security Considerations</h2>
+        <ul>
+            <li>✅ Input validation with strict whitelisting</li>
+            <li>✅ XSS prevention using sanitizeInput from utils module</li>
+            <li>✅ CORS restrictions on feed endpoints</li>
+            <li>✅ No eval() or innerHTML with user input</li>
+            <li>✅ Rate limiting on API endpoints (100 req/min)</li>
+            <li>✅ CSRF token validation on state-changing operations</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📞 Support</h2>
+        <p>For issues or feature requests, refer to the main EngineScript repository.</p>
+        <p><strong>Version:</strong> 1.0.0<br>
+        <strong>Last Updated:</strong> November 2025</p>
+    </div>
+</body>
+</html>

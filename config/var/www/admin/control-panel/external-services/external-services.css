@@ -1,0 +1,427 @@
+/* EngineScript External Services - Styles */
+
+/* External Services Grid */
+.external-services-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Service Category Headers */
+.service-category-header {
+    margin-top: 1rem;
+}
+
+.service-category-header h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* Service Category Grid */
+.service-category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Settings Panel */
+.external-services-settings {
+    margin-bottom: 1.5rem;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    overflow: hidden;
+}
+
+.settings-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.settings-toggle-btn:hover {
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.settings-toggle-btn .toggle-icon {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.settings-content {
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color) var(--card-bg);
+}
+
+.settings-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+    background: var(--card-bg);
+    border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
+.settings-content.collapsed {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 1.5rem;
+}
+
+.settings-header {
+    margin-bottom: 1rem;
+}
+
+.settings-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.settings-category {
+    margin-bottom: 1.5rem;
+}
+
+.settings-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.service-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.service-toggle:hover {
+    border-color: var(--accent-color);
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.service-toggle input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--accent-color);
+    width: 18px;
+    height: 18px;
+}
+
+.service-toggle span {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.settings-save-btn {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.settings-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--text-secondary);
+}
+
+.settings-save-btn:not(:disabled):hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+}
+
+/* Service Cards */
+.external-service-card {
+    display: block;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    transition: var(--transition);
+    text-decoration: none;
+    color: inherit;
+    cursor: grab;
+}
+
+.external-service-card:active {
+    cursor: grabbing;
+}
+
+.external-service-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.external-service-card.drag-over {
+    border: 2px dashed var(--accent-color);
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.external-service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: var(--accent-color);
+}
+
+.external-service-card.error {
+    opacity: 0.7;
+}
+
+.external-service-card.error:hover {
+    opacity: 0.85;
+}
+
+.external-service-card.static {
+    opacity: 0.9;
+}
+
+.external-service-card.static:hover {
+    opacity: 1;
+}
+
+/* Service Header */
+.service-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+/* Service Icons */
+.service-icon {
+    display: none;
+}
+
+.service-icon.cloudflare-icon {
+    background: linear-gradient(135deg, #f38020, #f4a020);
+}
+
+.service-icon.digitalocean-icon {
+    background: linear-gradient(135deg, #0080ff, #05c);
+}
+
+.service-icon.aws-icon {
+    background: linear-gradient(135deg, #f90, #fa0);
+}
+
+.service-icon.github-icon {
+    background: linear-gradient(135deg, #24292e, #424242);
+}
+
+.service-icon.letsencrypt-icon {
+    background: linear-gradient(135deg, #33a542, #4cb548);
+}
+
+.service-icon.mailgun-icon {
+    background: linear-gradient(135deg, #a020f0, #b833f5);
+}
+
+.service-icon.stripe-icon {
+    background: linear-gradient(135deg, #0055de, #06f);
+}
+
+.service-icon.vimeo-icon {
+    background: linear-gradient(135deg, #1ab7ea, #09c);
+}
+
+.service-icon.sendgrid-icon {
+    background: linear-gradient(135deg, #1a82e2, #2196f3);
+}
+
+.service-icon.spotify-icon {
+    background: linear-gradient(135deg, #1db954, #1ed760);
+}
+
+.service-icon.anthropic-icon {
+    background: linear-gradient(135deg, #d4a574, #e0b886);
+}
+
+.service-icon.codacy-icon {
+    background: linear-gradient(135deg, #222, #444);
+}
+
+.service-icon.facebook-icon {
+    background: linear-gradient(135deg, #1877f2, #4a9ff5);
+}
+
+.service-icon.flare-icon {
+    background: linear-gradient(135deg, #f4862b, #f99f4e);
+}
+
+.service-icon.pipedream-icon {
+    background: linear-gradient(135deg, #0e1b2e, #1a2942);
+}
+
+.service-icon.trello-icon {
+    background: linear-gradient(135deg, #0079bf, #0091d5);
+}
+
+.service-icon.wordpress-icon {
+    background: linear-gradient(135deg, #21759b, #2ea2cc);
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+/* Service Info */
+.service-info {
+    flex: 1;
+}
+
+.service-category-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    background: rgba(0, 212, 170, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.service-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+/* Service Status */
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.service-status.status-success {
+    color: var(--success-color);
+}
+
+.service-status.status-warning {
+    color: var(--warning-color);
+}
+
+.service-status.status-error {
+    color: var(--error-color);
+}
+
+.service-status.status-info {
+    color: var(--info-color);
+}
+
+.service-status.status-loading {
+    color: var(--text-secondary);
+}
+
+/* Loading State */
+.loading-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .service-category-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Notifications */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}

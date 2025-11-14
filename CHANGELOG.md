@@ -4,12 +4,124 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-14
+
+### 🏗️ REFACTORING: External Services Module Extraction (COMPLETED)
+
+**Created standalone external services module** in `config/var/www/admin/control-panel/external-services/`
+
+**Full separation achieved** - all external services code completely extracted and cleaned from main dashboard files
+
+#### New Module Files Created
+
+- **`external-services.js`** - ES6 module class with self-contained service management
+  - `ExternalServicesManager` class with own state management
+  - 5-minute cache TTL for improved performance
+  - Imports utilities from shared `modules/utils.js`
+  - Constructor accepts container IDs for flexible integration
+  - Public `init()` method for clean initialization
+  - All service definitions, preferences, ordering, drag-drop functionality
+  
+- **`external-services.css`** - Complete styling extracted from dashboard.css (lines 1197-1583)
+  - Service cards, grids, headers, icons
+  - Drag-drop states and visual indicators
+  - Loading states and skeleton loaders
+  - Settings panel with collapsible sections
+  - Service toggles and save button
+  - All service icon gradients and colors
+  - Responsive breakpoints for mobile/tablet
+  
+- **`external-services-api.php`** - All feed parsing and backend logic extracted from api.php
+  - `parseStatusFeed()` - RSS/Atom feed parser with 48-hour recency filter
+  - `parseGoogleWorkspaceIncidents()` - Google Workspace JSON API parser
+  - `parseWistiaSummary()` - Wistia status JSON parser
+  - `parseVultrAlerts()` - Vultr alerts JSON parser
+  - `parsePostmarkNotices()` - Postmark notices API parser
+  - `parseStatusPageAPI()` - Standard StatusPage.io JSON parser
+  - `handleStatusFeed()` - Feed request routing with strict whitelisting
+  - `getExternalServicesConfig()` - Available services configuration
+  - `handleExternalServicesConfig()` - Config endpoint handler
+  - All security validation and input sanitization
+  
+- **`external-services.html`** - Comprehensive integration guide and documentation
+  - Required DOM structure and element IDs
+  - Complete integration examples
+  - API endpoint specifications
+  - Customization instructions for adding new services
+  - Security best practices
+  - Performance features explained
+  - Browser compatibility information
+
+#### Architecture Improvements
+
+- **Maintains all existing functionality** including:
+  - 60+ external service definitions with categorization
+  - Drag-and-drop card reordering with persistent preferences
+  - Client-side cookie storage (servicePreferences, serviceOrder)
+  - Service toggle settings panel with save functionality
+  - Staggered async loading (60ms delay between requests)
+  - Static service cards for non-API services (AWS)
+  - Loading states and error handling
+  - All security measures (input validation, XSS prevention, whitelisting)
+
+- **ES6 module architecture:**
+  - Clean imports/exports
+  - No global namespace pollution
+  - Proper encapsulation
+  - Reusable across projects
+
+#### Legacy Code Removal & Cleanup (VERIFIED COMPLETE)
+
+- **dashboard.js** - Removed 1,598 lines of external services code (60% reduction: 2,633 → 1,035 lines)
+  - ✅ **VERIFIED CLEAN**: No external services methods remain
+  - ✅ Only proper integration code: import statement and initialization
+  - ✅ Clean delegation to ExternalServicesManager module
+  - ✅ Retained all core dashboard functionality (LEMP stack services, sites, system info, uptime monitoring)
+  - ✅ No service-specific code (cloudflare, stripe, vultr, github, etc.)
+  
+- **dashboard.css** - Removed ~380 lines of external services styles (1,608 → 1,228 lines)
+  - ✅ **VERIFIED CLEAN**: No external services styles remain
+  - ✅ All service card styles moved to external-services.css
+  - ✅ All service icon gradients and colors moved
+  - ✅ All settings panel styles moved
+  - ✅ All drag-drop visual states moved
+  - ✅ Retained core service styles (for LEMP stack: Nginx, PHP, MySQL, Redis)
+  - ✅ Only cleanup marker comment remains
+  
+- **api.php** - Removed ~750 lines of external services backend code (FINAL CLEANUP COMPLETE)
+  - **Removed all orphaned feed parsing functions** (lines 1018-1700+)
+    - `parseStatusFeed()` with Atom/RSS logic
+    - `parseGoogleWorkspaceIncidents()`
+    - `parseWistiaSummary()`
+    - `parseVultrAlerts()`
+    - `parsePostmarkNotices()`
+    - `parseStatusPageAPI()`
+    - `handleStatusFeed()` with all feed routing
+  - **Removed duplicate config functions** (lines 1639-1731)
+    - `getExternalServicesConfig()` with full service list
+    - `handleExternalServicesConfig()` handler
+  - **Added security constant definition** before requiring external-services-api.php
+  - **Clean routing** delegates to external services module correctly
+  - **Retained UptimeRobot integration** (monitoring endpoints, not external services)
+  - **Retained all core API endpoints** (system info, services status, sites, alerts, etc.)
+
+#### Benefits
+
+- ✅ **Improved maintainability** through separation of concerns
+- ✅ **Better code organization** with clear module boundaries
+- ✅ **Easier testing** of isolated components
+- ✅ **Reusability** across different dashboard implementations
+- ✅ **Clear documentation** for integration and customization
+- ✅ **No breaking changes** - all functionality preserved
+- ✅ **Massive code reduction** in main dashboard files (~2,700 lines extracted)
+- ✅ **Ready for standalone project** - just copy external-services/ + modules/utils.js
+
 ## 2025-11-13
 
 ### ⚡ PERFORMANCE: Request Management & Timeout Improvements
 
 - **Staggered Request Loading**:
-  - Services now load with 50ms delay between each request
+  - Services now load with 60ms delay between each request
   - Prevents overwhelming browser connection limits (typically 6 concurrent connections)
   - Eliminates timeout issues for services at bottom of page
   - All services get fair chance to load without competing for limited connections
