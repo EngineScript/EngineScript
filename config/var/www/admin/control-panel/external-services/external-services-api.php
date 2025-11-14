@@ -509,7 +509,7 @@ function handleStatusFeed() {
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Missing feed parameter']);
-            return;
+            exit;
         }
         
         $feedType = $_GET['feed'];
@@ -527,56 +527,56 @@ function handleStatusFeed() {
         if (!in_array($feedType, $allowedFeedTypes, true)) {
             http_response_code(400);
             echo json_encode(['error' => 'Invalid feed type']);
-            return;
+            exit;
         }
         
         // Handle special JSON API feeds
         if ($feedType === 'vultr') {
             $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'postmark') {
             $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'googleworkspace') {
             $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'wistia') {
             $status = parseWistiaSummary('https://status.wistia.com/summary.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'sendgrid') {
             $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'spotify') {
             $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'trello') {
             $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         if ($feedType === 'pipedream') {
             $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
             echo json_encode(['status' => $status]);
-            return;
+            exit;
         }
         
         // Whitelist allowed RSS/Atom feeds for security
@@ -609,7 +609,7 @@ function handleStatusFeed() {
         if (!isset($allowedFeeds[$feedType])) {
             http_response_code(400);
             echo json_encode(['error' => 'Invalid feed type']);
-            return;
+            exit;
         }
         
         $feedUrl = $allowedFeeds[$feedType];
@@ -632,11 +632,13 @@ function handleStatusFeed() {
         $status = parseStatusFeed($feedUrl, $filter);
         
         echo json_encode(['status' => $status]);
+        exit;
         
     } catch (Exception $e) {
         http_response_code(500);
         error_log('Status feed error: ' . $e->getMessage());
         echo json_encode(['error' => 'Unable to fetch status feed']);
+        exit;
     }
 }
 
@@ -736,11 +738,11 @@ function handleExternalServicesConfig() {
         
         // Return all available services (preferences now stored client-side in cookies)
         echo json_encode($config);
+        exit;
     } catch (Exception $e) {
         http_response_code(500);
         error_log('External services config error: ' . $e->getMessage());
         echo json_encode(['error' => 'Unable to retrieve external services config']);
+        exit;
     }
 }
-
-?>

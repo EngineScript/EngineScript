@@ -6,6 +6,28 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2025-11-14
 
+### 🐛 CRITICAL FIX: External Services API Handler Script Termination
+
+**Fixed 502 Bad Gateway errors** caused by improper script termination in external-services-api.php
+
+#### Problem Identified
+- Handler functions (`handleStatusFeed()`, `handleExternalServicesConfig()`) were outputting JSON but not terminating script execution
+- PHP continued executing after `return` statements, causing additional output and 502 errors
+- Closing `?>` tag was present (bad practice for include-only files)
+
+#### Changes Made to `external-services-api.php`
+- ✅ Added `exit;` after all `echo json_encode()` statements in `handleStatusFeed()`
+- ✅ Added `exit;` after all `echo json_encode()` statements in `handleExternalServicesConfig()`
+- ✅ Replaced all `return;` with `exit;` in error handlers (12 locations)
+- ✅ Removed closing `?>` tag (PHP best practice)
+
+#### Impact
+- **Resolved**: 502 Bad Gateway errors when loading external services
+- **Resolved**: Multiple "AbortError: signal is aborted without reason" errors in browser console
+- **Result**: External services feed requests now complete successfully
+
+---
+
 ### 🏗️ REFACTORING: External Services Module Extraction (COMPLETED)
 
 **Created standalone external services module** in `config/var/www/admin/control-panel/external-services/`
