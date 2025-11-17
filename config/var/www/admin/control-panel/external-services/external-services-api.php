@@ -68,12 +68,13 @@ function parseStatusFeed($feedUrl, $filter = null) {
             throw new Exception('Failed to fetch feed');
         }
         
-        // Suppress XML errors and parse with security flags
+        // Suppress XML errors and parse securely
         libxml_use_internal_errors(true);
-        // Disable external entities to prevent XXE attacks
+        // Disable external entity processing to prevent XXE attacks
         libxml_disable_entity_loader(true);
-        // Parse XML without entity expansion to prevent XXE attacks
-        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement', LIBXML_NOCDATA);
+        // Parse XML without entity substitution (secure by default)
+        // Do not use LIBXML_NOENT as it enables external entity substitution
+        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement');
         libxml_clear_errors();
         
         if ($xml === false) {
