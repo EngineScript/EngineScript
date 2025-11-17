@@ -148,8 +148,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
         // Check if it's an RSS feed
         elseif (isset($xml->channel->item)) {
             // If filter provided, find matching item
+            $latestItem = null;
             if ($filter !== null) {
-                $latestItem = null;
                 foreach ($xml->channel->item as $item) {
                     $itemTitle = isset($item->title) ? (string)$item->title : '';
                     if (stripos($itemTitle, $filter) !== false) {
@@ -161,9 +161,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 if ($latestItem === null) {
                     return $status;
                 }
-            } else {
-                $latestItem = $xml->channel->item[0];
             }
+            $latestItem = $latestItem ?? $xml->channel->item[0];
             
             $title = isset($latestItem->title) ? (string)$latestItem->title : '';
             $description = isset($latestItem->description) ? (string)$latestItem->description : '';
