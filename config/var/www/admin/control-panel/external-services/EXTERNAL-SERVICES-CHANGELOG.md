@@ -204,6 +204,7 @@ function sanitizeFeedText($text) {
 #### Categories Affected
 
 All 9 service categories:
+
 1. Hosting & Infrastructure (17 services)
 2. Developer Tools (8 services)
 3. E-Commerce & Payments (9 services)
@@ -284,7 +285,7 @@ async loadExternalServices() {
 
 ### 🐛 BUG FIX: Font Awesome Version & Cloudflare Rocket Loader Compatibility
 
-**Fixed Font Awesome 404 error and ES6 module preload warnings**
+- Fixed Font Awesome 404 error and ES6 module preload warnings
 
 #### Problem 1: Invalid Font Awesome Version
 

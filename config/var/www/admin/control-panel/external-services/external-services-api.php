@@ -89,8 +89,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
         // Check if it's an Atom feed
         if (isset($xml->entry)) {
             // If filter provided, find matching entry
+            $latestEntry = null;
             if ($filter !== null) {
-                $latestEntry = null;
                 foreach ($xml->entry as $entry) {
                     $entryTitle = isset($entry->title) ? (string)$entry->title : '';
                     if (stripos($entryTitle, $filter) !== false) {
@@ -102,9 +102,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 if ($latestEntry === null) {
                     return $status;
                 }
-            } else {
-                $latestEntry = $xml->entry[0];
             }
+            $latestEntry = $latestEntry ?? $xml->entry[0];
             
             $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
             $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
