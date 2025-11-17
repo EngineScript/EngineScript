@@ -72,7 +72,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
         libxml_use_internal_errors(true);
         // Disable external entities to prevent XXE attacks
         libxml_disable_entity_loader(true);
-        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement', LIBXML_NOENT | LIBXML_NOCDATA);
+        // Parse XML without entity expansion to prevent XXE attacks
+        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement', LIBXML_NOCDATA);
         libxml_clear_errors();
         
         if ($xml === false) {
