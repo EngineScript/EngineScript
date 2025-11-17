@@ -180,7 +180,7 @@ class EngineScriptDashboard {
 
       console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
-      const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.14.01');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.17.01');
       
       console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
