@@ -563,7 +563,8 @@ function handleStatusFeed() {
             'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
             'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
             'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
-            'trello', 'pipedream', 'codacy', 'openai'
+            'trello', 'pipedream', 'codacy', 'openai',
+            'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
         ];
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
