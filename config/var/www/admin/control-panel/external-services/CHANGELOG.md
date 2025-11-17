@@ -73,6 +73,7 @@ function sanitizeFeedText($text) {
 #### New Services Added
 
 **Email & Communication Category:**
+
 - **SparkPost** - `https://status.sparkpost.com/`
 - **Zoho** - `https://status.zoho.com/`
 - **Mailjet** - `https://status.mailjet.com/`
@@ -1238,3 +1239,4 @@ Added inline `@codacy suppress` comments for all 14 legitimate API patterns:
   - Added .aws-icon, .github-icon, .letsencrypt-icon, .mailgun-icon, .stripe-icon, .vimeo-icon gradients
   - Brand-accurate colors for each service
   - Consistent with existing Cloudflare and DigitalOcean styling
+  
