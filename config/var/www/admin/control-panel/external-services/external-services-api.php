@@ -731,6 +731,7 @@ function getExternalServicesConfig() {
         'upcloud' => true,
         'vercel' => true,
         'vultr' => true,
+        'godaddy' => true,
         'wordpressapi' => true,
         'wpcloudapi' => true,
 
@@ -755,13 +756,22 @@ function getExternalServicesConfig() {
         'stripe' => true,
         'woocommercepay' => true,
         
-        // Email & Communication
+        // Email Services
         'brevo' => true,
-        'discord' => true,
+        'mailersend' => true,
         'mailgun' => true,
+        'mailjet' => true,
         'mailpoet' => true,
         'postmark' => true,
+        'resend' => true,
         'sendgrid' => true,
+        'sendlayer' => true,
+        'smtp2go' => true,
+        'sparkpost' => true,
+        'zoho' => true,
+        
+        // Communication
+        'discord' => true,
         'slack' => true,
         'zoom' => true,
         

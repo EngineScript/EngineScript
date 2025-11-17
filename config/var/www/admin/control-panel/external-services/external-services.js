@@ -387,7 +387,7 @@ export class ExternalServicesManager {
       },
       postmark: {
         name: 'Postmark',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'postmark',
         url: 'https://status.postmarkapp.com/',
         icon: 'fa-paper-plane',
@@ -464,10 +464,10 @@ export class ExternalServicesManager {
         corsEnabled: false,
         useFeed: true
       },
-      // EMAIL & COMMUNICATION
+      // COMMUNICATION
       discord: {
         name: 'Discord',
-        category: 'Email & Communication',
+        category: 'Communication',
         api: 'https://discordstatus.com/api/v2/status.json',
         url: 'https://discordstatus.com/',
         icon: 'fa-discord',
@@ -476,7 +476,7 @@ export class ExternalServicesManager {
       },
       brevo: {
         name: 'Brevo',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'brevo',
         url: 'https://status.brevo.com/',
         icon: 'fa-envelope-open',
@@ -486,7 +486,7 @@ export class ExternalServicesManager {
       },
       mailgun: {
         name: 'Mailgun',
-        category: 'Email & Communication',
+        category: 'Email Services',
         api: 'https://status.mailgun.com/api/v2/status.json',
         url: 'https://status.mailgun.com/',
         icon: 'fa-envelope',
@@ -495,7 +495,7 @@ export class ExternalServicesManager {
       },
       sendgrid: {
         name: 'SendGrid',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'sendgrid',
         url: 'https://status.sendgrid.com/',
         icon: 'fa-envelope',
@@ -505,7 +505,7 @@ export class ExternalServicesManager {
       },
       slack: {
         name: 'Slack',
-        category: 'Email & Communication',
+        category: 'Communication',
         feedType: 'slack',
         url: 'https://slack-status.com/',
         icon: 'fa-slack',
@@ -515,7 +515,7 @@ export class ExternalServicesManager {
       },
       zoom: {
         name: 'Zoom',
-        category: 'Email & Communication',
+        category: 'Communication',
         api: 'https://www.zoomstatus.com/api/v2/status.json',
         url: 'https://www.zoomstatus.com/',
         icon: 'fa-video',
@@ -524,7 +524,7 @@ export class ExternalServicesManager {
       },
       sparkpost: {
         name: 'SparkPost',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'sparkpost',
         url: 'https://status.sparkpost.com/',
         icon: 'fa-envelope',
@@ -534,7 +534,7 @@ export class ExternalServicesManager {
       },
       zoho: {
         name: 'Zoho',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'zoho',
         url: 'https://status.zoho.com/',
         icon: 'fa-envelope',
@@ -544,7 +544,7 @@ export class ExternalServicesManager {
       },
       mailjet: {
         name: 'Mailjet',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'mailjet',
         url: 'https://status.mailjet.com/',
         icon: 'fa-envelope',
@@ -554,7 +554,7 @@ export class ExternalServicesManager {
       },
       mailersend: {
         name: 'MailerSend',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'mailersend',
         url: 'https://status.mailersend.com/',
         icon: 'fa-paper-plane',
@@ -564,7 +564,7 @@ export class ExternalServicesManager {
       },
       resend: {
         name: 'Resend',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'resend',
         url: 'https://resend-status.com/',
         icon: 'fa-paper-plane',
@@ -574,7 +574,7 @@ export class ExternalServicesManager {
       },
       smtp2go: {
         name: 'SMTP2GO',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'smtp2go',
         url: 'https://smtp2gostatus.com/',
         icon: 'fa-envelope',
@@ -584,7 +584,7 @@ export class ExternalServicesManager {
       },
       sendlayer: {
         name: 'SendLayer',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'sendlayer',
         url: 'https://status.sendlayer.com/',
         icon: 'fa-paper-plane',
@@ -636,7 +636,7 @@ export class ExternalServicesManager {
       },
       mailpoet: {
         name: 'MailPoet',
-        category: 'Email & Communication',
+        category: 'Email Services',
         feedType: 'automattic',
         feedFilter: 'MailPoet Sending Service',
         url: 'https://automatticstatus.com/',
@@ -891,7 +891,8 @@ export class ExternalServicesManager {
       'Hosting & Infrastructure',
       'Developer Tools',
       'E-Commerce & Payments',
-      'Email & Communication',
+      'Email Services',
+      'Communication',
       'Media & Content',
       'Gaming',
       'AI & Machine Learning',
@@ -1513,14 +1514,16 @@ export class ExternalServicesManager {
     // Default alphabetical order by category
     return [
       // Hosting & Infrastructure
-      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'hostinger', 'jetpackapi', 'kinsta', 
+      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'godaddy', 'hostinger', 'jetpackapi', 'kinsta', 
       'linode', 'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wordpressapi', 'wpcloudapi',
       // Developer Tools
-      'codacy', 'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'pipedream', 'postmark', 'trello', 'twilio',
+      'codacy', 'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'pipedream', 'trello', 'twilio',
       // E-Commerce & Payments
       'coinbase', 'intuit', 'metafb', 'paypal', 'recurly', 'shopify', 'square', 'stripe', 'woocommercepay',
-      // Email & Communication
-      'brevo', 'discord', 'mailgun', 'mailpoet', 'postmark', 'sendgrid', 'slack', 'zoom',
+      // Email Services
+      'brevo', 'mailersend', 'mailgun', 'mailjet', 'mailpoet', 'postmark', 'resend', 'sendgrid', 'sendlayer', 'smtp2go', 'sparkpost', 'zoho',
+      // Communication
+      'discord', 'slack', 'zoom',
       // Media & Content
       'dropbox', 'reddit', 'spotify', 'udemy', 'vimeo', 'wistia',
       // Gaming
