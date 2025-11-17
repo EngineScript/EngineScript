@@ -21,6 +21,7 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
  */
 function sanitizeFeedText($text) {
     // Convert HTML entities to characters first (handles &lt; &gt; etc)
+    // @codacy suppress [The use of function html_entity_decode() is discouraged] Required to decode HTML entities from external feeds before sanitization
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     
     // Strip all HTML tags

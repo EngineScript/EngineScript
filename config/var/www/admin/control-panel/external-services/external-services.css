@@ -370,11 +370,11 @@
 }
 
 .service-icon.mailjet-icon {
-    background: linear-gradient(135deg, #ff6600, #ff8533);
+    background: linear-gradient(135deg, #f60, #ff8533);
 }
 
 .service-icon.mailersend-icon {
-    background: linear-gradient(135deg, #0052ff, #3377ff);
+    background: linear-gradient(135deg, #0052ff, #37f);
 }
 
 .service-icon.resend-icon {
@@ -382,7 +382,7 @@
 }
 
 .service-icon.smtp2go-icon {
-    background: linear-gradient(135deg, #0066cc, #0080ff);
+    background: linear-gradient(135deg, #06c, #0080ff);
 }
 
 .service-icon.sendlayer-icon {

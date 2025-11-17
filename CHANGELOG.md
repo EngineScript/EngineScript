@@ -13,6 +13,7 @@ Changes are organized by date, with the most recent changes listed first.
 #### Security Improvements
 
 **New `sanitizeFeedText()` Function:**
+
 - **HTML Entity Decoding** - Handles encoded entities (`&lt;`, `&gt;`, etc.) before stripping tags
 - **Tag Stripping** - Removes all HTML tags from feed content
 - **Null Byte Removal** - Eliminates null bytes that could enable SQL injection
@@ -20,11 +21,13 @@ Changes are organized by date, with the most recent changes listed first.
 - **HTML Encoding** - Re-encodes special characters for safe JSON output
 
 **XML External Entity (XXE) Protection:**
+
 - `libxml_disable_entity_loader(true)` - Prevents external entity attacks
 - `LIBXML_NOENT` flag - Disables entity substitution
 - `LIBXML_NOCDATA` flag - Handles CDATA sections safely
 
 **Applied Globally:**
+
 - All 11 feed parsing functions now use `sanitizeFeedText()`
 - RSS/Atom feeds (parseStatusFeed)
 - JSON APIs (Google Workspace, Wistia, Vultr, Postmark, StatusPage.io)
@@ -40,11 +43,13 @@ Changes are organized by date, with the most recent changes listed first.
 #### Technical Details
 
 **Before:**
+
 ```php
 $status['description'] = strip_tags($title);
 ```
 
 **After:**
+
 ```php
 $status['description'] = sanitizeFeedText($title);
 
@@ -79,20 +84,24 @@ function sanitizeFeedText($text) {
 **Note:** Mailchimp was initially added but removed - their status page (`https://status.mailchimp.com/`) does not provide a public API or RSS/Atom feed.
 
 **Hosting & Infrastructure Category:**
+
 - **GoDaddy** - `https://status.godaddy.com/` (StatusPage API)
 
 #### Implementation Details
 
 **Frontend (`external-services.js`):**
+
 - Added 8 email service definitions with appropriate icons and feed configurations
 - SparkPost, Zoho, Mailjet, MailerSend, Resend, SMTP2GO, SendLayer use RSS/Atom feeds
 - GoDaddy uses StatusPage.io JSON API (CORS-enabled)
 
 **Backend (`external-services-api.php`):**
+
 - Added 7 feed URLs to `$allowedFeeds` whitelist
 - Feed mappings: sparkpost, zoho, mailjet, mailersend, resend, smtp2go, sendlayer
 
 **Styling (`external-services.css`):**
+
 - Added brand-specific color gradients for all 8 services
 - SparkPost (orange), Zoho (red), Mailjet (orange), MailerSend (blue)
 - Resend (black), SMTP2GO (blue), SendLayer (cyan), GoDaddy (teal)
@@ -121,12 +130,14 @@ function sanitizeFeedText($text) {
 #### Changes Made
 
 **`.github/workflows/software-version-check.yml`:**
+
 - Changed from `/releases/latest` to `/releases` endpoint
 - Added jq filter: `select(.tag_name | test("^7\\.0\\.[0-9]+$"))`
 - Now only detects and updates to 7.0.x patch releases
 - Will auto-update to 7.0.2, 7.0.3, etc. when released
 
 **`README.md`:**
+
 - Corrected Font Awesome version from 7.1.0 → 7.0.1
 
 #### Impact
