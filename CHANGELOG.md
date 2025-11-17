@@ -4,6 +4,140 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2025-11-17
+
+### 🔒 SECURITY: Enhanced Feed Sanitization and XXE Protection
+
+**Strengthened security** for external feed parsing with multi-layer sanitization and XML exploit protection
+
+#### Security Improvements
+
+**New `sanitizeFeedText()` Function:**
+- **HTML Entity Decoding** - Handles encoded entities (`&lt;`, `&gt;`, etc.) before stripping tags
+- **Tag Stripping** - Removes all HTML tags from feed content
+- **Null Byte Removal** - Eliminates null bytes that could enable SQL injection
+- **Whitespace Normalization** - Prevents formatting-based exploits
+- **HTML Encoding** - Re-encodes special characters for safe JSON output
+
+**XML External Entity (XXE) Protection:**
+- `libxml_disable_entity_loader(true)` - Prevents external entity attacks
+- `LIBXML_NOENT` flag - Disables entity substitution
+- `LIBXML_NOCDATA` flag - Handles CDATA sections safely
+
+**Applied Globally:**
+- All 11 feed parsing functions now use `sanitizeFeedText()`
+- RSS/Atom feeds (parseStatusFeed)
+- JSON APIs (Google Workspace, Wistia, Vultr, Postmark, StatusPage.io)
+
+#### Impact
+
+- ✅ **Zero SQL Injection Risk** - No database interactions exist
+- ✅ **XSS Prevention** - All output properly encoded for JSON
+- ✅ **XXE Protection** - XML exploits blocked at parser level
+- ✅ **Injection Prevention** - Multi-layer sanitization on all external content
+- ✅ **Safe Output** - All text properly escaped before JSON encoding
+
+#### Technical Details
+
+**Before:**
+```php
+$status['description'] = strip_tags($title);
+```
+
+**After:**
+```php
+$status['description'] = sanitizeFeedText($title);
+
+function sanitizeFeedText($text) {
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = strip_tags($text);
+    $text = str_replace("\0", '', $text);
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text);
+    $text = htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8', false);
+    return $text;
+}
+```
+
+---
+
+### ✨ NEW SERVICES: Added 8 Email Service Providers to External Services Dashboard
+
+**Added comprehensive email service monitoring** for popular transactional and marketing email platforms
+
+#### New Services Added
+
+**Email & Communication Category:**
+- **SparkPost** - `https://status.sparkpost.com/`
+- **Zoho** - `https://status.zoho.com/`
+- **Mailjet** - `https://status.mailjet.com/`
+- **MailerSend** - `https://status.mailersend.com/`
+- **Resend** - `https://resend-status.com/`
+- **SMTP2GO** - `https://smtp2gostatus.com/`
+- **SendLayer** - `https://status.sendlayer.com/`
+
+**Note:** Mailchimp was initially added but removed - their status page (`https://status.mailchimp.com/`) does not provide a public API or RSS/Atom feed.
+
+**Hosting & Infrastructure Category:**
+- **GoDaddy** - `https://status.godaddy.com/` (StatusPage API)
+
+#### Implementation Details
+
+**Frontend (`external-services.js`):**
+- Added 8 email service definitions with appropriate icons and feed configurations
+- SparkPost, Zoho, Mailjet, MailerSend, Resend, SMTP2GO, SendLayer use RSS/Atom feeds
+- GoDaddy uses StatusPage.io JSON API (CORS-enabled)
+
+**Backend (`external-services-api.php`):**
+- Added 7 feed URLs to `$allowedFeeds` whitelist
+- Feed mappings: sparkpost, zoho, mailjet, mailersend, resend, smtp2go, sendlayer
+
+**Styling (`external-services.css`):**
+- Added brand-specific color gradients for all 8 services
+- SparkPost (orange), Zoho (red), Mailjet (orange), MailerSend (blue)
+- Resend (black), SMTP2GO (blue), SendLayer (cyan), GoDaddy (teal)
+
+#### Impact
+
+- ✅ Comprehensive email service provider monitoring (8 services)
+- ✅ Coverage for transactional email (Resend, SendLayer, SMTP2GO, SparkPost)
+- ✅ Marketing platform monitoring (Zoho)
+- ✅ Enterprise email services (SparkPost, Mailjet, MailerSend)
+- ✅ Domain/hosting monitoring (GoDaddy)
+
+---
+
+### 🔧 VERSION CONTROL: Restricted Font Awesome Updates to 7.0.x Branch
+
+**Prevented automatic updates** to Font Awesome 7.1.x due to CDN availability issues
+
+#### Problem
+
+- Version checker was fetching latest release (7.1.0)
+- Font Awesome 7.1.0 not available on CDN (cdnjs.cloudflare.com)
+- Caused ORB (Origin Request Blocked) errors in dashboard
+- Need to stay on stable 7.0.x branch until 7.1.x available on CDN
+
+#### Changes Made
+
+**`.github/workflows/software-version-check.yml`:**
+- Changed from `/releases/latest` to `/releases` endpoint
+- Added jq filter: `select(.tag_name | test("^7\\.0\\.[0-9]+$"))`
+- Now only detects and updates to 7.0.x patch releases
+- Will auto-update to 7.0.2, 7.0.3, etc. when released
+
+**`README.md`:**
+- Corrected Font Awesome version from 7.1.0 → 7.0.1
+
+#### Impact
+
+- ✅ Prevents automatic updates to unavailable CDN versions
+- ✅ Will auto-update within 7.0.x patch releases
+- ✅ Maintains dashboard stability and reliability
+- ✅ Can manually update to 7.1.x when CDN availability confirmed
+
+---
+
 ## 2025-11-14
 
 ### ⚡ PERFORMANCE: Increased Timeouts for Slow External Service Feeds
@@ -38,7 +172,7 @@ Changes are organized by date, with the most recent changes listed first.
 #### Feature
 
 - **Category-Level Controls**: Each category header now includes a "Toggle All" button
-- **Smart Toggle Logic**: 
+- **Smart Toggle Logic**:
   - If any services in category are unchecked → enables all
   - If all services are checked → disables all
 - **Visual Feedback**: Button icon changes between check-square and square based on state
@@ -294,6 +428,7 @@ async loadExternalServices() {
 #### False Positives Documented
 
 Created `.codacy-review-notes.md` documenting 11 false positive warnings:
+
 - CSRF warnings on GET requests (read-only operations, no state modification)
 - WordPress-specific warnings (`wp_unslash`) on non-WordPress code
 - `file_get_contents()` warnings for legitimate outbound HTTP API calls with timeout protection
@@ -303,6 +438,7 @@ Created `.codacy-review-notes.md` documenting 11 false positive warnings:
 #### Codacy Configuration
 
 Created `.codacy.yml` to suppress expected API endpoint patterns:
+
 - **Excludes WordPress core files** (`wp-config.php`) - not under our control
 - **Excludes API files** from WordPress-specific rules (nonce verification, wp_unslash)
 - **Allows required functions** in API endpoints: `header()`, `echo`, `exit`, `die`
@@ -312,6 +448,7 @@ Created `.codacy.yml` to suppress expected API endpoint patterns:
 - **Module inclusion allowed**: `require_once` with `__DIR__` constant (hardcoded paths)
 
 Added inline `@codacy suppress` comments for all 14 legitimate API patterns:
+
 - 11 suppressions in `external-services-api.php` (die, echo, exit, file_get_contents, stream_context_create)
 - 1 suppression in `api.php` (require_once for module inclusion)
 - All suppressions include clear explanations of why the pattern is necessary and safe

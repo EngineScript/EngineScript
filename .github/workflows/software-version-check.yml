@@ -297,18 +297,19 @@ jobs:
             echo "::warning::Failed to fetch Chart.js version, keeping current version"
           fi
           
-          # Font Awesome
-          echo "::debug::Fetching Font Awesome version..."
-          FONTAWESOME_API_RESPONSE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases/latest)
+          # Font Awesome (restricted to 7.0.x releases)
+          echo "::debug::Fetching Font Awesome 7.0.x version..."
+          FONTAWESOME_API_RESPONSE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases)
           echo "::debug::Font Awesome API Response: $FONTAWESOME_API_RESPONSE"
           
-          LATEST_FONTAWESOME=$(echo "$FONTAWESOME_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/[^0-9\.]//g')
-          echo "::debug::Parsed Font Awesome version: '$LATEST_FONTAWESOME'"
+          # Filter for 7.0.x releases only, get the latest one
+          LATEST_FONTAWESOME=$(echo "$FONTAWESOME_API_RESPONSE" | jq -r '[.[] | select(.tag_name | test("^7\\.0\\.[0-9]+$")) | .tag_name] | first // empty' | sed 's/[^0-9\.]//g')
+          echo "::debug::Parsed Font Awesome 7.0.x version: '$LATEST_FONTAWESOME'"
           
           if [[ -n "$LATEST_FONTAWESOME" && "$LATEST_FONTAWESOME" != "null" ]]; then
             check_version "FONTAWESOME_VER" "$LATEST_FONTAWESOME"
           else
-            echo "::warning::Failed to fetch Font Awesome version, keeping current version"
+            echo "::warning::Failed to fetch Font Awesome 7.0.x version, keeping current version"
           fi
           
           # TinyFileManager

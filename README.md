@@ -238,7 +238,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
 |**Admin Control Panel**|||
 |Chart.js|4.5.1|<https://github.com/chartjs/Chart.js>|
-|Font Awesome|7.1.0|<https://github.com/FortAwesome/Font-Awesome>|
+|Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
 |TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|

@@ -327,6 +327,15 @@ export class ExternalServicesManager {
         corsEnabled: false,
         useFeed: true
       },
+      godaddy: {
+        name: 'GoDaddy',
+        category: 'Hosting & Infrastructure',
+        api: 'https://status.godaddy.com/api/v2/status.json',
+        url: 'https://status.godaddy.com/',
+        icon: 'fa-globe',
+        color: 'godaddy-icon',
+        corsEnabled: true
+      },
       // DEVELOPER TOOLS
       codacy: {
         name: 'Codacy',
@@ -512,6 +521,76 @@ export class ExternalServicesManager {
         icon: 'fa-video',
         color: 'zoom-icon',
         corsEnabled: true
+      },
+      sparkpost: {
+        name: 'SparkPost',
+        category: 'Email & Communication',
+        feedType: 'sparkpost',
+        url: 'https://status.sparkpost.com/',
+        icon: 'fa-envelope',
+        color: 'sparkpost-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      zoho: {
+        name: 'Zoho',
+        category: 'Email & Communication',
+        feedType: 'zoho',
+        url: 'https://status.zoho.com/',
+        icon: 'fa-envelope',
+        color: 'zoho-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      mailjet: {
+        name: 'Mailjet',
+        category: 'Email & Communication',
+        feedType: 'mailjet',
+        url: 'https://status.mailjet.com/',
+        icon: 'fa-envelope',
+        color: 'mailjet-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      mailersend: {
+        name: 'MailerSend',
+        category: 'Email & Communication',
+        feedType: 'mailersend',
+        url: 'https://status.mailersend.com/',
+        icon: 'fa-paper-plane',
+        color: 'mailersend-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      resend: {
+        name: 'Resend',
+        category: 'Email & Communication',
+        feedType: 'resend',
+        url: 'https://resend-status.com/',
+        icon: 'fa-paper-plane',
+        color: 'resend-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      smtp2go: {
+        name: 'SMTP2GO',
+        category: 'Email & Communication',
+        feedType: 'smtp2go',
+        url: 'https://smtp2gostatus.com/',
+        icon: 'fa-envelope',
+        color: 'smtp2go-icon',
+        corsEnabled: false,
+        useFeed: true
+      },
+      sendlayer: {
+        name: 'SendLayer',
+        category: 'Email & Communication',
+        feedType: 'sendlayer',
+        url: 'https://status.sendlayer.com/',
+        icon: 'fa-paper-plane',
+        color: 'sendlayer-icon',
+        corsEnabled: false,
+        useFeed: true
       },
       // E-COMMERCE
       intuit: {

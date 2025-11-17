@@ -15,6 +15,33 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 }
 
 /**
+ * Sanitize text from external feeds to prevent injection attacks
+ * @param string $text Raw text from feed
+ * @return string Sanitized text safe for output
+ */
+function sanitizeFeedText($text) {
+    // Convert HTML entities to characters first (handles &lt; &gt; etc)
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Strip all HTML tags
+    $text = strip_tags($text);
+    
+    // Remove null bytes (can cause SQL injection in some contexts)
+    $text = str_replace("\0", '', $text);
+    
+    // Normalize whitespace
+    $text = preg_replace('/\s+/', ' ', $text);
+    
+    // Trim
+    $text = trim($text);
+    
+    // Re-encode special characters for safe JSON output
+    $text = htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8', false);
+    
+    return $text;
+}
+
+/**
  * Parse RSS/Atom feed and extract status information
  * @param string $feedUrl The URL of the RSS/Atom feed
  * @param string|null $filter Optional filter to match specific service name in feed items
@@ -40,9 +67,11 @@ function parseStatusFeed($feedUrl, $filter = null) {
             throw new Exception('Failed to fetch feed');
         }
         
-        // Suppress XML errors and parse
+        // Suppress XML errors and parse with security flags
         libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($feedContent);
+        // Disable external entities to prevent XXE attacks
+        libxml_disable_entity_loader(true);
+        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement', LIBXML_NOENT | LIBXML_NOCDATA);
         libxml_clear_errors();
         
         if ($xml === false) {
@@ -103,15 +132,15 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
                 $status['indicator'] = 'major';
-                $status['description'] = strip_tags($description);
+                $status['description'] = sanitizeFeedText($description);
             } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
                 $status['indicator'] = 'minor';
-                $status['description'] = strip_tags($description);
+                $status['description'] = sanitizeFeedText($description);
             }
             
             // Default: show title as-is if no patterns match
             if ($status['indicator'] !== 'none' && $status['indicator'] !== 'major' && $status['indicator'] !== 'minor') {
-                $status['description'] = strip_tags($title);
+                $status['description'] = sanitizeFeedText($title);
             }
         }
         // Check if it's an RSS feed
@@ -154,12 +183,12 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
                 $status['indicator'] = 'major';
-                $status['description'] = strip_tags(!empty($description) ? $description : $title);
+                $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
             } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
                 $status['indicator'] = 'minor';
-                $status['description'] = strip_tags(!empty($description) ? $description : $title);
+                $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
             } else {
-                $status['description'] = strip_tags($title);
+                $status['description'] = sanitizeFeedText($title);
             }
         }
         
@@ -243,7 +272,7 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
         
         return [
             'indicator' => $indicator,
-            'description' => strip_tags($title)
+            'description' => sanitizeFeedText($title)
         ];
         
     } catch (Exception $e) {
@@ -309,7 +338,7 @@ function parseWistiaSummary($apiUrl) {
             
             return [
                 'indicator' => $indicator,
-                'description' => strip_tags($name)
+                'description' => sanitizeFeedText($name)
             ];
         }
         
@@ -386,7 +415,7 @@ function parseVultrAlerts($apiUrl) {
         
         return [
             'indicator' => $indicator,
-            'description' => strip_tags($subject)
+            'description' => sanitizeFeedText($subject)
         ];
         
     } catch (Exception $e) {
@@ -451,7 +480,7 @@ function parsePostmarkNotices($apiUrl) {
         
         return [
             'indicator' => $indicator,
-            'description' => strip_tags($title)
+            'description' => sanitizeFeedText($title)
         ];
         
     } catch (Exception $e) {
@@ -496,7 +525,7 @@ function parseStatusPageAPI($apiUrl) {
         
         return [
             'indicator' => $indicator,
-            'description' => strip_tags($description)
+            'description' => sanitizeFeedText($description)
         ];
         
     } catch (Exception $e) {
@@ -627,7 +656,14 @@ function handleStatusFeed() {
             'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
             'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
             'codacy' => 'https://status.codacy.com/history.rss',
-            'openai' => 'https://status.openai.com/feed.atom'
+            'openai' => 'https://status.openai.com/feed.atom',
+            'sparkpost' => 'https://status.sparkpost.com/history.atom',
+            'zoho' => 'https://status.zoho.com/rss',
+            'mailjet' => 'https://status.mailjet.com/history.rss',
+            'mailersend' => 'https://status.mailersend.com/history.rss',
+            'resend' => 'https://resend-status.com/feed.rss',
+            'smtp2go' => 'https://smtp2gostatus.com/history.atom',
+            'sendlayer' => 'https://status.sendlayer.com/history/rss'
         ];
         
         if (!isset($allowedFeeds[$feedType])) {

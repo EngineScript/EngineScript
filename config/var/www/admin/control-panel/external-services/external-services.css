@@ -361,6 +361,38 @@
     background: linear-gradient(135deg, #21759b, #2ea2cc);
 }
 
+.service-icon.sparkpost-icon {
+    background: linear-gradient(135deg, #fa6423, #ff7d3b);
+}
+
+.service-icon.zoho-icon {
+    background: linear-gradient(135deg, #e42527, #f03537);
+}
+
+.service-icon.mailjet-icon {
+    background: linear-gradient(135deg, #ff6600, #ff8533);
+}
+
+.service-icon.mailersend-icon {
+    background: linear-gradient(135deg, #0052ff, #3377ff);
+}
+
+.service-icon.resend-icon {
+    background: linear-gradient(135deg, #000, #333);
+}
+
+.service-icon.smtp2go-icon {
+    background: linear-gradient(135deg, #0066cc, #0080ff);
+}
+
+.service-icon.sendlayer-icon {
+    background: linear-gradient(135deg, #00c9ff, #33d4ff);
+}
+
+.service-icon.godaddy-icon {
+    background: linear-gradient(135deg, #1bdbba, #37e8cc);
+}
+
 .service-icon i {
     font-size: 1.5rem;
     color: white;
