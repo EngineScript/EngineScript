@@ -4,7 +4,7 @@ A standalone, modular external service status monitoring system. This module can
 
 ## 📁 Module Structure
 
-```
+```plaintext
 external-services/
 ├── external-services.js          # Main ES6 module class
 ├── external-services.css         # Complete styling
@@ -142,6 +142,13 @@ getServiceDefinitions() {
       corsEnabled: true
     }
   };
+}
+```
+
+1. **Add to backend whitelist** in `external-services-api.php`:
+
+```php
+$config = [
 }
 ```
 
