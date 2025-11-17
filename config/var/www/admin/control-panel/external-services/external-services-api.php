@@ -188,7 +188,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
             } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
                 $status['indicator'] = 'minor';
                 $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
-            } else {
+            }
+            if (!preg_match('/operational|resolved|completed|fixed|normal|outage|down|major|critical|offline|degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
                 $status['description'] = sanitizeFeedText($title);
             }
         }
@@ -250,7 +251,8 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
         } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
             // Fallback: title on same line
             $title = trim($matches[1]);
-        } else {
+        }
+        if (empty($title)) {
             // No title marker, use first line
             $title = strtok($description, "\n");
         }
