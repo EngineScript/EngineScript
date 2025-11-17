@@ -232,7 +232,7 @@ Once configured, your uptime monitoring data will automatically appear in the ad
 |**Script Processing**|||
 |PHP|8.4|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
 |**MySQL Database**|||
-|MARIADB|11.8.3|<https://mariadb.org/download/>|
+|MARIADB|11.8.5|<https://mariadb.org/download/>|
 |**Database Management**|||
 |ADMINER|||
 |PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
