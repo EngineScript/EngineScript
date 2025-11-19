@@ -62,7 +62,17 @@ function parseStatusFeed($feedUrl, $filter = null) {
         
         // Fetch feed content
         // @codacy suppress [The use of function file_get_contents() is discouraged] Used for outbound HTTP requests with timeout protection - not file system access
-        $feedContent = @file_get_contents($feedUrl, false, $context);
+        set_error_handler(function($severity, $message, $file, $line) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        });
+        
+        try {
+            $feedContent = file_get_contents($feedUrl, false, $context);
+        } catch (Exception $e) {
+            $feedContent = false;
+        } finally {
+            restore_error_handler();
+        }
         
         if ($feedContent === false) {
             throw new Exception('Failed to fetch feed');
