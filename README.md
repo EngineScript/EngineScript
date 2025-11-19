@@ -179,30 +179,6 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 - **Uptime percentage** tracking with historical data
 - **Automatic status reporting** in the admin dashboard
 
-**Setup Uptime Robot Integration:**
-
-1. Create a free account at [UptimeRobot.com](https://uptimerobot.com/)
-2. Generate an API key in Settings > API Settings (Main API Key)
-3. Configure the API key on your server:
-
-   ```bash
-   sudo nano /etc/enginescript/uptimerobot.conf
-   ```
-
-4. Add your API key:
-
-   ```text
-   api_key=your_main_api_key_here
-   ```
-
-5. Set proper permissions:
-
-   ```bash
-   sudo chmod 600 /etc/enginescript/uptimerobot.conf
-   ```
-
-Once configured, your uptime monitoring data will automatically appear in the admin control panel.
-
 #### File Management
 
 - **Tiny File Manager** integration for secure web-based file management

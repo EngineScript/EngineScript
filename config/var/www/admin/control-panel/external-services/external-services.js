@@ -54,7 +54,7 @@ export class ExternalServicesManager {
       let serviceOrder = this.getServiceOrder();
 
       // Render settings panel in dedicated container
-      this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
+      this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions);
 
       // Get service keys in custom order
       let orderedServiceKeys = serviceOrder.filter(key => services[key]);
@@ -202,7 +202,7 @@ export class ExternalServicesManager {
   /**
    * Render the service settings panel with toggles
    */
-  renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences) {
+  renderServiceSettings(settingsContainer, services, serviceDefinitions) {
     settingsContainer.innerHTML = "";
     
     const settingsToggle = document.createElement("button");
