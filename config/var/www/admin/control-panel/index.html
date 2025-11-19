@@ -11,13 +11,39 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@{CHARTJS_VER}/dist/chart.umd.js" data-cfasync="false"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
     
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="dashboard.css?v=2025.11.17.01">
-    <link rel="stylesheet" href="external-services/external-services.css?v=2025.11.17.01">
-    
-    <!-- Preload Critical Resources -->
-    <link rel="modulepreload" href="dashboard.js?v=2025.11.17.01" crossorigin="use-credentials">
-    <link rel="modulepreload" href="modules/api.js?v=2025.11.17.01" crossorigin="use-credentials">
+    <!-- Version Management -->
+    <script type="module">
+        import { DASHBOARD_VERSION } from './version.js';
+        // Inject CSS with version
+        const css1 = document.createElement('link');
+        css1.rel = 'stylesheet';
+        css1.href = `dashboard.css?v=${DASHBOARD_VERSION}`;
+        document.head.appendChild(css1);
+        
+        const css2 = document.createElement('link');
+        css2.rel = 'stylesheet';
+        css2.href = `external-services/external-services.css?v=${DASHBOARD_VERSION}`;
+        document.head.appendChild(css2);
+        
+        // Inject modulepreload hints
+        const preload1 = document.createElement('link');
+        preload1.rel = 'modulepreload';
+        preload1.href = `dashboard.js?v=${DASHBOARD_VERSION}`;
+        preload1.crossOrigin = 'use-credentials';
+        document.head.appendChild(preload1);
+        
+        const preload2 = document.createElement('link');
+        preload2.rel = 'modulepreload';
+        preload2.href = `modules/api.js?v=${DASHBOARD_VERSION}`;
+        preload2.crossOrigin = 'use-credentials';
+        document.head.appendChild(preload2);
+        
+        // Update version display
+        window.addEventListener('DOMContentLoaded', () => {
+            const versionEl = document.getElementById('dashboard-version');
+            if (versionEl) versionEl.textContent = `EngineScript Dashboard v${DASHBOARD_VERSION}`;
+        });
+    </script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -369,11 +395,18 @@
     </div>
 
     <!-- Dashboard Version -->
-    <div style="text-align: center; padding: 20px; color: #666; font-size: 0.85rem; border-top: 1px solid #444;">
-        EngineScript Dashboard v2025.11.17.01
+    <div id="dashboard-version" style="text-align: center; padding: 20px; color: #666; font-size: 0.85rem; border-top: 1px solid #444;">
+        EngineScript Dashboard
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2025.11.17.01" data-cfasync="false"></script>
+    <script type="module">
+        import { DASHBOARD_VERSION } from './version.js';
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = `dashboard.js?v=${DASHBOARD_VERSION}`;
+        script.dataset.cfasync = 'false';
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
