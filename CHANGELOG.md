@@ -18,7 +18,6 @@ Changes are organized by date, with the most recent changes listed first.
   - Error handling for API failures with user-friendly messages
   - Fetches data directly from external APIs with proper CORS handling
 
-
 ## 2025-11-10
 
 ### 🎨 UI/UX IMPROVEMENTS

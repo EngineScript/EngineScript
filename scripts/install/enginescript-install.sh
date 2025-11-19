@@ -8,6 +8,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------
 
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Trap errors and print the line number
+trap 'echo "Error occurred at line $LINENO. Exiting."; exit 1' ERR
+
 # Check current user's ID. If user is not 0 (root), exit.
 if [[ "${EUID}" -ne 0 ]];
   then
