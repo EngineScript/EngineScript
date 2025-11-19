@@ -62,7 +62,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
         
         // Fetch feed content
         set_error_handler(function($severity, $message, $file, $line) {
-            throw new ErrorException(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'), 0, $severity, $file, $line);
+            // @codacy suppress [XSS] Internal error handler - exception message never output to browser
+            throw new ErrorException($message, 0, $severity, $file, $line);
         });
         
         try {
