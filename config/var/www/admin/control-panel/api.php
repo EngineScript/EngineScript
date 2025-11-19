@@ -11,6 +11,9 @@
  * wp_unslash() and WordPress functions are not available in this context.
  */
 
+// Load SystemCommand class for secure shell execution
+require_once __DIR__ . '/classes/SystemCommand.php';
+
 // Prevent direct access if not from proper context
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - Direct $_SERVER access required for standalone API
     http_response_code(403);
@@ -175,10 +178,9 @@ function getPhpServiceStatus() {
 
 function findActivePhpFpmService() {
     // Use a safer approach: get list of active services first, then filter in PHP
-    $command = "systemctl list-units --type=service --state=active --no-legend --plain 2>/dev/null";
-    $services_output = shell_exec($command); // codacy:ignore - shell_exec() required for service discovery in standalone API
+    $services_output = SystemCommand::getSystemdServices();
     
-    if ($services_output === null) {
+    if ($services_output === false || empty($services_output)) {
         return null;
     }
     
@@ -572,7 +574,7 @@ function getOsInfo() {
 
 function getKernelVersion() {
     try {
-        $version = shell_exec('uname -r 2>/dev/null'); // codacy:ignore - shell_exec() required for kernel version retrieval in standalone API
+        $version = SystemCommand::getKernelVersion();
         if ($version !== null) {
             $version = trim($version);
             // Validate kernel version format
@@ -603,7 +605,7 @@ function getNetworkInfo() {
         // Try to get IP from /proc/net/fib_trie (safer than shell commands)
         if (file_exists('/proc/net/route')) { // codacy:ignore - file_exists() required for network info reading in standalone API
             // Fallback to safer shell command with validation
-            $ip_output = shell_exec("ip route get 8.8.8.8 2>/dev/null | awk '{print \$7; exit}'"); // codacy:ignore - shell_exec() required for network IP detection in standalone API
+            $ip_output = SystemCommand::getNetworkIP();
             if ($ip_output !== null) {
                 $client_ip = trim($ip_output);
                 // Validate the IP
@@ -656,10 +658,8 @@ function createErrorServiceStatus() {
 }
 
 function getSystemServiceStatus($service) {
-    $safe_service = escapeshellarg($service); // codacy:ignore - escapeshellarg() required for shell command safety in standalone API
-    $command = "systemctl is-active $safe_service 2>/dev/null";
-    $status_output = shell_exec($command); // codacy:ignore - shell_exec() required for service status checking in standalone API
-    return $status_output !== null ? trim($status_output) : '';
+    $status_output = SystemCommand::getServiceStatus($service);
+    return $status_output !== false ? $status_output : '';
 }
 
 function getServiceVersion($service) {
@@ -681,7 +681,7 @@ function getServiceVersion($service) {
 }
 
 function getNginxVersion() {
-    $version_output = shell_exec('nginx -v 2>&1'); // codacy:ignore - shell_exec() required for Nginx version retrieval in standalone API
+    $version_output = SystemCommand::getNginxVersion();
     if ($version_output !== null && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
         return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
@@ -689,7 +689,7 @@ function getNginxVersion() {
 }
 
 function getPhpVersion() {
-    $version_output = shell_exec('php -v 2>/dev/null'); // codacy:ignore - shell_exec() required for PHP version retrieval in standalone API
+    $version_output = SystemCommand::getPhpVersion();
     if ($version_output !== null && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
         return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
@@ -697,7 +697,7 @@ function getPhpVersion() {
 }
 
 function getMariadbVersion() {
-    $version_output = shell_exec('mariadb --version 2>/dev/null'); // codacy:ignore - shell_exec() required for MariaDB version retrieval in standalone API
+    $version_output = SystemCommand::getMariadbVersion();
     if ($version_output !== null && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
         return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
@@ -705,7 +705,7 @@ function getMariadbVersion() {
 }
 
 function getRedisVersion() {
-    $version_output = shell_exec('redis-server --version 2>/dev/null'); // codacy:ignore - shell_exec() required for Redis version retrieval in standalone API
+    $version_output = SystemCommand::getRedisVersion();
     if ($version_output !== null && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
         return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
