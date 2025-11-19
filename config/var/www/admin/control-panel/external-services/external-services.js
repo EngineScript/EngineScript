@@ -2,6 +2,7 @@
 // Handles external service status monitoring with drag-drop ordering and preferences
 
 import { DashboardUtils } from '../modules/utils.js?v=2025.11.12.16';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.19.01';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
@@ -195,648 +196,7 @@ export class ExternalServicesManager {
    * Get service definitions for all supported external services
    */
   getServiceDefinitions() {
-    return {
-      // HOSTING & INFRASTRUCTURE
-      aws: {
-        name: 'AWS',
-        category: 'Hosting & Infrastructure',
-        url: 'https://health.aws.amazon.com/health/status',
-        icon: 'fa-server',
-        color: 'aws-icon',
-        corsEnabled: false,
-        statusText: 'Visit status page'
-      },
-      cloudflare: {
-        name: 'Cloudflare',
-        category: 'Hosting & Infrastructure',
-        api: 'https://www.cloudflarestatus.com/api/v2/status.json',
-        url: 'https://www.cloudflarestatus.com/',
-        icon: 'fa-cloud',
-        color: 'cloudflare-icon',
-        corsEnabled: true
-      },
-      cloudways: {
-        name: 'Cloudways',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.cloudways.com/api/v2/status.json',
-        url: 'https://status.cloudways.com/',
-        icon: 'fa-cloud-upload-alt',
-        color: 'cloudways-icon',
-        corsEnabled: true
-      },
-      digitalocean: {
-        name: 'DigitalOcean',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.digitalocean.com/api/v2/status.json',
-        url: 'https://status.digitalocean.com/',
-        icon: 'fa-water',
-        color: 'digitalocean-icon',
-        corsEnabled: true
-      },
-      googlecloud: {
-        name: 'Google Cloud',
-        category: 'Hosting & Infrastructure',
-        feedType: 'googlecloud',
-        url: 'https://status.cloud.google.com/',
-        icon: 'fa-google',
-        color: 'google-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      hostinger: {
-        name: 'Hostinger',
-        category: 'Hosting & Infrastructure',
-        api: 'https://statuspage.hostinger.com/api/v2/status.json',
-        url: 'https://statuspage.hostinger.com/',
-        icon: 'fa-h-square',
-        color: 'hostinger-icon',
-        corsEnabled: true
-      },
-      kinsta: {
-        name: 'Kinsta',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.kinsta.com/api/v2/status.json',
-        url: 'https://status.kinsta.com/',
-        icon: 'fa-bolt',
-        color: 'kinsta-icon',
-        corsEnabled: true
-      },
-      linode: {
-        name: 'Linode',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.linode.com/api/v2/status.json',
-        url: 'https://status.linode.com/',
-        icon: 'fa-cube',
-        color: 'linode-icon',
-        corsEnabled: true
-      },
-      oracle: {
-        name: 'Oracle Cloud',
-        category: 'Hosting & Infrastructure',
-        feedType: 'oracle',
-        url: 'https://ocistatus.oraclecloud.com/',
-        icon: 'fa-database',
-        color: 'oracle-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      ovh: {
-        name: 'OVH Cloud',
-        category: 'Hosting & Infrastructure',
-        feedType: 'ovh',
-        url: 'https://public-cloud.status-ovhcloud.com/',
-        icon: 'fa-cloud',
-        color: 'ovh-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      scaleway: {
-        name: 'Scaleway',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.scaleway.com/api/v2/status.json',
-        url: 'https://status.scaleway.com/',
-        icon: 'fa-layer-group',
-        color: 'scaleway-icon',
-        corsEnabled: true
-      },
-      upcloud: {
-        name: 'UpCloud',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.upcloud.com/api/v2/status.json',
-        url: 'https://status.upcloud.com/',
-        icon: 'fa-arrow-up',
-        color: 'upcloud-icon',
-        corsEnabled: true
-      },
-      vercel: {
-        name: 'Vercel',
-        category: 'Hosting & Infrastructure',
-        api: 'https://www.vercel-status.com/api/v2/status.json',
-        url: 'https://www.vercel-status.com/',
-        icon: 'fa-triangle',
-        color: 'vercel-icon',
-        corsEnabled: true
-      },
-      vultr: {
-        name: 'Vultr',
-        category: 'Hosting & Infrastructure',
-        feedType: 'vultr',
-        url: 'https://status.vultr.com/',
-        icon: 'fa-bolt',
-        color: 'vultr-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      godaddy: {
-        name: 'GoDaddy',
-        category: 'Hosting & Infrastructure',
-        api: 'https://status.godaddy.com/api/v2/status.json',
-        url: 'https://status.godaddy.com/',
-        icon: 'fa-globe',
-        color: 'godaddy-icon',
-        corsEnabled: true
-      },
-      // DEVELOPER TOOLS
-      codacy: {
-        name: 'Codacy',
-        category: 'Developer Tools',
-        feedType: 'codacy',
-        url: 'https://status.codacy.com/',
-        icon: 'fa-code-branch',
-        color: 'codacy-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      github: {
-        name: 'GitHub',
-        category: 'Developer Tools',
-        api: 'https://www.githubstatus.com/api/v2/status.json',
-        url: 'https://www.githubstatus.com/',
-        icon: 'fa-github',
-        color: 'github-icon',
-        corsEnabled: true
-      },
-      gitlab: {
-        name: 'GitLab',
-        category: 'Developer Tools',
-        feedType: 'gitlab',
-        url: 'https://status.gitlab.com/',
-        icon: 'fa-gitlab',
-        color: 'gitlab-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      notion: {
-        name: 'Notion',
-        category: 'Developer Tools',
-        api: 'https://www.notion-status.com/api/v2/status.json',
-        url: 'https://www.notion-status.com/',
-        icon: 'fa-file-alt',
-        color: 'notion-icon',
-        corsEnabled: true
-      },
-      pipedream: {
-        name: 'Pipedream',
-        category: 'Developer Tools',
-        feedType: 'pipedream',
-        url: 'https://status.pipedream.com/',
-        icon: 'fa-project-diagram',
-        color: 'pipedream-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      postmark: {
-        name: 'Postmark',
-        category: 'Email Services',
-        feedType: 'postmark',
-        url: 'https://status.postmarkapp.com/',
-        icon: 'fa-paper-plane',
-        color: 'postmark-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      trello: {
-        name: 'Trello',
-        category: 'Developer Tools',
-        feedType: 'trello',
-        url: 'https://trello.status.atlassian.com/',
-        icon: 'fa-trello',
-        color: 'trello-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      twilio: {
-        name: 'Twilio',
-        category: 'Developer Tools',
-        api: 'https://status.twilio.com/api/v2/status.json',
-        url: 'https://status.twilio.com/',
-        icon: 'fa-sms',
-        color: 'twilio-icon',
-        corsEnabled: true
-      },
-      // PAYMENT PROCESSING
-      coinbase: {
-        name: 'Coinbase',
-        category: 'E-Commerce & Payments',
-        api: 'https://status.coinbase.com/api/v2/status.json',
-        url: 'https://status.coinbase.com/',
-        icon: 'fa-bitcoin',
-        color: 'coinbase-icon',
-        corsEnabled: true
-      },
-      paypal: {
-        name: 'PayPal',
-        category: 'E-Commerce & Payments',
-        feedType: 'paypal',
-        url: 'https://www.paypal-status.com/product/production',
-        icon: 'fa-paypal',
-        color: 'paypal-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      recurly: {
-        name: 'Recurly',
-        category: 'E-Commerce & Payments',
-        feedType: 'recurly',
-        url: 'https://status.recurly.com/',
-        icon: 'fa-repeat',
-        color: 'recurly-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      square: {
-        name: 'Square',
-        category: 'E-Commerce & Payments',
-        feedType: 'square',
-        url: 'https://www.issquareup.com/',
-        icon: 'fa-square',
-        color: 'square-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      stripe: {
-        name: 'Stripe',
-        category: 'E-Commerce & Payments',
-        feedType: 'stripe',
-        url: 'https://status.stripe.com/',
-        icon: 'fa-credit-card',
-        color: 'stripe-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      // COMMUNICATION
-      discord: {
-        name: 'Discord',
-        category: 'Communication',
-        api: 'https://discordstatus.com/api/v2/status.json',
-        url: 'https://discordstatus.com/',
-        icon: 'fa-discord',
-        color: 'discord-icon',
-        corsEnabled: true
-      },
-      brevo: {
-        name: 'Brevo',
-        category: 'Email Services',
-        feedType: 'brevo',
-        url: 'https://status.brevo.com/',
-        icon: 'fa-envelope-open',
-        color: 'brevo-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      mailgun: {
-        name: 'Mailgun',
-        category: 'Email Services',
-        api: 'https://status.mailgun.com/api/v2/status.json',
-        url: 'https://status.mailgun.com/',
-        icon: 'fa-envelope',
-        color: 'mailgun-icon',
-        corsEnabled: true
-      },
-      sendgrid: {
-        name: 'SendGrid',
-        category: 'Email Services',
-        feedType: 'sendgrid',
-        url: 'https://status.sendgrid.com/',
-        icon: 'fa-envelope',
-        color: 'sendgrid-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      slack: {
-        name: 'Slack',
-        category: 'Communication',
-        feedType: 'slack',
-        url: 'https://slack-status.com/',
-        icon: 'fa-slack',
-        color: 'slack-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      zoom: {
-        name: 'Zoom',
-        category: 'Communication',
-        api: 'https://www.zoomstatus.com/api/v2/status.json',
-        url: 'https://www.zoomstatus.com/',
-        icon: 'fa-video',
-        color: 'zoom-icon',
-        corsEnabled: true
-      },
-      sparkpost: {
-        name: 'SparkPost',
-        category: 'Email Services',
-        feedType: 'sparkpost',
-        url: 'https://status.sparkpost.com/',
-        icon: 'fa-envelope',
-        color: 'sparkpost-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      zoho: {
-        name: 'Zoho',
-        category: 'Email Services',
-        feedType: 'zoho',
-        url: 'https://status.zoho.com/',
-        icon: 'fa-envelope',
-        color: 'zoho-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      mailjet: {
-        name: 'Mailjet',
-        category: 'Email Services',
-        feedType: 'mailjet',
-        url: 'https://status.mailjet.com/',
-        icon: 'fa-envelope',
-        color: 'mailjet-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      mailersend: {
-        name: 'MailerSend',
-        category: 'Email Services',
-        feedType: 'mailersend',
-        url: 'https://status.mailersend.com/',
-        icon: 'fa-paper-plane',
-        color: 'mailersend-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      resend: {
-        name: 'Resend',
-        category: 'Email Services',
-        feedType: 'resend',
-        url: 'https://resend-status.com/',
-        icon: 'fa-paper-plane',
-        color: 'resend-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      smtp2go: {
-        name: 'SMTP2GO',
-        category: 'Email Services',
-        feedType: 'smtp2go',
-        url: 'https://smtp2gostatus.com/',
-        icon: 'fa-envelope',
-        color: 'smtp2go-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      sendlayer: {
-        name: 'SendLayer',
-        category: 'Email Services',
-        feedType: 'sendlayer',
-        url: 'https://status.sendlayer.com/',
-        icon: 'fa-paper-plane',
-        color: 'sendlayer-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      // E-COMMERCE
-      intuit: {
-        name: 'Intuit',
-        category: 'E-Commerce & Payments',
-        api: 'https://status.developer.intuit.com/api/v2/status.json',
-        url: 'https://status.developer.intuit.com/',
-        icon: 'fa-calculator',
-        color: 'intuit-icon',
-        corsEnabled: true
-      },
-      shopify: {
-        name: 'Shopify',
-        category: 'E-Commerce & Payments',
-        api: 'https://www.shopifystatus.com/api/v2/status.json',
-        url: 'https://www.shopifystatus.com/',
-        icon: 'fa-shopping-bag',
-        color: 'shopify-icon',
-        corsEnabled: true
-      },
-      // MEDIA & CONTENT
-      woocommercepay: {
-        name: 'WooCommerce Pay API',
-        category: 'E-Commerce & Payments',
-        feedType: 'automattic',
-        feedFilter: 'WooCommerce Pay API',
-        url: 'https://automatticstatus.com/',
-        icon: 'fa-shopping-cart',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      wpcloudapi: {
-        name: 'WP Cloud API',
-        category: 'Hosting & Infrastructure',
-        feedType: 'automattic',
-        feedFilter: 'WP Cloud API',
-        url: 'https://automatticstatus.com/',
-        icon: 'fa-cloud',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      mailpoet: {
-        name: 'MailPoet',
-        category: 'Email Services',
-        feedType: 'automattic',
-        feedFilter: 'MailPoet Sending Service',
-        url: 'https://automatticstatus.com/',
-        icon: 'fa-envelope',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      jetpackapi: {
-        name: 'Jetpack API',
-        category: 'Hosting & Infrastructure',
-        feedType: 'automattic',
-        feedFilter: 'Jetpack API',
-        url: 'https://automatticstatus.com/',
-        icon: 'fa-rocket',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      wordpressapi: {
-        name: 'WordPress.com API',
-        category: 'Hosting & Infrastructure',
-        feedType: 'automattic',
-        feedFilter: 'WordPress.com API',
-        url: 'https://automatticstatus.com/',
-        icon: 'fa-wordpress',
-        color: 'wordpress-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      dropbox: {
-        name: 'Dropbox',
-        category: 'Media & Content',
-        api: 'https://status.dropbox.com/api/v2/status.json',
-        url: 'https://status.dropbox.com/',
-        icon: 'fa-dropbox',
-        color: 'dropbox-icon',
-        corsEnabled: true
-      },
-      reddit: {
-        name: 'Reddit',
-        category: 'Media & Content',
-        api: 'https://www.redditstatus.com/api/v2/status.json',
-        url: 'https://www.redditstatus.com/',
-        icon: 'fa-reddit',
-        color: 'reddit-icon',
-        corsEnabled: true
-      },
-      udemy: {
-        name: 'Udemy',
-        category: 'Media & Content',
-        api: 'https://status.udemy.com/api/v2/status.json',
-        url: 'https://status.udemy.com/',
-        icon: 'fa-graduation-cap',
-        color: 'udemy-icon',
-        corsEnabled: true
-      },
-      vimeo: {
-        name: 'Vimeo',
-        category: 'Media & Content',
-        api: 'https://www.vimeostatus.com/api/v2/status.json',
-        url: 'https://status.vimeo.com/',
-        icon: 'fa-vimeo',
-        color: 'vimeo-icon',
-        corsEnabled: true
-      },
-      wistia: {
-        name: 'Wistia',
-        category: 'Media & Content',
-        feedType: 'wistia',
-        url: 'https://status.wistia.com/',
-        icon: 'fa-play-circle',
-        color: 'wistia-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      spotify: {
-        name: 'Spotify',
-        category: 'Media & Content',
-        feedType: 'spotify',
-        url: 'https://spotify.statuspage.io/',
-        icon: 'fa-spotify',
-        color: 'spotify-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      // AI & MACHINE LEARNING
-      openai: {
-        name: 'OpenAI',
-        category: 'AI & Machine Learning',
-        feedType: 'openai',
-        url: 'https://status.openai.com/',
-        icon: 'fa-brain',
-        color: 'openai-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      anthropic: {
-        name: 'Anthropic (Claude)',
-        category: 'AI & Machine Learning',
-        feedType: 'anthropic',
-        url: 'https://status.claude.com/',
-        icon: 'fa-robot',
-        color: 'anthropic-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      // ADVERTISING
-      googleads: {
-        name: 'Google Ads',
-        category: 'Advertising',
-        feedType: 'googleads',
-        url: 'https://ads.google.com/status/publisher/',
-        icon: 'fa-ad',
-        color: 'google-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      microsoftads: {
-        name: 'Microsoft Advertising',
-        category: 'Advertising',
-        feedType: 'microsoftads',
-        url: 'https://status.ads.microsoft.com/',
-        icon: 'fa-microsoft',
-        color: 'microsoft-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      metafb: {
-        name: 'Meta: Facebook & Instagram Shops',
-        category: 'E-Commerce & Payments',
-        feedType: 'metafb',
-        url: 'https://metastatus.com/',
-        icon: 'fa-facebook',
-        color: 'facebook-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      metamarketingapi: {
-        name: 'Meta: Marketing API',
-        category: 'Advertising',
-        feedType: 'metamarketingapi',
-        url: 'https://metastatus.com/',
-        icon: 'fa-facebook',
-        color: 'facebook-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      metafbs: {
-        name: 'Meta: Business Suite',
-        category: 'Advertising',
-        feedType: 'metafbs',
-        url: 'https://metastatus.com/',
-        icon: 'fa-facebook',
-        color: 'facebook-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      metalogin: {
-        name: 'Meta: Facebook Login',
-        category: 'Developer Tools',
-        feedType: 'metalogin',
-        url: 'https://metastatus.com/',
-        icon: 'fa-facebook',
-        color: 'facebook-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      googleworkspace: {
-        name: 'Google Workspace',
-        category: 'Developer Tools',
-        feedType: 'googleworkspace',
-        url: 'https://www.google.com/appsstatus/dashboard/',
-        icon: 'fa-google',
-        color: 'google-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      // SECURITY
-      letsencrypt: {
-        name: "Let's Encrypt",
-        category: 'Security',
-        feedType: 'letsencrypt',
-        url: 'https://letsencrypt.status.io/',
-        icon: 'fa-lock',
-        color: 'letsencrypt-icon',
-        corsEnabled: false,
-        useFeed: true
-      },
-      flare: {
-        name: 'Flare',
-        category: 'Security',
-        feedType: 'flare',
-        url: 'https://status.flare.io/',
-        icon: 'fa-shield-alt',
-        color: 'flare-icon',
-        corsEnabled: false,
-        useFeed: true
-      }
-    };
+    return SERVICE_DEFINITIONS;
   }
 
   /**
@@ -897,274 +257,126 @@ export class ExternalServicesManager {
       'Gaming',
       'AI & Machine Learning',
       'Advertising',
-      'Security',
-      'Other'
+      'Security'
     ];
 
-    categoryOrder.forEach(categoryName => {
-      if (categories[categoryName]) {
-        const categorySection = document.createElement("div");
-        categorySection.className = "settings-category";
+    for (const category of categoryOrder) {
+      if (!categories[category]) continue;
+
+      const categorySection = document.createElement("div");
+      categorySection.className = "category-section";
+
+      const categoryHeader = document.createElement("div");
+      categoryHeader.className = "category-header";
+      categoryHeader.innerHTML = `
+        <span>${category}</span>
+        <button class="category-toggle-btn" data-category="${category}">
+          <span class="toggle-all-text">Toggle All</span>
+          <i class="fas fa-toggle-on"></i>
+        </button>
+      `;
+
+      categorySection.appendChild(categoryHeader);
+
+      const servicesGrid = document.createElement("div");
+      servicesGrid.className = "services-grid";
+
+      const categoryCheckboxes = [];
+      
+      categories[category].forEach(serviceKey => {
+        const serviceDef = serviceDefinitions[serviceKey];
+        const isEnabled = services[serviceKey];
         
-        // Category header with toggle all button
-        const categoryHeader = document.createElement("div");
-        categoryHeader.className = "category-header";
+        const toggleLabel = document.createElement("label");
+        toggleLabel.className = "service-toggle";
         
-        const categoryTitle = document.createElement("h4");
-        categoryTitle.className = "category-title";
-        categoryTitle.textContent = categoryName;
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = isEnabled;
+        checkbox.dataset.service = serviceKey;
         
-        const toggleAllBtn = document.createElement("button");
-        toggleAllBtn.className = "category-toggle-all-btn";
-        toggleAllBtn.innerHTML = '<i class="fas fa-check-square"></i> Toggle All';
-        toggleAllBtn.title = `Enable/Disable all ${categoryName} services`;
-        
-        categoryHeader.appendChild(categoryTitle);
-        categoryHeader.appendChild(toggleAllBtn);
-        categorySection.appendChild(categoryHeader);
-        
-        const categoryGrid = document.createElement("div");
-        categoryGrid.className = "settings-grid";
-        
-        // Sort services alphabetically within category
-        categories[categoryName].sort((a, b) => {
-          return serviceDefinitions[a].name.localeCompare(serviceDefinitions[b].name);
+        checkbox.addEventListener("change", () => {
+          pendingChanges[serviceKey] = checkbox.checked;
         });
         
-        // Store checkboxes for this category
-        const categoryCheckboxes = [];
+        const serviceName = document.createElement("span");
+        serviceName.textContent = serviceDef.name;
         
-        categories[categoryName].forEach(serviceKey => {
-          const isEnabled = preferences[serviceKey] === true;
-          
-          const toggleLabel = document.createElement("label");
-          toggleLabel.className = "service-toggle";
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = isEnabled;
-          checkbox.dataset.service = serviceKey;
-          checkbox.addEventListener("change", () => {
-            pendingChanges[serviceKey] = checkbox.checked;
-            saveButton.disabled = false;
-            saveButton.classList.add('has-changes');
-          });
-          
-          const serviceName = document.createElement("span");
-          serviceName.textContent = serviceDefinitions[serviceKey].name;
-          
-          toggleLabel.appendChild(checkbox);
-          toggleLabel.appendChild(serviceName);
-          categoryGrid.appendChild(toggleLabel);
-          
-          // Track checkbox for toggle all functionality
-          categoryCheckboxes.push(checkbox);
+        toggleLabel.appendChild(checkbox);
+        toggleLabel.appendChild(serviceName);
+        servicesGrid.appendChild(toggleLabel);
+        
+        categoryCheckboxes.push(checkbox);
+      });
+
+      // Add toggle all button functionality
+      const toggleBtn = categoryHeader.querySelector(".category-toggle-btn");
+      toggleBtn.addEventListener("click", () => {
+        const allEnabled = categoryCheckboxes.every(cb => cb.checked);
+        categoryCheckboxes.forEach(cb => {
+          cb.checked = !allEnabled;
+          cb.dispatchEvent(new Event('change'));
+        });
+      });
+
+      categorySection.appendChild(servicesGrid);
+      settingsContent.appendChild(categorySection);
+    }
+
+    // Save button
+    const saveButton = document.createElement("button");
+    saveButton.className = "save-settings-btn";
+    saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    saveButton.disabled = true;
+    
+    saveButton.addEventListener("click", async () => {
+      try {
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        const response = await fetch("/api/external-services/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pendingChanges),
+          credentials: 'include'
         });
         
-        // Add toggle all button click handler
-        toggleAllBtn.addEventListener("click", () => {
-          // Check current state - if any are unchecked, enable all; if all checked, disable all
-          const allChecked = categoryCheckboxes.every(cb => cb.checked);
-          const newState = !allChecked;
-          
-          categoryCheckboxes.forEach(checkbox => {
-            checkbox.checked = newState;
-            const serviceKey = checkbox.dataset.service;
-            pendingChanges[serviceKey] = newState;
-          });
-          
-          // Update button appearance
-          const icon = toggleAllBtn.querySelector('i');
-          if (newState) {
-            icon.className = 'fas fa-check-square';
-          } else {
-            icon.className = 'fas fa-square';
-          }
-          
-          saveButton.disabled = false;
-          saveButton.classList.add('has-changes');
-        });
+        if (!response.ok) throw new Error("Failed to save");
         
-        categorySection.appendChild(categoryGrid);
-        settingsContent.appendChild(categorySection);
+        // Update local services object
+        Object.assign(services, pendingChanges);
+        Object.keys(pendingChanges).length = 0;
+        
+        saveButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
+        setTimeout(() => {
+          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+          saveButton.classList.remove('has-changes');
+        }, 2000);
+        
+        // Reload services display
+        await this.init();
+      } catch (error) {
+        console.error("Save error:", error);
+        saveButton.innerHTML = '<i class="fas fa-times"></i> Save Failed';
+        saveButton.disabled = false;
+        setTimeout(() => {
+          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+        }, 2000);
       }
     });
     
-    // Add save button
-    const saveButton = document.createElement("button");
-    saveButton.className = "settings-save-btn";
-    saveButton.disabled = true;
-    saveButton.innerHTML = `<i class="fas fa-save"></i> Save Changes`;
-    saveButton.addEventListener("click", async () => {
-      if (Object.keys(pendingChanges).length > 0) {
-        await this.saveServicePreferences(pendingChanges);
-        Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
-        saveButton.disabled = true;
-        saveButton.classList.remove('has-changes');
-        
-        // Collapse the settings panel
-        settingsContent.classList.add('collapsed');
-        const toggleIcon = settingsToggle.querySelector('.toggle-icon');
-        if (toggleIcon) {
-          toggleIcon.className = 'fas fa-chevron-down toggle-icon';
-        }
+    // Track changes to enable save button
+    Object.keys(services).forEach(serviceKey => {
+      const checkbox = settingsContent.querySelector(`input[data-service="${serviceKey}"]`);
+      if (checkbox) {
+        checkbox.addEventListener("change", () => {
+          saveButton.disabled = false;
+          saveButton.classList.add('has-changes');
+        });
       }
     });
     
     settingsContent.appendChild(saveButton);
-  }
-
-  /**
-   * Enable drag-and-drop reordering for service cards
-   */
-  enableServiceDragDrop(container) {
-    const categoryGrids = container.querySelectorAll('.service-category-grid');
-    
-    categoryGrids.forEach(grid => {
-      const cards = grid.querySelectorAll('.external-service-card');
-      let draggedElement = null;
-      let dropTargetElement = null;
-      
-      cards.forEach(card => {
-        card.draggable = true;
-        
-        card.addEventListener('dragstart', (e) => {
-          draggedElement = card;
-          card.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/html', card.innerHTML);
-        });
-        
-        card.addEventListener('dragend', () => {
-          card.classList.remove('dragging');
-          
-          // Remove drag-over class from all cards
-          cards.forEach(c => c.classList.remove('drag-over'));
-          
-          // Perform swap if there's a valid drop target
-          if (dropTargetElement && dropTargetElement !== draggedElement && grid.contains(dropTargetElement)) {
-            // Get parent references before swapping
-            const draggedParent = draggedElement.parentNode;
-            const targetParent = dropTargetElement.parentNode;
-            
-            // Only swap if both are in the same grid
-            if (draggedParent === targetParent) {
-              // Get next siblings to preserve position
-              const draggedNext = draggedElement.nextSibling;
-              const targetNext = dropTargetElement.nextSibling;
-              
-              // Swap positions
-              if (draggedNext === dropTargetElement) {
-                // Adjacent: dragged is before target
-                draggedParent.insertBefore(dropTargetElement, draggedElement);
-              } else if (targetNext === draggedElement) {
-                // Adjacent: target is before dragged
-                draggedParent.insertBefore(draggedElement, dropTargetElement);
-              } else {
-                // Not adjacent: swap positions
-                draggedParent.insertBefore(draggedElement, targetNext);
-                targetParent.insertBefore(dropTargetElement, draggedNext);
-              }
-            }
-          }
-          
-          // Reset drop target
-          dropTargetElement = null;
-          
-          // Save new order for all cards across all categories
-          const allCards = container.querySelectorAll('.external-service-card');
-          const newOrder = Array.from(allCards).map(child => child.dataset.serviceKey);
-          this.saveServiceOrder(newOrder);
-        });
-        
-        card.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-        });
-        
-        card.addEventListener('dragenter', (e) => {
-          // Find the card element even if hovering over child
-          let targetCard = e.target;
-          while (targetCard && !targetCard.classList.contains('external-service-card')) {
-            targetCard = targetCard.parentElement;
-          }
-          
-          if (targetCard && targetCard !== draggedElement && grid.contains(targetCard)) {
-            // Remove drag-over from previous target
-            if (dropTargetElement && dropTargetElement !== targetCard) {
-              dropTargetElement.classList.remove('drag-over');
-            }
-            
-            // Set new drop target and add visual indicator
-            dropTargetElement = targetCard;
-            targetCard.classList.add('drag-over');
-          }
-        });
-        
-        card.addEventListener('dragleave', (e) => {
-          // Find the card element
-          let targetCard = e.target;
-          while (targetCard && !targetCard.classList.contains('external-service-card')) {
-            targetCard = targetCard.parentElement;
-          }
-          
-          if (targetCard) {
-            // Only remove if we're actually leaving the card
-            const rect = targetCard.getBoundingClientRect();
-            if (e.clientX < rect.left || e.clientX > rect.right || 
-                e.clientY < rect.top || e.clientY > rect.bottom) {
-              targetCard.classList.remove('drag-over');
-              // Clear drop target if leaving
-              if (dropTargetElement === targetCard) {
-                dropTargetElement = null;
-              }
-            }
-          }
-        });
-      });
-    });
-  }
-
-  /**
-   * Save service preferences to cookie (client-side storage)
-   */
-  async saveServicePreferences(changes) {
-    try {
-      // Get all service definitions to validate
-      const serviceDefinitions = this.getServiceDefinitions();
-      
-      // Get current preferences from cookie
-      let preferences = {};
-      const cookiePrefs = this.getCookie('servicePreferences');
-      if (cookiePrefs) {
-        try {
-          preferences = JSON.parse(decodeURIComponent(cookiePrefs));
-        } catch (e) {
-          console.error('Failed to parse cookie preferences:', e);
-          preferences = {};
-        }
-      }
-      
-      // Update all pending preferences
-      Object.keys(changes).forEach(serviceKey => {
-        if (serviceDefinitions[serviceKey]) {
-          preferences[serviceKey] = Boolean(changes[serviceKey]);
-        }
-      });
-      
-      // Save to cookie (1 year expiration)
-      this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(preferences)), 365);
-      
-      // Clear cache on preferences change
-      this.serviceCache.clear();
-      
-      // Reload services
-      await this.loadExternalServices();
-      
-      this.showNotification("Preferences saved successfully", "success");
-    } catch (error) {
-      console.error('Failed to save service preferences:', error);
-      this.showNotification("Failed to save preferences", "error");
-    }
   }
 
   /**
