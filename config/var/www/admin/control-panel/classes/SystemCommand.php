@@ -12,17 +12,16 @@ class SystemCommand {
     /**
      * Execute a shell command with validation and error handling
      * @param string $command The command to execute
-     * @param bool $escape Whether to escape shell arguments (default: false for pre-validated commands)
      * @return string|false Command output or false on failure
      */
-    private static function execute($command, $escape = false) {
+    private static function execute($command) {
         if (empty($command)) {
             return false;
         }
         
         // For testing environments, we can mock this
         if (defined('ENGINESCRIPT_MOCK_SHELL') && ENGINESCRIPT_MOCK_SHELL) {
-            return self::mockCommand($command);
+            return self::mockCommand();
         }
         
         // Execute command
@@ -33,10 +32,9 @@ class SystemCommand {
     
     /**
      * Mock command execution for testing
-     * @param string $command The command to mock
      * @return string Mocked output
      */
-    private static function mockCommand($command) {
+    private static function mockCommand() {
         // Testing hook - can be extended for unit tests
         return '';
     }
@@ -78,6 +76,7 @@ class SystemCommand {
             return false;
         }
         
+        // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
         $command = sprintf('systemctl status %s --no-pager 2>/dev/null', escapeshellarg($service));
         return self::execute($command);
     }

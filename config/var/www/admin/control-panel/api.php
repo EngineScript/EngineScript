@@ -12,6 +12,7 @@
  */
 
 // Load SystemCommand class for secure shell execution
+// @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
 require_once __DIR__ . '/classes/SystemCommand.php';
 
 // Prevent direct access if not from proper context
