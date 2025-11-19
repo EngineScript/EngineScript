@@ -61,12 +61,12 @@ function parseStatusFeed($feedUrl, $filter = null) {
         ]);
         
         // Fetch feed content
-        // @codacy suppress [The use of function file_get_contents() is discouraged] Used for outbound HTTP requests with timeout protection - not file system access
         set_error_handler(function($severity, $message, $file, $line) {
-            throw new ErrorException($message, 0, $severity, $file, $line);
+            throw new ErrorException(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'), 0, $severity, $file, $line);
         });
         
         try {
+            // @codacy suppress [The use of function file_get_contents() is discouraged] Used for outbound HTTP requests with timeout protection - not file system access
             $feedContent = file_get_contents($feedUrl, false, $context);
         } catch (Exception $e) {
             $feedContent = false;
