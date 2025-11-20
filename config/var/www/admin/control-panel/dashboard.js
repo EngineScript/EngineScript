@@ -1,10 +1,11 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.12.16';
-import { DashboardState } from './modules/state.js?v=2025.11.12.16';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.12.16';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.12.16';
+import { DashboardAPI } from './modules/api.js?v=2025.11.20.01';
+import { DashboardState } from './modules/state.js?v=2025.11.20.01';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.20.01';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.20.01';
+import { ThemeManager } from './modules/theme.js?v=2025.11.20.01';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -14,6 +15,7 @@ class EngineScriptDashboard {
     this.state = new DashboardState();
     this.charts = new DashboardCharts();
     this.utils = new DashboardUtils();
+    this.theme = new ThemeManager(); // Initialize theme manager first (before DOM)
     this.externalServices = null; // Lazy loaded when needed
 
     // Legacy property references for compatibility
@@ -30,6 +32,7 @@ class EngineScriptDashboard {
     this.setupEventListeners();
     this.setupNavigation();
     this.startClock();
+    this.theme.init(); // Initialize theme toggle button
     this.api.loadCsrfToken(); // Load CSRF token before other API calls
     this.loadInitialData();
     this.hideLoadingScreen();
@@ -97,28 +100,48 @@ class EngineScriptDashboard {
       return;
     }
 
-    // Update navigation
+    // Update navigation with ARIA current
     document.querySelectorAll(".nav-item").forEach((item) => {
       item.classList.remove("active");
+      const link = item.querySelector("a");
+      if (link) {
+        link.removeAttribute("aria-current");
+      }
     });
     const targetNav = document.querySelector(`[data-page="${pageName}"]`);
     if (targetNav) {
       targetNav.classList.add("active");
+      const link = targetNav.querySelector("a");
+      if (link) {
+        link.setAttribute("aria-current", "page");
+      }
     }
 
     // Update pages
     document.querySelectorAll(".page-content").forEach((page) => {
       page.classList.add("hidden");
+      page.setAttribute("aria-hidden", "true");
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
       targetPage.classList.remove("hidden");
+      targetPage.setAttribute("aria-hidden", "false");
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
       const mainContent = document.querySelector(".main-content");
       if (mainContent) {
         mainContent.scrollTop = 0;
+      }
+      
+      // Set focus to main content for keyboard users
+      const mainContentElement = document.getElementById("main-content");
+      if (mainContentElement) {
+        // Set tabindex temporarily to allow focus
+        mainContentElement.setAttribute("tabindex", "-1");
+        mainContentElement.focus();
+        // Remove tabindex after focus to prevent tab navigation issues
+        setTimeout(() => mainContentElement.removeAttribute("tabindex"), 100);
       }
     }
 
@@ -127,6 +150,9 @@ class EngineScriptDashboard {
     if (pageTitle) {
       pageTitle.textContent = this.getPageTitle(pageName);
     }
+
+    // Announce page change to screen readers
+    this.announceToScreenReader(`Navigated to ${this.getPageTitle(pageName)} page`);
 
     // Load page-specific data
     this.loadPageData(pageName);
@@ -180,7 +206,7 @@ class EngineScriptDashboard {
 
       console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.17.01');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.20.01');
       
       console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
@@ -211,15 +237,27 @@ class EngineScriptDashboard {
 
   toggleMobileMenu() {
     const sidebar = document.querySelector(".sidebar");
+    const toggleBtn = document.getElementById("mobile-menu-toggle");
     if (sidebar) {
-      sidebar.classList.toggle("mobile-open");
+      const isOpen = sidebar.classList.toggle("mobile-open");
+      // Update ARIA attributes for accessibility
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      }
+      // Announce to screen readers
+      this.announceToScreenReader(isOpen ? "Navigation menu opened" : "Navigation menu closed");
     }
   }
 
   closeMobileMenu() {
     const sidebar = document.querySelector(".sidebar");
+    const toggleBtn = document.getElementById("mobile-menu-toggle");
     if (sidebar) {
       sidebar.classList.remove("mobile-open");
+      // Update ARIA attributes
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-expanded", "false");
+      }
     }
   }
 
@@ -323,9 +361,20 @@ class EngineScriptDashboard {
     const refreshBtn = document.getElementById("refresh-btn");
     const icon = refreshBtn.querySelector("i");
 
+    // Update button state for accessibility
+    refreshBtn.setAttribute("aria-label", "Refreshing dashboard data");
+    refreshBtn.disabled = true;
+
     icon.classList.add("spinning");
+    
+    // Announce refresh to screen readers
+    this.announceToScreenReader("Refreshing dashboard data");
+    
     setTimeout(() => {
       icon.classList.remove("spinning");
+      refreshBtn.disabled = false;
+      refreshBtn.setAttribute("aria-label", "Refresh dashboard data");
+      this.announceToScreenReader("Dashboard data refreshed");
     }, 1000);
   }
     
@@ -379,6 +428,12 @@ class EngineScriptDashboard {
    */
   _updateServiceElements(services, isError = false) {
     const serviceList = ["nginx", "php", "mysql", "redis"];
+    const serviceListContainer = document.querySelector(".service-list");
+    
+    // Update aria-busy when loading is complete
+    if (serviceListContainer) {
+      serviceListContainer.setAttribute("aria-busy", "false");
+    }
     
     serviceList.forEach(serviceName => {
       const status = services ? services[serviceName] : null;
@@ -388,6 +443,7 @@ class EngineScriptDashboard {
 
       const statusIcon = element.querySelector(".service-status i");
       const versionSpan = element.querySelector(".service-version");
+      const statusContainer = element.querySelector(".service-status");
 
       if (statusIcon) {
         if (isError) {
@@ -404,6 +460,13 @@ class EngineScriptDashboard {
           versionSpan.textContent = `v${status.version}`;
         }
       }
+      
+      // Update aria-label for status
+      if (statusContainer) {
+        const statusText = isError ? "Error loading status" : 
+                          (status && status.online) ? "Service online" : "Service offline";
+        statusContainer.setAttribute("aria-label", `${serviceName} ${statusText}`);
+      }
     });
   }
     
@@ -414,6 +477,9 @@ class EngineScriptDashboard {
       const sitesGrid = document.getElementById("sites-grid");
 
       if (sitesGrid) {
+        // Mark loading as complete
+        sitesGrid.setAttribute("aria-busy", "false");
+        
         // Clear existing content
         sitesGrid.innerHTML = "";
 
@@ -424,10 +490,13 @@ class EngineScriptDashboard {
               sitesGrid.appendChild(siteElement);
             }
           });
+          // Announce sites loaded
+          this.announceToScreenReader(`${sites.length} WordPress ${sites.length === 1 ? 'site' : 'sites'} loaded`);
         } else {
           // Create no sites found element
           const noSitesElement = this.createNoSitesElement();
           sitesGrid.appendChild(noSitesElement);
+          this.announceToScreenReader("No WordPress sites found");
         }
       }
     } catch (error) {
@@ -435,9 +504,11 @@ class EngineScriptDashboard {
       // Show error message to user
       const sitesGrid = document.getElementById("sites-grid");
       if (sitesGrid) {
+        sitesGrid.setAttribute("aria-busy", "false");
         sitesGrid.innerHTML = "";
         const errorDiv = document.createElement("div");
         errorDiv.className = "site-card";
+        errorDiv.setAttribute("role", "alert");
         
         const headerDiv = document.createElement("div");
         headerDiv.className = "site-header";
@@ -458,6 +529,7 @@ class EngineScriptDashboard {
         errorDiv.appendChild(headerDiv);
         errorDiv.appendChild(infoDiv);
         sitesGrid.appendChild(errorDiv);
+        this.announceToScreenReader("Error loading WordPress sites");
       }
     }
   }
@@ -469,6 +541,9 @@ class EngineScriptDashboard {
       const systemInfo = document.getElementById("system-info");
 
       if (systemInfo && typeof sysInfo === "object") {
+        // Mark loading as complete
+        systemInfo.setAttribute("aria-busy", "false");
+        
         // Clear existing content
         systemInfo.innerHTML = "";
 
@@ -491,6 +566,9 @@ class EngineScriptDashboard {
           const infoElement = this.createInfoElement(item.label, item.value);
           systemInfo.appendChild(infoElement);
         });
+        
+        // Announce system info loaded
+        this.announceToScreenReader("System information loaded");
       }
 
     } catch (error) {
@@ -551,6 +629,11 @@ class EngineScriptDashboard {
 
   showSkeletonServiceStatus() {
     const services = ["nginx", "php", "mysql", "redis"];
+    const serviceList = document.querySelector(".service-list");
+    if (serviceList) {
+      serviceList.setAttribute("aria-busy", "true");
+    }
+    
     services.forEach(service => {
       const element = document.getElementById(`${service}-status`);
       if (element) {
@@ -572,10 +655,11 @@ class EngineScriptDashboard {
   showSkeletonSites() {
     const sitesGrid = document.getElementById("sites-grid");
     if (sitesGrid) {
+      sitesGrid.setAttribute("aria-busy", "true");
       let html = '';
       for (let i = 0; i < 3; i++) {
         html += `
-          <div class="skeleton-card">
+          <div class="skeleton-card" role="status" aria-label="Loading site information">
             <div class="skeleton skeleton-title"></div>
             <div class="skeleton skeleton-text"></div>
             <div class="skeleton skeleton-text short"></div>
@@ -589,10 +673,11 @@ class EngineScriptDashboard {
   showSkeletonSystemInfo() {
     const systemInfo = document.getElementById("system-info");
     if (systemInfo) {
+      systemInfo.setAttribute("aria-busy", "true");
       let html = '';
       for (let i = 0; i < 3; i++) {
         html += `
-          <div class="skeleton skeleton-text"></div>
+          <div class="skeleton skeleton-text" role="status" aria-label="Loading system information"></div>
         `;
       }
       systemInfo.innerHTML = html;
@@ -717,6 +802,10 @@ class EngineScriptDashboard {
   
   createSiteElement(site) {
     const { siteDiv, headerDiv } = this.createSiteCardStructure(this.sanitizeInput(site.domain));
+    
+    // Add ARIA attributes for site card
+    siteDiv.setAttribute("role", "listitem");
+    siteDiv.setAttribute("aria-label", `Site: ${this.sanitizeInput(site.domain)}`);
 
     const statusDiv = document.createElement("div");
     statusDiv.className = "site-status";
@@ -724,11 +813,14 @@ class EngineScriptDashboard {
     const statusIndicator = document.createElement("span");
     const sanitizedStatus = this.sanitizeInput(site.status) || "unknown";
     statusIndicator.className = `status-indicator ${sanitizedStatus}`;
+    statusIndicator.setAttribute("aria-hidden", "true");
 
     const statusText = document.createTextNode(sanitizedStatus);
 
     statusDiv.appendChild(statusIndicator);
     statusDiv.appendChild(statusText);
+    statusDiv.setAttribute("role", "status");
+    statusDiv.setAttribute("aria-label", `Site status: ${sanitizedStatus}`);
     headerDiv.appendChild(statusDiv);
 
     // Site info
@@ -772,12 +864,17 @@ class EngineScriptDashboard {
   createInfoElement(label, value) {
     const infoDiv = document.createElement("div");
     infoDiv.className = "info-item";
+    infoDiv.setAttribute("role", "listitem");
 
-    const labelElement = document.createElement("strong");
-    labelElement.textContent = `${label}:`;
+    const labelElement = document.createElement("dt");
+    const strong = document.createElement("strong");
+    strong.textContent = `${label}:`;
+    labelElement.appendChild(strong);
 
-    const valueElement = document.createElement("span");
-    valueElement.textContent = value;
+    const valueElement = document.createElement("dd");
+    const span = document.createElement("span");
+    span.textContent = value;
+    valueElement.appendChild(span);
 
     infoDiv.appendChild(labelElement);
     infoDiv.appendChild(valueElement);
@@ -785,10 +882,36 @@ class EngineScriptDashboard {
     return infoDiv;
   }
     
+  /**
+   * Announce message to screen readers using ARIA live region
+   * @param {string} message - Message to announce
+   * @param {string} priority - 'polite' or 'assertive'
+   */
+  announceToScreenReader(message, priority = 'polite') {
+    // Find or create live region
+    let liveRegion = document.getElementById('sr-live-region');
+    
+    if (!liveRegion) {
+      liveRegion = document.createElement('div');
+      liveRegion.id = 'sr-live-region';
+      liveRegion.className = 'sr-only';
+      liveRegion.setAttribute('aria-live', priority);
+      liveRegion.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(liveRegion);
+    }
+    
+    // Clear and set new message
+    liveRegion.textContent = '';
+    setTimeout(() => {
+      liveRegion.textContent = message;
+    }, 100);
+  }
+
   // Cleanup method
   destroy() {
     this.state.clearRefreshTimer();
     this.charts.destroy();
+    this.theme.destroy();
   }
 
   // Tools management methods
@@ -836,6 +959,9 @@ class EngineScriptDashboard {
       
       if (!monitorsContainer) return;
       
+      // Mark loading as complete
+      monitorsContainer.setAttribute("aria-busy", "false");
+      
       if (!response.configured) {
         this.showUptimeNotConfigured();
         return;
@@ -852,6 +978,7 @@ class EngineScriptDashboard {
           'Add websites to monitor in your Uptime Robot dashboard'
         );
         monitorsContainer.appendChild(emptyState);
+        this.announceToScreenReader("No uptime monitors configured");
         return;
       }
       
@@ -863,6 +990,9 @@ class EngineScriptDashboard {
         monitorsContainer.appendChild(monitorElement);
       });
       
+      // Announce monitors loaded
+      this.announceToScreenReader(`${monitors.length} uptime ${monitors.length === 1 ? 'monitor' : 'monitors'} loaded`);
+      
     } catch (error) {
       console.error('Failed to load uptime monitors:', error);
       this.showUptimeError();
@@ -872,15 +1002,20 @@ class EngineScriptDashboard {
   createUptimeMonitorElement(monitor) {
     const monitorDiv = document.createElement("div");
     monitorDiv.className = "uptime-monitor";
+    monitorDiv.setAttribute("role", "listitem");
+    monitorDiv.setAttribute("aria-label", `Monitor: ${this.sanitizeInput(monitor.name)}`);
     
     const statusClass = this.getUptimeStatusClass(monitor.status_code);
     
     // Create elements programmatically to avoid XSS vulnerabilities
     const statusDiv = document.createElement("div");
     statusDiv.className = `monitor-status ${statusClass}`;
+    statusDiv.setAttribute("role", "status");
+    statusDiv.setAttribute("aria-label", `Status: ${this.sanitizeInput(monitor.status)}`);
     
     const statusDot = document.createElement("span");
     statusDot.className = "status-dot";
+    statusDot.setAttribute("aria-hidden", "true");
     statusDiv.appendChild(statusDot);
     
     const infoDiv = document.createElement("div");

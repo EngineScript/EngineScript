@@ -12,18 +12,22 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="dashboard.css?v=2025.11.17.01">
-    <link rel="stylesheet" href="external-services/external-services.css?v=2025.11.17.01">
+    <link rel="stylesheet" href="dashboard.css?v=2025.11.20.01">
+    <link rel="stylesheet" href="external-services/external-services.css?v=2025.11.20.01">
     
     <!-- Preload Critical Resources -->
-    <link rel="modulepreload" href="dashboard.js?v=2025.11.17.01" crossorigin="use-credentials">
-    <link rel="modulepreload" href="modules/api.js?v=2025.11.17.01" crossorigin="use-credentials">
+    <link rel="modulepreload" href="dashboard.js?v=2025.11.20.01" crossorigin="use-credentials">
+    <link rel="modulepreload" href="modules/api.js?v=2025.11.20.01" crossorigin="use-credentials">
+    <link rel="modulepreload" href="modules/theme.js?v=2025.11.20.01" crossorigin="use-credentials">
 </head>
 <body>
+    <!-- Skip Navigation Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
+    <div id="loading-screen" class="loading-screen" role="status" aria-live="polite" aria-label="Loading dashboard">
         <div class="loading-content">
-            <div class="loading-spinner"></div>
+            <div class="loading-spinner" aria-hidden="true"></div>
             <h2>EngineScript</h2>
             <p>Loading Dashboard...</p>
         </div>
@@ -32,226 +36,226 @@
     <!-- Main Dashboard -->
     <div id="dashboard" class="dashboard" style="display: none;">
         <!-- Sidebar -->
-        <nav class="sidebar">
+        <nav class="sidebar" aria-label="Main navigation">
             <div class="sidebar-header">
-                <h2><i class="fas fa-server"></i> EngineScript</h2>
+                <h2><i class="fas fa-server" aria-hidden="true"></i> EngineScript</h2>
                 <p class="version">Admin Dashboard</p>
             </div>
             
-            <ul class="sidebar-nav">
-                <li class="nav-item active" data-page="overview">
-                    <a href="#"><i class="fas fa-tachometer-alt"></i> Overview</a>
+            <ul class="sidebar-nav" role="menu">
+                <li class="nav-item active" data-page="overview" role="none">
+                    <a href="#overview" role="menuitem" aria-current="page"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Overview</a>
                 </li>
-                <li class="nav-item" data-page="sites">
-                    <a href="#"><i class="fas fa-globe"></i> Sites</a>
+                <li class="nav-item" data-page="sites" role="none">
+                    <a href="#sites" role="menuitem"><i class="fas fa-globe" aria-hidden="true"></i> Sites</a>
                 </li>
-                <li class="nav-item" data-page="system">
-                    <a href="#"><i class="fas fa-cogs"></i> System</a>
+                <li class="nav-item" data-page="system" role="none">
+                    <a href="#system" role="menuitem"><i class="fas fa-cogs" aria-hidden="true"></i> System</a>
                 </li>
-                <li class="nav-item" data-page="external-services">
-                    <a href="#"><i class="fas fa-cloud"></i> External Services</a>
+                <li class="nav-item" data-page="external-services" role="none">
+                    <a href="#external-services" role="menuitem"><i class="fas fa-cloud" aria-hidden="true"></i> External Services</a>
                 </li>
-                <li class="nav-item" data-page="tools">
-                    <a href="#"><i class="fas fa-tools"></i> Tools</a>
+                <li class="nav-item" data-page="tools" role="none">
+                    <a href="#tools" role="menuitem"><i class="fas fa-tools" aria-hidden="true"></i> Tools</a>
                 </li>
             </ul>
             
             <div class="sidebar-footer">
-                <div class="server-status" id="server-status">
-                    <i class="fas fa-circle status-indicator"></i>
+                <div class="server-status" id="server-status" role="status" aria-live="polite" aria-label="Server status indicator">
+                    <i class="fas fa-circle status-indicator" aria-hidden="true"></i>
                     <span>Server Online</span>
                 </div>
             </div>
         </nav>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="main-content">
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
-                    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-                        <i class="fas fa-bars"></i>
+                    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle mobile navigation menu" aria-expanded="false">
+                        <i class="fas fa-bars" aria-hidden="true"></i>
                     </button>
                     <h1 id="page-title">Overview</h1>
-                    <span id="last-updated">Last updated: <span id="update-time">--</span></span>
+                    <span id="last-updated" role="status" aria-live="polite">Last updated: <span id="update-time">--</span></span>
                 </div>
                 <div class="header-right">
-                    <button class="btn btn-primary" id="refresh-btn">
-                        <i class="fas fa-sync-alt"></i> Refresh
+                    <button class="btn btn-primary" id="refresh-btn" aria-label="Refresh dashboard data">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i> <span>Refresh</span>
                     </button>
-                    <div class="server-time" id="server-time">--:--:--</div>
+                    <div class="server-time" id="server-time" role="timer" aria-live="off" aria-label="Current server time">--:--:--</div>
                 </div>
             </header>
 
             <!-- Overview Page -->
-            <div class="page-content" id="overview-page">
+            <div class="page-content" id="overview-page" role="region" aria-labelledby="page-title">
                 <!-- 50/50 Split: Services and Uptime Monitoring -->
                 <div class="content-row">
                     <!-- Service Status Panel -->
-                    <div class="card col-6">
+                    <section class="card col-6" aria-labelledby="service-status-heading">
                         <div class="card-header">
-                            <h3><i class="fas fa-server"></i> Service Status</h3>
+                            <h2 id="service-status-heading"><i class="fas fa-server" aria-hidden="true"></i> Service Status</h2>
                         </div>
                         <div class="card-body">
-                            <div class="service-list">
-                                <div class="service-item" id="nginx-status">
-                                    <div class="service-icon">
+                            <div class="service-list" role="list" aria-live="polite" aria-busy="false">
+                                <div class="service-item" id="nginx-status" role="listitem">
+                                    <div class="service-icon" aria-hidden="true">
                                         <i class="fas fa-server"></i>
                                     </div>
                                     <div class="service-content">
-                                        <h4>Nginx</h4>
-                                        <span class="service-version">v--</span>
+                                        <h3>Nginx</h3>
+                                        <span class="service-version" aria-label="Nginx version">v--</span>
                                     </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
+                                    <div class="service-status" role="status" aria-label="Nginx service status">
+                                        <i class="fas fa-circle" aria-hidden="true"></i>
                                     </div>
                                 </div>
                                 
-                                <div class="service-item" id="php-status">
-                                    <div class="service-icon">
+                                <div class="service-item" id="php-status" role="listitem">
+                                    <div class="service-icon" aria-hidden="true">
                                         <i class="fab fa-php"></i>
                                     </div>
                                     <div class="service-content">
-                                        <h4>PHP-FPM</h4>
-                                        <span class="service-version">v--</span>
+                                        <h3>PHP-FPM</h3>
+                                        <span class="service-version" aria-label="PHP version">v--</span>
                                     </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
+                                    <div class="service-status" role="status" aria-label="PHP-FPM service status">
+                                        <i class="fas fa-circle" aria-hidden="true"></i>
                                     </div>
                                 </div>
                                 
-                                <div class="service-item" id="mysql-status">
-                                    <div class="service-icon">
+                                <div class="service-item" id="mysql-status" role="listitem">
+                                    <div class="service-icon" aria-hidden="true">
                                         <i class="fas fa-database"></i>
                                     </div>
                                     <div class="service-content">
-                                        <h4>MariaDB</h4>
-                                        <span class="service-version">v--</span>
+                                        <h3>MariaDB</h3>
+                                        <span class="service-version" aria-label="MariaDB version">v--</span>
                                     </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
+                                    <div class="service-status" role="status" aria-label="MariaDB service status">
+                                        <i class="fas fa-circle" aria-hidden="true"></i>
                                     </div>
                                 </div>
                                 
-                                <div class="service-item" id="redis-status">
-                                    <div class="service-icon">
+                                <div class="service-item" id="redis-status" role="listitem">
+                                    <div class="service-icon" aria-hidden="true">
                                         <i class="fas fa-memory"></i>
                                     </div>
                                     <div class="service-content">
-                                        <h4>Redis</h4>
-                                        <span class="service-version">v--</span>
+                                        <h3>Redis</h3>
+                                        <span class="service-version" aria-label="Redis version">v--</span>
                                     </div>
-                                    <div class="service-status">
-                                        <i class="fas fa-circle"></i>
+                                    <div class="service-status" role="status" aria-label="Redis service status">
+                                        <i class="fas fa-circle" aria-hidden="true"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
                     
                     <!-- Uptime Monitoring Panel -->
-                    <div class="card col-6">
+                    <section class="card col-6" aria-labelledby="uptime-monitoring-heading">
                         <div class="card-header">
-                            <h3><i class="fas fa-heartbeat"></i> Website Uptime Monitoring</h3>
+                            <h2 id="uptime-monitoring-heading"><i class="fas fa-heartbeat" aria-hidden="true"></i> Website Uptime Monitoring</h2>
                         </div>
                         <div class="card-body">
-                            <div class="uptime-summary" id="uptime-summary">
+                            <div class="uptime-summary" id="uptime-summary" role="region" aria-label="Uptime summary statistics">
                                 <div class="uptime-stat">
-                                    <span class="uptime-number" id="total-monitors">--</span>
+                                    <span class="uptime-number" id="total-monitors" aria-label="Total monitored sites">--</span>
                                     <span class="uptime-label">Total Sites</span>
                                 </div>
                                 <div class="uptime-stat">
-                                    <span class="uptime-number success" id="up-monitors">--</span>
+                                    <span class="uptime-number success" id="up-monitors" aria-label="Sites currently online">--</span>
                                     <span class="uptime-label">Online</span>
                                 </div>
                                 <div class="uptime-stat">
-                                    <span class="uptime-number error" id="down-monitors">--</span>
+                                    <span class="uptime-number error" id="down-monitors" aria-label="Sites currently offline">--</span>
                                     <span class="uptime-label">Offline</span>
                                 </div>
                             </div>
-                            <div class="uptime-monitors" id="uptime-monitors">
+                            <div class="uptime-monitors" id="uptime-monitors" role="list" aria-live="polite" aria-busy="false">
                                 <div class="uptime-status">
                                     <p>Loading uptime monitoring data...</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
                 
                 <!-- EngineScript Commands Section -->
                 <div class="content-row">
-                    <div class="card col-12">
+                    <section class="card col-12" aria-labelledby="commands-heading">
                         <div class="card-header">
-                            <h3><i class="fas fa-terminal"></i> EngineScript Commands</h3>
+                            <h2 id="commands-heading"><i class="fas fa-terminal" aria-hidden="true"></i> EngineScript Commands</h2>
                         </div>
                         <div class="card-body">
-                            <div class="commands-grid">
-                                <div class="command-item">
+                            <div class="commands-grid" role="list">
+                                <div class="command-item" role="listitem">
                                     <code>es.backup</code>
                                     <p>Backup all domains locally and optionally to cloud</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.cache</code>
                                     <p>Clear FastCGI Cache, OpCache, and Redis (server-wide)</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.config</code>
                                     <p>Open configuration file in Nano</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.debug</code>
                                     <p>Display debug information for EngineScript</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.help</code>
                                     <p>Display EngineScript commands and locations</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.images</code>
                                     <p>Compress images in WordPress uploads directory (server-wide)</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.info</code>
                                     <p>Display server information</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.install</code>
                                     <p>Run main EngineScript installation script</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.menu</code>
                                     <p>Open EngineScript interactive menu</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.permissions</code>
                                     <p>Reset file permissions in WordPress directories (server-wide)</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.restart</code>
                                     <p>Restart Nginx and PHP services</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.update</code>
                                     <p>Update EngineScript to latest version</p>
                                 </div>
-                                <div class="command-item">
+                                <div class="command-item" role="listitem">
                                     <code>es.variables</code>
                                     <p>Open variables file in Nano (resets on update)</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
             </div>
 
             <!-- Sites Page -->
-            <div class="page-content" id="sites-page" style="display: none;">
+            <div class="page-content" id="sites-page" style="display: none;" role="region" aria-labelledby="page-title">
                 <div class="page-header">
-                    <h2>WordPress Sites</h2>
+                    <h2 class="sr-only">WordPress Sites</h2>
                 </div>
                 
-                <div class="sites-grid" id="sites-grid">
-                    <div class="site-card loading">
+                <div class="sites-grid" id="sites-grid" role="list" aria-live="polite" aria-busy="false">
+                    <div class="site-card loading" role="status">
                         <div class="site-header">
                             <h3>Loading sites...</h3>
                         </div>
@@ -260,51 +264,52 @@
             </div>
 
             <!-- System Page -->
-            <div class="page-content" id="system-page" style="display: none;">
+            <div class="page-content" id="system-page" style="display: none;" role="region" aria-labelledby="page-title">
                 <div class="content-row">
-                    <div class="card col-12">
+                    <section class="card col-12" aria-labelledby="system-info-heading">
                         <div class="card-header">
-                            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+                            <h2 id="system-info-heading"><i class="fas fa-info-circle" aria-hidden="true"></i> System Information</h2>
                         </div>
                         <div class="card-body">
-                            <div class="info-list" id="system-info">
-                                <div class="info-item">
-                                    <strong>OS:</strong> <span>Loading...</span>
+                            <dl class="info-list" id="system-info" role="list" aria-live="polite" aria-busy="false">
+                                <div class="info-item" role="listitem">
+                                    <dt><strong>OS:</strong></dt>
+                                    <dd><span>Loading...</span></dd>
                                 </div>
-                            </div>
+                            </dl>
                         </div>
-                    </div>
+                    </section>
                 </div>
             </div>
 
             <!-- External Services Page -->
-            <div class="page-content" id="external-services-page" style="display: none;">
+            <div class="page-content" id="external-services-page" style="display: none;" role="region" aria-labelledby="page-title">
                 <div class="page-header">
-                    <h2>External Services Status</h2>
+                    <h2 class="sr-only">External Services Status</h2>
                 </div>
                 
                 <!-- Settings Panel (Full Width Header) -->
-                <div class="external-services-settings" id="external-services-settings">
+                <div class="external-services-settings" id="external-services-settings" role="region" aria-label="Service settings">
                     <!-- Settings will be dynamically loaded here -->
                 </div>
                 
-                <div class="external-services-grid" id="external-services-grid">
+                <div class="external-services-grid" id="external-services-grid" role="list" aria-live="polite" aria-busy="false">
                     <!-- Services will be dynamically loaded here -->
-                    <div class="loading-message">
+                    <div class="loading-message" role="status">
                         <p>Loading external services status...</p>
                     </div>
                 </div>
             </div>
 
             <!-- Tools Page -->
-            <div class="page-content" id="tools-page" style="display: none;">
+            <div class="page-content" id="tools-page" style="display: none;" role="region" aria-labelledby="page-title">
                 <div class="page-header">
-                    <h1><i class="fas fa-tools"></i> Administrative Tools</h1>
+                    <h2 class="sr-only"><i class="fas fa-tools" aria-hidden="true"></i> Administrative Tools</h2>
                 </div>
                 
-                <div class="tools-grid">
-                    <a href="/phpmyadmin/" target="_blank" rel="noopener noreferrer" class="tool-card">
-                        <div class="tool-icon">
+                <div class="tools-grid" role="list">
+                    <a href="/phpmyadmin/" target="_blank" rel="noopener noreferrer" class="tool-card" role="listitem" aria-label="phpMyAdmin - Database administration interface">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fas fa-database"></i>
                         </div>
                         <div class="tool-content">
@@ -313,8 +318,8 @@
                         </div>
                     </a>
                     
-                    <a href="/phpinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
-                        <div class="tool-icon">
+                    <a href="/phpinfo/" target="_blank" rel="noopener noreferrer" class="tool-card" role="listitem" aria-label="PHP Info - PHP configuration viewer">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fab fa-php"></i>
                         </div>
                         <div class="tool-content">
@@ -323,8 +328,8 @@
                         </div>
                     </a>
                     
-                    <a href="/phpsysinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
-                        <div class="tool-icon">
+                    <a href="/phpsysinfo/" target="_blank" rel="noopener noreferrer" class="tool-card" role="listitem" aria-label="System Info - System hardware and software viewer">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fas fa-server"></i>
                         </div>
                         <div class="tool-content">
@@ -333,8 +338,8 @@
                         </div>
                     </a>
                     
-                    <a href="/adminer/" target="_blank" rel="noopener noreferrer" class="tool-card">
-                        <div class="tool-icon">
+                    <a href="/adminer/" target="_blank" rel="noopener noreferrer" class="tool-card" role="listitem" aria-label="Adminer - Lightweight database manager">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fas fa-database"></i>
                         </div>
                         <div class="tool-content">
@@ -343,8 +348,8 @@
                         </div>
                     </a>
                     
-                    <a href="/tinyfilemanager/tinyfilemanager.php" target="_blank" rel="noopener noreferrer" class="tool-card" id="filemanager-tool">
-                        <div class="tool-icon">
+                    <a href="/tinyfilemanager/tinyfilemanager.php" target="_blank" rel="noopener noreferrer" class="tool-card" id="filemanager-tool" role="listitem" aria-label="File Manager - Web-based file browser">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fas fa-folder-open"></i>
                         </div>
                         <div class="tool-content">
@@ -353,8 +358,8 @@
                         </div>
                     </a>
                     
-                    <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer" class="tool-card">
-                        <div class="tool-icon">
+                    <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer" class="tool-card" role="listitem" aria-label="Uptime Robot - Website monitoring service">
+                        <div class="tool-icon" aria-hidden="true">
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="tool-content">
@@ -369,11 +374,11 @@
     </div>
 
     <!-- Dashboard Version -->
-    <div style="text-align: center; padding: 20px; color: #666; font-size: 0.85rem; border-top: 1px solid #444;">
-        EngineScript Dashboard v2025.11.17.01
+    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border-color);">
+        EngineScript Dashboard v2025.11.20.01
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2025.11.17.01" data-cfasync="false"></script>
+    <script type="module" src="dashboard.js?v=2025.11.20.01" data-cfasync="false"></script>
 </body>
 </html>
