@@ -38,7 +38,11 @@ class ServicesController extends BaseController {
                 'nginx' => ServiceStatusService::getServiceStatus('nginx'),
                 // codacy:ignore - Static utility class pattern for stateless service operations
                 'php' => ServiceStatusService::getPhpServiceStatus(),
-            self::jsonResponse($services);
+                'mysql' => $mysqlStatus,
+                'redis' => $redisStatus
+            ];
+            
+            return self::jsonResponse($status);
         } catch (Exception $e) {
             self::handleException($e, 'Services status');
         }

@@ -7,8 +7,9 @@
  * @security HIGH - Contains sensitive system information
  */
 
-// Load BaseController early for response methods
+// Load BaseController and Router early for response methods and path validation
 require_once __DIR__ . '/classes/BaseController.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+require_once __DIR__ . '/classes/Router.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 // Prevent direct access
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - $_SERVER access required for standalone API validation
@@ -91,9 +92,6 @@ if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') 
     http_response_code(405);
     BaseController::methodNotAllowed();
 }
-
-// Load Router and Controllers
-require_once __DIR__ . '/classes/Router.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 // Parse request path
 $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - $_SERVER access required for routing, wp_unslash() not available in standalone API
