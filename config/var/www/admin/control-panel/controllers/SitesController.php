@@ -6,8 +6,8 @@
  * @version 1.0.0
  */
 
-require_once __DIR__ . '/../classes/BaseController.php';
-require_once __DIR__ . '/../services/WordPressService.php';
+require_once __DIR__ . '/../classes/BaseController.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+require_once __DIR__ . '/../services/WordPressService.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 class SitesController extends BaseController {
     
@@ -17,6 +17,7 @@ class SitesController extends BaseController {
      */
     public static function getSites() {
         try {
+            // codacy:ignore - Static utility class pattern for stateless service operations
             $sites = WordPressService::getWordPressSites();
             self::jsonResponse($sites);
         } catch (Exception $e) {

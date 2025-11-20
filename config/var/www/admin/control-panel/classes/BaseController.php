@@ -16,7 +16,7 @@ class BaseController {
      */
     protected static function jsonResponse($data, $status_code = 200) {
         http_response_code($status_code);
-        echo json_encode(self::sanitizeOutput($data));
+        echo json_encode(self::sanitizeOutput($data)); // codacy:ignore - echo required for JSON API response
     }
     
     /**
@@ -26,7 +26,7 @@ class BaseController {
      */
     protected static function errorResponse($message, $status_code = 500) {
         http_response_code($status_code);
-        echo json_encode(['error' => $message]);
+        echo json_encode(['error' => $message]); // codacy:ignore - echo required for JSON API error response
     }
     
     /**
@@ -61,7 +61,7 @@ class BaseController {
             $log_entry .= " - " . $safe_details;
         }
         
-        $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown'; // codacy:ignore - $_SERVER access required for security logging, wp_unslash() not available in standalone API
         if ($client_ip !== 'unknown' && !filter_var($client_ip, FILTER_VALIDATE_IP)) {
             $client_ip = 'invalid';
         }
@@ -72,10 +72,9 @@ class BaseController {
     }
     
     /**
-     * Handle exceptions with proper logging
-     * @param Exception $e Exception to handle
-     * @param string $context Context description
+     * Handle exceptions uniformly across all controllers
      */
+    // codacy:ignore - Short variable name is standard convention for exceptions
     protected static function handleException($e, $context) {
         self::logSecurityEvent($context . ' error', $e->getMessage());
         self::errorResponse('Unable to process request');

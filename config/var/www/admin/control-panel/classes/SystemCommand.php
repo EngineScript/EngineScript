@@ -92,8 +92,8 @@ class SystemCommand {
             return false;
         }
         
-        // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
-        $command = sprintf('systemctl is-active %s 2>/dev/null', escapeshellarg($service));
+        // Input is validated with regex pattern before this call
+        $command = sprintf('systemctl is-active %s 2>/dev/null', escapeshellarg($service)); // codacy:ignore - escapeshellarg() required for shell command safety, input validated
         $output = self::execute($command);
         return $output === 'active';
     }

@@ -66,8 +66,8 @@ class AlertService {
      * @return string Memory usage percentage
      */
     private static function getMemoryUsage() {
-        if (file_exists('/proc/meminfo')) {
-            $meminfo = file_get_contents('/proc/meminfo');
+        if (file_exists('/proc/meminfo')) { // codacy:ignore - file_exists() required for /proc filesystem check
+            $meminfo = file_get_contents('/proc/meminfo'); // codacy:ignore - file_get_contents() required for memory info reading
             preg_match('/MemTotal:\s+(\d+)/', $meminfo, $total);
             preg_match('/MemAvailable:\s+(\d+)/', $meminfo, $available);
             

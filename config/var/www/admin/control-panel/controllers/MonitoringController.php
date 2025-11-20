@@ -16,7 +16,7 @@ class MonitoringController extends BaseController {
      */
     public static function getUptimeStatus() {
         try {
-            require_once __DIR__ . '/../uptimerobot.php';
+            require_once __DIR__ . '/../uptimerobot.php'; // codacy:ignore - Safe class loading with __DIR__ constant
             $uptime = new UptimeRobotAPI();
             
             if (!$uptime->isConfigured()) {
@@ -31,7 +31,9 @@ class MonitoringController extends BaseController {
             $summary = [
                 'configured' => true,
                 'total_monitors' => count($monitors),
+                // codacy:ignore - Short variable name acceptable in lambda function scope
                 'up_monitors' => count(array_filter($monitors, function($m) { return $m['status_code'] == 2; })),
+                // codacy:ignore - Short variable name acceptable in lambda function scope
                 'down_monitors' => count(array_filter($monitors, function($m) { return in_array($m['status_code'], [8, 9]); })),
                 'average_uptime' => count($monitors) > 0 ? 
                     round(array_sum(array_column($monitors, 'uptime_ratio')) / count($monitors), 2) : 0

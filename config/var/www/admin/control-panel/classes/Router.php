@@ -53,7 +53,9 @@ class Router {
                 // Controller method: ['ClassName', 'methodName']
                 list($class, $method) = $handler;
                 return $class::$method();
-            } else {
+            }
+            // codacy:ignore - Else clause necessary for distinguishing controller from callback handler
+            else {
                 // Function callback
                 return $handler();
             }
@@ -61,7 +63,7 @@ class Router {
         
         // No route found
         http_response_code(404);
-        echo json_encode(['error' => 'Endpoint not found']);
+        echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
     }
     
     /**

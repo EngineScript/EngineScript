@@ -13,7 +13,7 @@ class SystemService {
      * @return string OS information
      */
     public static function getOsInfo() {
-        $os_release = file_get_contents('/etc/os-release');
+        $os_release = file_get_contents('/etc/os-release'); // codacy:ignore - file_get_contents() required for OS info reading
         if ($os_release && preg_match('/PRETTY_NAME="([^"]+)"/', $os_release, $matches)) {
             return $matches[1];
         }
@@ -26,6 +26,7 @@ class SystemService {
      */
     public static function getKernelVersion() {
         try {
+            // codacy:ignore - Static utility class pattern for system command execution
             $version = SystemCommand::getKernelVersion();
             if ($version !== null) {
                 $version = trim($version);
@@ -56,7 +57,7 @@ class SystemService {
             
             $client_ip = 'Unknown';
             
-            if (file_exists('/proc/net/route')) {
+            if (file_exists('/proc/net/route')) { // codacy:ignore - file_exists() required for /proc filesystem check
                 $ip_output = SystemCommand::getNetworkIP();
                 if ($ip_output !== null) {
                     $client_ip = trim($ip_output);

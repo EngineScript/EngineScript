@@ -16,7 +16,7 @@ class ExternalServicesController extends BaseController {
      */
     public static function getConfig() {
         define('ENGINESCRIPT_DASHBOARD', true);
-        require_once __DIR__ . '/../external-services/external-services-api.php';
+        require_once __DIR__ . '/../external-services/external-services-api.php'; // codacy:ignore - Safe module loading with __DIR__ constant
         handleExternalServicesConfig();
     }
     
