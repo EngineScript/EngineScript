@@ -699,46 +699,6 @@ function handleStatusFeed() {
         JsonResponse::errorAndExit('Unable to fetch status feed', 500);
     }
 }
-        'linode' => true,
-        'oracle' => true,
-        'ovh' => true,
-        'scaleway' => true,
-        'upcloud' => true,
-        'vercel' => true,
-        'vultr' => true,
-        'godaddy' => true,
-        'wordpressapi' => true,
-        'wpcloudapi' => true,
-
-        // Developer Tools
-        'codacy' => true,
-        'github' => true,
-        'gitlab' => true,
-        'notion' => true,
-        'pipedream' => true,
-        'postmark' => true,
-        'trello' => true,
-        'twilio' => true,
-        
-        // E-Commerce & Payments
-        'coinbase' => true,
-        'intuit' => true,
-        'metafb' => true,
-        'paypal' => true,
-        'recurly' => true,
-        'shopify' => true,
-        'square' => true,
-        'stripe' => true,
-        'woocommercepay' => true,
-        
-        // Email Services
-        'brevo' => true,
-        'mailersend' => true,
-        'mailgun' => true,
-        'mailjet' => true,
-        'mailpoet' => true,
-        'postmark' => true,
-        'resend' => true,
         'sendgrid' => true,
         'sendlayer' => true,
         'smtp2go' => true,
