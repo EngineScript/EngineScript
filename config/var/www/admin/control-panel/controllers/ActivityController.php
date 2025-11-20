@@ -20,7 +20,7 @@ class ActivityController extends BaseController {
         try {
             // codacy:ignore - Static utility class pattern for stateless service operations
             $activity = ActivityService::getRecentActivity();
-            self::jsonResponse($activity);
+            return self::jsonResponse($activity);
         } catch (Exception $e) {
             self::handleException($e, 'Recent activity');
         }
@@ -34,7 +34,7 @@ class ActivityController extends BaseController {
         try {
             // codacy:ignore - Static utility class pattern for stateless service operations
             $alerts = AlertService::getSystemAlerts();
-            self::jsonResponse($alerts);
+            return self::jsonResponse($alerts);
         } catch (Exception $e) {
             self::handleException($e, 'Alerts');
         }

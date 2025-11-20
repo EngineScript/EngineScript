@@ -26,7 +26,7 @@ class SystemController extends BaseController {
                 // codacy:ignore - Static utility class pattern for stateless service operations
                 'network' => SystemService::getNetworkInfo()
             ];
-            self::jsonResponse($info);
+            return self::jsonResponse($info);
         } catch (Exception $e) {
             self::handleException($e, 'System info');
         }

@@ -593,13 +593,6 @@ function handleStatusFeed() {
             $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
             header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
-            JsonResponse::send(['status' => $status]);
-            exit;
-        }
-        
-        if ($feedType === 'postmark') {
-            $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
-            JsonResponse::send(['status' => $status]);
             exit;
         }
         
@@ -815,9 +808,3 @@ function handleExternalServicesConfig() {
         echo json_encode(['error' => 'Unable to retrieve external services config']);
         exit;
     }
-}
-JsonResponse::send($config);
-        exit;
-    } catch (Exception $e) {
-        error_log('External services config error: ' . $e->getMessage());
-        JsonResponse::errorAndExit('Unable to retrieve external services config', 500)

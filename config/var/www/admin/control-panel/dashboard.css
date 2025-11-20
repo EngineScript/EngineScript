@@ -631,7 +631,12 @@ a:focus-visible {
     color: white;
 }
 
-.   align-items: center;
+.service-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
@@ -641,15 +646,14 @@ a:focus-visible {
     color: white;
 }
 
-.service-status {
+.service-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-}
-ay: flex;
-    align-items: center;
     gap: 1rem;
+    padding: 1rem;
+    background: var(--secondary-bg);
     border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     transition: var(--transition);
     position: relative;
 }
