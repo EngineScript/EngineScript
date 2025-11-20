@@ -118,11 +118,20 @@ class ServiceStatusService {
     /**
      * Get system service status
      * @param string $service Service name
-     * @return string Service status
+     * @return string Service status ('active' or 'inactive')
      */
     private static function getSystemServiceStatus($service) {
         $status_output = SystemCommand::getServiceStatus($service);
-        return $status_output !== false ? $status_output : '';
+        if ($status_output === false || empty($status_output)) {
+            return 'inactive';
+        }
+        
+        // Check if service is active by looking for "Active: active" in output
+        if (stripos($status_output, 'Active: active') !== false) {
+            return 'active';
+        }
+        
+        return 'inactive';
     }
     
     /**
