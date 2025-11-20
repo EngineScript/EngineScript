@@ -58,6 +58,24 @@ class ServiceStatusService {
      * @return string|null Service name or null
      */
     private static function findActivePhpFpmService() {
+        // Try common PHP-FPM service name patterns
+        $commonNames = [
+            'php8.4-fpm',
+            'php8.3-fpm',
+            'php8.2-fpm',
+            'php8.1-fpm',
+            'php-fpm',
+            'php-fpm8.4',
+            'php84-fpm'
+        ];
+        
+        foreach ($commonNames as $serviceName) {
+            if (SystemCommand::isServiceActive($serviceName)) {
+                return $serviceName;
+            }
+        }
+        
+        // If common names don't work, search through all services
         $services_output = SystemCommand::getSystemdServices();
         
         if ($services_output === false || empty($services_output)) {
@@ -85,8 +103,7 @@ class ServiceStatusService {
             
             if (stripos($service_name, 'php') !== false && stripos($service_name, 'fpm') !== false) {
                 if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service_name)) {
-                    $status = self::getSystemServiceStatus($service_name);
-                    if ($status === 'active') {
+                    if (SystemCommand::isServiceActive($service_name)) {
                         return $service_name;
                     }
                 }
@@ -102,7 +119,7 @@ class ServiceStatusService {
      * @return string|false Validated service name or false
      */
     private static function validateService($service) {
-        $allowed_services = ['nginx', 'mariadb', 'redis-server'];
+        $allowed_services = ['nginx', 'mariadb', 'mysql', 'redis-server', 'redis'];
         
         if (in_array($service, $allowed_services, true)) {
             return $service;
@@ -121,17 +138,9 @@ class ServiceStatusService {
      * @return string Service status ('active' or 'inactive')
      */
     private static function getSystemServiceStatus($service) {
-        $status_output = SystemCommand::getServiceStatus($service);
-        if ($status_output === false || empty($status_output)) {
-            return 'inactive';
-        }
-        
-        // Check if service is active by looking for "Active: active" in output
-        if (stripos($status_output, 'Active: active') !== false) {
-            return 'active';
-        }
-        
-        return 'inactive';
+        // Use is-active for reliable status check
+        $isActive = SystemCommand::isServiceActive($service);
+        return $isActive ? 'active' : 'inactive';
     }
     
     /**
@@ -144,8 +153,10 @@ class ServiceStatusService {
             case 'nginx':
                 return self::getNginxVersion();
             case 'mariadb':
+            case 'mysql':
                 return self::getMariadbVersion();
             case 'redis-server':
+            case 'redis':
                 return self::getRedisVersion();
             default:
                 if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service)) {

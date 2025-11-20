@@ -71,14 +71,31 @@ class SystemCommand {
      * @return string Service status output
      */
     public static function getServiceStatus($service) {
-        // Validate service name (alphanumeric, dash, underscore only)
-        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $service)) {
+        // Validate service name (alphanumeric, dash, underscore only, and dots)
+        if (!preg_match('/^[a-zA-Z0-9_\.\-]+$/', $service)) {
             return false;
         }
         
         // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
         $command = sprintf('systemctl status %s --no-pager 2>/dev/null', escapeshellarg($service));
         return self::execute($command);
+    }
+    
+    /**
+     * Check if service is active (lightweight check)
+     * @param string $service Service name (validated)
+     * @return bool True if active, false otherwise
+     */
+    public static function isServiceActive($service) {
+        // Validate service name (alphanumeric, dash, underscore only, and dots)
+        if (!preg_match('/^[a-zA-Z0-9_\.\-]+$/', $service)) {
+            return false;
+        }
+        
+        // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
+        $command = sprintf('systemctl is-active %s 2>/dev/null', escapeshellarg($service));
+        $output = self::execute($command);
+        return $output === 'active';
     }
     
     /**

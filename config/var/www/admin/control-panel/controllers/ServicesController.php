@@ -17,11 +17,23 @@ class ServicesController extends BaseController {
      */
     public static function getStatus() {
         try {
+            // Try mariadb first, fall back to mysql service name
+            $mysqlStatus = ServiceStatusService::getServiceStatus('mariadb');
+            if ($mysqlStatus['status'] === 'offline') {
+                $mysqlStatus = ServiceStatusService::getServiceStatus('mysql');
+            }
+            
+            // Try redis-server first, fall back to redis
+            $redisStatus = ServiceStatusService::getServiceStatus('redis-server');
+            if ($redisStatus['status'] === 'offline') {
+                $redisStatus = ServiceStatusService::getServiceStatus('redis');
+            }
+            
             $services = [
                 'nginx' => ServiceStatusService::getServiceStatus('nginx'),
                 'php' => ServiceStatusService::getPhpServiceStatus(),
-                'mysql' => ServiceStatusService::getServiceStatus('mariadb'),
-                'redis' => ServiceStatusService::getServiceStatus('redis-server')
+                'mysql' => $mysqlStatus,
+                'redis' => $redisStatus
             ];
             self::jsonResponse($services);
         } catch (Exception $e) {
