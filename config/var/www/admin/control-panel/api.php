@@ -93,7 +93,7 @@ if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') 
 }
 
 // Load Router and Controllers
-require_once __DIR__ . '/classes/Routd.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+require_once __DIR__ . '/classes/Router.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 // Parse request path
 $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - $_SERVER access required for routing, wp_unslash() not available in standalone API
@@ -116,9 +116,9 @@ if (empty($endpoint_param)) {
 if (!Router::validatePath($path)) {
     http_response_code(400);
     error_log("API Security: Suspicious path - " . substr($path, 0, 100) . " - IP: " . $client_ip);
-    die(json_encode(['error' => 'Invalid path']));
-}error_log("API Security: Suspicious path - " . substr($path, 0, 100) . " - IP: " . $client_ip);
-    BaseController::badRequest('Invalid path'
+    BaseController::badRequest('Invalid path');
+}
+
 $router = new Router();
 
 // Register routes

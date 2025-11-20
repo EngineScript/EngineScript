@@ -109,6 +109,15 @@ export class ThemeManager {
       return;
     }
 
+    // Create container for button and label
+    const container = document.createElement('div');
+    container.className = 'theme-toggle-container';
+    
+    // Create label
+    const label = document.createElement('span');
+    label.className = 'theme-toggle-label';
+    label.textContent = 'Theme';
+    
     // Create button
     const button = document.createElement('button');
     button.id = 'theme-toggle';
@@ -121,13 +130,15 @@ export class ThemeManager {
     icon.className = this.currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     
     button.appendChild(icon);
+    container.appendChild(label);
+    container.appendChild(button);
     
     // Insert before refresh button
     const refreshBtn = document.getElementById('refresh-btn');
     if (refreshBtn) {
-      headerRight.insertBefore(button, refreshBtn);
+      headerRight.insertBefore(container, refreshBtn);
     } else {
-      headerRight.insertBefore(button, headerRight.firstChild);
+      headerRight.insertBefore(container, headerRight.firstChild);
     }
     
     this.themeToggleButton = button;

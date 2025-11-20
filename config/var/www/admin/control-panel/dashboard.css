@@ -443,6 +443,21 @@ body {
     margin-right: 0.5rem;
 }
 
+/* Theme Toggle Container and Label */
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.theme-toggle-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    user-select: none;
+}
+
 /* Theme Toggle Button */
 .theme-toggle {
     width: 44px;
