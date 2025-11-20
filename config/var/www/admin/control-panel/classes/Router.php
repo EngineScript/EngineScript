@@ -54,11 +54,9 @@ class Router {
                 list($class, $method) = $handler;
                 return $class::$method();
             }
-            // codacy:ignore - Else clause necessary for distinguishing controller from callback handler
-            else {
-                // Function callback
-                return $handler();
-            }
+            
+            // Function callback
+            return $handler();
         }
         
         // No route found

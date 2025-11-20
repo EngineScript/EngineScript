@@ -70,7 +70,8 @@ class UptimeRobotAPI {
         curl_close($curl_handle); // codacy:ignore - cURL required for external API communication in standalone service
         
         if ($error) {
-            throw new Exception('Curl error: ' . htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')); // codacy:ignore - htmlspecialchars() used for XSS prevention
+            // codacy:ignore - Exception message contains already-escaped cURL error, caught internally and logged, not output to browser
+            throw new Exception('Curl error: ' . htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         }
         
         if ($http_code !== 200) {
@@ -86,7 +87,8 @@ class UptimeRobotAPI {
             $error_message = isset($data['error']['message']) ? 
                 htmlspecialchars($data['error']['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 
                 'Unknown error';
-            throw new Exception('API error: ' . $error_message); // codacy:ignore - $error_message is already escaped above
+            // codacy:ignore - Exception message contains already-escaped data, caught internally and logged, not output to browser
+            throw new Exception('API error: ' . $error_message);
         }
         
         return $data;

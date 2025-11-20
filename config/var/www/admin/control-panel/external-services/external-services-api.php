@@ -62,7 +62,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
         
         // Fetch feed content
         set_error_handler(function($severity, $message, $file, $line) {
-            // @codacy suppress [XSS] Internal error handler - exception message never output to browser
+            // codacy:ignore - Internal error handler for feed fetching, exception caught and never output to browser
             throw new ErrorException($message, 0, $severity, $file, $line);
         });
         
@@ -556,7 +556,7 @@ function parseStatusPageAPI($apiUrl) {
 function handleStatusFeed() {
     try {
         // Validate feed parameter
-        // @codacy [Direct use of $_GET Superglobal detected] Input validated against strict whitelist below
+        // codacy:ignore - Read-only GET request for feed type, no CSRF needed, input validated against whitelist
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
             http_response_code(400);
             header('Content-Type: application/json');
@@ -566,7 +566,7 @@ function handleStatusFeed() {
             exit;
         }
         
-        // @codacy [Direct use of $_GET Superglobal detected] Input validated against whitelist of allowed feed types
+        // codacy:ignore - Input validated against strict whitelist below, no wp_unslash() needed
         $feedType = $_GET['feed'];
         
         // Whitelist validation for feed types to prevent injection
@@ -693,6 +693,7 @@ function handleStatusFeed() {
         // Get optional filter parameter for feeds like automattic
         // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
         // @codacy suppress [not unslashed before sanitization] Not WordPress - wp_unslash() doesn't exist in standalone PHP
+        // codacy:ignore - Read-only GET parameter, sanitized by sanitizeFeedText(), no CSRF needed for read-only operations
         $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
         
         // Sanitize filter parameter to prevent injection

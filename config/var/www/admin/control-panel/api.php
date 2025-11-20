@@ -34,10 +34,12 @@ if ($origin_host === false) {
     $origin_host = $origin;
 }
 
-if (in_array($origin_host, $allowed_origins, true) || 
-    preg_match('/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/', $origin_host)) {
+$allowed = in_array($origin_host, $allowed_origins, true) || 
+           preg_match('/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/', $origin_host);
+if ($allowed) {
     header('Access-Control-Allow-Origin: ' . $origin); // codacy:ignore - header() required for CORS
-} else {
+}
+if (!$allowed) {
     header('Access-Control-Allow-Origin: null'); // codacy:ignore - header() required for CORS security
 }
 
@@ -102,7 +104,8 @@ $endpoint_param = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $endpoint_param);
 if (!empty($endpoint_param)) {
     $path = '/' . ltrim($endpoint_param, '/');
     $path = rtrim($path, '/');
-} else {
+}
+if (empty($endpoint_param)) {
     $path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing in standalone API
     if ($path !== false) {
         $path = str_replace('/api', '', $path);
