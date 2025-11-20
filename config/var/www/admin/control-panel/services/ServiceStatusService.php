@@ -144,6 +144,8 @@ class ServiceStatusService {
         // codacy:ignore - Static utility class pattern for system command execution
         // Use lightweight is-active check for status
         $isActive = SystemCommand::isServiceActive($service);
+        return $isActive ? 'active' : 'inactive';
+    }
     
     /**
      * Get service version

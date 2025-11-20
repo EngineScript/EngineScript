@@ -5,6 +5,22 @@
     box-sizing: border-box;
 }
 
+/* Ensure focus is always visible */
+*:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Focus visible for keyboard navigation only */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 /* Skip Link - Accessibility */
 .skip-link {
     position: absolute;
@@ -39,22 +55,6 @@
     border-width: 0;
 }
 
-/* Ensure focus is always visible */
-*:focus {
-    outline: 2px solid var(--accent-color);
-    outline-offset: 2px;
-}
-
-/* Focus visible for keyboard navigation only */
-*:focus:not(:focus-visible) {
-    outline: none;
-}
-
-*:focus-visible {
-    outline: 2px solid var(--accent-color);
-    outline-offset: 2px;
-}
-
 :root {
     /* Dark Theme Colors (Default) */
     --primary-bg: #1a1a1a;
@@ -83,8 +83,8 @@
 /* Light Theme Colors */
 [data-theme="light"] {
     --primary-bg: #f7fafc;
-    --secondary-bg: #ffffff;
-    --card-bg: #ffffff;
+    --secondary-bg: #fff;
+    --card-bg: #fff;
     --accent-color: #00a67e;
     --accent-hover: #008968;
     --text-primary: #1a202c;
@@ -94,9 +94,14 @@
     --success-color: #00a67e;
     --warning-color: #d69e00;
     --error-color: #e53e3e;
-    --info-color: #0088cc;
+    --info-color: #08c;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Disable transitions during theme switch for smoother experience */
+.theme-transitioning * {
+    transition: none !important;
 }
 
 body {
@@ -114,11 +119,6 @@ body {
                 color 0.3s ease, 
                 border-color 0.3s ease,
                 box-shadow 0.3s ease;
-}
-
-/* Disable transitions during theme switch for smoother experience */
-.theme-transitioning * {
-    transition: none !important;
 }
 
 /* Loading Screen */
@@ -288,6 +288,29 @@ body {
 
 .nav-item {
     margin: 0.25rem 1rem;
+}
+
+/* Base link styles - must come before specific .nav-item a */
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+a:focus {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
+}
+
+a:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
 }
 
 .nav-item a {
@@ -485,6 +508,22 @@ body {
     transform: translateY(0) scale(0.95);
 }
 
+/* Icon styles must come before .theme-toggle:hover i for specificity */
+.card-header i {
+    margin-right: 0.5rem;
+    color: var(--accent-color);
+}
+
+.tool-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
 .theme-toggle i {
     font-size: 1.1rem;
     margin-right: 0;
@@ -543,11 +582,6 @@ body {
     font-weight: 600;
 }
 
-.card-header i {
-    margin-right: 0.5rem;
-    color: var(--accent-color);
-}
-
 .card-body {
     padding: 1.5rem;
 }
@@ -597,12 +631,7 @@ body {
     color: white;
 }
 
-.service-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--border-radius);
-    display: flex;
-    align-items: center;
+.   align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
@@ -617,12 +646,7 @@ body {
     align-items: center;
     gap: 0.5rem;
 }
-
-.service-item {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--border-radius);
-    padding: 1.25rem;
-    display: flex;
+ay: flex;
     align-items: center;
     gap: 1rem;
     border: 1px solid var(--border-color);
@@ -1026,7 +1050,6 @@ body {
 button:focus, 
 select:focus, 
 input:focus, 
-a:focus,
 [tabindex]:focus {
     outline: 3px solid var(--accent-color);
     outline-offset: 3px;
@@ -1036,7 +1059,6 @@ a:focus,
 button:focus-visible, 
 select:focus-visible, 
 input:focus-visible, 
-a:focus-visible,
 [tabindex]:focus-visible {
     outline: 3px solid var(--accent-color);
     outline-offset: 3px;
@@ -1047,10 +1069,16 @@ a:focus-visible,
 button:focus:not(:focus-visible),
 select:focus:not(:focus-visible),
 input:focus:not(:focus-visible),
-a:focus:not(:focus-visible),
 [tabindex]:focus:not(:focus-visible) {
     outline: none;
     box-shadow: none;
+}
+
+/* Disabled button must come before button:disabled for specificity */
+button:disabled,
+button[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Loading States - Accessible */
@@ -1074,19 +1102,12 @@ a:focus:not(:focus-visible),
     animation: spin 1s linear infinite;
 }
 
-/* Ensure disabled buttons are clearly indicated */
-button:disabled,
-button[aria-disabled="true"] {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* Ensure all interactive elements are keyboard accessible */
-a, button, input, select, textarea, [role="button"], [role="menuitem"], [tabindex="0"] {
+button, input, select, textarea, [role="button"], [role="menuitem"], [tabindex="0"] {
     cursor: pointer;
 }
 
-a:hover, button:hover, [role="button"]:hover, [role="menuitem"]:hover {
+button:hover, [role="button"]:hover, [role="menuitem"]:hover {
     text-decoration: none;
 }
 
@@ -1507,6 +1528,7 @@ a:hover, button:hover, [role="button"]:hover, [role="menuitem"]:hover {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(400px);
         opacity: 0;

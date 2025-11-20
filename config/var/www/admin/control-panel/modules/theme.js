@@ -174,6 +174,7 @@ export class ThemeManager {
    */
   updateChartColors(theme) {
     // Check if Chart.js is loaded
+    /* global Chart */
     if (typeof Chart === 'undefined') return;
     
     const isDark = theme === 'dark';

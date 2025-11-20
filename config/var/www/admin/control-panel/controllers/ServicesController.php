@@ -33,10 +33,9 @@ class ServicesController extends BaseController {
                 $redisStatus = ServiceStatusService::getServiceStatus('redis');
             }
             
+            // codacy:ignore - Static utility class pattern for stateless service operations
             $status = [
-                // codacy:ignore - Static utility class pattern for stateless service operations
                 'nginx' => ServiceStatusService::getServiceStatus('nginx'),
-                // codacy:ignore - Static utility class pattern for stateless service operations
                 'php' => ServiceStatusService::getPhpServiceStatus(),
                 'mysql' => $mysqlStatus,
                 'redis' => $redisStatus
