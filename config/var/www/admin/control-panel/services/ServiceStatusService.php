@@ -141,8 +141,8 @@ class ServiceStatusService {
      * @return string Service status ('active' or 'inactive')
      */
     private static function getSystemServiceStatus($service) {
-        // Use lightweight is-active check for status
         // codacy:ignore - Static utility class pattern for system command execution
+        // Use lightweight is-active check for status
         $isActive = SystemCommand::isServiceActive($service);
     
     /**

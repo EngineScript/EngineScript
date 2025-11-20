@@ -86,7 +86,7 @@ class EngineScriptDashboard {
     // Hide all pages except overview
     pages.forEach((page) => {
       if (page.id !== "overview-page") {
-        page.style.display = "none";
+        page.classList.add("hidden");
       }
     });
   }
@@ -108,11 +108,11 @@ class EngineScriptDashboard {
 
     // Update pages
     document.querySelectorAll(".page-content").forEach((page) => {
-      page.style.display = "none";
+      page.classList.add("hidden");
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.style.display = "block";
+      targetPage.classList.remove("hidden");
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
@@ -204,8 +204,8 @@ class EngineScriptDashboard {
     const dashboard = document.getElementById("dashboard");
 
     if (loadingScreen && dashboard) {
-      loadingScreen.style.display = "none";
-      dashboard.style.display = "flex";
+      loadingScreen.classList.add("hidden");
+      dashboard.classList.add("visible-flex");
     }
   }
 
@@ -323,9 +323,9 @@ class EngineScriptDashboard {
     const refreshBtn = document.getElementById("refresh-btn");
     const icon = refreshBtn.querySelector("i");
 
-    icon.style.animation = "spin 1s linear";
+    icon.classList.add("spinning");
     setTimeout(() => {
-      icon.style.animation = "";
+      icon.classList.remove("spinning");
     }, 1000);
   }
     
@@ -359,51 +359,52 @@ class EngineScriptDashboard {
     
   async loadServiceStatus() {
     try {
-      // Fetch all services at once
-      const response = await fetch("/api/services/status");
-      
-      if (!response.ok) {
-        console.error('Service status API error:', response.status, response.statusText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const services = await response.json();
-      console.log('Service status response:', services);
+      // Use centralized API method for fetching all service statuses
+      const services = await this.api.fetchAllServiceStatuses();
 
-      // Update each service
-      ["nginx", "php", "mysql", "redis"].forEach(service => {
-        const status = services[service];
-        const element = document.getElementById(`${service}-status`);
-
-        if (element && status) {
-          const statusIcon = element.querySelector(".service-status i");
-          const versionSpan = element.querySelector(".service-version");
-
-          if (statusIcon) {
-            statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
-          }
-          if (versionSpan && status.version) {
-            versionSpan.textContent = `v${status.version}`;
-          }
-        }
-      });
+      // Update each service in the DOM
+      this._updateServiceElements(services);
     } catch (error) {
       console.error('Failed to load service status:', error);
       // Set all services to error state
-      ["nginx", "php", "mysql", "redis"].forEach(service => {
-        const element = document.getElementById(`${service}-status`);
-        if (element) {
-          const statusIcon = element.querySelector(".service-status i");
-          const versionSpan = element.querySelector(".service-version");
-          if (statusIcon) {
-            statusIcon.className = "fas fa-circle offline";
-          }
-          if (versionSpan) {
-            versionSpan.textContent = "Error";
-          }
-        }
-      });
+      this._updateServiceElements(null, true);
     }
+  }
+
+  /**
+   * Update service status elements in the DOM
+   * @private
+   * @param {Object|null} services - Service status data
+   * @param {boolean} isError - Whether this is an error state
+   */
+  _updateServiceElements(services, isError = false) {
+    const serviceList = ["nginx", "php", "mysql", "redis"];
+    
+    serviceList.forEach(serviceName => {
+      const status = services ? services[serviceName] : null;
+      const element = document.getElementById(`${serviceName}-status`);
+
+      if (!element) return;
+
+      const statusIcon = element.querySelector(".service-status i");
+      const versionSpan = element.querySelector(".service-version");
+
+      if (statusIcon) {
+        if (isError) {
+          statusIcon.className = "fas fa-circle offline";
+        } else if (status) {
+          statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
+        }
+      }
+
+      if (versionSpan) {
+        if (isError) {
+          versionSpan.textContent = "Error";
+        } else if (status && status.version) {
+          versionSpan.textContent = `v${status.version}`;
+        }
+      }
+    });
   }
     
   async loadSites() {
@@ -563,7 +564,7 @@ class EngineScriptDashboard {
           versionSpan.textContent = "v--";
         }
         // Remove any error styling
-        element.style.opacity = "1";
+        element.classList.add("fade-in");
       }
     });
   }

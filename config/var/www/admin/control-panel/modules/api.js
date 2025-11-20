@@ -108,19 +108,67 @@ export class DashboardAPI {
     }
   }
 
-  async getServiceStatus(service) {
+  /**
+   * Fetch all service statuses at once
+   * @returns {Promise<Object>} Object with service names as keys and status objects as values
+   */
+  async fetchAllServiceStatuses() {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { online: false, version: "Unavailable" };
+        return this._getOfflineServices();
       }
 
-      const response = await fetch("/api/services/status");
-      const data = await response.json();
+      const headers = {};
+      if (this.csrfToken) {
+        headers['X-CSRF-Token'] = this.csrfToken;
+      }
 
-      return data[service] || { online: false, version: "Unknown" };
+      const response = await fetch("/api/services/status", {
+        method: 'GET',
+        headers: headers,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        console.error('Service status API error:', response.status, response.statusText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const services = await response.json();
+      console.log('Service status response:', services);
+
+      return services;
+    } catch (error) {
+      console.error('Failed to fetch service statuses:', error);
+      return this._getOfflineServices();
+    }
+  }
+
+  /**
+   * Fetch status for a specific service
+   * @param {string} service - Service name (nginx, php, mysql, redis)
+   * @returns {Promise<Object>} Service status object {online: boolean, version: string}
+   */
+  async getServiceStatus(service) {
+    try {
+      const allStatuses = await this.fetchAllServiceStatuses();
+      return allStatuses[service] || { online: false, version: "Unknown" };
     } catch (error) {
       console.error(`Failed to get service status for ${service}:`, error);
       return { online: false, version: "Error" };
     }
+  }
+
+  /**
+   * Get default offline state for all services
+   * @private
+   */
+  _getOfflineServices() {
+    return {
+      nginx: { online: false, version: "Unavailable" },
+      php: { online: false, version: "Unavailable" },
+      mysql: { online: false, version: "Unavailable" },
+      redis: { online: false, version: "Unavailable" }
+    };
   }
 }

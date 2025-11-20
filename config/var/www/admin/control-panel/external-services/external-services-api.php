@@ -3,15 +3,16 @@
  * EngineScript External Services API
  * Handles feed parsing and service status fetching for external services monitoring
  * 
- * @version 1.0.0
+ * @version 1.1.0
  * @security HIGH - Implements strict whitelisting and input validation
  */
 
+// Load JsonResponse utility
+require_once __DIR__ . '/../classes/JsonResponse.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+
 // Security: Prevent direct access
 if (!defined('ENGINESCRIPT_DASHBOARD')) {
-    http_response_code(403);
-    // @codacy suppress [Use of die language construct is discouraged] Required for security - unauthorized access prevention
-    die('Direct access forbidden');
+    JsonResponse::forbidden('Direct access forbidden');
 }
 
 /**
@@ -558,12 +559,7 @@ function handleStatusFeed() {
         // Validate feed parameter
         // codacy:ignore - Read-only GET request for feed type, no CSRF needed, input validated against whitelist
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
-            echo json_encode(['error' => 'Missing feed parameter']);
-            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
-            exit;
+            JsonResponse::badRequest('Missing feed parameter');
         }
         
         // codacy:ignore - Input validated against strict whitelist below, no wp_unslash() needed
@@ -581,12 +577,7 @@ function handleStatusFeed() {
         ];
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
-            echo json_encode(['error' => 'Invalid feed type']);
-            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
-            exit;
+            JsonResponse::badRequest('Invalid feed type');
         }
         
         // Handle special JSON API feeds
@@ -602,58 +593,49 @@ function handleStatusFeed() {
             $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
             header('Content-Type: application/json');
             echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
+            exit;
+        }
+        
+        if ($feedType === 'postmark') {
+            $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'googleworkspace') {
             $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'wistia') {
             $status = parseWistiaSummary('https://status.wistia.com/summary.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'sendgrid') {
             $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'spotify') {
             $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'trello') {
             $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
+            JsonResponse::send(['status' => $status]);
             exit;
         }
         
         if ($feedType === 'pipedream') {
             $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
-        }
-        
-        // Whitelist allowed RSS/Atom feeds for security
-        $allowedFeeds = [
-            'stripe' => 'https://www.stripestatus.com/history.atom',
-            'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
-            'flare' => 'https://status.flare.io/history/rss',
-            'slack' => 'https://slack-status.com/feed/atom',
-            'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+            JsonResponse::sendps://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
             'square' => 'https://www.issquareup.com/united-states/feed.atom',
             'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
             'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
@@ -701,6 +683,22 @@ function handleStatusFeed() {
             // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
             $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
             // Limit length to reasonable service name size
+            JsonResponse::badRequest('Invalid feed type');
+        }
+        
+        $feedUrl = $allowedFeeds[$feedType];
+        
+        // Get optional filter parameter for feeds like automattic
+        // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
+        // @codacy suppress [not unslashed before sanitization] Not WordPress - wp_unslash() doesn't exist in standalone PHP
+        // codacy:ignore - Read-only GET parameter, sanitized by sanitizeFeedText(), no CSRF needed for read-only operations
+        $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
+        
+        // Sanitize filter parameter to prevent injection
+        if ($filter !== null) {
+            // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
+            $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
+            // Limit length to reasonable service name size
             $filter = substr($filter, 0, 100);
             if (empty($filter)) {
                 $filter = null;
@@ -710,35 +708,12 @@ function handleStatusFeed() {
         // Parse feed and return status
         $status = parseStatusFeed($feedUrl, $filter);
         
-        header('Content-Type: application/json');
-        echo json_encode(['status' => $status]);
+        JsonResponse::send(['status' => $status]);
         exit;
         
     } catch (Exception $e) {
-        http_response_code(500);
-        header('Content-Type: application/json');
         error_log('Status feed error: ' . $e->getMessage());
-        echo json_encode(['error' => 'Unable to fetch status feed']);
-        exit;
-    }
-}
-
-/**
- * Get external services configuration
- * Returns all available services (preferences stored client-side)
- */
-function getExternalServicesConfig() {
-    // All services available - user preferences stored client-side in cookies
-    $config = [
-        // Hosting & Infrastructure
-        'aws' => true,
-        'cloudflare' => true,
-        'cloudways' => true,
-        'digitalocean' => true,
-        'googlecloud' => true,
-        'hostinger' => true,
-        'jetpackapi' => true,
-        'kinsta' => true,
+        JsonResponse::errorAndExit('Unable to fetch status feed', 500)sta' => true,
         'linode' => true,
         'oracle' => true,
         'ovh' => true,
@@ -841,3 +816,8 @@ function handleExternalServicesConfig() {
         exit;
     }
 }
+JsonResponse::send($config);
+        exit;
+    } catch (Exception $e) {
+        error_log('External services config error: ' . $e->getMessage());
+        JsonResponse::errorAndExit('Unable to retrieve external services config', 500)
