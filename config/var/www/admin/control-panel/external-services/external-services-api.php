@@ -628,7 +628,13 @@ function handleStatusFeed() {
         
         if ($feedType === 'pipedream') {
             $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
-            JsonResponse::sendps://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+            JsonResponse::send(['status' => $status]);
+            exit;
+        }
+        
+        // RSS/Atom feed-based services
+        $allowedFeeds = [
+            'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
             'square' => 'https://www.issquareup.com/united-states/feed.atom',
             'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
             'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
@@ -676,22 +682,6 @@ function handleStatusFeed() {
             // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
             $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
             // Limit length to reasonable service name size
-            JsonResponse::badRequest('Invalid feed type');
-        }
-        
-        $feedUrl = $allowedFeeds[$feedType];
-        
-        // Get optional filter parameter for feeds like automattic
-        // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
-        // @codacy suppress [not unslashed before sanitization] Not WordPress - wp_unslash() doesn't exist in standalone PHP
-        // codacy:ignore - Read-only GET parameter, sanitized by sanitizeFeedText(), no CSRF needed for read-only operations
-        $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
-        
-        // Sanitize filter parameter to prevent injection
-        if ($filter !== null) {
-            // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
-            $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
-            // Limit length to reasonable service name size
             $filter = substr($filter, 0, 100);
             if (empty($filter)) {
                 $filter = null;
@@ -706,7 +696,9 @@ function handleStatusFeed() {
         
     } catch (Exception $e) {
         error_log('Status feed error: ' . $e->getMessage());
-        JsonResponse::errorAndExit('Unable to fetch status feed', 500)sta' => true,
+        JsonResponse::errorAndExit('Unable to fetch status feed', 500);
+    }
+}
         'linode' => true,
         'oracle' => true,
         'ovh' => true,
