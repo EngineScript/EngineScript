@@ -1,10 +1,8 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
 
-// Version management - UPDATE version.js when changing version
-import { DASHBOARD_VERSION } from '../version.js';
-import { DashboardUtils } from '../modules/utils.js?v=2025.11.19.02';
-import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.19.02';
+import { DashboardUtils } from '../modules/utils.js?v=2025.11.12.16';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.19.01';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {

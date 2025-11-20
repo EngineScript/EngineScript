@@ -1,12 +1,10 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-// Version management - UPDATE version.js when changing version
-import { DASHBOARD_VERSION, versionedUrl } from './version.js';
-import { DashboardAPI } from './modules/api.js?v=2025.11.19.02';
-import { DashboardState } from './modules/state.js?v=2025.11.19.02';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.19.02';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.19.02';
+import { DashboardAPI } from './modules/api.js?v=2025.11.12.16';
+import { DashboardState } from './modules/state.js?v=2025.11.12.16';
+import { DashboardCharts } from './modules/charts.js?v=2025.11.12.16';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.12.16';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -182,7 +180,7 @@ class EngineScriptDashboard {
 
       console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import(versionedUrl('./external-services/external-services.js'));
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.17.01');
       
       console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
