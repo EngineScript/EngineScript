@@ -17,6 +17,7 @@ class BaseController {
     protected static function jsonResponse($data, $status_code = 200) {
         http_response_code($status_code);
         echo json_encode(self::sanitizeOutput($data)); // codacy:ignore - echo required for JSON API response
+        exit;
     }
     
     /**
@@ -27,6 +28,7 @@ class BaseController {
     protected static function errorResponse($message, $status_code = 500) {
         http_response_code($status_code);
         echo json_encode(['error' => $message]); // codacy:ignore - echo required for JSON API error response
+        exit;
     }
     
     /**
@@ -34,7 +36,9 @@ class BaseController {
      * @param string $message Error message
      */
     protected static function badRequest($message = 'Bad request') {
-        self::errorResponse($message, 400);
+        http_response_code(400);
+        echo json_encode(['error' => $message]); // codacy:ignore - echo required for JSON API error response
+        exit;
     }
     
     /**
@@ -51,7 +55,9 @@ class BaseController {
      * @param string $message Error message
      */
     protected static function notFound($message = 'Not found') {
-        self::errorResponse($message, 404);
+        http_response_code(404);
+        echo json_encode(['error' => $message]); // codacy:ignore - echo required for JSON API error response
+        exit;
     }
     
     /**
