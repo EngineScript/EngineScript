@@ -537,6 +537,19 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Get service card DOM element for a given key and log if not found
+   */
+  getServiceCardElement(serviceKey, serviceDef) {
+    const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
+    if (!serviceCard) {
+      const name = serviceDef && serviceDef.name ? serviceDef.name : serviceKey;
+      console.error(`Card not found for service: ${serviceKey} (${name})`);
+      return null;
+    }
+    return serviceCard;
+  }
+
+  /**
    * Update feed-based service status asynchronously
    */
   async updateFeedServiceStatus(serviceKey, serviceDef) {
@@ -558,11 +571,8 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
-      if (!serviceCard) {
-        console.error(`Card not found for service: ${serviceKey}`);
-        return;
-      }
+      const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
+      if (!serviceCard) return;
       
       const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, true);
       this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
@@ -588,11 +598,8 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
-      if (!serviceCard) {
-        console.error(`Card not found for service: ${serviceKey}`);
-        return;
-      }
+      const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
+      if (!serviceCard) return;
       
       const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, false);
       this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
