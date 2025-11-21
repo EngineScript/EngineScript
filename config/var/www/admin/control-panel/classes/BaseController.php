@@ -30,49 +30,6 @@ class BaseController {
     }
     
     /**
-     * Send 400 Bad Request response
-     * @param string $message Error message
-     */
-    protected static function badRequest($message = 'Bad request') {
-        self::errorResponse($message, 400);
-    }
-    
-    /**
-     * Send 403 Forbidden response
-     * @param string $message Error message
-     */
-    protected static function forbidden($message = 'Forbidden') {
-        http_response_code(403);
-        die(json_encode(['error' => $message])); // codacy:ignore - die() required for security termination
-    }
-    
-    /**
-     * Send 404 Not Found response
-     * @param string $message Error message
-     */
-    protected static function notFound($message = 'Not found') {
-        self::errorResponse($message, 404);
-    }
-    
-    /**
-     * Send 405 Method Not Allowed response
-     * @param string $message Error message
-     */
-    protected static function methodNotAllowed($message = 'Method not allowed') {
-        http_response_code(405);
-        die(json_encode(['error' => $message])); // codacy:ignore - die() required for security termination
-    }
-    
-    /**
-     * Send 429 Rate Limit Exceeded response
-     * @param string $message Error message
-     */
-    protected static function rateLimitExceeded($message = 'Rate limit exceeded') {
-        http_response_code(429);
-        die(json_encode(['error' => $message])); // codacy:ignore - die() required for rate limit response
-    }
-    
-    /**
      * Sanitize output data
      * @param mixed $data Data to sanitize
      * @return mixed Sanitized data

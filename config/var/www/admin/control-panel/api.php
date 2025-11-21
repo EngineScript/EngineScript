@@ -7,12 +7,10 @@
  * @security HIGH - Contains sensitive system information
  */
 
-// Load BaseController early for response methods
-require_once __DIR__ . '/classes/BaseController.php'; // codacy:ignore - Safe class loading with __DIR__ constant
-
 // Prevent direct access
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - $_SERVER access required for standalone API validation
-    BaseController::forbidden('Direct access forbidden');
+    http_response_code(403);
+    die('Direct access forbidden'); // codacy:ignore - die() required for security termination
 }
 
 // Security headers
@@ -73,7 +71,8 @@ if (isset($_SESSION[$rate_limit_key]['reset']) && time() > $_SESSION[$rate_limit
 }
 
 if (isset($_SESSION[$rate_limit_key]['count']) && $_SESSION[$rate_limit_key]['count'] >= 100) { // codacy:ignore - Session access required for rate limiting
-    BaseController::rateLimitExceeded();
+    http_response_code(429);
+    die(json_encode(['error' => 'Rate limit exceeded'])); // codacy:ignore - die() required for rate limit response
 }
 
 if (isset($_SESSION[$rate_limit_key]['count'])) { // codacy:ignore - Session access required for rate limiting
@@ -89,11 +88,13 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
 // Only allow GET requests
 if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') { // codacy:ignore - $_SERVER access required for method validation
     http_response_code(405);
-    BaseController::methodNotAllowed();
+    die(json_encode(['error' => 'Method not allowed'])); // codacy:ignore - die() required for security termination
 }
 
 // Load Router and Controllers
 require_once __DIR__ . '/classes/Router.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+require_once __DIR__ . '/classes/BaseController.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+require_once __DIR__ . '/classes/SystemCommand.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 // Parse request path
 $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - $_SERVER access required for routing, wp_unslash() not available in standalone API
@@ -114,10 +115,12 @@ if (empty($endpoint_param)) {
 
 // Validate path
 if (!Router::validatePath($path)) {
+    http_response_code(400);
     error_log("API Security: Suspicious path - " . substr($path, 0, 100) . " - IP: " . $client_ip);
-    BaseController::badRequest('Invalid path');
+    die(json_encode(['error' => 'Invalid path']));
 }
 
+// Initialize router
 $router = new Router();
 
 // Register routes

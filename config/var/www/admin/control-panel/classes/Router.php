@@ -60,7 +60,8 @@ class Router {
         }
         
         // No route found
-        BaseController::notFound('Endpoint not found');
+        http_response_code(404);
+        echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
     }
     
     /**
