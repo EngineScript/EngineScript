@@ -39,7 +39,7 @@ class ToolsController extends BaseController {
                 'version' => $current_version
             ];
             
-            return self::jsonResponse($status);
+            self::jsonResponse($status);
         } catch (Exception $e) {
             self::handleException($e, 'File manager status');
         }

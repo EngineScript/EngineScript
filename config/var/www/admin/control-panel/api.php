@@ -7,9 +7,8 @@
  * @security HIGH - Contains sensitive system information
  */
 
-// Load BaseController and Router early for response methods and path validation
+// Load BaseController early for response methods
 require_once __DIR__ . '/classes/BaseController.php'; // codacy:ignore - Safe class loading with __DIR__ constant
-require_once __DIR__ . '/classes/Router.php'; // codacy:ignore - Safe class loading with __DIR__ constant
 
 // Prevent direct access
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - $_SERVER access required for standalone API validation
@@ -93,6 +92,9 @@ if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') 
     BaseController::methodNotAllowed();
 }
 
+// Load Router and Controllers
+require_once __DIR__ . '/classes/Routd.php'; // codacy:ignore - Safe class loading with __DIR__ constant
+
 // Parse request path
 $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - $_SERVER access required for routing, wp_unslash() not available in standalone API
 $endpoint_param = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : ''; // codacy:ignore - $_GET access required for routing, input sanitized with preg_replace
@@ -114,9 +116,9 @@ if (empty($endpoint_param)) {
 if (!Router::validatePath($path)) {
     http_response_code(400);
     error_log("API Security: Suspicious path - " . substr($path, 0, 100) . " - IP: " . $client_ip);
-    BaseController::badRequest('Invalid path');
-}
-
+    die(json_encode(['error' => 'Invalid path']));
+}error_log("API Security: Suspicious path - " . substr($path, 0, 100) . " - IP: " . $client_ip);
+    BaseController::badRequest('Invalid path'
 $router = new Router();
 
 // Register routes

@@ -5,58 +5,8 @@
     box-sizing: border-box;
 }
 
-/* Ensure focus is always visible */
-*:focus {
-    outline: 2px solid var(--accent-color);
-    outline-offset: 2px;
-}
-
-/* Focus visible for keyboard navigation only */
-*:focus:not(:focus-visible) {
-    outline: none;
-}
-
-*:focus-visible {
-    outline: 2px solid var(--accent-color);
-    outline-offset: 2px;
-}
-
-/* Skip Link - Accessibility */
-.skip-link {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--accent-color);
-    color: white;
-    padding: 8px 16px;
-    text-decoration: none;
-    z-index: 10000;
-    border-radius: 0 0 8px 0;
-    font-weight: 600;
-    transition: top 0.3s ease;
-}
-
-.skip-link:focus {
-    top: 0;
-    outline: 3px solid var(--accent-hover);
-    outline-offset: 2px;
-}
-
-/* Screen Reader Only Text */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-}
-
 :root {
-    /* Dark Theme Colors (Default) */
+    /* Color Scheme */
     --primary-bg: #1a1a1a;
     --secondary-bg: #2d2d2d;
     --card-bg: #333;
@@ -76,49 +26,15 @@
     --header-height: 80px;
     --border-radius: 12px;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.4);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Light Theme Colors */
-[data-theme="light"] {
-    --primary-bg: #f7fafc;
-    --secondary-bg: #fff;
-    --card-bg: #fff;
-    --accent-color: #00a67e;
-    --accent-hover: #008968;
-    --text-primary: #1a202c;
-    --text-secondary: #4a5568;
-    --text-muted: #718096;
-    --border-color: #e2e8f0;
-    --success-color: #00a67e;
-    --warning-color: #d69e00;
-    --error-color: #e53e3e;
-    --info-color: #08c;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-/* Disable transitions during theme switch for smoother experience */
-.theme-transitioning * {
-    transition: none !important;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #2a2a2d 100%);
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-/* Theme transition for all themed elements */
-* {
-    transition: background-color 0.3s ease, 
-                color 0.3s ease, 
-                border-color 0.3s ease,
-                box-shadow 0.3s ease;
 }
 
 /* Loading Screen */
@@ -167,7 +83,7 @@ body {
 }
 
 .skeleton {
-    background: linear-gradient(90deg, var(--card-bg) 0%, var(--border-color) 50%, var(--card-bg) 100%);
+    background: linear-gradient(90deg, var(--card-bg) 0%, #3e3e3e 50%, var(--card-bg) 100%);
     background-size: 1000px 100%;
     animation: skeleton-shimmer 2s infinite;
     border-radius: 4px;
@@ -210,7 +126,7 @@ body {
     height: 40px;
     border-radius: 50%;
     margin-bottom: 8px;
-    background: linear-gradient(90deg, var(--card-bg) 0%, var(--border-color) 50%, var(--card-bg) 100%);
+    background: linear-gradient(90deg, var(--card-bg) 0%, #3e3e3e 50%, var(--card-bg) 100%);
     background-size: 1000px 100%;
     animation: skeleton-shimmer 2s infinite;
 }
@@ -228,7 +144,7 @@ body {
 .skeleton-chart {
     width: 100%;
     height: 300px;
-    background: linear-gradient(90deg, var(--card-bg) 0%, var(--border-color) 50%, var(--card-bg) 100%);
+    background: linear-gradient(90deg, var(--card-bg) 0%, #3e3e3e 50%, var(--card-bg) 100%);
     background-size: 1000px 100%;
     animation: skeleton-shimmer 2s infinite;
     border-radius: 8px;
@@ -288,29 +204,6 @@ body {
 
 .nav-item {
     margin: 0.25rem 1rem;
-}
-
-/* Base link styles - must come before specific .nav-item a */
-a {
-    color: var(--accent-color);
-    text-decoration: none;
-    transition: var(--transition);
-}
-
-a:hover {
-    text-decoration: none;
-}
-
-a:focus {
-    outline: 3px solid var(--accent-color);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
-}
-
-a:focus-visible {
-    outline: 3px solid var(--accent-color);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
 }
 
 .nav-item a {
@@ -466,76 +359,6 @@ a:focus-visible {
     margin-right: 0.5rem;
 }
 
-/* Theme Toggle Container and Label */
-.theme-toggle-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.theme-toggle-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    user-select: none;
-}
-
-/* Theme Toggle Button */
-.theme-toggle {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.theme-toggle:hover {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
-    transform: translateY(-2px) rotate(15deg);
-}
-
-.theme-toggle:active {
-    transform: translateY(0) scale(0.95);
-}
-
-/* Icon styles must come before .theme-toggle:hover i for specificity */
-.card-header i {
-    margin-right: 0.5rem;
-    color: var(--accent-color);
-}
-
-.tool-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.service-icon i {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.theme-toggle i {
-    font-size: 1.1rem;
-    margin-right: 0;
-    color: var(--text-primary);
-    transition: transform 0.3s ease;
-}
-
-.theme-toggle:hover i {
-    color: #fff;
-    transform: rotate(15deg);
-}
-
 /* Page Content */
 .page-content {
     flex: 1;
@@ -566,7 +389,7 @@ a:focus-visible {
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 .card-header {
@@ -580,6 +403,11 @@ a:focus-visible {
 .card-header h3 {
     font-size: 1.25rem;
     font-weight: 600;
+}
+
+.card-header i {
+    margin-right: 0.5rem;
+    color: var(--accent-color);
 }
 
 .card-body {
@@ -646,14 +474,20 @@ a:focus-visible {
     color: white;
 }
 
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .service-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    background: var(--secondary-bg);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
     transition: var(--transition);
     position: relative;
 }
@@ -1050,46 +884,16 @@ a:focus-visible {
     background: var(--accent-color);
 }
 
-/* Focus States - Enhanced for Accessibility */
-button:focus, 
-select:focus, 
-input:focus, 
-[tabindex]:focus {
-    outline: 3px solid var(--accent-color);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
+/* Focus States */
+button:focus, select:focus, input:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
-button:focus-visible, 
-select:focus-visible, 
-input:focus-visible, 
-[tabindex]:focus-visible {
-    outline: 3px solid var(--accent-color);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
-}
-
-/* Remove focus outline for mouse users */
-button:focus:not(:focus-visible),
-select:focus:not(:focus-visible),
-input:focus:not(:focus-visible),
-[tabindex]:focus:not(:focus-visible) {
-    outline: none;
-    box-shadow: none;
-}
-
-/* Disabled button must come before button:disabled for specificity */
-button:disabled,
-button[aria-disabled="true"] {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Loading States - Accessible */
+/* Loading States */
 .loading {
     opacity: 0.6;
     pointer-events: none;
-    position: relative;
 }
 
 .loading::after {
@@ -1104,50 +908,6 @@ button[aria-disabled="true"] {
     border-top: 2px solid var(--accent-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-}
-
-/* Ensure all interactive elements are keyboard accessible */
-button, input, select, textarea, [role="button"], [role="menuitem"], [tabindex="0"] {
-    cursor: pointer;
-}
-
-button:hover, [role="button"]:hover, [role="menuitem"]:hover {
-    text-decoration: none;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    :root {
-        --border-color: #000;
-        --accent-color: #0f0;
-    }
-    
-    [data-theme="light"] {
-        --border-color: #000;
-        --text-primary: #000;
-        --accent-color: #006400;
-    }
-}
-
-/* Reduced motion support - Respect user preferences */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-    
-    .loading-spinner {
-        animation: none;
-        border-top-color: var(--accent-color);
-    }
-    
-    .spinning {
-        animation: none !important;
-    }
 }
 
 /* Uptime Monitoring Styles */
@@ -1459,11 +1219,6 @@ button:hover, [role="button"]:hover, [role="menuitem"]:hover {
     color: var(--info-color);
 }
 
-/* Theme Transition */
-.theme-transitioning {
-    transition: background-color 0.3s ease, color 0.3s ease !important;
-}
-
 /* Utility Classes for JS-toggled styles */
 .hidden {
     display: none !important;
@@ -1532,7 +1287,6 @@ button:hover, [role="button"]:hover, [role="menuitem"]:hover {
         transform: translateX(0);
         opacity: 1;
     }
-
     to {
         transform: translateX(400px);
         opacity: 0;

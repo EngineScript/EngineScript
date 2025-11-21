@@ -138,6 +138,9 @@ export class ExternalServicesManager {
 
         this.container.appendChild(categoryContainer);
       }
+      
+      // Enable drag and drop for service cards
+      this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
       this.container.innerHTML = "";
@@ -204,20 +207,14 @@ export class ExternalServicesManager {
     
     const settingsToggle = document.createElement("button");
     settingsToggle.className = "settings-toggle-btn";
-    settingsToggle.setAttribute("aria-expanded", "false");
-    settingsToggle.setAttribute("aria-controls", "settings-panel");
-    settingsToggle.setAttribute("aria-label", "Toggle service settings panel");
     settingsToggle.innerHTML = `
-      <i class="fas fa-cog" aria-hidden="true"></i>
+      <i class="fas fa-cog"></i>
       <span>Service Settings</span>
-      <i class="fas fa-chevron-down toggle-icon" aria-hidden="true"></i>
+      <i class="fas fa-chevron-down toggle-icon"></i>
     `;
     
     const settingsContent = document.createElement("div");
     settingsContent.className = "settings-content collapsed";
-    settingsContent.id = "settings-panel";
-    settingsContent.setAttribute("role", "region");
-    settingsContent.setAttribute("aria-labelledby", "settings-toggle-label");
     
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
@@ -232,7 +229,6 @@ export class ExternalServicesManager {
       const isCollapsed = settingsContent.classList.toggle("collapsed");
       const icon = settingsToggle.querySelector(".toggle-icon");
       icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
-      settingsToggle.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
     });
     
     settingsContainer.appendChild(settingsToggle);
@@ -298,7 +294,6 @@ export class ExternalServicesManager {
         checkbox.type = "checkbox";
         checkbox.checked = isEnabled;
         checkbox.dataset.service = serviceKey;
-        checkbox.setAttribute("aria-label", `Toggle ${serviceDef.name} service visibility`);
         
         checkbox.addEventListener("change", () => {
           pendingChanges[serviceKey] = checkbox.checked;
@@ -331,17 +326,13 @@ export class ExternalServicesManager {
     // Save button
     const saveButton = document.createElement("button");
     saveButton.className = "save-settings-btn";
-    saveButton.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Save Changes';
+    saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
     saveButton.disabled = true;
-    saveButton.setAttribute("aria-label", "Save service settings changes");
-    saveButton.setAttribute("aria-disabled", "true");
     
     saveButton.addEventListener("click", async () => {
       try {
         saveButton.disabled = true;
-        saveButton.setAttribute("aria-disabled", "true");
-        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Saving...';
-        saveButton.setAttribute("aria-label", "Saving service settings");
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         
         const response = await fetch("/api/external-services/config", {
           method: "POST",
@@ -356,11 +347,9 @@ export class ExternalServicesManager {
         Object.assign(services, pendingChanges);
         Object.keys(pendingChanges).length = 0;
         
-        saveButton.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Saved!';
-        saveButton.setAttribute("aria-label", "Service settings saved successfully");
+        saveButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
         setTimeout(() => {
-          saveButton.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Save Changes';
-          saveButton.setAttribute("aria-label", "Save service settings changes");
+          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
           saveButton.classList.remove('has-changes');
         }, 2000);
         
@@ -368,13 +357,10 @@ export class ExternalServicesManager {
         await this.init();
       } catch (error) {
         console.error("Save error:", error);
-        saveButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i> Save Failed';
-        saveButton.setAttribute("aria-label", "Failed to save service settings");
+        saveButton.innerHTML = '<i class="fas fa-times"></i> Save Failed';
         saveButton.disabled = false;
-        saveButton.setAttribute("aria-disabled", "false");
         setTimeout(() => {
-          saveButton.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Save Changes';
-          saveButton.setAttribute("aria-label", "Save service settings changes");
+          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
         }, 2000);
       }
     });
@@ -385,7 +371,6 @@ export class ExternalServicesManager {
       if (checkbox) {
         checkbox.addEventListener("change", () => {
           saveButton.disabled = false;
-          saveButton.setAttribute("aria-disabled", "false");
           saveButton.classList.add('has-changes');
         });
       }
@@ -404,8 +389,6 @@ export class ExternalServicesManager {
     serviceLink.rel = "noopener noreferrer";
     serviceLink.className = "external-service-card static";
     serviceLink.dataset.serviceKey = serviceKey;
-    serviceLink.setAttribute("role", "listitem");
-    serviceLink.setAttribute("aria-label", `${serviceDef.name} - ${serviceDef.statusText || 'Visit status page'} (opens in new tab)`);
     
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
@@ -444,8 +427,6 @@ export class ExternalServicesManager {
     serviceLink.rel = "noopener noreferrer";
     serviceLink.className = "external-service-card loading";
     serviceLink.dataset.serviceKey = serviceKey;
-    serviceLink.setAttribute("role", "listitem");
-    serviceLink.setAttribute("aria-label", `${serviceDef.name} - Loading status (opens in new tab)`);
     
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
@@ -530,13 +511,9 @@ export class ExternalServicesManager {
       const statusSpan = serviceCard.querySelector(".service-status");
       if (statusSpan) {
         statusSpan.className = `service-status status-${statusColor}`;
-        statusSpan.setAttribute("role", "status");
-        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}" aria-hidden="true"></i> `;
+        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
         statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(data.status.description)));
       }
-      
-      // Update card aria-label
-      serviceCard.setAttribute("aria-label", `${serviceDef.name} - ${this.utils.sanitizeInput(data.status.description)} (opens in new tab)`);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} feed status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -593,13 +570,9 @@ export class ExternalServicesManager {
       const statusSpan = serviceCard.querySelector(".service-status");
       if (statusSpan) {
         statusSpan.className = `service-status status-${statusColor}`;
-        statusSpan.setAttribute("role", "status");
-        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}" aria-hidden="true"></i> `;
+        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
         statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(data.status.description)));
       }
-      
-      // Update card aria-label
-      serviceCard.setAttribute("aria-label", `${serviceDef.name} - ${this.utils.sanitizeInput(data.status.description)} (opens in new tab)`);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -630,13 +603,9 @@ export class ExternalServicesManager {
     const statusSpan = serviceCard.querySelector(".service-status");
     if (statusSpan) {
       statusSpan.className = "service-status status-error";
-      statusSpan.setAttribute("role", "alert");
-      statusSpan.innerHTML = `<i class="fas fa-times-circle" aria-hidden="true"></i> `;
+      statusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
       statusSpan.appendChild(document.createTextNode(errorMessage));
     }
-    
-    // Update card aria-label
-    serviceCard.setAttribute("aria-label", `${serviceDef.name} - ${errorMessage} (opens in new tab)`);
   }
 
   // ============ Cache Management ============

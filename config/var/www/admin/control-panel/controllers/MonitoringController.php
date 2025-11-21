@@ -20,10 +20,11 @@ class MonitoringController extends BaseController {
             $uptime = new UptimeRobotAPI();
             
             if (!$uptime->isConfigured()) {
-                return self::jsonResponse([
+                self::jsonResponse([
                     'configured' => false,
                     'message' => 'Uptime Robot API key not configured'
                 ]);
+                return;
             }
             
             $monitors = $uptime->getMonitorStatus();
@@ -38,7 +39,7 @@ class MonitoringController extends BaseController {
                     round(array_sum(array_column($monitors, 'uptime_ratio')) / count($monitors), 2) : 0
             ];
             
-            return self::jsonResponse($summary);
+            self::jsonResponse($summary);
         } catch (Exception $e) {
             self::errorResponse('Unable to retrieve uptime status', 500);
         }
@@ -54,15 +55,16 @@ class MonitoringController extends BaseController {
             $uptime = new UptimeRobotAPI();
             
             if (!$uptime->isConfigured()) {
-                return self::jsonResponse([
+                self::jsonResponse([
                     'configured' => false,
                     'monitors' => [],
                     'message' => 'Uptime Robot API key not configured'
                 ]);
+                return;
             }
             
             $monitors = $uptime->getMonitorStatus();
-            return self::jsonResponse([
+            self::jsonResponse([
                 'configured' => true,
                 'monitors' => $monitors
             ]);

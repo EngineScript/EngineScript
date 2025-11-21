@@ -19,7 +19,7 @@ class SitesController extends BaseController {
         try {
             // codacy:ignore - Static utility class pattern for stateless service operations
             $sites = WordPressService::getWordPressSites();
-            return self::jsonResponse($sites);
+            self::jsonResponse($sites);
         } catch (Exception $e) {
             self::handleException($e, 'Sites');
         }
@@ -32,7 +32,7 @@ class SitesController extends BaseController {
     public static function getCount() {
         try {
             $sites = WordPressService::getWordPressSites();
-            return self::jsonResponse(['count' => count($sites)]);
+            self::jsonResponse(['count' => count($sites)]);
         } catch (Exception $e) {
             self::handleException($e, 'Sites count');
         }
