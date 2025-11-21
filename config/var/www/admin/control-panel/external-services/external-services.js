@@ -388,17 +388,12 @@ export class ExternalServicesManager {
     settingsContent.appendChild(saveButton);
   }
 
+  // ============ Card Creation Helpers ============
+
   /**
-   * Display static service card (no API/feed)
+   * Create service card header (icon + info)
    */
-  displayStaticServiceCard(container, serviceKey, serviceDef) {
-    const serviceLink = document.createElement("a");
-    serviceLink.href = serviceDef.url;
-    serviceLink.target = "_blank";
-    serviceLink.rel = "noopener noreferrer";
-    serviceLink.className = "external-service-card static";
-    serviceLink.dataset.serviceKey = serviceKey;
-    
+  createServiceCardHeader(serviceDef, statusClassName, statusContent) {
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
     
@@ -413,16 +408,42 @@ export class ExternalServicesManager {
     h3.textContent = serviceDef.name;
     
     const statusSpan = document.createElement("span");
-    statusSpan.className = "service-status status-info";
-    statusSpan.innerHTML = `<i class="fas fa-external-link-alt"></i> `;
-    statusSpan.appendChild(document.createTextNode(serviceDef.statusText || 'Visit status page'));
+    statusSpan.className = `service-status ${statusClassName}`;
+    statusSpan.innerHTML = statusContent;
     
     infoDiv.appendChild(h3);
     infoDiv.appendChild(statusSpan);
     headerDiv.appendChild(iconDiv);
     headerDiv.appendChild(infoDiv);
-    serviceLink.appendChild(headerDiv);
     
+    return headerDiv;
+  }
+
+  /**
+   * Create base service card element
+   */
+  createBaseServiceCard(serviceKey, serviceDef, cardClass, headerElement) {
+    const serviceLink = document.createElement("a");
+    serviceLink.href = serviceDef.url;
+    serviceLink.target = "_blank";
+    serviceLink.rel = "noopener noreferrer";
+    serviceLink.className = `external-service-card ${cardClass}`;
+    serviceLink.dataset.serviceKey = serviceKey;
+    serviceLink.appendChild(headerElement);
+    return serviceLink;
+  }
+
+  /**
+   * Display static service card (no API/feed)
+   */
+  displayStaticServiceCard(container, serviceKey, serviceDef) {
+    const statusContent = `<i class="fas fa-external-link-alt"></i> `;
+    const contentNode = document.createTextNode(serviceDef.statusText || 'Visit status page');
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusContent);
+    const statusSpan = headerDiv.querySelector(".service-status");
+    statusSpan.appendChild(contentNode);
+    
+    const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "static", headerDiv);
     container.appendChild(serviceLink);
   }
 
@@ -430,62 +451,58 @@ export class ExternalServicesManager {
    * Display service card with loading state
    */
   displayServiceCardWithLoadingState(container, serviceKey, serviceDef) {
-    const serviceLink = document.createElement("a");
-    serviceLink.href = serviceDef.url;
-    serviceLink.target = "_blank";
-    serviceLink.rel = "noopener noreferrer";
-    serviceLink.className = "external-service-card loading";
-    serviceLink.dataset.serviceKey = serviceKey;
+    const statusContent = `<i class="fas fa-spinner fa-spin"></i> `;
+    const contentNode = document.createTextNode("Loading...");
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusContent);
+    const statusSpan = headerDiv.querySelector(".service-status");
+    statusSpan.appendChild(contentNode);
     
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "service-header";
-    
-    const iconDiv = document.createElement("div");
-    iconDiv.className = `service-icon ${serviceDef.color}`;
-    iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
-    
-    const infoDiv = document.createElement("div");
-    infoDiv.className = "service-info";
-    
-    const h3 = document.createElement("h3");
-    h3.textContent = serviceDef.name;
-    
-    const statusSpan = document.createElement("span");
-    statusSpan.className = "service-status status-loading";
-    statusSpan.innerHTML = `<i class="fas fa-spinner fa-spin"></i> `;
-    statusSpan.appendChild(document.createTextNode("Loading..."));
-    
-    infoDiv.appendChild(h3);
-    infoDiv.appendChild(statusSpan);
-    headerDiv.appendChild(iconDiv);
-    headerDiv.appendChild(infoDiv);
-    serviceLink.appendChild(headerDiv);
-    
+    const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "loading", headerDiv);
     container.appendChild(serviceLink);
   }
 
+  // ============ Status Update Helpers ============
+
   /**
-   * Update feed-based service status asynchronously
+   * Extract and determine status display values
    */
-  async updateFeedServiceStatus(serviceKey, serviceDef) {
-    try {
-      // Check cache first
-      let data = this.getCachedService(serviceKey);
+  getStatusDisplayValues(statusIndicator) {
+    const statusClass = statusIndicator === "none" ? "operational" : statusIndicator;
+    const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
+    const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+    return { statusClass, statusIcon, statusColor };
+  }
+
+  /**
+   * Update service card with status data
+   */
+  updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIcon, statusColor) {
+    // Update card class
+    serviceCard.classList.remove("loading", "error");
+    
+    // Update status span
+    const statusSpan = serviceCard.querySelector(".service-status");
+    if (statusSpan) {
+      statusSpan.className = `service-status status-${statusColor}`;
+      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
+      statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(statusDescription)));
+    }
+  }
+
+  /**
+   * Fetch data with timeout and caching support
+   */
+  async fetchServiceData(fetchFn, serviceKey) {
+    // Check cache first
+    let data = this.getCachedService(serviceKey);
+    
+    if (!data) {
+      // Not in cache, fetch from API
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
       
-      if (!data) {
-        // Not in cache, fetch from API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-        
-        let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
-        if (serviceDef.feedFilter) {
-          apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
-        }
-        
-        const response = await fetch(apiUrl, {
-          signal: controller.signal,
-          credentials: 'include'
-        });
+      try {
+        const response = await fetchFn(controller.signal);
         clearTimeout(timeoutId);
         
         if (!response.ok) {
@@ -496,7 +513,31 @@ export class ExternalServicesManager {
         
         // Cache the response
         this.setCachedService(serviceKey, data);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
       }
+    }
+    
+    return data;
+  }
+
+  /**
+   * Update feed-based service status asynchronously
+   */
+  async updateFeedServiceStatus(serviceKey, serviceDef) {
+    try {
+      const data = await this.fetchServiceData((signal) => {
+        let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
+        if (serviceDef.feedFilter) {
+          apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
+        }
+        
+        return fetch(apiUrl, {
+          signal: signal,
+          credentials: 'include'
+        });
+      }, serviceKey);
       
       if (!data || !data.status) {
         throw new Error('Invalid feed response format');
@@ -509,20 +550,8 @@ export class ExternalServicesManager {
         return;
       }
       
-      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
-      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
-      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
-      
-      // Update card class
-      serviceCard.classList.remove("loading", "error");
-      
-      // Update status span
-      const statusSpan = serviceCard.querySelector(".service-status");
-      if (statusSpan) {
-        statusSpan.className = `service-status status-${statusColor}`;
-        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
-        statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(data.status.description)));
-      }
+      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator);
+      this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} feed status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -534,28 +563,11 @@ export class ExternalServicesManager {
    */
   async updateStatusPageServiceStatus(serviceKey, serviceDef) {
     try {
-      // Check cache first
-      let data = this.getCachedService(serviceKey);
-      
-      if (!data) {
-        // Not in cache, fetch from API
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-        
-        const response = await fetch(serviceDef.api, {
-          signal: controller.signal
+      const data = await this.fetchServiceData((signal) => {
+        return fetch(serviceDef.api, {
+          signal: signal
         });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        data = await response.json();
-        
-        // Cache the response
-        this.setCachedService(serviceKey, data);
-      }
+      }, serviceKey);
       
       if (!data || !data.status || !data.status.indicator) {
         throw new Error('Invalid API response format');
@@ -568,20 +580,8 @@ export class ExternalServicesManager {
         return;
       }
       
-      const statusClass = data.status.indicator === "none" ? "operational" : data.status.indicator;
-      const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
-      const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
-      
-      // Update card class
-      serviceCard.classList.remove("loading", "error");
-      
-      // Update status span
-      const statusSpan = serviceCard.querySelector(".service-status");
-      if (statusSpan) {
-        statusSpan.className = `service-status status-${statusColor}`;
-        statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
-        statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(data.status.description)));
-      }
+      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator);
+      this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -773,14 +773,12 @@ export class ExternalServicesManager {
   enableServiceDragDrop(container) {
     const serviceCards = container.querySelectorAll('.external-service-card');
     let draggedElement = null;
-    let draggedServiceKey = null;
 
     serviceCards.forEach(card => {
       card.draggable = true;
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
-        draggedServiceKey = card.dataset.serviceKey;
         card.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/html', card.innerHTML);
@@ -818,7 +816,6 @@ export class ExternalServicesManager {
           targetCard.classList.remove('drag-over');
           
           // Swap positions
-          const targetServiceKey = targetCard.dataset.serviceKey;
           const allCards = Array.from(container.querySelectorAll('.external-service-card'));
           const draggedIndex = allCards.indexOf(draggedElement);
           const targetIndex = allCards.indexOf(targetCard);
