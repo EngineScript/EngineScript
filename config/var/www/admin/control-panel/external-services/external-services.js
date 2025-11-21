@@ -1,8 +1,8 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
 
-import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.07';
-import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.07';
+import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.08';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.08';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
@@ -138,9 +138,6 @@ export class ExternalServicesManager {
 
         this.container.appendChild(categoryContainer);
       }
-      
-      // Enable drag and drop for service cards
-      this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
       this.container.innerHTML = "";
