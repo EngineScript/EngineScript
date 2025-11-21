@@ -67,12 +67,13 @@ class SystemCommand {
     
     /**
      * Get service status
-     * @param string $service Service name (validated, alphanumeric + dash only)
+     * @param string $service Service name (validated, alphanumeric + dash/underscore/dot)
      * @return string|false Service status (active/inactive) or false on error
      */
     public static function getServiceStatus($service) {
-        // Validate service name (alphanumeric, dash, underscore only)
-        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $service)) {
+        // Validate service name (alphanumeric, dash, underscore, dot only)
+        // Dot added to support PHP-FPM services like php-fpm8.4
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $service)) {
             return false;
         }
         
