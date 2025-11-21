@@ -1,8 +1,8 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
 
-import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.05';
-import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.05';
+import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.07';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.07';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
@@ -334,27 +334,35 @@ export class ExternalServicesManager {
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         
-        const response = await fetch("/api/external-services/config", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pendingChanges),
-          credentials: 'include'
-        });
+        // Load current preferences from cookie
+        let currentPreferences = this.loadServicePreferences() || {};
         
-        if (!response.ok) throw new Error("Failed to save");
+        // Apply pending changes to preferences
+        Object.assign(currentPreferences, pendingChanges);
+        
+        // Save to cookie (client-side only)
+        this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
         
         // Update local services object
         Object.assign(services, pendingChanges);
-        Object.keys(pendingChanges).length = 0;
+        
+        // Clear pending changes
+        for (const key in pendingChanges) {
+          delete pendingChanges[key];
+        }
         
         saveButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
         setTimeout(() => {
           saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
           saveButton.classList.remove('has-changes');
+          saveButton.disabled = true;
         }, 2000);
         
-        // Reload services display
+        // Reload services display to show updated preferences
+        this.initialized = false; // Reset initialization flag to allow reload
         await this.init();
+        
+        this.showNotification('Service preferences saved', 'success');
       } catch (error) {
         console.error("Save error:", error);
         saveButton.innerHTML = '<i class="fas fa-times"></i> Save Failed';
@@ -362,6 +370,7 @@ export class ExternalServicesManager {
         setTimeout(() => {
           saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
         }, 2000);
+        this.showNotification('Failed to save preferences', 'error');
       }
     });
     
