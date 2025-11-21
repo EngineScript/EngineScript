@@ -466,10 +466,21 @@ export class ExternalServicesManager {
   /**
    * Extract and determine status display values
    */
-  getStatusDisplayValues(statusIndicator) {
+  getStatusDisplayValues(statusIndicator, isFeed = false) {
     const statusClass = statusIndicator === "none" ? "operational" : statusIndicator;
-    const statusIcon = statusClass === "operational" ? "check-circle" : "exclamation-triangle";
-    const statusColor = statusClass === "operational" ? "success" : statusClass === "minor" ? "warning" : "error";
+    // Map icons per status
+    let statusIcon = 'exclamation-triangle';
+    if (statusClass === 'operational') statusIcon = 'check-circle';
+    else if (statusClass === 'major') statusIcon = 'times-circle';
+    else if (statusClass === 'minor') statusIcon = 'exclamation-triangle';
+
+    // For Atom/RSS feeds, map major->error, minor->warning
+    if (isFeed) {
+      const statusColor = statusClass === 'operational' ? 'success' : (statusClass === 'major' ? 'error' : 'warning');
+      return { statusClass, statusIcon, statusColor };
+    }
+
+    const statusColor = statusClass === 'operational' ? 'success' : statusClass === 'minor' ? 'warning' : 'error';
     return { statusClass, statusIcon, statusColor };
   }
 
@@ -478,7 +489,7 @@ export class ExternalServicesManager {
    */
   updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIcon, statusColor) {
     // Update card class
-    serviceCard.classList.remove("loading", "error");
+    serviceCard.classList.remove("loading", "error", "status-success", "status-warning", "status-error");
     
     // Update status span
     const statusSpan = serviceCard.querySelector(".service-status");
@@ -487,6 +498,9 @@ export class ExternalServicesManager {
       statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
       statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(statusDescription)));
     }
+
+    // Add card-level status class for visual emphasis
+    serviceCard.classList.add(`status-${statusColor}`);
   }
 
   /**
@@ -550,7 +564,7 @@ export class ExternalServicesManager {
         return;
       }
       
-      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator);
+      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, true);
       this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} feed status:`, error);
@@ -580,7 +594,7 @@ export class ExternalServicesManager {
         return;
       }
       
-      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator);
+      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, false);
       this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} status:`, error);

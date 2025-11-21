@@ -280,6 +280,21 @@
     opacity: 1;
 }
 
+/* Card-level status coloring */
+.external-service-card.status-success {
+    border-color: var(--success-color);
+}
+
+.external-service-card.status-warning {
+    border-color: var(--warning-color);
+    background: rgba(255, 184, 0, 0.02);
+}
+
+.external-service-card.status-error {
+    border-color: var(--error-color);
+    background: rgba(244, 68, 68, 0.03);
+}
+
 /* Service Header */
 .service-header {
     display: flex;

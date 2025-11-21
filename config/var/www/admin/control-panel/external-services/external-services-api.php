@@ -133,13 +133,13 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 $entryDate = strtotime((string)$latestEntry->published);
             }
             
-            // Check if entry is within 48 hours (172800 seconds)
-            $isRecent = ($entryDate && (time() - $entryDate) <= 172800);
+            // Check if entry is within 24 hours (86400 seconds)
+            $isRecent = ($entryDate && (time() - $entryDate) <= 86400);
             
             // For Brevo and similar feeds, prefer title only
             $description = !empty($title) ? $title : (!empty($content) ? $content : $summary);
             
-            // Only show status if entry is within 48 hours, otherwise show operational
+            // Only show status if entry is within 24 hours, otherwise show operational
             if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
@@ -186,10 +186,10 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 $itemDate = strtotime((string)$latestItem->children('http://purl.org/dc/elements/1.1/')->date);
             }
             
-            // Check if item is within 48 hours (172800 seconds)
-            $isRecent = ($itemDate && (time() - $itemDate) <= 172800);
+            // Check if item is within 24 hours (86400 seconds)
+            $isRecent = ($itemDate && (time() - $itemDate) <= 86400);
             
-            // Only show status if item is within 48 hours, otherwise show operational
+            // Only show status if item is within 24 hours, otherwise show operational
             if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
@@ -275,6 +275,26 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
             ];
         }
         
+        // Determine recency (if timestamp available) and severity
+        $incidentDate = null;
+        if (isset($latestIncident['start_time'])) {
+            $incidentDate = strtotime($latestIncident['start_time']);
+        } elseif (isset($latestIncident['created_at'])) {
+            $incidentDate = strtotime($latestIncident['created_at']);
+        } elseif (isset($latestIncident['updated_at'])) {
+            $incidentDate = strtotime($latestIncident['updated_at']);
+        } elseif (isset($latestIncident['time'])) {
+            $incidentDate = strtotime($latestIncident['time']);
+        }
+
+        // If incident has a timestamp and it's older than 24 hours, treat as operational
+        if ($incidentDate && (time() - $incidentDate) > 86400) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
+
         // Determine severity
         $indicator = 'minor';
         if (isset($latestIncident['severity'])) {
