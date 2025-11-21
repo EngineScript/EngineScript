@@ -172,7 +172,26 @@ function getPhpServiceStatus() {
 }
 
 function findActivePhpFpmService() {
-    // Use a safer approach: get list of active services first, then filter in PHP
+    // Common PHP-FPM service name patterns to check (ordered by likelihood)
+    $php_patterns = [
+        'php8.4-fpm',
+        'php8.3-fpm',
+        'php8.2-fpm',
+        'php8.1-fpm',
+        'php-fpm',
+        'php-fpm8.4',
+        'php84-fpm',
+    ];
+    
+    // Try each pattern
+    foreach ($php_patterns as $service_name) {
+        $status = getSystemServiceStatus($service_name);
+        if ($status === 'active') {
+            return $service_name;
+        }
+    }
+    
+    // Fallback: Use systemctl to find any active PHP-FPM service
     $services_output = SystemCommand::getSystemdServices(); // codacy:ignore - Static utility class pattern
     
     if ($services_output === false || empty($services_output)) {
@@ -202,7 +221,7 @@ function findActivePhpFpmService() {
         // Remove .service suffix if present
         $service_name = preg_replace('/\.service$/', '', $service_name);
         
-        // Check if it contains both "php" and "fpm" (case insensitive) - FIXED TYPO
+        // Check if it contains both "php" and "fpm" (case insensitive)
         if (stripos($service_name, 'php') !== false && stripos($service_name, 'fpm') !== false) {
             // Validate the service name matches our flexible pattern for PHP-FPM services
             // Pattern: php + optional version/text + fpm + optional version/text

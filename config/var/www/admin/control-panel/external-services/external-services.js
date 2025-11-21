@@ -1,8 +1,8 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
 
-import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.08';
-import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.08';
+import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.09';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.09';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
@@ -138,6 +138,9 @@ export class ExternalServicesManager {
 
         this.container.appendChild(categoryContainer);
       }
+      
+      // Enable drag and drop for service cards
+      this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
       this.container.innerHTML = "";
@@ -267,7 +270,7 @@ export class ExternalServicesManager {
       categoryHeader.className = "category-header";
       categoryHeader.innerHTML = `
         <span>${category}</span>
-        <button class="category-toggle-btn" data-category="${category}">
+        <button class="category-toggle-all-btn" data-category="${category}">
           <span class="toggle-all-text">Toggle All</span>
           <i class="fas fa-toggle-on"></i>
         </button>
@@ -307,7 +310,7 @@ export class ExternalServicesManager {
       });
 
       // Add toggle all button functionality
-      const toggleBtn = categoryHeader.querySelector(".category-toggle-btn");
+      const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
       toggleBtn.addEventListener("click", () => {
         const allEnabled = categoryCheckboxes.every(cb => cb.checked);
         categoryCheckboxes.forEach(cb => {
@@ -322,7 +325,7 @@ export class ExternalServicesManager {
 
     // Save button
     const saveButton = document.createElement("button");
-    saveButton.className = "save-settings-btn";
+    saveButton.className = "settings-save-btn";
     saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
     saveButton.disabled = true;
     
@@ -760,6 +763,94 @@ export class ExternalServicesManager {
    */
   saveServiceOrder(orderArray) {
     this.setCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
+  }
+
+  // ============ Drag and Drop ============
+
+  /**
+   * Enable drag-and-drop for service cards
+   */
+  enableServiceDragDrop(container) {
+    const serviceCards = container.querySelectorAll('.external-service-card');
+    let draggedElement = null;
+    let draggedServiceKey = null;
+
+    serviceCards.forEach(card => {
+      card.draggable = true;
+
+      card.addEventListener('dragstart', (e) => {
+        draggedElement = card;
+        draggedServiceKey = card.dataset.serviceKey;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', card.innerHTML);
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const targetCard = e.target.closest('.external-service-card');
+        if (targetCard && targetCard !== draggedElement) {
+          targetCard.classList.add('drag-over');
+        }
+      });
+
+      card.addEventListener('dragenter', (e) => {
+        const targetCard = e.target.closest('.external-service-card');
+        if (targetCard && targetCard !== draggedElement) {
+          targetCard.classList.add('drag-over');
+        }
+      });
+
+      card.addEventListener('dragleave', (e) => {
+        const targetCard = e.target.closest('.external-service-card');
+        if (targetCard) {
+          targetCard.classList.remove('drag-over');
+        }
+      });
+
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        
+        const targetCard = e.target.closest('.external-service-card');
+        if (targetCard && targetCard !== draggedElement) {
+          targetCard.classList.remove('drag-over');
+          
+          // Swap positions
+          const targetServiceKey = targetCard.dataset.serviceKey;
+          const allCards = Array.from(container.querySelectorAll('.external-service-card'));
+          const draggedIndex = allCards.indexOf(draggedElement);
+          const targetIndex = allCards.indexOf(targetCard);
+          
+          if (draggedIndex < targetIndex) {
+            targetCard.parentNode.insertBefore(draggedElement, targetCard.nextSibling);
+          } else {
+            targetCard.parentNode.insertBefore(draggedElement, targetCard);
+          }
+          
+          // Save new order
+          this.saveCardOrder();
+        }
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        // Remove drag-over from all cards
+        container.querySelectorAll('.external-service-card').forEach(c => {
+          c.classList.remove('drag-over');
+        });
+      });
+    });
+  }
+
+  /**
+   * Save current card order to cookie
+   */
+  saveCardOrder() {
+    const cards = document.querySelectorAll('.external-service-card');
+    const orderArray = Array.from(cards).map(card => card.dataset.serviceKey);
+    this.saveServiceOrder(orderArray);
   }
 
   // ============ Notifications ============
