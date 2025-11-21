@@ -68,7 +68,7 @@ class SystemCommand {
     /**
      * Get service status
      * @param string $service Service name (validated, alphanumeric + dash only)
-     * @return string Service status output
+     * @return string|false Service status (active/inactive) or false on error
      */
     public static function getServiceStatus($service) {
         // Validate service name (alphanumeric, dash, underscore only)
@@ -78,7 +78,19 @@ class SystemCommand {
         
         // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
         $command = sprintf('systemctl status %s --no-pager 2>/dev/null', escapeshellarg($service));
-        return self::execute($command);
+        $output = self::execute($command);
+        
+        if ($output === false || empty($output)) {
+            return false;
+        }
+        
+        // Parse the Active line from systemctl status output
+        // Format: "     Active: active (running) since ..."
+        if (preg_match('/Active:\s+(active|inactive|failed|unknown)/', $output, $matches)) {
+            return $matches[1];
+        }
+        
+        return false;
     }
     
     /**

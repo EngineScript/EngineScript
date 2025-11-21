@@ -41,6 +41,9 @@ if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
   systemctl daemon-reload
 fi
 
+# Re-tune MariaDB configuration after update (in case my.cnf was replaced by package)
+/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
+
 # Restart Service
 systemctl daemon-reload
 systemctl start mariadb.service

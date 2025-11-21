@@ -660,7 +660,7 @@ function createErrorServiceStatus() {
 
 function getSystemServiceStatus($service) {
     $status_output = SystemCommand::getServiceStatus($service); // codacy:ignore - Static utility class pattern
-    return $status_output !== false ? $status_output : '';
+    return $status_output !== false ? $status_output : 'unknown';
 }
 
 function getServiceVersion($service) {
