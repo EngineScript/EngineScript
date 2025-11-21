@@ -79,41 +79,42 @@ function parseStatusFeed($feedUrl, $filter = null) {
             throw new Exception('Failed to fetch feed');
         }
         
-        // Delegate to string parser for consistent behavior and testing
-        return parseStatusFeedFromString($feedContent, $filter);
-                // Choose the most recent relevant entry: prefer the newest matching filter if provided
-                $latestEntry = null;
-                $latestEntryTimestamp = 0;
+        // Suppress XML errors and parse securely
+        libxml_use_internal_errors(true);
+        // Disable external entity processing to prevent XXE attacks
+        libxml_disable_entity_loader(true);
+        // Parse XML without entity substitution (secure by default)
+        // Do not use LIBXML_NOENT as it enables external entity substitution
+        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement');
+        libxml_clear_errors();
+        
+        if ($xml === false) {
+            throw new Exception('Failed to parse XML');
+        }
+        
+        $status = [
+            'indicator' => 'none',
+            'description' => 'All Systems Operational'
+        ];
+        
+        // Check if it's an Atom feed
+        if (isset($xml->entry)) {
+            // If filter provided, find matching entry
+            $latestEntry = null;
+            if ($filter !== null) {
                 foreach ($xml->entry as $entry) {
                     $entryTitle = isset($entry->title) ? (string)$entry->title : '';
-                    if ($filter !== null && stripos($entryTitle, $filter) === false) {
-                        continue; // skip non-matching entries
-                    }
-
-                    // Determine entry timestamp preference: updated > published
-                    $entryDateCandidate = null;
-                    if (isset($entry->updated)) {
-                        $entryDateCandidate = strtotime((string)$entry->updated);
-                    } elseif (isset($entry->published)) {
-                        $entryDateCandidate = strtotime((string)$entry->published);
-                    }
-
-                    // Prefer entries with a valid timestamp; if none have timestamps, fallback to first matching entry
-                    $timestampValue = $entryDateCandidate ? $entryDateCandidate : 0;
-                    if ($timestampValue > $latestEntryTimestamp) {
-                        $latestEntryTimestamp = $timestampValue;
+                    if (stripos($entryTitle, $filter) !== false) {
                         $latestEntry = $entry;
-                    } elseif ($latestEntry === null && $filter === null) {
-                        // When no filter, ensure at least the first entry is selected even without timestamps
-                        $latestEntry = $xml->entry[0];
+                        break;
                     }
                 }
-                // If no matching entry found (when filter used), return operational
-                if ($filter !== null && $latestEntry === null) {
+                // If no matching entry, return operational
+                if ($latestEntry === null) {
                     return $status;
                 }
-                // If we couldn't find a timestamped entry and latestEntry is still null, fallback to first entry
-                $latestEntry = $latestEntry ?? $xml->entry[0];
+            }
+            $latestEntry = $latestEntry ?? $xml->entry[0];
             
             $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
             $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
@@ -124,7 +125,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
             $content = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $content);
             $summary = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $summary);
             
-            // Get entry timestamp (prefer updated -> published)
+            // Get entry timestamp
             $entryDate = null;
             if (isset($latestEntry->updated)) {
                 $entryDate = strtotime((string)$latestEntry->updated);
@@ -138,9 +139,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // For Brevo and similar feeds, prefer title only
             $description = !empty($title) ? $title : (!empty($content) ? $content : $summary);
             
-            // Only show status if entry is within 24 hours and not resolved; otherwise show operational
-            $fullText = $title . ' ' . $content . ' ' . $summary;
-            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $fullText)) {
+            // Only show status if entry is within 24 hours, otherwise show operational
+            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
@@ -155,46 +155,30 @@ function parseStatusFeed($feedUrl, $filter = null) {
             if ($status['indicator'] !== 'none' && $status['indicator'] !== 'major' && $status['indicator'] !== 'minor') {
                 $status['description'] = sanitizeFeedText($title);
             }
-        
+        }
         // Check if it's an RSS feed
         elseif (isset($xml->channel->item)) {
-            // Choose the most recent relevant item: prefer the newest matching filter if provided
+            // If filter provided, find matching item
             $latestItem = null;
-            $latestItemTimestamp = 0;
-            foreach ($xml->channel->item as $item) {
-                $itemTitle = isset($item->title) ? (string)$item->title : '';
-                if ($filter !== null && stripos($itemTitle, $filter) === false) {
-                    continue; // skip non-matching items
+            if ($filter !== null) {
+                foreach ($xml->channel->item as $item) {
+                    $itemTitle = isset($item->title) ? (string)$item->title : '';
+                    if (stripos($itemTitle, $filter) !== false) {
+                        $latestItem = $item;
+                        break;
+                    }
                 }
-
-                // Determine item timestamp preference: pubDate > dc:date
-                $itemDateCandidate = null;
-                if (isset($item->pubDate)) {
-                    $itemDateCandidate = strtotime((string)$item->pubDate);
-                } elseif (isset($item->children('http://purl.org/dc/elements/1.1/')->date)) {
-                    $itemDateCandidate = strtotime((string)$item->children('http://purl.org/dc/elements/1.1/')->date);
-                }
-
-                $timestampValue = $itemDateCandidate ? $itemDateCandidate : 0;
-                if ($timestampValue > $latestItemTimestamp) {
-                    $latestItemTimestamp = $timestampValue;
-                    $latestItem = $item;
-                } elseif ($latestItem === null && $filter === null) {
-                    // When no filter, ensure at least the first item is selected even without timestamps
-                    $latestItem = $xml->channel->item[0];
+                // If no matching item, return operational
+                if ($latestItem === null) {
+                    return $status;
                 }
             }
-            // If no matching item found (when filter used), return operational
-            if ($filter !== null && $latestItem === null) {
-                return $status;
-            }
-            // Fallback to first item if none selected
             $latestItem = $latestItem ?? $xml->channel->item[0];
             
             $title = isset($latestItem->title) ? (string)$latestItem->title : '';
             $description = isset($latestItem->description) ? (string)$latestItem->description : '';
             
-            // Get item timestamp (prefer pubDate -> dc:date)
+            // Get item timestamp
             $itemDate = null;
             if (isset($latestItem->pubDate)) {
                 $itemDate = strtotime((string)$latestItem->pubDate);
@@ -205,9 +189,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // Check if item is within 24 hours (86400 seconds)
             $isRecent = ($itemDate && (time() - $itemDate) <= 86400);
             
-            // Only show status if item is within 24 hours and not resolved; otherwise show operational
-            $fullText = $title . ' ' . $description;
-            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $fullText)) {
+            // Only show status if item is within 24 hours, otherwise show operational
+            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
             } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
@@ -235,163 +218,6 @@ function parseStatusFeed($feedUrl, $filter = null) {
             'description' => 'Unable to fetch status'
         ];
     }
-}
-
-/**
- * Parse feed content directly from XML string (for testing/validation)
- */
-function parseStatusFeedFromString($feedContent, $filter = null) {
-    try {
-        libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement');
-        libxml_clear_errors();
-        if ($xml === false) {
-            throw new Exception('Failed to parse XML');
-        }
-
-        // Use the same parsing branch as parseStatusFeed
-        return parseStatusFeedFromXmlObject($xml, $filter);
-    } catch (Exception $e) {
-        return [
-            'indicator' => 'major',
-            'description' => 'Unable to fetch status'
-        ];
-    }
-}
-
-/**
- * Core parsing logic extracted to separate function to avoid duplication
- */
-function parseStatusFeedFromXmlObject($xml, $filter = null) {
-    $status = [
-        'indicator' => 'none',
-        'description' => 'All Systems Operational'
-    ];
-
-    // Atom feed handling
-    if (isset($xml->entry)) {
-        // Choose most recent matching entry
-        $latestEntry = null;
-        $latestEntryTimestamp = 0;
-        foreach ($xml->entry as $entry) {
-            $entryTitle = isset($entry->title) ? (string)$entry->title : '';
-            if ($filter !== null && stripos($entryTitle, $filter) === false) {
-                continue;
-            }
-            $entryDateCandidate = null;
-            if (isset($entry->updated)) {
-                $entryDateCandidate = strtotime((string)$entry->updated);
-            } elseif (isset($entry->published)) {
-                $entryDateCandidate = strtotime((string)$entry->published);
-            }
-            $timestampValue = $entryDateCandidate ? $entryDateCandidate : 0;
-            if ($timestampValue > $latestEntryTimestamp) {
-                $latestEntryTimestamp = $timestampValue;
-                $latestEntry = $entry;
-            }
-        }
-        if ($filter !== null && $latestEntry === null) {
-            return $status;
-        }
-        $latestEntry = $latestEntry ?? $xml->entry[0];
-
-        $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
-        $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
-        $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
-
-        $title = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $title);
-        $content = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $content);
-        $summary = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $summary);
-
-        $entryDate = null;
-        if (isset($latestEntry->updated)) {
-            $entryDate = strtotime((string)$latestEntry->updated);
-        } elseif (isset($latestEntry->published)) {
-            $entryDate = strtotime((string)$latestEntry->published);
-        }
-
-        $isRecent = ($entryDate && (time() - $entryDate) <= 86400);
-
-        $description = !empty($title) ? $title : (!empty($content) ? $content : $summary);
-        if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
-            $status['indicator'] = 'none';
-            $status['description'] = 'All Systems Operational';
-        } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
-            $status['indicator'] = 'major';
-            $status['description'] = sanitizeFeedText($description);
-        } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-            $status['indicator'] = 'minor';
-            $status['description'] = sanitizeFeedText($description);
-        }
-
-        if ($status['indicator'] !== 'none' && $status['indicator'] !== 'major' && $status['indicator'] !== 'minor') {
-            $status['description'] = sanitizeFeedText($title);
-        }
-        if (strlen($status['description']) > 200) {
-            $status['description'] = substr($status['description'], 0, 197) . '...';
-        }
-        return $status;
-    }
-
-    // RSS feed handling (channel->item)
-    if (isset($xml->channel->item)) {
-        $latestItem = null;
-        $latestItemTimestamp = 0;
-        foreach ($xml->channel->item as $item) {
-            $itemTitle = isset($item->title) ? (string)$item->title : '';
-            if ($filter !== null && stripos($itemTitle, $filter) === false) {
-                continue;
-            }
-            $itemDateCandidate = null;
-            if (isset($item->pubDate)) {
-                $itemDateCandidate = strtotime((string)$item->pubDate);
-            } elseif (isset($item->children('http://purl.org/dc/elements/1.1/')->date)) {
-                $itemDateCandidate = strtotime((string)$item->children('http://purl.org/dc/elements/1.1/')->date);
-            }
-            $timestampValue = $itemDateCandidate ? $itemDateCandidate : 0;
-            if ($timestampValue > $latestItemTimestamp) {
-                $latestItemTimestamp = $timestampValue;
-                $latestItem = $item;
-            }
-        }
-        if ($filter !== null && $latestItem === null) {
-            return $status;
-        }
-        $latestItem = $latestItem ?? $xml->channel->item[0];
-
-        $title = isset($latestItem->title) ? (string)$latestItem->title : '';
-        $description = isset($latestItem->description) ? (string)$latestItem->description : '';
-
-        $itemDate = null;
-        if (isset($latestItem->pubDate)) {
-            $itemDate = strtotime((string)$latestItem->pubDate);
-        } elseif (isset($latestItem->children('http://purl.org/dc/elements/1.1/')->date)) {
-            $itemDate = strtotime((string)$latestItem->children('http://purl.org/dc/elements/1.1/')->date);
-        }
-
-        $isRecent = ($itemDate && (time() - $itemDate) <= 86400);
-
-        if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
-            $status['indicator'] = 'none';
-            $status['description'] = 'All Systems Operational';
-        } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
-            $status['indicator'] = 'major';
-            $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
-        } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-            $status['indicator'] = 'minor';
-            $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
-        }
-        if (!preg_match('/operational|resolved|completed|fixed|normal|outage|down|major|critical|offline|degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-            $status['description'] = sanitizeFeedText($title);
-        }
-        if (strlen($status['description']) > 200) {
-            $status['description'] = substr($status['description'], 0, 197) . '...';
-        }
-        return $status;
-    }
-
-    // Default if not Atom or RSS
-    return $status;
 }
 
 /**
