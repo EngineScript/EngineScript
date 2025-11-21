@@ -172,26 +172,8 @@ function getPhpServiceStatus() {
 }
 
 function findActivePhpFpmService() {
-    // Common PHP-FPM service name patterns to check (ordered by likelihood)
-    $php_patterns = [
-        'php8.4-fpm',
-        'php8.3-fpm',
-        'php8.2-fpm',
-        'php8.1-fpm',
-        'php-fpm',
-        'php-fpm8.4',
-        'php84-fpm',
-    ];
-    
-    // Try each pattern
-    foreach ($php_patterns as $service_name) {
-        $status = getSystemServiceStatus($service_name);
-        if ($status === 'active') {
-            return $service_name;
-        }
-    }
-    
-    // Fallback: Use systemctl to find any active PHP-FPM service
+    // Use systemctl to find any active PHP-FPM service
+    // This approach is more flexible and works with any PHP version
     $services_output = SystemCommand::getSystemdServices(); // codacy:ignore - Static utility class pattern
     
     if ($services_output === false || empty($services_output)) {
@@ -222,9 +204,11 @@ function findActivePhpFpmService() {
         $service_name = preg_replace('/\.service$/', '', $service_name);
         
         // Check if it contains both "php" and "fpm" (case insensitive)
+        // This matches: php-fpm, php8.4-fpm, php-fpm8.4, php84-fpm, phpfpm, etc.
         if (stripos($service_name, 'php') !== false && stripos($service_name, 'fpm') !== false) {
             // Validate the service name matches our flexible pattern for PHP-FPM services
-            // Pattern: php + optional version/text + fpm + optional version/text
+            // Pattern allows: php[version]fpm or php-fpm[version] or any combination
+            // Examples: php-fpm, php8.4-fpm, php-fpm8.4, php84-fpm, phpfpm84
             if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service_name)) {
                 // Double-check that it's actually active before returning
                 $status = getSystemServiceStatus($service_name);

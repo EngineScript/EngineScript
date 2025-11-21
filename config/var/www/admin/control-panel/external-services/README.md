@@ -21,13 +21,13 @@ The module is already integrated into the EngineScript admin dashboard:
 
 ```html
 <!-- In index.html -->
-<link rel="stylesheet" href="external-services/external-services.css?v=2025.11.21.05">
-<script type="module" src="external-services/external-services.js?v=2025.11.21.05"></script>
+<link rel="stylesheet" href="external-services/external-services.css?v=2025.11.21.09">
+<script type="module" src="external-services/external-services.js?v=2025.11.21.09"></script>
 ```
 
 ```javascript
 // In dashboard.js
-import { ExternalServicesManager } from './external-services/external-services.js?v=2025.11.21.05';
+import { ExternalServicesManager } from './external-services/external-services.js?v=2025.11.21.09';
 
 class EngineScriptDashboard {
   constructor() {
