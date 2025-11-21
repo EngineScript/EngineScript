@@ -49,7 +49,7 @@ if (in_array($origin_host, $allowed_origins, true) ||
     header('Access-Control-Allow-Origin: null'); // codacy:ignore - CORS security header required
 }
 
-header('Access-Control-Allow-Methods: GET, OPTIONS'); // codacy:ignore - CORS header required
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required
 header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
@@ -343,7 +343,14 @@ switch ($path) {
         // @codacy suppress [require_once statement detected] Module inclusion with __DIR__ constant - hardcoded path, no user input
         require_once __DIR__ . '/external-services/external-services-api.php';
         if ($path === '/external-services/config') {
-            handleExternalServicesConfig();
+            if ($request_method === 'GET' || $request_method === 'OPTIONS') {
+                handleExternalServicesConfig();
+            } elseif ($request_method === 'POST') {
+                handleExternalServicesConfigSave();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']); // codacy:ignore - echo required for JSON API response
+            }
         } elseif ($path === '/external-services/feed') {
             handleStatusFeed();
         }

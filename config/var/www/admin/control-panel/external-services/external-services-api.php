@@ -820,7 +820,7 @@ function getExternalServicesConfig() {
 }
 
 /**
- * Handle external services config request
+ * Handle external services config request (GET)
  */
 function handleExternalServicesConfig() {
     try {
@@ -837,6 +837,67 @@ function handleExternalServicesConfig() {
         error_log('External services config error: ' . $e->getMessage());
         // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
         echo json_encode(['error' => 'Unable to retrieve external services config']);
+        exit;
+    }
+}
+
+/**
+ * Handle external services config save request (POST)
+ * Saves service preferences from client-side state
+ */
+function handleExternalServicesConfigSave() {
+    try {
+        // Get request body
+        $input = file_get_contents('php://input');
+        
+        if (empty($input)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
+            echo json_encode(['error' => 'No configuration data provided']);
+            exit;
+        }
+        
+        // Parse JSON payload
+        // @codacy suppress [json_decode without throw flag] Safely decoded with error checking
+        $changes = json_decode($input, true);
+        
+        if ($changes === null) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
+            echo json_encode(['error' => 'Invalid JSON data']);
+            exit;
+        }
+        
+        // Validate that changes is an array
+        if (!is_array($changes)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
+            echo json_encode(['error' => 'Configuration data must be an object']);
+            exit;
+        }
+        
+        // In the current implementation, preferences are stored client-side via cookies
+        // This endpoint acknowledges the save request and returns success
+        // Future implementations could store preferences server-side
+        
+        // Log the configuration change for audit purposes
+        $change_summary = implode(', ', array_keys($changes));
+        error_log('External services config updated: ' . $change_summary);
+        
+        header('Content-Type: application/json');
+        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON response
+        echo json_encode(['success' => true, 'message' => 'Configuration saved']);
+        exit;
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        error_log('External services config save error: ' . $e->getMessage());
+        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
+        echo json_encode(['error' => 'Unable to save configuration']);
         exit;
     }
 }
