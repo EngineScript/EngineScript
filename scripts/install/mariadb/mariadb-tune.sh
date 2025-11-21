@@ -39,15 +39,15 @@ Environment="_WSREP_NEW_CLUSTER="
 EOF
 
 # Set Memory Variables
-SERVER_MEMORY_TOTAL_45="$(free -m | awk 'NR==2{printf "%d", $2*0.45 }')"
+SERVER_MEMORY_TOTAL_43="$(free -m | awk 'NR==2{printf "%d", $2*0.43 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 
 # Log Buffer Size variable calculation
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    SEDLBSM="32M"
+    SEDLBS="32"
   else
-    SEDLBSM="64M"
+    SEDLBS="64"
 fi
 
 # tmp_table_size & max_heap_table_size
@@ -66,7 +66,7 @@ if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
 fi
 
 # Use the calculated SEDLBSM variable for log buffer size
-sed -i "s|SEDLBSM|${SEDLBSM}|g" /etc/mysql/my.cnf
+sed -i "s|SEDLBS|${SEDLBS}M|g" /etc/mysql/my.cnf
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
@@ -114,10 +114,10 @@ sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/my.cnf
 if [[ "${SERVER_MEMORY_TOTAL_10}" -gt 512 ]]; then
   SERVER_MEMORY_TOTAL_10=512
 fi
-sed -i "s|SEDMYSQL10PERCENT|${SERVER_MEMORY_TOTAL_10}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL09PERCENT|${SERVER_MEMORY_TOTAL_09}M|g" /etc/mysql/my.cnf
 
 sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/my.cnf
-sed -i "s|SEDMYSQL45PERCENT|${SERVER_MEMORY_TOTAL_45}|g" /etc/mysql/my.cnf
+sed -i "s|SEDMYSQL43PERCENT|${SERVER_MEMORY_TOTAL_43}M|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/my.cnf
 
 # IOPS Benchmark

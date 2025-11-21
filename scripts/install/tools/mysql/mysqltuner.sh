@@ -24,6 +24,7 @@ wget -O /usr/local/bin/mysqltuner/mysqltuner.pl https://raw.githubusercontent.co
 wget -O /usr/local/bin/mysqltuner/basic_passwords.txt https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt --no-check-certificate
 wget -O /usr/local/bin/mysqltuner/vulnerabilities.csv https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv --no-check-certificate
 chmod +x /usr/local/bin/mysqltuner/mysqltuner.pl
+chmod 644 /usr/local/bin/mysqltuner/vulnerabilities.csv
 
 echo ""
 echo ""
