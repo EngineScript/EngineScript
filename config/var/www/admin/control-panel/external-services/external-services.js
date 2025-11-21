@@ -138,9 +138,6 @@ export class ExternalServicesManager {
 
         this.container.appendChild(categoryContainer);
       }
-      
-      // Enable drag and drop for service cards
-      this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
       this.container.innerHTML = "";
