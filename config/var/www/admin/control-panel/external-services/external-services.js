@@ -447,6 +447,8 @@ export class ExternalServicesManager {
     statusSpan.appendChild(contentNode);
     
     const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "static", headerDiv);
+    // Add success status class for green border like operational services
+    serviceLink.classList.add('status-success');
     container.appendChild(serviceLink);
   }
 

@@ -143,21 +143,27 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // Check for resolved/completed keywords which indicate the incident is over
             $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
             
+            // If not recent or if resolved, no incident
             if (!$isRecent || $isResolved) {
-                // No active incident
-                $status['indicator'] = 'none';
-                $status['description'] = 'All Systems Operational';
+                return [
+                    'indicator' => 'none',
+                    'description' => 'All Systems Operational'
+                ];
             }
+            
+            // Check severity of active incident
             if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                // Active incident detected - check severity
-                $status['indicator'] = 'major';
-                $status['description'] = 'Major Outage';
+                return [
+                    'indicator' => 'major',
+                    'description' => 'Major Outage'
+                ];
             }
-            if ($isRecent && !$isResolved && !preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                // Any other active incident is considered minor
-                $status['indicator'] = 'minor';
-                $status['description'] = 'Partially Degraded Service';
-            }
+            
+            // Any other active incident is considered minor
+            return [
+                'indicator' => 'minor',
+                'description' => 'Partially Degraded Service'
+            ];
         }
         // Check if it's an RSS feed
         elseif (isset($xml->channel->item)) {
@@ -199,26 +205,27 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // Check for resolved/completed keywords which indicate the incident is over
             $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
             
+            // If not recent or if resolved, no incident
             if (!$isRecent || $isResolved) {
-                // No active incident
-                $status['indicator'] = 'none';
-                $status['description'] = 'All Systems Operational';
+                return [
+                    'indicator' => 'none',
+                    'description' => 'All Systems Operational'
+                ];
             }
+            
+            // Check severity of active incident
             if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                // Active incident detected - check severity
-                $status['indicator'] = 'major';
-                $status['description'] = 'Major Outage';
+                return [
+                    'indicator' => 'major',
+                    'description' => 'Major Outage'
+                ];
             }
-            if ($isRecent && !$isResolved && !preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                // Any other active incident is considered minor
-                $status['indicator'] = 'minor';
-                $status['description'] = 'Partially Degraded Service';
-            }
-        }
-        
-        // Truncate long descriptions
-        if (strlen($status['description']) > 200) {
-            $status['description'] = substr($status['description'], 0, 197) . '...';
+            
+            // Any other active incident is considered minor
+            return [
+                'indicator' => 'minor',
+                'description' => 'Partially Degraded Service'
+            ];
         }
         
         return $status;
