@@ -136,24 +136,27 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // Check if entry is within 24 hours (86400 seconds)
             $isRecent = ($entryDate && (time() - $entryDate) <= 86400);
             
-            // For Brevo and similar feeds, prefer title only
-            $description = !empty($title) ? $title : (!empty($content) ? $content : $summary);
+            // Combine title, content, summary for better matching
+            $fullText = $title . ' ' . $content . ' ' . $summary;
             
-            // Only show status if entry is within 24 hours, otherwise show operational
-            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+            // Only show incidents if recent AND active (not resolved/completed)
+            // Check for resolved/completed keywords which indicate the incident is over
+            $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
+            
+            if (!$isRecent || $isResolved) {
+                // No active incident
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
-            } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
-                $status['indicator'] = 'major';
-                $status['description'] = sanitizeFeedText($description);
-            } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-                $status['indicator'] = 'minor';
-                $status['description'] = sanitizeFeedText($description);
-            }
-            
-            // Default: show title as-is if no patterns match
-            if ($status['indicator'] !== 'none' && $status['indicator'] !== 'major' && $status['indicator'] !== 'minor') {
-                $status['description'] = sanitizeFeedText($title);
+            } else {
+                // Active incident detected - check severity
+                if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+                    $status['indicator'] = 'major';
+                    $status['description'] = 'Major Outage';
+                } else {
+                    // Any other active incident is considered minor
+                    $status['indicator'] = 'minor';
+                    $status['description'] = 'Partially Degraded Service';
+                }
             }
         }
         // Check if it's an RSS feed
@@ -189,19 +192,27 @@ function parseStatusFeed($feedUrl, $filter = null) {
             // Check if item is within 24 hours (86400 seconds)
             $isRecent = ($itemDate && (time() - $itemDate) <= 86400);
             
-            // Only show status if item is within 24 hours, otherwise show operational
-            if (!$isRecent || preg_match('/operational|resolved|completed|fixed|normal/i', $title)) {
+            // Combine title and description for better matching
+            $fullText = $title . ' ' . $description;
+            
+            // Only show incidents if recent AND active (not resolved/completed)
+            // Check for resolved/completed keywords which indicate the incident is over
+            $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
+            
+            if (!$isRecent || $isResolved) {
+                // No active incident
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
-            } elseif (preg_match('/outage|down|major|critical|offline/i', $title)) {
-                $status['indicator'] = 'major';
-                $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
-            } elseif (preg_match('/degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-                $status['indicator'] = 'minor';
-                $status['description'] = sanitizeFeedText(!empty($description) ? $description : $title);
-            }
-            if (!preg_match('/operational|resolved|completed|fixed|normal|outage|down|major|critical|offline|degraded|issue|problem|investigating|identified|monitoring/i', $title)) {
-                $status['description'] = sanitizeFeedText($title);
+            } else {
+                // Active incident detected - check severity
+                if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+                    $status['indicator'] = 'major';
+                    $status['description'] = 'Major Outage';
+                } else {
+                    // Any other active incident is considered minor
+                    $status['indicator'] = 'minor';
+                    $status['description'] = 'Partially Degraded Service';
+                }
             }
         }
         
@@ -294,19 +305,37 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
                 'description' => 'All Systems Operational'
             ];
         }
+        
+        // Check if incident is resolved
+        $fullText = $title . ' ' . $description;
+        $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $fullText);
+        
+        if ($isResolved) {
+            return [
+                'indicator' => 'none',
+                'description' => 'All Systems Operational'
+            ];
+        }
 
-        // Determine severity
-        $indicator = 'minor';
-        if (isset($latestIncident['severity'])) {
+        // Determine severity - check for major keywords first
+        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $fullText)) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Major Outage'
+            ];
+        } elseif (isset($latestIncident['severity'])) {
             $severity = strtolower($latestIncident['severity']);
             if (in_array($severity, ['high', 'critical'])) {
-                $indicator = 'major';
+                return [
+                    'indicator' => 'major',
+                    'description' => 'Major Outage'
+                ];
             }
         }
         
         return [
-            'indicator' => $indicator,
-            'description' => sanitizeFeedText($title)
+            'indicator' => 'minor',
+            'description' => 'Partially Degraded Service'
         ];
         
     } catch (Exception $e) {
@@ -361,18 +390,28 @@ function parseWistiaSummary($apiUrl) {
             $latestIncident = reset($data['activeIncidents']);
             $name = isset($latestIncident['name']) ? $latestIncident['name'] : 'Service Issue';
             
+            // Check for major outage keywords
+            if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $name)) {
+                return [
+                    'indicator' => 'major',
+                    'description' => 'Major Outage'
+                ];
+            }
+            
             // Determine severity from impact
-            $indicator = 'minor';
             if (isset($latestIncident['impact'])) {
                 $impact = strtoupper($latestIncident['impact']);
                 if (in_array($impact, ['MAJOROUTAGE', 'CRITICAL'])) {
-                    $indicator = 'major';
+                    return [
+                        'indicator' => 'major',
+                        'description' => 'Major Outage'
+                    ];
                 }
             }
             
             return [
-                'indicator' => $indicator,
-                'description' => sanitizeFeedText($name)
+                'indicator' => 'minor',
+                'description' => 'Partially Degraded Service'
             ];
         }
         
@@ -380,7 +419,7 @@ function parseWistiaSummary($apiUrl) {
         if ($pageStatus === 'HASISSUES') {
             return [
                 'indicator' => 'minor',
-                'description' => 'Service Experiencing Issues'
+                'description' => 'Partially Degraded Service'
             ];
         }
         
@@ -441,15 +480,25 @@ function parseVultrAlerts($apiUrl) {
         $latestAlert = reset($ongoingAlerts);
         $subject = isset($latestAlert['subject']) ? $latestAlert['subject'] : 'Service Alert';
         
-        // Determine severity from subject
-        $indicator = 'minor';
-        if (preg_match('/outage|down|major|critical|offline/i', $subject)) {
-            $indicator = 'major';
+        // Check for major outage keywords
+        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $subject)) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Major Outage'
+            ];
+        }
+        
+        // Check for other severe keywords
+        if (preg_match('/outage|down|critical|offline/i', $subject)) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Major Outage'
+            ];
         }
         
         return [
-            'indicator' => $indicator,
-            'description' => sanitizeFeedText($subject)
+            'indicator' => 'minor',
+            'description' => 'Partially Degraded Service'
         ];
         
     } catch (Exception $e) {
@@ -506,15 +555,25 @@ function parsePostmarkNotices($apiUrl) {
         $latestNotice = reset($currentUnplanned);
         $title = isset($latestNotice['title']) ? $latestNotice['title'] : 'Unplanned Incident';
         
-        // Determine severity from title
-        $indicator = 'minor';
-        if (preg_match('/outage|down|major|critical|offline/i', $title)) {
-            $indicator = 'major';
+        // Check for major outage keywords
+        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $title)) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Major Outage'
+            ];
+        }
+        
+        // Check for other severe keywords
+        if (preg_match('/outage|down|critical|offline/i', $title)) {
+            return [
+                'indicator' => 'major',
+                'description' => 'Major Outage'
+            ];
         }
         
         return [
-            'indicator' => $indicator,
-            'description' => sanitizeFeedText($title)
+            'indicator' => 'minor',
+            'description' => 'Partially Degraded Service'
         ];
         
     } catch (Exception $e) {
@@ -557,9 +616,25 @@ function parseStatusPageAPI($apiUrl) {
         $indicator = isset($statusData['indicator']) ? $statusData['indicator'] : 'none';
         $description = isset($statusData['description']) ? $statusData['description'] : 'All Systems Operational';
         
+        // Standardize status messages
+        if ($indicator === 'none' || $indicator === 'operational') {
+            $standardDescription = 'All Systems Operational';
+        } elseif ($indicator === 'major' || $indicator === 'critical') {
+            $standardDescription = 'Major Outage';
+        } else {
+            // Check description for major keywords
+            if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $description)) {
+                $indicator = 'major';
+                $standardDescription = 'Major Outage';
+            } else {
+                $indicator = 'minor';
+                $standardDescription = 'Partially Degraded Service';
+            }
+        }
+        
         return [
             'indicator' => $indicator,
-            'description' => sanitizeFeedText($description)
+            'description' => $standardDescription
         ];
         
     } catch (Exception $e) {
