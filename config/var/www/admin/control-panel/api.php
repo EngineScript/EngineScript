@@ -461,12 +461,13 @@ function handleAlerts() {
 function handleFileManagerStatus() {
     try {
         // Load EngineScript variables to get current version
+        $current_version = 'Unknown';
         if (file_exists('/usr/local/bin/enginescript/enginescript-variables.txt')) { // codacy:ignore - file_exists() required for version checking in standalone service
             $content = file_get_contents('/usr/local/bin/enginescript/enginescript-variables.txt'); // codacy:ignore - file_get_contents() required for version reading in standalone service
             preg_match('/TINYFILEMANAGER_VER="([^"]*)"/', $content, $matches);
-            $current_version = isset($matches[1]) ? $matches[1] : '2.6';
-        } else {
-            $current_version = '2.6';
+            if (isset($matches[1]) && !empty($matches[1])) {
+                $current_version = $matches[1];
+            }
         }
         
         $tfm_file = '/var/www/admin/enginescript/tinyfilemanager/tinyfilemanager.php';

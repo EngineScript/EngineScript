@@ -147,16 +147,16 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 // No active incident
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
-            } else {
+            }
+            if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
                 // Active incident detected - check severity
-                if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                    $status['indicator'] = 'major';
-                    $status['description'] = 'Major Outage';
-                } else {
-                    // Any other active incident is considered minor
-                    $status['indicator'] = 'minor';
-                    $status['description'] = 'Partially Degraded Service';
-                }
+                $status['indicator'] = 'major';
+                $status['description'] = 'Major Outage';
+            }
+            if ($isRecent && !$isResolved && !preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+                // Any other active incident is considered minor
+                $status['indicator'] = 'minor';
+                $status['description'] = 'Partially Degraded Service';
             }
         }
         // Check if it's an RSS feed
@@ -203,16 +203,16 @@ function parseStatusFeed($feedUrl, $filter = null) {
                 // No active incident
                 $status['indicator'] = 'none';
                 $status['description'] = 'All Systems Operational';
-            } else {
+            }
+            if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
                 // Active incident detected - check severity
-                if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
-                    $status['indicator'] = 'major';
-                    $status['description'] = 'Major Outage';
-                } else {
-                    // Any other active incident is considered minor
-                    $status['indicator'] = 'minor';
-                    $status['description'] = 'Partially Degraded Service';
-                }
+                $status['indicator'] = 'major';
+                $status['description'] = 'Major Outage';
+            }
+            if ($isRecent && !$isResolved && !preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+                // Any other active incident is considered minor
+                $status['indicator'] = 'minor';
+                $status['description'] = 'Partially Degraded Service';
             }
         }
         

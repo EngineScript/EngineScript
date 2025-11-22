@@ -50,9 +50,6 @@ export class ExternalServicesManager {
       let preferences = this.loadServicePreferences() || {};
       let serviceOrder = this.getServiceOrder();
       
-      // Start fetching API config asynchronously (don't block rendering)
-      const servicesPromise = this.fetchAvailableServices();
-      
       // Use all services from definitions immediately for instant rendering
       let services = {};
       Object.keys(serviceDefinitions).forEach(key => {
