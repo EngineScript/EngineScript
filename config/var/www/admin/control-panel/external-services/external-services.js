@@ -46,12 +46,18 @@ export class ExternalServicesManager {
       // Get service definitions first (always available)
       const serviceDefinitions = this.getServiceDefinitions();
       
-      // Try to fetch from API, but fall back to definitions if it fails
-      const services = await this.fetchAvailableServices();
-      
       // Load preferences from cookie (client-side only)
       let preferences = this.loadServicePreferences() || {};
       let serviceOrder = this.getServiceOrder();
+      
+      // Start fetching API config asynchronously (don't block rendering)
+      const servicesPromise = this.fetchAvailableServices();
+      
+      // Use all services from definitions immediately for instant rendering
+      let services = {};
+      Object.keys(serviceDefinitions).forEach(key => {
+        services[key] = true;
+      });
 
       // Render settings panel in dedicated container
       this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions);
