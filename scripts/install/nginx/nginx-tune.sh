@@ -114,8 +114,8 @@ if [[ "${INSTALL_HTTP3}" = 1 ]]; then
   sed -i "s|#quic_retry on|quic_retry on|g" /etc/nginx/nginx.conf
   sed -i "s|#add_header Alt-Svc|add_header Alt-Svc|g" /etc/nginx/globals/response-headers.conf
   sed -i "s|#add_header x-quic|add_header x-quic|g" /etc/nginx/globals/response-headers.conf
-  sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/globals/admin.localhost.conf"
-  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/globals/admin.localhost.conf"
+  sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/admin/admin.localhost.conf"
+  sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/admin/admin.localhost.conf"
 fi
 
 # HTTP3 - QUIC GSO (requires hardware support check)
