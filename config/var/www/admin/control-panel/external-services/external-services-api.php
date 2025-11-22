@@ -232,9 +232,14 @@ function parseStatusFeed($feedUrl, $filter = null) {
 }
 
 /**
- * Parse Google Workspace incidents JSON API
+ * Unified JSON API parser with configurable structure mapping
+ * Handles various JSON API formats with standardized incident detection
+ * 
+ * @param string $apiUrl The API endpoint URL
+ * @param array $config Configuration for parsing this specific API format
+ * @return array Status information with indicator and description
  */
-function parseGoogleWorkspaceIncidents($apiUrl) {
+function parseJsonAPI($apiUrl, $config) {
     try {
         $context = stream_context_create([
             'http' => [
@@ -253,389 +258,176 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
         }
         
         $data = json_decode($response, true);
-        if (!$data || empty($data)) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Get the first incident (most recent)
-        $latestIncident = reset($data);
-        
-        // Extract title from external_desc (format: **Title:**\nActual title text)
-        $description = isset($latestIncident['external_desc']) ? $latestIncident['external_desc'] : '';
-        
-        // Parse title - extract text after **Title:** marker
-        $title = '';
-        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
-            $title = trim($matches[1]);
-        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
-            // Fallback: title on same line
-            $title = trim($matches[1]);
-        }
-        if (empty($title)) {
-            // No title marker, use first line
-            $title = strtok($description, "\n");
-        }
-        
-        if (empty($title)) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Determine recency (if timestamp available) and severity
-        $incidentDate = null;
-        if (isset($latestIncident['start_time'])) {
-            $incidentDate = strtotime($latestIncident['start_time']);
-        } elseif (isset($latestIncident['created_at'])) {
-            $incidentDate = strtotime($latestIncident['created_at']);
-        } elseif (isset($latestIncident['updated_at'])) {
-            $incidentDate = strtotime($latestIncident['updated_at']);
-        } elseif (isset($latestIncident['time'])) {
-            $incidentDate = strtotime($latestIncident['time']);
-        }
-
-        // If incident has a timestamp and it's older than 24 hours, treat as operational
-        if ($incidentDate && (time() - $incidentDate) > 86400) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Check if incident is resolved
-        $fullText = $title . ' ' . $description;
-        $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $fullText);
-        
-        if ($isResolved) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-
-        // Determine severity - check for major keywords first
-        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $fullText)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
-        } elseif (isset($latestIncident['severity'])) {
-            $severity = strtolower($latestIncident['severity']);
-            if (in_array($severity, ['high', 'critical'])) {
-                return [
-                    'indicator' => 'major',
-                    'description' => 'Major Outage'
-                ];
-            }
-        }
-        
-        return [
-            'indicator' => 'minor',
-            'description' => 'Partially Degraded Service'
-        ];
-        
-    } catch (Exception $e) {
-        return [
-            'indicator' => 'major',
-            'description' => 'Unable to fetch status'
-        ];
-    }
-}
-
-/**
- * Parse Wistia summary JSON API
- */
-function parseWistiaSummary($apiUrl) {
-    try {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'EngineScript Admin Dashboard'
-            ]
-        ]);
-        
-        $response = file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
-        }
-        
-        $data = json_decode($response, true);
-        if (!$data || !isset($data['page'])) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
-        }
-        
-        // Check page status
-        $pageStatus = isset($data['page']['status']) ? strtoupper($data['page']['status']) : 'UNKNOWN';
-        
-        // If no issues, return operational
-        if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Check for active incidents
-        if (isset($data['activeIncidents']) && !empty($data['activeIncidents'])) {
-            $latestIncident = reset($data['activeIncidents']);
-            $name = isset($latestIncident['name']) ? $latestIncident['name'] : 'Service Issue';
-            
-            // Check for major outage keywords
-            if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $name)) {
-                return [
-                    'indicator' => 'major',
-                    'description' => 'Major Outage'
-                ];
-            }
-            
-            // Determine severity from impact
-            if (isset($latestIncident['impact'])) {
-                $impact = strtoupper($latestIncident['impact']);
-                if (in_array($impact, ['MAJOROUTAGE', 'CRITICAL'])) {
-                    return [
-                        'indicator' => 'major',
-                        'description' => 'Major Outage'
-                    ];
-                }
-            }
-            
-            return [
-                'indicator' => 'minor',
-                'description' => 'Partially Degraded Service'
-            ];
-        }
-        
-        // Has issues but no active incidents listed
-        if ($pageStatus === 'HASISSUES') {
-            return [
-                'indicator' => 'minor',
-                'description' => 'Partially Degraded Service'
-            ];
-        }
-        
-        return [
-            'indicator' => 'none',
-            'description' => 'All Systems Operational'
-        ];
-        
-    } catch (Exception $e) {
-        return [
-            'indicator' => 'major',
-            'description' => 'Unable to fetch status'
-        ];
-    }
-}
-
-/**
- * Parse Vultr alerts JSON API
- */
-function parseVultrAlerts($apiUrl) {
-    try {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'EngineScript Admin Dashboard'
-            ]
-        ]);
-        
-        $response = file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
-        }
-        
-        $data = json_decode($response, true);
-        if (!$data || !isset($data['service_alerts'])) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Check for ongoing alerts only
-        $ongoingAlerts = array_filter($data['service_alerts'], function($alert) {
-            return isset($alert['status']) && $alert['status'] === 'ongoing';
-        });
-        
-        if (empty($ongoingAlerts)) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Get the most recent ongoing alert
-        $latestAlert = reset($ongoingAlerts);
-        $subject = isset($latestAlert['subject']) ? $latestAlert['subject'] : 'Service Alert';
-        
-        // Check for major outage keywords
-        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $subject)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
-        }
-        
-        // Check for other severe keywords
-        if (preg_match('/outage|down|critical|offline/i', $subject)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
-        }
-        
-        return [
-            'indicator' => 'minor',
-            'description' => 'Partially Degraded Service'
-        ];
-        
-    } catch (Exception $e) {
-        return [
-            'indicator' => 'major',
-            'description' => 'Unable to fetch status'
-        ];
-    }
-}
-
-/**
- * Parse Postmark notices API
- */
-function parsePostmarkNotices($apiUrl) {
-    try {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'EngineScript Admin Dashboard'
-            ]
-        ]);
-        
-        $response = file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
-        }
-        
-        $data = json_decode($response, true);
-        if (!$data || !isset($data['notices'])) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Filter for current unplanned notices
-        $currentUnplanned = array_filter($data['notices'], function($notice) {
-            $isUnplanned = isset($notice['type']) && $notice['type'] === 'unplanned';
-            $isPresent = isset($notice['timeline_state']) && $notice['timeline_state'] === 'present';
-            return $isUnplanned && $isPresent;
-        });
-        
-        if (empty($currentUnplanned)) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
-        }
-        
-        // Get the most recent current unplanned notice
-        $latestNotice = reset($currentUnplanned);
-        $title = isset($latestNotice['title']) ? $latestNotice['title'] : 'Unplanned Incident';
-        
-        // Check for major outage keywords
-        if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $title)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
-        }
-        
-        // Check for other severe keywords
-        if (preg_match('/outage|down|critical|offline/i', $title)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
-        }
-        
-        return [
-            'indicator' => 'minor',
-            'description' => 'Partially Degraded Service'
-        ];
-        
-    } catch (Exception $e) {
-        return [
-            'indicator' => 'major',
-            'description' => 'Unable to fetch status'
-        ];
-    }
-}
-
-/**
- * Parse standard StatusPage.io JSON API
- */
-function parseStatusPageAPI($apiUrl) {
-    try {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'EngineScript Admin Dashboard'
-            ]
-        ]);
-        
-        $response = file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
-        }
-        
-        $data = json_decode($response, true);
-        if (!$data || !isset($data['status'])) {
+        if (!$data) {
             return [
                 'indicator' => 'major',
                 'description' => 'Unable to parse status'
             ];
         }
         
-        $statusData = $data['status'];
-        $indicator = isset($statusData['indicator']) ? $statusData['indicator'] : 'none';
-        $description = isset($statusData['description']) ? $statusData['description'] : 'All Systems Operational';
+        // Check if data structure is valid
+        if (isset($config['required_field']) && !isset($data[$config['required_field']])) {
+            // Required field missing - treat as operational or error based on config
+            return isset($config['missing_is_operational']) && $config['missing_is_operational']
+                ? ['indicator' => 'none', 'description' => 'All Systems Operational']
+                : ['indicator' => 'major', 'description' => 'Unable to fetch status'];
+        }
         
-        // Standardize status messages
-        if ($indicator === 'none' || $indicator === 'operational') {
-            $standardDescription = 'All Systems Operational';
-        } elseif ($indicator === 'major' || $indicator === 'critical') {
-            $standardDescription = 'Major Outage';
-        } else {
-            // Check description for major keywords
-            if (preg_match('/\b(major\s+(downtime|outage)|major\s+incident)\b/i', $description)) {
-                $indicator = 'major';
-                $standardDescription = 'Major Outage';
+        // Handle direct status indicator APIs (like StatusPage.io)
+        if (isset($config['type']) && $config['type'] === 'direct_status') {
+            $statusPath = explode('.', $config['status_path']);
+            $statusData = $data;
+            foreach ($statusPath as $key) {
+                if (!isset($statusData[$key])) {
+                    return ['indicator' => 'major', 'description' => 'Unable to parse status'];
+                }
+                $statusData = $statusData[$key];
+            }
+            
+            $indicator = isset($statusData['indicator']) ? $statusData['indicator'] : 'none';
+            $description = isset($statusData['description']) ? $statusData['description'] : 'All Systems Operational';
+            
+            // Standardize indicator
+            if ($indicator === 'none' || $indicator === 'operational') {
+                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            } elseif ($indicator === 'major' || $indicator === 'critical') {
+                return ['indicator' => 'major', 'description' => 'Major Outage'];
             } else {
-                $indicator = 'minor';
-                $standardDescription = 'Partially Degraded Service';
+                return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
             }
         }
         
-        return [
-            'indicator' => $indicator,
-            'description' => $standardDescription
-        ];
+        // Handle page status APIs (like Wistia)
+        if (isset($config['type']) && $config['type'] === 'page_status') {
+            $pageStatus = isset($data[$config['page_path']]['status']) 
+                ? strtoupper($data[$config['page_path']]['status']) 
+                : 'UNKNOWN';
+            
+            if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
+                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            }
+            
+            // Check for active incidents
+            if (isset($data[$config['incidents_path']]) && !empty($data[$config['incidents_path']])) {
+                $latestIncident = reset($data[$config['incidents_path']]);
+                $title = isset($latestIncident[$config['title_field']]) ? $latestIncident[$config['title_field']] : '';
+                
+                if (preg_match('/outage|down|major|critical|offline/i', $title)) {
+                    return ['indicator' => 'major', 'description' => 'Major Outage'];
+                }
+                
+                // Check severity field if configured
+                if (isset($config['severity_field']) && isset($latestIncident[$config['severity_field']])) {
+                    $severity = strtoupper($latestIncident[$config['severity_field']]);
+                    if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'])) {
+                        return ['indicator' => 'major', 'description' => 'Major Outage'];
+                    }
+                }
+                
+                return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+            }
+            
+            if ($pageStatus === 'HASISSUES') {
+                return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+            }
+            
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+        
+        // Handle incident list APIs (Vultr, Postmark, Google Workspace)
+        $incidents = $data;
+        
+        // Navigate to incidents array if path specified
+        if (isset($config['incidents_path'])) {
+            $path = explode('.', $config['incidents_path']);
+            foreach ($path as $key) {
+                if (!isset($incidents[$key])) {
+                    return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+                }
+                $incidents = $incidents[$key];
+            }
+        }
+        
+        if (empty($incidents)) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+        
+        // Filter incidents based on status field
+        if (isset($config['filter_field']) && isset($config['filter_value'])) {
+            $filteredIncidents = array_filter($incidents, function($incident) use ($config) {
+                if (is_array($config['filter_value'])) {
+                    foreach ($config['filter_value'] as $field => $value) {
+                        if (!isset($incident[$field]) || $incident[$field] !== $value) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                return isset($incident[$config['filter_field']]) && $incident[$config['filter_field']] === $config['filter_value'];
+            });
+            
+            if (empty($filteredIncidents)) {
+                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            }
+            
+            $incidents = $filteredIncidents;
+        }
+        
+        // Get latest incident
+        $latestIncident = reset($incidents);
+        
+        // Extract title with custom parser if provided
+        if (isset($config['title_parser']) && is_callable($config['title_parser'])) {
+            $title = $config['title_parser']($latestIncident);
+        } else {
+            $title = isset($latestIncident[$config['title_field']]) ? $latestIncident[$config['title_field']] : '';
+        }
+        
+        // Get description field if specified
+        $description = '';
+        if (isset($config['description_field']) && isset($latestIncident[$config['description_field']])) {
+            $description = $latestIncident[$config['description_field']];
+        }
+        
+        if (empty($title)) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+        
+        // Check recency if timestamp field configured
+        if (isset($config['timestamp_fields'])) {
+            $incidentDate = null;
+            foreach ($config['timestamp_fields'] as $field) {
+                if (isset($latestIncident[$field])) {
+                    $incidentDate = strtotime($latestIncident[$field]);
+                    break;
+                }
+            }
+            
+            if ($incidentDate && (time() - $incidentDate) > 86400) {
+                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            }
+        }
+        
+        // Check if resolved
+        $fullText = $title . ' ' . $description;
+        if (preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $fullText)) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+        
+        // Determine severity - check keywords first
+        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+            return ['indicator' => 'major', 'description' => 'Major Outage'];
+        }
+        
+        // Check severity field if configured
+        if (isset($config['severity_field']) && isset($latestIncident[$config['severity_field']])) {
+            $severity = strtolower($latestIncident[$config['severity_field']]);
+            if (in_array($severity, ['high', 'critical', 'major'])) {
+                return ['indicator' => 'major', 'description' => 'Major Outage'];
+            }
+        }
+        
+        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
         
     } catch (Exception $e) {
         return [
@@ -643,6 +435,84 @@ function parseStatusPageAPI($apiUrl) {
             'description' => 'Unable to fetch status'
         ];
     }
+}
+
+/**
+ * Parse Google Workspace incidents JSON API
+ * Custom title parser for Google's unique format
+ */
+function parseGoogleWorkspaceIncidents($apiUrl) {
+    return parseJsonAPI($apiUrl, [
+        'title_field' => 'external_desc',
+        'description_field' => 'external_desc',
+        'severity_field' => 'severity',
+        'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
+        'missing_is_operational' => true,
+        'title_parser' => function($incident) {
+            $description = isset($incident['external_desc']) ? $incident['external_desc'] : '';
+            
+            // Parse title - extract text after **Title:** marker
+            if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
+                return trim($matches[1]);
+            } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
+                return trim($matches[1]);
+            }
+            
+            // No title marker, use first line
+            return strtok($description, "\n");
+        }
+    ]);
+}
+
+/**
+ * Parse Wistia summary JSON API
+ */
+function parseWistiaSummary($apiUrl) {
+    return parseJsonAPI($apiUrl, [
+        'type' => 'page_status',
+        'page_path' => 'page',
+        'incidents_path' => 'activeIncidents',
+        'title_field' => 'name',
+        'severity_field' => 'impact',
+        'required_field' => 'page'
+    ]);
+}
+
+/**
+ * Parse Vultr alerts JSON API
+ */
+function parseVultrAlerts($apiUrl) {
+    return parseJsonAPI($apiUrl, [
+        'incidents_path' => 'service_alerts',
+        'title_field' => 'subject',
+        'filter_field' => 'status',
+        'filter_value' => 'ongoing',
+        'missing_is_operational' => true
+    ]);
+}
+
+/**
+ * Parse Postmark notices API
+ */
+function parsePostmarkNotices($apiUrl) {
+    return parseJsonAPI($apiUrl, [
+        'incidents_path' => 'notices',
+        'title_field' => 'title',
+        'filter_field' => 'multiple',
+        'filter_value' => ['type' => 'unplanned', 'timeline_state' => 'present'],
+        'missing_is_operational' => true
+    ]);
+}
+
+/**
+ * Parse standard StatusPage.io JSON API
+ */
+function parseStatusPageAPI($apiUrl) {
+    return parseJsonAPI($apiUrl, [
+        'type' => 'direct_status',
+        'status_path' => 'status',
+        'required_field' => 'status'
+    ]);
 }
 
 /**
