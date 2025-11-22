@@ -290,11 +290,11 @@ function parseJsonAPI($apiUrl, $config) {
             // Standardize indicator
             if ($indicator === 'none' || $indicator === 'operational') {
                 return ['indicator' => 'none', 'description' => 'All Systems Operational'];
-            } elseif ($indicator === 'major' || $indicator === 'critical') {
-                return ['indicator' => 'major', 'description' => 'Major Outage'];
-            } else {
-                return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
             }
+            if ($indicator === 'major' || $indicator === 'critical') {
+                return ['indicator' => 'major', 'description' => 'Major Outage'];
+            }
+            return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
         }
         
         // Handle page status APIs (like Wistia)
