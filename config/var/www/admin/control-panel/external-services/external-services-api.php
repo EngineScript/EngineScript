@@ -386,7 +386,8 @@ function parseJsonAPI($apiUrl, $config) {
         // Extract title with custom parser if provided
         if (isset($config['title_parser']) && is_callable($config['title_parser'])) {
             $title = $config['title_parser']($latestIncident);
-        } else {
+        }
+        if (!isset($title) || empty($title)) {
             $title = isset($latestIncident[$config['title_field']]) ? $latestIncident[$config['title_field']] : '';
         }
         
