@@ -42,12 +42,12 @@ EOF
 SERVER_MEMORY_TOTAL_43="$(free -m | awk 'NR==2{printf "%d", $2*0.43 }')"
 SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
 
-# Log Buffer Size variable calculation
-if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
-  then
-    SEDLBS="32"
-  else
-    SEDLBS="64"
+# Log Buffer Size variable calculation (MB)
+# Choose a sensible innodb_log_buffer_size based on memory
+if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]]; then
+  SEDLBS="32"
+else
+  SEDLBS="64"
 fi
 
 # tmp_table_size & max_heap_table_size
@@ -58,14 +58,7 @@ sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
 # Scales to be near the MariaDB default value on a 4GB server
 sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/my.cnf
 
-if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
-  then
-    sed -i "s|SEDLBS|32|g" /etc/mysql/my.cnf
-  else
-    sed -i "s|SEDLBS|64|g" /etc/mysql/my.cnf
-fi
-
-# Use the calculated SEDLBSM variable for log buffer size
+# Use the calculated SEDLBS variable for log buffer size
 sed -i "s|SEDLBS|${SEDLBS}M|g" /etc/mysql/my.cnf
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
