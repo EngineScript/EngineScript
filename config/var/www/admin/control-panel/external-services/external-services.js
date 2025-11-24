@@ -14,6 +14,11 @@ export class ExternalServicesManager {
     this.serviceCache = new Map();
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
     this.initialized = false; // Track if services have been loaded (lazy loading)
+    
+    // Limits concurrent requests to prevent overwhelming the server/browser
+    this.maxConcurrentRequests = 6;
+    this.activeRequests = 0;
+    this.requestQueue = [];
   }
 
   /**
@@ -509,33 +514,75 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Fetch data with timeout and caching support
+   * Queue a request with concurrency limiting
+   * Prevents overwhelming browser/server with too many concurrent requests
+   * @param {Function} requestFn - Async function that performs the actual request
+   * @returns {Promise} - Resolves when request completes
+   */
+  async queueRequest(requestFn) {
+    return new Promise((resolve, reject) => {
+      const executeRequest = async () => {
+        this.activeRequests++;
+        try {
+          const result = await requestFn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        } finally {
+          this.activeRequests--;
+          this.processQueue();
+        }
+      };
+
+      if (this.activeRequests < this.maxConcurrentRequests) {
+        executeRequest();
+      } else {
+        this.requestQueue.push(executeRequest);
+      }
+    });
+  }
+
+  /**
+   * Process queued requests when a slot becomes available
+   */
+  processQueue() {
+    while (this.requestQueue.length > 0 && this.activeRequests < this.maxConcurrentRequests) {
+      const nextRequest = this.requestQueue.shift();
+      nextRequest();
+    }
+  }
+
+  /**
+   * Fetch data with timeout, caching support, and concurrency limiting
    */
   async fetchServiceData(fetchFn, serviceKey) {
-    // Check cache first
+    // Check cache first - no need to queue if cached
     let data = this.getCachedService(serviceKey);
     
     if (!data) {
-      // Not in cache, fetch from API
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-      
-      try {
-        const response = await fetchFn(controller.signal);
-        clearTimeout(timeoutId);
+      // Not in cache, queue the fetch request with concurrency limiting
+      data = await this.queueRequest(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        try {
+          const response = await fetchFn(controller.signal);
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const responseData = await response.json();
+          
+          // Cache the response
+          this.setCachedService(serviceKey, responseData);
+          return responseData;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
         }
-        
-        data = await response.json();
-        
-        // Cache the response
-        this.setCachedService(serviceKey, data);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
+      });
     }
     
     return data;

@@ -573,33 +573,56 @@ class EngineScriptDashboard {
     });
   }
 
+  /**
+   * Show skeleton loading state for sites using DocumentFragment
+   * Avoids forced DOM reparse from innerHTML
+   */
   showSkeletonSites() {
     const sitesGrid = document.getElementById("sites-grid");
     if (sitesGrid) {
-      let html = '';
+      sitesGrid.textContent = ''; // Clear efficiently
+      const fragment = document.createDocumentFragment();
+      
       for (let i = 0; i < 3; i++) {
-        html += `
-          <div class="skeleton-card">
-            <div class="skeleton skeleton-title"></div>
-            <div class="skeleton skeleton-text"></div>
-            <div class="skeleton skeleton-text short"></div>
-          </div>
-        `;
+        const card = document.createElement('div');
+        card.className = 'skeleton-card';
+        
+        const title = document.createElement('div');
+        title.className = 'skeleton skeleton-title';
+        card.appendChild(title);
+        
+        const text1 = document.createElement('div');
+        text1.className = 'skeleton skeleton-text';
+        card.appendChild(text1);
+        
+        const text2 = document.createElement('div');
+        text2.className = 'skeleton skeleton-text short';
+        card.appendChild(text2);
+        
+        fragment.appendChild(card);
       }
-      sitesGrid.innerHTML = html;
+      
+      sitesGrid.appendChild(fragment);
     }
   }
 
+  /**
+   * Task 70: Show skeleton loading state for system info using DocumentFragment
+   * Avoids forced DOM reparse from innerHTML
+   */
   showSkeletonSystemInfo() {
     const systemInfo = document.getElementById("system-info");
     if (systemInfo) {
-      let html = '';
+      systemInfo.textContent = ''; // Clear efficiently
+      const fragment = document.createDocumentFragment();
+      
       for (let i = 0; i < 3; i++) {
-        html += `
-          <div class="skeleton skeleton-text"></div>
-        `;
+        const text = document.createElement('div');
+        text.className = 'skeleton skeleton-text';
+        fragment.appendChild(text);
       }
-      systemInfo.innerHTML = html;
+      
+      systemInfo.appendChild(fragment);
     }
   }
 

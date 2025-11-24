@@ -4,6 +4,9 @@
 export class DashboardAPI {
   constructor() {
     this.csrfToken = null;
+    
+    // Prevents duplicate API calls when multiple components request the same endpoint
+    this.pendingRequests = new Map();
   }
 
   async loadCsrfToken() {
@@ -33,28 +36,55 @@ export class DashboardAPI {
     );
   }
 
+  /**
+   * If a request to the same endpoint is already in-flight, return the existing promise
+   * This prevents duplicate network requests when multiple components need the same data
+   * 
+   * @param {string} endpoint - The API endpoint
+   * @param {Function} fetchFn - The function that performs the actual fetch
+   * @returns {Promise} - The deduplicated promise
+   */
+  async deduplicateRequest(endpoint, fetchFn) {
+    // Check if request is already in-flight
+    if (this.pendingRequests.has(endpoint)) {
+      return this.pendingRequests.get(endpoint);
+    }
+
+    // Create the promise and store it
+    const requestPromise = fetchFn().finally(() => {
+      // Remove from pending requests when complete (success or failure)
+      this.pendingRequests.delete(endpoint);
+    });
+
+    this.pendingRequests.set(endpoint, requestPromise);
+    return requestPromise;
+  }
+
   async getApiData(endpoint, fallback) {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
         return fallback;
       }
 
-      const headers = {};
-      if (this.csrfToken) {
-        headers['X-CSRF-Token'] = this.csrfToken;
-      }
+      // Use request deduplication for all GET requests
+      const data = await this.deduplicateRequest(endpoint, async () => {
+        const headers = {};
+        if (this.csrfToken) {
+          headers['X-CSRF-Token'] = this.csrfToken;
+        }
 
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: headers,
-        credentials: 'include'
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: headers,
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
+        }
+
+        return response.json();
       });
-
-      if (!response.ok) {
-        throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
 
       // Handle different response formats
       if (endpoint.includes("/system/memory") && data.usage) {
