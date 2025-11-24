@@ -56,6 +56,13 @@ header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
 
 // Rate limiting (basic implementation) - session functions required for API rate limiting
 if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status() required for session management in standalone API
+    // Configure secure session cookie parameters before starting session
+    ini_set('session.cookie_secure', '1');     // Only send cookie over HTTPS
+    ini_set('session.cookie_httponly', '1');   // Prevent JavaScript access to session cookie
+    ini_set('session.cookie_samesite', 'Strict'); // Prevent CSRF via cookie
+    ini_set('session.use_strict_mode', '1');   // Reject uninitialized session IDs
+    ini_set('session.use_only_cookies', '1');  // Only use cookies for session ID
+    
     session_start(); // codacy:ignore - session_start() required for rate limiting functionality
 }
 
@@ -89,6 +96,54 @@ if (isset($_SESSION[$rate_limit_key]['count'])) { // codacy:ignore - Direct $_SE
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') { // codacy:ignore - Direct $_SERVER access required for CORS handling
     http_response_code(200);
     die(); // codacy:ignore - die() required for CORS termination
+}
+
+/**
+ * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+ * Token can be sent via X-CSRF-Token header or _csrf_token body parameter
+ * 
+ * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
+ */
+function validateCsrfToken() {
+    $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET'; // codacy:ignore - Direct $_SERVER access required
+    
+    // CSRF validation only required for state-changing methods
+    $safe_methods = ['GET', 'HEAD', 'OPTIONS'];
+    if (in_array($method, $safe_methods, true)) {
+        return true;
+    }
+    
+    // Get CSRF token from header (preferred) or body parameter
+    $client_token = null;
+    
+    // Check header first (X-CSRF-Token)
+    if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) { // codacy:ignore - Direct $_SERVER access required for CSRF header
+        $client_token = $_SERVER['HTTP_X_CSRF_TOKEN'];
+    }
+    // Fallback to body parameter
+    elseif (isset($_POST['_csrf_token'])) { // codacy:ignore - Direct $_POST access required for CSRF token
+        $client_token = $_POST['_csrf_token'];
+    }
+    
+    // Validate token exists
+    if (empty($client_token) || empty($_SESSION['csrf_token'])) {
+        logSecurityEvent('CSRF token missing', $method . ' request without token');
+        return false;
+    }
+    
+    // Use timing-safe comparison to prevent timing attacks
+    if (!hash_equals($_SESSION['csrf_token'], $client_token)) { // codacy:ignore - Direct $_SESSION access required for CSRF validation
+        logSecurityEvent('CSRF token mismatch', 'Invalid token submitted');
+        return false;
+    }
+    
+    return true;
+}
+
+// Validate CSRF token for state-changing requests
+if (!validateCsrfToken()) {
+    http_response_code(403);
+    die(json_encode(['error' => 'Invalid or missing CSRF token'])); // codacy:ignore - die() required for security termination
 }
 
 // Get the request URI and method first
