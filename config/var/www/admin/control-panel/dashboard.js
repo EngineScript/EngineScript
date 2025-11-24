@@ -277,6 +277,13 @@ class EngineScriptDashboard {
   }
     
   startClock() {
+    const serverTimeElement = document.getElementById("server-time");
+    
+    // Early return if element doesn't exist (prevents errors)
+    if (!serverTimeElement) {
+      return;
+    }
+    
     const updateClock = () => {
       const now = new Date();
       const timeString = now.toLocaleTimeString("en-US", {
@@ -286,10 +293,8 @@ class EngineScriptDashboard {
         second: "2-digit",
       });
 
-      const serverTime = document.getElementById("server-time");
-      if (serverTime) {
-        serverTime.textContent = timeString;
-      }
+      // Use cached element reference instead of getElementById
+      serverTimeElement.textContent = timeString;
     };
 
     updateClock();

@@ -81,11 +81,13 @@ function parseStatusFeed($feedUrl, $filter = null) {
         
         // Suppress XML errors and parse securely
         libxml_use_internal_errors(true);
-        // Disable external entity processing to prevent XXE attacks
-        libxml_disable_entity_loader(true);
-        // Parse XML without entity substitution (secure by default)
-        // Do not use LIBXML_NOENT as it enables external entity substitution
-        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement');
+        
+        // XXE Protection for PHP 8.0+
+        // libxml_disable_entity_loader() was deprecated in PHP 8.0 and removed in PHP 8.2
+        // Instead, we use LIBXML_NONET flag to prevent network access during parsing
+        // Combined with not using LIBXML_NOENT (which would enable entity substitution)
+        // This provides secure XML parsing without external entity processing
+        $xml = simplexml_load_string($feedContent, 'SimpleXMLElement', LIBXML_NONET | LIBXML_NOCDATA);
         libxml_clear_errors();
         
         if ($xml === false) {
