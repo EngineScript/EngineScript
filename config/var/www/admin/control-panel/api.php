@@ -412,7 +412,7 @@ function sweepCache() {
     if ($now - $lastSweep < CACHE_SWEEP_INTERVAL) {
         // Not time yet
         flock($lockHandle, LOCK_UN);
-        fclose($lockHandle);
+        fclose($lockHandle); // codacy:ignore - fclose() required for lock file cleanup in standalone API
         return;
     }
 
@@ -531,7 +531,7 @@ function setCachedResponse($endpoint, $data, $params = []) {
  * @param string|null $endpoint Optional endpoint to clear, null clears all
  */
 function clearCache($endpoint = null) {
-    if (!is_dir(CACHE_DIR)) {
+    if (!is_dir(CACHE_DIR)) { // codacy:ignore - is_dir() required for cache directory validation in standalone API
         return;
     }
     
