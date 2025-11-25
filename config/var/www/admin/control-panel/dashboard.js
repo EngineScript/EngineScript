@@ -3,7 +3,6 @@
 
 import { DashboardAPI } from './modules/api.js?v=2025.11.21.09';
 import { DashboardState } from './modules/state.js?v=2025.11.21.09';
-import { DashboardCharts } from './modules/charts.js?v=2025.11.21.09';
 import { DashboardUtils } from './modules/utils.js?v=2025.11.21.09';
 // External services loaded dynamically when needed (lazy loading)
 
@@ -12,7 +11,6 @@ class EngineScriptDashboard {
     // Initialize modules
     this.api = new DashboardAPI();
     this.state = new DashboardState();
-    this.charts = new DashboardCharts();
     this.utils = new DashboardUtils();
     this.externalServices = null; // Lazy loaded when needed
 
@@ -212,7 +210,18 @@ class EngineScriptDashboard {
   toggleMobileMenu() {
     const sidebar = document.querySelector(".sidebar");
     if (sidebar) {
+      const isOpening = !sidebar.classList.contains("mobile-open");
       sidebar.classList.toggle("mobile-open");
+      
+      // Manage focus when menu opens/closes
+      if (isOpening) {
+        this.setupMobileFocusTrap(sidebar);
+      } else {
+        this.removeMobileFocusTrap();
+        // Return focus to toggle button
+        const mobileToggle = document.getElementById("mobile-menu-toggle");
+        if (mobileToggle) mobileToggle.focus();
+      }
     }
   }
 
@@ -220,7 +229,62 @@ class EngineScriptDashboard {
     const sidebar = document.querySelector(".sidebar");
     if (sidebar) {
       sidebar.classList.remove("mobile-open");
+      this.removeMobileFocusTrap();
+      // Return focus to toggle button
+      const mobileToggle = document.getElementById("mobile-menu-toggle");
+      if (mobileToggle) mobileToggle.focus();
     }
+  }
+
+  /**
+   * Set up focus trap for mobile menu accessibility
+   * Prevents focus from escaping the menu overlay when open
+   */
+  setupMobileFocusTrap(sidebar) {
+    // Get all focusable elements in sidebar
+    const focusableSelector = 'a[href], button, [tabindex]:not([tabindex="-1"])';
+    const focusableElements = sidebar.querySelectorAll(focusableSelector);
+    
+    if (focusableElements.length === 0) return;
+    
+    this.firstFocusable = focusableElements[0];
+    this.lastFocusable = focusableElements[focusableElements.length - 1];
+    
+    // Focus first element when menu opens
+    this.firstFocusable.focus();
+    
+    // Store bound handler for removal
+    this.focusTrapHandler = (e) => {
+      if (e.key !== 'Tab') return;
+      
+      if (e.shiftKey) {
+        // Shift+Tab: if on first element, wrap to last
+        if (document.activeElement === this.firstFocusable) {
+          e.preventDefault();
+          this.lastFocusable.focus();
+        }
+      } else {
+        // Tab: if on last element, wrap to first
+        if (document.activeElement === this.lastFocusable) {
+          e.preventDefault();
+          this.firstFocusable.focus();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', this.focusTrapHandler);
+  }
+
+  /**
+   * Remove focus trap when mobile menu closes
+   */
+  removeMobileFocusTrap() {
+    if (this.focusTrapHandler) {
+      document.removeEventListener('keydown', this.focusTrapHandler);
+      this.focusTrapHandler = null;
+    }
+    this.firstFocusable = null;
+    this.lastFocusable = null;
   }
 
   setupKeyboardShortcuts() {

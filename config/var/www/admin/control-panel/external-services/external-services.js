@@ -751,15 +751,18 @@ export class ExternalServicesManager {
       date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
       expires = "; expires=" + date.toUTCString();
     }
-    // Set cookie with SameSite=Lax for security
-    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+    // Set cookie with Secure, HttpOnly cannot be set via JS, SameSite=Strict for maximum security
+    // Secure flag ensures cookie only sent over HTTPS
+    // SameSite=Strict prevents CSRF attacks (stricter than Lax)
+    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Strict; Secure";
   }
 
   /**
    * Delete cookie
+   * Include Secure flag in deletion for consistency
    */
   deleteCookie(name) {
-    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure';
   }
 
   // ============ Service Preferences ============

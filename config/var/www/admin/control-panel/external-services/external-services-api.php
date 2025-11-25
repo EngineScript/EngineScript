@@ -672,10 +672,10 @@ function handleStatusFeed() {
         
         // Sanitize filter parameter to prevent injection
         if ($filter !== null) {
-            // Allow alphanumeric, spaces, hyphens, periods, parentheses for service names
-            $filter = preg_replace('/[^a-zA-Z0-9 \-\.\(\)]/', '', $filter);
+            // Restrict to alphanumeric, hyphens, underscores only (removed spaces/parentheses as injection vectors)
+            $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
             // Limit length to reasonable service name size
-            $filter = substr($filter, 0, 100);
+            $filter = substr($filter, 0, 50);
             if (empty($filter)) {
                 $filter = null;
             }

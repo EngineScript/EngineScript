@@ -283,19 +283,6 @@ jobs:
             fi
           fi
           
-          # Chart.js
-          echo "::debug::Fetching Chart.js version..."
-          CHARTJS_API_RESPONSE=$(curl -s https://api.github.com/repos/chartjs/Chart.js/releases/latest)
-          echo "::debug::Chart.js API Response: $CHARTJS_API_RESPONSE"
-          
-          LATEST_CHARTJS=$(echo "$CHARTJS_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
-          echo "::debug::Parsed Chart.js version: '$LATEST_CHARTJS'"
-          
-          if [[ -n "$LATEST_CHARTJS" && "$LATEST_CHARTJS" != "null" ]]; then
-            check_version "CHARTJS_VER" "$LATEST_CHARTJS"
-          else
-            echo "::warning::Failed to fetch Chart.js version, keeping current version"
-          fi
           
           # Font Awesome (restricted to 7.0.x releases)
           echo "::debug::Fetching Font Awesome 7.0.x version..."
@@ -362,7 +349,6 @@ jobs:
                 -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
                 -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
                 -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
-                -e "s#^(\\|Chart\\.js\\|)[^|]*#\1$(get_current_version CHARTJS_VER)#" \
                 -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
                 -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
                 README.md

@@ -309,16 +309,15 @@ function sanitizeOutput($data) {
 }
 
 function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_SERVER access required for security logging in standalone API
-    // Sanitize all log inputs to prevent log injection attacks
-    $safe_event = preg_replace('/[\r\n\t]/', ' ', $event);
-    $safe_event = substr(trim($safe_event), 0, 255); // Limit length
+    // Enhanced log injection protection
+    // Sanitize all log inputs to prevent log injection/forging attacks
+    $safe_event = sanitizeLogInput($event);
     
     $log_entry = date('Y-m-d H:i:s') . " [SECURITY] " . $safe_event;
     
     if ($details) {
-        // Sanitize details to prevent log injection
-        $safe_details = preg_replace('/[\r\n\t]/', ' ', $details);
-        $safe_details = substr(trim($safe_details), 0, 255); // Limit length
+        // Sanitize details using same function
+        $safe_details = sanitizeLogInput($details);
         $log_entry .= " - " . $safe_details;
     }
     
@@ -335,6 +334,28 @@ function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_S
     // Log to a secure location
     $log_file = '/var/log/EngineScript/enginescript-api-security.log';
     error_log($log_entry, 3, $log_file);
+}
+
+/**
+ * Sanitize input for safe log output
+ * Prevents log injection attacks by escaping control characters
+ * @param string $input Raw input to sanitize
+ * @return string Sanitized string safe for logging
+ */
+function sanitizeLogInput($input) {
+    // Remove all control characters (ASCII 0-31 and 127)
+    // This includes \r, \n, \t, and other dangerous characters
+    $sanitized = preg_replace('/[\x00-\x1F\x7F]/', ' ', $input);
+    
+    // Collapse multiple spaces
+    $sanitized = preg_replace('/\s+/', ' ', $sanitized);
+    
+    // Limit length to prevent log flooding
+    $sanitized = substr(trim($sanitized), 0, 255);
+    
+    // Encode any remaining special characters for safe output
+    // This prevents log format string attacks
+    return addcslashes($sanitized, '\\');
 }
 
 // Path was already extracted and validated above, validate again for security
