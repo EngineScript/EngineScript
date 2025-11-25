@@ -358,6 +358,393 @@ function sanitizeLogInput($input) {
     return addcslashes($sanitized, '\\');
 }
 
+// ============ API Response Caching System ============
+// Cache configuration
+define('CACHE_DIR', '/var/cache/enginescript/api/');
+define('CACHE_DEFAULT_TTL', 30); // 30 seconds default
+
+/**
+ * Cache TTL configuration per endpoint (in seconds)
+ * Endpoints not listed use CACHE_DEFAULT_TTL
+ */
+$CACHE_TTL_CONFIG = [
+    '/system/info' => 60,           // 1 minute - system info rarely changes
+    '/services/status' => 15,       // 15 seconds - service status should be fresh
+    '/sites' => 120,                // 2 minutes - site list rarely changes
+    '/sites/count' => 120,          // 2 minutes
+    '/activity/recent' => 30,       // 30 seconds
+    '/alerts' => 30,                // 30 seconds
+    '/tools/filemanager/status' => 300, // 5 minutes - rarely changes
+    '/monitoring/uptime' => 60,     // 1 minute
+    '/monitoring/uptime/monitors' => 60, // 1 minute
+    '/external-services/config' => 300,  // 5 minutes - config rarely changes
+    '/external-services/feed' => 180,    // 3 minutes - external feeds
+];
+
+// Cache sweep configuration in seconds
+define('CACHE_SWEEP_INTERVAL', 60); // Run cleanup at most once per minute
+
+/**
+ * Periodic cache sweeping to remove expired files
+ * Runs at most once every CACHE_SWEEP_INTERVAL seconds to reduce IO overhead
+ */
+function sweepCache() {
+    $lockFile = CACHE_DIR . '.sweep_lock';
+    $now = time();
+
+    if (!is_dir(CACHE_DIR)) return;
+
+    // Attempt to obtain a non-blocking lock; if not possible, skip sweep
+    $fp = @fopen($lockFile, 'c');
+    if ($fp === false) return;
+    $gotLock = flock($fp, LOCK_EX | LOCK_NB);
+    if (!$gotLock) {
+        fclose($fp);
+        return;
+    }
+
+    // Read last sweep time
+    $lastSweep = 0;
+    $contents = @file_get_contents($lockFile);
+    if ($contents !== false) {
+        $lastSweep = intval($contents);
+    }
+    if ($now - $lastSweep < CACHE_SWEEP_INTERVAL) {
+        // Not time yet
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        return;
+    }
+
+    // Update lock file with now; keep exclusive lock while sweeping
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, (string)$now);
+    fflush($fp);
+
+    // Scan cache files and remove expired ones (limit to 200 deletions per sweep)
+    $deleted = 0;
+    $maxDeletes = 200;
+    global $CACHE_TTL_CONFIG;
+    foreach (glob(CACHE_DIR . '*.json') as $cacheFile) {
+        if ($deleted >= $maxDeletes) break;
+        $raw = @file_get_contents($cacheFile);
+        if ($raw === false) continue;
+        $data = json_decode($raw, true);
+        if (!$data || !isset($data['timestamp'])) {
+            @unlink($cacheFile);
+            $deleted++;
+            continue;
+        }
+        $endpoint = isset($data['endpoint']) ? $data['endpoint'] : '';
+        $timestamp = intval($data['timestamp']);
+        $ttl = isset($CACHE_TTL_CONFIG[$endpoint]) ? $CACHE_TTL_CONFIG[$endpoint] : CACHE_DEFAULT_TTL;
+        if ($now - $timestamp > $ttl) {
+            @unlink($cacheFile);
+            $deleted++;
+        }
+    }
+
+    // Release lock
+    flock($fp, LOCK_UN);
+    fclose($fp);
+}
+
+
+/**
+ * Get cache file path for an endpoint
+ * @param string $endpoint The API endpoint
+ * @param array $params Optional query parameters for cache key
+ * @return string Cache file path
+ */
+function getCacheFilePath($endpoint, $params = []) {
+    // Create cache key from endpoint and params
+    $cache_key = $endpoint;
+    if (!empty($params)) {
+        ksort($params);
+        $cache_key .= '_' . md5(json_encode($params));
+    }
+    
+    // Sanitize cache key for filesystem
+    $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $cache_key);
+    return CACHE_DIR . $safe_key . '.json';
+}
+
+/**
+ * Get cached response if valid
+ * @param string $endpoint The API endpoint
+ * @param array $params Optional query parameters
+ * @return array|null Cached data or null if not found/expired
+ */
+function getCachedResponse($endpoint, $params = []) {
+    global $CACHE_TTL_CONFIG;
+    
+    $cache_file = getCacheFilePath($endpoint, $params);
+    
+    if (!file_exists($cache_file)) {
+        return null;
+    }
+    
+    $cache_data = json_decode(file_get_contents($cache_file), true);
+    if (!$cache_data || !isset($cache_data['timestamp']) || !isset($cache_data['data'])) {
+        return null;
+    }
+    
+    // Get TTL for this endpoint
+    $ttl = isset($CACHE_TTL_CONFIG[$endpoint]) ? $CACHE_TTL_CONFIG[$endpoint] : CACHE_DEFAULT_TTL;
+    
+    // Check if cache is still valid
+    if (time() - $cache_data['timestamp'] > $ttl) {
+        // Cache expired
+        @unlink($cache_file);
+        return null;
+    }
+    
+    return $cache_data['data'];
+}
+
+/**
+ * Store response in cache
+ * @param string $endpoint The API endpoint
+ * @param mixed $data The response data to cache
+ * @param array $params Optional query parameters
+ * @return bool Success status
+ */
+function setCachedResponse($endpoint, $data, $params = []) {
+    // Ensure cache directory exists
+    if (!is_dir(CACHE_DIR)) {
+        @mkdir(CACHE_DIR, 0755, true);
+    }
+    
+    $cache_file = getCacheFilePath($endpoint, $params);
+    $cache_data = [
+        'timestamp' => time(),
+        'endpoint' => $endpoint,
+        'data' => $data
+    ];
+    
+    return @file_put_contents($cache_file, json_encode($cache_data), LOCK_EX) !== false;
+}
+
+/**
+ * Clear cache for a specific endpoint or all caches
+ * @param string|null $endpoint Optional endpoint to clear, null clears all
+ */
+function clearCache($endpoint = null) {
+    if (!is_dir(CACHE_DIR)) {
+        return;
+    }
+    
+    if ($endpoint === null) {
+        // Clear all cache files
+        $files = glob(CACHE_DIR . '*.json');
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    } else {
+        // Clear specific endpoint cache
+        $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $endpoint);
+        $files = glob(CACHE_DIR . $safe_key . '*.json');
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+
+/**
+ * Output cached response with cache headers
+ * @param mixed $data The cached data
+ * @param int $ttl Time-to-live in seconds
+ */
+function outputCachedResponse($data, $ttl) {
+    header('X-Cache: HIT');
+    header('Cache-Control: private, max-age=' . $ttl);
+    echo json_encode($data);
+}
+
+// ============ Batch API Request Handler ============
+
+/**
+ * Allowed endpoints for batch requests
+ * Only GET endpoints that return JSON are allowed
+ */
+$BATCH_ALLOWED_ENDPOINTS = [
+    '/system/info',
+    '/services/status',
+    '/sites',
+    '/sites/count',
+    '/activity/recent',
+    '/alerts',
+    '/tools/filemanager/status',
+    '/monitoring/uptime',
+    '/monitoring/uptime/monitors',
+];
+
+/**
+ * Handle batch API requests
+ * Accepts POST with JSON body: { "requests": ["/endpoint1", "/endpoint2", ...] }
+ * Returns: { "results": { "/endpoint1": {...}, "/endpoint2": {...} }, "errors": {...} }
+ */
+function handleBatchRequest() {
+    global $BATCH_ALLOWED_ENDPOINTS;
+    
+    // Only accept POST for batch requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed. Use POST.']);
+        return;
+    }
+    
+    // Parse JSON body
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid request. Expected JSON with "requests" array.']);
+        return;
+    }
+    
+    $requests = $data['requests'];
+    
+    // Limit batch size to prevent abuse
+    $max_batch_size = 10;
+    if (count($requests) > $max_batch_size) {
+        http_response_code(400);
+        echo json_encode(['error' => "Batch size exceeds maximum of $max_batch_size requests."]);
+        return;
+    }
+    
+    $results = [];
+    $errors = [];
+    
+    foreach ($requests as $endpoint) {
+        // Validate endpoint
+        if (!is_string($endpoint)) {
+            $errors[] = ['endpoint' => $endpoint, 'error' => 'Invalid endpoint type'];
+            continue;
+        }
+        
+        // Sanitize and validate endpoint
+        $clean_endpoint = preg_replace('/[^a-zA-Z0-9\/_-]/', '', $endpoint);
+        
+        if (!in_array($clean_endpoint, $BATCH_ALLOWED_ENDPOINTS, true)) {
+            $errors[$endpoint] = 'Endpoint not allowed in batch requests';
+            continue;
+        }
+        
+        // Check cache first
+        $cached = getCachedResponse($clean_endpoint);
+        if ($cached !== null) {
+            $results[$clean_endpoint] = $cached;
+            continue;
+        }
+        
+        // Execute the endpoint handler
+        try {
+            ob_start();
+            
+            switch ($clean_endpoint) {
+                case '/system/info':
+                    handleSystemInfo();
+                    break;
+                case '/services/status':
+                    handleServicesStatus();
+                    break;
+                case '/sites':
+                    handleSites();
+                    break;
+                case '/sites/count':
+                    handleSitesCount();
+                    break;
+                case '/activity/recent':
+                    handleRecentActivity();
+                    break;
+                case '/alerts':
+                    handleAlerts();
+                    break;
+                case '/tools/filemanager/status':
+                    handleFileManagerStatus();
+                    break;
+                case '/monitoring/uptime':
+                    handleUptimeStatus();
+                    break;
+                case '/monitoring/uptime/monitors':
+                    handleUptimeMonitors();
+                    break;
+            }
+            
+            $output = ob_get_clean();
+            $result = json_decode($output, true);
+            
+            if ($result !== null) {
+                $results[$clean_endpoint] = $result;
+                // Cache the result
+                setCachedResponse($clean_endpoint, $result);
+            } else {
+                $errors[$clean_endpoint] = 'Failed to parse response';
+            }
+        } catch (Exception $e) {
+            ob_end_clean();
+            $errors[$clean_endpoint] = 'Internal error';
+            logSecurityEvent('Batch request error', $clean_endpoint . ': ' . $e->getMessage());
+        }
+    }
+    
+    echo json_encode([
+        'results' => $results,
+        'errors' => $errors,
+        'cached_count' => count(array_filter($results, function($r) { return $r !== null; }))
+    ]);
+}
+
+/**
+ * Handle cache clearing requests (admin-only)
+ * Accepts POST with JSON body: { "endpoint": "/services/status" } or no body to clear all
+ */
+function handleCacheClear() {
+    // Only accept POST
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed. Use POST.']);
+        return;
+    }
+
+    // Check CSRF token
+    if (!validateCsrfToken()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF token']);
+        return;
+    }
+
+    // Basic authentication check (if using HTTP auth via nginx)
+    if (!isset($_SERVER['REMOTE_USER'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Unauthorized']);
+        return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $endpoint = null;
+    if (is_array($input) && isset($input['endpoint']) && is_string($input['endpoint'])) {
+        $endpoint = preg_replace('/[^a-zA-Z0-9\/_-]/', '', $input['endpoint']);
+    }
+
+    try {
+        if ($endpoint) {
+            clearCache($endpoint);
+            echo json_encode(['result' => 'ok', 'cleared' => $endpoint]);
+        } else {
+            clearCache(null);
+            echo json_encode(['result' => 'ok', 'cleared' => 'all']);
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        logSecurityEvent('Cache clear error', $e->getMessage());
+        echo json_encode(['error' => 'Failed to clear cache']);
+    }
+}
+
 // Path was already extracted and validated above, validate again for security
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
     http_response_code(400);
@@ -365,10 +752,19 @@ if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
     die(json_encode(['error' => 'Invalid path']));
 }
 
+// Periodic cache sweep (non-blocking and rate-limited)
+if (function_exists('sweepCache')) {
+    sweepCache();
+}
+
 // Route handling
 switch ($path) {
     case '/csrf-token':
         handleCsrfToken();
+        break;
+    
+    case '/batch':
+        handleBatchRequest();
         break;
     
     case '/system/info':
@@ -422,6 +818,10 @@ switch ($path) {
         }
         break;
     
+    case '/cache/clear':
+        handleCacheClear();
+        break;
+    
     default:
         http_response_code(404);
         // Sanitize path for logging to prevent injection attacks
@@ -453,13 +853,30 @@ function handleCsrfToken() {
 
 
 function handleSystemInfo() {
+    global $CACHE_TTL_CONFIG;
+    
     try {
+        // Check cache first
+        $cached = getCachedResponse('/system/info');
+        if ($cached !== null) {
+            $ttl = isset($CACHE_TTL_CONFIG['/system/info']) ? $CACHE_TTL_CONFIG['/system/info'] : CACHE_DEFAULT_TTL;
+            outputCachedResponse($cached, $ttl);
+            return;
+        }
+        
         $info = [
             'os' => getOsInfo(),
             'kernel' => getKernelVersion(),
             'network' => getNetworkInfo()
         ];
-        echo json_encode(sanitizeOutput($info)); // codacy:ignore - echo required for JSON API response
+        
+        $result = sanitizeOutput($info);
+        
+        // Cache the result
+        setCachedResponse('/system/info', $result);
+        
+        header('X-Cache: MISS');
+        echo json_encode($result); // codacy:ignore - echo required for JSON API response
     } catch (Exception $e) {
         http_response_code(500);
         logSecurityEvent('System info error', $e->getMessage());
@@ -478,14 +895,31 @@ function handleSystemInfo() {
 
 
 function handleServicesStatus() {
+    global $CACHE_TTL_CONFIG;
+    
     try {
+        // Check cache first
+        $cached = getCachedResponse('/services/status');
+        if ($cached !== null) {
+            $ttl = isset($CACHE_TTL_CONFIG['/services/status']) ? $CACHE_TTL_CONFIG['/services/status'] : CACHE_DEFAULT_TTL;
+            outputCachedResponse($cached, $ttl);
+            return;
+        }
+        
         $services = [
             'nginx' => getServiceStatus('nginx'),
             'php' => getPhpServiceStatus(),
             'mysql' => getServiceStatus('mariadb'),
             'redis' => getServiceStatus('redis-server')
         ];
-        echo json_encode(sanitizeOutput($services)); // codacy:ignore - echo required for JSON API response
+        
+        $result = sanitizeOutput($services);
+        
+        // Cache the result
+        setCachedResponse('/services/status', $result);
+        
+        header('X-Cache: MISS');
+        echo json_encode($result); // codacy:ignore - echo required for JSON API response
     } catch (Exception $e) {
         http_response_code(500);
         logSecurityEvent('Services status error', $e->getMessage());

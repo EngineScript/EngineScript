@@ -141,6 +141,26 @@ function purge_nginx_helper_cache() {
 }
 
 
+
+# ----------------------------------------------------------------
+# Clear EngineScript API cache directory (/var/cache/enginescript/api)
+function clear_api_cache() {
+    echo "Clearing EngineScript API cache"
+    local cache_dir="/var/cache/enginescript/api"
+
+    if [ -d "${cache_dir}" ]; then
+        find "${cache_dir}" -type f -name '*.json' -delete 2>/dev/null || {
+            echo "Error: Failed to clear API cache at ${cache_dir}."
+            return 1
+        }
+        echo "API cache cleared successfully"
+    else
+        echo "Warning: API cache directory not found at ${cache_dir}"
+        return 1
+    fi
+}
+
+
 # ----------------------------------------------------------------
 # Clear all WordPress caches for a single site (cache + rewrites)
 function clear_wordpress_caches() {
@@ -214,6 +234,7 @@ function clear_all_wordpress_caches() {
 # ----------------------------------------------------------------
 # Clear all system caches (Nginx, OpCache, Redis)
 function clear_all_system_caches() {
+    clear_api_cache
     clear_nginx_cache
     clear_opcache
     clear_redis_cache

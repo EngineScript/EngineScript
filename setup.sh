@@ -124,6 +124,13 @@ if [[ ! -d "/var/www/admin/enginescript/" ]]; then
     echo "✓ EngineScript admin directory created"
 fi
 
+# Create /var/cache/enginescript/api if it doesn't exist
+if [[ ! -d "/var/cache/enginescript/api" ]]; then
+    echo "Creating EngineScript dashboard API cache directory..."
+    mkdir -p "/var/cache/enginescript/api"
+    echo "✓ EngineScript dashboard API cache directory created"
+fi
+
 # EngineScript Logs
 # Create EngineScript logs
 mkdir -p "/var/log/EngineScript"

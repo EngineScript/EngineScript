@@ -138,6 +138,59 @@ export class DashboardAPI {
     }
   }
 
+  /**
+   * Batch multiple API requests into a single call
+   * Reduces network round-trips and improves performance
+   * 
+   * @param {string[]} endpoints - Array of API endpoints to fetch
+   * @returns {Promise<Object>} - Object with results keyed by endpoint
+   * 
+   * @example
+   * const data = await api.batchRequest(['/system/info', '/services/status']);
+   * console.log(data.results['/system/info']);
+   */
+  async batchRequest(endpoints) {
+    try {
+      if (typeof fetch === "undefined" || this.isOperaMini()) {
+        return { error: 'Fetch not supported', results: {}, errors: {} };
+      }
+
+      if (!Array.isArray(endpoints) || endpoints.length === 0) {
+        return { error: 'No endpoints provided', results: {}, errors: {} };
+      }
+
+      // Limit batch size client-side to match server limit
+      const maxBatchSize = 10;
+      if (endpoints.length > maxBatchSize) {
+        console.warn(`Batch size ${endpoints.length} exceeds max ${maxBatchSize}, truncating`);
+        endpoints = endpoints.slice(0, maxBatchSize);
+      }
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (this.csrfToken) {
+        headers['X-CSRF-Token'] = this.csrfToken;
+      }
+
+      const response = await fetch('/api/batch', {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify({ requests: endpoints })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Batch API returned ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Batch API request failed:', error);
+      return { error: error.message, results: {}, errors: {} };
+    }
+  }
+
   async getServiceStatus(service) {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {

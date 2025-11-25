@@ -6,7 +6,7 @@
 }
 
 :root {
-    /* Color Scheme */
+    /* Color Scheme - Dark Theme (Default) */
     --primary-bg: #1a1a1a;
     --secondary-bg: #2d2d2d;
     --card-bg: #333;
@@ -20,6 +20,10 @@
     --warning-color: #ffb800;
     --error-color: #f44;
     --info-color: #00a8ff;
+    --skeleton-base: #333;
+    --skeleton-highlight: #3e3e3e;
+    --input-bg: #2d2d2d;
+    --hover-overlay: rgba(255, 255, 255, 0.05);
     
     /* Layout */
     --sidebar-width: 280px;
@@ -27,6 +31,33 @@
     --border-radius: 12px;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --primary-bg: #f5f5f5;
+    --secondary-bg: #ffffff;
+    --card-bg: #ffffff;
+    --accent-color: #00a88a;
+    --accent-hover: #00937a;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555555;
+    --text-muted: #777777;
+    --border-color: #e0e0e0;
+    --success-color: #00a88a;
+    --warning-color: #e6a700;
+    --error-color: #d32f2f;
+    --info-color: #0088cc;
+    --skeleton-base: #e0e0e0;
+    --skeleton-highlight: #f0f0f0;
+    --input-bg: #f5f5f5;
+    --hover-overlay: rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Light theme body background adjustment */
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #e8e8e8 100%);
 }
 
 body {
@@ -1221,6 +1252,50 @@ button:focus, select:focus, input:focus {
 
 .empty-state.error .empty-state-icon {
     color: var(--error-color);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    transition: var(--transition);
+}
+
+.theme-toggle:hover {
+    background: var(--hover-overlay);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.theme-toggle:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Theme toggle icon states */
+.theme-toggle .fa-sun {
+    display: none;
+}
+
+.theme-toggle .fa-moon {
+    display: block;
+}
+
+[data-theme="light"] .theme-toggle .fa-sun {
+    display: block;
+}
+
+[data-theme="light"] .theme-toggle .fa-moon {
+    display: none;
 }
 
 /* External Services styles moved to external-services/external-services.css */

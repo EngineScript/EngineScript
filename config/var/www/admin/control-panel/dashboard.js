@@ -1,9 +1,9 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.25.2';
-import { DashboardState } from './modules/state.js?v=2025.11.25.2';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.25.2';
+import { DashboardAPI } from './modules/api.js?v=2025.11.25.3';
+import { DashboardState } from './modules/state.js?v=2025.11.25.3';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.25.3';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -25,6 +25,7 @@ class EngineScriptDashboard {
   }
 
   init() {
+    this.initTheme(); // Initialize theme before rendering
     this.setupEventListeners();
     this.setupNavigation();
     this.startClock();
@@ -33,7 +34,38 @@ class EngineScriptDashboard {
     this.hideLoadingScreen();
   }
 
+  /**
+   * Initialize theme from localStorage or system preference
+   */
+  initTheme() {
+    const savedTheme = localStorage.getItem('dashboard-theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } else {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+  }
+
+  /**
+   * Toggle between dark and light themes
+   */
+  toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('dashboard-theme', newTheme);
+  }
+
   setupEventListeners() {
+    // Theme toggle button
+    const themeToggle = document.getElementById("theme-toggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => this.toggleTheme());
+    }
+
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
     if (mobileMenuToggle) {
@@ -183,7 +215,7 @@ class EngineScriptDashboard {
 
       console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.25.2');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.25.3');
       
       console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
@@ -676,7 +708,7 @@ class EngineScriptDashboard {
   }
 
   /**
-   * Task 70: Show skeleton loading state for system info using DocumentFragment
+   * Show skeleton loading state for system info using DocumentFragment
    * Avoids forced DOM reparse from innerHTML
    */
   showSkeletonSystemInfo() {
