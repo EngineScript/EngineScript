@@ -36,28 +36,23 @@
 /* Light Theme */
 [data-theme="light"] {
     --primary-bg: #f5f5f5;
-    --secondary-bg: #ffffff;
-    --card-bg: #ffffff;
+    --secondary-bg: #fff;
+    --card-bg: #fff;
     --accent-color: #00a88a;
     --accent-hover: #00937a;
     --text-primary: #1a1a1a;
-    --text-secondary: #555555;
-    --text-muted: #777777;
+    --text-secondary: #555;
+    --text-muted: #777;
     --border-color: #e0e0e0;
     --success-color: #00a88a;
     --warning-color: #e6a700;
     --error-color: #d32f2f;
-    --info-color: #0088cc;
+    --info-color: #08c;
     --skeleton-base: #e0e0e0;
     --skeleton-highlight: #f0f0f0;
     --input-bg: #f5f5f5;
     --hover-overlay: rgba(0, 0, 0, 0.05);
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* Light theme body background adjustment */
-[data-theme="light"] body {
-    background: linear-gradient(135deg, var(--primary-bg) 0%, #e8e8e8 100%);
 }
 
 body {
@@ -66,6 +61,11 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
+}
+
+/* Light theme body background adjustment */
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #e8e8e8 100%);
 }
 
 /* Loading Screen */
