@@ -786,45 +786,11 @@ class EngineScriptDashboard {
     }
   }
     
-  isValidActivity(activity) {
-    return this.utils.isValidActivity(activity);
-  }
-
-  isValidAlert(alert) {
-    return this.utils.isValidAlert(alert);
-  }
 
   isValidSite(site) {
     return this.utils.isValidSite(site);
   }
     
-  createActivityElement(activity) {
-    const iconClass = this.sanitizeInput(activity.icon) || "fa-info-circle";
-    
-    return this.utils.createContentElement({
-      containerClass: "activity-item",
-      iconClass: "activity-icon",
-      contentClass: "activity-content",
-      messageText: activity.message,
-      timeText: activity.time,
-      timeClass: "activity-time",
-      iconType: iconClass,
-    });
-  }
-
-  createAlertElement(alert) {
-    const alertType = this.sanitizeInput(alert.type) || "info";
-
-    return this.utils.createContentElement({
-      containerClass: `alert-item ${alertType}`,
-      iconClass: `alert-icon ${alertType}`,
-      contentClass: "alert-content",
-      messageText: alert.message,
-      timeText: alert.time,
-      timeClass: "alert-time",
-      iconType: this.getAlertIcon(alertType),
-    });
-  }
     
   // Helper method to create site card structure - eliminates duplication
   createSiteCardStructure(titleText) {

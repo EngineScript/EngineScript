@@ -130,6 +130,11 @@ if [[ ! -d "/var/cache/enginescript/api" ]]; then
     mkdir -p "/var/cache/enginescript/api"
     echo "✓ EngineScript dashboard API cache directory created"
 fi
+# Ensure correct ownership and permissions for the API cache directory
+if [[ -d "/var/cache/enginescript/api" ]]; then
+  chown -R www-data:www-data /var/cache/enginescript/api
+  chmod -R 775 /var/cache/enginescript/api
+fi
 
 # EngineScript Logs
 # Create EngineScript logs

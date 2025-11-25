@@ -462,6 +462,12 @@ function set_enginescript_frontend_permissions() {
     find /etc/enginescript -type d -print0 | sudo xargs -0 chmod 0755
     find /etc/enginescript -type f -print0 | sudo xargs -0 chmod 0644
     chown -R www-data:www-data /etc/enginescript
+
+    # Ensure API cache directory has correct owner and permissions
+    if [ -d "/var/cache/enginescript/api" ]; then
+        chown -R www-data:www-data /var/cache/enginescript/api
+        chmod -R 775 /var/cache/enginescript/api
+    fi
 }
 
 

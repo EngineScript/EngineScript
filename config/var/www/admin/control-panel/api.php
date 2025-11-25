@@ -372,8 +372,6 @@ $CACHE_TTL_CONFIG = [
     '/services/status' => 15,       // 15 seconds - service status should be fresh
     '/sites' => 120,                // 2 minutes - site list rarely changes
     '/sites/count' => 120,          // 2 minutes
-    '/activity/recent' => 30,       // 30 seconds
-    '/alerts' => 30,                // 30 seconds
     '/tools/filemanager/status' => 300, // 5 minutes - rarely changes
     '/monitoring/uptime' => 60,     // 1 minute
     '/monitoring/uptime/monitors' => 60, // 1 minute
@@ -573,8 +571,6 @@ $BATCH_ALLOWED_ENDPOINTS = [
     '/services/status',
     '/sites',
     '/sites/count',
-    '/activity/recent',
-    '/alerts',
     '/tools/filemanager/status',
     '/monitoring/uptime',
     '/monitoring/uptime/monitors',
@@ -656,12 +652,6 @@ function handleBatchRequest() {
                     break;
                 case '/sites/count':
                     handleSitesCount();
-                    break;
-                case '/activity/recent':
-                    handleRecentActivity();
-                    break;
-                case '/alerts':
-                    handleAlerts();
                     break;
                 case '/tools/filemanager/status':
                     handleFileManagerStatus();
@@ -784,14 +774,6 @@ switch ($path) {
         handleSitesCount();
         break;
     
-    case '/activity/recent':
-        handleRecentActivity();
-        break;
-    
-    case '/alerts':
-    case '/alerts/':
-        handleAlerts();
-        break;
     
     case '/tools/filemanager/status':
         handleFileManagerStatus();
@@ -948,25 +930,6 @@ function handleSitesCount() {
     }
 }
 
-function handleRecentActivity() {
-    try {
-        echo json_encode(sanitizeOutput(getRecentActivity())); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Recent activity error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve recent activity']); // codacy:ignore - echo required for JSON API response
-    }
-}
-
-function handleAlerts() {
-    try {
-        echo json_encode(sanitizeOutput(getSystemAlerts())); // codacy:ignore - echo required for JSON API response
-    } catch (Exception $e) {
-        http_response_code(500);
-        logSecurityEvent('Alerts error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve alerts']); // codacy:ignore - echo required for JSON API response
-    }
-}
 
 function handleFileManagerStatus() {
     try {
@@ -1413,116 +1376,6 @@ function getWordPressVersion($document_root) {
     }
 }
 
-// Recent activity helpers
-function checkRecentSSHActivity() {
-    $auth_log = '/var/log/auth.log';
-    $real_auth_log = realpath($auth_log); // codacy:ignore - realpath() required for log file path validation in standalone API
-    
-    if (!isValidLogFile($real_auth_log, $auth_log)) {
-        return null;
-    }
-    
-    $handle = fopen($real_auth_log, 'r'); // codacy:ignore - fopen() required for log file reading in standalone API
-    if (!$handle) {
-        return null;
-    }
-    
-    $ssh_activity = parseAuthLogForActivity($handle);
-    fclose($handle); // codacy:ignore - fclose() required for proper file handle cleanup in standalone API
-    
-    return $ssh_activity;
-}
-
-function getRecentActivity() {
-    $activities = [];
-    
-    try {
-        // Check for SSH login activity
-        $ssh_activity = checkRecentSSHActivity();
-        if ($ssh_activity) {
-            $activities[] = $ssh_activity;
-        }
-        
-        // Add system status update
-        $activities[] = [
-            'message' => 'System status updated',
-            'time' => 'Just now',
-            'icon' => 'fa-sync-alt'
-        ];
-    } catch (Exception $e) {
-        logSecurityEvent('Recent activity error', $e->getMessage());
-        // Add fallback activity
-        $activities[] = [
-            'message' => 'System monitoring active',
-            'time' => 'Just now',
-            'icon' => 'fa-shield-alt'
-        ];
-    }
-    
-    return $activities;
-}
-
-function isValidLogFile($real_path, $expected_path) {
-    return $real_path && 
-           $real_path === $expected_path && 
-           file_exists($real_path) && // codacy:ignore - file_exists() required for log file validation in standalone API
-           is_readable($real_path); // codacy:ignore - is_readable() required for log file validation in standalone API
-}
-
-function parseAuthLogForActivity($handle) {
-    $file_size = filesize('/var/log/auth.log'); // codacy:ignore - filesize() required for log file size checking in standalone API
-    if (!$file_size || $file_size <= 0) {
-        return null;
-    }
-    
-    fseek($handle, max(0, $file_size - 1024), SEEK_SET); // codacy:ignore - fseek() required for log file positioning in standalone API
-    $content = fread($handle, 1024); // codacy:ignore - fread() required for log file reading in standalone API
-    
-    if ($content && strpos($content, 'Accepted') !== false) {
-        return [
-            'message' => 'Recent SSH login detected',
-            'time' => '5 minutes ago',
-            'icon' => 'fa-sign-in-alt'
-        ];
-    }
-    
-    return null;
-}
-
-function getSystemAlerts() {
-    $alerts = [];
-    
-    // Check disk usage
-    $disk_usage = (float)str_replace('%', '', getDiskUsage());
-    if ($disk_usage > 90) {
-        $alerts[] = [
-            'message' => 'High disk usage detected',
-            'time' => 'Now',
-            'type' => 'warning'
-        ];
-    }
-    
-    // Check memory usage
-    $memory_usage = (float)str_replace('%', '', getMemoryUsage());
-    if ($memory_usage > 85) {
-        $alerts[] = [
-            'message' => 'High memory usage detected',
-            'time' => 'Now',
-            'type' => 'warning'
-        ];
-    }
-    
-    // If no alerts, return success message
-    if (empty($alerts)) {
-        $alerts[] = [
-            'message' => 'All systems operational',
-            'time' => 'Just now',
-            'type' => 'info'
-        ];
-    }
-    
-    return $alerts;
-}
 
 // External services functions moved to external-services/external-services-api.php
 

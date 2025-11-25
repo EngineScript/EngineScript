@@ -105,29 +105,6 @@ export class DashboardUtils {
     }
   }
 
-  isValidActivity(activity) {
-    return (
-      activity &&
-      typeof activity === "object" &&
-      typeof activity.message === "string" &&
-      typeof activity.time === "string" &&
-      activity.message.length > 0 &&
-      activity.message.length < 500
-    );
-  }
-
-  isValidAlert(alert) {
-    const validTypes = ["info", "warning", "error", "success"];
-    return (
-      alert &&
-      typeof alert === "object" &&
-      typeof alert.message === "string" &&
-      typeof alert.time === "string" &&
-      (!alert.type || validTypes.includes(alert.type)) &&
-      alert.message.length > 0 &&
-      alert.message.length < 500
-    );
-  }
 
   isValidSite(site) {
     return (
@@ -138,16 +115,6 @@ export class DashboardUtils {
       site.domain.length < 255 &&
       /^[a-zA-Z0-9.-]+$/.test(site.domain)
     ); // Basic domain validation
-  }
-
-  getAlertIcon(type) {
-    const icons = {
-      info: "fa-info-circle",
-      warning: "fa-exclamation-triangle",
-      error: "fa-exclamation-circle",
-      success: "fa-check-circle",
-    };
-    return icons[type] || "fa-info-circle";
   }
 
   showError(message) {

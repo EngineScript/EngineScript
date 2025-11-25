@@ -47,6 +47,9 @@ fi
 # System Maintenance
 (crontab -l 2>/dev/null; echo "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1") | crontab -
 
+# API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
+(crontab -l 2>/dev/null; echo "* * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1") | crontab -
+
 [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]] && \
     (crontab -l 2>/dev/null; echo "37 5 */7 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1") | crontab -
 
