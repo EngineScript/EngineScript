@@ -213,7 +213,6 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |ADMINER|||
 |PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
 |**Admin Control Panel**|||
-|Chart.js|4.5.1|<https://github.com/chartjs/Chart.js>|
 |Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
 |TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
 |**Object Cache**|||

@@ -1,8 +1,8 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
 
-import { DashboardUtils } from '../modules/utils.js?v=2025.11.21.16';
-import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.21.16';
+import { DashboardUtils } from '../modules/utils.js?v=2025.11.25.2';
+import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.25.2';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
@@ -10,9 +10,10 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
-    // State management with cache (5-minute TTL)
+    // State management with LRU cache (5-minute TTL, max 100 entries)
     this.serviceCache = new Map();
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+    this.cacheMaxSize = 100; // Limit cache size to prevent memory growth
     this.initialized = false; // Track if services have been loaded (lazy loading)
     
     // Limits concurrent requests to prevent overwhelming the server/browser
@@ -709,9 +710,21 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Set cached service data
+   * Set cached service data with LRU eviction
+   * Implements LRU cache with max size of 100 entries
    */
   setCachedService(serviceKey, data) {
+    // LRU behavior: if key exists, delete it first so it moves to end of Map
+    if (this.serviceCache.has(serviceKey)) {
+      this.serviceCache.delete(serviceKey);
+    }
+    
+    // Evict oldest entries if cache is full (LRU eviction)
+    while (this.serviceCache.size >= this.cacheMaxSize) {
+      const oldestKey = this.serviceCache.keys().next().value;
+      this.serviceCache.delete(oldestKey);
+    }
+    
     this.serviceCache.set(serviceKey, {
       data: data,
       timestamp: Date.now()

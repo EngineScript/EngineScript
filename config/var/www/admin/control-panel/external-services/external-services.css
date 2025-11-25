@@ -148,8 +148,9 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: var(--transition);
+    transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
     white-space: nowrap;
+    will-change: transform;
 }
 
 .category-toggle-all-btn:hover {
@@ -211,12 +212,13 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--transition);
+    transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     margin-top: 1.5rem;
+    will-change: transform;
 }
 
 .settings-save-btn:disabled {
@@ -226,7 +228,6 @@
 }
 
 .settings-save-btn:not(:disabled):hover {
-    background: var(--accent-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
 }
@@ -238,10 +239,11 @@
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     padding: 1.5rem;
-    transition: var(--transition);
+    transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
     color: inherit;
     cursor: grab;
+    will-change: transform;
 }
 
 .external-service-card:active {
@@ -259,9 +261,14 @@
 }
 
 .external-service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.external-service-card:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     transform: translateY(-2px);
-    box-shadow: var(--shadow);
-    border-color: var(--accent-color);
 }
 
 .external-service-card.error {

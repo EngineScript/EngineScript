@@ -1,9 +1,9 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.11.21.09';
-import { DashboardState } from './modules/state.js?v=2025.11.21.09';
-import { DashboardUtils } from './modules/utils.js?v=2025.11.21.09';
+import { DashboardAPI } from './modules/api.js?v=2025.11.25.2';
+import { DashboardState } from './modules/state.js?v=2025.11.25.2';
+import { DashboardUtils } from './modules/utils.js?v=2025.11.25.2';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -47,23 +47,28 @@ class EngineScriptDashboard {
       
       if (sidebar && sidebar.classList.contains("mobile-open") && 
           !sidebar.contains(e.target) && 
-          !mobileToggle.contains(e.target)) {
+          mobileToggle && !mobileToggle.contains(e.target)) {
         this.closeMobileMenu();
       }
     });
 
-    // Navigation
-    document.querySelectorAll(".nav-item").forEach((item) => {
-      item.addEventListener("click", (e) => {
+    // Navigation using event delegation (single listener on parent)
+    const sidebarNav = document.querySelector(".sidebar-nav");
+    if (sidebarNav) {
+      sidebarNav.addEventListener("click", (e) => {
+        // Find the nav-item element (could be clicked on link or icon inside)
+        const navItem = e.target.closest(".nav-item");
+        if (!navItem) return;
+        
         e.preventDefault();
-        const page = this.sanitizeInput(item.dataset.page);
+        const page = this.sanitizeInput(navItem.dataset.page);
         if (this.state.isValidPage(page)) {
           this.navigateToPage(page);
           // Close mobile menu after navigation
           this.closeMobileMenu();
         }
       });
-    });
+    }
 
     // Refresh button
     const refreshBtn = document.getElementById("refresh-btn");
@@ -178,7 +183,7 @@ class EngineScriptDashboard {
 
       console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.21.16');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.11.25.2');
       
       console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
