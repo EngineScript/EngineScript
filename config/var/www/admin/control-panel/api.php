@@ -86,8 +86,7 @@ if (isset($_SESSION[$rate_limit_key]['reset']) && time() > $_SESSION[$rate_limit
 
 // Check rate limit (100 requests per minute)
 if (isset($_SESSION[$rate_limit_key]['count']) && $_SESSION[$rate_limit_key]['count'] >= 100) { // codacy:ignore - Direct $_SESSION access required
-    http_response_code(429);
-    die(json_encode(['error' => 'Rate limit exceeded'])); // codacy:ignore - die() required for security termination
+    jsonError('Rate limit exceeded', 429);
 }
 
 if (isset($_SESSION[$rate_limit_key]['count'])) { // codacy:ignore - Direct $_SESSION access required
@@ -144,8 +143,7 @@ function validateCsrfToken() {
 
 // Validate CSRF token for state-changing requests
 if (!validateCsrfToken()) {
-    http_response_code(403);
-    die(json_encode(['error' => 'Invalid or missing CSRF token'])); // codacy:ignore - die() required for security termination
+    jsonError('Invalid or missing CSRF token', 403);
 }
 
 // Get the request URI and method first
@@ -450,7 +448,6 @@ function sweepCache() {
     fclose($lockHandle); // codacy:ignore - fclose() required for lock file cleanup in standalone API
 }
 
-
 /**
  * Get cache file path for an endpoint
  * @param string $endpoint The API endpoint
@@ -562,6 +559,43 @@ function outputCachedResponse($data, $ttl) {
     echo json_encode($data); // codacy:ignore - echo required for JSON API response in standalone API
 }
 
+// ============ JSON Response Helpers ============
+
+/**
+ * Send a JSON success response and exit
+ * @param mixed $data The data to return in the response
+ * @return never
+ */
+function jsonSuccess($data) {
+    echo json_encode(['success' => true, 'data' => $data]); // codacy:ignore - echo required for JSON API response
+    exit; // codacy:ignore - exit required after API response
+}
+
+/**
+ * Send a JSON error response with HTTP status code and exit
+ * @param string $message The error message
+ * @param int $code HTTP status code (default 400)
+ * @return never
+ */
+function jsonError($message, $code = 400) {
+    http_response_code($code);
+    echo json_encode(['success' => false, 'error' => $message]); // codacy:ignore - echo required for JSON API response
+    exit; // codacy:ignore - exit required after API response
+}
+
+/**
+ * Send a JSON cached response with appropriate headers and exit
+ * @param mixed $data The data to return
+ * @param int $ttl Cache time-to-live in seconds
+ * @return never
+ */
+function jsonCached($data, $ttl) {
+    header('X-Cache: HIT'); // codacy:ignore - header() required for cache status in standalone API
+    header('Cache-Control: private, max-age=' . $ttl); // codacy:ignore - header() required for cache control in standalone API
+    echo json_encode(['success' => true, 'data' => $data]); // codacy:ignore - echo required for JSON API response
+    exit; // codacy:ignore - exit required after API response
+}
+
 // ============ Batch API Request Handler ============
 
 /**
@@ -588,9 +622,7 @@ function handleBatchRequest() {
     
     // Only accept POST for batch requests
     if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') { // codacy:ignore - Direct $_SERVER access required for standalone API
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed. Use POST.']); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError('Method not allowed. Use POST.', 405);
     }
     
     // Parse JSON body
@@ -598,9 +630,7 @@ function handleBatchRequest() {
     $data = json_decode($input, true);
     
     if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid request. Expected JSON with "requests" array.']); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError('Invalid request. Expected JSON with "requests" array.', 400);
     }
     
     $requests = $data['requests'];
@@ -608,9 +638,7 @@ function handleBatchRequest() {
     // Limit batch size to prevent abuse
     $max_batch_size = 10;
     if (count($requests) > $max_batch_size) {
-        http_response_code(400);
-        echo json_encode(['error' => "Batch size exceeds maximum of $max_batch_size requests."]); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError("Batch size exceeds maximum of $max_batch_size requests.", 400);
     }
     
     $results = [];
@@ -697,23 +725,17 @@ function handleBatchRequest() {
 function handleCacheClear() {
     // Only accept POST
     if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') { // codacy:ignore - Direct $_SERVER access required for standalone API
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed. Use POST.']); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError('Method not allowed. Use POST.', 405);
     }
 
     // Check CSRF token
     if (!validateCsrfToken()) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Invalid CSRF token']); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError('Invalid CSRF token', 403);
     }
 
     // Basic authentication check (if using HTTP auth via nginx)
     if (!isset($_SERVER['REMOTE_USER'])) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Unauthorized']); // codacy:ignore - echo required for JSON API response
-        return;
+        jsonError('Unauthorized', 403);
     }
 
     $input = json_decode(file_get_contents('php://input'), true); // codacy:ignore - file_get_contents() required for reading POST body
@@ -725,15 +747,14 @@ function handleCacheClear() {
     try {
         if ($endpoint) {
             clearCache($endpoint);
-            echo json_encode(['result' => 'ok', 'cleared' => $endpoint]); // codacy:ignore - echo required for JSON API response
+            jsonSuccess(['result' => 'ok', 'cleared' => $endpoint]);
         } else {
             clearCache(null);
-            echo json_encode(['result' => 'ok', 'cleared' => 'all']); // codacy:ignore - echo required for JSON API response
+            jsonSuccess(['result' => 'ok', 'cleared' => 'all']);
         }
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Cache clear error', $e->getMessage());
-        echo json_encode(['error' => 'Failed to clear cache']); // codacy:ignore - echo required for JSON API response
+        jsonError('Failed to clear cache', 500);
     }
 }
 
@@ -807,34 +828,28 @@ switch ($path) {
         break;
     
     default:
-        http_response_code(404);
         // Sanitize path for logging to prevent injection attacks
         $sanitized_path = preg_replace('/[^a-zA-Z0-9\/\-_.]/', '', $path);
         error_log("API 404 - Path not matched: " . $sanitized_path);
-        echo json_encode(['error' => 'Endpoint not found']); // codacy:ignore - echo required for JSON API response
-        break;
+        jsonError('Endpoint not found', 404);
 }
 
 function handleCsrfToken() {
     try {
         // Return the current CSRF token
         if (isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF token response
-            echo json_encode([ // codacy:ignore - echo required for JSON API response
+            jsonSuccess([
                 'csrf_token' => $_SESSION['csrf_token'], // codacy:ignore - Direct $_SESSION access required for CSRF token response
                 'token_name' => '_csrf_token'
             ]);
         } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Unable to generate CSRF token']); // codacy:ignore - echo required for JSON API response
+            jsonError('Unable to generate CSRF token', 500);
         }
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('CSRF token error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to generate CSRF token']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to generate CSRF token', 500);
     }
 }
-
-
 
 function handleSystemInfo() {
     global $CACHE_TTL_CONFIG;
@@ -844,8 +859,7 @@ function handleSystemInfo() {
         $cached = getCachedResponse('/system/info');
         if ($cached !== null) {
             $ttl = isset($CACHE_TTL_CONFIG['/system/info']) ? $CACHE_TTL_CONFIG['/system/info'] : CACHE_DEFAULT_TTL;
-            outputCachedResponse($cached, $ttl);
-            return;
+            jsonCached($cached, $ttl);
         }
         
         $info = [
@@ -860,23 +874,12 @@ function handleSystemInfo() {
         setCachedResponse('/system/info', $result);
         
         header('X-Cache: MISS'); // codacy:ignore - header() required for cache status in standalone API
-        echo json_encode($result); // codacy:ignore - echo required for JSON API response
+        jsonSuccess($result);
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('System info error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve system info']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve system info', 500);
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 function handleServicesStatus() {
     global $CACHE_TTL_CONFIG;
@@ -886,8 +889,7 @@ function handleServicesStatus() {
         $cached = getCachedResponse('/services/status');
         if ($cached !== null) {
             $ttl = isset($CACHE_TTL_CONFIG['/services/status']) ? $CACHE_TTL_CONFIG['/services/status'] : CACHE_DEFAULT_TTL;
-            outputCachedResponse($cached, $ttl);
-            return;
+            jsonCached($cached, $ttl);
         }
         
         $services = [
@@ -903,35 +905,31 @@ function handleServicesStatus() {
         setCachedResponse('/services/status', $result);
         
         header('X-Cache: MISS'); // codacy:ignore - header() required for cache status in standalone API
-        echo json_encode($result); // codacy:ignore - echo required for JSON API response
+        jsonSuccess($result);
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Services status error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve services status']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve services status', 500);
     }
 }
 
 function handleSites() {
     try {
-        echo json_encode(sanitizeOutput(getWordPressSites())); // codacy:ignore - echo required for JSON API response
+        jsonSuccess(sanitizeOutput(getWordPressSites()));
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Sites error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve sites']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve sites', 500);
     }
 }
 
 function handleSitesCount() {
     try {
         $sites = getWordPressSites();
-        echo json_encode(['count' => count($sites)]); // codacy:ignore - echo required for JSON API response
+        jsonSuccess(['count' => count($sites)]);
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Sites count error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve sites count']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve sites count', 500);
     }
 }
-
 
 function handleFileManagerStatus() {
     try {
@@ -959,11 +957,10 @@ function handleFileManagerStatus() {
             'version' => $current_version
         ];
         
-        echo json_encode(sanitizeOutput($status)); // codacy:ignore - echo required for JSON API response
+        jsonSuccess(sanitizeOutput($status));
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('File manager status error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve file manager status']); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve file manager status', 500);
     }
 }
 
@@ -973,11 +970,10 @@ function handleUptimeStatus() {
         $uptime = new UptimeRobotAPI();
         
         if (!$uptime->isConfigured()) {
-            echo json_encode([ // codacy:ignore - echo required for JSON API response
+            jsonSuccess([
                 'configured' => false,
                 'message' => 'Uptime Robot API key not configured'
             ]);
-            return;
         }
         
         $monitors = $uptime->getMonitorStatus();
@@ -990,11 +986,10 @@ function handleUptimeStatus() {
                 round(array_sum(array_column($monitors, 'uptime_ratio')) / count($monitors), 2) : 0
         ];
         
-        echo json_encode(sanitizeOutput($summary)); // codacy:ignore - echo required for JSON API response
+        jsonSuccess(sanitizeOutput($summary));
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Uptime status error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve uptime status', 'configured' => false]); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve uptime status', 500);
     }
 }
 
@@ -1004,40 +999,25 @@ function handleUptimeMonitors() {
         $uptime = new UptimeRobotAPI();
         
         if (!$uptime->isConfigured()) {
-            echo json_encode([ // codacy:ignore - echo required for JSON API response
+            jsonSuccess([
                 'configured' => false,
                 'monitors' => [],
                 'message' => 'Uptime Robot API key not configured'
             ]);
-            return;
         }
         
         $monitors = $uptime->getMonitorStatus();
-        echo json_encode([ // codacy:ignore - echo required for JSON API response
+        jsonSuccess([
             'configured' => true,
             'monitors' => sanitizeOutput($monitors)
         ]);
     } catch (Exception $e) {
-        http_response_code(500);
         logSecurityEvent('Uptime monitors error', $e->getMessage());
-        echo json_encode(['error' => 'Unable to retrieve monitors', 'configured' => false, 'monitors' => []]); // codacy:ignore - echo required for JSON API response
+        jsonError('Unable to retrieve monitors', 500);
     }
 }
 
 // System information functions
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getOsInfo() {
     $os_release = file_get_contents('/etc/os-release'); // codacy:ignore - file_get_contents() required for OS info reading in standalone API
     if ($os_release && preg_match('/PRETTY_NAME="([^"]+)"/', $os_release, $matches)) {
@@ -1378,9 +1358,6 @@ function getWordPressVersion($document_root) {
     }
 }
 
-
 // External services functions moved to external-services/external-services-api.php
 
 ?>
-
-

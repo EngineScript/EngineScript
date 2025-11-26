@@ -76,10 +76,12 @@ class EngineScriptDashboard {
     document.addEventListener("click", (e) => {
       const sidebar = document.querySelector(".sidebar");
       const mobileToggle = document.getElementById("mobile-menu-toggle");
+      // Guard: If toggle element not present, nothing to do
+      if (!mobileToggle) return;
       
       if (sidebar && sidebar.classList.contains("mobile-open") && 
           !sidebar.contains(e.target) && 
-          mobileToggle && !mobileToggle.contains(e.target)) {
+          !mobileToggle.contains(e.target)) {
         this.closeMobileMenu();
       }
     });
@@ -121,7 +123,7 @@ class EngineScriptDashboard {
     // Hide all pages except overview
     pages.forEach((page) => {
       if (page.id !== "overview-page") {
-        page.style.display = "none";
+        page.classList.add("page-hidden");
       }
     });
   }
@@ -143,11 +145,13 @@ class EngineScriptDashboard {
 
     // Update pages
     document.querySelectorAll(".page-content").forEach((page) => {
-      page.style.display = "none";
+      page.classList.add("page-hidden");
+      page.classList.remove("page-visible");
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.style.display = "block";
+      targetPage.classList.remove("page-hidden");
+      targetPage.classList.add("page-visible");
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
@@ -239,8 +243,9 @@ class EngineScriptDashboard {
     const dashboard = document.getElementById("dashboard");
 
     if (loadingScreen && dashboard) {
-      loadingScreen.style.display = "none";
-      dashboard.style.display = "flex";
+      loadingScreen.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      dashboard.classList.add("visible-flex");
     }
   }
 
@@ -418,8 +423,9 @@ class EngineScriptDashboard {
     const currentPage = this.state.getCurrentPage();
     console.log('[Dashboard] Auto-refresh triggered for page:', currentPage);
     
-    // Clear service cache on manual refresh
+    // Clear service cache on manual refresh (both state and API module caches)
     this.state.clearServiceCache();
+    this.api.clearStatusCache();
     this.showRefreshAnimation();
     this.loadPageData(currentPage);
     this.updateLastRefresh();
@@ -427,11 +433,11 @@ class EngineScriptDashboard {
     
   showRefreshAnimation() {
     const refreshBtn = document.getElementById("refresh-btn");
-    const icon = refreshBtn.querySelector("i");
+    if (!refreshBtn) return;
 
-    icon.style.animation = "spin 1s linear";
+    refreshBtn.classList.add("refresh-spinning");
     setTimeout(() => {
-      icon.style.animation = "";
+      refreshBtn.classList.remove("refresh-spinning");
     }, 1000);
   }
     
@@ -465,16 +471,19 @@ class EngineScriptDashboard {
     
   async loadServiceStatus() {
     try {
-      // Fetch all services at once
-      const response = await fetch("/api/services/status");
-      
-      if (!response.ok) {
-        console.error('Service status API error:', response.status, response.statusText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Use unified fetchServiceStatus from API module
+      const result = await this.api.fetchServiceStatus("/api/services/status", {
+        cacheTTL: 30000,  // 30 seconds cache for service status
+        useCache: true
+      });
+
+      if (!result.success) {
+        console.error('Service status API error:', result.error);
+        throw new Error(result.error);
       }
       
-      const services = await response.json();
-      console.log('Service status response:', services);
+      const services = result.data;
+      console.log('Service status response:', services, result.cached ? '(cached)' : '');
 
       // Update each service
       ["nginx", "php", "mysql", "redis"].forEach(service => {
@@ -570,7 +579,15 @@ class EngineScriptDashboard {
   async loadSystemInfo() {
     try {
       this.showSkeletonSystemInfo();
-      const sysInfo = await this.getApiData("/api/system/info", {});
+      
+      // Use unified fetchServiceStatus for system info
+      const result = await this.api.fetchServiceStatus("/api/system/info", {
+        cacheTTL: 60000,  // 60 seconds cache for system info (changes less frequently)
+        useCache: true,
+        fallback: {}
+      });
+      
+      const sysInfo = result.success ? result.data : {};
       const systemInfo = document.getElementById("system-info");
 
       if (systemInfo && typeof sysInfo === "object") {
@@ -669,7 +686,7 @@ class EngineScriptDashboard {
           versionSpan.textContent = "v--";
         }
         // Remove any error styling
-        element.style.opacity = "1";
+        element.classList.add("status-reset");
       }
     });
   }

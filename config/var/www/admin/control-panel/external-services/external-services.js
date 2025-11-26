@@ -2,11 +2,13 @@
 // Handles external service status monitoring with drag-drop ordering and preferences
 
 import { DashboardUtils } from '../modules/utils.js?v=2025.11.25.3';
+import { DashboardAPI } from '../modules/api.js?v=2025.11.25.3';
 import { SERVICE_DEFINITIONS } from './services-config.js?v=2025.11.25.3';
 
 export class ExternalServicesManager {
   constructor(containerSelector, settingsContainerSelector) {
     this.utils = new DashboardUtils();
+    this.api = new DashboardAPI();
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
@@ -167,16 +169,22 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Fetch available services from API
+   * Fetch available services from API using unified fetchServiceStatus
    */
   async fetchAvailableServices() {
     try {
-      const response = await fetch("/api/external-services/config", { credentials: 'include' });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      // Use unified API for consistent caching and error handling
+      const result = await this.api.fetchServiceStatus("/api/external-services/config", {
+        cacheTTL: this.cacheTTL,
+        useCache: true,
+        fallback: null
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch config');
       }
       
-      const data = await response.json();
+      const data = result.data;
       let services = data.services || data;
       
       // If API failed or returned empty, use all services from definitions
@@ -555,36 +563,63 @@ export class ExternalServicesManager {
 
   /**
    * Fetch data with timeout, caching support, and concurrency limiting
+   * Now integrates with unified fetchServiceStatus for internal API calls
+   * @param {Function} fetchFn - Function that performs the actual fetch (receives AbortSignal)
+   * @param {string} serviceKey - Key for caching
+   * @param {Object} options - Additional options
+   * @param {boolean} options.useUnifiedApi - Whether to use unified API for internal endpoints
+   * @param {string} options.endpoint - Endpoint for unified API (required if useUnifiedApi=true)
    */
-  async fetchServiceData(fetchFn, serviceKey) {
+  async fetchServiceData(fetchFn, serviceKey, options = {}) {
+    const { useUnifiedApi = false, endpoint = null } = options;
+    
     // Check cache first - no need to queue if cached
     let data = this.getCachedService(serviceKey);
     
-    if (!data) {
-      // Not in cache, queue the fetch request with concurrency limiting
-      data = await this.queueRequest(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-        
-        try {
-          const response = await fetchFn(controller.signal);
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const responseData = await response.json();
-          
-          // Cache the response
-          this.setCachedService(serviceKey, responseData);
-          return responseData;
-        } catch (error) {
-          clearTimeout(timeoutId);
-          throw error;
-        }
-      });
+    if (data) {
+      return data;
     }
+
+    // For internal API endpoints, use unified fetchServiceStatus
+    if (useUnifiedApi && endpoint && endpoint.startsWith('/api/')) {
+      const result = await this.api.fetchServiceStatus(endpoint, {
+        cacheTTL: this.cacheTTL,
+        useCache: true,
+        timeout: 60000
+      });
+      
+      if (result.success) {
+        // Also cache locally for this manager
+        this.setCachedService(serviceKey, result.data);
+        return result.data;
+      }
+      
+      throw new Error(result.error || 'Failed to fetch service data');
+    }
+
+    // For external APIs, use existing concurrency-limited approach
+    data = await this.queueRequest(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+      try {
+        const response = await fetchFn(controller.signal);
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const responseData = await response.json();
+        
+        // Cache the response
+        this.setCachedService(serviceKey, responseData);
+        return responseData;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    });
     
     return data;
   }
@@ -604,20 +639,22 @@ export class ExternalServicesManager {
 
   /**
    * Update feed-based service status asynchronously
+   * Uses unified fetchServiceStatus for internal API calls
    */
   async updateFeedServiceStatus(serviceKey, serviceDef) {
     try {
-      const data = await this.fetchServiceData((signal) => {
-        let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
-        if (serviceDef.feedFilter) {
-          apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
-        }
-        
-        return fetch(apiUrl, {
-          signal: signal,
-          credentials: 'include'
-        });
-      }, serviceKey);
+      // Build the API endpoint
+      let apiUrl = `/api/external-services/feed?feed=${encodeURIComponent(serviceDef.feedType)}`;
+      if (serviceDef.feedFilter) {
+        apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
+      }
+      
+      // Use unified API for internal endpoints
+      const data = await this.fetchServiceData(
+        (signal) => fetch(apiUrl, { signal, credentials: 'include' }),
+        serviceKey,
+        { useUnifiedApi: true, endpoint: apiUrl }
+      );
       
       if (!data || !data.status) {
         throw new Error('Invalid feed response format');
@@ -949,24 +986,12 @@ export class ExternalServicesManager {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background: ${type === 'success' ? '#00d4aa' : type === 'error' ? '#f44' : '#00a8ff'};
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
     
     document.body.appendChild(notification);
     
     // Remove after 3 seconds
     setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
+      notification.classList.add('notification-hiding');
       setTimeout(() => notification.remove(), 300);
     }, 3000);
   }

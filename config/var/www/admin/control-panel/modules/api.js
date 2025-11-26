@@ -7,6 +7,10 @@ export class DashboardAPI {
     
     // Prevents duplicate API calls when multiple components request the same endpoint
     this.pendingRequests = new Map();
+    
+    // Service status cache with configurable TTL
+    this.statusCache = new Map();
+    this.defaultCacheTTL = 30000; // 30 seconds default cache
   }
 
   async loadCsrfToken() {
@@ -205,5 +209,242 @@ export class DashboardAPI {
       console.error(`Failed to get service status for ${service}:`, error);
       return { online: false, version: "Error" };
     }
+  }
+
+  /**
+   * Unified service/system status fetching function
+   * Provides consistent interface for fetching status from any endpoint
+   * with caching, deduplication, timeout handling, and uniform error responses
+   * 
+   * @param {string} endpoint - The API endpoint to fetch (e.g., '/api/services/status')
+   * @param {Object} options - Configuration options
+   * @param {number} options.cacheTTL - Cache time-to-live in ms (default: 30000)
+   * @param {boolean} options.useCache - Whether to use caching (default: true)
+   * @param {number} options.timeout - Request timeout in ms (default: 30000)
+   * @param {*} options.fallback - Fallback value on error (default: null)
+   * @param {string} options.method - HTTP method (default: 'GET')
+   * @param {Object} options.body - Request body for POST requests
+   * @param {AbortSignal} options.signal - External abort signal
+   * @returns {Promise<Object>} - Consistent response: { success: boolean, data: any, error?: string, cached?: boolean }
+   * 
+   * @example
+   * // Fetch all service statuses
+   * const result = await api.fetchServiceStatus('/api/services/status');
+   * if (result.success) {
+   *   console.log(result.data.nginx.online);
+   * }
+   * 
+   * @example
+   * // Fetch with custom options
+   * const result = await api.fetchServiceStatus('/api/system/info', {
+   *   cacheTTL: 60000,
+   *   timeout: 10000,
+   *   fallback: { os: 'Unknown' }
+   * });
+   */
+  async fetchServiceStatus(endpoint, options = {}) {
+    const {
+      cacheTTL = this.defaultCacheTTL,
+      useCache = true,
+      timeout = 30000,
+      fallback = null,
+      method = 'GET',
+      body = null,
+      signal = null
+    } = options;
+
+    // Standardized response format
+    const createResponse = (success, data, error = null, cached = false) => ({
+      success,
+      data,
+      error,
+      cached,
+      timestamp: Date.now()
+    });
+
+    try {
+      // Check for fetch support
+      if (typeof fetch === "undefined" || this.isOperaMini()) {
+        return createResponse(false, fallback, 'Fetch not supported');
+      }
+
+      // Check cache first (only for GET requests with caching enabled)
+      if (useCache && method === 'GET') {
+        const cached = this.getStatusCache(endpoint);
+        if (cached !== null) {
+          return createResponse(true, cached, null, true);
+        }
+      }
+
+      // Use request deduplication for GET requests
+      const fetchFn = async () => {
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+          const headers = {};
+          if (this.csrfToken) {
+            headers['X-CSRF-Token'] = this.csrfToken;
+          }
+          if (body) {
+            headers['Content-Type'] = 'application/json';
+          }
+
+          const fetchOptions = {
+            method,
+            headers,
+            credentials: 'include',
+            signal: signal || controller.signal
+          };
+
+          if (body && method !== 'GET') {
+            fetchOptions.body = JSON.stringify(body);
+          }
+
+          const response = await fetch(endpoint, fetchOptions);
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          // Cache successful GET responses
+          if (useCache && method === 'GET') {
+            this.setStatusCache(endpoint, data, cacheTTL);
+          }
+
+          return data;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
+
+      // Deduplicate concurrent requests to same endpoint (GET only)
+      let data;
+      if (method === 'GET') {
+        data = await this.deduplicateRequest(endpoint, fetchFn);
+      } else {
+        data = await fetchFn();
+      }
+
+      return createResponse(true, data);
+
+    } catch (error) {
+      // Handle specific error types
+      let errorMessage = error.message || 'Unknown error';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out';
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Network error - unable to connect';
+      }
+
+      console.error(`fetchServiceStatus(${endpoint}) failed:`, errorMessage);
+      return createResponse(false, fallback, errorMessage);
+    }
+  }
+
+  /**
+   * Get cached status data
+   * @param {string} key - Cache key (typically endpoint)
+   * @returns {*} - Cached data or null if expired/missing
+   */
+  getStatusCache(key) {
+    const cached = this.statusCache.get(key);
+    if (!cached) return null;
+
+    if (Date.now() - cached.timestamp > cached.ttl) {
+      this.statusCache.delete(key);
+      return null;
+    }
+
+    return cached.data;
+  }
+
+  /**
+   * Set cached status data
+   * @param {string} key - Cache key
+   * @param {*} data - Data to cache
+   * @param {number} ttl - Time-to-live in ms
+   */
+  setStatusCache(key, data, ttl) {
+    // Limit cache size to prevent memory issues (LRU-style eviction)
+    const maxCacheSize = 50;
+    if (this.statusCache.size >= maxCacheSize) {
+      const oldestKey = this.statusCache.keys().next().value;
+      this.statusCache.delete(oldestKey);
+    }
+
+    this.statusCache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
+
+  /**
+   * Clear status cache (all or specific key)
+   * @param {string} [key] - Optional specific key to clear
+   */
+  clearStatusCache(key = null) {
+    if (key) {
+      this.statusCache.delete(key);
+    } else {
+      this.statusCache.clear();
+    }
+  }
+
+  /**
+   * Fetch multiple service statuses in a single call
+   * Uses batch API if available, falls back to parallel requests
+   * 
+   * @param {string[]} endpoints - Array of endpoints to fetch
+   * @param {Object} options - Options passed to fetchServiceStatus
+   * @returns {Promise<Object>} - Object with results keyed by endpoint
+   */
+  async fetchMultipleStatuses(endpoints, options = {}) {
+    if (!Array.isArray(endpoints) || endpoints.length === 0) {
+      return { results: {}, errors: {} };
+    }
+
+    const results = {};
+    const errors = {};
+
+    // Try batch API first if all endpoints are internal
+    const allInternal = endpoints.every(e => e.startsWith('/api/'));
+    if (allInternal && endpoints.length > 1) {
+      try {
+        const batchResult = await this.batchRequest(endpoints);
+        if (!batchResult.error) {
+          // Convert batch results to fetchServiceStatus format
+          Object.entries(batchResult.results || {}).forEach(([endpoint, data]) => {
+            results[endpoint] = { success: true, data, cached: false, timestamp: Date.now() };
+          });
+          Object.entries(batchResult.errors || {}).forEach(([endpoint, error]) => {
+            errors[endpoint] = error;
+            results[endpoint] = { success: false, data: null, error, cached: false, timestamp: Date.now() };
+          });
+          return { results, errors };
+        }
+      } catch (batchError) {
+        console.warn('Batch request failed, falling back to parallel requests:', batchError);
+      }
+    }
+
+    // Fallback: parallel individual requests
+    const promises = endpoints.map(async (endpoint) => {
+      const result = await this.fetchServiceStatus(endpoint, options);
+      results[endpoint] = result;
+      if (!result.success) {
+        errors[endpoint] = result.error;
+      }
+    });
+
+    await Promise.all(promises);
+    return { results, errors };
   }
 }
