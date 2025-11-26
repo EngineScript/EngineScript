@@ -450,7 +450,6 @@ function sweepCache() {
     fclose($lockHandle); // codacy:ignore - fclose() required for lock file cleanup in standalone API
 }
 
-
 /**
  * Get cache file path for an endpoint
  * @param string $endpoint The API endpoint
@@ -834,8 +833,6 @@ function handleCsrfToken() {
     }
 }
 
-
-
 function handleSystemInfo() {
     global $CACHE_TTL_CONFIG;
     
@@ -867,16 +864,6 @@ function handleSystemInfo() {
         echo json_encode(['error' => 'Unable to retrieve system info']); // codacy:ignore - echo required for JSON API response
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 function handleServicesStatus() {
     global $CACHE_TTL_CONFIG;
@@ -931,7 +918,6 @@ function handleSitesCount() {
         echo json_encode(['error' => 'Unable to retrieve sites count']); // codacy:ignore - echo required for JSON API response
     }
 }
-
 
 function handleFileManagerStatus() {
     try {
@@ -1024,20 +1010,8 @@ function handleUptimeMonitors() {
     }
 }
 
+
 // System information functions
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getOsInfo() {
     $os_release = file_get_contents('/etc/os-release'); // codacy:ignore - file_get_contents() required for OS info reading in standalone API
     if ($os_release && preg_match('/PRETTY_NAME="([^"]+)"/', $os_release, $matches)) {
@@ -1379,8 +1353,4 @@ function getWordPressVersion($document_root) {
 }
 
 
-// External services functions moved to external-services/external-services-api.php
-
 ?>
-
-
