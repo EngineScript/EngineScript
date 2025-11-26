@@ -123,7 +123,18 @@ export class DashboardUtils {
 
     // Create a simple error notification
     const notification = document.createElement("div");
-    notification.className = "error-notification";
+    notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--error-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 10000;
+            max-width: 300px;
+        `;
     notification.textContent = sanitizedMessage;
 
     document.body.appendChild(notification);

@@ -123,7 +123,7 @@ class EngineScriptDashboard {
     // Hide all pages except overview
     pages.forEach((page) => {
       if (page.id !== "overview-page") {
-        page.classList.add("page-hidden");
+        page.style.display = "none";
       }
     });
   }
@@ -145,13 +145,11 @@ class EngineScriptDashboard {
 
     // Update pages
     document.querySelectorAll(".page-content").forEach((page) => {
-      page.classList.add("page-hidden");
-      page.classList.remove("page-visible");
+      page.style.display = "none";
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.classList.remove("page-hidden");
-      targetPage.classList.add("page-visible");
+      targetPage.style.display = "block";
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
@@ -243,9 +241,8 @@ class EngineScriptDashboard {
     const dashboard = document.getElementById("dashboard");
 
     if (loadingScreen && dashboard) {
-      loadingScreen.classList.add("hidden");
-      dashboard.classList.remove("hidden");
-      dashboard.classList.add("visible-flex");
+      loadingScreen.style.display = "none";
+      dashboard.style.display = "flex";
     }
   }
 
@@ -423,9 +420,8 @@ class EngineScriptDashboard {
     const currentPage = this.state.getCurrentPage();
     console.log('[Dashboard] Auto-refresh triggered for page:', currentPage);
     
-    // Clear service cache on manual refresh (both state and API module caches)
+    // Clear service cache on manual refresh
     this.state.clearServiceCache();
-    this.api.clearStatusCache();
     this.showRefreshAnimation();
     this.loadPageData(currentPage);
     this.updateLastRefresh();
@@ -433,11 +429,11 @@ class EngineScriptDashboard {
     
   showRefreshAnimation() {
     const refreshBtn = document.getElementById("refresh-btn");
-    if (!refreshBtn) return;
+    const icon = refreshBtn.querySelector("i");
 
-    refreshBtn.classList.add("refresh-spinning");
+    icon.style.animation = "spin 1s linear";
     setTimeout(() => {
-      refreshBtn.classList.remove("refresh-spinning");
+      icon.style.animation = "";
     }, 1000);
   }
     
@@ -471,19 +467,16 @@ class EngineScriptDashboard {
     
   async loadServiceStatus() {
     try {
-      // Use unified fetchServiceStatus from API module
-      const result = await this.api.fetchServiceStatus("/api/services/status", {
-        cacheTTL: 30000,  // 30 seconds cache for service status
-        useCache: true
-      });
-
-      if (!result.success) {
-        console.error('Service status API error:', result.error);
-        throw new Error(result.error);
+      // Fetch all services at once
+      const response = await fetch("/api/services/status");
+      
+      if (!response.ok) {
+        console.error('Service status API error:', response.status, response.statusText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      const services = result.data;
-      console.log('Service status response:', services, result.cached ? '(cached)' : '');
+      const services = await response.json();
+      console.log('Service status response:', services);
 
       // Update each service
       ["nginx", "php", "mysql", "redis"].forEach(service => {
@@ -579,15 +572,7 @@ class EngineScriptDashboard {
   async loadSystemInfo() {
     try {
       this.showSkeletonSystemInfo();
-      
-      // Use unified fetchServiceStatus for system info
-      const result = await this.api.fetchServiceStatus("/api/system/info", {
-        cacheTTL: 60000,  // 60 seconds cache for system info (changes less frequently)
-        useCache: true,
-        fallback: {}
-      });
-      
-      const sysInfo = result.success ? result.data : {};
+      const sysInfo = await this.getApiData("/api/system/info", {});
       const systemInfo = document.getElementById("system-info");
 
       if (systemInfo && typeof sysInfo === "object") {
@@ -686,7 +671,7 @@ class EngineScriptDashboard {
           versionSpan.textContent = "v--";
         }
         // Remove any error styling
-        element.classList.add("status-reset");
+        element.style.opacity = "1";
       }
     });
   }

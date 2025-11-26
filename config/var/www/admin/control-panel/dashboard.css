@@ -856,52 +856,6 @@ button:focus, select:focus, input:focus {
     outline-offset: 2px;
 }
 
-/* Visibility Utility Classes */
-.hidden {
-    display: none !important;
-}
-
-.visible-block {
-    display: block !important;
-}
-
-.visible-flex {
-    display: flex !important;
-}
-
-/* Page Content Visibility States */
-.page-content.page-hidden {
-    display: none;
-}
-
-.page-content.page-visible {
-    display: block;
-}
-
-/* Refresh Button Animation */
-.refresh-spinning i {
-    animation: spin 1s linear;
-}
-
-/* Service Status Reset */
-.service-item.status-reset {
-    opacity: 1;
-}
-
-/* Error Notification */
-.error-notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--error-color);
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    z-index: 10000;
-    max-width: 300px;
-}
-
 /* Loading States */
 .loading {
     opacity: 0.6;
