@@ -29,7 +29,7 @@ class SiteController extends BaseController
     private const NGINX_SITES_PATH = '/etc/nginx/sites-enabled';
 
     /**
-     * List all WordPress sites
+     * Get all WordPress sites
      * 
      * Scans nginx configuration to find WordPress installations.
      * Returns domain, status, WordPress version, and SSL status.
@@ -38,7 +38,7 @@ class SiteController extends BaseController
      * 
      * @return void Outputs JSON response
      */
-    public function listSites()
+    public function getSites()
     {
         try {
             // Check cache first
@@ -70,7 +70,7 @@ class SiteController extends BaseController
      * 
      * @return void Outputs JSON response
      */
-    public function countSites()
+    public function getSitesCount()
     {
         try {
             // Check cache first

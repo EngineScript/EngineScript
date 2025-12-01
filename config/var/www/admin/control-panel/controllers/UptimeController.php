@@ -21,8 +21,8 @@ class UptimeController extends BaseController
     /**
      * API endpoint paths
      */
-    private const ENDPOINT_STATUS = '/uptime/status';
-    private const ENDPOINT_MONITORS = '/uptime/monitors';
+    private const ENDPOINT_STATUS = '/monitoring/uptime';
+    private const ENDPOINT_MONITORS = '/monitoring/uptime/monitors';
 
     /**
      * UptimeRobot API instance

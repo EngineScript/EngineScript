@@ -60,7 +60,7 @@ class ExternalServicesController extends BaseController
             }
 
             // Validate endpoint parameter
-            if (!$this->validateString($endpoint, 1, 100)) {
+            if (!$this->validateString($endpoint, 100)) {
                 ApiResponse::badRequest('Invalid endpoint parameter');
                 return;
             }
@@ -136,7 +136,7 @@ class ExternalServicesController extends BaseController
             }
 
             // Validate slug format
-            if (!$this->validateString($slug, 1, 100)) {
+            if (!$this->validateString($slug, 100)) {
                 ApiResponse::badRequest('Invalid plugin slug');
                 return;
             }
