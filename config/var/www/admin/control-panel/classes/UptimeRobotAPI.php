@@ -138,11 +138,11 @@ class UptimeRobotAPI
 
         // Initialize cURL
         // codacy:ignore - curl_init() required for API communication in standalone service
-        $ch = curl_init();
+        $curlHandle = curl_init();
 
         // Set cURL options
         // codacy:ignore - curl functions required for secure API communication
-        curl_setopt_array($ch, [
+        curl_setopt_array($curlHandle, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
@@ -162,12 +162,12 @@ class UptimeRobotAPI
 
         // Execute request
         // codacy:ignore - curl_exec() required for API communication
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
+        $response = curl_exec($curlHandle);
+        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $error = curl_error($curlHandle);
 
         // codacy:ignore - curl_close() required for cleanup
-        curl_close($ch);
+        curl_close($curlHandle);
 
         // Check for cURL errors
         if ($response === false) {

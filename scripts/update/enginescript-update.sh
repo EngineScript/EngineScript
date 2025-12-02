@@ -82,7 +82,9 @@ echo ""
 # --------------------------------------------------------
 # Update EngineScript Frontend
 
-# Admin Control Panel
+# Admin Control Panel - Remove old files and replace with new version
+echo "Cleaning up old Admin Control Panel files..."
+rm -rf /var/www/admin/enginescript/*
 /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
 
 # Install phpinfo

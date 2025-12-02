@@ -44,6 +44,7 @@ class SiteController extends BaseController
             // Check cache first
             $cached = $this->getCached(self::ENDPOINT_LIST);
             if ($cached !== null) {
+                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
                 ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_LIST));
                 return;
             }
@@ -54,9 +55,11 @@ class SiteController extends BaseController
             // Cache the result
             $this->setCached(self::ENDPOINT_LIST, $result);
 
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::success($result, $this->getTtl(self::ENDPOINT_LIST));
         } catch (Exception $e) {
             $this->logSecurityEvent('Sites error', $e->getMessage());
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::serverError('Unable to retrieve sites');
         }
     }
@@ -76,6 +79,7 @@ class SiteController extends BaseController
             // Check cache first
             $cached = $this->getCached(self::ENDPOINT_COUNT);
             if ($cached !== null) {
+                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
                 ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
@@ -86,9 +90,11 @@ class SiteController extends BaseController
             // Cache the result
             $this->setCached(self::ENDPOINT_COUNT, $result);
 
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
         } catch (Exception $e) {
             $this->logSecurityEvent('Sites count error', $e->getMessage());
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::serverError('Unable to retrieve sites count');
         }
     }
@@ -136,7 +142,7 @@ class SiteController extends BaseController
      */
     private function validateNginxSitesPath($nginx_sites_path)
     {
-        // codacy:ignore - realpath() required for path validation in standalone API
+        // codacy:ignore - realpath() required for path normalization and validation to prevent directory traversal
         $real_path = realpath($nginx_sites_path);
         if ($real_path !== '/etc/nginx/sites-enabled') {
             $this->logSecurityEvent('Nginx sites path traversal attempt', $nginx_sites_path);

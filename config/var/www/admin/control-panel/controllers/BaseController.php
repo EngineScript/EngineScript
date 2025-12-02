@@ -17,6 +17,7 @@
  */
 
 // Ensure ApiResponse class is loaded
+// codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
 require_once __DIR__ . '/../classes/ApiResponse.php';
 
 /**
@@ -161,7 +162,7 @@ abstract class BaseController
      */
     protected function clearCacheFor($endpoint = null)
     {
-        // codacy:ignore - is_dir() required for cache directory validation in standalone API
+        // codacy:ignore - is_dir() required for filesystem operations in standalone API on hardcoded path
         if (!is_dir(self::CACHE_DIR)) {
             return;
         }
@@ -174,15 +175,16 @@ abstract class BaseController
                 // codacy:ignore - unlink() required for cache deletion in standalone API
                 @unlink($file);
             }
-        } else {
-            // Clear specific endpoint cache
-            $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $endpoint);
-            // codacy:ignore - glob() required for cache enumeration on hardcoded path
-            $files = glob(self::CACHE_DIR . $safe_key . '*.json');
-            foreach ($files as $file) {
-                // codacy:ignore - unlink() required for cache deletion in standalone API
-                @unlink($file);
-            }
+            return;
+        }
+
+        // Clear specific endpoint cache
+        $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $endpoint);
+        // codacy:ignore - glob() required for cache enumeration on hardcoded path
+        $files = glob(self::CACHE_DIR . $safe_key . '*.json');
+        foreach ($files as $file) {
+            // codacy:ignore - unlink() required for cache deletion in standalone API
+            @unlink($file);
         }
     }
 
@@ -455,6 +457,7 @@ abstract class BaseController
                 break;
             }
             
+            // codacy:ignore - file_get_contents() required for cache file reading on hardcoded path
             $raw = @file_get_contents($cacheFile);
             if ($raw === false) {
                 continue;
