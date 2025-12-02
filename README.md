@@ -249,7 +249,7 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
 |**Misc Supplemental Software**|||
-|LIBURING|2.12|<https://github.com/axboe/liburing>|
+|LIBURING|2.13-rc1|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
 |ZLIB|1.3.1|<https://github.com/madler/zlib>|
 
