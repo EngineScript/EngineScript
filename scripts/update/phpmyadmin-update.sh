@@ -21,7 +21,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # phpMyAdmin
 
 # Store existing config file
-rm -rf /usr/src/config.inc.php
+rm -rf /usr/src/config.inc.php 2>/dev/null || true
 mv /var/www/admin/enginescript/phpmyadmin/config.inc.php /usr/src/config.inc.php
 rm -rf /var/www/admin/enginescript/phpmyadmin
 

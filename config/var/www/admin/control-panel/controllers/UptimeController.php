@@ -191,7 +191,7 @@ class UptimeController extends BaseController
             $status = isset($monitor['status']) ? (int) $monitor['status'] : 0;
             switch ($status) {
                 case 2: // Up
-                    $up++;
+                    $upCount++;
                     break;
                 case 8: // Seems down
                 case 9: // Down
@@ -211,9 +211,9 @@ class UptimeController extends BaseController
         if ($total > 0) {
             if ($down > 0) {
                 $overall_status = 'critical';
-            } elseif ($up === $total) {
+            } elseif ($upCount === $total) {
                 $overall_status = 'healthy';
-            } elseif ($up > 0) {
+            } elseif ($upCount > 0) {
                 $overall_status = 'partial';
             }
         }
@@ -222,7 +222,7 @@ class UptimeController extends BaseController
             'enabled' => true,
             'overall_status' => $overall_status,
             'total_monitors' => $total,
-            'up' => $up,
+            'up' => $upCount,
             'down' => $down,
             'paused' => $paused
         ];

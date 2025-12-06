@@ -42,7 +42,7 @@ fi
 if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then
     echo "Updating phpMyAdmin"
-    /usr/local/bin/enginescript/scripts/install/tools/security/phpmyadmin-update.sh
+    /usr/local/bin/enginescript/scripts/update/phpmyadmin-update.sh
   else
     echo "Skipping phpMyAdmin update"
 fi
