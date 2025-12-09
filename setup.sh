@@ -55,7 +55,7 @@ fi
 # Install Required Packages for Script
 apt update --allow-releaseinfo-change -y
 
-core_packages="apt bash boxes cron coreutils curl dos2unix git gzip nano openssl pwgen sed software-properties-common tar tzdata unattended-upgrades unzip zip"
+core_packages="apt bash boxes cron coreutils curl dos2unix git gzip nano needrestart openssl pwgen sed software-properties-common tar tzdata unattended-upgrades unzip zip"
 
 apt install -qy $core_packages || {
   echo "Error: Unable to install one or more packages. Exiting..."
@@ -71,7 +71,10 @@ for cmd in "${required_commands[@]}"; do
   fi
 done
 
-sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
+# Configure needrestart if available
+if [[ -f "/etc/needrestart/needrestart.conf" ]]; then
+  sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
+fi
 
 # Upgrade Software
 apt upgrade -y
