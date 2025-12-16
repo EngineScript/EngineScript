@@ -7,12 +7,6 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# Exit immediately if a command exits with a non-zero status
-set -e
-
-# Trap errors and print the line number
-trap 'echo "Error occurred at line $LINENO. Exiting."; exit 1' ERR
-
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt

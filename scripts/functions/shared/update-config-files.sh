@@ -7,8 +7,6 @@
 # the individual .conf files for various EngineScript services
 #----------------------------------------------------------------------------------
 
-set -e
-
 # Source configuration
 source /usr/local/bin/enginescript/enginescript-variables.txt
 source /home/EngineScript/enginescript-install-options.txt

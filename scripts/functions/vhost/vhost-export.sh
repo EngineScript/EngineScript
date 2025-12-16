@@ -18,10 +18,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Add proper error handling
-set -e
-set -o pipefail
-
 # Source the list of sites
 SITES_LIST_FILE="/home/EngineScript/sites-list/sites.sh"
 if [[ -f "$SITES_LIST_FILE" ]]; then
