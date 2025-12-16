@@ -44,9 +44,20 @@ class UptimeController extends BaseController
             if (file_exists($configPath)) {
                 // codacy:ignore - parse_ini_file() required for config parsing in standalone service
                 $config = parse_ini_file($configPath);
-                if ($config && !empty($config['api_key'])) {
-                    $this->uptimeApi = new UptimeRobotAPI($config['api_key']);
+                
+                // Debug logging
+                error_log("UptimeRobot config parse result: " . print_r($config, true));
+                
+                if ($config && isset($config['api_key']) && !empty(trim($config['api_key']))) {
+                    error_log("UptimeRobot API key found: " . substr(trim($config['api_key']), 0, 10) . "...");
+                    $this->uptimeApi = new UptimeRobotAPI(trim($config['api_key']));
+                } else {
+                    error_log("UptimeRobot API key validation failed - config: " . ($config ? 'exists' : 'false') . 
+                              ", isset: " . (isset($config['api_key']) ? 'yes' : 'no') . 
+                              ", empty: " . (isset($config['api_key']) ? (empty(trim($config['api_key'])) ? 'yes' : 'no') : 'n/a'));
                 }
+            } else {
+                error_log("UptimeRobot config file not found at: " . $configPath);
             }
         }
         return $this->uptimeApi;
@@ -75,6 +86,7 @@ class UptimeController extends BaseController
             $api = $this->getUptimeApi();
 
             if (!$api) {
+                error_log("UptimeController: API instance is null");
                 $result = [
                     'enabled' => false,
                     'reason' => 'UptimeRobot API not configured'
@@ -84,7 +96,9 @@ class UptimeController extends BaseController
                 return;
             }
 
+            error_log("UptimeController: About to call getMonitors()");
             $monitors = $api->getMonitors();
+            error_log("UptimeController: getMonitors() returned: " . ($monitors === false ? 'FALSE' : (is_array($monitors) ? count($monitors) . ' monitors' : 'unknown')));
 
             if (!$monitors) {
                 $result = [
