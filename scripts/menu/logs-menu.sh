@@ -27,7 +27,7 @@ while true
     echo "Select an option to view the last 30 lines of logs."
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "EngineScript Install Error Log" "Exit Server Logs")
+    secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "EngineScript Install Error Log" "API Error Log" "Exit Server Logs")
     select secopt in "${secoptions[@]}"
     do
       case "$secopt" in
@@ -69,6 +69,12 @@ while true
           clear
           echo "${BOLD}Showing last 30 lines of EngineScript install-error-log.log.${NORMAL}" | boxes -a c -d shell -p a1l2
           tail -n30 /var/log/EngineScript/install-error-log.log && read -n 1 -s -r -p "Press any key to continue"
+          break
+          ;;
+        "API Error Log")
+          clear
+          echo "${BOLD}Showing last 30 lines of EngineScript API error log.${NORMAL}" | boxes -a c -d shell -p a1l2
+          tail -n30 /var/log/EngineScript/enginescript-api.log && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Exit Server Logs")

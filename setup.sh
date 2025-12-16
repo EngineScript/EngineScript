@@ -8,8 +8,6 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------
 
-set -e
-
 # Check current user's ID. If user is not 0 (root), exit.
 if [[ "${EUID}" != 0 ]];
   then
