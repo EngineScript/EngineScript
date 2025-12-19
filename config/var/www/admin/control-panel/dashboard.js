@@ -908,10 +908,10 @@ class EngineScriptDashboard {
     try {
       const summary = await this.getApiData("/api/monitoring/uptime", {});
       
-      if (summary.configured) {
+      if (summary.enabled) {
         const totalCount = this.normalizeMonitorCount(summary.total_monitors);
-        const upCount = this.normalizeMonitorCount(summary.up_monitors);
-        const downCount = this.normalizeMonitorCount(summary.down_monitors);
+        const upCount = this.normalizeMonitorCount(summary.up);
+        const downCount = this.normalizeMonitorCount(summary.down);
 
         this.setTextContent("total-monitors", totalCount);
         this.setTextContent("up-monitors", upCount);
@@ -932,7 +932,7 @@ class EngineScriptDashboard {
       
       if (!monitorsContainer) return;
       
-      if (!response.configured) {
+      if (!response.enabled) {
         this.showUptimeNotConfigured();
         return;
       }
@@ -969,7 +969,8 @@ class EngineScriptDashboard {
     const monitorDiv = document.createElement("div");
     monitorDiv.className = "uptime-monitor";
     
-    const statusClass = this.getUptimeStatusClass(monitor.status_code);
+    // API returns 'status' (numeric) and 'status_text' (string)
+    const statusClass = this.getUptimeStatusClass(monitor.status);
     
     // Create elements programmatically to avoid XSS vulnerabilities
     const statusDiv = document.createElement("div");
@@ -992,20 +993,21 @@ class EngineScriptDashboard {
     infoDiv.appendChild(nameH4);
     infoDiv.appendChild(urlP);
     
-    // Only show stats if they have meaningful values
-    const hasStats = monitor.uptime_ratio > 0 || monitor.response_time > 0;
+    // API returns uptime_day, uptime_week, uptime_month (use day for display)
+    const uptimeRatio = monitor.uptime_day || monitor.uptime_week || monitor.uptime_month || 0;
+    const hasStats = uptimeRatio > 0 || monitor.response_time > 0;
     
     if (hasStats) {
       const statsDiv = document.createElement("div");
       statsDiv.className = "monitor-stats";
       
-      if (monitor.uptime_ratio > 0) {
+      if (uptimeRatio > 0) {
         const uptimeStatDiv = document.createElement("div");
         uptimeStatDiv.className = "stat";
         
         const uptimeValue = document.createElement("span");
         uptimeValue.className = "stat-value";
-        uptimeValue.textContent = this.sanitizeNumeric(monitor.uptime_ratio, "0") + "%";
+        uptimeValue.textContent = this.sanitizeNumeric(uptimeRatio, "0") + "%";
         
         const uptimeLabel = document.createElement("span");
         uptimeLabel.className = "stat-label";
@@ -1041,7 +1043,8 @@ class EngineScriptDashboard {
     
     const statusText = document.createElement("span");
     statusText.className = "status-text";
-    statusText.textContent = this.sanitizeInput(monitor.status);
+    // API returns 'status_text' for the text version
+    statusText.textContent = this.sanitizeInput(monitor.status_text || 'Unknown');
     
     statusTextDiv.appendChild(statusText);
     

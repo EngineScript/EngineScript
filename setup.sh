@@ -146,6 +146,7 @@ touch "/var/log/EngineScript/vhost-export.log"
 touch "/var/log/EngineScript/vhost-import.log"
 touch "/var/log/EngineScript/vhost-install.log"
 touch "/var/log/EngineScript/vhost-remove.log"
+touch "/var/log/EngineScript/enginescript-api.log"
 touch "/var/log/EngineScript/enginescript-api-security.log"
 
 # Set proper permissions for EngineScript logs
