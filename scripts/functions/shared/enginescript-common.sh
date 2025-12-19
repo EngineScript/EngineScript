@@ -453,10 +453,19 @@ function validate_url() {
 # ----------------------------------------------------------------
 # Set permissions for EngineScript frontend directories and files
 function set_enginescript_frontend_permissions() {
-    # Set permissions for /var/www/admin/enginescript
-    find /var/www/admin/enginescript -type d -print0 | sudo xargs -0 chmod 0755
-    find /var/www/admin/enginescript -type f -print0 | sudo xargs -0 chmod 0644
-    chown -R www-data:www-data /var/www/admin/enginescript
+    # Set permissions for /var/www/admin/control-panel (dashboard)
+    if [ -d "/var/www/admin/control-panel" ]; then
+        find /var/www/admin/control-panel -type d -print0 | sudo xargs -0 chmod 0755
+        find /var/www/admin/control-panel -type f -print0 | sudo xargs -0 chmod 0644
+        chown -R www-data:www-data /var/www/admin/control-panel
+    fi
+
+    # Set permissions for /var/www/admin/tools (phpMyAdmin, TinyFileManager, etc.)
+    if [ -d "/var/www/admin/tools" ]; then
+        find /var/www/admin/tools -type d -print0 | sudo xargs -0 chmod 0755
+        find /var/www/admin/tools -type f -print0 | sudo xargs -0 chmod 0644
+        chown -R www-data:www-data /var/www/admin/tools
+    fi
 
     # Set permissions for /etc/enginescript
     find /etc/enginescript -type d -print0 | sudo xargs -0 chmod 0755

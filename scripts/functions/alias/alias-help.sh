@@ -57,6 +57,7 @@ ${BOLD}EngineScript Locations:${NORMAL}
 /usr/local/bin/enginescript - EngineScript source
 /var/lib/mysql              - MySQL database
 /var/log                    - Server logs
-/var/www/admin/enginescript - Tools accessible via server IP address or admin.YOURDOMAIN subdomain
+/var/www/admin/control-panel - EngineScript Admin Dashboard
+/var/www/admin/tools        - Admin tools (phpMyAdmin, TinyFileManager, etc.)
 /var/www/sites/YOURDOMAIN/html - Root directory for your WordPress installation
 "

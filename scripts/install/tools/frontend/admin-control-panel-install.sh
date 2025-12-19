@@ -21,16 +21,19 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Return to /usr/src
 cd /usr/src
 
+# Create control-panel directory if it doesn't exist
+mkdir -p /var/www/admin/control-panel
+
 # Copy Admin Control Panel
-cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/enginescript/
+cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/
 
 # Substitute frontend dependency versions
-sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/enginescript/index.html
+sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # More robust removal: match any <div> with id="adminer-tool" regardless of attribute order/whitespace
-    sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/enginescript/index.html"
+    sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
 fi
 
 # Set permissions for the EngineScript frontend

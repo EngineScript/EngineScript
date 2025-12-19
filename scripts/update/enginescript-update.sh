@@ -83,21 +83,12 @@ echo ""
 # Update EngineScript Frontend
 
 # Admin Control Panel - Remove old files and replace with new version
+# NOTE: Only the control-panel directory is wiped on updates.
+# Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer, phpinfo)
+# are stored in /var/www/admin/tools/ and are NOT affected by updates.
 echo "Cleaning up old Admin Control Panel files..."
-rm -rf /var/www/admin/enginescript/*
+rm -rf /var/www/admin/control-panel/*
 /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
-
-# Install phpinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh
-
-# Install phpSysinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh
-
-# Install Tiny File Manager
-/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh
-
-# Install UptimeRobot API
-/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."

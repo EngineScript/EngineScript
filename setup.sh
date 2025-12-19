@@ -118,11 +118,18 @@ if [[ ! -d "/etc/enginescript" ]]; then
     echo "✓ EngineScript configuration directory created"
 fi
 
-# Create /var/www/admin/enginescript/ if it doesn't exist
-if [[ ! -d "/var/www/admin/enginescript/" ]]; then
-    echo "Creating EngineScript admin directory..."
-    mkdir -p "/var/www/admin/enginescript"
-    echo "✓ EngineScript admin directory created"
+# Create /var/www/admin/control-panel/ if it doesn't exist
+if [[ ! -d "/var/www/admin/control-panel/" ]]; then
+    echo "Creating EngineScript admin control panel directory..."
+    mkdir -p "/var/www/admin/control-panel"
+    echo "✓ EngineScript admin control panel directory created"
+fi
+
+# Create /var/www/admin/tools/ if it doesn't exist
+if [[ ! -d "/var/www/admin/tools/" ]]; then
+    echo "Creating EngineScript admin tools directory..."
+    mkdir -p "/var/www/admin/tools"
+    echo "✓ EngineScript admin tools directory created"
 fi
 
 # Create /var/cache/enginescript/api if it doesn't exist

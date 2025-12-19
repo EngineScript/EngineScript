@@ -18,16 +18,19 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Create tools directory if it doesn't exist
+mkdir -p /var/www/admin/tools
+
 # phpSysinfo
 # Remove existing phpSysinfo directory if it exists
-if [[ -d "/var/www/admin/enginescript/phpsysinfo" ]]; then
-  rm -rf /var/www/admin/enginescript/phpsysinfo
+if [[ -d "/var/www/admin/tools/phpsysinfo" ]]; then
+  rm -rf /var/www/admin/tools/phpsysinfo
 fi
 
 # Clone the phpSysinfo repository
-git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/enginescript/phpsysinfo
-cp -rf /usr/local/bin/enginescript/config/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
-sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/enginescript/phpsysinfo/phpsysinfo.ini
+git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/tools/phpsysinfo
+cp -rf /usr/local/bin/enginescript/config/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
 
 # Set permissions for the EngineScript frontend
 set_enginescript_frontend_permissions

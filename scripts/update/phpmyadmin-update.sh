@@ -22,18 +22,18 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Store existing config file
 rm -rf /usr/src/config.inc.php 2>/dev/null || true
-mv /var/www/admin/enginescript/phpmyadmin/config.inc.php /usr/src/config.inc.php
-rm -rf /var/www/admin/enginescript/phpmyadmin
+mv /var/www/admin/tools/phpmyadmin/config.inc.php /usr/src/config.inc.php
+rm -rf /var/www/admin/tools/phpmyadmin
 
 # Download phpMyAdmin
 wget -O "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" --no-check-certificate
 unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d /usr/src
-mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" /var/www/admin/enginescript/phpmyadmin
-mkdir -p /var/www/admin/enginescript/phpmyadmin/tmp
-chown -R www-data:www-data /var/www/admin/enginescript/phpmyadmin
+mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" /var/www/admin/tools/phpmyadmin
+mkdir -p /var/www/admin/tools/phpmyadmin/tmp
+chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
 
 # Return existing config file
-mv /usr/src/config.inc.php /var/www/admin/enginescript/phpmyadmin/config.inc.php
+mv /usr/src/config.inc.php /var/www/admin/tools/phpmyadmin/config.inc.php
 
 # Post-Install Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh

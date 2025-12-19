@@ -37,7 +37,8 @@ DIRS=(
     "/var/lib/nginx/proxy"
     "/var/log/domains"
     "/var/log/nginx"
-    "/var/www/admin/enginescript"
+    "/var/www/admin/control-panel"
+    "/var/www/admin/tools"
     "/var/www/sites"
 )
 

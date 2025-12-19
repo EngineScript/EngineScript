@@ -25,8 +25,8 @@ class FileManagerController extends BaseController
     /**
      * TinyFileManager file paths
      */
-    private const TFM_FILE = '/var/www/admin/enginescript/tinyfilemanager/tinyfilemanager.php';
-    private const TFM_CONFIG = '/var/www/admin/enginescript/tinyfilemanager/config.php';
+    private const TFM_FILE = '/var/www/admin/tools/tinyfilemanager/tinyfilemanager.php';
+    private const TFM_CONFIG = '/var/www/admin/tools/tinyfilemanager/config.php';
     private const VARIABLES_FILE = '/usr/local/bin/enginescript/enginescript-variables.txt';
 
     /**

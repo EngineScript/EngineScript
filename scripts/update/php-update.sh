@@ -156,19 +156,19 @@ for config_file in /etc/nginx/sites-available/*; do
     fi
 done
 
-# Update phpinfo configuration
-echo "Updating phpinfo configuration..."
-if [[ -f "/var/www/admin/enginescript/phpinfo/phpsysinfo.ini" ]]; then
-    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/enginescript/phpinfo/phpsysinfo.ini"
+# Update phpSysInfo configuration
+echo "Updating phpSysInfo configuration..."
+if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
+    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
 fi
 
 # Update API configuration to be dynamic for both PHP versions
 echo "Updating admin control panel API configuration..."
-if [[ -f "/var/www/admin/enginescript/api.php" ]]; then
+if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
     # Make PHP service detection dynamic
-    sed -i "s/'php8\.3-fpm'/'php8.4-fpm', 'php8.3-fpm'/g" "/var/www/admin/enginescript/api.php"
-    sed -i "s/getServiceStatus('php8\.3-fpm')/getServiceStatus('php8.4-fpm') ?: getServiceStatus('php8.3-fpm')/g" "/var/www/admin/enginescript/api.php"
-    sed -i "s/case 'php8\.3-fpm':/case 'php8.4-fpm':\n        case 'php8.3-fpm':/g" "/var/www/admin/enginescript/api.php"
+    sed -i "s/'php8\.3-fpm'/'php8.4-fpm', 'php8.3-fpm'/g" "/var/www/admin/control-panel/api.php"
+    sed -i "s/getServiceStatus('php8\.3-fpm')/getServiceStatus('php8.4-fpm') ?: getServiceStatus('php8.3-fpm')/g" "/var/www/admin/control-panel/api.php"
+    sed -i "s/case 'php8\.3-fpm':/case 'php8.4-fpm':\n        case 'php8.3-fpm':/g" "/var/www/admin/control-panel/api.php"
 fi
 
 # Update debug script

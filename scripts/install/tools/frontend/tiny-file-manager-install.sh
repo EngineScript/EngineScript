@@ -18,9 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Create tools directory if it doesn't exist
+mkdir -p /var/www/admin/tools
+
 # Download and install official Tiny File Manager from GitHub
 echo "Installing official Tiny File Manager from GitHub..."
-TFM_DIR="/var/www/admin/enginescript/tinyfilemanager"
+TFM_DIR="/var/www/admin/tools/tinyfilemanager"
 TFM_ZIP_URL="https://github.com/prasathmani/tinyfilemanager/archive/refs/tags/${TINYFILEMANAGER_VER}.tar.gz"
 TFM_ZIP_FILE="/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}.tar.gz"
 

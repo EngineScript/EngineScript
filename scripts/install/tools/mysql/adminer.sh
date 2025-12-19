@@ -18,14 +18,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Create tools directory if it doesn't exist
+mkdir -p /var/www/admin/tools
+
 # Adminer
-mkdir /var/www/admin/enginescript/adminer
-wget https://www.adminer.org/latest.php -O /var/www/admin/enginescript/adminer/index.php --no-check-certificate
+mkdir -p /var/www/admin/tools/adminer
+wget https://www.adminer.org/latest.php -O /var/www/admin/tools/adminer/index.php --no-check-certificate
 
 # Set Permissons
-chown -R www-data:www-data /var/www/admin/enginescript/adminer
-find /var/www/admin/enginescript/adminer -type d -exec chmod 755 {} \;
-find /var/www/admin/enginescript/adminer -type f -exec chmod 644 {} \;
+chown -R www-data:www-data /var/www/admin/tools/adminer
+find /var/www/admin/tools/adminer -type d -exec chmod 755 {} \;
+find /var/www/admin/tools/adminer -type f -exec chmod 644 {} \;
 
 echo ""
 echo ""
