@@ -34,7 +34,6 @@ export class ExternalServicesManager {
 
     // Prevent duplicate initialization - only load once
     if (this.initialized) {
-      console.log('External services already initialized, skipping reload...');
       return;
     }
 

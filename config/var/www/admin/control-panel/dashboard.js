@@ -206,29 +206,22 @@ class EngineScriptDashboard {
    */
   async loadExternalServices() {
     try {
-      console.log('[Dashboard] Loading external services (lazy load triggered)');
-      
       // If already loaded, just initialize
       if (this.externalServices) {
-        console.log('[Dashboard] External services already loaded, reinitializing...');
         await this.externalServices.init();
         return;
       }
 
-      console.log('[Dashboard] Importing external services module...');
       // Dynamic import - only loads when needed
             const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.12.01.1');
       
-      console.log('[Dashboard] Creating ExternalServicesManager instance...');
       // Create instance and initialize
       this.externalServices = new ExternalServicesManager(
         '#external-services-grid',
         '#external-services-settings'
       );
       
-      console.log('[Dashboard] Initializing external services...');
       await this.externalServices.init();
-      console.log('[Dashboard] External services loaded successfully');
     } catch (error) {
       console.error('[Dashboard] Failed to load external services:', error);
       this.showError('Failed to load external services. Please try again.');
@@ -416,9 +409,7 @@ class EngineScriptDashboard {
   }
     
   refreshData() {
-    // Log current page being refreshed
     const currentPage = this.state.getCurrentPage();
-    console.log('[Dashboard] Auto-refresh triggered for page:', currentPage);
     
     // Clear service cache on manual refresh
     this.state.clearServiceCache();
@@ -476,7 +467,6 @@ class EngineScriptDashboard {
       }
       
       const services = await response.json();
-      console.log('Service status response:', services);
 
       // Update each service
       ["nginx", "php", "mysql", "redis"].forEach(service => {

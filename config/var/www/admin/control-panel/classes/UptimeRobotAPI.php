@@ -169,21 +169,15 @@ class UptimeRobotAPI
         // codacy:ignore - curl_close() required for cleanup
         curl_close($curlHandle);
 
-        // DEBUG: Log raw response
-        error_log("UptimeRobotAPI: HTTP Code: " . $httpCode);
-        error_log("UptimeRobotAPI: Response: " . substr($response, 0, 500)); // First 500 chars
-        
         // Check for cURL errors
         if ($response === false) {
             $this->logError('cURL request failed', ['error' => $error]);
-            error_log("UptimeRobotAPI: cURL ERROR - " . $error);
             return false;
         }
 
         // Check HTTP status code
         if ($httpCode !== 200) {
             $this->logError('API returned non-200 status', ['http_code' => $httpCode]);
-            error_log("UptimeRobotAPI: Non-200 HTTP code - " . $httpCode);
             return false;
         }
 
@@ -192,11 +186,9 @@ class UptimeRobotAPI
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->logError('Invalid JSON response', ['error' => json_last_error_msg()]);
-            error_log("UptimeRobotAPI: JSON decode error - " . json_last_error_msg());
             return false;
         }
 
-        error_log("UptimeRobotAPI: Successful response, stat: " . ($decoded['stat'] ?? 'unknown'));
         return $decoded;
     }
 
