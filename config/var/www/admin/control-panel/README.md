@@ -39,4 +39,4 @@ The dashboard is designed to work with RESTful API endpoints for real-time data:
 
 ## Installation
 
-The dashboard is automatically deployed by the EngineScript installation process to `/var/www/admin/enginescript/`.
+The dashboard is automatically deployed by the EngineScript installation process to `/var/www/admin/control-panel/`.

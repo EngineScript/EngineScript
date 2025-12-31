@@ -138,7 +138,8 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**/usr/local/bin/enginescript** |EngineScript source|
 |**/var/lib/mysql**              |MySQL database|
 |**/var/log**                    |Server logs|
-|**/var/www/admin/enginescript** |Tools that may be accessed via server IP address or admin.YOURDOMAIN subdomain|
+|**/var/www/admin/control-panel**|EngineScript Admin Dashboard|
+|**/var/www/admin/tools**        |Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer)|
 |**/var/www/sites/*YOURDOMAIN*/html**|Root directory for your WordPress installation|
 
 ### EngineScript Commands

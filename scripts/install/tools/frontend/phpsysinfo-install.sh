@@ -29,7 +29,10 @@ fi
 
 # Clone the phpSysinfo repository
 git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/tools/phpsysinfo
-cp -rf /usr/local/bin/enginescript/config/var/www/admin/phpsysinfo/phpsysinfo.ini /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
+
+# Copy EngineScript phpSysinfo configuration template
+# Config templates are stored in /config/var/www/admin/tools/ to mirror the install location
+cp -rf /usr/local/bin/enginescript/config/var/www/admin/tools/phpsysinfo/phpsysinfo.ini /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
 
 # Set permissions for the EngineScript frontend

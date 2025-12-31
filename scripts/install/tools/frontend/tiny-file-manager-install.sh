@@ -44,8 +44,9 @@ if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_
         cp -r "/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}/"* "$TFM_DIR/"
         
         # Copy our custom configuration file
-        if [[ -f "/usr/local/bin/enginescript/config/var/www/admin/tinyfilemanager/config.php" ]]; then
-            cp /usr/local/bin/enginescript/config/var/www/admin/tinyfilemanager/config.php "$TFM_DIR/"
+        # Config templates are stored in /config/var/www/admin/tools/ to mirror the install location
+        if [[ -f "/usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php" ]]; then
+            cp /usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php "$TFM_DIR/"
         fi
         
         # Set proper permissions

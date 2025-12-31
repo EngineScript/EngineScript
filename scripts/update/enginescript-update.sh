@@ -82,12 +82,37 @@ echo ""
 # --------------------------------------------------------
 # Update EngineScript Frontend
 
+# Safety Check: Verify we're only wiping the control-panel directory
+# This prevents accidental deletion of admin tools (phpMyAdmin, etc.)
+CONTROL_PANEL_DIR="/var/www/admin/control-panel"
+TOOLS_DIR="/var/www/admin/tools"
+
+# Verify tools directory exists and is not empty (contains user configurations)
+if [[ -d "$TOOLS_DIR" ]]; then
+    TOOLS_COUNT=$(find "$TOOLS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+    if [[ "$TOOLS_COUNT" -gt 0 ]]; then
+        echo "✓ Admin tools directory verified: $TOOLS_COUNT tool(s) found in $TOOLS_DIR"
+        echo "  Tools will NOT be affected by this update."
+    fi
+else
+    echo "ℹ Admin tools directory not found. Creating..."
+    mkdir -p "$TOOLS_DIR"
+fi
+
 # Admin Control Panel - Remove old files and replace with new version
 # NOTE: Only the control-panel directory is wiped on updates.
 # Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer, phpinfo)
 # are stored in /var/www/admin/tools/ and are NOT affected by updates.
 echo "Cleaning up old Admin Control Panel files..."
-rm -rf /var/www/admin/control-panel/*
+
+# Safety: Double-check we're targeting the correct directory
+if [[ "$CONTROL_PANEL_DIR" == "/var/www/admin/control-panel" ]]; then
+    rm -rf "${CONTROL_PANEL_DIR:?}"/*
+else
+    echo "ERROR: Control panel directory path mismatch. Aborting for safety."
+    exit 1
+fi
+
 /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
 
 # Update configuration files from main credentials file
