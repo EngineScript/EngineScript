@@ -145,11 +145,19 @@ create_backup_directories() {
 create_domain_logs() {
   local SITE_URL="$1"
   
-  # Domain Logs
+  # Domain Logs (stored in subdirectory)
   mkdir -p "/var/log/domains/${SITE_URL}"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log"
+  touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-error.log"
   chown -R www-data:www-data "/var/log/domains/${SITE_URL}"
+  
+  # Admin Subdomain Logs (stored in root of /var/log/domains/)
+  # These are for the admin.DOMAIN control panel access auditing
+  touch "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
+  touch "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
+  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
+  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
 }
 
 
