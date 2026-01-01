@@ -394,7 +394,7 @@ jobs:
 
       - name: Update existing PR or create new one
         if: steps.version-check.outputs.software_versions_changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update software versions"
