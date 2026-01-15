@@ -199,8 +199,8 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.29.3|<https://nginx.org/en/download.html>|
-|NGINX CACHE PURGE|2.5.4|<https://github.com/nginx-modules/ngx_cache_purge>|
+|NGINX MAINLINE|1.29.4|<https://nginx.org/en/download.html>|
+|NGINX CACHE PURGE|2.5.5|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
 |OPENSSL|3.5.4|<https://www.openssl.org/source/>|
@@ -250,9 +250,9 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
 |**Misc Supplemental Software**|||
-|LIBURING|2.12|<https://github.com/axboe/liburing>|
+|LIBURING|2.13|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
-|ZLIB|1.3.1|<https://github.com/madler/zlib>|
+|ZLIB|1.3.1.2|<https://github.com/madler/zlib>|
 
 ## Star History
 
