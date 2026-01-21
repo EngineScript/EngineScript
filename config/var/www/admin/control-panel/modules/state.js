@@ -62,6 +62,7 @@ export class DashboardState {
       overview: "Overview",
       sites: "WordPress Sites",
       system: "System Information",
+      "external-services": "External Services",
       tools: "Admin Tools",
     };
     return titles[pageName] || "Dashboard";

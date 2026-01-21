@@ -112,7 +112,9 @@ export class ExternalServicesManager {
         // Create category header
         const categoryHeader = document.createElement("div");
         categoryHeader.className = "service-category-header";
-        categoryHeader.innerHTML = `<h3>${category}</h3>`;
+        const categoryH3 = document.createElement("h3");
+        categoryH3.textContent = category;
+        categoryHeader.appendChild(categoryH3);
         this.container.appendChild(categoryHeader);
 
         // Create category container
@@ -276,13 +278,25 @@ export class ExternalServicesManager {
 
       const categoryHeader = document.createElement("div");
       categoryHeader.className = "category-header";
-      categoryHeader.innerHTML = `
-        <span>${category}</span>
-        <button class="category-toggle-all-btn" data-category="${category}">
-          <span class="toggle-all-text">Toggle All</span>
-          <i class="fas fa-toggle-on"></i>
-        </button>
-      `;
+      
+      const categorySpan = document.createElement("span");
+      categorySpan.textContent = category;
+      categoryHeader.appendChild(categorySpan);
+      
+      const toggleAllBtn = document.createElement("button");
+      toggleAllBtn.className = "category-toggle-all-btn";
+      toggleAllBtn.dataset.category = category;
+      
+      const toggleText = document.createElement("span");
+      toggleText.className = "toggle-all-text";
+      toggleText.textContent = "Toggle All";
+      toggleAllBtn.appendChild(toggleText);
+      
+      const toggleIcon = document.createElement("i");
+      toggleIcon.className = "fas fa-toggle-on";
+      toggleAllBtn.appendChild(toggleIcon);
+      
+      categoryHeader.appendChild(toggleAllBtn);
 
       categorySection.appendChild(categoryHeader);
 
@@ -400,14 +414,23 @@ export class ExternalServicesManager {
 
   /**
    * Create service card header (icon + info)
+   * @param {Object} serviceDef - Service definition
+   * @param {string} statusClassName - CSS class for status
+   * @param {string} statusIconClass - FontAwesome icon class (e.g., 'fa-spinner fa-spin')
    */
-  createServiceCardHeader(serviceDef, statusClassName, statusContent) {
+  createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
     
     const iconDiv = document.createElement("div");
     iconDiv.className = `service-icon ${serviceDef.color}`;
-    iconDiv.innerHTML = `<i class="fas ${serviceDef.icon}"></i>`;
+    
+    // Use DOM methods instead of innerHTML for security
+    const iconElement = document.createElement("i");
+    // Validate icon class contains only safe characters (alphanumeric, hyphens)
+    const safeIcon = (serviceDef.icon || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
+    iconElement.className = `fas ${safeIcon}`;
+    iconDiv.appendChild(iconElement);
     
     const infoDiv = document.createElement("div");
     infoDiv.className = "service-info";
@@ -417,7 +440,14 @@ export class ExternalServicesManager {
     
     const statusSpan = document.createElement("span");
     statusSpan.className = `service-status ${statusClassName}`;
-    statusSpan.innerHTML = statusContent;
+    
+    // Create status icon using DOM methods instead of innerHTML
+    const statusIcon = document.createElement("i");
+    // Validate status icon class contains only safe characters
+    const safeStatusIcon = (statusIconClass || 'fa-question').replace(/[^a-zA-Z0-9- ]/g, '');
+    statusIcon.className = `fas ${safeStatusIcon}`;
+    statusSpan.appendChild(statusIcon);
+    statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
     
     infoDiv.appendChild(h3);
     infoDiv.appendChild(statusSpan);
@@ -445,9 +475,9 @@ export class ExternalServicesManager {
    * Display static service card (no API/feed)
    */
   displayStaticServiceCard(container, serviceKey, serviceDef) {
-    const statusContent = `<i class="fas fa-external-link-alt"></i> `;
+    const statusIconClass = "fa-external-link-alt";
     const contentNode = document.createTextNode(serviceDef.statusText || 'Visit status page');
-    const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusContent);
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusIconClass);
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
     
@@ -461,9 +491,9 @@ export class ExternalServicesManager {
    * Display service card with loading state
    */
   displayServiceCardWithLoadingState(container, serviceKey, serviceDef) {
-    const statusContent = `<i class="fas fa-spinner fa-spin"></i> `;
+    const statusIconClass = "fa-spinner fa-spin";
     const contentNode = document.createTextNode("Loading...");
-    const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusContent);
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusIconClass);
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
     
@@ -501,12 +531,19 @@ export class ExternalServicesManager {
     // Update card class
     serviceCard.classList.remove("loading", "error", "status-success", "status-warning", "status-error");
     
-    // Update status span
+    // Update status span using DOM methods instead of innerHTML
     const statusSpan = serviceCard.querySelector(".service-status");
     if (statusSpan) {
       statusSpan.className = `service-status status-${statusColor}`;
-      statusSpan.innerHTML = `<i class="fas fa-${statusIcon}"></i> `;
-      statusSpan.appendChild(document.createTextNode(this.utils.sanitizeInput(statusDescription)));
+      // Clear existing content
+      statusSpan.textContent = '';
+      // Create icon element safely
+      const iconElement = document.createElement("i");
+      // Validate icon class contains only safe characters (alphanumeric, hyphens)
+      const safeIcon = (statusIcon || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
+      iconElement.className = `fas fa-${safeIcon}`;
+      statusSpan.appendChild(iconElement);
+      statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
     }
 
     // Add card-level status class for visual emphasis
@@ -685,8 +722,12 @@ export class ExternalServicesManager {
     const statusSpan = serviceCard.querySelector(".service-status");
     if (statusSpan) {
       statusSpan.className = "service-status status-error";
-      statusSpan.innerHTML = `<i class="fas fa-times-circle"></i> `;
-      statusSpan.appendChild(document.createTextNode(errorMessage));
+      // Clear existing content and use DOM methods instead of innerHTML
+      statusSpan.textContent = '';
+      const iconElement = document.createElement("i");
+      iconElement.className = "fas fa-times-circle";
+      statusSpan.appendChild(iconElement);
+      statusSpan.appendChild(document.createTextNode(" " + errorMessage));
     }
   }
 
