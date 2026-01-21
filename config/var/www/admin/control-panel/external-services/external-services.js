@@ -1096,7 +1096,7 @@ export class ExternalServicesManager {
     const serviceCards = container.querySelectorAll('.external-service-card');
     let draggedElement = null;
 
-    serviceCards.forEach((card, index) => {
+    serviceCards.forEach((card) => {
       card.draggable = true;
       
       // Add tabindex for keyboard accessibility

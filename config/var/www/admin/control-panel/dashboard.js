@@ -23,12 +23,17 @@ class EngineScriptDashboard {
     
     // Cached keyboard navigation pages array
     this.keyboardNavPages = ["overview", "sites", "system", "external-services", "tools"];
+    
+    // Cached DOM element references for performance
+    this.cachedNavItems = null;
+    this.cachedPages = null;
 
     this.init();
   }
 
   init() {
     this.initTheme(); // Initialize theme before rendering
+    this.cacheNavDOMElements(); // Cache DOM elements for performance
     this.setupEventListeners();
     this.setupNavigation();
     this.startClock();
@@ -49,6 +54,15 @@ class EngineScriptDashboard {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
+  }
+
+  /**
+   * Cache navigation DOM elements for performance optimization
+   * Avoids repeated querySelectorAll calls during navigation
+   */
+  cacheNavDOMElements() {
+    this.cachedNavItems = document.querySelectorAll(".nav-item");
+    this.cachedPages = document.querySelectorAll(".page-content");
   }
 
   /**
@@ -120,11 +134,9 @@ class EngineScriptDashboard {
     // Status checking handled separately
   }
   setupNavigation() {
-    // Set up single page app navigation
-    const pages = document.querySelectorAll(".page-content");
-
+    // Set up single page app navigation using cached elements
     // Hide all pages except overview
-    pages.forEach((page) => {
+    this.cachedPages.forEach((page) => {
       if (page.id !== "overview-page") {
         page.style.display = "none";
       }
@@ -137,17 +149,13 @@ class EngineScriptDashboard {
       return;
     }
 
-    // Update navigation
-    document.querySelectorAll(".nav-item").forEach((item) => {
-      item.classList.remove("active");
+    // Update navigation using cached elements
+    this.cachedNavItems.forEach((item) => {
+      item.classList.toggle("active", item.dataset.page === pageName);
     });
-    const targetNav = document.querySelector(`[data-page="${pageName}"]`);
-    if (targetNav) {
-      targetNav.classList.add("active");
-    }
 
-    // Update pages
-    document.querySelectorAll(".page-content").forEach((page) => {
+    // Update pages using cached elements
+    this.cachedPages.forEach((page) => {
       page.style.display = "none";
     });
     const targetPage = document.getElementById(`${pageName}-page`);
@@ -421,8 +429,10 @@ class EngineScriptDashboard {
   refreshData() {
     const currentPage = this.state.getCurrentPage();
     
-    // Clear service cache on manual refresh
-    this.state.clearServiceCache();
+    // Clear external services cache on manual refresh
+    if (this.externalServices) {
+      this.externalServices.clearCache();
+    }
     this.showRefreshAnimation();
     this.loadPageData(currentPage);
     this.updateLastRefresh();

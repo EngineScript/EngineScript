@@ -33,6 +33,18 @@ header('X-XSS-Protection: 1; mode=block'); // codacy:ignore - Security header re
 header('Referrer-Policy: strict-origin-when-cross-origin'); // codacy:ignore - Security header required
 header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';'); // codacy:ignore - Security header required
 
+// Task 94: Enable response compression for performance
+// Check if client accepts gzip and zlib extension is available
+if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    // Check Accept-Encoding header for gzip support
+    $accept_encoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : ''; // codacy:ignore - Direct $_SERVER access required
+    if (strpos($accept_encoding, 'gzip') !== false) {
+        // Enable gzip compression with level 6 (good balance of speed/compression)
+        ini_set('zlib.output_compression', 'On'); // codacy:ignore - ini_set() required for compression
+        ini_set('zlib.output_compression_level', '6'); // codacy:ignore - ini_set() required for compression
+    }
+}
+
 // Secure CORS - Only allow same origin by default
 $allowed_origins = [
     isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '', // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
