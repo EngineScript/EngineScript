@@ -53,122 +53,212 @@ export class ExternalServicesManager {
     try {
       this.container.innerHTML = "";
 
-      // Get service definitions first (always available)
+      // Get service definitions and preferences
       const serviceDefinitions = this.getServiceDefinitions();
-      
-      // Load preferences from cookie (client-side only)
-      let preferences = this.loadServicePreferences() || {};
-      let serviceOrder = this.getServiceOrder();
-      
-      // Use all services from definitions immediately for instant rendering
-      let services = {};
-      Object.keys(serviceDefinitions).forEach(key => {
-        services[key] = true;
-      });
+      const preferences = this.loadServicePreferences() || {};
+      const services = this.buildServicesObject(serviceDefinitions);
 
-      // Render settings panel in dedicated container
+      // Render settings panel
       this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions);
 
-      // Get service keys in custom order
-      let orderedServiceKeys = serviceOrder.filter(key => services[key]);
-      // Add any new services not in the saved order
-      Object.keys(services).forEach(key => {
-        if (!orderedServiceKeys.includes(key)) {
-          orderedServiceKeys.push(key);
-        }
-      });
+      // Get ordered and enabled services
+      const orderedServiceKeys = this.getOrderedServiceKeys(services);
+      const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
 
-      // Check if any services are enabled (must be explicitly set to true)
-      const enabledServices = orderedServiceKeys.filter(key => {
-        return serviceDefinitions[key] && preferences[key] === true;
-      });
-
-      // If no services are enabled, show empty state
+      // Show empty state if no services enabled
       if (enabledServices.length === 0) {
-        const emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.innerHTML = `
-          <div class="empty-state-icon">
-            <i class="fas fa-toggle-off"></i>
-          </div>
-          <h3>No Services Selected</h3>
-          <p>Click the "Service Settings" button above to enable external service monitoring.</p>
-        `;
-        this.container.appendChild(emptyState);
+        this.renderEmptyState();
         return;
       }
 
-      // Group enabled services by category
-      const servicesByCategory = {};
-      for (const serviceKey of orderedServiceKeys) {
-        if (serviceDefinitions[serviceKey] && preferences[serviceKey] === true) {
-          const serviceDef = serviceDefinitions[serviceKey];
-          const category = serviceDef.category || 'Other';
-          
-          if (!servicesByCategory[category]) {
-            servicesByCategory[category] = [];
-          }
-          servicesByCategory[category].push({ key: serviceKey, def: serviceDef });
-        }
-      }
-
-      // Render services grouped by category
-      for (const category in servicesByCategory) {
-        // Create category header
-        const categoryHeader = document.createElement("div");
-        categoryHeader.className = "service-category-header";
-        const categoryH3 = document.createElement("h3");
-        categoryH3.textContent = category;
-        categoryHeader.appendChild(categoryH3);
-        this.container.appendChild(categoryHeader);
-
-        // Create category container
-        const categoryContainer = document.createElement("div");
-        categoryContainer.className = "service-category-grid";
-        categoryContainer.dataset.category = category;
-
-        // Display all cards immediately with loading state, then fetch statuses asynchronously
-        for (const { key: serviceKey, def: serviceDef } of servicesByCategory[category]) {
-          // Check if this is a static service (no API or feed)
-          if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
-            // Display static card immediately (e.g., AWS)
-            this.displayStaticServiceCard(categoryContainer, serviceKey, serviceDef);
-          } else {
-            // Display card immediately with loading state
-            this.displayServiceCardWithLoadingState(categoryContainer, serviceKey, serviceDef);
-            
-            // Fire all requests immediately in parallel - browser and server handle concurrency
-            // Each request is fully independent and non-blocking with its own timeout
-            if (serviceDef.useFeed) {
-              this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
-                console.error(`Failed to load ${serviceDef.name}:`, err);
-              });
-            } else if (serviceDef.corsEnabled && serviceDef.api) {
-              this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
-                console.error(`Failed to load ${serviceDef.name}:`, err);
-              });
-            }
-          }
-        }
-
-        this.container.appendChild(categoryContainer);
-      }
+      // Group and render services by category
+      const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
+      this.renderServiceCategories(servicesByCategory);
       
       // Enable drag and drop for service cards
       this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
-      this.container.innerHTML = "";
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "error-state";
-      errorDiv.innerHTML = `
-        <div class="error-icon">
-          <i class="fas fa-exclamation-circle"></i>
-        </div>
-        <h3>Error Loading External Services</h3>
-        <p>Failed to fetch external service status. Please try again later.</p>
-      `;
-      this.container.appendChild(errorDiv);
+      this.renderErrorState();
+    }
+  }
+
+  /**
+   * Build services object from definitions
+   */
+  buildServicesObject(serviceDefinitions) {
+    const services = {};
+    Object.keys(serviceDefinitions).forEach(key => {
+      services[key] = true;
+    });
+    return services;
+  }
+
+  /**
+   * Get service keys in custom order, adding any new services
+   */
+  getOrderedServiceKeys(services) {
+    const serviceOrder = this.getServiceOrder();
+    const orderedKeys = serviceOrder.filter(key => services[key]);
+    
+    // Add any new services not in the saved order
+    Object.keys(services).forEach(key => {
+      if (!orderedKeys.includes(key)) {
+        orderedKeys.push(key);
+      }
+    });
+    
+    return orderedKeys;
+  }
+
+  /**
+   * Filter to only enabled services
+   */
+  filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences) {
+    return orderedServiceKeys.filter(key => {
+      return serviceDefinitions[key] && preferences[key] === true;
+    });
+  }
+
+  /**
+   * Render empty state when no services are enabled
+   */
+  renderEmptyState() {
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-state";
+    
+    const iconDiv = document.createElement("div");
+    iconDiv.className = "empty-state-icon";
+    const icon = document.createElement("i");
+    icon.className = "fas fa-toggle-off";
+    iconDiv.appendChild(icon);
+    
+    const h3 = document.createElement("h3");
+    h3.textContent = "No Services Selected";
+    
+    const p = document.createElement("p");
+    p.textContent = 'Click the "Service Settings" button above to enable external service monitoring.';
+    
+    emptyState.appendChild(iconDiv);
+    emptyState.appendChild(h3);
+    emptyState.appendChild(p);
+    this.container.appendChild(emptyState);
+  }
+
+  /**
+   * Render error state when loading fails
+   */
+  renderErrorState() {
+    this.container.innerHTML = "";
+    
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "error-state";
+    
+    const iconDiv = document.createElement("div");
+    iconDiv.className = "error-icon";
+    const icon = document.createElement("i");
+    icon.className = "fas fa-exclamation-circle";
+    iconDiv.appendChild(icon);
+    
+    const h3 = document.createElement("h3");
+    h3.textContent = "Error Loading External Services";
+    
+    const p = document.createElement("p");
+    p.textContent = "Failed to fetch external service status. Please try again later.";
+    
+    errorDiv.appendChild(iconDiv);
+    errorDiv.appendChild(h3);
+    errorDiv.appendChild(p);
+    this.container.appendChild(errorDiv);
+  }
+
+  /**
+   * Group services by category
+   */
+  groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences) {
+    const servicesByCategory = {};
+    
+    for (const serviceKey of orderedServiceKeys) {
+      if (serviceDefinitions[serviceKey] && preferences[serviceKey] === true) {
+        const serviceDef = serviceDefinitions[serviceKey];
+        const category = serviceDef.category || 'Other';
+        
+        if (!servicesByCategory[category]) {
+          servicesByCategory[category] = [];
+        }
+        servicesByCategory[category].push({ key: serviceKey, def: serviceDef });
+      }
+    }
+    
+    return servicesByCategory;
+  }
+
+  /**
+   * Render service categories and their cards
+   */
+  renderServiceCategories(servicesByCategory) {
+    for (const category in servicesByCategory) {
+      // Create and append category header
+      const categoryHeader = this.createCategoryHeader(category);
+      this.container.appendChild(categoryHeader);
+
+      // Create category container and render cards
+      const categoryContainer = this.createCategoryContainer(category);
+      this.renderCategoryCards(categoryContainer, servicesByCategory[category]);
+      this.container.appendChild(categoryContainer);
+    }
+  }
+
+  /**
+   * Create category header element
+   */
+  createCategoryHeader(category) {
+    const categoryHeader = document.createElement("div");
+    categoryHeader.className = "service-category-header";
+    const categoryH3 = document.createElement("h3");
+    categoryH3.textContent = category;
+    categoryHeader.appendChild(categoryH3);
+    return categoryHeader;
+  }
+
+  /**
+   * Create category container element
+   */
+  createCategoryContainer(category) {
+    const categoryContainer = document.createElement("div");
+    categoryContainer.className = "service-category-grid";
+    categoryContainer.dataset.category = category;
+    return categoryContainer;
+  }
+
+  /**
+   * Render service cards within a category container
+   */
+  renderCategoryCards(container, services) {
+    for (const { key: serviceKey, def: serviceDef } of services) {
+      if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
+        // Display static card immediately (e.g., AWS)
+        this.displayStaticServiceCard(container, serviceKey, serviceDef);
+      } else {
+        // Display card with loading state, then fetch status
+        this.displayServiceCardWithLoadingState(container, serviceKey, serviceDef);
+        this.fetchServiceStatusAsync(serviceKey, serviceDef);
+      }
+    }
+  }
+
+  /**
+   * Fetch service status asynchronously (non-blocking)
+   */
+  fetchServiceStatusAsync(serviceKey, serviceDef) {
+    if (serviceDef.useFeed) {
+      this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
+        console.error(`Failed to load ${serviceDef.name}:`, err);
+      });
+    } else if (serviceDef.corsEnabled && serviceDef.api) {
+      this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
+        console.error(`Failed to load ${serviceDef.name}:`, err);
+      });
     }
   }
 
@@ -220,36 +310,73 @@ export class ExternalServicesManager {
   renderServiceSettings(settingsContainer, services, serviceDefinitions) {
     settingsContainer.innerHTML = "";
     
+    // Track pending changes (shared across components)
+    const pendingChanges = {};
+    
+    // Create main UI structure
+    const { settingsToggle, settingsContent } = this.createSettingsStructure();
+    settingsContainer.appendChild(settingsToggle);
+    settingsContainer.appendChild(settingsContent);
+
+    // Group services by category and render
+    const categories = this.groupServicesForSettings(services, serviceDefinitions);
+    const categoryOrder = this.getCategoryOrder();
+
+    for (const category of categoryOrder) {
+      if (!categories[category]) continue;
+      const categorySection = this.createSettingsCategorySection(
+        category, categories[category], services, serviceDefinitions, pendingChanges
+      );
+      settingsContent.appendChild(categorySection);
+    }
+
+    // Create and append save button
+    const saveButton = this.createSaveButton(settingsContent, services, pendingChanges);
+    settingsContent.appendChild(saveButton);
+  }
+
+  /**
+   * Create settings panel structure (toggle button and content container)
+   */
+  createSettingsStructure() {
     const settingsToggle = document.createElement("button");
     settingsToggle.className = "settings-toggle-btn";
-    settingsToggle.innerHTML = `
-      <i class="fas fa-cog"></i>
-      <span>Service Settings</span>
-      <i class="fas fa-chevron-down toggle-icon"></i>
-    `;
+    
+    const cogIcon = document.createElement("i");
+    cogIcon.className = "fas fa-cog";
+    const textSpan = document.createElement("span");
+    textSpan.textContent = "Service Settings";
+    const chevronIcon = document.createElement("i");
+    chevronIcon.className = "fas fa-chevron-down toggle-icon";
+    
+    settingsToggle.appendChild(cogIcon);
+    settingsToggle.appendChild(textSpan);
+    settingsToggle.appendChild(chevronIcon);
     
     const settingsContent = document.createElement("div");
     settingsContent.className = "settings-content collapsed";
     
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
-    settingsHeader.innerHTML = `<p>Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Click "Save Changes" to apply. Services are organized by category.</p>`;
-    
+    const headerP = document.createElement("p");
+    headerP.textContent = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Click "Save Changes" to apply. Services are organized by category.';
+    settingsHeader.appendChild(headerP);
     settingsContent.appendChild(settingsHeader);
     
-    // Track pending changes
-    const pendingChanges = {};
-    
+    // Toggle collapse behavior
     settingsToggle.addEventListener("click", () => {
       const isCollapsed = settingsContent.classList.toggle("collapsed");
       const icon = settingsToggle.querySelector(".toggle-icon");
       icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
     });
     
-    settingsContainer.appendChild(settingsToggle);
-    settingsContainer.appendChild(settingsContent);
+    return { settingsToggle, settingsContent };
+  }
 
-    // Group services by category
+  /**
+   * Group services by category for settings panel
+   */
+  groupServicesForSettings(services, serviceDefinitions) {
     const categories = {};
     for (const [serviceKey] of Object.entries(services)) {
       if (serviceDefinitions[serviceKey]) {
@@ -260,9 +387,14 @@ export class ExternalServicesManager {
         categories[category].push(serviceKey);
       }
     }
+    return categories;
+  }
 
-    // Render each category
-    const categoryOrder = [
+  /**
+   * Get ordered list of categories for settings display
+   */
+  getCategoryOrder() {
+    return [
       'Hosting & Infrastructure',
       'Developer Tools',
       'E-Commerce & Payments',
@@ -274,131 +406,119 @@ export class ExternalServicesManager {
       'Advertising',
       'Security'
     ];
+  }
 
-    for (const category of categoryOrder) {
-      if (!categories[category]) continue;
+  /**
+   * Create a category section for settings panel
+   */
+  createSettingsCategorySection(category, serviceKeys, services, serviceDefinitions, pendingChanges) {
+    const categorySection = document.createElement("div");
+    categorySection.className = "category-section";
 
-      const categorySection = document.createElement("div");
-      categorySection.className = "category-section";
+    // Create header with toggle all button
+    const categoryHeader = this.createSettingsCategoryHeader(category);
+    categorySection.appendChild(categoryHeader);
 
-      const categoryHeader = document.createElement("div");
-      categoryHeader.className = "category-header";
-      
-      const categorySpan = document.createElement("span");
-      categorySpan.textContent = category;
-      categoryHeader.appendChild(categorySpan);
-      
-      const toggleAllBtn = document.createElement("button");
-      toggleAllBtn.className = "category-toggle-all-btn";
-      toggleAllBtn.dataset.category = category;
-      
-      const toggleText = document.createElement("span");
-      toggleText.className = "toggle-all-text";
-      toggleText.textContent = "Toggle All";
-      toggleAllBtn.appendChild(toggleText);
-      
-      const toggleIcon = document.createElement("i");
-      toggleIcon.className = "fas fa-toggle-on";
-      toggleAllBtn.appendChild(toggleIcon);
-      
-      categoryHeader.appendChild(toggleAllBtn);
+    // Create services grid with checkboxes
+    const { servicesGrid, categoryCheckboxes } = this.createServicesGrid(
+      serviceKeys, services, serviceDefinitions, pendingChanges
+    );
+    categorySection.appendChild(servicesGrid);
 
-      categorySection.appendChild(categoryHeader);
-
-      const servicesGrid = document.createElement("div");
-      servicesGrid.className = "services-grid";
-
-      const categoryCheckboxes = [];
-      
-      categories[category].forEach(serviceKey => {
-        const serviceDef = serviceDefinitions[serviceKey];
-        const isEnabled = services[serviceKey];
-        
-        const toggleLabel = document.createElement("label");
-        toggleLabel.className = "service-toggle";
-        
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = isEnabled;
-        checkbox.dataset.service = serviceKey;
-        
-        checkbox.addEventListener("change", () => {
-          pendingChanges[serviceKey] = checkbox.checked;
-        });
-        
-        const serviceName = document.createElement("span");
-        serviceName.textContent = serviceDef.name;
-        
-        toggleLabel.appendChild(checkbox);
-        toggleLabel.appendChild(serviceName);
-        servicesGrid.appendChild(toggleLabel);
-        
-        categoryCheckboxes.push(checkbox);
+    // Wire up toggle all button
+    const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
+    toggleBtn.addEventListener("click", () => {
+      const allEnabled = categoryCheckboxes.every(cb => cb.checked);
+      categoryCheckboxes.forEach(cb => {
+        cb.checked = !allEnabled;
+        cb.dispatchEvent(new Event('change'));
       });
+    });
 
-      // Add toggle all button functionality
-      const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
-      toggleBtn.addEventListener("click", () => {
-        const allEnabled = categoryCheckboxes.every(cb => cb.checked);
-        categoryCheckboxes.forEach(cb => {
-          cb.checked = !allEnabled;
-          cb.dispatchEvent(new Event('change'));
-        });
+    return categorySection;
+  }
+
+  /**
+   * Create category header with toggle all button
+   */
+  createSettingsCategoryHeader(category) {
+    const categoryHeader = document.createElement("div");
+    categoryHeader.className = "category-header";
+    
+    const categorySpan = document.createElement("span");
+    categorySpan.textContent = category;
+    categoryHeader.appendChild(categorySpan);
+    
+    const toggleAllBtn = document.createElement("button");
+    toggleAllBtn.className = "category-toggle-all-btn";
+    toggleAllBtn.dataset.category = category;
+    
+    const toggleText = document.createElement("span");
+    toggleText.className = "toggle-all-text";
+    toggleText.textContent = "Toggle All";
+    toggleAllBtn.appendChild(toggleText);
+    
+    const toggleIcon = document.createElement("i");
+    toggleIcon.className = "fas fa-toggle-on";
+    toggleAllBtn.appendChild(toggleIcon);
+    
+    categoryHeader.appendChild(toggleAllBtn);
+    return categoryHeader;
+  }
+
+  /**
+   * Create services grid with checkboxes for each service
+   */
+  createServicesGrid(serviceKeys, services, serviceDefinitions, pendingChanges) {
+    const servicesGrid = document.createElement("div");
+    servicesGrid.className = "services-grid";
+    const categoryCheckboxes = [];
+    
+    serviceKeys.forEach(serviceKey => {
+      const serviceDef = serviceDefinitions[serviceKey];
+      const isEnabled = services[serviceKey];
+      
+      const toggleLabel = document.createElement("label");
+      toggleLabel.className = "service-toggle";
+      
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = isEnabled;
+      checkbox.dataset.service = serviceKey;
+      
+      checkbox.addEventListener("change", () => {
+        pendingChanges[serviceKey] = checkbox.checked;
       });
+      
+      const serviceName = document.createElement("span");
+      serviceName.textContent = serviceDef.name;
+      
+      toggleLabel.appendChild(checkbox);
+      toggleLabel.appendChild(serviceName);
+      servicesGrid.appendChild(toggleLabel);
+      
+      categoryCheckboxes.push(checkbox);
+    });
 
-      categorySection.appendChild(servicesGrid);
-      settingsContent.appendChild(categorySection);
-    }
+    return { servicesGrid, categoryCheckboxes };
+  }
 
-    // Save button
+  /**
+   * Create save button with click handler
+   */
+  createSaveButton(settingsContent, services, pendingChanges) {
     const saveButton = document.createElement("button");
     saveButton.className = "settings-save-btn";
-    saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    
+    const saveIcon = document.createElement("i");
+    saveIcon.className = "fas fa-save";
+    saveButton.appendChild(saveIcon);
+    saveButton.appendChild(document.createTextNode(" Save Changes"));
     saveButton.disabled = true;
     
+    // Save click handler
     saveButton.addEventListener("click", async () => {
-      try {
-        saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        
-        // Load current preferences from cookie
-        let currentPreferences = this.loadServicePreferences() || {};
-        
-        // Apply pending changes to preferences
-        Object.assign(currentPreferences, pendingChanges);
-        
-        // Save to cookie (client-side only)
-        this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
-        
-        // Update local services object
-        Object.assign(services, pendingChanges);
-        
-        // Clear pending changes
-        for (const key in pendingChanges) {
-          delete pendingChanges[key];
-        }
-        
-        saveButton.innerHTML = '<i class="fas fa-check"></i> Saved!';
-        setTimeout(() => {
-          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-          saveButton.classList.remove('has-changes');
-          saveButton.disabled = true;
-        }, 2000);
-        
-        // Reload services display to show updated preferences
-        this.initialized = false; // Reset initialization flag to allow reload
-        await this.init();
-        
-        this.showNotification('Service preferences saved', 'success');
-      } catch (error) {
-        console.error("Save error:", error);
-        saveButton.innerHTML = '<i class="fas fa-times"></i> Save Failed';
-        saveButton.disabled = false;
-        setTimeout(() => {
-          saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-        }, 2000);
-        this.showNotification('Failed to save preferences', 'error');
-      }
+      await this.handleSavePreferences(saveButton, services, pendingChanges);
     });
     
     // Track changes to enable save button
@@ -412,7 +532,75 @@ export class ExternalServicesManager {
       }
     });
     
-    settingsContent.appendChild(saveButton);
+    return saveButton;
+  }
+
+  /**
+   * Handle save preferences button click
+   */
+  async handleSavePreferences(saveButton, services, pendingChanges) {
+    try {
+      saveButton.disabled = true;
+      saveButton.textContent = '';
+      const spinnerIcon = document.createElement("i");
+      spinnerIcon.className = "fas fa-spinner fa-spin";
+      saveButton.appendChild(spinnerIcon);
+      saveButton.appendChild(document.createTextNode(" Saving..."));
+      
+      // Load and update preferences
+      let currentPreferences = this.loadServicePreferences() || {};
+      Object.assign(currentPreferences, pendingChanges);
+      
+      // Save to cookie
+      this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
+      Object.assign(services, pendingChanges);
+      
+      // Clear pending changes
+      for (const key in pendingChanges) {
+        delete pendingChanges[key];
+      }
+      
+      // Show success state
+      saveButton.textContent = '';
+      const checkIcon = document.createElement("i");
+      checkIcon.className = "fas fa-check";
+      saveButton.appendChild(checkIcon);
+      saveButton.appendChild(document.createTextNode(" Saved!"));
+      
+      setTimeout(() => {
+        saveButton.textContent = '';
+        const saveIcon = document.createElement("i");
+        saveIcon.className = "fas fa-save";
+        saveButton.appendChild(saveIcon);
+        saveButton.appendChild(document.createTextNode(" Save Changes"));
+        saveButton.classList.remove('has-changes');
+        saveButton.disabled = true;
+      }, 2000);
+      
+      // Reload services display
+      this.initialized = false;
+      await this.init();
+      
+      this.showNotification('Service preferences saved', 'success');
+    } catch (error) {
+      console.error("Save error:", error);
+      saveButton.textContent = '';
+      const timesIcon = document.createElement("i");
+      timesIcon.className = "fas fa-times";
+      saveButton.appendChild(timesIcon);
+      saveButton.appendChild(document.createTextNode(" Save Failed"));
+      saveButton.disabled = false;
+      
+      setTimeout(() => {
+        saveButton.textContent = '';
+        const saveIcon = document.createElement("i");
+        saveIcon.className = "fas fa-save";
+        saveButton.appendChild(saveIcon);
+        saveButton.appendChild(document.createTextNode(" Save Changes"));
+      }, 2000);
+      
+      this.showNotification('Failed to save preferences', 'error');
+    }
   }
 
   // ============ Card Creation Helpers ============
