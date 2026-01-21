@@ -40,6 +40,7 @@ INSTALL_ADMINER=0
 # Controls the SSL certificate keylength for all new domains.
 # 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
 # 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
+#     Also disables TLS 1.1 in nginx (only TLS 1.2 and TLS 1.3 allowed)
 #
 # If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
 HIGH_SECURITY_SSL=0

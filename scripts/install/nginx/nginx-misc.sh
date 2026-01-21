@@ -22,6 +22,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf
 
+# Disable TLS 1.1 if high security SSL is enabled
+if [[ "${HIGH_SECURITY_SSL}" == "1" ]]; then
+    sed -i 's|ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;|ssl_protocols TLSv1.2 TLSv1.3;|g' /etc/nginx/ssl/sslshared.conf
+fi
+
 # Enable unsafe file blocking if configured
 if [[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" ]]; then
     sed -i 's|^  #\("~\*\\.\(?:asc\|  \1|' /etc/nginx/globals/map-cache.conf
