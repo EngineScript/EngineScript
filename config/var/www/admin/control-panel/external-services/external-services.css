@@ -260,6 +260,31 @@
     background: rgba(0, 212, 170, 0.05);
 }
 
+/* Keyboard reorder mode indicator */
+.external-service-card.reorder-active {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(0, 212, 170, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+    z-index: 10;
+    position: relative;
+}
+
+.external-service-card.reorder-active::before {
+    content: '↕ Reorder Mode';
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .external-service-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);

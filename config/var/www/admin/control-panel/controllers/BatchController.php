@@ -162,6 +162,7 @@ class BatchController extends BaseController
                 return null;
             }
 
+            // codacy:ignore - require_once with __DIR__ and whitelisted controller name from ENDPOINT_CONTROLLERS constant; no user input
             require_once $controllerFile;
 
             if (!class_exists($controllerClass)) {

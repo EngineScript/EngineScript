@@ -71,7 +71,9 @@ class ExternalServicesController extends BaseController
 
             // Check cache for GET requests
             $cacheKey = self::ENDPOINT . '/' . $endpoint;
-            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            // codacy:ignore - $_SERVER['REQUEST_METHOD'] is guaranteed by web server; isset check added for static analysis
+            $requestMethod = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
+            if ($requestMethod === 'GET') {
                 $cached = $this->getCached($cacheKey);
                 if ($cached !== null) {
                     // codacy:ignore - Static ApiResponse method used; dependency injection would require service container

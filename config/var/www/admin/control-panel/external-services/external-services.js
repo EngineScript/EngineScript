@@ -20,6 +20,11 @@ export class ExternalServicesManager {
     this.maxConcurrentRequests = 6;
     this.activeRequests = 0;
     this.requestQueue = [];
+    
+    // Keyboard navigation state for accessibility
+    this.reorderMode = false;
+    this.selectedCard = null;
+    this.keyboardHandler = null;
   }
 
   /**
@@ -903,8 +908,13 @@ export class ExternalServicesManager {
     const serviceCards = container.querySelectorAll('.external-service-card');
     let draggedElement = null;
 
-    serviceCards.forEach(card => {
+    serviceCards.forEach((card, index) => {
       card.draggable = true;
+      
+      // Add tabindex for keyboard accessibility
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'listitem');
+      card.setAttribute('aria-label', `${card.querySelector('h3')?.textContent || 'Service'} - Press Enter to enter reorder mode, then use arrow keys to move`);
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
@@ -968,6 +978,201 @@ export class ExternalServicesManager {
         });
       });
     });
+    
+    // Enable keyboard navigation for accessibility
+    this.enableKeyboardNavigation(container);
+  }
+
+  // ============ Keyboard Navigation (Accessibility) ============
+
+  /**
+   * Enable keyboard navigation for service card reordering
+   * Implements arrow key navigation and Enter to toggle reorder mode
+   * This is an accessibility alternative to drag-and-drop
+   */
+  enableKeyboardNavigation(container) {
+    // Remove existing handler if present (prevents duplicate listeners on reload)
+    if (this.keyboardHandler) {
+      container.removeEventListener('keydown', this.keyboardHandler);
+    }
+    
+    this.keyboardHandler = (e) => {
+      const focusedCard = document.activeElement;
+      
+      // Only handle events on service cards
+      if (!focusedCard || !focusedCard.classList.contains('external-service-card')) {
+        return;
+      }
+      
+      const allCards = Array.from(container.querySelectorAll('.external-service-card'));
+      const currentIndex = allCards.indexOf(focusedCard);
+      
+      if (currentIndex === -1) return;
+      
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          // Toggle reorder mode on Enter or Space
+          e.preventDefault();
+          this.toggleReorderMode(focusedCard);
+          break;
+          
+        case 'Escape':
+          // Exit reorder mode
+          if (this.reorderMode) {
+            e.preventDefault();
+            this.exitReorderMode();
+          }
+          break;
+          
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (this.reorderMode && this.selectedCard === focusedCard) {
+            // Move card up/left in reorder mode
+            this.moveCardUp(focusedCard, allCards, currentIndex);
+          } else {
+            // Navigate to previous card
+            this.focusPreviousCard(allCards, currentIndex);
+          }
+          break;
+          
+        case 'ArrowDown':
+        case 'ArrowRight':
+          e.preventDefault();
+          if (this.reorderMode && this.selectedCard === focusedCard) {
+            // Move card down/right in reorder mode
+            this.moveCardDown(focusedCard, allCards, currentIndex);
+          } else {
+            // Navigate to next card
+            this.focusNextCard(allCards, currentIndex);
+          }
+          break;
+          
+        case 'Home':
+          // Move to first card
+          e.preventDefault();
+          if (allCards.length > 0) {
+            allCards[0].focus();
+          }
+          break;
+          
+        case 'End':
+          // Move to last card
+          e.preventDefault();
+          if (allCards.length > 0) {
+            allCards[allCards.length - 1].focus();
+          }
+          break;
+      }
+    };
+    
+    container.addEventListener('keydown', this.keyboardHandler);
+  }
+
+  /**
+   * Toggle reorder mode for a card
+   * When in reorder mode, arrow keys move the card instead of navigating
+   */
+  toggleReorderMode(card) {
+    if (this.reorderMode && this.selectedCard === card) {
+      // Exit reorder mode
+      this.exitReorderMode();
+      this.showNotification('Reorder mode exited. Order saved.', 'info');
+    } else {
+      // Enter reorder mode
+      this.reorderMode = true;
+      this.selectedCard = card;
+      card.classList.add('reorder-active');
+      card.setAttribute('aria-grabbed', 'true');
+      
+      // Announce to screen readers
+      this.announceToScreenReader(`Reorder mode. Use arrow keys to move ${card.querySelector('h3')?.textContent || 'service'}. Press Enter or Escape to exit.`);
+      this.showNotification('Reorder mode: Use arrow keys to move, Enter/Escape to exit', 'info');
+    }
+  }
+
+  /**
+   * Exit reorder mode
+   */
+  exitReorderMode() {
+    if (this.selectedCard) {
+      this.selectedCard.classList.remove('reorder-active');
+      this.selectedCard.setAttribute('aria-grabbed', 'false');
+    }
+    this.reorderMode = false;
+    this.selectedCard = null;
+  }
+
+  /**
+   * Move card up (toward beginning of list)
+   */
+  moveCardUp(card, allCards, currentIndex) {
+    if (currentIndex > 0) {
+      const prevCard = allCards[currentIndex - 1];
+      prevCard.parentNode.insertBefore(card, prevCard);
+      card.focus();
+      this.saveCardOrder();
+      this.announceToScreenReader(`Moved to position ${currentIndex}`);
+    } else {
+      this.announceToScreenReader('Already at the beginning');
+    }
+  }
+
+  /**
+   * Move card down (toward end of list)
+   */
+  moveCardDown(card, allCards, currentIndex) {
+    if (currentIndex < allCards.length - 1) {
+      const nextCard = allCards[currentIndex + 1];
+      nextCard.parentNode.insertBefore(card, nextCard.nextSibling);
+      card.focus();
+      this.saveCardOrder();
+      this.announceToScreenReader(`Moved to position ${currentIndex + 2}`);
+    } else {
+      this.announceToScreenReader('Already at the end');
+    }
+  }
+
+  /**
+   * Focus previous card in list
+   */
+  focusPreviousCard(allCards, currentIndex) {
+    if (currentIndex > 0) {
+      allCards[currentIndex - 1].focus();
+    }
+  }
+
+  /**
+   * Focus next card in list
+   */
+  focusNextCard(allCards, currentIndex) {
+    if (currentIndex < allCards.length - 1) {
+      allCards[currentIndex + 1].focus();
+    }
+  }
+
+  /**
+   * Announce message to screen readers via live region
+   */
+  announceToScreenReader(message) {
+    // Find or create live region
+    let liveRegion = document.getElementById('es-live-region');
+    if (!liveRegion) {
+      liveRegion = document.createElement('div');
+      liveRegion.id = 'es-live-region';
+      liveRegion.setAttribute('aria-live', 'polite');
+      liveRegion.setAttribute('aria-atomic', 'true');
+      liveRegion.className = 'sr-only';
+      liveRegion.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
+      document.body.appendChild(liveRegion);
+    }
+    
+    // Clear and set message (triggers announcement)
+    liveRegion.textContent = '';
+    setTimeout(() => {
+      liveRegion.textContent = message;
+    }, 100);
   }
 
   /**

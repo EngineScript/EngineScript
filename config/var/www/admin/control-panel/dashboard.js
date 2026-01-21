@@ -20,6 +20,9 @@ class EngineScriptDashboard {
     this.allowedTimeRanges = this.state.allowedTimeRanges;
     this.allowedPages = this.state.allowedPages;
     this.allowedTools = this.state.allowedTools;
+    
+    // Cached keyboard navigation pages array
+    this.keyboardNavPages = ["overview", "sites", "system", "external-services", "tools"];
 
     this.init();
   }
@@ -320,10 +323,12 @@ class EngineScriptDashboard {
   }
 
   setupKeyboardShortcuts() {
-    document.addEventListener("keydown", (event) => {
+    // Bind handler to maintain 'this' context and enable removal if needed
+    this.keyboardShortcutHandler = (event) => {
       // Don't trigger shortcuts when typing in inputs
-      if (event.target.tagName === "INPUT" || 
-          event.target.tagName === "TEXTAREA" || 
+      const tagName = event.target.tagName;
+      if (tagName === "INPUT" || 
+          tagName === "TEXTAREA" || 
           event.target.isContentEditable) {
         return;
       }
@@ -331,45 +336,50 @@ class EngineScriptDashboard {
       // ESC - Close mobile menu
       if (event.key === "Escape") {
         this.closeMobileMenu();
+        return;
       }
 
       // Ctrl+R or F5 - Refresh data (prevent default browser refresh)
       if ((event.ctrlKey && event.key === "r") || event.key === "F5") {
         event.preventDefault();
         this.refreshData();
+        return;
       }
 
       // Arrow keys - Navigate between pages
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         this.navigateWithKeys(event.key === "ArrowRight");
+        return;
       }
 
-      // Number keys 1-5 - Quick page navigation
+      // Number keys 1-5 - Quick page navigation (using cached pages array)
       if (event.key >= "1" && event.key <= "5" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-        const pages = ["overview", "sites", "system", "external-services", "tools"];
         const pageIndex = parseInt(event.key, 10) - 1;
-        if (pageIndex < pages.length) {
-          this.navigateToPage(pages[pageIndex]);
+        if (pageIndex < this.keyboardNavPages.length) {
+          this.navigateToPage(this.keyboardNavPages[pageIndex]);
         }
       }
-    });
+    };
+    
+    document.addEventListener("keydown", this.keyboardShortcutHandler);
   }
 
   navigateWithKeys(forward) {
-    const pages = ["overview", "sites", "system", "external-services", "tools"];
-    const currentIndex = pages.indexOf(this.state.getCurrentPage());
+    // Use cached pages array instead of creating new array on each call
+    const currentIndex = this.keyboardNavPages.indexOf(this.state.getCurrentPage());
     
     if (currentIndex === -1) return;
     
+    const pagesLength = this.keyboardNavPages.length;
     let nextIndex;
     if (forward) {
-      nextIndex = (currentIndex + 1) % pages.length;
+      nextIndex = (currentIndex + 1) % pagesLength;
     } else {
-      nextIndex = (currentIndex - 1 + pages.length) % pages.length;
+      nextIndex = (currentIndex - 1 + pagesLength) % pagesLength;
     }
     
-    this.navigateToPage(pages[nextIndex]);
+    this.navigateToPage(this.keyboardNavPages[nextIndex]);
   }
     
   startClock() {

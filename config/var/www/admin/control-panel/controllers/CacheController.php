@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/BaseController.php';
+// codacy:ignore - require_once with __DIR__ constant and hardcoded path; no user input in path
 require_once __DIR__ . '/../classes/SystemCommand.php';
 
 /**
@@ -278,6 +279,7 @@ class CacheController extends BaseController
             // Cache the result
             $this->setCached('/cache/status', $result);
 
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::success($result, $this->getTtl('/cache/status'));
         } catch (Exception $e) {
             $this->logSecurityEvent('Cache status error', $e->getMessage());

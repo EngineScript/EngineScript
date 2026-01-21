@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/BaseController.php';
+// codacy:ignore - require_once with __DIR__ constant and hardcoded path; no user input in path
 require_once __DIR__ . '/../classes/UptimeRobotAPI.php';
 
 /**
