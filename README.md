@@ -199,17 +199,17 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.29.3|<https://nginx.org/en/download.html>|
-|NGINX CACHE PURGE|2.5.4|<https://github.com/nginx-modules/ngx_cache_purge>|
+|NGINX MAINLINE|1.29.5|<https://nginx.org/en/download.html>|
+|NGINX CACHE PURGE|2.5.5|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
-|OPENSSL|3.5.4|<https://www.openssl.org/source/>|
+|OPENSSL|3.5.5|<https://www.openssl.org/source/>|
 |PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB-Cloudflare||<https://github.com/cloudflare/zlib>|
 |**Script Processing**|||
 |PHP|8.4|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
 |**MySQL Database**|||
-|MARIADB|11.8.5|<https://mariadb.org/download/>|
+|MARIADB|11.8.6|<https://mariadb.org/download/>|
 |**Database Management**|||
 |ADMINER|||
 |PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
@@ -250,9 +250,9 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
 |**Misc Supplemental Software**|||
-|LIBURING|2.12|<https://github.com/axboe/liburing>|
+|LIBURING|2.14|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
-|ZLIB|1.3.1|<https://github.com/madler/zlib>|
+|ZLIB|1.3.1.2|<https://github.com/madler/zlib>|
 
 ## Star History
 
