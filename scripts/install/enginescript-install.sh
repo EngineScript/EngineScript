@@ -66,6 +66,13 @@ echo "32bit or 64bit = $BIT_TYPE"
 echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
 echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $UBUNTU_TYPE $UBUNTU_VERSION $UBUNTU_CODENAME"
+
+# Detect server location and hosting provider
+detect_server_location
+
+# Auto-detect DigitalOcean and enable features if applicable
+auto_detect_digitalocean
+
 echo -e "${BOLD}\nEngineScript Install Options:${NORMAL}"
 echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
 echo "ENGINESCRIPT_AUTO_UPDATE = $ENGINESCRIPT_AUTO_UPDATE"

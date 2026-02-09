@@ -606,3 +606,96 @@ function verify_installation_completion() {
         exit 1
     fi
 }
+
+
+# ----------------------------------------------------------------
+# Detect server location and hosting provider via ipinfo.io
+# Logs results to /var/log/EngineScript/server-location.log
+# Sets SERVER_ASN_ORG global variable for provider detection
+# Always uses IPv4 with 5-second timeouts
+function detect_server_location() {
+    local log_file="/var/log/EngineScript/server-location.log"
+    local curl_opts="-4s --max-time 5 --connect-timeout 5"
+
+    echo -e "${BOLD}Server Location Info:${NORMAL}"
+
+    # Fetch geo data (city, region, country, timezone)
+    local geo_data
+    geo_data=$(curl ${curl_opts} https://ipinfo.io/geo 2>/dev/null)
+
+    if [[ -n "${geo_data}" ]]; then
+        # Parse and display geo fields (exclude ip, phone, postal, loc, readme)
+        echo "${geo_data}" | sed -e 's|[{}]||g' -e 's/\(^"\|"\)//g' -e 's|,||g' | grep -Eiv 'ip:|phone|postal|loc|readme' | while IFS= read -r line; do
+            line=$(echo "${line}" | sed 's/^[[:space:]]*//')
+            if [[ -n "${line}" ]]; then
+                echo "  ${line}"
+            fi
+        done
+    else
+        echo "  Unable to retrieve server location (ipinfo.io unreachable)"
+    fi
+
+    # Fetch ASN/organization info
+    SERVER_ASN_ORG=$(curl ${curl_opts} https://ipinfo.io/org 2>/dev/null)
+
+    if [[ -n "${SERVER_ASN_ORG}" ]]; then
+        echo "  ASN: ${SERVER_ASN_ORG}"
+    else
+        SERVER_ASN_ORG=""
+        echo "  ASN: Unable to retrieve"
+    fi
+
+    # Log results
+    {
+        echo "# EngineScript Server Location - Detected at install time"
+        echo "# Date: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo ""
+        if [[ -n "${geo_data}" ]]; then
+            echo "${geo_data}" | sed -e 's|[{}]||g' -e 's/\(^"\|"\)//g' -e 's|,||g' | grep -Eiv 'readme' | while IFS= read -r line; do
+                line=$(echo "${line}" | sed 's/^[[:space:]]*//')
+                if [[ -n "${line}" ]]; then
+                    echo "${line}"
+                fi
+            done
+        fi
+        echo "ASN: ${SERVER_ASN_ORG:-Unknown}"
+    } > "${log_file}" 2>/dev/null || true
+
+    echo ""
+}
+
+
+# ----------------------------------------------------------------
+# Auto-detect DigitalOcean hosting and enable DO features
+# Must be called after detect_server_location() sets SERVER_ASN_ORG
+# Updates install options file and in-memory variables when DO is detected
+function auto_detect_digitalocean() {
+    local options_file="/home/EngineScript/enginescript-install-options.txt"
+
+    # Check if ASN contains DIGITALOCEAN (case-insensitive)
+    if [[ "${SERVER_ASN_ORG,,}" == *"digitalocean"* ]]; then
+        echo -e "${BOLD}✅ DigitalOcean hosting detected${NORMAL} (${SERVER_ASN_ORG})"
+        echo "   Enabling DigitalOcean agents automatically..."
+        echo ""
+
+        # Enable Remote Console if currently disabled
+        if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" != "1" ]]; then
+            sed -i 's/^INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0/INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=1/' "${options_file}"
+            INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=1
+            echo "   → INSTALL_DIGITALOCEAN_REMOTE_CONSOLE = 1 (auto-enabled)"
+        else
+            echo "   → INSTALL_DIGITALOCEAN_REMOTE_CONSOLE = 1 (already enabled)"
+        fi
+
+        # Enable Metrics Agent if currently disabled
+        if [[ "${INSTALL_DIGITALOCEAN_METRICS_AGENT}" != "1" ]]; then
+            sed -i 's/^INSTALL_DIGITALOCEAN_METRICS_AGENT=0/INSTALL_DIGITALOCEAN_METRICS_AGENT=1/' "${options_file}"
+            INSTALL_DIGITALOCEAN_METRICS_AGENT=1
+            echo "   → INSTALL_DIGITALOCEAN_METRICS_AGENT = 1 (auto-enabled)"
+        else
+            echo "   → INSTALL_DIGITALOCEAN_METRICS_AGENT = 1 (already enabled)"
+        fi
+
+        echo ""
+    fi
+}
