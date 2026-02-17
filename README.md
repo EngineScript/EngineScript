@@ -207,7 +207,7 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB-Cloudflare||<https://github.com/cloudflare/zlib>|
 |**Script Processing**|||
-|PHP|8.4|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
+|PHP|8.5|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
 |**MySQL Database**|||
 |MARIADB|11.8.6|<https://mariadb.org/download/>|
 |**Database Management**|||
