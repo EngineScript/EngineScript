@@ -53,7 +53,7 @@ make -f Makefile.in distclean
 #ldconfig
 
 # Official zlib Download
-wget -O "/usr/src/zlib-${ZLIB_VER}.tar.gz" "https://www.zlib.net/zlib-${ZLIB_VER}.tar.gz" --no-check-certificate
+wget -O "/usr/src/zlib-${ZLIB_VER}.tar.gz" "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz"
 tar -xzf "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 
 # Return to /usr/src
