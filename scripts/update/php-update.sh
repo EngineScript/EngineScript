@@ -25,38 +25,47 @@ else
     echo "Skipping EngineScript update."
 fi
 
+# Accept target version from argument (used by menu) or fall back to variables + override
+if [[ -n "${1}" ]]; then
+    NEW_PHP_VER="${1}"
+else
+    NEW_PHP_VER="${PHP_VER}"
+fi
+
+# Auto-detect currently installed PHP-FPM version
+OLD_PHP_VER=""
+for ver in 8.1 8.2 8.3 8.4 8.5; do
+    if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
+        OLD_PHP_VER="${ver}"
+    fi
+done
+
+if [[ -z "${OLD_PHP_VER}" ]]; then
+    # Check if target version is already installed
+    if dpkg -l | grep -q "php${NEW_PHP_VER}-fpm"; then
+        echo "PHP ${NEW_PHP_VER} is already installed. Nothing to upgrade."
+        exit 0
+    else
+        echo "No existing PHP-FPM installation detected. Use php-install.sh for fresh installs."
+        exit 1
+    fi
+fi
+
 echo ""
 echo "============================================================="
 echo ""
-echo "PHP Upgrade: Migrating from PHP 8.3 to PHP ${PHP_VER}"
+echo "PHP Upgrade: Migrating from PHP ${OLD_PHP_VER} to PHP ${NEW_PHP_VER}"
 echo ""
 echo "============================================================="
 echo ""
-
-# Define old and new PHP versions
-OLD_PHP_VER="8.3"
-NEW_PHP_VER="${PHP_VER}"
-
-# Verify we're upgrading to 8.4
-if [[ "${NEW_PHP_VER}" != "8.4" ]]; then
-    echo "Error: This script is designed to upgrade to PHP 8.4 only."
-    echo "Current PHP_VER variable is set to: ${NEW_PHP_VER}"
-    exit 1
-fi
-
-# Check if PHP 8.3 is currently installed
-if ! dpkg -l | grep -q "php${OLD_PHP_VER}-fpm"; then
-    echo "PHP ${OLD_PHP_VER} is not installed. Nothing to upgrade."
-    exit 0
-fi
 
 echo "Detected PHP ${OLD_PHP_VER} installation. Proceeding with upgrade..."
 
-# Stop PHP 8.3 service
+# Stop old PHP service
 echo "Stopping PHP ${OLD_PHP_VER} service..."
 systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
 
-# Install PHP 8.4
+# Install new PHP version
 echo "Installing PHP ${NEW_PHP_VER}..."
 
 # Define the PHP packages to install
@@ -70,11 +79,16 @@ php${NEW_PHP_VER}-imagick
 php${NEW_PHP_VER}-intl
 php${NEW_PHP_VER}-mbstring
 php${NEW_PHP_VER}-mysql
-php${NEW_PHP_VER}-opcache
 php${NEW_PHP_VER}-redis
 php${NEW_PHP_VER}-ssh2
 php${NEW_PHP_VER}-xml
 php${NEW_PHP_VER}-zip"
+
+# PHP 8.5+ has opcache built-in; older versions need the separate package
+if [[ "$(echo "${NEW_PHP_VER} < 8.5" | bc -l)" -eq 1 ]]; then
+    php_packages="${php_packages}
+php${NEW_PHP_VER}-opcache"
+fi
 
 # Install the packages with error checking
 apt install -qy $php_packages || {
@@ -94,29 +108,8 @@ php${NEW_PHP_VER}-sqlite3"
     }
 fi
 
-# Copy PHP 8.3 configuration to PHP 8.4
-echo "Migrating PHP configuration from ${OLD_PHP_VER} to ${NEW_PHP_VER}..."
-
-# Copy php.ini
-if [[ -f "/etc/php/${OLD_PHP_VER}/fpm/php.ini" ]]; then
-    cp "/etc/php/${OLD_PHP_VER}/fpm/php.ini" "/etc/php/${NEW_PHP_VER}/fpm/php.ini"
-fi
-
-# Copy pool configuration
-if [[ -f "/etc/php/${OLD_PHP_VER}/fpm/pool.d/www.conf" ]]; then
-    cp "/etc/php/${OLD_PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${NEW_PHP_VER}/fpm/pool.d/www.conf"
-fi
-
-# Copy php-fpm.conf
-if [[ -f "/etc/php/${OLD_PHP_VER}/fpm/php-fpm.conf" ]]; then
-    cp "/etc/php/${OLD_PHP_VER}/fpm/php-fpm.conf" "/etc/php/${NEW_PHP_VER}/fpm/php-fpm.conf"
-fi
-
-# Update configuration references from 8.3 to 8.4
-echo "Updating configuration references..."
-
-# Update logrotate configuration
-if [[ -f "/etc/logrotate.d/php${OLD_PHP_VER}-fpm" ]]; then
+# Logrotate
+if [[ -f "/etc/logrotate.d/php${NEW_PHP_VER}-fpm" ]]; then
     sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${NEW_PHP_VER}-fpm"
 fi
 
@@ -157,26 +150,19 @@ for config_file in /etc/nginx/sites-available/*; do
 done
 
 # Update phpSysInfo configuration
-echo "Updating phpSysInfo configuration..."
 if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
+    echo "Updating phpSysInfo configuration..."
     sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
 fi
 
-# Update API configuration to be dynamic for both PHP versions
-echo "Updating admin control panel API configuration..."
+# Update admin control panel API configuration
 if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
-    # Make PHP service detection dynamic
-    sed -i "s/'php8\.3-fpm'/'php8.4-fpm', 'php8.3-fpm'/g" "/var/www/admin/control-panel/api.php"
-    sed -i "s/getServiceStatus('php8\.3-fpm')/getServiceStatus('php8.4-fpm') ?: getServiceStatus('php8.3-fpm')/g" "/var/www/admin/control-panel/api.php"
-    sed -i "s/case 'php8\.3-fpm':/case 'php8.4-fpm':\n        case 'php8.3-fpm':/g" "/var/www/admin/control-panel/api.php"
+    echo "Updating admin control panel API configuration..."
+    sed -i "s|php${OLD_PHP_VER}-fpm|php${NEW_PHP_VER}-fpm|g" "/var/www/admin/control-panel/api.php"
+    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/control-panel/api.php"
 fi
 
-# Update debug script
-if [[ -f "/usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh" ]]; then
-    sed -i "s/php8\.3-fpm/php8.4-fpm/g" "/usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh"
-fi
-
-# Start PHP 8.4 service
+# Start new PHP service
 echo "Starting PHP ${NEW_PHP_VER} service..."
 systemctl enable "php${NEW_PHP_VER}-fpm"
 systemctl start "php${NEW_PHP_VER}-fpm"
@@ -195,33 +181,28 @@ else
     exit 1
 fi
 
-# Remove PHP 8.3 if not keeping it
-if [[ "${INSTALL_PHP83}" != "1" ]]; then
-    echo "Removing PHP ${OLD_PHP_VER} installation..."
-    
-    # Stop and disable PHP 8.3 service
-    systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
-    systemctl disable "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
-    
-    # Remove PHP 8.3 packages
-    apt purge -y php${OLD_PHP_VER}* 2>/dev/null || true
-    
-    # Remove PHP 8.3 configuration directory
-    rm -rf "/etc/php/${OLD_PHP_VER}" 2>/dev/null || true
-    
-    # Remove PHP 8.3 logrotate configuration
-    rm -f "/etc/logrotate.d/php${OLD_PHP_VER}-fpm" 2>/dev/null || true
-    
-    # Clean up old logs (keep for reference but rename)
-    if [[ -f "/var/log/php/php${OLD_PHP_VER}-fpm.log" ]]; then
-        mv "/var/log/php/php${OLD_PHP_VER}-fpm.log" "/var/log/php/php${OLD_PHP_VER}-fpm.log.old" 2>/dev/null || true
-    fi
-    
-    echo "PHP ${OLD_PHP_VER} has been removed."
-else
-    echo "PHP ${OLD_PHP_VER} has been kept alongside PHP ${NEW_PHP_VER}."
-    echo "Note: Only PHP ${NEW_PHP_VER} is configured for use with Nginx."
+# Remove old PHP version
+echo "Removing PHP ${OLD_PHP_VER} installation..."
+
+# Stop and disable old PHP service
+systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+systemctl disable "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+
+# Remove old PHP packages
+apt purge -y php${OLD_PHP_VER}* 2>/dev/null || true
+
+# Remove old PHP configuration directory
+rm -rf "/etc/php/${OLD_PHP_VER}" 2>/dev/null || true
+
+# Remove old PHP logrotate configuration
+rm -f "/etc/logrotate.d/php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+
+# Archive old log
+if [[ -f "/var/log/php/php${OLD_PHP_VER}-fpm.log" ]]; then
+    mv "/var/log/php/php${OLD_PHP_VER}-fpm.log" "/var/log/php/php${OLD_PHP_VER}-fpm.log.old" 2>/dev/null || true
 fi
+
+echo "PHP ${OLD_PHP_VER} has been removed."
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh
@@ -242,13 +223,9 @@ echo "PHP upgrade from ${OLD_PHP_VER} to ${NEW_PHP_VER} completed successfully."
 echo ""
 echo "Changes made:"
 echo "  - Installed PHP ${NEW_PHP_VER} and extensions"
-echo "  - Migrated configuration from PHP ${OLD_PHP_VER}"
+echo "  - Applied EngineScript configuration for PHP ${NEW_PHP_VER}"
 echo "  - Updated Nginx configuration"
-echo "  - Updated admin control panel API"
-echo "  - Updated debug scripts"
-if [[ "${INSTALL_PHP83}" != "1" ]]; then
-    echo "  - Removed PHP ${OLD_PHP_VER} installation"
-fi
+echo "  - Removed PHP ${OLD_PHP_VER} installation"
 echo ""
 echo "============================================================="
 echo ""

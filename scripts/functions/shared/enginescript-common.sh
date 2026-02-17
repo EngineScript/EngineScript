@@ -242,6 +242,36 @@ function clear_all_system_caches() {
 
 
 # ----------------------------------------------------------------
+# Resolve PHP version from override or default
+# If PHP_VERSION_OVERRIDE is set in install options, use it instead of the default PHP_VER
+# Validates that the override is a supported version (8.3, 8.4, 8.5)
+function resolve_php_version() {
+    local supported_versions=("8.3" "8.4" "8.5")
+
+    if [[ -n "${PHP_VERSION_OVERRIDE}" ]]; then
+        local valid=false
+        for ver in "${supported_versions[@]}"; do
+            if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
+                valid=true
+                break
+            fi
+        done
+
+        if [[ "${valid}" == true ]]; then
+            PHP_VER="${PHP_VERSION_OVERRIDE}"
+            echo "PHP version override active: using PHP ${PHP_VER}"
+        else
+            echo "Warning: Invalid PHP_VERSION_OVERRIDE '${PHP_VERSION_OVERRIDE}'. Supported: ${supported_versions[*]}"
+            echo "Falling back to default PHP ${PHP_VER}"
+        fi
+    fi
+}
+
+# Apply PHP version override if set
+resolve_php_version
+
+
+# ----------------------------------------------------------------
 # Function to restart a service
 function restart_service() {
     local service_name="$1"
@@ -255,7 +285,7 @@ function restart_service() {
 # ----------------------------------------------------------------
 # Function to restart PHP-FPM service
 function restart_php_fpm() {
-    local php_versions=("8.1" "8.2" "8.3" "8.4")
+    local php_versions=("8.3" "8.4" "8.5")
     for version in "${php_versions[@]}"; do
         if systemctl is-active --quiet "php${version}-fpm"; then
             restart_service "php${version}-fpm"

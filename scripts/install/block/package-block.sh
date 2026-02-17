@@ -30,26 +30,15 @@ echo -e "Package: nginx*\nPin: release *\nPin-Priority: -1" > nginx-block
 echo -e "Package: openlitespeed*\nPin: release *\nPin-Priority: -1" > litespeed-block
 echo -e "Package: lighttpd*\nPin: release *\nPin-Priority: -1" > litespeed-block2
 
-# Block PHP 5.x from APT
-echo -e "Package: php5*\nPin: release *\nPin-Priority: -1" > php5-block
+# Block all PHP versions except the selected one
+# Always block legacy versions
+block_versions=("5" "7.0" "7.1" "7.2" "7.3" "7.4" "8.0" "8.1" "8.2" "8.3" "8.4" "8.5")
 
-# Block PHP 7.0 from APT
-echo -e "Package: php7.0*\nPin: release *\nPin-Priority: -1" > php70-block
-
-# Block PHP 7.1 from APT
-echo -e "Package: php7.1*\nPin: release *\nPin-Priority: -1" > php71-block
-
-# Block PHP 7.2 from APT
-echo -e "Package: php7.2*\nPin: release *\nPin-Priority: -1" > php72-block
-
-# Block PHP 7.3 from APT
-echo -e "Package: php7.3*\nPin: release *\nPin-Priority: -1" > php73-block
-
-# Block PHP 7.4 from APT
-echo -e "Package: php7.4*\nPin: release *\nPin-Priority: -1" > php74-block
-
-# Block PHP 8.0 from APT
-echo -e "Package: php8.0*\nPin: release *\nPin-Priority: -1" > php80-block
-
-# Block PHP 8.1 from APT
-echo -e "Package: php8.1*\nPin: release *\nPin-Priority: -1" > php81-block
+for ver in "${block_versions[@]}"; do
+    # Skip the selected PHP version
+    if [[ "${ver}" == "${PHP_VER}" ]]; then
+        continue
+    fi
+    sanitized="${ver//.}"
+    echo -e "Package: php${ver}*\nPin: release *\nPin-Priority: -1" > "php${sanitized}-block"
+done

@@ -33,11 +33,16 @@ php${PHP_VER}-imagick
 php${PHP_VER}-intl
 php${PHP_VER}-mbstring
 php${PHP_VER}-mysql
-php${PHP_VER}-opcache
 php${PHP_VER}-redis
 php${PHP_VER}-ssh2
 php${PHP_VER}-xml
 php${PHP_VER}-zip"
+
+# PHP 8.5+ has opcache built-in; older versions need the separate package
+if [[ "$(echo "${PHP_VER} < 8.5" | bc -l)" -eq 1 ]]; then
+    php_packages="${php_packages}
+php${PHP_VER}-opcache"
+fi
 
 # Install the packages with error checking
 # Unquoted expansion relies on word splitting (spaces and newlines)

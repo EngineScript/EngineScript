@@ -320,7 +320,7 @@ debug_print "Redis: $(redis-server --version)" "Redis: \`$(redis-server --versio
 debug_print "\n## Service Status\n" "\n## Service Status\n"
 debug_print "| Service | Status |" "| Service | Status |"
 debug_print "|---------|---------|" "|---------|---------|"
-services=("nginx" "php8.3-fpm" "mariadb" "redis-server")
+services=("nginx" "php${PHP_VER}-fpm" "mariadb" "redis-server")
 for service in "${services[@]}"; do
     status=$(systemctl is-active "$service")
     if [[ "$status" == "active" ]]; then

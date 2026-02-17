@@ -54,10 +54,12 @@ INSTALL_HTTP3=0
 # SOAP, SQLite3
 INSTALL_EXPANDED_PHP=0
 
-## Keep PHP 8.3 Installation ##
-# Set to 1 to keep PHP 8.3 alongside PHP 8.4 during upgrade
-# Set to 0 to remove PHP 8.3 after upgrading to PHP 8.4 (recommended)
-INSTALL_PHP83=0
+## PHP Version Override ##
+# Leave empty to use the default PHP version (currently 8.5)
+# Set to "8.4" or "8.3" to install an older version instead
+# This affects all PHP installation, configuration, and service management
+# You can also switch versions at any time via: es.menu > Update Software > Switch PHP Version
+PHP_VERSION_OVERRIDE=""
 
 ## Automatic Lossless Image Optimization ##
 # Automatically perform lossless compression on all images on each domain.
