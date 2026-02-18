@@ -33,11 +33,6 @@ thread_cache_size = 8
 table_open_cache = 256
 table_definition_cache = 128
 
-# Query cache (if supported)
-query_cache_type = 1
-query_cache_size = 32M
-query_cache_limit = 1M
-
 # Temporary table settings
 tmp_table_size = 32M
 max_heap_table_size = 32M

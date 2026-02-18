@@ -55,8 +55,16 @@ sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
 sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
 
 # Max Connections
-# Scales to be near the MariaDB default value on a 4GB server
-sed -i "s|SEDMAXCON|${SERVER_MEMORY_TOTAL_05}|g" /etc/mysql/my.cnf
+# Scaled proportionally to PHP-FPM pm.max_children with headroom for WP-CLI, cron, and admin tasks
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]]; then
+  sed -i "s|SEDMAXCON|50|g" /etc/mysql/my.cnf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]]; then
+  sed -i "s|SEDMAXCON|75|g" /etc/mysql/my.cnf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ]]; then
+  sed -i "s|SEDMAXCON|100|g" /etc/mysql/my.cnf
+else
+  sed -i "s|SEDMAXCON|150|g" /etc/mysql/my.cnf
+fi
 
 # Use the calculated SEDLBS variable for log buffer size
 sed -i "s|SEDLBS|${SEDLBS}M|g" /etc/mysql/my.cnf
@@ -104,8 +112,8 @@ sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/my.cnf
 sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/my.cnf
 
 # Cap innodb_log_file_size at 512MB
-if [[ "${SERVER_MEMORY_TOTAL_10}" -gt 512 ]]; then
-  SERVER_MEMORY_TOTAL_10=512
+if [[ "${SERVER_MEMORY_TOTAL_09}" -gt 512 ]]; then
+  SERVER_MEMORY_TOTAL_09=512
 fi
 sed -i "s|SEDMYSQL09PERCENT|${SERVER_MEMORY_TOTAL_09}M|g" /etc/mysql/my.cnf
 
@@ -122,8 +130,8 @@ IOPS_AVG_VAR="SEDAVGIOPS"  # Placeholder for avg IOPS
 IOPS_MAX_VAR="SEDMAXIOPS"  # Placeholder for max IOPS
 
 # Run fio and get results (with progress)
-echo "Running fio test (read)..."
-fio_full_output=$(sudo fio --ioengine=libaio --direct=1 --name=test --filename="$TEST_FILE" --bs=4k --size=500M --readwrite=read)
+echo "Running fio test (random mixed read/write)..."
+fio_full_output=$(sudo fio --ioengine=libaio --direct=1 --name=test --filename="$TEST_FILE" --bs=4k --size=500M --readwrite=randrw --rwmixread=70)
 
 # Extract avg and max IOPS values
 avg_iops=$(echo "$fio_full_output" | grep "iops" | awk -F',' '{print $3}' | awk -F'=' '{print $2}')
