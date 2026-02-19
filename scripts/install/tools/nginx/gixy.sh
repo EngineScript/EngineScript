@@ -18,14 +18,18 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# GIXY
-pip3 install gixy
+# GIXY-NEXT (maintained fork of Gixy)
+# https://github.com/MegaManSec/Gixy-Next
+# Uses pipx to install in an isolated virtual environment (PEP 668 compliance)
+apt install -y pipx
+pipx install gixy-next
+pipx ensurepath
 
 echo ""
 echo ""
 echo "============================================================="
 echo ""
-echo "  ${BOLD}GIXY installed.${NORMAL}"
+echo "  ${BOLD}Gixy-Next installed.${NORMAL}"
 echo ""
 echo "  To run a scan of your Nginx configuration:"
 echo "  gixy /etc/nginx/nginx.conf"
