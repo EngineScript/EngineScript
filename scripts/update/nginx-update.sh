@@ -40,10 +40,10 @@ debug_pause "Brotli"
 print_last_errors
 debug_pause "OpenSSL"
 
-# Retrieve Latest Cloudflare Zlib
+# Retrieve Latest zlib
 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
-debug_pause "Cloudflare Zlib"
+debug_pause "zlib"
 
 # Retrieve Latest PCRE2
 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log

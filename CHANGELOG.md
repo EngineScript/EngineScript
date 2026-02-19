@@ -4,6 +4,52 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-02-18
+
+### ⚡ NGINX JETPACK BOOST DELIVERY COMPATIBILITY
+
+- **Jetpack Boost static delivery fallback fix**: Added a dedicated Nginx location for `/wp-content/boost-cache/static/*.css|*.js` that uses `try_files` with fallback to `/index.php?$args`.
+  - Existing concatenated files continue to be served directly by Nginx.
+  - Missing concatenated files now route through WordPress instead of returning an Nginx-native 404.
+  - Restores compatibility with Jetpack Boost enhanced delivery detection that relies on WordPress `is_404()` behavior in `wp-content` paths.
+- **Generic CSS/JS location clarified**: Added inline guidance noting why `try_files` is intentionally not enabled in the general `\.(css|js)` location to preserve fast native 404 handling for non-Jetpack asset misses.
+- **FastCGI/PHP timeout alignment**: Tuned request timeout chain to reduce premature 504 responses and unnecessary long-running worker overlap.
+  - Updated Nginx `fastcgi_read_timeout` from `120s` to `130s`.
+  - Updated PHP-FPM `request_terminate_timeout` from `300s` to `125s`.
+  - Kept PHP `max_execution_time` at `120` as the baseline script limit.
+- **try_files simplification for endpoint-specific rules**: Removed unnecessary `$uri/` directory checks where URL patterns are file/endpoint specific.
+  - Updated Jetpack Boost static fallback in `static-files.conf` to `try_files $uri /index.php?$args;`.
+  - Updated `wp-json` fallback in `wp-secure.conf` to `try_files $uri /index.php?$args;`.
+- **Nginx zlib source migration**: Switched active Nginx build path from Cloudflare zlib fork to official zlib source.
+  - Updated `nginx-compile.sh` to use `--with-zlib="/usr/src/zlib-${ZLIB_VER}"` for both HTTP/2 and HTTP/3 builds.
+  - Disabled Cloudflare zlib clone/configure flow in `zlib-install.sh` by commenting it out (kept for future re-enable).
+  - Updated Nginx install/upgrade script messaging from "Cloudflare Zlib" to "zlib".
+
+## 2025-01-21
+
+### ⚙️ PHP VERSION SELECTION
+
+- **PHP 8.5 Default**: Default PHP version changed from 8.4 to 8.5
+- **Version Override System**: New `PHP_VERSION_OVERRIDE` variable in install options allows selecting PHP 8.4 or 8.3
+- **KEEP_OLD_PHP Removed**: Old PHP version is always removed during upgrades; use "Switch PHP Version" menu to change versions
+- **Switch PHP Version Menu**: New interactive option in Update Software menu lets users switch between PHP 8.3, 8.4, and 8.5
+- **resolve_php_version()**: New shared function validates version override and applies it at script startup
+- **Dynamic Package Blocking**: `package-block.sh` now dynamically blocks all PHP versions except the selected one
+- **Opcache Handling**: `php-install.sh` and `php-update.sh` conditionally skip `php-opcache` package for PHP 8.5+ (built-in)
+- **php-update.sh Rewrite**: Complete rewrite — auto-detects currently installed PHP version, version-agnostic upgrade logic, no hardcoded versions
+
+### 🐛 BUG FIXES
+
+- **alias-debug.sh**: Fixed hardcoded `php8.3-fpm` service name; now uses `${PHP_VER}` dynamically
+- **enginescript-common.sh**: Updated `restart_php_fpm()` version array to include PHP 8.5
+
+### 🔒 SECURITY IMPROVEMENTS
+
+- **HIGH_SECURITY_SSL TLS Enhancement**: When `HIGH_SECURITY_SSL=1` is configured, TLS 1.1 is now disabled in nginx
+  - SSL protocols reduced from `TLSv1.1 TLSv1.2 TLSv1.3` to `TLSv1.2 TLSv1.3`
+  - Applied during nginx installation via nginx-misc.sh
+  - Improves security posture for high-security environments by removing deprecated TLS 1.1 support
+
 ## 2025-11-17
 
 ### 🌐 NEW FEATURE: External Services Monitoring

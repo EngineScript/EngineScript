@@ -131,7 +131,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --with-threads \
       --with-pcre="/usr/src/pcre2-${PCRE2_VER}" \
       --with-pcre-jit \
-      --with-zlib=/usr/src/zlib-cf \
+      --with-zlib="/usr/src/zlib-${ZLIB_VER}" \
       --with-zlib-opt=-fPIC \
       --with-http_ssl_module \
       --with-http_v2_module \
@@ -178,7 +178,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --with-threads \
       --with-pcre="/usr/src/pcre2-${PCRE2_VER}" \
       --with-pcre-jit \
-      --with-zlib=/usr/src/zlib-cf \
+      --with-zlib="/usr/src/zlib-${ZLIB_VER}" \
       --with-zlib-opt=-fPIC \
       --with-http_ssl_module \
       --with-http_v2_module \

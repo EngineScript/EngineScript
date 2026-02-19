@@ -21,19 +21,18 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Return to /usr/src
 cd /usr/src
 
-# Cloudflare zlib Download
-# Remove existing Zlib-CF directory if it exists
-if [[ -d "/usr/src/zlib-cf" ]]; then
-  rm -rf "/usr/src/zlib-cf"
-fi
-
-# Clone Zlib-CF
-git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 "/usr/src/zlib-cf"
-cd "/usr/src/zlib-cf"
-sudo ./configure --prefix=path \
-  --static \
-  --64
-make -f Makefile.in distclean
+# Cloudflare zlib fork (disabled)
+# Disabled due to security and maintenance concerns. Keep this block for future re-enable if upstream status improves.
+#if [[ -d "/usr/src/zlib-cf" ]]; then
+#  rm -rf "/usr/src/zlib-cf"
+#fi
+#
+#git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 "/usr/src/zlib-cf"
+#cd "/usr/src/zlib-cf"
+#sudo ./configure --prefix=path \
+#  --static \
+#  --64
+#make -f Makefile.in distclean
 
 #make
 #make test
@@ -53,6 +52,14 @@ make -f Makefile.in distclean
 #ldconfig
 
 # Official zlib Download
+# Remove existing official zlib source directory and tarball if they exist
+if [[ -d "/usr/src/zlib-${ZLIB_VER}" ]]; then
+  rm -rf "/usr/src/zlib-${ZLIB_VER}"
+fi
+if [[ -f "/usr/src/zlib-${ZLIB_VER}.tar.gz" ]]; then
+  rm -f "/usr/src/zlib-${ZLIB_VER}.tar.gz"
+fi
+
 wget -O "/usr/src/zlib-${ZLIB_VER}.tar.gz" "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz"
 tar -xzf "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 
