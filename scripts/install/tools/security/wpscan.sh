@@ -21,14 +21,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # WPScan
 gem install wpscan
 
-echo ""
-echo ""
-echo "============================================================"
-echo ""
-echo "${BOLD}WPScan installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-
-sleep 5
+print_install_banner "WPScan"

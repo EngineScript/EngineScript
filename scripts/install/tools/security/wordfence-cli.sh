@@ -24,7 +24,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cd /usr/src
 
 # Install
-wget -O /usr/src/wordfence.deb https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb --no-check-certificate
+safe_wget "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb"
 sudo apt install /usr/src/wordfence.deb -y
 
 # Make Results Directory
@@ -34,15 +34,7 @@ mkdir -p /home/EngineScript/wordfence-scan-results
 mkdir -p ~/.cache/wordfence
 chmod 775 ~/.cache/wordfence
 
-echo ""
-echo ""
-echo "============================================================"
-echo ""
-echo "${BOLD}Wordfence CLI installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
+print_install_banner "Wordfence CLI" 0
 
 # Return to /usr/src
 cd /usr/src

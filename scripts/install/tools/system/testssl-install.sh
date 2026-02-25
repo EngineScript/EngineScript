@@ -21,13 +21,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Return to /usr/src
 cd /usr/src
 
-# Remove existing Testssl.sh directory if it exists
-if [[ -d "/usr/local/bin/testssl.sh" ]]; then
-  rm -rf /usr/local/bin/testssl.sh
-fi
-
 # Install Testssl.sh
-git clone https://github.com/testssl/testssl.sh.git /usr/local/bin/testssl.sh
+git_clone_fresh "https://github.com/testssl/testssl.sh.git" "/usr/local/bin/testssl.sh"
 
 # Permissions
 find /usr/local/bin/testssl.sh -exec chmod 755 {} \;

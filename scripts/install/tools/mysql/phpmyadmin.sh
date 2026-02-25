@@ -24,7 +24,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 mkdir -p /var/www/admin/tools
 
 # Download phpMyAdmin
-wget -O "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" --no-check-certificate
+safe_wget "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
 unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
 mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" "/var/www/admin/tools/phpmyadmin"
 mkdir -p /var/www/admin/tools/phpmyadmin/tmp
@@ -47,13 +47,4 @@ sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhos
 # Post-Install Cleanup
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}phpMyAdmin installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-sleep 5
+print_install_banner "phpMyAdmin"

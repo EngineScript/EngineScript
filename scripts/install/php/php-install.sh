@@ -93,24 +93,9 @@ set_php_permissions
 restart_service "php${PHP_VER}-fpm"
 
 # PHP Service Check
-STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-if [[ "${STATUS}" == "active" ]]; then
-  echo "PASSED: PHP ${PHP_VER} is running."
-  echo "PHP=1" >> /var/log/EngineScript/install-log.log
-else
-  echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
-  exit 1
-fi
+verify_service_running "php${PHP_VER}-fpm" "PHP" "PHP ${PHP_VER}"
 
-echo ""
-echo "============================================================="
-echo ""
-echo "PHP ${PHP_VER} setup completed."
-echo ""
-echo "============================================================="
-echo ""
-
-sleep 5
+print_install_banner "PHP ${PHP_VER}"
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh

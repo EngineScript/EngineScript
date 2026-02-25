@@ -80,11 +80,4 @@ chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
 chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 
 # Redis Service Check
-STATUS="$(systemctl is-active redis)"
-if [[ "${STATUS}" == "active" ]]; then
-  echo "PASSED: Redis is running."
-  echo "REDIS=1" >> /var/log/EngineScript/install-log.log
-else
-  echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
-  exit 1
-fi
+verify_service_running "redis" "REDIS" "Redis"

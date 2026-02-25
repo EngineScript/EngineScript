@@ -29,13 +29,13 @@ PNGOUT_FILE="/usr/src/pngout-${PNGOUT_VER}-linux.tar.gz"
 
 # Primary URL (updated with working link)
 echo "Attempting to download pngout from primary URL..."
-if wget --timeout=30 --tries=3 -O "$PNGOUT_FILE" "https://www.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz" --no-check-certificate 2>/dev/null; then
+if safe_wget "https://www.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz" "$PNGOUT_FILE" 2>/dev/null; then
     echo "Successfully downloaded pngout from primary URL"
     PNGOUT_DOWNLOADED=true
 else
     echo "Primary URL failed, trying fallback URL..."
     # Fallback URL (original)
-    if wget --timeout=30 --tries=3 -O "$PNGOUT_FILE" "https://static.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz" --no-check-certificate 2>/dev/null; then
+    if safe_wget "https://static.jonof.id.au/files/kenutils/pngout-${PNGOUT_VER}-linux.tar.gz" "$PNGOUT_FILE" 2>/dev/null; then
         echo "Successfully downloaded pngout from fallback URL"
         PNGOUT_DOWNLOADED=true
     else

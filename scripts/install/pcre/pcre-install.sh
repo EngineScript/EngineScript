@@ -20,5 +20,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # PCRE
 cd /usr/src
-wget "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" --no-check-certificate
-tar -xzf "pcre2-${PCRE2_VER}.tar.gz"
+download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz"

@@ -21,4 +21,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/set-up/
 
 # Retrieve Cloudflare Origin Certificate
-wget -O /etc/nginx/ssl/cloudflare/origin-pull-ca.pem https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem --no-check-certificate
+safe_wget "https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem" "/etc/nginx/ssl/cloudflare/origin-pull-ca.pem"

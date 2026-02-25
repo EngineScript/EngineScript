@@ -23,21 +23,11 @@ mkdir -p /var/www/admin/tools
 
 # Adminer
 mkdir -p /var/www/admin/tools/adminer
-wget https://www.adminer.org/latest.php -O /var/www/admin/tools/adminer/index.php --no-check-certificate
+safe_wget "https://www.adminer.org/latest.php" "/var/www/admin/tools/adminer/index.php"
 
 # Set Permissons
 chown -R www-data:www-data /var/www/admin/tools/adminer
 find /var/www/admin/tools/adminer -type d -exec chmod 755 {} \;
 find /var/www/admin/tools/adminer -type f -exec chmod 644 {} \;
 
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}Adminer installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-
-sleep 5
+print_install_banner "Adminer"

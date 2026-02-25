@@ -645,18 +645,18 @@ function verify_installation_completion() {
 # Always uses IPv4 with 5-second timeouts
 function detect_server_location() {
     local log_file="/var/log/EngineScript/server-location.log"
-    local curl_opts="-4s --max-time 5 --connect-timeout 5"
+    local -a curl_opts=(-4s --max-time 5 --connect-timeout 5)
 
     echo -e "${BOLD}Server Location Info:${NORMAL}"
 
     # Fetch geo data (city, region, country, timezone)
     local geo_data
-    geo_data=$(curl ${curl_opts} https://ipinfo.io/geo 2>/dev/null)
+    geo_data=$(curl "${curl_opts[@]}" https://ipinfo.io/geo 2>/dev/null)
 
     if [[ -n "${geo_data}" ]]; then
         # Parse and display geo fields (exclude ip, phone, postal, loc, readme)
         echo "${geo_data}" | sed -e 's|[{}]||g' -e 's/\(^"\|"\)//g' -e 's|,||g' | grep -Eiv 'ip:|phone|postal|loc|readme' | while IFS= read -r line; do
-            line=$(echo "${line}" | sed 's/^[[:space:]]*//')
+            line="${line#"${line%%[![:space:]]*}"}"
             if [[ -n "${line}" ]]; then
                 echo "  ${line}"
             fi
@@ -666,7 +666,7 @@ function detect_server_location() {
     fi
 
     # Fetch ASN/organization info
-    SERVER_ASN_ORG=$(curl ${curl_opts} https://ipinfo.io/org 2>/dev/null)
+    SERVER_ASN_ORG=$(curl "${curl_opts[@]}" https://ipinfo.io/org 2>/dev/null)
 
     if [[ -n "${SERVER_ASN_ORG}" ]]; then
         echo "  ASN: ${SERVER_ASN_ORG}"
@@ -728,4 +728,148 @@ function auto_detect_digitalocean() {
 
         echo ""
     fi
+}
+
+
+# ----------------------------------------------------------------
+# Validate that a configuration variable is not still set to PLACEHOLDER
+# Exits with warning if the variable value is "PLACEHOLDER"
+# Usage: validate_not_placeholder "VARIABLE_NAME" "$VARIABLE_VALUE" ["custom message"]
+function validate_not_placeholder() {
+    local var_name="$1"
+    local var_value="$2"
+    local custom_msg="${3:-""}"
+
+    if [[ "$var_value" = "PLACEHOLDER" ]]; then
+        if [[ -n "$custom_msg" ]]; then
+            echo -e "\nWARNING:\n\n${custom_msg}\n"
+        else
+            echo -e "\nWARNING:\n\n${var_name} is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change ${var_name} to the correct value.\n"
+        fi
+        exit 1
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Run an idempotent install step: skip if already completed, otherwise execute and mark done
+# Usage: run_install_step "FLAG_NAME" "/path/to/script.sh" "Step Description"
+function run_install_step() {
+    local flag_name="$1"
+    local script_path="$2"
+    local step_desc="$3"
+    local flag_value="${!flag_name:-0}"
+
+    if [[ "${flag_value}" = 1 ]]; then
+        echo "${flag_name} script has already run."
+    else
+        "${script_path}" 2>> /tmp/enginescript_install_errors.log
+        echo "${flag_name}=1" >> /var/log/EngineScript/install-log.log
+    fi
+    print_last_errors
+    debug_pause "${step_desc}"
+}
+
+
+# ----------------------------------------------------------------
+# Verify a systemd service is running after installation
+# Logs completion flag and exits on failure
+# Usage: verify_service_running "service_name" "LOG_FLAG" "Display Name"
+function verify_service_running() {
+    local service_name="$1"
+    local log_flag="${2:-""}"
+    local display_name="${3:-${service_name}}"
+    local status
+
+    status="$(systemctl is-active "${service_name}")"
+    if [[ "${status}" == "active" ]]; then
+        echo "PASSED: ${display_name} is running."
+        if [[ -n "${log_flag}" ]]; then
+            echo "${log_flag}=1" >> /var/log/EngineScript/install-log.log
+        fi
+    else
+        echo "FAILED: ${display_name} not running. Please diagnose this issue before proceeding."
+        exit 1
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Remove a directory if it exists (clean before fresh install)
+# Usage: clean_directory "/path/to/directory"
+function clean_directory() {
+    local dir_path="$1"
+
+    if [[ -d "${dir_path}" ]]; then
+        rm -rf "${dir_path}"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Download a file and extract a tarball
+# Usage: download_and_extract "URL" "/path/to/output.tar.gz" [extract_dir]
+function download_and_extract() {
+    local url="$1"
+    local output_file="$2"
+    local extract_dir="${3:-$(dirname "${output_file}")}"
+
+    wget -O "${output_file}" "${url}" --no-check-certificate || {
+        echo "Error: Failed to download ${url}"
+        return 1
+    }
+    tar -xzf "${output_file}" -C "${extract_dir}" || {
+        echo "Error: Failed to extract ${output_file}"
+        return 1
+    }
+}
+
+
+# ----------------------------------------------------------------
+# Print a formatted installation completion banner
+# Usage: print_install_banner "Tool Name" [sleep_seconds]
+function print_install_banner() {
+    local tool_name="$1"
+    local sleep_seconds="${2:-5}"
+
+    echo ""
+    echo ""
+    echo "============================================================="
+    echo ""
+    echo "${BOLD}${tool_name} installed.${NORMAL}"
+    echo ""
+    echo "============================================================="
+    echo ""
+    echo ""
+
+    if [[ "${sleep_seconds}" -gt 0 ]]; then
+        sleep "${sleep_seconds}"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Clone a git repository, removing any existing directory first
+# Usage: git_clone_fresh "https://repo.url" "/destination/path" [extra_args...]
+function git_clone_fresh() {
+    local repo_url="$1"
+    local dest_path="$2"
+    shift 2
+
+    clean_directory "${dest_path}"
+    git clone "$@" "${repo_url}" "${dest_path}"
+}
+
+
+# ----------------------------------------------------------------
+# Download a file with wget using consistent flags
+# Usage: safe_wget "URL" "/destination/path"
+function safe_wget() {
+    local url="$1"
+    local dest="$2"
+
+    wget -O "${dest}" "${url}" --no-check-certificate || {
+        echo "Error: Failed to download ${url}"
+        return 1
+    }
 }

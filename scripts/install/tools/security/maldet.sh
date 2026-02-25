@@ -20,20 +20,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Maldet Install
 cd /usr/local/src
-wget https://www.rfxn.com/downloads/maldetect-current.tar.gz --no-check-certificate
-tar -xzf maldetect-current.tar.gz
+download_and_extract "https://www.rfxn.com/downloads/maldetect-current.tar.gz" "/usr/local/src/maldetect-current.tar.gz" "/usr/local/src"
 cd maldetect-1.6.4/
 ./install.sh
 echo "/sys" >> /usr/local/maldetect/ignore_paths
 
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}ClamAV Anti-Virus installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-
-sleep 5
+print_install_banner "Maldet"

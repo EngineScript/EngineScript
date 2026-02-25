@@ -22,13 +22,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 mkdir -p /var/www/admin/tools
 
 # phpSysinfo
-# Remove existing phpSysinfo directory if it exists
-if [[ -d "/var/www/admin/tools/phpsysinfo" ]]; then
-  rm -rf /var/www/admin/tools/phpsysinfo
-fi
-
 # Clone the phpSysinfo repository
-git clone --depth 1 https://github.com/phpsysinfo/phpsysinfo.git /var/www/admin/tools/phpsysinfo
+git_clone_fresh "https://github.com/phpsysinfo/phpsysinfo.git" "/var/www/admin/tools/phpsysinfo" --depth 1
 
 # Copy EngineScript phpSysinfo configuration template
 # Config templates are stored in /config/var/www/admin/tools/ to mirror the install location

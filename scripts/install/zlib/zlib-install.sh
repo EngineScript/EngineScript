@@ -53,15 +53,12 @@ cd /usr/src
 
 # Official zlib Download
 # Remove existing official zlib source directory and tarball if they exist
-if [[ -d "/usr/src/zlib-${ZLIB_VER}" ]]; then
-  rm -rf "/usr/src/zlib-${ZLIB_VER}"
-fi
+clean_directory "/usr/src/zlib-${ZLIB_VER}"
 if [[ -f "/usr/src/zlib-${ZLIB_VER}.tar.gz" ]]; then
   rm -f "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 fi
 
-wget -O "/usr/src/zlib-${ZLIB_VER}.tar.gz" "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz"
-tar -xzf "/usr/src/zlib-${ZLIB_VER}.tar.gz"
+download_and_extract "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz" "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 
 # Return to /usr/src
 cd /usr/src

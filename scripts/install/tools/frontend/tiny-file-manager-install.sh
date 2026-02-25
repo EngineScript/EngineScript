@@ -28,9 +28,7 @@ TFM_ZIP_URL="https://github.com/prasathmani/tinyfilemanager/archive/refs/tags/${
 TFM_ZIP_FILE="/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}.tar.gz"
 
 # Remove existing TFM directory if it exists
-if [[ -d "$TFM_DIR" ]]; then
-    rm -rf "$TFM_DIR"
-fi
+clean_directory "$TFM_DIR"
 
 # Create TFM directory if it doesn't exist
 if [[ ! -d "$TFM_DIR" ]]; then

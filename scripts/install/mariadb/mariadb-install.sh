@@ -91,32 +91,8 @@ systemctl daemon-reload
 systemctl start mariadb.service
 
 # Check if services are running
-# MariaDB Service Check
-STATUS="$(systemctl is-active mariadb)"
-if [[ "${STATUS}" == "active" ]]; then
-  echo "PASSED: MariaDB is running."
-else
-  echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
-  exit 1
-fi
-
-# MySQL Service Check
-STATUS="$(systemctl is-active mysql)"
-if [[ "${STATUS}" == "active" ]]; then
-  echo "PASSED: MySQL is running."
-  echo "MARIADB=1" >> /var/log/EngineScript/install-log.log
-else
-  echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
-  exit 1
-fi
+verify_service_running "mariadb" "" "MariaDB"
+verify_service_running "mysql" "MARIADB" "MySQL"
 mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'
 
-echo ""
-echo "============================================================="
-echo ""
-echo "MariaDB setup completed."
-echo ""
-echo "============================================================="
-echo ""
-
-sleep 2
+print_install_banner "MariaDB" 2

@@ -22,8 +22,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cd /usr/src
 
 # Official liburing Download
-wget -O "/usr/src/liburing-${LIBURING_VER}.tar.gz" "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" --no-check-certificate
-tar -xzf "/usr/src/liburing-${LIBURING_VER}.tar.gz"
+download_and_extract "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" "/usr/src/liburing-${LIBURING_VER}.tar.gz"
 cd "/usr/src/liburing-liburing-${LIBURING_VER}"
 
 # Compile liburing

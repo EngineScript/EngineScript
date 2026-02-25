@@ -24,14 +24,4 @@ apt install -qy clamav --no-install-recommends
 # Set ClamAV Config
 cp -rf /usr/local/bin/enginescript/config/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf
 
-echo ""
-echo ""
-echo "============================================================="
-echo ""
-echo "${BOLD}ClamAV Anti-Virus installed.${NORMAL}"
-echo ""
-echo "============================================================="
-echo ""
-echo ""
-
-sleep 5
+print_install_banner "ClamAV Anti-Virus"

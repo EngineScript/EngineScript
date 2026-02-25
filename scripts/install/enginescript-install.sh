@@ -142,134 +142,44 @@ if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
 fi
 
 # Check S3 Install
-if [[ "$INSTALL_S3_BACKUP" = 1 ]] && [[ "$S3_BUCKET_NAME" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nYou have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0\n"
-    exit
+if [[ "$INSTALL_S3_BACKUP" = 1 ]]; then
+    validate_not_placeholder "S3_BUCKET_NAME" "$S3_BUCKET_NAME" "You have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0"
 fi
 
-# Check Cloudflare Global API Key
-if [[ "$CF_GLOBAL_API_KEY" = PLACEHOLDER ]] && [[ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nCF_GLOBAL_API_KEY is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_GLOBAL_API_KEY to the correct value.\n"
-    exit
-fi
+# Check Cloudflare Credentials
+validate_not_placeholder "CF_GLOBAL_API_KEY" "$CF_GLOBAL_API_KEY" "CF_GLOBAL_API_KEY is set to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_GLOBAL_API_KEY to the correct value."
+validate_not_placeholder "CF_ACCOUNT_EMAIL" "$CF_ACCOUNT_EMAIL" "CF_ACCOUNT_EMAIL is set to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_ACCOUNT_EMAIL to the correct value."
 
-# Check Cloudflare Account Email
-if [[ "$CF_ACCOUNT_EMAIL" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nCF_ACCOUNT_EMAIL is to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_ACCOUNT_EMAIL to the correct value.\n"
-    exit
-fi
-
-# Check MariaDB Password
-if [[ "$MARIADB_ADMIN_PASSWORD" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nMARIADB_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change MARIADB_ADMIN_PASSWORD to something more secure.\n"
-    exit
-fi
-
-# Check phpMyAdmin Username
-if [[ "$PHPMYADMIN_USERNAME" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nPHPMYADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_USERNAME to something more secure.\n"
-    exit
-fi
-
-# Check phpMyAdmin Password
-if [[ "$PHPMYADMIN_PASSWORD" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\nPHPMYADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change PHPMYADMIN_PASSWORD to something more secure.\n"
-    exit
-fi
-
-# Check File Manager Username
-if [[ "$FILEMANAGER_USERNAME" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nFILEMANAGER_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change FILEMANAGER_USERNAME to something more secure.\n"
-    exit
-fi
-
-# Check File Manager Password
-if [[ "$FILEMANAGER_PASSWORD" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nFILEMANAGER_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change FILEMANAGER_PASSWORD to something more secure.\n"
-    exit
-fi
-
-# Check WordPress Admin Email
-if [[ "$WP_ADMIN_EMAIL" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nWP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address.\n"
-    exit
-fi
+# Check Credentials
+validate_not_placeholder "MARIADB_ADMIN_PASSWORD" "$MARIADB_ADMIN_PASSWORD"
+validate_not_placeholder "PHPMYADMIN_USERNAME" "$PHPMYADMIN_USERNAME"
+validate_not_placeholder "PHPMYADMIN_PASSWORD" "$PHPMYADMIN_PASSWORD"
+validate_not_placeholder "FILEMANAGER_USERNAME" "$FILEMANAGER_USERNAME"
+validate_not_placeholder "FILEMANAGER_PASSWORD" "$FILEMANAGER_PASSWORD"
+validate_not_placeholder "WP_ADMIN_EMAIL" "$WP_ADMIN_EMAIL" "WP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address."
 
 # Check/fix WordPress Recovery Email
-if [[ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ]];
-	then
+if [[ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ]]; then
     sed -i "s|PLACEHOLDER@PLACEHOLDER\.com|${WP_ADMIN_EMAIL}|g" /home/EngineScript/enginescript-install-options.txt
 fi
 
-# Check WordPress Admin Username
-if [[ "$WP_ADMIN_USERNAME" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nWP_ADMIN_USERNAME is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_USERNAME to something more secure.\n"
-    exit
-fi
-
-# Check WordPress Admin Password
-if [[ "$WP_ADMIN_PASSWORD" = PLACEHOLDER ]];
-	then
-    echo -e "\nWARNING:\n\nWP_ADMIN_PASSWORD is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_PASSWORD to something more secure.\n"
-    exit
-fi
+validate_not_placeholder "WP_ADMIN_USERNAME" "$WP_ADMIN_USERNAME"
+validate_not_placeholder "WP_ADMIN_PASSWORD" "$WP_ADMIN_PASSWORD"
 
 # Install Check
 source /var/log/EngineScript/install-log.log
 
 # Repositories
-if [[ "${REPOS}" = 1 ]];
-  then
-    echo "REPOS script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "REPOS=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Install Repositories"
+run_install_step "REPOS" "/usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh" "Install Repositories"
 
 # Remove Preinstalled Software
-if [[ "${REMOVES}" = 1 ]];
-  then
-    echo "REMOVES script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh 2>> /tmp/enginescript_install_errors.log
-    echo "REMOVES=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Remove Preinstalled Software"
+run_install_step "REMOVES" "/usr/local/bin/enginescript/scripts/install/removes/remove-preinstalled.sh" "Remove Preinstalled Software"
 
 # Block Unwanted Packages
-if [[ "${BLOCK}" = 1 ]];
-  then
-    echo "BLOCK script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/block/package-block.sh 2>> /tmp/enginescript_install_errors.log
-    echo "BLOCK=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Block Unwanted Packages"
+run_install_step "BLOCK" "/usr/local/bin/enginescript/scripts/install/block/package-block.sh" "Block Unwanted Packages"
 
 # Ubuntu Pro Setup
-if [[ "${UBUNTU_PRO}" = 1 ]];
-  then
-    echo "UBUNTU_PRO script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "UBUNTU_PRO=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Ubuntu Pro Setup"
+run_install_step "UBUNTU_PRO" "/usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh" "Ubuntu Pro Setup"
 
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
@@ -277,221 +187,66 @@ print_last_errors
 debug_pause "Update & Upgrade"
 
 # Install Dependencies
-if [[ "${DEPENDS}" = 1 ]];
-  then
-    echo "DEPENDS script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/depends/depends-install.sh 2>> /tmp/enginescript_install_errors.log
-fi
-print_last_errors
-debug_pause "Install Dependencies"
+run_install_step "DEPENDS" "/usr/local/bin/enginescript/scripts/install/depends/depends-install.sh" "Install Dependencies"
 
 # Cron
-if [[ "${CRON}" = 1 ]];
-  then
-    echo "CRON script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/cron/cron-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "CRON=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Cron"
+run_install_step "CRON" "/usr/local/bin/enginescript/scripts/install/cron/cron-install.sh" "Cron"
 
 # ACME.sh
-if [[ "${ACME}" = 1 ]];
-  then
-    echo "ACME.sh script has already run"
-  else
-    /usr/local/bin/enginescript/scripts/install/acme/acme-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "ACME=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "ACME.sh"
+run_install_step "ACME" "/usr/local/bin/enginescript/scripts/install/acme/acme-install.sh" "ACME.sh"
 
 # GCC
-if [[ "${GCC}" = 1 ]];
-  then
-    echo "GCC script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "GCC=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "GCC"
+run_install_step "GCC" "/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh" "GCC"
 
 # OpenSSL
-if [[ "${OPENSSL}" = 1 ]];
-  then
-    echo "OPENSSL script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "OPENSSL=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "OpenSSL"
+run_install_step "OPENSSL" "/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh" "OpenSSL"
 
 # Swap
-if [[ "${SWAP}" = 1 ]];
-  then
-    echo "SWAP script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/swap/swap-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "SWAP=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Swap"
+run_install_step "SWAP" "/usr/local/bin/enginescript/scripts/install/swap/swap-install.sh" "Swap"
 
 # Kernel Tweaks
-if [[ "${KERNEL_TWEAKS}" = 1 ]];
-  then
-    echo "KERNEL TWEAKS script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "KERNEL_TWEAKS=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Kernel Tweaks"
+run_install_step "KERNEL_TWEAKS" "/usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh" "Kernel Tweaks"
 
 # Kernel Samepage Merging
-if [[ "${KSM}" = 1 ]];
-  then
-    echo "KSM script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/kernel/ksm.sh 2>> /tmp/enginescript_install_errors.log
-    echo "KSM=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Kernel Samepage Merging"
+run_install_step "KSM" "/usr/local/bin/enginescript/scripts/install/kernel/ksm.sh" "Kernel Samepage Merging"
 
 # Raising System File Limits
-if [[ "${SFL}" = 1 ]];
-  then
-    echo "SYSTEM FILE LIMITS script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh 2>> /tmp/enginescript_install_errors.log
-    echo "SFL=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Raising System File Limits"
+run_install_step "SFL" "/usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh" "Raising System File Limits"
 
 # NTP
-if [[ "${NTP}" = 1 ]];
-  then
-    echo "NTP script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh 2>> /tmp/enginescript_install_errors.log
-    echo "NTP=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "NTP"
+run_install_step "NTP" "/usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh" "NTP"
 
 # DigitalOcean Remote Console (optional)
 if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" = "1" ]]; then
-  if [[ "${DO_CONSOLE}" = 1 ]];
-    then
-      echo "DigitalOcean Remote Console script has already run."
-    else
-      /usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh 2>> /tmp/enginescript_install_errors.log
-      echo "DO_CONSOLE=1" >> /var/log/EngineScript/install-log.log
-  fi
-  print_last_errors
-  debug_pause "DigitalOcean Remote Console"
+  run_install_step "DO_CONSOLE" "/usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh" "DigitalOcean Remote Console"
 fi
 
 # PCRE
-if [[ "${PCRE}" = 1 ]];
-  then
-    echo "PCRE script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "PCRE=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "PCRE"
+run_install_step "PCRE" "/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh" "PCRE"
 
 # zlib
-if [[ "${ZLIB}" = 1 ]];
-  then
-    echo "ZLIB script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "ZLIB=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "zlib"
+run_install_step "ZLIB" "/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh" "zlib"
 
 # liburing
-if [[ "${LIBURING}" = 1 ]];
-  then
-    echo "LIBURING script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "LIBURING=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "liburing"
+run_install_step "LIBURING" "/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh" "liburing"
 
 # UFW
-if [[ "${UFW}" = 1 ]];
-  then
-    echo "UFW script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "UFW=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "UFW"
+run_install_step "UFW" "/usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh" "UFW"
 
 # MariaDB
-if [[ "${MARIADB}" = 1 ]];
-  then
-    echo "MARIADB script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh 2>> /tmp/enginescript_install_errors.log
-fi
-print_last_errors
-debug_pause "MariaDB"
+run_install_step "MARIADB" "/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-install.sh" "MariaDB"
 
 # PHP
-if [[ "${PHP}" = 1 ]];
-  then
-    echo "PHP script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/php/php-install.sh 2>> /tmp/enginescript_install_errors.log
-fi
-print_last_errors
-debug_pause "PHP"
+run_install_step "PHP" "/usr/local/bin/enginescript/scripts/install/php/php-install.sh" "PHP"
 
 # Redis
-if [[ "${REDIS}" = 1 ]];
-  then
-    echo "REDIS script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/redis/redis-install.sh 2>> /tmp/enginescript_install_errors.log
-fi
-print_last_errors
-debug_pause "Redis"
+run_install_step "REDIS" "/usr/local/bin/enginescript/scripts/install/redis/redis-install.sh" "Redis"
 
 # Nginx
-if [[ "${NGINX}" = 1 ]];
-  then
-    echo "NGINX script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh 2>> /tmp/enginescript_install_errors.log
-fi
-print_last_errors
-debug_pause "Nginx"
+run_install_step "NGINX" "/usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh" "Nginx"
 
 # Tools
-if [[ "${TOOLS}" = 1 ]];
-  then
-    echo "TOOLS script has already run."
-  else
-    /usr/local/bin/enginescript/scripts/install/tools/tools-install.sh 2>> /tmp/enginescript_install_errors.log
-    echo "TOOLS=1" >> /var/log/EngineScript/install-log.log
-fi
-print_last_errors
-debug_pause "Tools"
+run_install_step "TOOLS" "/usr/local/bin/enginescript/scripts/install/tools/tools-install.sh" "Tools"
 
 # --------------------------------------------------------
 # Final Installation Completion Verification

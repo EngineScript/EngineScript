@@ -23,13 +23,8 @@ cd /usr/src
 
 # Brotli
 
-# Remove existing ngx_brotli directory if it exists
-if [[ -d "/usr/src/ngx_brotli" ]]; then
-  rm -rf /usr/src/ngx_brotli
-fi
-
-# Git Clone
-git clone --recurse-submodules --remote-submodules https://github.com/google/ngx_brotli.git /usr/src/ngx_brotli
+# Clone fresh ngx_brotli
+git_clone_fresh "https://github.com/google/ngx_brotli.git" "/usr/src/ngx_brotli" --recurse-submodules --remote-submodules
 cd /usr/src/ngx_brotli
 git submodule update --init
 

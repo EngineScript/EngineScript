@@ -23,5 +23,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cd /usr/src
 
 # Download and extract OpenSSL
-wget "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" -O "/usr/src/openssl-${OPENSSL_VER}.tar.gz" --no-check-certificate || { echo "Error: Failed to download OpenSSL."; exit 1; }
-tar -xzf "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to extract OpenSSL."; exit 1; }
+download_and_extract "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to download/extract OpenSSL."; exit 1; }

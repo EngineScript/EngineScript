@@ -22,9 +22,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 mkdir -p /var/www/admin/tools
 
 # Remove existing phpinfo directory if it exists
-if [[ -d "/var/www/admin/tools/phpinfo" ]]; then
-  rm -rf "/var/www/admin/tools/phpinfo"
-fi
+clean_directory "/var/www/admin/tools/phpinfo"
 
 # Create phpinfo directory and file
 mkdir -p "/var/www/admin/tools/phpinfo"

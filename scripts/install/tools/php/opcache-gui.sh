@@ -24,13 +24,8 @@ cd /usr/src
 # Create tools directory if it doesn't exist
 mkdir -p /var/www/admin/tools
 
-# Remove existing OpCache-GUI directory if it exists
-if [[ -d "/var/www/admin/tools/opcache-gui" ]]; then
-  rm -rf /var/www/admin/tools/opcache-gui
-fi
-
 # OpCache-GUI
-git clone --depth 1 https://github.com/amnuts/opcache-gui.git /var/www/admin/tools/opcache-gui
+git_clone_fresh "https://github.com/amnuts/opcache-gui.git" "/var/www/admin/tools/opcache-gui" --depth 1
 
 # Return to /usr/src
 cd /usr/src

@@ -20,9 +20,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # MYSQLTuner
 mkdir -p /usr/local/bin/mysqltuner
-wget -O /usr/local/bin/mysqltuner/mysqltuner.pl https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl --no-check-certificate
-wget -O /usr/local/bin/mysqltuner/basic_passwords.txt https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt --no-check-certificate
-wget -O /usr/local/bin/mysqltuner/vulnerabilities.csv https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv --no-check-certificate
+safe_wget "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl" "/usr/local/bin/mysqltuner/mysqltuner.pl"
+safe_wget "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt" "/usr/local/bin/mysqltuner/basic_passwords.txt"
+safe_wget "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv" "/usr/local/bin/mysqltuner/vulnerabilities.csv"
 chmod +x /usr/local/bin/mysqltuner/mysqltuner.pl
 chmod 644 /usr/local/bin/mysqltuner/vulnerabilities.csv
 

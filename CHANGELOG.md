@@ -4,6 +4,27 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-02-25
+
+### 🔧 SHARED FUNCTIONS LIBRARY EXPANSION (DRY REFACTOR)
+
+- **Added 8 new shared functions** to `scripts/functions/shared/enginescript-common.sh`:
+  - `validate_not_placeholder()` — Validates config variables are not still set to PLACEHOLDER; exits with warning directing user to `es.config`.
+  - `run_install_step()` — Idempotent install step runner: checks completion flag, executes script with error logging, marks done, and calls debug_pause.
+  - `verify_service_running()` — Checks systemd service status after installation, logs completion flag, exits on failure.
+  - `clean_directory()` — Removes a directory if it exists (clean before fresh install).
+  - `download_and_extract()` — Downloads a tarball with wget and extracts with tar in one call.
+  - `print_install_banner()` — Prints formatted installation completion banner with configurable sleep.
+  - `git_clone_fresh()` — Removes existing directory and clones a git repository fresh.
+  - `safe_wget()` — Wraps wget with consistent `--no-check-certificate` flag and error handling.
+- **Refactored `enginescript-install.sh`**: Replaced 11 PLACEHOLDER validation blocks with `validate_not_placeholder()` calls. Replaced ~20 idempotent install step blocks with `run_install_step()` calls.
+- **Refactored service checks** in `mariadb-install.sh`, `php-install.sh`, `redis-install.sh`, `nginx-install.sh` to use `verify_service_running()`.
+- **Refactored directory cleanup** in `nginx-download.sh`, `zlib-install.sh`, `tiny-file-manager-install.sh`, `phpinfo-install.sh` to use `clean_directory()`.
+- **Refactored wget+tar** in `nginx-download.sh`, `liburing-install.sh`, `openssl-install.sh`, `pcre-install.sh`, `zlib-install.sh`, `maldet.sh` to use `download_and_extract()`.
+- **Refactored install banners** in `adminer.sh`, `phpmyadmin.sh`, `clamav.sh`, `maldet.sh`, `php-malware-finder.sh`, `wpscan.sh`, `wordfence-cli.sh`, `mariadb-install.sh`, `php-install.sh`, `nginx-install.sh` to use `print_install_banner()`.
+- **Refactored git clone** in `nginx-brotli.sh`, `zimageoptimizer.sh`, `php-malware-finder.sh`, `testssl-install.sh`, `opcache-gui.sh`, `phpsysinfo-install.sh` to use `git_clone_fresh()`.
+- **Refactored wget calls** in `adminer.sh`, `mysqltuner.sh`, `phpmyadmin.sh`, `wordfence-cli.sh`, `nginx-cloudflare-origin-cert.sh`, `kernel-update.sh`, `pngout.sh` to use `safe_wget()`.
+
 ## 2026-02-18
 
 ### ⚡ NGINX JETPACK BOOST DELIVERY COMPATIBILITY
