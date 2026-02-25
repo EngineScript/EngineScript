@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 echo "Clam Antivirus is running. Scan may take a long time, be patient. Standby for results."
-sudo clamscan --infected --recursive --leave-temps --scan-archive=no --exclude-dir="^/sys" --exclude-dir="^/tmp" --exclude-dir="^/root/.wp-cli/packages/vendor/pantheon-systems/" --exclude-dir="^/usr/local/maldetect" --exclude-dir="^var/lib/clamav" --exclude-dir="^/usr/local/src" --exclude-dir="^/usr/local/bin/php-malware-finder" /
+sudo clamscan --infected --recursive --leave-temps --scan-archive=no --exclude-dir="^/sys" --exclude-dir="^/tmp" --exclude-dir="^/root/.wp-cli/packages/vendor/pantheon-systems/" --exclude-dir="^/usr/local/maldetect" --exclude-dir="^var/lib/clamav" --exclude-dir="^/usr/local/src" /
 
 # Ask user to acknowledge that the scan has completed before moving on
 echo ""

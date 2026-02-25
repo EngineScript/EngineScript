@@ -165,32 +165,11 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 EngineScript includes a comprehensive web-based admin control panel accessible at `https://admin.yourdomain.com`. The control panel provides:
 
-#### Server Monitoring
-
-- Real-time server statistics (CPU, RAM, disk usage)
-- Service status monitoring (Nginx, PHP, MariaDB, Redis)
-- System activity and security event logging
-
-#### Uptime Monitoring
-
-EngineScript integrates with **Uptime Robot** to monitor your WordPress websites for uptime and performance:
-
-- **Real-time uptime status** for all monitored websites
-- **Response time monitoring** and alerts
-- **Uptime percentage** tracking with historical data
-- **Automatic status reporting** in the admin dashboard
-
-#### File Management
-
-- **Tiny File Manager** integration for secure web-based file management
-- Direct access to WordPress files and directories
-- Safe file editing and management interface
-
-#### Tools & Utilities
-
-- Quick access to common server management tasks
-- One-click service restarts and cache clearing
-- Server information and diagnostics
+- Server monitoring and management tools
+- Uptime monitoring and reporting for all WordPress sites
+- Web-based file management with Tiny File Manager
+- Quick access to common server management tasks and tools
+- Remote uptime monitoring for third-party services and APIs
 
 ### Software EngineScript Utilizes
 
@@ -205,41 +184,39 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
 |OPENSSL|3.5.5|<https://www.openssl.org/source/>|
 |PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
-|ZLIB-Cloudflare||<https://github.com/cloudflare/zlib>|
-|**Script Processing**|||
+|ZLIB|1.3.2|<https://github.com/madler/zlib>|
+|**Application Server**|||
 |PHP|8.5|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
-|**MySQL Database**|||
+|**Database Server**|||
 |MARIADB|11.8.6|<https://mariadb.org/download/>|
-|**Database Management**|||
-|ADMINER|||
-|PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
+|**Object Cache**|||
+|REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||
 |Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
 |TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
-|**Object Cache**|||
-|REDIS||<https://redis.io/>|
+|**Database Management**|||
+|ADMINER|||
+|PHPMYADMIN|5.2.3|<https://www.phpmyadmin.net/downloads/>|
 |**Content Management System (CMS)**|||
-|WORDPRESS||<https://wordpress.org>|
+|WORDPRESS|Latest|<https://wordpress.org>|
+|PLUGIN: Action Scheduler *(optional)*||<https://wordpress.org/plugins/action-scheduler/>|
+|PLUGIN: EngineScript: Simple Site Exporter *(optional)*|1.9.1|[https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter)|
+|PLUGIN: EngineScript: Simple WP Optimizer *(optional)*|1.8.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
+|PLUGIN: MariaDB Health Checks *(highly recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
+|PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
+|PLUGIN: Performance Lab *(optional)*||<https://wordpress.org/plugins/performance-lab/>|
+|PLUGIN: PHP Compatibility Checker *(optional)*||<https://wordpress.org/plugins/php-compatibility-checker/>|
+|PLUGIN: Redis Object Cache *(supported and recommended)*||<https://wordpress.org/plugins/redis-cache/>|
+|PLUGIN: The SEO Framework *(recommended)*||<https://wordpress.org/plugins/autodescription/>|
+|PLUGIN: Theme Check *(optional)*||<https://wordpress.org/plugins/theme-check/>|
+|PLUGIN: WP Crontrol *(optional)*||<https://wordpress.org/plugins/wp-crontrol/>|
+|PLUGIN: WP Mail SMTP *(optional)*||<https://wordpress.org/plugins/wp-mail-smtp/>|
+|PLUGIN: WP OPcache *(recommended)*||<https://wordpress.org/plugins/flush-opcache/>|
 |WP-CLI||<https://github.com/wp-cli/wp-cli>|
 |WP-CLI: doctor-command||<https://github.com/wp-cli/doctor-command>|
 |WP-CLI: WP Launch Check||<https://github.com/pantheon-systems/wp_launch_check>|
-|PLUGIN: App for Cloudflare||<https://wordpress.org/plugins/app-for-cf/>|
-|PLUGIN: Action Scheduler||<https://wordpress.org/plugins/action-scheduler/>|
-|PLUGIN: EngineScript: Simple Site Exporter|1.9.1|[https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter)|
-|PLUGIN: EngineScript: Simple WP Optimizer|1.8.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
-|PLUGIN: MariaDB Health Checks *(recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
-|PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
-|PLUGIN: Performance Lab||<https://wordpress.org/plugins/performance-lab/>|
-|PLUGIN: PHP Compatibility Checker||<https://wordpress.org/plugins/php-compatibility-checker/>|
-|PLUGIN: Redis Object Cache *(recommended)*||<https://wordpress.org/plugins/redis-cache/>|
-|PLUGIN: The SEO Framework *(recommended)*||<https://wordpress.org/plugins/autodescription/>|
-|PLUGIN: Theme Check||<https://wordpress.org/plugins/theme-check/>|
-|PLUGIN: WP Crontrol||<https://wordpress.org/plugins/wp-crontrol/>|
-|PLUGIN: WP Mail SMTP||<https://wordpress.org/plugins/wp-mail-smtp/>|
-|PLUGIN: WP OPcache *(recommended)*||<https://wordpress.org/plugins/flush-opcache/>|
 |**Security**|||
 |MALDETECT||<https://www.rfxn.com/projects/linux-malware-detect/>|
-|PHP-MALWARE-FINDER||<https://github.com/nbs-system/php-malware-finder>|
 |UNCOMPLICATED FIREWALL (UFW)||Bundled with Ubuntu|
 |WORDFENCE CLI||<https://github.com/wordfence/wordfence-cli/releases>|
 |WPSCAN||<https://wpscan.com/>|
@@ -252,7 +229,6 @@ EngineScript integrates with **Uptime Robot** to monitor your WordPress websites
 |**Misc Supplemental Software**|||
 |LIBURING|2.14|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
-|ZLIB|1.3.2|<https://github.com/madler/zlib>|
 
 ## Star History
 

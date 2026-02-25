@@ -26,20 +26,12 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("10up WP-CLI Vulnerability Scan" "Find PHP Files in Uploads Directory" "PHP Malware Finder" "Wordfence CLI Malware Scan" "Wordfence CLI Remediate Infected Files (After Malware Scan)" "Wordfence CLI Vulnerability Scan" "WP-CLI Doctor" "WPScan Vulnerability Scan" "Exit Security Tools")
+    secoptions=("Find PHP Files in Uploads Directory" "PHP Malware Finder" "Wordfence CLI Malware Scan" "Wordfence CLI Remediate Infected Files (After Malware Scan)" "Wordfence CLI Vulnerability Scan" "WP-CLI Doctor" "WPScan Vulnerability Scan" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "10up WP-CLI Vulnerability Scan")
-          /usr/local/bin/enginescript/scripts/functions/security/10up-vuln-scanner.sh
-          break
-          ;;
         "Find PHP Files in Uploads Directory")
           /usr/local/bin/enginescript/scripts/functions/security/find-php-in-uploads.sh
-          break
-          ;;
-        "PHP Malware Finder")
-          /usr/local/bin/enginescript/scripts/functions/security/php-malware-finder.sh
           break
           ;;
         "Wordfence CLI Malware Scan")

@@ -604,7 +604,6 @@ install_required_wp_plugins() {
 install_extra_wp_plugins() {
   local SITE_URL="$1"
   wp plugin install action-scheduler --allow-root
-  wp plugin install app-for-cf --allow-root
   wp plugin install autodescription --allow-root
   wp plugin install performance-lab --allow-root
   wp plugin install php-compatibility-checker --allow-root

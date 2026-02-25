@@ -116,16 +116,6 @@ define( 'DISABLE_NAG_NOTICES', true );
 /* Gravity Forms */
 //define( 'GF_LICENSE_KEY', 'PLACEHOLDER_KEY' );
 
-/* 10Up Vulnerability Scanner */
-// We're selecting Wordfence Intelligence CE as the default scanner. It does not require an API Key.
-//
-// Register for an account at
-//	- https://wpscan.com/api
-//	- https://www.wordfence.com/threat-intel/
-//	- https://patchstack.com/
-define( 'VULN_API_PROVIDER', 'wordfence' ); // Options = patchstack, wordfence, wpscan
-//define( 'VULN_API_TOKEN', 'PUT-API-HERE' );
-
 /* Sentry.io */
 // https://sentry.io/welcome/
 //define( 'WP_SENTRY_PHP_DSN', 'PHP_DSN' );

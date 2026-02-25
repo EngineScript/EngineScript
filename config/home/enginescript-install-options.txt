@@ -76,7 +76,7 @@ INSTALL_ENGINESCRIPT_PLUGINS=1
 
 ## Install Extra WordPress Plugins ##
 # When enabled, EngineScript will install additional recommended WordPress plugins during site creation:
-# action-scheduler, app-for-cf, autodescription, performance-lab, php-compatibility-checker, theme-check, wp-crontrol, wp-mail-smtp
+# action-scheduler, autodescription, performance-lab, php-compatibility-checker, theme-check, wp-crontrol, wp-mail-smtp
 # These are optional but recommended for enhanced functionality, debugging, and development
 # Note: Core plugins (flush-opcache, mariadb-health-checks, nginx-helper, redis-cache) are always installed
 INSTALL_EXTRA_WP_PLUGINS=1

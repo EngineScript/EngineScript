@@ -21,36 +21,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Return to /usr/src
 cd /usr/src
 
-# Cloudflare zlib fork (disabled)
-# Disabled due to security and maintenance concerns. Keep this block for future re-enable if upstream status improves.
-#if [[ -d "/usr/src/zlib-cf" ]]; then
-#  rm -rf "/usr/src/zlib-cf"
-#fi
-#
-#git clone --depth 1 https://github.com/cloudflare/zlib.git -b gcc.amd64 "/usr/src/zlib-cf"
-#cd "/usr/src/zlib-cf"
-#sudo ./configure --prefix=path \
-#  --static \
-#  --64
-#make -f Makefile.in distclean
-
-#make
-#make test
-#make install
-#ldconfig
-
-## zlib-ng download
-#rm -rf "/usr/src/zlib-ng"
-#git clone --depth 1 https://github.com/Dead2/zlib-ng -b develop "/usr/src/zlib-ng"
-#cd "/usr/src/zlib-ng"
-#sudo ./configure --prefix=path \
-#  --zlib-compat
-
-#make -j"${CPU_COUNT}"
-#make test
-#make install
-#ldconfig
-
 # Official zlib Download
 # Remove existing official zlib source directory and tarball if they exist
 clean_directory "/usr/src/zlib-${ZLIB_VER}"

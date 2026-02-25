@@ -35,9 +35,6 @@ fi
 # Update MYSQLTuner
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
-# Update PHP Malware Finder
-/usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh
-
 # Update phpMyAdmin
 if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then

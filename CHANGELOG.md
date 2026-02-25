@@ -6,7 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-02-25
 
-### 🔧 SHARED FUNCTIONS LIBRARY EXPANSION (DRY REFACTOR)
+### �️ CLOUDFLARE ZLIB REMOVAL
+
+- **Removed Cloudflare zlib fork**: Cloudflare zlib is officially deprecated. Removed all references from the codebase.
+  - Removed commented-out Cloudflare zlib clone/configure block and zlib-ng block from `zlib-install.sh`.
+  - Removed `ZLIB-Cloudflare` entry from `README.md` software table.
+  - Official zlib (madler/zlib) remains in use for Nginx compilation.
+
+### �🔧 SHARED FUNCTIONS LIBRARY EXPANSION (DRY REFACTOR)
 
 - **Added 8 new shared functions** to `scripts/functions/shared/enginescript-common.sh`:
   - `validate_not_placeholder()` — Validates config variables are not still set to PLACEHOLDER; exits with warning directing user to `es.config`.
@@ -21,8 +28,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **Refactored service checks** in `mariadb-install.sh`, `php-install.sh`, `redis-install.sh`, `nginx-install.sh` to use `verify_service_running()`.
 - **Refactored directory cleanup** in `nginx-download.sh`, `zlib-install.sh`, `tiny-file-manager-install.sh`, `phpinfo-install.sh` to use `clean_directory()`.
 - **Refactored wget+tar** in `nginx-download.sh`, `liburing-install.sh`, `openssl-install.sh`, `pcre-install.sh`, `zlib-install.sh`, `maldet.sh` to use `download_and_extract()`.
-- **Refactored install banners** in `adminer.sh`, `phpmyadmin.sh`, `clamav.sh`, `maldet.sh`, `php-malware-finder.sh`, `wpscan.sh`, `wordfence-cli.sh`, `mariadb-install.sh`, `php-install.sh`, `nginx-install.sh` to use `print_install_banner()`.
-- **Refactored git clone** in `nginx-brotli.sh`, `zimageoptimizer.sh`, `php-malware-finder.sh`, `testssl-install.sh`, `opcache-gui.sh`, `phpsysinfo-install.sh` to use `git_clone_fresh()`.
+- **Refactored install banners** in `adminer.sh`, `phpmyadmin.sh`, `clamav.sh`, `maldet.sh`, `wpscan.sh`, `wordfence-cli.sh`, `mariadb-install.sh`, `php-install.sh`, `nginx-install.sh` to use `print_install_banner()`.
+- **Refactored git clone** in `nginx-brotli.sh`, `zimageoptimizer.sh`, `testssl-install.sh`, `opcache-gui.sh`, `phpsysinfo-install.sh` to use `git_clone_fresh()`.
 - **Refactored wget calls** in `adminer.sh`, `mysqltuner.sh`, `phpmyadmin.sh`, `wordfence-cli.sh`, `nginx-cloudflare-origin-cert.sh`, `kernel-update.sh`, `pngout.sh` to use `safe_wget()`.
 
 ## 2026-02-18
@@ -270,7 +277,7 @@ Changes are organized by date, with the most recent changes listed first.
 - **Static Files Cache Control**: Enhanced cache control headers for static assets
 - **Plugin Installation Options**: Added granular control over WordPress plugin installation
   - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (Simple WP Optimizer, Simple Site Exporter)
-  - **INSTALL_EXTRA_WP_PLUGINS**: New option to control optional recommended plugins (action-scheduler, app-for-cf, autodescription, etc.)
+  - **INSTALL_EXTRA_WP_PLUGINS**: New option to control optional recommended plugins (action-scheduler, autodescription, etc.)
   - **Core Plugins Always Installed**: Essential plugins (nginx-helper, redis-cache, flush-opcache, mariadb-health-checks) remain mandatory
   - **Enhanced Flexibility**: Allows customization while maintaining critical functionality
 

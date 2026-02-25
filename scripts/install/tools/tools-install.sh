@@ -92,11 +92,6 @@ fi
 # Maldet
 #/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
 
-# PHP Malware Finder
-/usr/local/bin/enginescript/scripts/install/tools/security/php-malware-finder.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "PHP Malware Finder"
-
 # Wordfence CLI Malware Scanner
 /usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
