@@ -26,7 +26,7 @@ class ExternalServicesController extends BaseController
     /**
      * External services API file path
      */
-    private const EXTERNAL_API_FILE = __DIR__ . '/../external-services-api.php';
+    private const EXTERNAL_API_FILE = __DIR__ . '/../external-services/external-services-api.php';
 
     /**
      * Handle external services request

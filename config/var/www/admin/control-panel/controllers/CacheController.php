@@ -154,9 +154,9 @@ class CacheController extends BaseController
     private function clearRedisCache()
     {
         // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::execute('redis-cli', ['FLUSHALL']);
+        $output = SystemCommand::run('redis-cli', ['FLUSHALL']);
 
-        if ($output !== null && trim($output) === 'OK') {
+        if ($output !== false && trim($output) === 'OK') {
             $this->logSecurityEvent('Cache cleared', 'Redis cache flushed successfully');
             return [
                 'success' => true,
@@ -195,14 +195,14 @@ class CacheController extends BaseController
 
         // Clear cache files using find command (safer than rm -rf)
         // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::execute('find', [
+        $output = SystemCommand::run('find', [
             self::FASTCGI_CACHE_PATH,
             '-type',
             'f',
             '-delete'
         ]);
 
-        if ($output !== null) {
+        if ($output !== false) {
             $this->logSecurityEvent('Cache cleared', 'FastCGI cache cleared successfully');
             return [
                 'success' => true,
@@ -296,9 +296,9 @@ class CacheController extends BaseController
     private function getRedisStatus()
     {
         // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::execute('redis-cli', ['INFO', 'memory']);
+        $output = SystemCommand::run('redis-cli', ['INFO', 'memory']);
 
-        if ($output === null) {
+        if ($output === false) {
             return [
                 'available' => false,
                 'reason' => 'Unable to connect to Redis'
@@ -339,10 +339,10 @@ class CacheController extends BaseController
 
         // Get cache directory size
         // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::execute('du', ['-sh', self::FASTCGI_CACHE_PATH]);
+        $output = SystemCommand::run('du', ['-sh', self::FASTCGI_CACHE_PATH]);
         $size = 'Unknown';
 
-        if ($output !== null) {
+        if ($output !== false) {
             $parts = preg_split('/\s+/', trim($output));
             if (!empty($parts[0])) {
                 $size = $parts[0];

@@ -1,9 +1,9 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2025.12.01.1';
-import { DashboardState } from './modules/state.js?v=2025.12.01.1';
-import { DashboardUtils } from './modules/utils.js?v=2025.12.01.1';
+import { DashboardAPI } from './modules/api.js?v=2.25.2026';
+import { DashboardState } from './modules/state.js?v=2.25.2026';
+import { DashboardUtils } from './modules/utils.js?v=2.25.2026';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -224,7 +224,7 @@ class EngineScriptDashboard {
       }
 
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2025.12.01.1');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2.25.2026');
       
       // Create instance and initialize
       this.externalServices = new ExternalServicesManager(
@@ -742,29 +742,35 @@ class EngineScriptDashboard {
   // Empty state helpers
   createEmptyState(type, icon, title, message, actionText = null, actionCallback = null) {
     const emptyState = document.createElement('div');
-    emptyState.className = `empty-state ${type}`;
-    
-    let html = `
-      <i class="fas fa-${icon} empty-state-icon"></i>
-      <h3 class="empty-state-title">${this.sanitizeInput(title)}</h3>
-      <p class="empty-state-message">${this.sanitizeInput(message)}</p>
-    `;
-    
+    emptyState.className = `empty-state ${this.sanitizeInput(type)}`;
+
+    const iconEl = document.createElement('i');
+    iconEl.className = `fas fa-${this.sanitizeInput(icon)} empty-state-icon`;
+    emptyState.appendChild(iconEl);
+
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'empty-state-title';
+    titleEl.textContent = title;
+    emptyState.appendChild(titleEl);
+
+    const messageEl = document.createElement('p');
+    messageEl.className = 'empty-state-message';
+    messageEl.textContent = message;
+    emptyState.appendChild(messageEl);
+
     if (actionText && actionCallback) {
-      html += `
-        <div class="empty-state-action">
-          <button class="btn btn-primary" data-action="empty-state-action">${this.sanitizeInput(actionText)}</button>
-        </div>
-      `;
-    }
-    
-    emptyState.innerHTML = html;
-    
-    if (actionText && actionCallback) {
-      const btn = emptyState.querySelector('[data-action="empty-state-action"]');
+      const actionDiv = document.createElement('div');
+      actionDiv.className = 'empty-state-action';
+
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = actionText;
       btn.addEventListener('click', actionCallback);
+
+      actionDiv.appendChild(btn);
+      emptyState.appendChild(actionDiv);
     }
-    
+
     return emptyState;
   }
 
@@ -894,7 +900,6 @@ class EngineScriptDashboard {
   // Cleanup method
   destroy() {
     this.state.clearRefreshTimer();
-    this.charts.destroy();
   }
 
   // Tools management methods

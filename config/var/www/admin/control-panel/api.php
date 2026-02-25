@@ -29,7 +29,6 @@ if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codac
 header('Content-Type: application/json; charset=UTF-8'); // codacy:ignore - Required for API response type
 header('X-Content-Type-Options: nosniff'); // codacy:ignore - Security header required
 header('X-Frame-Options: DENY'); // codacy:ignore - Security header required
-header('X-XSS-Protection: 1; mode=block'); // codacy:ignore - Security header required
 header('Referrer-Policy: strict-origin-when-cross-origin'); // codacy:ignore - Security header required
 header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';'); // codacy:ignore - Security header required
 

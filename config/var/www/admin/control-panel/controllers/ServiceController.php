@@ -74,9 +74,10 @@ class ServiceController extends BaseController
     private function getServiceStatus($service)
     {
         // Validate service name to prevent command injection
+        $originalService = $service;
         $service = $this->validateService($service);
         if ($service === false) {
-            $this->logSecurityEvent('Invalid service name attempted', $service);
+            $this->logSecurityEvent('Invalid service name attempted', $originalService);
             return $this->createErrorServiceStatus();
         }
 

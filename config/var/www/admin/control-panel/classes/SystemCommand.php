@@ -38,7 +38,32 @@ class SystemCommand {
         // Testing hook - can be extended for unit tests
         return '';
     }
-    
+
+    /**
+     * Run a whitelisted binary with arguments
+     * Public interface for controllers that need to run specific commands
+     *
+     * @param string $binary The binary name (must be whitelisted)
+     * @param array $args Arguments to pass to the binary
+     * @return string|false Command output or false on failure
+     */
+    public static function run($binary, array $args = []) {
+        $allowedBinaries = ['redis-cli', 'find', 'du'];
+
+        if (!in_array($binary, $allowedBinaries, true)) {
+            error_log('[EngineScript] SystemCommand::run() blocked non-whitelisted binary: ' . $binary);
+            return false;
+        }
+
+        // Build escaped command
+        $command = escapeshellarg($binary);
+        foreach ($args as $arg) {
+            $command .= ' ' . escapeshellarg($arg);
+        }
+
+        return self::execute($command);
+    }
+
     /**
      * Get systemd services
      * @return string Raw systemctl output
