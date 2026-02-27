@@ -92,6 +92,19 @@ SHOW_ENGINESCRIPT_HEADER=0
 # Disable if you need to access these files through the web (not recommended for security)
 NGINX_BLOCK_UNSAFE_FILES=0
 
+## Experimental: zlib Alternative for Nginx (Optional) ##
+# Select an alternative zlib implementation for Nginx compilation.
+# This replaces the standard zlib with a higher-performance drop-in replacement.
+# Leave empty or set to "standard" to use official zlib (default, stable).
+#
+# Options:
+#   ""         = Standard zlib (default)
+#   "zlib-ng"  = zlib-ng (C, high-performance drop-in with --zlib-compat mode)
+#   "zlib-rs"  = zlib-rs (Rust-based, requires cargo/rustc toolchain on the server)
+#
+# WARNING: These are experimental options. If Nginx fails to compile, set back to "".
+ZLIB_IMPLEMENTATION=""
+
 ## DigitalOcean Remote Console ##
 # Install DigitalOcean's Droplet Agent for remote console access
 # This enables the Recovery Console feature in the DigitalOcean control panel

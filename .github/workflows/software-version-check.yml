@@ -212,6 +212,34 @@ jobs:
             echo "::warning::Failed to fetch Zlib version, keeping current version"
           fi
           
+          # zlib-ng
+          echo "::debug::Fetching zlib-ng version..."
+          ZLIB_NG_API_RESPONSE=$(curl -s https://api.github.com/repos/zlib-ng/zlib-ng/releases/latest)
+          echo "::debug::zlib-ng API Response: $ZLIB_NG_API_RESPONSE"
+          
+          LATEST_ZLIB_NG=$(echo "$ZLIB_NG_API_RESPONSE" | jq -r '.tag_name // empty')
+          echo "::debug::Parsed zlib-ng version: '$LATEST_ZLIB_NG'"
+          
+          if [[ -n "$LATEST_ZLIB_NG" && "$LATEST_ZLIB_NG" != "null" ]]; then
+            check_version "ZLIB_NG_VER" "$LATEST_ZLIB_NG"
+          else
+            echo "::warning::Failed to fetch zlib-ng version, keeping current version"
+          fi
+          
+          # zlib-rs
+          echo "::debug::Fetching zlib-rs version..."
+          ZLIB_RS_API_RESPONSE=$(curl -s https://api.github.com/repos/trifectatechfoundation/zlib-rs/releases/latest)
+          echo "::debug::zlib-rs API Response: $ZLIB_RS_API_RESPONSE"
+          
+          LATEST_ZLIB_RS=$(echo "$ZLIB_RS_API_RESPONSE" | jq -r '.tag_name // empty')
+          echo "::debug::Parsed zlib-rs version: '$LATEST_ZLIB_RS'"
+          
+          if [[ -n "$LATEST_ZLIB_RS" && "$LATEST_ZLIB_RS" != "null" ]]; then
+            check_version "ZLIB_RS_VER" "$LATEST_ZLIB_RS"
+          else
+            echo "::warning::Failed to fetch zlib-rs version, keeping current version"
+          fi
+          
           # liburing
           echo "::debug::Fetching liburing version..."
           LIBURING_API_RESPONSE=$(curl -s https://api.github.com/repos/axboe/liburing/tags)
@@ -367,6 +395,8 @@ jobs:
                 -e "s/^PHP_VER=\"[^\"]*\"/PHP_VER=\"$(get_current_version PHP_VER)\"/" \
                 -e "s/^PHPMYADMIN_VER=\"[^\"]*\"/PHPMYADMIN_VER=\"$(get_current_version PHPMYADMIN_VER)\"/" \
                 -e "s/^ZLIB_VER=\"[^\"]*\"/ZLIB_VER=\"$(get_current_version ZLIB_VER)\"/" \
+                -e "s/^ZLIB_NG_VER=\"[^\"]*\"/ZLIB_NG_VER=\"$(get_current_version ZLIB_NG_VER)\"/" \
+                -e "s/^ZLIB_RS_VER=\"[^\"]*\"/ZLIB_RS_VER=\"$(get_current_version ZLIB_RS_VER)\"/" \
                 -e "s/^SSE_PLUGIN_VER=\"[^\"]*\"/SSE_PLUGIN_VER=\"$(get_current_version SSE_PLUGIN_VER)\"/" \
                 -e "s/^SWPO_PLUGIN_VER=\"[^\"]*\"/SWPO_PLUGIN_VER=\"$(get_current_version SWPO_PLUGIN_VER)\"/" \
                 .github/ci-config/enginescript-variables-ci.txt

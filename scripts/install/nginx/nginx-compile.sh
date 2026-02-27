@@ -103,6 +103,45 @@ fi
 
 OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-deprecated no-psk no-srp no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
 
+# Determine zlib implementation flags for nginx configure
+ZLIB_CC_EXTRA=""
+ZLIB_LD_EXTRA=""
+ZLIB_CONFIGURE_FLAGS=()
+ZLIB_BUILD_TAG=""
+
+case "${ZLIB_IMPLEMENTATION}" in
+  zlib-ng)
+    ZLIB_CONFIGURE_FLAGS=(
+      --with-zlib="/usr/src/zlib-ng-${ZLIB_NG_VER}"
+      --with-zlib-opt=-fPIC
+    )
+    ZLIB_BUILD_TAG="-zlibng"
+    echo "Using zlib-ng ${ZLIB_NG_VER} for Nginx compilation"
+    ;;
+  zlib-rs)
+    ZLIB_RS_PREFIX="/opt/zlib-rs"
+    ZLIB_CC_EXTRA="-I${ZLIB_RS_PREFIX}/include"
+    ZLIB_LD_EXTRA="-L${ZLIB_RS_PREFIX}/lib"
+    ZLIB_BUILD_TAG="-zlibrs"
+    echo "Using zlib-rs ${ZLIB_RS_VER} for Nginx compilation"
+    ;;
+  *)
+    ZLIB_CONFIGURE_FLAGS=(
+      --with-zlib="/usr/src/zlib-${ZLIB_VER}"
+      --with-zlib-opt=-fPIC
+    )
+    echo "Using standard zlib ${ZLIB_VER} for Nginx compilation"
+    ;;
+esac
+
+# Append zlib extras to compiler/linker flags
+if [[ -n "$ZLIB_CC_EXTRA" ]]; then
+  CC_OPT_FLAGS="$CC_OPT_FLAGS $ZLIB_CC_EXTRA"
+fi
+if [[ -n "$ZLIB_LD_EXTRA" ]]; then
+  LD_OPT_FLAGS="$LD_OPT_FLAGS $ZLIB_LD_EXTRA"
+fi
+
 if [[ "${INSTALL_HTTP3}" == "1" ]];
   then
     # HTTP3
@@ -120,7 +159,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --modules-path=/etc/nginx/modules \
       --pid-path=/run/nginx.pid \
       --sbin-path=/usr/sbin/nginx \
-      --build="nginx-${NGINX_VER}-${DT}-enginescript" \
+      --build="nginx-${NGINX_VER}-${DT}-enginescript${ZLIB_BUILD_TAG}" \
       --builddir="nginx-${NGINX_VER}" \
       --with-cc-opt="$CC_OPT_FLAGS" \
       --with-ld-opt="$LD_OPT_FLAGS" \
@@ -131,8 +170,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --with-threads \
       --with-pcre="/usr/src/pcre2-${PCRE2_VER}" \
       --with-pcre-jit \
-      --with-zlib="/usr/src/zlib-${ZLIB_VER}" \
-      --with-zlib-opt=-fPIC \
+      "${ZLIB_CONFIGURE_FLAGS[@]}" \
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_v3_module \
@@ -167,7 +205,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --modules-path=/etc/nginx/modules \
       --pid-path=/run/nginx.pid \
       --sbin-path=/usr/sbin/nginx \
-      --build="nginx-${NGINX_VER}-${DT}-enginescript" \
+      --build="nginx-${NGINX_VER}-${DT}-enginescript${ZLIB_BUILD_TAG}" \
       --builddir="nginx-${NGINX_VER}" \
       --with-cc-opt="$CC_OPT_FLAGS" \
       --with-ld-opt="$LD_OPT_FLAGS" \
@@ -178,8 +216,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --with-threads \
       --with-pcre="/usr/src/pcre2-${PCRE2_VER}" \
       --with-pcre-jit \
-      --with-zlib="/usr/src/zlib-${ZLIB_VER}" \
-      --with-zlib-opt=-fPIC \
+      "${ZLIB_CONFIGURE_FLAGS[@]}" \
       --with-http_ssl_module \
       --with-http_v2_module \
       --with-http_realip_module \

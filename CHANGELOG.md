@@ -4,6 +4,18 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-02-26
+
+### ⚗️ EXPERIMENTAL ZLIB ALTERNATIVES FOR NGINX
+
+- **Added `ZLIB_IMPLEMENTATION` option** to `config/home/enginescript-install-options.txt`:
+  - `""` (empty/default) = standard zlib (no change from current behavior)
+  - `"zlib-ng"` = zlib-ng, a high-performance C drop-in replacement using `--zlib-compat` mode
+  - `"zlib-rs"` = zlib-rs, a Rust-based implementation (requires cargo/rustc on the server)
+- **Added `ZLIB_NG_VER` and `ZLIB_RS_VER`** to `enginescript-variables.txt` for centralized version management.
+- **Updated `scripts/install/zlib/zlib-install.sh`**: Now prepares the selected zlib alternative alongside the standard zlib download. Handles zlib-ng configure wrapper, stub Makefile (for nginx distclean compatibility), and zlib-rs cargo build + prefix install.
+- **Updated `scripts/install/nginx/nginx-compile.sh`**: Dynamically sets `--with-zlib` flags or include/link paths based on `ZLIB_IMPLEMENTATION`. Appends a build tag (`-zlibng` or `-zlibrs`) to the nginx `--build` string for identification.
+
 ## 2026-02-25
 
 ### �️ CLOUDFLARE ZLIB REMOVAL
