@@ -23,7 +23,7 @@ ZLIB_RS_VER="v0.6.0"
 
 # EngineScript Plugins
 ES_SE_PLUGIN_VER="2.0.0"
-ES_SO_PLUGIN_VER="1.8.0"
+ES_SO_PLUGIN_VER="2.0.0"
 
 # Frontend Dependencies  
 FONTAWESOME_VER="7.0.1"
