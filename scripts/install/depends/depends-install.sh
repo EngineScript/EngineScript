@@ -58,7 +58,6 @@ duf
 expat
 findutils
 fio
-freebsd-manpages
 geoipupdate
 gettext
 ghostscript
