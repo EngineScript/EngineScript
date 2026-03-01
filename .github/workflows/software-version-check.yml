@@ -86,38 +86,38 @@ jobs:
             tail -n1)
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
-          # Simple Site Exporter Plugin
-          echo "::debug::Fetching SSE Plugin version..."
-          SSE_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Site-Exporter/releases/latest)
-          echo "::debug::SSE API Response: $SSE_API_RESPONSE"
+          # EngineScript Site Exporter Plugin
+          echo "::debug::Fetching ES_SE Plugin version..."
+          ES_SE_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-exporter/releases/latest)
+          echo "::debug::ES_SE API Response: $ES_SE_API_RESPONSE"
           
-          LATEST_SSE=$(echo "$SSE_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
-          echo "::debug::Parsed SSE version: '$LATEST_SSE'"
+          LATEST_ES_SE=$(echo "$ES_SE_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
+          echo "::debug::Parsed ES_SE version: '$LATEST_ES_SE'"
           
           # Only check version if we got a valid response
-          if [[ -n "$LATEST_SSE" && "$LATEST_SSE" != "null" ]]; then
-            check_version "SSE_PLUGIN_VER" "$LATEST_SSE"
+          if [[ -n "$LATEST_ES_SE" && "$LATEST_ES_SE" != "null" ]]; then
+            check_version "ES_SE_PLUGIN_VER" "$LATEST_ES_SE"
           else
-            echo "::warning::Failed to fetch SSE Plugin version, keeping current version"
+            echo "::warning::Failed to fetch ES_SE Plugin version, keeping current version"
           fi
           
           # EngineScript Site Optimizer Plugin
-          echo "::debug::Fetching SWPO Plugin version..."
-          SWPO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-optimizer/releases/latest)
-          echo "::debug::SWPO API Response: $SWPO_API_RESPONSE"
+          echo "::debug::Fetching ES_SO Plugin version..."
+          ES_SO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-optimizer/releases/latest)
+          echo "::debug::ES_SO API Response: $ES_SO_API_RESPONSE"
           
-          LATEST_SWPO=$(echo "$SWPO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/^v//')
-          echo "::debug::Parsed SWPO version: '$LATEST_SWPO'"
+          LATEST_ES_SO=$(echo "$ES_SO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/^v//')
+          echo "::debug::Parsed ES_SO version: '$LATEST_ES_SO'"
           
           # Debug current version
-          CURRENT_SWPO_VER=$(get_current_version "SWPO_PLUGIN_VER")
-          echo "::debug::Current SWPO version: '$CURRENT_SWPO_VER'"
+          CURRENT_ES_SO_VER=$(get_current_version "ES_SO_PLUGIN_VER")
+          echo "::debug::Current ES_SO version: '$CURRENT_ES_SO_VER'"
           
           # Only check version if we got a valid response
-          if [[ -n "$LATEST_SWPO" && "$LATEST_SWPO" != "null" ]]; then
-            check_version "SWPO_PLUGIN_VER" "$LATEST_SWPO"
+          if [[ -n "$LATEST_ES_SO" && "$LATEST_ES_SO" != "null" ]]; then
+            check_version "ES_SO_PLUGIN_VER" "$LATEST_ES_SO"
           else
-            echo "::warning::Failed to fetch SWPO Plugin version, keeping current version"
+            echo "::warning::Failed to fetch ES_SO Plugin version, keeping current version"
           fi
           
           # PCRE2
@@ -375,8 +375,8 @@ jobs:
                 -e "s#^(\\|LIBURING\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
                 -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
                 -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
-                -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
-                -e "s#^(\\|PLUGIN: EngineScript Site Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript Site Exporter\\|)[^|]*#\1$(get_current_version ES_SE_PLUGIN_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript Site Optimizer\\|)[^|]*#\1$(get_current_version ES_SO_PLUGIN_VER)#" \
                 -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
                 -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
                 README.md
@@ -397,8 +397,8 @@ jobs:
                 -e "s/^ZLIB_VER=\"[^\"]*\"/ZLIB_VER=\"$(get_current_version ZLIB_VER)\"/" \
                 -e "s/^ZLIB_NG_VER=\"[^\"]*\"/ZLIB_NG_VER=\"$(get_current_version ZLIB_NG_VER)\"/" \
                 -e "s/^ZLIB_RS_VER=\"[^\"]*\"/ZLIB_RS_VER=\"$(get_current_version ZLIB_RS_VER)\"/" \
-                -e "s/^SSE_PLUGIN_VER=\"[^\"]*\"/SSE_PLUGIN_VER=\"$(get_current_version SSE_PLUGIN_VER)\"/" \
-                -e "s/^SWPO_PLUGIN_VER=\"[^\"]*\"/SWPO_PLUGIN_VER=\"$(get_current_version SWPO_PLUGIN_VER)\"/" \
+                -e "s/^ES_SE_PLUGIN_VER=\"[^\"]*\"/ES_SE_PLUGIN_VER=\"$(get_current_version ES_SE_PLUGIN_VER)\"/" \
+                -e "s/^ES_SO_PLUGIN_VER=\"[^\"]*\"/ES_SO_PLUGIN_VER=\"$(get_current_version ES_SO_PLUGIN_VER)\"/" \
                 .github/ci-config/enginescript-variables-ci.txt
             fi
           else

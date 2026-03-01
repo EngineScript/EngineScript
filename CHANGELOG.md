@@ -11,6 +11,9 @@ Changes are organized by date, with the most recent changes listed first.
 - Updated all EngineScript references to use **EngineScript Site Optimizer**.
 - Updated repository links and release download URLs to use `EngineScript/enginescript-site-optimizer`.
 - Updated plugin zip and directory references in install and update scripts to use `enginescript-site-optimizer` naming.
+- Updated all EngineScript references to use **EngineScript Site Exporter**.
+- Updated repository links and release download URLs to use `EngineScript/enginescript-site-exporter`.
+- Normalized legacy Site Exporter naming from `SSE`/`sse-*` to `ES_SE` and `es-se` across workflow variables, temp paths, and script comments.
 
 ## 2026-02-26
 
@@ -296,7 +299,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **Static Files Cache Control**: Enhanced cache control headers for static assets
 - **Plugin Installation Options**: Added granular control over WordPress plugin installation
-  - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (EngineScript Site Optimizer, Simple Site Exporter)
+  - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (EngineScript Site Optimizer, EngineScript Site Exporter)
   - **INSTALL_EXTRA_WP_PLUGINS**: New option to control optional recommended plugins (action-scheduler, autodescription, etc.)
   - **Core Plugins Always Installed**: Essential plugins (nginx-helper, redis-cache, flush-opcache, mariadb-health-checks) remain mandatory
   - **Enhanced Flexibility**: Allows customization while maintaining critical functionality
@@ -1397,7 +1400,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **CI/CD Workflow Enhancement**: Comprehensively improved the GitHub Actions software-version-check workflow
   - **Robust Error Handling**: Added comprehensive error handling for all GitHub API calls to prevent "null" version values
-    - Enhanced SSE_PLUGIN, SWPO_PLUGIN, PCRE2, OpenSSL, Zlib, liburing, NGINX modules with proper null checking
+    - Enhanced ES_SE_PLUGIN, ES_SO_PLUGIN, PCRE2, OpenSSL, Zlib, liburing, NGINX modules with proper null checking
     - Added debug output for all API responses to improve troubleshooting
     - Implemented fallback behavior to retain current versions when API calls fail
     - Added warning messages for failed API calls with clear context

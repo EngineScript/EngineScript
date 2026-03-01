@@ -70,7 +70,7 @@ AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 ## Install EngineScript Custom Plugins ##
 # When enabled, EngineScript will install its two custom plugins during site creation:
 # 1. EngineScript Site Optimizer - Basic WordPress performance optimizations (header cleanup, etc.)
-# 2. Simple Site Exporter - Makes it easy to export sites to new EngineScript servers
+# 2. EngineScript Site Exporter - Makes it easy to export sites to new EngineScript servers
 # Note: This does NOT affect other recommended plugins (Nginx Helper, Redis, etc.)
 INSTALL_ENGINESCRIPT_PLUGINS=1
 

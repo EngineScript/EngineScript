@@ -622,16 +622,16 @@ install_enginescript_custom_plugins() {
     echo "Installing EngineScript custom plugins..."
     
     # 1. EngineScript Site Optimizer plugin
-    mkdir -p "/tmp/enginescript-swpo-plugin"
-    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/latest/download/enginescript-site-optimizer.zip" -O "/tmp/enginescript-swpo-plugin/enginescript-site-optimizer.zip"
-    unzip -q -o "/tmp/enginescript-swpo-plugin/enginescript-site-optimizer.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
-    rm -rf "/tmp/enginescript-swpo-plugin"
+    mkdir -p "/tmp/enginescript-es-so-plugin"
+    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip"
+    unzip -q -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    rm -rf "/tmp/enginescript-es-so-plugin"
 
-    # 2. Simple Site Exporter plugin
-    mkdir -p "/tmp/enginescript-sse-plugin"
-    wget -q "https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/latest/download/simple-site-exporter.zip" -O "/tmp/enginescript-sse-plugin/simple-site-exporter.zip"
-    unzip -q -o "/tmp/enginescript-sse-plugin/simple-site-exporter.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
-    rm -rf "/tmp/enginescript-sse-plugin"
+    # 2. EngineScript Site Exporter plugin
+    mkdir -p "/tmp/enginescript-es-se-plugin"
+    wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip"
+    unzip -q -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    rm -rf "/tmp/enginescript-es-se-plugin"
   else
     echo "Skipping EngineScript custom plugins installation (disabled in config)..."
   fi

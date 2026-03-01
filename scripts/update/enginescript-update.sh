@@ -139,29 +139,29 @@ if [[ -f "$SITES_FILE" ]]; then
       if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
         # Update the two custom EngineScript plugins:
         
-        # 1. Simple Site Exporter plugin
-        echo "Updating Simple Site Exporter plugin for $DOMAIN..."
-        mkdir -p "/tmp/sse-plugin-update"
-        if wget -q "https://github.com/EngineScript/Simple-WP-Site-Exporter/releases/download/v${SSE_PLUGIN_VER}/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" -O "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" 2>/dev/null; then
+        # 1. EngineScript Site Exporter plugin
+        echo "Updating EngineScript Site Exporter plugin for $DOMAIN..."
+        mkdir -p "/tmp/es-se-plugin-update"
+        if wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" 2>/dev/null; then
           # Verify the downloaded file is a valid zip
-          if unzip -t "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" >/dev/null 2>&1; then
-            unzip -q -o "/tmp/sse-plugin-update/simple-wp-site-exporter-${SSE_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
-            echo "Simple Site Exporter plugin updated successfully for $DOMAIN"
+          if unzip -t "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" >/dev/null 2>&1; then
+            unzip -q -o "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
+            echo "EngineScript Site Exporter plugin updated successfully for $DOMAIN"
           else
-            echo "Warning: Downloaded Simple Site Exporter plugin file is corrupted for $DOMAIN"
+            echo "Warning: Downloaded EngineScript Site Exporter plugin file is corrupted for $DOMAIN"
           fi
         else
-          echo "Warning: Failed to download Simple Site Exporter plugin for $DOMAIN"
+          echo "Warning: Failed to download EngineScript Site Exporter plugin for $DOMAIN"
         fi
-        rm -rf "/tmp/sse-plugin-update"
+        rm -rf "/tmp/es-se-plugin-update"
         
         # 2. EngineScript Site Optimizer plugin
         echo "Updating EngineScript Site Optimizer plugin for $DOMAIN..."
-        mkdir -p "/tmp/swpo-plugin-update"
-        if wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${SWPO_PLUGIN_VER}/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" -O "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" 2>/dev/null; then
+        mkdir -p "/tmp/es-so-plugin-update"
+        if wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" 2>/dev/null; then
           # Verify the downloaded file is a valid zip
-          if unzip -t "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
-            unzip -q -o "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
+          if unzip -t "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
+            unzip -q -o "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
             echo "EngineScript Site Optimizer plugin updated successfully for $DOMAIN"
           else
             echo "Warning: Downloaded EngineScript Site Optimizer plugin file is corrupted for $DOMAIN"
@@ -169,13 +169,13 @@ if [[ -f "$SITES_FILE" ]]; then
         else
           echo "Warning: Failed to download EngineScript Site Optimizer plugin for $DOMAIN"
         fi
-        rm -rf "/tmp/swpo-plugin-update"
+        rm -rf "/tmp/es-so-plugin-update"
         
         # Set permissions for both plugins (only if they exist)
-        if [[ -d "$WP_PLUGIN_DIR/simple-site-exporter" ]]; then
-          chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-site-exporter"
-          find "$WP_PLUGIN_DIR/simple-site-exporter" -type d -exec chmod 755 {} \;
-          find "$WP_PLUGIN_DIR/simple-site-exporter" -type f -exec chmod 644 {} \;
+        if [[ -d "$WP_PLUGIN_DIR/enginescript-site-exporter" ]]; then
+          chown -R www-data:www-data "$WP_PLUGIN_DIR/enginescript-site-exporter"
+          find "$WP_PLUGIN_DIR/enginescript-site-exporter" -type d -exec chmod 755 {} \;
+          find "$WP_PLUGIN_DIR/enginescript-site-exporter" -type f -exec chmod 644 {} \;
         fi
         if [[ -d "$WP_PLUGIN_DIR/enginescript-site-optimizer" ]]; then
           chown -R www-data:www-data "$WP_PLUGIN_DIR/enginescript-site-optimizer"
