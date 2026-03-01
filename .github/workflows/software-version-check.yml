@@ -365,20 +365,20 @@ jobs:
               # Update README.md table directly in this step
               echo "Updating README.md..."
               sed -i -E \
-                -e "s#^(\\|NGINX MAINLINE\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
-                -e "s#^(\\|NGINX CACHE PURGE\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
-                -e "s#^(\\|NGINX HEADERS MORE\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
-                -e "s#^(\\|NGINX PATCH: Dynamic TLS Records\\|)[^|]*#\1Latest#" \
-                -e "s#^(\\|OPENSSL\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
-                -e "s#^(\\|PCRE2\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
-                -e "s#^(\\|ZLIB\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
-                -e "s#^(\\|LIBURING\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
-                -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
-                -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
-                -e "s#^(\\|PLUGIN: EngineScript Site Exporter\\|)[^|]*#\1$(get_current_version ES_SE_PLUGIN_VER)#" \
-                -e "s#^(\\|PLUGIN: EngineScript Site Optimizer\\|)[^|]*#\1$(get_current_version ES_SO_PLUGIN_VER)#" \
-                -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
-                -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
+                -e "s#^(\\|NGINX MAINLINE[^|]*\\|)[^|]*#\1$(get_current_version NGINX_VER)#" \
+                -e "s#^(\\|NGINX CACHE PURGE[^|]*\\|)[^|]*#\1$(get_current_version NGINX_PURGE_VER)#" \
+                -e "s#^(\\|NGINX HEADERS MORE[^|]*\\|)[^|]*#\1$(get_current_version NGINX_HEADER_VER)#" \
+                -e "s#^(\\|NGINX PATCH: Dynamic TLS Records[^|]*\\|)[^|]*#\1Latest#" \
+                -e "s#^(\\|OPENSSL[^|]*\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
+                -e "s#^(\\|PCRE2[^|]*\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
+                -e "s#^(\\|ZLIB[^|]*\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
+                -e "s#^(\\|LIBURING[^|]*\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
+                -e "s#^(\\|PHPMYADMIN[^|]*\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
+                -e "s#^(\\|MARIADB[^|]*\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript Site Exporter[^|]*\\|)[^|]*#\1$(get_current_version ES_SE_PLUGIN_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript Site Optimizer[^|]*\\|)[^|]*#\1$(get_current_version ES_SO_PLUGIN_VER)#" \
+                -e "s#^(\\|Font Awesome[^|]*\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
+                -e "s#^(\\|TinyFileManager[^|]*\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
                 README.md
 
               # Update CI variables file to keep it in sync
