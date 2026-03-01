@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-01
+
+### 📝 PLUGIN NAMING AND REPOSITORY RENAME SYNC
+
+- Updated all EngineScript references to use **EngineScript Site Optimizer**.
+- Updated repository links and release download URLs to use `EngineScript/enginescript-site-optimizer`.
+- Updated plugin zip and directory references in install and update scripts to use `enginescript-site-optimizer` naming.
+
 ## 2026-02-26
 
 ### ⚗️ EXPERIMENTAL ZLIB ALTERNATIVES FOR NGINX
@@ -288,7 +296,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **Static Files Cache Control**: Enhanced cache control headers for static assets
 - **Plugin Installation Options**: Added granular control over WordPress plugin installation
-  - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (Simple WP Optimizer, Simple Site Exporter)
+  - **INSTALL_ENGINESCRIPT_PLUGINS**: New option to control EngineScript custom plugins (EngineScript Site Optimizer, Simple Site Exporter)
   - **INSTALL_EXTRA_WP_PLUGINS**: New option to control optional recommended plugins (action-scheduler, autodescription, etc.)
   - **Core Plugins Always Installed**: Essential plugins (nginx-helper, redis-cache, flush-opcache, mariadb-health-checks) remain mandatory
   - **Enhanced Flexibility**: Allows customization while maintaining critical functionality
@@ -688,7 +696,7 @@ Changes are organized by date, with the most recent changes listed first.
     - Direct updates to enginescript-variables.txt and README.md version tables
     - Better commit messages and PR descriptions for version update notifications
   - **Version Detection**: Improved version detection for all tracked software components
-    - Enhanced regex patterns for NGINX mainline, NGINX Headers More, and Simple WP Optimizer
+    - Enhanced regex patterns for NGINX mainline, NGINX Headers More, and EngineScript Site Optimizer
     - Better handling of pre-release versions and release candidates
     - More reliable parsing of GitHub API responses for version information
   - **Conditional Date Updates**: Added logic to only update timestamps when software versions actually change

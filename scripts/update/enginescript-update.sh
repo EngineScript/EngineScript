@@ -155,19 +155,19 @@ if [[ -f "$SITES_FILE" ]]; then
         fi
         rm -rf "/tmp/sse-plugin-update"
         
-        # 2. Simple WP Optimizer plugin
-        echo "Updating Simple WP Optimizer plugin for $DOMAIN..."
+        # 2. EngineScript Site Optimizer plugin
+        echo "Updating EngineScript Site Optimizer plugin for $DOMAIN..."
         mkdir -p "/tmp/swpo-plugin-update"
-        if wget -q "https://github.com/EngineScript/Simple-WP-Optimizer/releases/download/v${SWPO_PLUGIN_VER}/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" -O "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" 2>/dev/null; then
+        if wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${SWPO_PLUGIN_VER}/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" -O "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" 2>/dev/null; then
           # Verify the downloaded file is a valid zip
-          if unzip -t "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
-            unzip -q -o "/tmp/swpo-plugin-update/simple-wp-optimizer-${SWPO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
-            echo "Simple WP Optimizer plugin updated successfully for $DOMAIN"
+          if unzip -t "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
+            unzip -q -o "/tmp/swpo-plugin-update/enginescript-site-optimizer-${SWPO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
+            echo "EngineScript Site Optimizer plugin updated successfully for $DOMAIN"
           else
-            echo "Warning: Downloaded Simple WP Optimizer plugin file is corrupted for $DOMAIN"
+            echo "Warning: Downloaded EngineScript Site Optimizer plugin file is corrupted for $DOMAIN"
           fi
         else
-          echo "Warning: Failed to download Simple WP Optimizer plugin for $DOMAIN"
+          echo "Warning: Failed to download EngineScript Site Optimizer plugin for $DOMAIN"
         fi
         rm -rf "/tmp/swpo-plugin-update"
         
@@ -177,10 +177,10 @@ if [[ -f "$SITES_FILE" ]]; then
           find "$WP_PLUGIN_DIR/simple-site-exporter" -type d -exec chmod 755 {} \;
           find "$WP_PLUGIN_DIR/simple-site-exporter" -type f -exec chmod 644 {} \;
         fi
-        if [[ -d "$WP_PLUGIN_DIR/simple-wp-optimizer" ]]; then
-          chown -R www-data:www-data "$WP_PLUGIN_DIR/simple-wp-optimizer"
-          find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type d -exec chmod 755 {} \;
-          find "$WP_PLUGIN_DIR/simple-wp-optimizer" -type f -exec chmod 644 {} \;
+        if [[ -d "$WP_PLUGIN_DIR/enginescript-site-optimizer" ]]; then
+          chown -R www-data:www-data "$WP_PLUGIN_DIR/enginescript-site-optimizer"
+          find "$WP_PLUGIN_DIR/enginescript-site-optimizer" -type d -exec chmod 755 {} \;
+          find "$WP_PLUGIN_DIR/enginescript-site-optimizer" -type f -exec chmod 644 {} \;
         fi
       else
         echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."

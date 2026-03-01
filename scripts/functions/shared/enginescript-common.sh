@@ -814,7 +814,7 @@ function download_and_extract() {
     local output_file="$2"
     local extract_dir="${3:-$(dirname "${output_file}")}"
 
-    wget -O "${output_file}" "${url}" --no-check-certificate || {
+    wget -nv -O "${output_file}" "${url}" --no-check-certificate || {
         echo "Error: Failed to download ${url}"
         return 1
     }
@@ -868,7 +868,7 @@ function safe_wget() {
     local url="$1"
     local dest="$2"
 
-    wget -O "${dest}" "${url}" --no-check-certificate || {
+    wget -nv -O "${dest}" "${url}" --no-check-certificate || {
         echo "Error: Failed to download ${url}"
         return 1
     }

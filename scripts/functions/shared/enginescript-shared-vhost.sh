@@ -621,10 +621,10 @@ install_enginescript_custom_plugins() {
   if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
     echo "Installing EngineScript custom plugins..."
     
-    # 1. Simple WP Optimizer plugin
+    # 1. EngineScript Site Optimizer plugin
     mkdir -p "/tmp/enginescript-swpo-plugin"
-    wget -q "https://github.com/EngineScript/Simple-WP-Optimizer/releases/latest/download/simple-wp-optimizer.zip" -O "/tmp/enginescript-swpo-plugin/simple-wp-optimizer.zip"
-    unzip -q -o "/tmp/enginescript-swpo-plugin/simple-wp-optimizer.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/latest/download/enginescript-site-optimizer.zip" -O "/tmp/enginescript-swpo-plugin/enginescript-site-optimizer.zip"
+    unzip -q -o "/tmp/enginescript-swpo-plugin/enginescript-site-optimizer.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
     rm -rf "/tmp/enginescript-swpo-plugin"
 
     # 2. Simple Site Exporter plugin

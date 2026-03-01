@@ -201,7 +201,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |WORDPRESS|Latest|<https://wordpress.org>|
 |PLUGIN: Action Scheduler *(optional)*||<https://wordpress.org/plugins/action-scheduler/>|
 |PLUGIN: EngineScript: Simple Site Exporter *(optional)*|1.9.1|[https://github.com/EngineScript/Simple-WP-Site-Exporter](https://github.com/EngineScript/Simple-WP-Site-Exporter)|
-|PLUGIN: EngineScript: Simple WP Optimizer *(optional)*|1.8.0|[https://github.com/EngineScript/Simple-WP-Optimizer](https://github.com/EngineScript/Simple-WP-Optimizer)|
+|PLUGIN: EngineScript Site Optimizer *(optional)*|1.8.0|[https://github.com/EngineScript/enginescript-site-optimizer](https://github.com/EngineScript/enginescript-site-optimizer)|
 |PLUGIN: MariaDB Health Checks *(highly recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
 |PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
 |PLUGIN: Performance Lab *(optional)*||<https://wordpress.org/plugins/performance-lab/>|

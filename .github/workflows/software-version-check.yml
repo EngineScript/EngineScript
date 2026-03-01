@@ -101,9 +101,9 @@ jobs:
             echo "::warning::Failed to fetch SSE Plugin version, keeping current version"
           fi
           
-          # Simple WP Optimizer Plugin
+          # EngineScript Site Optimizer Plugin
           echo "::debug::Fetching SWPO Plugin version..."
-          SWPO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/Simple-WP-Optimizer/releases/latest)
+          SWPO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-optimizer/releases/latest)
           echo "::debug::SWPO API Response: $SWPO_API_RESPONSE"
           
           LATEST_SWPO=$(echo "$SWPO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/^v//')
@@ -376,7 +376,7 @@ jobs:
                 -e "s#^(\\|PHPMYADMIN\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
                 -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
                 -e "s#^(\\|PLUGIN: EngineScript: Simple Site Exporter\\|)[^|]*#\1$(get_current_version SSE_PLUGIN_VER)#" \
-                -e "s#^(\\|PLUGIN: EngineScript: Simple WP Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
+                -e "s#^(\\|PLUGIN: EngineScript Site Optimizer\\|)[^|]*#\1$(get_current_version SWPO_PLUGIN_VER)#" \
                 -e "s#^(\\|Font Awesome\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
                 -e "s#^(\\|TinyFileManager\\|)[^|]*#\1$(get_current_version TINYFILEMANAGER_VER)#" \
                 README.md
