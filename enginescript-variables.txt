@@ -22,8 +22,8 @@ ZLIB_NG_VER="2.3.3"
 ZLIB_RS_VER="v0.6.0"
 
 # EngineScript Plugins
-SSE_PLUGIN_VER="1.9.1"
-SWPO_PLUGIN_VER="1.8.0"
+SSE_PLUGIN_VER="1.9.2"
+SWPO_PLUGIN_VER="2.0.0"
 
 # Frontend Dependencies  
 FONTAWESOME_VER="7.0.1"
