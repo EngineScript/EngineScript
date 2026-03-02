@@ -31,7 +31,7 @@
     <!-- Main Dashboard -->
     <div id="dashboard" class="dashboard" style="display: none;">
         <!-- Sidebar -->
-        <nav class="sidebar">
+        <nav class="sidebar" aria-label="Main navigation">
             <div class="sidebar-header">
                 <h2><i class="fas fa-server"></i> EngineScript</h2>
                 <p class="version">Admin Dashboard</p>
@@ -68,8 +68,8 @@
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
-                    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-                        <i class="fas fa-bars"></i>
+                    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation menu">
+                        <i class="fas fa-bars" aria-hidden="true"></i>
                     </button>
                     <h1 id="page-title">Overview</h1>
                     <span id="last-updated">Last updated: <span id="update-time">--</span></span>
@@ -302,7 +302,7 @@
             <!-- Tools Page -->
             <div class="page-content" id="tools-page" style="display: none;">
                 <div class="page-header">
-                    <h1><i class="fas fa-tools"></i> Administrative Tools</h1>
+                    <h2><i class="fas fa-tools"></i> Administrative Tools</h2>
                 </div>
                 
                 <div class="tools-grid">

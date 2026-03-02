@@ -131,6 +131,7 @@ export class ExternalServicesManager {
     iconDiv.className = "empty-state-icon";
     const icon = document.createElement("i");
     icon.className = "fas fa-toggle-off";
+    icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
     
     const h3 = document.createElement("h3");
@@ -158,6 +159,7 @@ export class ExternalServicesManager {
     iconDiv.className = "error-icon";
     const icon = document.createElement("i");
     icon.className = "fas fa-exclamation-circle";
+    icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
     
     const h3 = document.createElement("h3");
@@ -228,6 +230,8 @@ export class ExternalServicesManager {
     const categoryContainer = document.createElement("div");
     categoryContainer.className = "service-category-grid";
     categoryContainer.dataset.category = category;
+    categoryContainer.setAttribute("role", "list");
+    categoryContainer.setAttribute("aria-label", `${category} services`);
     return categoryContainer;
   }
 
@@ -237,20 +241,20 @@ export class ExternalServicesManager {
   renderCategoryCards(container, services) {
     for (const { key: serviceKey, def: serviceDef } of services) {
       if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
-        // Display static card immediately (e.g., AWS)
-        this.displayStaticServiceCard(container, serviceKey, serviceDef);
+        // Render static card immediately (e.g., AWS)
+        this.renderStaticServiceCard(container, serviceKey, serviceDef);
       } else {
-        // Display card with loading state, then fetch status
-        this.displayServiceCardWithLoadingState(container, serviceKey, serviceDef);
-        this.fetchServiceStatusAsync(serviceKey, serviceDef);
+        // Render card with loading state, then fetch status
+        this.renderServiceCardLoadingState(container, serviceKey, serviceDef);
+        this.fetchServiceStatus(serviceKey, serviceDef);
       }
     }
   }
 
   /**
-   * Fetch service status asynchronously (non-blocking)
+   * Fetch service status (non-blocking)
    */
-  fetchServiceStatusAsync(serviceKey, serviceDef) {
+  fetchServiceStatus(serviceKey, serviceDef) {
     if (serviceDef.useFeed) {
       this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
         console.error(`Failed to load ${serviceDef.name}:`, err);
@@ -344,10 +348,12 @@ export class ExternalServicesManager {
     
     const cogIcon = document.createElement("i");
     cogIcon.className = "fas fa-cog";
+    cogIcon.setAttribute("aria-hidden", "true");
     const textSpan = document.createElement("span");
     textSpan.textContent = "Service Settings";
     const chevronIcon = document.createElement("i");
     chevronIcon.className = "fas fa-chevron-down toggle-icon";
+    chevronIcon.setAttribute("aria-hidden", "true");
     
     settingsToggle.appendChild(cogIcon);
     settingsToggle.appendChild(textSpan);
@@ -452,6 +458,7 @@ export class ExternalServicesManager {
     const toggleAllBtn = document.createElement("button");
     toggleAllBtn.className = "category-toggle-all-btn";
     toggleAllBtn.dataset.category = category;
+    toggleAllBtn.setAttribute("aria-label", `Toggle all ${category} services`);
     
     const toggleText = document.createElement("span");
     toggleText.className = "toggle-all-text";
@@ -460,6 +467,7 @@ export class ExternalServicesManager {
     
     const toggleIcon = document.createElement("i");
     toggleIcon.className = "fas fa-toggle-on";
+    toggleIcon.setAttribute("aria-hidden", "true");
     toggleAllBtn.appendChild(toggleIcon);
     
     categoryHeader.appendChild(toggleAllBtn);
@@ -512,6 +520,7 @@ export class ExternalServicesManager {
     
     const saveIcon = document.createElement("i");
     saveIcon.className = "fas fa-save";
+    saveIcon.setAttribute("aria-hidden", "true");
     saveButton.appendChild(saveIcon);
     saveButton.appendChild(document.createTextNode(" Save Changes"));
     saveButton.disabled = true;
@@ -623,13 +632,14 @@ export class ExternalServicesManager {
     // Validate icon class contains only safe characters (alphanumeric, hyphens)
     const safeIcon = (serviceDef.icon || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
     iconElement.className = `fas ${safeIcon}`;
+    iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
     
     const infoDiv = document.createElement("div");
     infoDiv.className = "service-info";
     
-    const h3 = document.createElement("h3");
-    h3.textContent = serviceDef.name;
+    const h4 = document.createElement("h4");
+    h4.textContent = serviceDef.name;
     
     const statusSpan = document.createElement("span");
     statusSpan.className = `service-status ${statusClassName}`;
@@ -639,10 +649,11 @@ export class ExternalServicesManager {
     // Validate status icon class contains only safe characters
     const safeStatusIcon = (statusIconClass || 'fa-question').replace(/[^a-zA-Z0-9- ]/g, '');
     statusIcon.className = `fas ${safeStatusIcon}`;
+    statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
     statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
     
-    infoDiv.appendChild(h3);
+    infoDiv.appendChild(h4);
     infoDiv.appendChild(statusSpan);
     headerDiv.appendChild(iconDiv);
     headerDiv.appendChild(infoDiv);
@@ -665,9 +676,9 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Display static service card (no API/feed)
+   * Render static service card (no API/feed)
    */
-  displayStaticServiceCard(container, serviceKey, serviceDef) {
+  renderStaticServiceCard(container, serviceKey, serviceDef) {
     const statusIconClass = "fa-external-link-alt";
     const contentNode = document.createTextNode(serviceDef.statusText || 'Visit status page');
     const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusIconClass);
@@ -681,9 +692,9 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Display service card with loading state
+   * Render service card with loading state
    */
-  displayServiceCardWithLoadingState(container, serviceKey, serviceDef) {
+  renderServiceCardLoadingState(container, serviceKey, serviceDef) {
     const statusIconClass = "fa-spinner fa-spin";
     const contentNode = document.createTextNode("Loading...");
     const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusIconClass);
@@ -1102,7 +1113,7 @@ export class ExternalServicesManager {
       // Add tabindex for keyboard accessibility
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'listitem');
-      card.setAttribute('aria-label', `${card.querySelector('h3')?.textContent || 'Service'} - Press Enter to enter reorder mode, then use arrow keys to move`);
+      card.setAttribute('aria-label', `${card.querySelector('h4')?.textContent || 'Service'} - Press Enter to enter reorder mode, then use arrow keys to move`);
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
@@ -1352,7 +1363,6 @@ export class ExternalServicesManager {
       liveRegion.setAttribute('aria-live', 'polite');
       liveRegion.setAttribute('aria-atomic', 'true');
       liveRegion.className = 'sr-only';
-      liveRegion.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
       document.body.appendChild(liveRegion);
     }
     
@@ -1380,20 +1390,8 @@ export class ExternalServicesManager {
   showNotification(message, type = 'info') {
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
+    notification.className = `es-notification notification-${type}`;
     notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background: ${type === 'success' ? '#00d4aa' : type === 'error' ? '#f44' : '#00a8ff'};
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
     
     document.body.appendChild(notification);
     

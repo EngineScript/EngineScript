@@ -1258,3 +1258,51 @@ button:focus, select:focus, input:focus {
 
 /* External Services styles moved to external-services/external-services.css */
 
+/* Page Visibility */
+.page-hidden {
+    display: none;
+}
+
+/* Loading Screen States */
+.es-hidden {
+    display: none;
+}
+
+.es-flex {
+    display: flex;
+}
+
+/* Refresh Button Spinning */
+.refresh-spinning {
+    animation: spin 1s linear;
+}
+
+/* Notification Toast */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    z-index: 10000;
+    max-width: 300px;
+}
+
+.notification-toast.notification-error {
+    background: var(--error-color);
+}
+
+.notification-toast.notification-success {
+    background: var(--success-color);
+}
+
+.notification-toast.notification-info {
+    background: var(--info-color);
+}
+
+.notification-toast.notification-warning {
+    background: var(--warning-color);
+}
+

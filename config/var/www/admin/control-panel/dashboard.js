@@ -138,7 +138,7 @@ class EngineScriptDashboard {
     // Hide all pages except overview
     this.cachedPages.forEach((page) => {
       if (page.id !== "overview-page") {
-        page.style.display = "none";
+        page.classList.add("page-hidden");
       }
     });
   }
@@ -156,11 +156,11 @@ class EngineScriptDashboard {
 
     // Update pages using cached elements
     this.cachedPages.forEach((page) => {
-      page.style.display = "none";
+      page.classList.add("page-hidden");
     });
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
-      targetPage.style.display = "block";
+      targetPage.classList.remove("page-hidden");
       // Scroll to top when navigating to a new page
       targetPage.scrollTop = 0;
       // Also scroll the main content area to top
@@ -245,8 +245,8 @@ class EngineScriptDashboard {
     const dashboard = document.getElementById("dashboard");
 
     if (loadingScreen && dashboard) {
-      loadingScreen.style.display = "none";
-      dashboard.style.display = "flex";
+      loadingScreen.classList.add("es-hidden");
+      dashboard.classList.add("es-flex");
     }
   }
 
@@ -442,9 +442,9 @@ class EngineScriptDashboard {
     const refreshBtn = document.getElementById("refresh-btn");
     const icon = refreshBtn.querySelector("i");
 
-    icon.style.animation = "spin 1s linear";
+    icon.classList.add("refresh-spinning");
     setTimeout(() => {
-      icon.style.animation = "";
+      icon.classList.remove("refresh-spinning");
     }, 1000);
   }
     
@@ -478,15 +478,12 @@ class EngineScriptDashboard {
     
   async loadServiceStatus() {
     try {
-      // Fetch all services at once
-      const response = await fetch("/api/services/status");
-      
-      if (!response.ok) {
-        console.error('Service status API error:', response.status, response.statusText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Fetch all services at once (uses CSRF headers, deduplication, and error handling)
+      const services = await this.getApiData("/api/services/status", null);
+
+      if (!services) {
+        throw new Error('Failed to load service status');
       }
-      
-      const services = await response.json();
 
       // Update each service
       ["nginx", "php", "mysql", "redis"].forEach(service => {
@@ -625,10 +622,6 @@ class EngineScriptDashboard {
     return this.api.postApiData(endpoint, data);
   }
 
-  async getServiceStatus(service) {
-    return this.api.getServiceStatus(service);
-  }
-    
   showError(message) {
     this.utils.showError(message);
   }

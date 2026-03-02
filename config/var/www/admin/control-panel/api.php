@@ -32,7 +32,6 @@ header('X-Frame-Options: DENY'); // codacy:ignore - Security header required
 header('Referrer-Policy: strict-origin-when-cross-origin'); // codacy:ignore - Security header required
 header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';'); // codacy:ignore - Security header required
 
-// Task 94: Enable response compression for performance
 // Check if client accepts gzip and zlib extension is available
 if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
     // Check Accept-Encoding header for gzip support

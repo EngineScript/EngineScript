@@ -191,19 +191,4 @@ export class DashboardAPI {
     }
   }
 
-  async getServiceStatus(service) {
-    try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { online: false, version: "Unavailable" };
-      }
-
-      const response = await fetch("/api/services/status");
-      const data = await response.json();
-
-      return data[service] || { online: false, version: "Unknown" };
-    } catch (error) {
-      console.error(`Failed to get service status for ${service}:`, error);
-      return { online: false, version: "Error" };
-    }
-  }
 }

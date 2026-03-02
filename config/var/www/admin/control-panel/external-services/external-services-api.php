@@ -14,6 +14,10 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
     die('Direct access forbidden');
 }
 
+// Load centralized API response handler
+// @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
+require_once __DIR__ . '/../classes/ApiResponse.php';
+
 /**
  * Sanitize text from external feeds to prevent injection attacks
  * @param string $text Raw text from feed
@@ -533,12 +537,8 @@ function handleStatusFeed() {
         // Validate feed parameter
         // @codacy [Direct use of $_GET Superglobal detected] Input validated against strict whitelist below
         if (!isset($_GET['feed']) || empty($_GET['feed'])) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
-            echo json_encode(['error' => 'Missing feed parameter']);
-            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
-            exit;
+            ApiResponse::badRequest('Missing feed parameter');
+            return;
         }
         
         // @codacy [Direct use of $_GET Superglobal detected] Input validated against whitelist of allowed feed types
@@ -556,70 +556,57 @@ function handleStatusFeed() {
         ];
         
         if (!in_array($feedType, $allowedFeedTypes, true)) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            // @codacy suppress [Use of echo language construct is discouraged] API endpoint must output JSON response
-            echo json_encode(['error' => 'Invalid feed type']);
-            // @codacy suppress [Use of exit language construct is discouraged] API endpoint must terminate after response
-            exit;
+            ApiResponse::badRequest('Invalid feed type');
+            return;
         }
         
         // Handle special JSON API feeds
         if ($feedType === 'vultr') {
             $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
-            header('Content-Type: application/json');
-            // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON response
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'postmark') {
             $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'googleworkspace') {
             $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'wistia') {
             $status = parseWistiaSummary('https://status.wistia.com/summary.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'sendgrid') {
             $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'spotify') {
             $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'trello') {
             $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         if ($feedType === 'pipedream') {
             $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
-            header('Content-Type: application/json');
-            echo json_encode(['status' => $status]);
-            exit;
+            ApiResponse::success(['status' => $status]);
+            return;
         }
         
         // Whitelist allowed RSS/Atom feeds for security
@@ -657,10 +644,8 @@ function handleStatusFeed() {
         ];
         
         if (!isset($allowedFeeds[$feedType])) {
-            http_response_code(400);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid feed type']);
-            exit;
+            ApiResponse::badRequest('Invalid feed type');
+            return;
         }
         
         $feedUrl = $allowedFeeds[$feedType];
@@ -684,16 +669,13 @@ function handleStatusFeed() {
         // Parse feed and return status
         $status = parseStatusFeed($feedUrl, $filter);
         
-        header('Content-Type: application/json');
-        echo json_encode(['status' => $status]);
-        exit;
+        ApiResponse::success(['status' => $status]);
+        return;
         
     } catch (Exception $e) {
-        http_response_code(500);
-        header('Content-Type: application/json');
         error_log('Status feed error: ' . $e->getMessage());
-        echo json_encode(['error' => 'Unable to fetch status feed']);
-        exit;
+        ApiResponse::serverError('Unable to fetch status feed');
+        return;
     }
 }
 
@@ -804,16 +786,11 @@ function handleExternalServicesConfig() {
         $config = getExternalServicesConfig();
         
         // Return all available services (preferences stored client-side in cookies)
-        header('Content-Type: application/json');
-        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON response
-        echo json_encode($config);
-        exit;
+        ApiResponse::success($config);
+        return;
     } catch (Exception $e) {
-        http_response_code(500);
-        header('Content-Type: application/json');
         error_log('External services config error: ' . $e->getMessage());
-        // @codacy suppress [Use of echo language construct is discouraged] API endpoint JSON error response
-        echo json_encode(['error' => 'Unable to retrieve external services config']);
-        exit;
+        ApiResponse::serverError('Unable to retrieve external services config');
+        return;
     }
 }
