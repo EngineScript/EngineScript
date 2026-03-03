@@ -4,6 +4,21 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-03
+
+### 🌐 NON-WORDPRESS DOMAIN SUPPORT (Tasks 113 & 114)
+
+- **Created placeholder page** (`config/var/www/placeholder/index.html`) for non-WordPress domains.
+  - Dark-themed, responsive design matching EngineScript admin dashboard color scheme.
+  - Includes links to EngineScript website, GitHub repository, and documentation wiki.
+  - Uses `YOURDOMAIN` placeholder for automatic sed replacement during installation.
+- **Added WordPress installation choice** to `scripts/functions/vhost/vhost-install.sh`.
+  - After domain validation, users are prompted whether to install WordPress (default: yes).
+  - **With WordPress**: Full existing flow (database, WP-CLI, plugins, Redis, backups, credentials).
+  - **Without WordPress**: Nginx vhost, SSL certificates, directories, logs, permissions, and placeholder page only. No database or CMS created.
+  - Shared infrastructure steps (Cloudflare API, nginx vhost, SSL, backup directories, site root, domain logs) run for both installation paths.
+  - Non-WordPress path displays a summary with site root, vhost, SSL, and backup locations.
+
 ## 2026-03-01
 
 ### 📝 PLUGIN NAMING AND REPOSITORY RENAME SYNC

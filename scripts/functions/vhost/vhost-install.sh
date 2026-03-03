@@ -99,6 +99,31 @@ LOG_FILE="/var/log/EngineScript/vhost-install.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "Starting domain installation for ${DOMAIN} at $(date)"
 
+# WordPress Installation Choice
+echo ""
+echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+echo "|   Installation Type                                  |"
+echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+echo ""
+echo "You can install this domain with or without WordPress."
+echo ""
+echo "  With WordPress:    Full LEMP stack with WordPress, database,"
+echo "                     plugins, Redis caching, and backups."
+echo ""
+echo "  Without WordPress: Nginx vhost, SSL certificates, and a"
+echo "                     placeholder page. No database or CMS."
+echo ""
+
+if prompt_yes_no "Would you like to install WordPress on this domain?" "y" 300; then
+  INSTALL_WORDPRESS="1"
+  echo "WordPress will be installed on ${DOMAIN}."
+else
+  INSTALL_WORDPRESS="0"
+  echo "Skipping WordPress. A placeholder page will be installed on ${DOMAIN}."
+fi
+echo ""
+sleep 1
+
 # Continue the installation
 
 # Cloudflare API Settings
@@ -114,27 +139,6 @@ create_ssl_certificate "${DOMAIN}"
 # Print date for logs
 echo "System Date: $(date)"
 
-# Domain Creation Variables
-PREFIX="${RAND_CHAR2}"
-sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
-SUSR="${RAND_CHAR16}"
-SPS="${RAND_CHAR32}"
-
-# Domain Database Credentials
-echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-
-source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-
-echo "Randomly generated MySQL database credentials for ${SITE_URL}."
-
-sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
-sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
-
 # Create backup directories
 create_backup_directories "${SITE_URL}"
 
@@ -145,115 +149,169 @@ cd "/var/www/sites/${SITE_URL}/html"
 # Create domain log directories and files
 create_domain_logs "${SITE_URL}"
 
-# Download WordPress using WP-CLI
-wp core download --allow-root
-rm -f "/var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php"
+if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
+  #----------------------------------------------------------------------------------
+  # WordPress Installation Path
+  #----------------------------------------------------------------------------------
 
-# Create Extra WordPress Directories
-# WordPress often doesn't include these directories by default, despite them being used or checked in the Health Check plugin.
-create_extra_wp_dirs "${SITE_URL}"
+  # Domain Creation Variables
+  PREFIX="${RAND_CHAR2}"
+  sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
+  SUSR="${RAND_CHAR16}"
+  SPS="${RAND_CHAR32}"
 
-# Create wp-config.php
-cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${SITE_URL}/html/wp-config.php"
-sed -i "s|SEDWPDB|${DB}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
-sed -i "s|SEDWPUSER|${USR}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
-sed -i "s|SEDWPPASS|${PSWD}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
-sed -i "s|SEDPREFIX|${PREFIX}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
-sed -i "s|SEDURL|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  # Domain Database Credentials
+  echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
-# Configure Redis for WordPress
-configure_redis "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
-# WP Salt Creation
-SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
-STRING='put your unique phrase here'
-printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  echo "Randomly generated MySQL database credentials for ${SITE_URL}."
 
-# Configure wp-config.php settings
-configure_wpconfig_settings "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
+  sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+  sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 
-# Create robots.txt file
-create_robots_txt "${SITE_URL}" "/var/www/sites/${SITE_URL}/html"
+  # Download WordPress using WP-CLI
+  wp core download --allow-root
+  rm -f "/var/www/sites/${SITE_URL}/html/wp-content/plugins/hello.php"
 
-# WP File Permissions
-find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
-find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
-chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
-chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
-chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  # Create Extra WordPress Directories
+  # WordPress often doesn't include these directories by default, despite them being used or checked in the Health Check plugin.
+  create_extra_wp_dirs "${SITE_URL}"
 
-# WP-CLI Finalizing Install
-clear
-echo "============================================="
-echo "Finalizing ${SITE_URL} Install:"
-echo "============================================="
+  # Create wp-config.php
+  cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sed -i "s|SEDWPDB|${DB}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sed -i "s|SEDWPUSER|${USR}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sed -i "s|SEDWPPASS|${PSWD}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sed -i "s|SEDPREFIX|${PREFIX}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  sed -i "s|SEDURL|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
-# Ask user to continue install
-#while true;
-  #do
-    #read -p "When ready, enter y to begin finalizing ${SITE_URL}: " y
-      #case $y in
-        #[Yy]* )
-          #echo "Let's continue";
-          #sleep 1;
-          #break
-          #;;
-        #* ) echo "Please answer y";;
-      #esac
-  #done
+  # Configure Redis for WordPress
+  configure_redis "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
-# WP-CLI Install WordPress
-cd "/var/www/sites/${SITE_URL}/html"
-wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${SITE_URL}" --title='New Site' --skip-email --allow-root
+  # WP Salt Creation
+  SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+  STRING='put your unique phrase here'
+  printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
-clear_wordpress_caches
+  # Configure wp-config.php settings
+  configure_wpconfig_settings "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
-# Install and activate required WordPress plugins
-install_required_wp_plugins
+  # Create robots.txt file
+  create_robots_txt "${SITE_URL}" "/var/www/sites/${SITE_URL}/html"
 
-# Install extra WordPress plugins if enabled
-if [[ "${INSTALL_EXTRA_WP_PLUGINS}" == "1" ]]; then
-    install_extra_wp_plugins
+  # WP File Permissions
+  find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
+  find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
+  chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
+  chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
+  chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
+
+  # WP-CLI Finalizing Install
+  clear
+  echo "============================================="
+  echo "Finalizing ${SITE_URL} Install:"
+  echo "============================================="
+
+  # WP-CLI Install WordPress
+  cd "/var/www/sites/${SITE_URL}/html"
+  wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${SITE_URL}" --title='New Site' --skip-email --allow-root
+
+  clear_wordpress_caches
+
+  # Install and activate required WordPress plugins
+  install_required_wp_plugins
+
+  # Install extra WordPress plugins if enabled
+  if [[ "${INSTALL_EXTRA_WP_PLUGINS}" == "1" ]]; then
+      install_extra_wp_plugins
+  else
+      echo "Skipping extra WordPress plugins installation (disabled in config)..."
+  fi
+
+  # Install EngineScript custom plugins if enabled
+  install_enginescript_custom_plugins "${SITE_URL}"
+
+  # Clear WordPress caches, transients, and rewrite rules
+  clear_wordpress_caches
+
+  # Enable Redis Cache via WP-CLI
+  if wp plugin is-active redis-cache --allow-root; then
+    echo "Enabling Redis object cache..."
+    wp redis enable --allow-root
+  else
+    echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
+  fi
+
+  # WP-CLI set permalink structure for FastCGI Cache
+  wp option get permalink_structure --allow-root
+  wp option update permalink_structure '/%category%/%postname%/' --allow-root
+  flush_wordpress_rewrites
+
+  # Setting Permissions Again
+  # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
+  # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
+  cd "/var/www/sites/${SITE_URL}"
+  chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
+  chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
+  find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
+  find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
+  chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
+
+  clear
+
+  # Perform site backup
+  perform_site_backup "${SITE_URL}" "/var/www/sites/${SITE_URL}/html"
+
+  # Display final credentials summary
+  display_credentials_summary "${SITE_URL}" "${DB}" "${PREFIX}" "${USR}" "${PSWD}"
+
 else
-    echo "Skipping extra WordPress plugins installation (disabled in config)..."
+  #----------------------------------------------------------------------------------
+  # Non-WordPress Installation Path (Placeholder Page)
+  #----------------------------------------------------------------------------------
+
+  echo "Installing placeholder page for ${SITE_URL}..."
+
+  # Install placeholder page
+  cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${SITE_URL}/html/index.html"
+  sed -i "s|YOURDOMAIN|${SITE_URL}|g" "/var/www/sites/${SITE_URL}/html/index.html"
+
+  # Set file permissions
+  find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
+  find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
+  chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
+
+  # Backup nginx vhost and SSL keys
+  NOW=$(date +%m-%d-%Y-%H)
+  gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/${NOW}-nginx-vhost.conf.gz"
+  tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/${NOW}-ssl-keys.gz" "/etc/nginx/ssl/${SITE_URL}"
+
+  clear
+
+  echo ""
+  echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+  echo "|${BOLD} Domain Summary (No WordPress)${NORMAL}                       |"
+  echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+  echo ""
+  echo "${BOLD}URL:${NORMAL}               ${SITE_URL}"
+  echo ""
+  echo "Site root:         /var/www/sites/${SITE_URL}/html"
+  echo "Nginx vhost:       /etc/nginx/sites-enabled/${SITE_URL}.conf"
+  echo "SSL certificates:  /etc/nginx/ssl/${SITE_URL}/"
+  echo "Backups:           /home/EngineScript/site-backups/${SITE_URL}/"
+  echo ""
+  echo "A placeholder page has been installed. Replace"
+  echo "/var/www/sites/${SITE_URL}/html/index.html with your own content."
+  echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
+  echo ""
+  sleep 3
 fi
-
-# Install EngineScript custom plugins if enabled
-install_enginescript_custom_plugins "${SITE_URL}"
-
-# Clear WordPress caches, transients, and rewrite rules
-clear_wordpress_caches
-
-# Enable Redis Cache via WP-CLI
-if wp plugin is-active redis-cache --allow-root; then
-  echo "Enabling Redis object cache..."
-  wp redis enable --allow-root
-else
-  echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
-fi
-
-# WP-CLI set permalink structure for FastCGI Cache
-wp option get permalink_structure --allow-root
-wp option update permalink_structure '/%category%/%postname%/' --allow-root
-flush_wordpress_rewrites
-
-# Setting Permissions Again
-# For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
-# the ownership of the /uploads, /upgrade, and plugin directories to root:root.
-cd "/var/www/sites/${SITE_URL}"
-chown -R www-data:www-data "/var/www/sites/${SITE_URL}"
-chmod +x "/var/www/sites/${SITE_URL}/html/wp-cron.php"
-find "/var/www/sites/${SITE_URL}" -type d -print0 | sudo xargs -0 chmod 0755
-find "/var/www/sites/${SITE_URL}" -type f -print0 | sudo xargs -0 chmod 0644
-chmod 600 "/var/www/sites/${SITE_URL}/html/wp-config.php"
-
-clear
-
-# Perform site backup
-perform_site_backup "${SITE_URL}" "/var/www/sites/${SITE_URL}/html"
-
-# Display final credentials summary
-display_credentials_summary "${SITE_URL}" "${DB}" "${PREFIX}" "${USR}" "${PSWD}"
 
 # Restart Services
 /usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh

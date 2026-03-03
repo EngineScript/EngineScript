@@ -5,6 +5,11 @@ import { DashboardUtils } from '../modules/utils.js?v=2.25.2026';
 import { SERVICE_DEFINITIONS } from './services-config.js?v=2.25.2026';
 
 export class ExternalServicesManager {
+  /**
+   * Create an ExternalServicesManager instance
+   * @param {string} containerSelector - CSS selector for the services container
+   * @param {string} settingsContainerSelector - CSS selector for the settings container
+   */
   constructor(containerSelector, settingsContainerSelector) {
     this.utils = new DashboardUtils();
     this.container = document.querySelector(containerSelector);
@@ -30,6 +35,7 @@ export class ExternalServicesManager {
   /**
    * Initialize the external services manager (lazy loading)
    * Only loads when user navigates to external services page
+   * @returns {Promise<void>}
    */
   async init() {
     if (!this.container || !this.settingsContainer) {
@@ -48,6 +54,7 @@ export class ExternalServicesManager {
 
   /**
    * Main method to load and display all external services
+   * @returns {Promise<void>}
    */
   async loadExternalServices() {
     try {
@@ -85,6 +92,8 @@ export class ExternalServicesManager {
 
   /**
    * Build services object from definitions
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @returns {Object} Services object with all keys set to true
    */
   buildServicesObject(serviceDefinitions) {
     const services = {};
@@ -96,6 +105,8 @@ export class ExternalServicesManager {
 
   /**
    * Get service keys in custom order, adding any new services
+   * @param {Object} services - Services object keyed by service identifier
+   * @returns {string[]} Ordered array of service keys
    */
   getOrderedServiceKeys(services) {
     const serviceOrder = this.getServiceOrder();
@@ -113,6 +124,10 @@ export class ExternalServicesManager {
 
   /**
    * Filter to only enabled services
+   * @param {string[]} orderedServiceKeys - Ordered array of service keys
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} preferences - User preferences with service keys mapped to booleans
+   * @returns {string[]} Filtered array of enabled service keys
    */
   filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences) {
     return orderedServiceKeys.filter(key => {
@@ -122,6 +137,7 @@ export class ExternalServicesManager {
 
   /**
    * Render empty state when no services are enabled
+   * @returns {void}
    */
   renderEmptyState() {
     const emptyState = document.createElement("div");
@@ -148,6 +164,7 @@ export class ExternalServicesManager {
 
   /**
    * Render error state when loading fails
+   * @returns {void}
    */
   renderErrorState() {
     this.container.innerHTML = "";
@@ -176,6 +193,10 @@ export class ExternalServicesManager {
 
   /**
    * Group services by category
+   * @param {string[]} orderedServiceKeys - Ordered array of service keys
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} preferences - User preferences with service keys mapped to booleans
+   * @returns {Object} Services grouped by category name
    */
   groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences) {
     const servicesByCategory = {};
@@ -197,6 +218,8 @@ export class ExternalServicesManager {
 
   /**
    * Render service categories and their cards
+   * @param {Object} servicesByCategory - Services grouped by category name
+   * @returns {void}
    */
   renderServiceCategories(servicesByCategory) {
     for (const category in servicesByCategory) {
@@ -213,6 +236,8 @@ export class ExternalServicesManager {
 
   /**
    * Create category header element
+   * @param {string} category - Category name
+   * @returns {HTMLElement} Category header div element
    */
   createCategoryHeader(category) {
     const categoryHeader = document.createElement("div");
@@ -225,6 +250,8 @@ export class ExternalServicesManager {
 
   /**
    * Create category container element
+   * @param {string} category - Category name
+   * @returns {HTMLElement} Category grid container element
    */
   createCategoryContainer(category) {
     const categoryContainer = document.createElement("div");
@@ -237,6 +264,9 @@ export class ExternalServicesManager {
 
   /**
    * Render service cards within a category container
+   * @param {HTMLElement} container - Category container element
+   * @param {Array<{key: string, def: Object}>} services - Array of service key/definition pairs
+   * @returns {void}
    */
   renderCategoryCards(container, services) {
     for (const { key: serviceKey, def: serviceDef } of services) {
@@ -253,6 +283,9 @@ export class ExternalServicesManager {
 
   /**
    * Fetch service status (non-blocking)
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @returns {void}
    */
   fetchServiceStatus(serviceKey, serviceDef) {
     if (serviceDef.useFeed) {
@@ -268,6 +301,7 @@ export class ExternalServicesManager {
 
   /**
    * Fetch available services from API
+   * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {
     try {
@@ -303,6 +337,7 @@ export class ExternalServicesManager {
 
   /**
    * Get service definitions for all supported external services
+   * @returns {Object} SERVICE_DEFINITIONS object from services-config
    */
   getServiceDefinitions() {
     return SERVICE_DEFINITIONS;
@@ -310,6 +345,10 @@ export class ExternalServicesManager {
 
   /**
    * Render the service settings panel with toggles
+   * @param {HTMLElement} settingsContainer - Container element for settings panel
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @returns {void}
    */
   renderServiceSettings(settingsContainer, services, serviceDefinitions) {
     settingsContainer.innerHTML = "";
@@ -341,6 +380,7 @@ export class ExternalServicesManager {
 
   /**
    * Create settings panel structure (toggle button and content container)
+   * @returns {{settingsToggle: HTMLButtonElement, settingsContent: HTMLElement}} Settings UI elements
    */
   createSettingsStructure() {
     const settingsToggle = document.createElement("button");
@@ -381,6 +421,9 @@ export class ExternalServicesManager {
 
   /**
    * Group services by category for settings panel
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @returns {Object} Services grouped by category name
    */
   groupServicesForSettings(services, serviceDefinitions) {
     const categories = {};
@@ -398,6 +441,7 @@ export class ExternalServicesManager {
 
   /**
    * Get ordered list of categories for settings display
+   * @returns {string[]} Array of category names in display order
    */
   getCategoryOrder() {
     return [
@@ -416,6 +460,12 @@ export class ExternalServicesManager {
 
   /**
    * Create a category section for settings panel
+   * @param {string} category - Category name
+   * @param {string[]} serviceKeys - Array of service keys in this category
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
+   * @returns {HTMLElement} Category section element
    */
   createSettingsCategorySection(category, serviceKeys, services, serviceDefinitions, pendingChanges) {
     const categorySection = document.createElement("div");
@@ -446,6 +496,8 @@ export class ExternalServicesManager {
 
   /**
    * Create category header with toggle all button
+   * @param {string} category - Category name
+   * @returns {HTMLElement} Category header element with toggle button
    */
   createSettingsCategoryHeader(category) {
     const categoryHeader = document.createElement("div");
@@ -476,6 +528,11 @@ export class ExternalServicesManager {
 
   /**
    * Create services grid with checkboxes for each service
+   * @param {string[]} serviceKeys - Array of service keys
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
+   * @returns {{servicesGrid: HTMLElement, categoryCheckboxes: HTMLInputElement[]}} Grid element and checkbox references
    */
   createServicesGrid(serviceKeys, services, serviceDefinitions, pendingChanges) {
     const servicesGrid = document.createElement("div");
@@ -513,6 +570,10 @@ export class ExternalServicesManager {
 
   /**
    * Create save button with click handler
+   * @param {HTMLElement} settingsContent - Settings content container element
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
+   * @returns {HTMLElement} Save button element
    */
   createSaveButton(settingsContent, services, pendingChanges) {
     const saveButton = document.createElement("button");
@@ -546,6 +607,10 @@ export class ExternalServicesManager {
 
   /**
    * Handle save preferences button click
+   * @param {HTMLElement} saveButton - Save button element
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
+   * @returns {Promise<void>}
    */
   async handleSavePreferences(saveButton, services, pendingChanges) {
     try {
@@ -619,6 +684,7 @@ export class ExternalServicesManager {
    * @param {Object} serviceDef - Service definition
    * @param {string} statusClassName - CSS class for status
    * @param {string} statusIconClass - FontAwesome icon class (e.g., 'fa-spinner fa-spin')
+   * @returns {HTMLElement} Header div element containing icon and status info
    */
   createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
     const headerDiv = document.createElement("div");
@@ -663,6 +729,11 @@ export class ExternalServicesManager {
 
   /**
    * Create base service card element
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @param {string} cardClass - CSS class for the card state
+   * @param {HTMLElement} headerElement - Pre-built header element
+   * @returns {HTMLElement} Anchor element styled as a service card
    */
   createBaseServiceCard(serviceKey, serviceDef, cardClass, headerElement) {
     const serviceLink = document.createElement("a");
@@ -677,6 +748,10 @@ export class ExternalServicesManager {
 
   /**
    * Render static service card (no API/feed)
+   * @param {HTMLElement} container - Parent container to append the card to
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @returns {void}
    */
   renderStaticServiceCard(container, serviceKey, serviceDef) {
     const statusIconClass = "fa-external-link-alt";
@@ -693,6 +768,10 @@ export class ExternalServicesManager {
 
   /**
    * Render service card with loading state
+   * @param {HTMLElement} container - Parent container to append the card to
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @returns {void}
    */
   renderServiceCardLoadingState(container, serviceKey, serviceDef) {
     const statusIconClass = "fa-spinner fa-spin";
@@ -709,6 +788,9 @@ export class ExternalServicesManager {
 
   /**
    * Extract and determine status display values
+   * @param {string} statusIndicator - Raw status indicator from API (e.g., 'none', 'minor', 'major')
+   * @param {boolean} [isFeed=false] - Whether the status is from an Atom/RSS feed
+   * @returns {{statusClass: string, statusIcon: string, statusColor: string}} Display values for rendering
    */
   getStatusDisplayValues(statusIndicator, isFeed = false) {
     const statusClass = statusIndicator === "none" ? "operational" : statusIndicator;
@@ -730,6 +812,12 @@ export class ExternalServicesManager {
 
   /**
    * Update service card with status data
+   * @param {HTMLElement} serviceCard - Service card element to update
+   * @param {string} statusDescription - Human-readable status text
+   * @param {string} statusClass - CSS class name for the status
+   * @param {string} statusIcon - FontAwesome icon name (without fa- prefix)
+   * @param {string} statusColor - Color category ('success', 'warning', or 'error')
+   * @returns {void}
    */
   updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIcon, statusColor) {
     // Update card class
@@ -785,6 +873,7 @@ export class ExternalServicesManager {
 
   /**
    * Process queued requests when a slot becomes available
+   * @returns {void}
    */
   processQueue() {
     while (this.requestQueue.length > 0 && this.activeRequests < this.maxConcurrentRequests) {
@@ -795,6 +884,9 @@ export class ExternalServicesManager {
 
   /**
    * Fetch data with timeout, caching support, and concurrency limiting
+   * @param {Function} fetchFn - Function that accepts an AbortSignal and returns a fetch Promise
+   * @param {string} serviceKey - Service identifier key for cache lookup
+   * @returns {Promise<Object>} Parsed JSON response data
    */
   async fetchServiceData(fetchFn, serviceKey) {
     // Check cache first - no need to queue if cached
@@ -831,6 +923,9 @@ export class ExternalServicesManager {
 
   /**
    * Get service card DOM element for a given key and log if not found
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @returns {HTMLElement|null} Service card element or null if not found
    */
   getServiceCardElement(serviceKey, serviceDef) {
     const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
@@ -844,6 +939,9 @@ export class ExternalServicesManager {
 
   /**
    * Update feed-based service status asynchronously
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object with feedType and optional feedFilter
+   * @returns {Promise<void>}
    */
   async updateFeedServiceStatus(serviceKey, serviceDef) {
     try {
@@ -877,6 +975,9 @@ export class ExternalServicesManager {
 
   /**
    * Update StatusPage.io service status asynchronously
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object with api URL
+   * @returns {Promise<void>}
    */
   async updateStatusPageServiceStatus(serviceKey, serviceDef) {
     try {
@@ -904,6 +1005,10 @@ export class ExternalServicesManager {
 
   /**
    * Handle service loading errors
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @param {Error} error - The error that occurred
+   * @returns {void}
    */
   handleServiceError(serviceKey, serviceDef, error) {
     let errorMessage = 'Unable to fetch status';
@@ -939,6 +1044,8 @@ export class ExternalServicesManager {
 
   /**
    * Get cached service data
+   * @param {string} serviceKey - Service identifier key
+   * @returns {Object|null} Cached data or null if expired/missing
    */
   getCachedService(serviceKey) {
     const cached = this.serviceCache.get(serviceKey);
@@ -956,6 +1063,9 @@ export class ExternalServicesManager {
   /**
    * Set cached service data with LRU eviction
    * Implements LRU cache with max size of 100 entries
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} data - Service data to cache
+   * @returns {void}
    */
   setCachedService(serviceKey, data) {
     // LRU behavior: if key exists, delete it first so it moves to end of Map
@@ -977,6 +1087,7 @@ export class ExternalServicesManager {
 
   /**
    * Clear service cache
+   * @returns {void}
    */
   clearCache() {
     this.serviceCache.clear();
@@ -986,6 +1097,8 @@ export class ExternalServicesManager {
 
   /**
    * Get cookie value
+   * @param {string} name - Cookie name
+   * @returns {string|null} Cookie value or null if not found
    */
   getCookie(name) {
     const nameEQ = name + "=";
@@ -1000,6 +1113,10 @@ export class ExternalServicesManager {
 
   /**
    * Set cookie value
+   * @param {string} name - Cookie name
+   * @param {string} value - Cookie value
+   * @param {number} [days=365] - Expiration in days
+   * @returns {void}
    */
   setCookie(name, value, days = 365) {
     let expires = "";
@@ -1017,6 +1134,8 @@ export class ExternalServicesManager {
   /**
    * Delete cookie
    * Include Secure flag in deletion for consistency
+   * @param {string} name - Cookie name to delete
+   * @returns {void}
    */
   deleteCookie(name) {
     document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure';
@@ -1026,6 +1145,7 @@ export class ExternalServicesManager {
 
   /**
    * Load service preferences from cookie
+   * @returns {Object|null} Parsed preferences object or null if not found/invalid
    */
   loadServicePreferences() {
     try {
@@ -1055,6 +1175,7 @@ export class ExternalServicesManager {
 
   /**
    * Get service order from cookie
+   * @returns {string[]} Array of service keys in display order
    */
   getServiceOrder() {
     const orderCookie = this.getCookie('serviceOrder');
@@ -1093,6 +1214,8 @@ export class ExternalServicesManager {
 
   /**
    * Save service order to cookie
+   * @param {string[]} orderArray - Array of service keys in desired order
+   * @returns {void}
    */
   saveServiceOrder(orderArray) {
     this.setCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
@@ -1102,6 +1225,8 @@ export class ExternalServicesManager {
 
   /**
    * Enable drag-and-drop for service cards
+   * @param {HTMLElement} container - Container element holding service cards
+   * @returns {void}
    */
   enableServiceDragDrop(container) {
     const serviceCards = container.querySelectorAll('.external-service-card');
@@ -1188,6 +1313,8 @@ export class ExternalServicesManager {
    * Enable keyboard navigation for service card reordering
    * Implements arrow key navigation and Enter to toggle reorder mode
    * This is an accessibility alternative to drag-and-drop
+   * @param {HTMLElement} container - Container element holding service cards
+   * @returns {void}
    */
   enableKeyboardNavigation(container) {
     // Remove existing handler if present (prevents duplicate listeners on reload)
@@ -1272,6 +1399,8 @@ export class ExternalServicesManager {
   /**
    * Toggle reorder mode for a card
    * When in reorder mode, arrow keys move the card instead of navigating
+   * @param {HTMLElement} card - Service card element to toggle reorder mode on
+   * @returns {void}
    */
   toggleReorderMode(card) {
     if (this.reorderMode && this.selectedCard === card) {
@@ -1293,6 +1422,7 @@ export class ExternalServicesManager {
 
   /**
    * Exit reorder mode
+   * @returns {void}
    */
   exitReorderMode() {
     if (this.selectedCard) {
@@ -1305,6 +1435,10 @@ export class ExternalServicesManager {
 
   /**
    * Move card up (toward beginning of list)
+   * @param {HTMLElement} card - Service card element to move
+   * @param {HTMLElement[]} allCards - Array of all service card elements
+   * @param {number} currentIndex - Current position index of the card
+   * @returns {void}
    */
   moveCardUp(card, allCards, currentIndex) {
     if (currentIndex > 0) {
@@ -1320,6 +1454,10 @@ export class ExternalServicesManager {
 
   /**
    * Move card down (toward end of list)
+   * @param {HTMLElement} card - Service card element to move
+   * @param {HTMLElement[]} allCards - Array of all service card elements
+   * @param {number} currentIndex - Current position index of the card
+   * @returns {void}
    */
   moveCardDown(card, allCards, currentIndex) {
     if (currentIndex < allCards.length - 1) {
@@ -1335,6 +1473,9 @@ export class ExternalServicesManager {
 
   /**
    * Focus previous card in list
+   * @param {HTMLElement[]} allCards - Array of all service card elements
+   * @param {number} currentIndex - Current position index
+   * @returns {void}
    */
   focusPreviousCard(allCards, currentIndex) {
     if (currentIndex > 0) {
@@ -1344,6 +1485,9 @@ export class ExternalServicesManager {
 
   /**
    * Focus next card in list
+   * @param {HTMLElement[]} allCards - Array of all service card elements
+   * @param {number} currentIndex - Current position index
+   * @returns {void}
    */
   focusNextCard(allCards, currentIndex) {
     if (currentIndex < allCards.length - 1) {
@@ -1353,6 +1497,8 @@ export class ExternalServicesManager {
 
   /**
    * Announce message to screen readers via live region
+   * @param {string} message - Message to announce
+   * @returns {void}
    */
   announceToScreenReader(message) {
     // Find or create live region
@@ -1375,6 +1521,7 @@ export class ExternalServicesManager {
 
   /**
    * Save current card order to cookie
+   * @returns {void}
    */
   saveCardOrder() {
     const cards = document.querySelectorAll('.external-service-card');
@@ -1386,12 +1533,17 @@ export class ExternalServicesManager {
 
   /**
    * Show notification to user
+   * @param {string} message - Notification message text
+   * @param {string} [type='info'] - Notification type ('info', 'success', or 'error')
+   * @returns {void}
    */
   showNotification(message, type = 'info') {
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `es-notification notification-${type}`;
     notification.textContent = message;
+    notification.setAttribute('role', 'status');
+    notification.setAttribute('aria-live', 'polite');
     
     document.body.appendChild(notification);
     

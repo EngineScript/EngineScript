@@ -176,6 +176,9 @@ class EngineScriptDashboard {
       pageTitle.textContent = this.getPageTitle(pageName);
     }
 
+    // Announce page change to screen readers
+    this.announceToScreenReader(`Navigated to ${this.getPageTitle(pageName)} page`);
+
     // Load page-specific data
     this.loadPageData(pageName);
     this.state.setCurrentPage(pageName);
@@ -436,6 +439,7 @@ class EngineScriptDashboard {
     this.showRefreshAnimation();
     this.loadPageData(currentPage);
     this.updateLastRefresh();
+    this.announceToScreenReader("Dashboard refreshed");
   }
     
   showRefreshAnimation() {
@@ -502,6 +506,18 @@ class EngineScriptDashboard {
           }
         }
       });
+
+      // Announce service status to screen readers
+      const statusSummary = ["nginx", "php", "mysql", "redis"]
+        .map(s => {
+          const st = services[s];
+          return st ? `${s}: ${st.online ? "online" : "offline"}` : null;
+        })
+        .filter(Boolean)
+        .join(", ");
+      if (statusSummary) {
+        this.announceToScreenReader(`Service status loaded. ${statusSummary}`);
+      }
     } catch (error) {
       console.error('Failed to load service status:', error);
       // Set all services to error state
@@ -538,10 +554,12 @@ class EngineScriptDashboard {
               sitesGrid.appendChild(siteElement);
             }
           });
+          this.announceToScreenReader(`${sites.length} WordPress site${sites.length !== 1 ? 's' : ''} loaded`);
         } else {
           // Create no sites found element
           const noSitesElement = this.createNoSitesElement();
           sitesGrid.appendChild(noSitesElement);
+          this.announceToScreenReader('No WordPress sites found');
         }
       }
     } catch (error) {
@@ -605,6 +623,8 @@ class EngineScriptDashboard {
           const infoElement = this.createInfoElement(item.label, item.value);
           systemInfo.appendChild(infoElement);
         });
+
+        this.announceToScreenReader('System information loaded');
       }
 
     } catch (error) {
@@ -924,6 +944,8 @@ class EngineScriptDashboard {
         this.setTextContent("total-monitors", totalCount);
         this.setTextContent("up-monitors", upCount);
         this.setTextContent("down-monitors", downCount);
+
+        this.announceToScreenReader(`Uptime monitoring: ${upCount} online, ${downCount} offline out of ${totalCount} sites`);
       } else {
         this.showUptimeNotConfigured();
       }
@@ -1153,6 +1175,26 @@ class EngineScriptDashboard {
       monitorsContainer.appendChild(statusDiv);
     }
     this.setTextContent("down-monitors", 0);
+  }
+
+  /**
+   * Announce a message to screen readers via a live region
+   */
+  announceToScreenReader(message) {
+    let liveRegion = document.getElementById('es-dashboard-live-region');
+    if (!liveRegion) {
+      liveRegion = document.createElement('div');
+      liveRegion.id = 'es-dashboard-live-region';
+      liveRegion.setAttribute('aria-live', 'polite');
+      liveRegion.setAttribute('aria-atomic', 'true');
+      liveRegion.className = 'sr-only';
+      document.body.appendChild(liveRegion);
+    }
+    // Clear and re-set to trigger re-announcement
+    liveRegion.textContent = '';
+    setTimeout(() => {
+      liveRegion.textContent = message;
+    }, 100);
   }
 
 }
