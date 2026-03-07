@@ -249,6 +249,7 @@ class EngineScriptDashboard {
 
     if (loadingScreen && dashboard) {
       loadingScreen.classList.add("es-hidden");
+      dashboard.classList.remove("es-hidden");
       dashboard.classList.add("es-flex");
     }
   }
