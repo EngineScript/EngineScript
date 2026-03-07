@@ -82,6 +82,12 @@ create_nginx_vhost() {
   cp -rf "/usr/local/bin/enginescript/config/etc/nginx/admin/admin.your-domain.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"
   sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/etc/nginx/admin/admin.${DOMAIN}.conf"
 
+  # Verify control panel is deployed before enabling admin subdomain
+  if [[ ! -f "/var/www/admin/control-panel/index.html" ]]; then
+    echo "WARNING: Admin control panel files not found. Re-deploying..."
+    /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
+  fi
+
   # Enable Admin Subdomain Vhost File
   if [[ "${ADMIN_SUBDOMAIN}" == "1" ]];
     then
