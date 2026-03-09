@@ -35,8 +35,8 @@ header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';
 // Check if client accepts gzip and zlib extension is available
 if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
     // Check Accept-Encoding header for gzip support
-    $accept_encoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : ''; // codacy:ignore - Direct $_SERVER access required
-    if (strpos($accept_encoding, 'gzip') !== false) {
+    $accept_encoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''; // codacy:ignore - Direct $_SERVER access required
+    if (str_contains($accept_encoding, 'gzip')) {
         // Enable gzip compression with level 6 (good balance of speed/compression)
         ini_set('zlib.output_compression', 'On'); // codacy:ignore - ini_set() required for compression
         ini_set('zlib.output_compression_level', '6'); // codacy:ignore - ini_set() required for compression
@@ -45,12 +45,12 @@ if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
 
 // Secure CORS - Only allow same origin by default
 $allowed_origins = [
-    isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '', // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
+    $_SERVER['HTTP_HOST'] ?? '', // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
     'localhost',
     '127.0.0.1'
 ];
 
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''); // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 $origin_host = parse_url($origin, PHP_URL_HOST); // codacy:ignore - parse_url() required for URL validation in standalone API
 if ($origin_host === false) {
     $origin_host = $origin;
@@ -86,7 +86,7 @@ if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status()
 if (!isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF protection
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // codacy:ignore - random_bytes() required for cryptographic token generation
 }
-$client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
 
 if (!isset($_SESSION[$rate_limit_key])) { // codacy:ignore - Direct $_SESSION access required for rate limiting
@@ -121,7 +121,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
  * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
  */
 function validateCsrfToken() {
-    $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET'; // codacy:ignore - Direct $_SERVER access required
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET'; // codacy:ignore - Direct $_SERVER access required
     
     // CSRF validation only required for state-changing methods
     $safe_methods = ['GET', 'HEAD', 'OPTIONS'];
@@ -163,11 +163,11 @@ if (!validateCsrfToken()) {
 }
 
 // Get the request URI and method first
-$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
-$request_method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$request_uri = $_SERVER['REQUEST_URI'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$request_method = $_SERVER['REQUEST_METHOD'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 
 // Check if endpoint is passed as a query parameter
-$endpoint_param = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : ''; // codacy:ignore - Direct $_GET access required
+$endpoint_param = trim($_GET['endpoint'] ?? ''); // codacy:ignore - Direct $_GET access required
 // Sanitize endpoint parameter to prevent injection attacks
 $endpoint_param = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $endpoint_param);
 $path = '';
@@ -182,83 +182,7 @@ if (!empty($endpoint_param)) {
     }
 }
 
-// Input validation and sanitization
-// Input validation and sanitization helper
-function validateInputString($input, $max_length = 255) {
-    $input = trim($input);
-    if (strlen($input) > $max_length) {
-        return false;
-    }
-    
-    // Remove any potential script tags or dangerous characters
-    $input = preg_replace('/[<>"\']/', '', $input);
-    // Use htmlspecialchars instead of deprecated FILTER_SANITIZE_STRING
-    return htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-function validateInputPath($input) {
-    // Strict path validation - only allow alphanumeric, dash, underscore, dot
-    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $input)) {
-        return false;
-    }
-    // Prevent path traversal
-    if (strpos($input, '..') !== false || strpos($input, '/') !== false) {
-        return false;
-    }
-    return $input;
-}
-
-function validateInputService($input) {
-    // Allow known service names and PHP-FPM service patterns
-    $allowed_services = ['nginx', 'mariadb', 'redis-server'];
-    
-    // Check if it's in the allowed list
-    if (in_array($input, $allowed_services, true)) {
-        return $input;
-    }
-    
-    // Allow PHP-FPM services with flexible patterns:
-    // php-fpm, php8.4-fpm, php-fpm8.4, php84-fpm, etc.
-    // Pattern: php + optional version/text + fpm + optional version/text
-    if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $input)) {
-        return $input;
-    }
-    
-    return false;
-}
-
-
-function validateInput($input, $type = 'string', $max_length = 255) {
-    if (empty($input) && $input !== '0') {
-        return false;
-    }
-    
-    switch ($type) {
-        case 'string':
-            return validateInputString($input, $max_length);
-            
-        case 'path':
-            return validateInputPath($input);
-            
-        case 'service':
-            return validateInputService($input);
-            
-        default:
-            return false;
-    }
-}
-
-function sanitizeOutput($data) {
-    if (is_array($data)) {
-        return array_map('sanitizeOutput', $data);
-    }
-    if (is_string($data)) {
-        // Prevent XSS in JSON output
-        return htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    }
-    return $data;
-}
-
+// Security event logging (used by CSRF validation and path checks above)
 function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_SERVER access required for security logging in standalone API
     // Enhanced log injection protection
     // Sanitize all log inputs to prevent log injection/forging attacks
@@ -273,7 +197,7 @@ function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_S
     }
     
     // Sanitize IP address for logging
-    $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
+    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
     if ($client_ip !== 'unknown') {
         // Validate IP format to prevent injection
         if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
@@ -308,32 +232,6 @@ function sanitizeLogInput($input) {
     // This prevents log format string attacks
     return addcslashes($sanitized, '\\'); // codacy:ignore - addcslashes() required for log injection prevention
 }
-
-// ============ API Response Caching System ============
-// Cache configuration
-define('CACHE_DIR', '/var/cache/enginescript/api/');
-define('CACHE_DEFAULT_TTL', 30); // 30 seconds default
-
-/**
- * Cache TTL configuration per endpoint (in seconds)
- * Endpoints not listed use CACHE_DEFAULT_TTL
- */
-$CACHE_TTL_CONFIG = [
-    '/system/info' => 60,           // 1 minute - system info rarely changes
-    '/services/status' => 15,       // 15 seconds - service status should be fresh
-    '/sites' => 120,                // 2 minutes - site list rarely changes
-    '/sites/count' => 120,          // 2 minutes
-    '/tools/filemanager/status' => 300, // 5 minutes - rarely changes
-    '/monitoring/uptime' => 60,     // 1 minute
-    '/monitoring/uptime/monitors' => 60, // 1 minute
-    '/cache/status' => 30,          // 30 seconds - cache status updates frequently
-    '/external-services/config' => 300,  // 5 minutes - config rarely changes
-    '/external-services/feed' => 180,    // 3 minutes - external feeds
-];
-
-// Cache sweep configuration in seconds
-define('CACHE_SWEEP_INTERVAL', 60); // Run cleanup at most once per minute
-
 
 // Path was already extracted and validated above, validate again for security
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
@@ -374,22 +272,11 @@ $router->register('/cache/status', 'CacheController', 'getStatus');
 // External services endpoints
 $router->register('/external/plugin', 'ExternalServicesController', 'getPluginInfo');
 $router->register('/external/cloudflare/status', 'ExternalServicesController', 'getCloudflareStatus');
+$router->register('/external-services/config', 'ExternalServicesController', 'getConfig');
+$router->register('/external-services/feed', 'ExternalServicesController', 'getFeed');
 
 // Legacy batch endpoint (kept for backward compatibility)
 $router->register('/batch', 'BatchController', 'handle');
 
-// External services legacy routes (for backward compatibility)
-// These route to the external-services-api.php module
-if ($path === '/external-services/config' || $path === '/external-services/feed') {
-    define('ENGINESCRIPT_DASHBOARD', true);
-    // @codacy suppress [require_once statement detected] Module inclusion with __DIR__ constant - hardcoded path, no user input
-    require_once __DIR__ . '/external-services/external-services-api.php';
-    if ($path === '/external-services/config') {
-        handleExternalServicesConfig();
-    } elseif ($path === '/external-services/feed') {
-        handleStatusFeed();
-    }
-} else {
-    // Dispatch request through router
-    $router->dispatch($path);
-}
+// Dispatch request through router
+$router->dispatch($path);

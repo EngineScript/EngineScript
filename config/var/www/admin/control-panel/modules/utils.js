@@ -2,55 +2,19 @@
 // Input sanitization, validation, and UI helpers
 
 export class DashboardUtils {
-  removeDangerousPatterns(input) {
-    // Common security patterns that should be removed from all inputs
-    const dangerousPatterns = [
-      /javascript/gi,
-      /vbscript/gi,
-      /data:/gi,
-      /about:/gi,
-      /file:/gi,
-      /<script/gi,
-      /<iframe/gi,
-      /<object/gi,
-      /<embed/gi,
-      /<link/gi,
-      /<meta/gi,
-      /on\w+=/gi,
-      /expression/gi,
-      /eval/gi,
-      /alert/gi,
-      /prompt/gi,
-      /confirm/gi,
-      /<\/script/gi,
-      /<\/iframe/gi,
-    ];
-
-    let sanitized = input;
-    dangerousPatterns.forEach((pattern) => {
-      sanitized = sanitized.replace(pattern, "");
-    });
-
-    return sanitized;
-  }
-
   sanitizeInput(input) {
     if (typeof input !== "string") {
       return String(input || "");
     }
 
-    // Use whitelist approach for maximum security
-    // Only allow alphanumeric characters, spaces, and safe punctuation
-    let sanitized = String(input)
+    // Control character removal and length limiting
+    // XSS prevention is handled by using textContent for all DOM output
+    return String(input)
       // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove all control characters
-      .replace(/[^\w\s.\-@#%]/g, "") // Keep only safe characters: letters, numbers, spaces, . - @ # %
       .replace(/\s+/g, " ") // Normalize whitespace
       .trim()
       .substring(0, 1000); // Limit length
-
-    // Remove dangerous patterns using shared method
-    return this.removeDangerousPatterns(sanitized);
   }
 
   sanitizeNumeric(input, fallback = "0") {
@@ -88,13 +52,13 @@ export class DashboardUtils {
       .trim()
       .substring(0, 2048); // Limit URL length
     
-    // Check if it matches basic URL pattern
+    // Reject if it doesn't match the strict https?:// pattern
+    // This already blocks data:, javascript:, vbscript: and other dangerous schemes
     if (!urlPattern.test(sanitized)) {
       return fallback;
     }
     
-    // Remove dangerous patterns
-    return this.removeDangerousPatterns(sanitized);
+    return sanitized;
   }
 
   setTextContent(elementId, content) {

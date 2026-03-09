@@ -32,20 +32,12 @@ class UptimeRobotAPI
     private const REQUEST_TIMEOUT = 10;
 
     /**
-     * API key for authentication
-     * 
-     * @var string
-     */
-    private $apiKey;
-
-    /**
      * Create a new UptimeRobot API instance
      * 
      * @param string $apiKey UptimeRobot API key (read-only key recommended)
      */
-    public function __construct($apiKey)
+    public function __construct(private string $apiKey)
     {
-        $this->apiKey = $apiKey;
     }
 
     /**
@@ -105,7 +97,7 @@ class UptimeRobotAPI
             return false;
         }
 
-        return isset($response['account']) ? $response['account'] : false;
+        return $response['account'] ?? false;
     }
 
     /**

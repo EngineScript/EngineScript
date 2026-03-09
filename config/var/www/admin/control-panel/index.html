@@ -8,15 +8,28 @@
     <link rel="icon" type="image/png" href="favicon.png">
     
     <!-- External Dependencies -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous" id="fontawesome-css">
+    <script>
+    // Detect if Font Awesome failed to load (e.g. {FONTAWESOME_VER} placeholder not replaced)
+    document.addEventListener('DOMContentLoaded', function() {
+      var fa = document.getElementById('fontawesome-css');
+      if (!fa || !fa.sheet || fa.sheet.cssRules.length === 0) {
+        console.warn('Font Awesome failed to load. Icons will be missing. Ensure {FONTAWESOME_VER} is replaced during installation.');
+        var banner = document.createElement('div');
+        banner.style.cssText = 'background:#d32f2f;color:#fff;padding:8px 16px;text-align:center;font-size:14px;';
+        banner.textContent = 'Warning: Font Awesome icons failed to load. Run the EngineScript installer to configure the Font Awesome version.';
+        document.body.prepend(banner);
+      }
+    });
+    </script>
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="dashboard.css?v=2.25.2026">
-    <link rel="stylesheet" href="external-services/external-services.css?v=2.25.2026">
+    <link rel="stylesheet" href="dashboard.css?v={ES_DASHBOARD_VER}">
+    <link rel="stylesheet" href="external-services/external-services.css?v={ES_DASHBOARD_VER}">
     
     <!-- Preload Critical Resources -->
-    <link rel="modulepreload" href="dashboard.js?v=2.25.2026">
-    <link rel="modulepreload" href="modules/api.js?v=2.25.2026">
+    <link rel="modulepreload" href="dashboard.js?v={ES_DASHBOARD_VER}">
+    <link rel="modulepreload" href="modules/api.js?v={ES_DASHBOARD_VER}">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -373,10 +386,10 @@
 
     <!-- Dashboard Version -->
     <div class="dashboard-footer">
-        EngineScript Dashboard v2.25.2026
+        EngineScript Dashboard v{ES_DASHBOARD_VER}
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="dashboard.js?v=2.25.2026" data-cfasync="false"></script>
+    <script type="module" src="dashboard.js?v={ES_DASHBOARD_VER}" data-cfasync="false"></script>
 </body>
 </html>

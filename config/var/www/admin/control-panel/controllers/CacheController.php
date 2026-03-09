@@ -57,7 +57,7 @@ class CacheController extends BaseController
 
             // Get and validate cache types
             // codacy:ignore - wp_unslash() not available in standalone API, using trim() for sanitization; nonce not required in standalone API (uses CSRF token instead)
-            $typeParam = isset($_GET['type']) ? trim($_GET['type']) : '';
+            $typeParam = trim($_GET['type'] ?? '');
 
             if (empty($typeParam)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
@@ -381,16 +381,16 @@ class CacheController extends BaseController
 
         return [
             'available' => true,
-            'enabled' => isset($status['opcache_enabled']) ? $status['opcache_enabled'] : false,
+            'enabled' => $status['opcache_enabled'] ?? false,
             'memory_usage' => isset($status['memory_usage']) ? [
-                'used_memory' => isset($status['memory_usage']['used_memory']) ? $status['memory_usage']['used_memory'] : null,
-                'free_memory' => isset($status['memory_usage']['free_memory']) ? $status['memory_usage']['free_memory'] : null,
-                'wasted_memory' => isset($status['memory_usage']['wasted_memory']) ? $status['memory_usage']['wasted_memory'] : null
+                'used_memory' => $status['memory_usage']['used_memory'] ?? null,
+                'free_memory' => $status['memory_usage']['free_memory'] ?? null,
+                'wasted_memory' => $status['memory_usage']['wasted_memory'] ?? null
             ] : null,
             'statistics' => isset($status['opcache_statistics']) ? [
-                'num_cached_scripts' => isset($status['opcache_statistics']['num_cached_scripts']) ? $status['opcache_statistics']['num_cached_scripts'] : null,
-                'hits' => isset($status['opcache_statistics']['hits']) ? $status['opcache_statistics']['hits'] : null,
-                'misses' => isset($status['opcache_statistics']['misses']) ? $status['opcache_statistics']['misses'] : null
+                'num_cached_scripts' => $status['opcache_statistics']['num_cached_scripts'] ?? null,
+                'hits' => $status['opcache_statistics']['hits'] ?? null,
+                'misses' => $status['opcache_statistics']['misses'] ?? null
             ] : null
         ];
     }

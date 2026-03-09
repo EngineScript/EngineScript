@@ -42,28 +42,28 @@ class Router
      * 
      * @var array<string, array{controller: string, method: string}>
      */
-    private $routes = [];
+    private array $routes = [];
 
     /**
      * Route aliases mapping alias => canonical_path
      * 
      * @var array<string, string>
      */
-    private $aliases = [];
+    private array $aliases = [];
 
     /**
      * Base path for controller files
      * 
      * @var string
      */
-    private $controllerPath;
+    private string $controllerPath;
 
     /**
      * Whether controllers have been loaded
      * 
      * @var bool
      */
-    private $controllersLoaded = false;
+    private bool $controllersLoaded = false;
 
     /**
      * Create a new Router instance
@@ -295,6 +295,6 @@ class Router
     public function getRoute($path)
     {
         $canonicalPath = $this->resolvePath($path);
-        return isset($this->routes[$canonicalPath]) ? $this->routes[$canonicalPath] : null;
+        return $this->routes[$canonicalPath] ?? null;
     }
 }

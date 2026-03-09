@@ -19,11 +19,24 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 require_once __DIR__ . '/../classes/ApiResponse.php';
 
 /**
- * Sanitize text from external feeds to prevent injection attacks
- * @param string $text Raw text from feed
- * @return string Sanitized text safe for output
+ * External Services Feed Parser
+ * 
+ * Parses RSS/Atom feeds and JSON APIs to determine
+ * external service operational status.
+ * 
+ * @package EngineScript\Dashboard\ExternalServices
+ * @version 2.0.0
+ * @security HIGH - Implements strict whitelisting and input validation
  */
-function sanitizeFeedText($text) {
+class ExternalServicesFeedParser
+{
+    /**
+     * Sanitize text from external feeds to prevent injection attacks
+     * @param string $text Raw text from feed
+     * @return string Sanitized text safe for output
+     */
+    private static function sanitizeFeedText(string $text): string
+    {
     // Convert HTML entities to characters first (handles &lt; &gt; etc)
     // @codacy suppress [The use of function html_entity_decode() is discouraged] Required to decode HTML entities from external feeds before sanitization
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -46,40 +59,37 @@ function sanitizeFeedText($text) {
     return $text;
 }
 
-/**
- * Parse RSS/Atom feed and extract status information
- * @param string $feedUrl The URL of the RSS/Atom feed
- * @param string|null $filter Optional filter to match specific service name in feed items
- * @return array Status information with indicator and description
- */
-function parseStatusFeed($feedUrl, $filter = null) {
+    /**
+     * Parse RSS/Atom feed and extract status information
+     * @param string $feedUrl The URL of the RSS/Atom feed
+     * @param string|null $filter Optional filter to match specific service name in feed items
+     * @return array Status information with indicator and description
+     */
+    public function parseStatusFeed(string $feedUrl, ?string $filter = null): array
+    {
     try {
-        // Set up context with timeout and user agent
-        // @codacy suppress [The use of function stream_context_create() is discouraged] Required for HTTP timeout configuration on outbound requests
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 45,
-                'user_agent' => 'EngineScript-StatusMonitor/1.0',
-                'ignore_errors' => true
-            ]
+        // Fetch feed content via cURL with SSL verification
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $feedUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript-StatusMonitor/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
         ]);
-        
-        // Fetch feed content
-        set_error_handler(function($severity, $message, $file, $line) {
-            // @codacy suppress [XSS] Internal error handler - exception message never output to browser
-            throw new ErrorException($message, 0, $severity, $file, $line);
-        });
-        
-        try {
-            // @codacy suppress [The use of function file_get_contents() is discouraged] Used for outbound HTTP requests with timeout protection - not file system access
-            $feedContent = file_get_contents($feedUrl, false, $context);
-        } catch (Exception $e) {
-            $feedContent = false;
-        } finally {
-            restore_error_handler();
-        }
-        
-        if ($feedContent === false) {
+
+        $feedContent = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($feedContent === false || $httpCode !== 200) {
             throw new Exception('Failed to fetch feed');
         }
         
@@ -109,7 +119,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
             $latestEntry = null;
             if ($filter !== null) {
                 foreach ($xml->entry as $entry) {
-                    $entryTitle = isset($entry->title) ? (string)$entry->title : '';
+                    $entryTitle = (string)($entry->title ?? '');
                     if (stripos($entryTitle, $filter) !== false) {
                         $latestEntry = $entry;
                         break;
@@ -122,9 +132,9 @@ function parseStatusFeed($feedUrl, $filter = null) {
             }
             $latestEntry = $latestEntry ?? $xml->entry[0];
             
-            $title = isset($latestEntry->title) ? (string)$latestEntry->title : '';
-            $content = isset($latestEntry->content) ? (string)$latestEntry->content : '';
-            $summary = isset($latestEntry->summary) ? (string)$latestEntry->summary : '';
+            $title = (string)($latestEntry->title ?? '');
+            $content = (string)($latestEntry->content ?? '');
+            $summary = (string)($latestEntry->summary ?? '');
             
             // Strip CDATA tags if present (e.g., Brevo feed)
             $title = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $title);
@@ -177,7 +187,7 @@ function parseStatusFeed($feedUrl, $filter = null) {
             $latestItem = null;
             if ($filter !== null) {
                 foreach ($xml->channel->item as $item) {
-                    $itemTitle = isset($item->title) ? (string)$item->title : '';
+                    $itemTitle = (string)($item->title ?? '');
                     if (stripos($itemTitle, $filter) !== false) {
                         $latestItem = $item;
                         break;
@@ -190,8 +200,8 @@ function parseStatusFeed($feedUrl, $filter = null) {
             }
             $latestItem = $latestItem ?? $xml->channel->item[0];
             
-            $title = isset($latestItem->title) ? (string)$latestItem->title : '';
-            $description = isset($latestItem->description) ? (string)$latestItem->description : '';
+            $title = (string)($latestItem->title ?? '');
+            $description = (string)($latestItem->description ?? '');
             
             // Get item timestamp
             $itemDate = null;
@@ -244,26 +254,39 @@ function parseStatusFeed($feedUrl, $filter = null) {
     }
 }
 
-/**
- * Unified JSON API parser with configurable structure mapping
- * Handles various JSON API formats with standardized incident detection
- * 
- * @param string $apiUrl The API endpoint URL
- * @param array $config Configuration for parsing this specific API format
- * @return array Status information with indicator and description
- */
-function parseJsonAPI($apiUrl, $config) {
+    /**
+     * Unified JSON API parser with configurable structure mapping
+     * Handles various JSON API formats with standardized incident detection
+     * 
+     * @param string $apiUrl The API endpoint URL
+     * @param array $config Configuration for parsing this specific API format
+     * @return array Status information with indicator and description
+     */
+    public function parseJsonAPI(string $apiUrl, array $config): array
+    {
     try {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'EngineScript Admin Dashboard'
-            ]
+        // Fetch API response via cURL with SSL verification
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript Admin Dashboard'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
         ]);
-        
-        // @codacy suppress [The use of function file_get_contents() is discouraged] Outbound HTTP request to external API with timeout
-        $response = file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false || $httpCode !== 200) {
             return [
                 'indicator' => 'major',
                 'description' => 'Unable to fetch status'
@@ -297,8 +320,8 @@ function parseJsonAPI($apiUrl, $config) {
                 $statusData = $statusData[$key];
             }
             
-            $indicator = isset($statusData['indicator']) ? $statusData['indicator'] : 'none';
-            $description = isset($statusData['description']) ? $statusData['description'] : 'All Systems Operational';
+            $indicator = $statusData['indicator'] ?? 'none';
+            $description = $statusData['description'] ?? 'All Systems Operational';
             
             // Standardize indicator
             if ($indicator === 'none' || $indicator === 'operational') {
@@ -323,7 +346,7 @@ function parseJsonAPI($apiUrl, $config) {
             // Check for active incidents
             if (isset($data[$config['incidents_path']]) && !empty($data[$config['incidents_path']])) {
                 $latestIncident = reset($data[$config['incidents_path']]);
-                $title = isset($latestIncident[$config['title_field']]) ? $latestIncident[$config['title_field']] : '';
+                $title = $latestIncident[$config['title_field']] ?? '';
                 
                 if (preg_match('/outage|down|major|critical|offline/i', $title)) {
                     return ['indicator' => 'major', 'description' => 'Major Outage'];
@@ -394,7 +417,7 @@ function parseJsonAPI($apiUrl, $config) {
             $title = $config['title_parser']($latestIncident);
         }
         if (!isset($title) || empty($title)) {
-            $title = isset($latestIncident[$config['title_field']]) ? $latestIncident[$config['title_field']] : '';
+            $title = $latestIncident[$config['title_field']] ?? '';
         }
         
         // Get description field if specified
@@ -451,19 +474,20 @@ function parseJsonAPI($apiUrl, $config) {
     }
 }
 
-/**
- * Parse Google Workspace incidents JSON API
- * Custom title parser for Google's unique format
- */
-function parseGoogleWorkspaceIncidents($apiUrl) {
-    return parseJsonAPI($apiUrl, [
+    /**
+     * Parse Google Workspace incidents JSON API
+     * Custom title parser for Google's unique format
+     */
+    public function parseGoogleWorkspaceIncidents(string $apiUrl): array
+    {
+        return $this->parseJsonAPI($apiUrl, [
         'title_field' => 'external_desc',
         'description_field' => 'external_desc',
         'severity_field' => 'severity',
         'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
         'missing_is_operational' => true,
         'title_parser' => function($incident) {
-            $description = isset($incident['external_desc']) ? $incident['external_desc'] : '';
+            $description = $incident['external_desc'] ?? '';
             
             // Parse title - extract text after **Title:** marker
             if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
@@ -478,11 +502,12 @@ function parseGoogleWorkspaceIncidents($apiUrl) {
     ]);
 }
 
-/**
- * Parse Wistia summary JSON API
- */
-function parseWistiaSummary($apiUrl) {
-    return parseJsonAPI($apiUrl, [
+    /**
+     * Parse Wistia summary JSON API
+     */
+    public function parseWistiaSummary(string $apiUrl): array
+    {
+        return $this->parseJsonAPI($apiUrl, [
         'type' => 'page_status',
         'page_path' => 'page',
         'incidents_path' => 'activeIncidents',
@@ -492,11 +517,12 @@ function parseWistiaSummary($apiUrl) {
     ]);
 }
 
-/**
- * Parse Vultr alerts JSON API
- */
-function parseVultrAlerts($apiUrl) {
-    return parseJsonAPI($apiUrl, [
+    /**
+     * Parse Vultr alerts JSON API
+     */
+    public function parseVultrAlerts(string $apiUrl): array
+    {
+        return $this->parseJsonAPI($apiUrl, [
         'incidents_path' => 'service_alerts',
         'title_field' => 'subject',
         'filter_field' => 'status',
@@ -505,11 +531,12 @@ function parseVultrAlerts($apiUrl) {
     ]);
 }
 
-/**
- * Parse Postmark notices API
- */
-function parsePostmarkNotices($apiUrl) {
-    return parseJsonAPI($apiUrl, [
+    /**
+     * Parse Postmark notices API
+     */
+    public function parsePostmarkNotices(string $apiUrl): array
+    {
+        return $this->parseJsonAPI($apiUrl, [
         'incidents_path' => 'notices',
         'title_field' => 'title',
         'filter_field' => 'multiple',
@@ -518,174 +545,156 @@ function parsePostmarkNotices($apiUrl) {
     ]);
 }
 
-/**
- * Parse standard StatusPage.io JSON API
- */
-function parseStatusPageAPI($apiUrl) {
-    return parseJsonAPI($apiUrl, [
+    /**
+     * Parse standard StatusPage.io JSON API
+     */
+    public function parseStatusPageAPI(string $apiUrl): array
+    {
+        return $this->parseJsonAPI($apiUrl, [
         'type' => 'direct_status',
         'status_path' => 'status',
         'required_field' => 'status'
     ]);
 }
 
-/**
- * Handle RSS/Atom feed status requests
- */
-function handleStatusFeed() {
-    try {
-        // Validate feed parameter
-        // @codacy [Direct use of $_GET Superglobal detected] Input validated against strict whitelist below
-        if (!isset($_GET['feed']) || empty($_GET['feed'])) {
-            ApiResponse::badRequest('Missing feed parameter');
-            return;
-        }
-        
-        // @codacy [Direct use of $_GET Superglobal detected] Input validated against whitelist of allowed feed types
-        $feedType = $_GET['feed'];
-        
-        // Whitelist validation for feed types to prevent injection
-        $allowedFeedTypes = [
-            'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
-            'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
-            'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
-            'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
-            'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
-            'trello', 'pipedream', 'codacy', 'openai',
-            'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
-        ];
-        
-        if (!in_array($feedType, $allowedFeedTypes, true)) {
-            ApiResponse::badRequest('Invalid feed type');
-            return;
-        }
-        
-        // Handle special JSON API feeds
-        if ($feedType === 'vultr') {
-            $status = parseVultrAlerts('https://status.vultr.com/alerts.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'postmark') {
-            $status = parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'googleworkspace') {
-            $status = parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'wistia') {
-            $status = parseWistiaSummary('https://status.wistia.com/summary.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'sendgrid') {
-            $status = parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'spotify') {
-            $status = parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'trello') {
-            $status = parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        if ($feedType === 'pipedream') {
-            $status = parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
-            ApiResponse::success(['status' => $status]);
-            return;
-        }
-        
-        // Whitelist allowed RSS/Atom feeds for security
-        $allowedFeeds = [
-            'stripe' => 'https://www.stripestatus.com/history.atom',
-            'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
-            'flare' => 'https://status.flare.io/history/rss',
-            'slack' => 'https://slack-status.com/feed/atom',
-            'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
-            'square' => 'https://www.issquareup.com/united-states/feed.atom',
-            'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
-            'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
-            'googlesearch' => 'https://status.search.google.com/en/feed.atom',
-            'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
-            'paypal' => 'https://www.paypal-status.com/feed/atom',
-            'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
-            'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
-            'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
-            'brevo' => 'https://status.brevo.com/feed.atom',
-            'automattic' => 'https://automatticstatus.com/rss',
-            'anthropic' => 'https://status.claude.com/history.atom',
-            'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
-            'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
-            'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
-            'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
-            'codacy' => 'https://status.codacy.com/history.rss',
-            'openai' => 'https://status.openai.com/feed.atom',
-            'sparkpost' => 'https://status.sparkpost.com/history.atom',
-            'zoho' => 'https://status.zoho.com/rss',
-            'mailjet' => 'https://status.mailjet.com/history.rss',
-            'mailersend' => 'https://status.mailersend.com/history.rss',
-            'resend' => 'https://resend-status.com/feed.rss',
-            'smtp2go' => 'https://smtp2gostatus.com/history.atom',
-            'sendlayer' => 'https://status.sendlayer.com/history/rss'
-        ];
-        
-        if (!isset($allowedFeeds[$feedType])) {
-            ApiResponse::badRequest('Invalid feed type');
-            return;
-        }
-        
-        $feedUrl = $allowedFeeds[$feedType];
-        
-        // Get optional filter parameter for feeds like automattic
-        // @codacy [Direct use of $_GET Superglobal detected] Input sanitized below with regex whitelist and length limit
-        // @codacy suppress [not unslashed before sanitization] Not WordPress - wp_unslash() doesn't exist in standalone PHP
-        $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
-        
-        // Sanitize filter parameter to prevent injection
-        if ($filter !== null) {
-            // Restrict to alphanumeric, hyphens, underscores only (removed spaces/parentheses as injection vectors)
-            $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
-            // Limit length to reasonable service name size
-            $filter = substr($filter, 0, 50);
-            if (empty($filter)) {
-                $filter = null;
-            }
-        }
-        
-        // Parse feed and return status
-        $status = parseStatusFeed($feedUrl, $filter);
-        
-        ApiResponse::success(['status' => $status]);
-        return;
-        
-    } catch (Exception $e) {
-        error_log('Status feed error: ' . $e->getMessage());
-        ApiResponse::serverError('Unable to fetch status feed');
-        return;
-    }
-}
+    /**
+     * Handle RSS/Atom feed status requests
+     * 
+     * @param string $feedType The feed type identifier (must be whitelisted)
+     * @param string|null $filter Optional service name filter for multi-service feeds
+     * @return void Outputs JSON response via ApiResponse
+     */
+    public function handleStatusFeed(string $feedType, ?string $filter = null): void
+    {
+        try {
+            // Whitelist validation for feed types to prevent injection
+            $allowedFeedTypes = [
+                'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
+                'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
+                'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
+                'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
+                'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
+                'trello', 'pipedream', 'codacy', 'openai',
+                'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
+            ];
 
-/**
- * Get external services configuration
- * Returns all available services (preferences stored client-side)
- */
-function getExternalServicesConfig() {
-    // All services available - user preferences stored client-side in cookies
-    $config = [
+            if (!in_array($feedType, $allowedFeedTypes, true)) {
+                ApiResponse::badRequest('Invalid feed type');
+                return;
+            }
+
+            // Handle special JSON API feeds
+            if ($feedType === 'vultr') {
+                $status = $this->parseVultrAlerts('https://status.vultr.com/alerts.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'postmark') {
+                $status = $this->parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'googleworkspace') {
+                $status = $this->parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'wistia') {
+                $status = $this->parseWistiaSummary('https://status.wistia.com/summary.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'sendgrid') {
+                $status = $this->parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'spotify') {
+                $status = $this->parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'trello') {
+                $status = $this->parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            if ($feedType === 'pipedream') {
+                $status = $this->parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json');
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            // Whitelist allowed RSS/Atom feeds for security
+            $allowedFeeds = [
+                'stripe' => 'https://www.stripestatus.com/history.atom',
+                'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
+                'flare' => 'https://status.flare.io/history/rss',
+                'slack' => 'https://slack-status.com/feed/atom',
+                'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+                'square' => 'https://www.issquareup.com/united-states/feed.atom',
+                'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
+                'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
+                'googlesearch' => 'https://status.search.google.com/en/feed.atom',
+                'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
+                'paypal' => 'https://www.paypal-status.com/feed/atom',
+                'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
+                'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
+                'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
+                'brevo' => 'https://status.brevo.com/feed.atom',
+                'automattic' => 'https://automatticstatus.com/rss',
+                'anthropic' => 'https://status.claude.com/history.atom',
+                'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
+                'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
+                'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
+                'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
+                'codacy' => 'https://status.codacy.com/history.rss',
+                'openai' => 'https://status.openai.com/feed.atom',
+                'sparkpost' => 'https://status.sparkpost.com/history.atom',
+                'zoho' => 'https://status.zoho.com/rss',
+                'mailjet' => 'https://status.mailjet.com/history.rss',
+                'mailersend' => 'https://status.mailersend.com/history.rss',
+                'resend' => 'https://resend-status.com/feed.rss',
+                'smtp2go' => 'https://smtp2gostatus.com/history.atom',
+                'sendlayer' => 'https://status.sendlayer.com/history/rss'
+            ];
+
+            if (!isset($allowedFeeds[$feedType])) {
+                ApiResponse::badRequest('Invalid feed type');
+                return;
+            }
+
+            $feedUrl = $allowedFeeds[$feedType];
+
+            // Parse feed and return status
+            $status = $this->parseStatusFeed($feedUrl, $filter);
+
+            ApiResponse::success(['status' => $status]);
+            return;
+
+        } catch (Exception $e) {
+            error_log('Status feed error: ' . $e->getMessage());
+            ApiResponse::serverError('Unable to fetch status feed');
+            return;
+        }
+    }
+
+    /**
+     * Get external services configuration
+     * Returns all available services (preferences stored client-side)
+     * 
+     * @return array<string, bool> Map of service identifiers to enabled status
+     */
+    public static function getServicesConfig(): array
+    {
+        return [
         // Hosting & Infrastructure
         'aws' => true,
         'cloudflare' => true,
@@ -772,25 +781,5 @@ function getExternalServicesConfig() {
         'letsencrypt' => true,
         'flare' => true
     ];
-    
-    return $config;
-}
-
-/**
- * Handle external services config request
- * Returns list of all available services
- * Note: User preferences are stored client-side in cookies, not on server
- */
-function handleExternalServicesConfig() {
-    try {
-        $config = getExternalServicesConfig();
-        
-        // Return all available services (preferences stored client-side in cookies)
-        ApiResponse::success($config);
-        return;
-    } catch (Exception $e) {
-        error_log('External services config error: ' . $e->getMessage());
-        ApiResponse::serverError('Unable to retrieve external services config');
-        return;
     }
 }

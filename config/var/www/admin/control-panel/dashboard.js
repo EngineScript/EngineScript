@@ -1,9 +1,9 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v=2.25.2026';
-import { DashboardState } from './modules/state.js?v=2.25.2026';
-import { DashboardUtils } from './modules/utils.js?v=2.25.2026';
+import { DashboardAPI } from './modules/api.js?v={ES_DASHBOARD_VER}';
+import { DashboardState } from './modules/state.js?v={ES_DASHBOARD_VER}';
+import { DashboardUtils } from './modules/utils.js?v={ES_DASHBOARD_VER}';
 // External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
@@ -227,7 +227,7 @@ class EngineScriptDashboard {
       }
 
       // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v=2.25.2026');
+            const { ExternalServicesManager } = await import('./external-services/external-services.js?v={ES_DASHBOARD_VER}');
       
       // Create instance and initialize
       this.externalServices = new ExternalServicesManager(
@@ -445,7 +445,9 @@ class EngineScriptDashboard {
     
   showRefreshAnimation() {
     const refreshBtn = document.getElementById("refresh-btn");
+    if (!refreshBtn) return;
     const icon = refreshBtn.querySelector("i");
+    if (!icon) return;
 
     icon.classList.add("refresh-spinning");
     setTimeout(() => {
@@ -466,14 +468,24 @@ class EngineScriptDashboard {
       // Show skeleton loaders while loading
       this.showSkeletonServiceStatus();
 
-      // Load service status
-      await this.loadServiceStatus();
+      // Batch all overview API calls into a single request (3 round trips → 1)
+      const batch = await this.api.batchRequest([
+        '/services/status',
+        '/monitoring/uptime',
+        '/monitoring/uptime/monitors'
+      ]);
 
-      // Load uptime monitoring data
-      this.loadUptimeData();
+      const results = batch.results || {};
+
+      // Process each result using pre-fetched batch data
+      await this.loadServiceStatus(results['/services/status']);
+      this.loadUptimeData(
+        results['/monitoring/uptime'],
+        results['/monitoring/uptime/monitors']
+      );
 
     } catch (error) {
-      this.showError(
+      this.utils.showError(
         `Failed to load dashboard data: ${error.message || error}`,
       );
     }
@@ -481,10 +493,9 @@ class EngineScriptDashboard {
     
 
     
-  async loadServiceStatus() {
+  async loadServiceStatus(prefetchedData) {
     try {
-      // Fetch all services at once (uses CSRF headers, deduplication, and error handling)
-      const services = await this.getApiData("/api/services/status", null);
+      const services = prefetchedData ?? await this.api.getApiData("/api/services/status", null);
 
       if (!services) {
         throw new Error('Failed to load service status');
@@ -541,7 +552,7 @@ class EngineScriptDashboard {
   async loadSites() {
     try {
       this.showSkeletonSites();
-      const sites = await this.getApiData("/api/sites", []);
+      const sites = await this.api.getApiData("/api/sites", []);
       const sitesGrid = document.getElementById("sites-grid");
 
       if (sitesGrid) {
@@ -550,7 +561,7 @@ class EngineScriptDashboard {
 
         if (Array.isArray(sites) && sites.length > 0) {
           sites.forEach((site) => {
-            if (this.isValidSite(site)) {
+            if (this.utils.isValidSite(site)) {
               const siteElement = this.createSiteElement(site);
               sitesGrid.appendChild(siteElement);
             }
@@ -598,7 +609,7 @@ class EngineScriptDashboard {
   async loadSystemInfo() {
     try {
       this.showSkeletonSystemInfo();
-      const sysInfo = await this.getApiData("/api/system/info", {});
+      const sysInfo = await this.api.getApiData("/api/system/info", {});
       const systemInfo = document.getElementById("system-info");
 
       if (systemInfo && typeof sysInfo === "object") {
@@ -608,15 +619,15 @@ class EngineScriptDashboard {
         const infoItems = [
           {
             label: "OS",
-            value: this.sanitizeInput(sysInfo.os) || "Ubuntu 24.04 LTS",
+            value: this.utils.sanitizeInput(sysInfo.os) || "Ubuntu 24.04 LTS",
           },
           {
             label: "Kernel",
-            value: this.sanitizeInput(sysInfo.kernel) || "Loading...",
+            value: this.utils.sanitizeInput(sysInfo.kernel) || "Loading...",
           },
           {
             label: "Network",
-            value: this.sanitizeInput(sysInfo.network) || "Loading..."
+            value: this.utils.sanitizeInput(sysInfo.network) || "Loading..."
           }
         ];
 
@@ -634,40 +645,6 @@ class EngineScriptDashboard {
     }
   }
     
-  // API Methods - Delegated to module
-  async getApiData(endpoint, fallback) {
-    return this.api.getApiData(endpoint, fallback);
-  }
-
-  async postApiData(endpoint, data = {}) {
-    return this.api.postApiData(endpoint, data);
-  }
-
-  showError(message) {
-    this.utils.showError(message);
-  }
-    
-  // Utility methods - Delegated to module
-  sanitizeInput(input) {
-    return this.utils.sanitizeInput(input);
-  }
-
-  sanitizeNumeric(input, fallback = "0") {
-    return this.utils.sanitizeNumeric(input, fallback);
-  }
-
-  sanitizePercentage(input, fallback = "0%") {
-    return this.utils.sanitizePercentage(input, fallback);
-  }
-
-  sanitizeUrl(input, fallback = "") {
-    return this.utils.sanitizeUrl(input, fallback);
-  }
-
-  setTextContent(elementId, content) {
-    this.utils.setTextContent(elementId, content);
-  }
-
   normalizeMonitorCount(value) {
     const numericValue = Number(value);
     if (Number.isFinite(numericValue) && numericValue >= 0) {
@@ -756,10 +733,10 @@ class EngineScriptDashboard {
   // Empty state helpers
   createEmptyState(type, icon, title, message, actionText = null, actionCallback = null) {
     const emptyState = document.createElement('div');
-    emptyState.className = `empty-state ${this.sanitizeInput(type)}`;
+    emptyState.className = `empty-state ${this.utils.sanitizeInput(type)}`;
 
     const iconEl = document.createElement('i');
-    iconEl.className = `fas fa-${this.sanitizeInput(icon)} empty-state-icon`;
+    iconEl.className = `fas fa-${this.utils.sanitizeInput(icon)} empty-state-icon`;
     emptyState.appendChild(iconEl);
 
     const titleEl = document.createElement('h3');
@@ -818,11 +795,6 @@ class EngineScriptDashboard {
     }
   }
     
-
-  isValidSite(site) {
-    return this.utils.isValidSite(site);
-  }
-    
     
   // Helper method to create site card structure - eliminates duplication
   createSiteCardStructure(titleText) {
@@ -842,13 +814,13 @@ class EngineScriptDashboard {
   }
   
   createSiteElement(site) {
-    const { siteDiv, headerDiv } = this.createSiteCardStructure(this.sanitizeInput(site.domain));
+    const { siteDiv, headerDiv } = this.createSiteCardStructure(this.utils.sanitizeInput(site.domain));
 
     const statusDiv = document.createElement("div");
     statusDiv.className = "site-status";
 
     const statusIndicator = document.createElement("span");
-    const sanitizedStatus = this.sanitizeInput(site.status) || "unknown";
+    const sanitizedStatus = this.utils.sanitizeInput(site.status) || "unknown";
     statusIndicator.className = `status-indicator ${sanitizedStatus}`;
 
     const statusText = document.createTextNode(sanitizedStatus);
@@ -865,13 +837,13 @@ class EngineScriptDashboard {
     const wpLabel = document.createElement("strong");
     wpLabel.textContent = "WordPress: ";
     wpInfo.appendChild(wpLabel);
-    wpInfo.appendChild(document.createTextNode(this.sanitizeInput(site.wp_version) || "Unknown"));
+    wpInfo.appendChild(document.createTextNode(this.utils.sanitizeInput(site.wp_version) || "Unknown"));
 
     const sslInfo = document.createElement("p");
     const sslLabel = document.createElement("strong");
     sslLabel.textContent = "SSL: ";
     sslInfo.appendChild(sslLabel);
-    sslInfo.appendChild(document.createTextNode(this.sanitizeInput(site.ssl_status) || "Unknown"));
+    sslInfo.appendChild(document.createTextNode(this.utils.sanitizeInput(site.ssl_status) || "Unknown"));
 
     infoDiv.appendChild(wpInfo);
     infoDiv.appendChild(sslInfo);
@@ -922,10 +894,10 @@ class EngineScriptDashboard {
   }
 
   // Uptime monitoring methods
-  async loadUptimeData() {
+  async loadUptimeData(summaryData, monitorsData) {
     try {
-      await this.loadUptimeSummary();
-      await this.loadUptimeMonitors();
+      await this.loadUptimeSummary(summaryData);
+      await this.loadUptimeMonitors(monitorsData);
     } catch (error) {
       console.error('Failed to load uptime monitoring data:', error);
       // Show fallback uptime error state
@@ -933,18 +905,18 @@ class EngineScriptDashboard {
     }
   }
 
-  async loadUptimeSummary() {
+  async loadUptimeSummary(prefetchedData) {
     try {
-      const summary = await this.getApiData("/api/monitoring/uptime", {});
+      const summary = prefetchedData ?? await this.api.getApiData("/api/monitoring/uptime", {});
       
       if (summary.enabled) {
         const totalCount = this.normalizeMonitorCount(summary.total_monitors);
         const upCount = this.normalizeMonitorCount(summary.up);
         const downCount = this.normalizeMonitorCount(summary.down);
 
-        this.setTextContent("total-monitors", totalCount);
-        this.setTextContent("up-monitors", upCount);
-        this.setTextContent("down-monitors", downCount);
+        this.utils.setTextContent("total-monitors", totalCount);
+        this.utils.setTextContent("up-monitors", upCount);
+        this.utils.setTextContent("down-monitors", downCount);
 
         this.announceToScreenReader(`Uptime monitoring: ${upCount} online, ${downCount} offline out of ${totalCount} sites`);
       } else {
@@ -956,9 +928,9 @@ class EngineScriptDashboard {
     }
   }
 
-  async loadUptimeMonitors() {
+  async loadUptimeMonitors(prefetchedData) {
     try {
-      const response = await this.getApiData("/api/monitoring/uptime/monitors", {});
+      const response = prefetchedData ?? await this.api.getApiData("/api/monitoring/uptime/monitors", {});
       const monitorsContainer = document.getElementById("uptime-monitors");
       
       if (!monitorsContainer) return;
@@ -1015,11 +987,11 @@ class EngineScriptDashboard {
     infoDiv.className = "monitor-info";
     
     const nameH4 = document.createElement("h4");
-    nameH4.textContent = this.sanitizeInput(monitor.name);
+    nameH4.textContent = this.utils.sanitizeInput(monitor.name);
     
     const urlP = document.createElement("p");
     urlP.className = "monitor-url";
-    urlP.textContent = this.sanitizeUrl(monitor.url);
+    urlP.textContent = this.utils.sanitizeUrl(monitor.url);
     
     infoDiv.appendChild(nameH4);
     infoDiv.appendChild(urlP);
@@ -1038,7 +1010,7 @@ class EngineScriptDashboard {
         
         const uptimeValue = document.createElement("span");
         uptimeValue.className = "stat-value";
-        uptimeValue.textContent = this.sanitizeNumeric(uptimeRatio, "0") + "%";
+        uptimeValue.textContent = this.utils.sanitizeNumeric(uptimeRatio, "0") + "%";
         
         const uptimeLabel = document.createElement("span");
         uptimeLabel.className = "stat-label";
@@ -1055,7 +1027,7 @@ class EngineScriptDashboard {
         
         const responseValue = document.createElement("span");
         responseValue.className = "stat-value";
-        responseValue.textContent = this.sanitizeNumeric(monitor.response_time, "0") + "ms";
+        responseValue.textContent = this.utils.sanitizeNumeric(monitor.response_time, "0") + "ms";
         
         const responseLabel = document.createElement("span");
         responseLabel.className = "stat-label";
@@ -1075,7 +1047,7 @@ class EngineScriptDashboard {
     const statusText = document.createElement("span");
     statusText.className = "status-text";
     // API returns 'status_text' for the text version
-    statusText.textContent = this.sanitizeInput(monitor.status_text || 'Unknown');
+    statusText.textContent = this.utils.sanitizeInput(monitor.status_text || 'Unknown');
     
     statusTextDiv.appendChild(statusText);
     
@@ -1157,9 +1129,9 @@ class EngineScriptDashboard {
     }
     
     // Reset summary stats
-    this.setTextContent("total-monitors", "--");
-    this.setTextContent("up-monitors", "--");
-    this.setTextContent("down-monitors", 0);
+    this.utils.setTextContent("total-monitors", "--");
+    this.utils.setTextContent("up-monitors", "--");
+    this.utils.setTextContent("down-monitors", 0);
   }
 
   showUptimeError() {
@@ -1175,7 +1147,7 @@ class EngineScriptDashboard {
       statusDiv.appendChild(message);
       monitorsContainer.appendChild(statusDiv);
     }
-    this.setTextContent("down-monitors", 0);
+    this.utils.setTextContent("down-monitors", 0);
   }
 
   /**
@@ -1214,8 +1186,3 @@ window.addEventListener("beforeunload", () => {
     window.engineScriptDashboard.destroy();
   }
 });
-
-// Security: Prevent frame embedding
-if (window.top !== window.self) {
-    window.top.location = window.self.location;
-}

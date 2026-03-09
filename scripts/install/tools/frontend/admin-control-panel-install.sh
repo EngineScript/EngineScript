@@ -29,6 +29,9 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 
 # Substitute frontend dependency versions
 sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
+sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/index.html
+sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/dashboard.js
+sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/external-services/external-services.js
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then

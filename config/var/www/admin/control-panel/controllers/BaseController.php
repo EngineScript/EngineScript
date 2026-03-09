@@ -244,7 +244,7 @@ abstract class BaseController
         }
         
         // Prevent path traversal
-        if (strpos($input, '..') !== false || strpos($input, '/') !== false) {
+        if (str_contains($input, '..') || str_contains($input, '/')) {
             return false;
         }
         
@@ -350,7 +350,7 @@ abstract class BaseController
         
         // Sanitize IP address for logging
         // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
-        $client_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
         if ($client_ip !== 'unknown') {
             // Validate IP format to prevent injection
@@ -471,7 +471,7 @@ abstract class BaseController
                 continue;
             }
             
-            $endpoint = isset($data['endpoint']) ? $data['endpoint'] : '';
+            $endpoint = $data['endpoint'] ?? '';
             $timestamp = (int) $data['timestamp'];
             $ttl = $this->getTtl($endpoint);
             

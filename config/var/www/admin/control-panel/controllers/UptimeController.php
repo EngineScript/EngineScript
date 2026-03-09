@@ -30,7 +30,7 @@ class UptimeController extends BaseController
      * 
      * @var UptimeRobotAPI|null
      */
-    private $uptimeApi = null;
+    private ?UptimeRobotAPI $uptimeApi = null;
 
     /**
      * Get UptimeRobot API instance
@@ -190,7 +190,7 @@ class UptimeController extends BaseController
         $paused = 0;
 
         foreach ($monitors as $monitor) {
-            $status = isset($monitor['status']) ? (int) $monitor['status'] : 0;
+            $status = (int) ($monitor['status'] ?? 0);
             switch ($status) {
                 case 2: // Up
                     $upCount++;
@@ -241,13 +241,13 @@ class UptimeController extends BaseController
         $formatted = [];
 
         foreach ($monitors as $monitor) {
-            $status = isset($monitor['status']) ? (int) $monitor['status'] : 0;
+            $status = (int) ($monitor['status'] ?? 0);
             $status_text = $this->getStatusText($status);
 
             $formatted[] = [
-                'id' => isset($monitor['id']) ? (int) $monitor['id'] : 0,
-                'name' => isset($monitor['friendly_name']) ? $monitor['friendly_name'] : 'Unknown',
-                'url' => isset($monitor['url']) ? $monitor['url'] : '',
+                'id' => (int) ($monitor['id'] ?? 0),
+                'name' => $monitor['friendly_name'] ?? 'Unknown',
+                'url' => $monitor['url'] ?? '',
                 'status' => $status,
                 'status_text' => $status_text,
                 'uptime_day' => isset($monitor['custom_uptime_ratio']) ? $this->parseUptimeRatio($monitor['custom_uptime_ratio'], 0) : null,
@@ -280,7 +280,7 @@ class UptimeController extends BaseController
             9 => 'Down'
         ];
 
-        return isset($statuses[$status]) ? $statuses[$status] : 'Unknown';
+        return $statuses[$status] ?? 'Unknown';
     }
 
     /**

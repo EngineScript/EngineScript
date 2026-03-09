@@ -26,6 +26,7 @@ ES_SE_PLUGIN_VER="2.0.0"
 ES_SO_PLUGIN_VER="2.0.0"
 
 # Frontend Dependencies  
+ES_DASHBOARD_VER="$(date +"%m.%d.%Y")"
 FONTAWESOME_VER="7.0.1"
 TINYFILEMANAGER_VER="2.6"
 

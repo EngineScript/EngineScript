@@ -29,99 +29,110 @@ class ExternalServicesController extends BaseController
     private const EXTERNAL_API_FILE = __DIR__ . '/../external-services/external-services-api.php';
 
     /**
-     * Handle external services request
+     * Feed parser instance
      * 
-     * Proxies the request to external-services-api.php which handles:
-     * - WordPress.org plugin information
-     * - Cloudflare status
-     * - Other external service integrations
-     * 
-     * Endpoint: GET /external?endpoint=...
-     * 
-     * @return void Outputs JSON response
+     * @var ExternalServicesFeedParser|null
      */
-    public function handle()
+    private ?ExternalServicesFeedParser $feedParser = null;
+
+    /**
+     * Load the external services API module
+     * 
+     * Ensures the ENGINESCRIPT_DASHBOARD constant is defined and the
+     * external-services-api.php file is loaded exactly once.
+     * 
+     * @return void
+     * @throws \RuntimeException If the API file is not found
+     */
+    private function loadExternalApi(): void
     {
-        try {
-            // Verify external API file exists
-            // codacy:ignore - file_exists() required for API file validation
-            if (!file_exists(self::EXTERNAL_API_FILE)) {
-                $this->logSecurityEvent('External services error', 'External services API file not found');
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::serverError('External services API not available');
-                return;
-            }
+        // codacy:ignore - file_exists() required for API file validation
+        if (!file_exists(self::EXTERNAL_API_FILE)) {
+            throw new \RuntimeException('External services API file not found');
+        }
 
-            // Get the endpoint parameter
-            // codacy:ignore - wp_unslash() not available in standalone API, using trim() for sanitization
-            $endpoint = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : '';
+        if (!defined('ENGINESCRIPT_DASHBOARD')) {
+            define('ENGINESCRIPT_DASHBOARD', true);
+        }
 
-            if (empty($endpoint)) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Endpoint parameter required');
-                return;
-            }
+        // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
+        require_once self::EXTERNAL_API_FILE;
 
-            // Validate endpoint parameter
-            if (!$this->validateString($endpoint, 100)) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Invalid endpoint parameter');
-                return;
-            }
-
-            // Check cache for GET requests
-            $cacheKey = self::ENDPOINT . '/' . $endpoint;
-            // codacy:ignore - $_SERVER['REQUEST_METHOD'] is guaranteed by web server; isset check added for static analysis
-            $requestMethod = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
-            if ($requestMethod === 'GET') {
-                $cached = $this->getCached($cacheKey);
-                if ($cached !== null) {
-                    // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                    ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
-                    return;
-                }
-            }
-
-            // Include and execute external services API
-            // The external API file handles its own output
-            $this->executeExternalApi();
-        } catch (Exception $e) {
-            $this->logSecurityEvent('External services error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to process external services request');
+        if ($this->feedParser === null) {
+            $this->feedParser = new ExternalServicesFeedParser();
         }
     }
 
     /**
-     * Execute external services API
+     * Get external services configuration
      * 
-     * Includes the external-services-api.php file and captures its output.
-     * The endpoint is determined by $_GET['endpoint'] rather than a parameter.
+     * Returns all available external services.
+     * User preferences are stored client-side in cookies.
      * 
-     * @return void
+     * Endpoint: GET /external-services/config
+     * 
+     * @return void Outputs JSON response
      */
-    private function executeExternalApi()
+    public function getConfig()
     {
-        // Start output buffering to capture API response
-        ob_start();
-
         try {
-            // Include the external services API
-            // This file will handle the request based on $_GET['endpoint']
-            include self::EXTERNAL_API_FILE;
-
-            // Get the output
-            $output = ob_get_clean();
-
-            // If the external API already output JSON, we're done
-            // The response was already sent by external-services-api.php
-            if (!empty($output)) {
-                // codacy:ignore - Output already escaped via htmlspecialchars() in sanitizeOutput()
-                echo $output;
+            $cacheKey = '/external-services/config';
+            $cached = $this->getCached($cacheKey);
+            if ($cached !== null) {
+                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+                ApiResponse::cached($cached, $this->getTtl($cacheKey));
+                return;
             }
+
+            $this->loadExternalApi();
+
+            $config = ExternalServicesFeedParser::getServicesConfig();
+            $this->setCached($cacheKey, $config);
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::success($config, $this->getTtl($cacheKey));
         } catch (Exception $e) {
-            ob_end_clean();
-            throw $e;
+            $this->logSecurityEvent('External services config error', $e->getMessage());
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::serverError('Unable to retrieve external services config');
+        }
+    }
+
+    /**
+     * Get external service status feed
+     * 
+     * Proxies to handleStatusFeed() which parses RSS/Atom/JSON status feeds.
+     * 
+     * Endpoint: GET /external-services/feed?feed=...
+     * 
+     * @return void Outputs JSON response
+     */
+    public function getFeed()
+    {
+        try {
+            // codacy:ignore - wp_unslash() not available in standalone API
+            $feedType = $_GET['feed'] ?? '';
+
+            if (empty($feedType)) {
+                ApiResponse::badRequest('Missing feed parameter');
+                return;
+            }
+
+            // Sanitize optional filter parameter
+            $filter = $_GET['filter'] ?? null;
+            if ($filter !== null) {
+                $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
+                $filter = substr($filter, 0, 50);
+                if (empty($filter)) {
+                    $filter = null;
+                }
+            }
+
+            $this->loadExternalApi();
+            $this->feedParser->handleStatusFeed($feedType, $filter);
+        } catch (Exception $e) {
+            $this->logSecurityEvent('External services feed error', $e->getMessage());
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::serverError('Unable to fetch status feed');
         }
     }
 
@@ -138,7 +149,7 @@ class ExternalServicesController extends BaseController
     {
         try {
             // codacy:ignore - wp_unslash() not available in standalone API, using trim() for sanitization
-            $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
+            $slug = trim($_GET['slug'] ?? '');
 
             if (empty($slug)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
@@ -198,18 +209,27 @@ class ExternalServicesController extends BaseController
     {
         $url = 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=' . urlencode($slug);
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 10,
-                'header' => 'User-Agent: EngineScript/1.0'
-            ]
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
         ]);
 
-        // codacy:ignore - file_get_contents() with stream context required for external API calls
-        $response = @file_get_contents($url, false, $context);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-        if ($response === false) {
+        if ($response === false || $httpCode !== 200) {
             return null;
         }
 
@@ -221,17 +241,17 @@ class ExternalServicesController extends BaseController
 
         // Return sanitized subset of plugin data
         return $this->sanitizeOutput([
-            'name' => isset($data['name']) ? $data['name'] : '',
-            'slug' => isset($data['slug']) ? $data['slug'] : '',
-            'version' => isset($data['version']) ? $data['version'] : '',
-            'author' => isset($data['author']) ? strip_tags($data['author']) : '',
-            'requires' => isset($data['requires']) ? $data['requires'] : '',
-            'tested' => isset($data['tested']) ? $data['tested'] : '',
-            'requires_php' => isset($data['requires_php']) ? $data['requires_php'] : '',
-            'rating' => isset($data['rating']) ? (int) $data['rating'] : 0,
-            'active_installs' => isset($data['active_installs']) ? (int) $data['active_installs'] : 0,
-            'last_updated' => isset($data['last_updated']) ? $data['last_updated'] : '',
-            'download_link' => isset($data['download_link']) ? $data['download_link'] : ''
+            'name' => $data['name'] ?? '',
+            'slug' => $data['slug'] ?? '',
+            'version' => $data['version'] ?? '',
+            'author' => strip_tags($data['author'] ?? ''),
+            'requires' => $data['requires'] ?? '',
+            'tested' => $data['tested'] ?? '',
+            'requires_php' => $data['requires_php'] ?? '',
+            'rating' => (int) ($data['rating'] ?? 0),
+            'active_installs' => (int) ($data['active_installs'] ?? 0),
+            'last_updated' => $data['last_updated'] ?? '',
+            'download_link' => $data['download_link'] ?? ''
         ]);
     }
 
@@ -284,18 +304,27 @@ class ExternalServicesController extends BaseController
     {
         $url = 'https://www.cloudflarestatus.com/api/v2/status.json';
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 10,
-                'header' => 'User-Agent: EngineScript/1.0'
-            ]
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
         ]);
 
-        // codacy:ignore - file_get_contents() with stream context required for external API calls
-        $response = @file_get_contents($url, false, $context);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-        if ($response === false) {
+        if ($response === false || $httpCode !== 200) {
             return null;
         }
 
@@ -307,9 +336,9 @@ class ExternalServicesController extends BaseController
 
         // Return sanitized status data
         return $this->sanitizeOutput([
-            'indicator' => isset($data['status']['indicator']) ? $data['status']['indicator'] : 'unknown',
-            'description' => isset($data['status']['description']) ? $data['status']['description'] : 'Unknown',
-            'updated_at' => isset($data['page']['updated_at']) ? $data['page']['updated_at'] : null
+            'indicator' => $data['status']['indicator'] ?? 'unknown',
+            'description' => $data['status']['description'] ?? 'Unknown',
+            'updated_at' => $data['page']['updated_at'] ?? null
         ]);
     }
 }

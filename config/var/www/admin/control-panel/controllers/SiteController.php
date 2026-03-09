@@ -76,11 +76,21 @@ class SiteController extends BaseController
     public function getSitesCount()
     {
         try {
-            // Check cache first
+            // Check count cache first
             $cached = $this->getCached(self::ENDPOINT_COUNT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
                 ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
+                return;
+            }
+
+            // Reuse /sites cache if available to avoid redundant full enumeration
+            $sitesCached = $this->getCached(self::ENDPOINT_LIST);
+            if ($sitesCached !== null && is_array($sitesCached)) {
+                $result = ['count' => count($sitesCached)];
+                $this->setCached(self::ENDPOINT_COUNT, $result);
+                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
 
@@ -188,7 +198,7 @@ class SiteController extends BaseController
             $config_real_path = realpath($config_path);
 
             // Ensure the file is within the expected directory
-            if (!$config_real_path || strpos($config_real_path, $real_path . '/') !== 0) {
+            if (!$config_real_path || !str_starts_with($config_real_path, $real_path . '/')) {
                 $this->logSecurityEvent('Config file path traversal attempt', $config_path);
                 continue;
             }
@@ -214,8 +224,8 @@ class SiteController extends BaseController
         }
 
         // Check if this is a WordPress site
-        if (strpos($config_content, 'wordpress') === false &&
-            strpos($config_content, 'wp-') === false) {
+        if (!str_contains($config_content, 'wordpress') &&
+            !str_contains($config_content, 'wp-')) {
             return null;
         }
 
@@ -306,7 +316,7 @@ class SiteController extends BaseController
         // Ensure the file exists and is within the expected directory structure
         // codacy:ignore - realpath() required for path validation in standalone API
         if (!$real_version_file ||
-            strpos($real_version_file, realpath($document_root) . '/') !== 0) {
+            !str_starts_with($real_version_file, realpath($document_root) . '/')) {
             return false;
         }
 
