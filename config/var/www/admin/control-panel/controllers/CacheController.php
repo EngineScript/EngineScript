@@ -56,7 +56,7 @@ class CacheController extends BaseController
             }
 
             // Get and validate cache types
-            // codacy:ignore - wp_unslash() not available in standalone API, using trim() for sanitization; nonce not required in standalone API (uses CSRF token instead)
+            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
             $typeParam = trim($_GET['type'] ?? '');
 
             if (empty($typeParam)) {

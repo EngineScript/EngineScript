@@ -109,7 +109,7 @@ class ExternalServicesController extends BaseController
     public function getFeed()
     {
         try {
-            // codacy:ignore - wp_unslash() not available in standalone API
+            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
             $feedType = $_GET['feed'] ?? '';
 
             if (empty($feedType)) {
@@ -118,6 +118,7 @@ class ExternalServicesController extends BaseController
             }
 
             // Sanitize optional filter parameter
+            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
             $filter = $_GET['filter'] ?? null;
             if ($filter !== null) {
                 $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
@@ -148,7 +149,7 @@ class ExternalServicesController extends BaseController
     public function getPluginInfo()
     {
         try {
-            // codacy:ignore - wp_unslash() not available in standalone API, using trim() for sanitization
+            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
             $slug = trim($_GET['slug'] ?? '');
 
             if (empty($slug)) {
@@ -210,8 +211,8 @@ class ExternalServicesController extends BaseController
         $url = 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=' . urlencode($slug);
 
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curl = curl_init();
+        curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
@@ -225,9 +226,9 @@ class ExternalServicesController extends BaseController
             CURLOPT_MAXREDIRS => 0
         ]);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
 
         if ($response === false || $httpCode !== 200) {
             return null;
@@ -305,8 +306,8 @@ class ExternalServicesController extends BaseController
         $url = 'https://www.cloudflarestatus.com/api/v2/status.json';
 
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curl = curl_init();
+        curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
@@ -320,9 +321,9 @@ class ExternalServicesController extends BaseController
             CURLOPT_MAXREDIRS => 0
         ]);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
 
         if ($response === false || $httpCode !== 200) {
             return null;

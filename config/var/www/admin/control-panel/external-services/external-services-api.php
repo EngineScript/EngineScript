@@ -70,8 +70,8 @@ class ExternalServicesFeedParser
     try {
         // Fetch feed content via cURL with SSL verification
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curl = curl_init();
+        curl_setopt_array($curl, [
             CURLOPT_URL => $feedUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
@@ -85,9 +85,9 @@ class ExternalServicesFeedParser
             CURLOPT_MAXREDIRS => 0
         ]);
 
-        $feedContent = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $feedContent = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
 
         if ($feedContent === false || $httpCode !== 200) {
             throw new Exception('Failed to fetch feed');
