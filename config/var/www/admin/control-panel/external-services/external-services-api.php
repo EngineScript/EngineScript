@@ -31,35 +31,6 @@ require_once __DIR__ . '/../classes/ApiResponse.php';
 class ExternalServicesFeedParser
 {
     /**
-     * Sanitize text from external feeds to prevent injection attacks
-     * @param string $text Raw text from feed
-     * @return string Sanitized text safe for output
-     */
-    private static function sanitizeFeedText(string $text): string
-    {
-    // Convert HTML entities to characters first (handles &lt; &gt; etc)
-    // @codacy suppress [The use of function html_entity_decode() is discouraged] Required to decode HTML entities from external feeds before sanitization
-    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    
-    // Strip all HTML tags
-    $text = strip_tags($text);
-    
-    // Remove null bytes (can cause SQL injection in some contexts)
-    $text = str_replace("\0", '', $text);
-    
-    // Normalize whitespace
-    $text = preg_replace('/\s+/', ' ', $text);
-    
-    // Trim
-    $text = trim($text);
-    
-    // Re-encode special characters for safe JSON output
-    $text = htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8', false);
-    
-    return $text;
-}
-
-    /**
      * Parse RSS/Atom feed and extract status information
      * @param string $feedUrl The URL of the RSS/Atom feed
      * @param string|null $filter Optional filter to match specific service name in feed items
@@ -267,8 +238,8 @@ class ExternalServicesFeedParser
     try {
         // Fetch API response via cURL with SSL verification
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $curl = curl_init();
+        curl_setopt_array($curl, [
             CURLOPT_URL => $apiUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
@@ -282,9 +253,9 @@ class ExternalServicesFeedParser
             CURLOPT_MAXREDIRS => 0
         ]);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
 
         if ($response === false || $httpCode !== 200) {
             return [

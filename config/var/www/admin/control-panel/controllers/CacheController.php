@@ -56,8 +56,7 @@ class CacheController extends BaseController
             }
 
             // Get and validate cache types
-            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
-            $typeParam = trim($_GET['type'] ?? '');
+            $typeParam = trim($_GET['type'] ?? ''); // codacy:ignore - CSRF validated globally in api.php before all controller invocations
 
             if (empty($typeParam)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container

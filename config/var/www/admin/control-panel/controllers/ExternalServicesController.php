@@ -55,8 +55,7 @@ class ExternalServicesController extends BaseController
             define('ENGINESCRIPT_DASHBOARD', true);
         }
 
-        // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
-        require_once self::EXTERNAL_API_FILE;
+        require_once self::EXTERNAL_API_FILE; // codacy:ignore - Secure class loading: path is a private constant resolved from __DIR__, no user input
 
         if ($this->feedParser === null) {
             $this->feedParser = new ExternalServicesFeedParser();
@@ -109,8 +108,7 @@ class ExternalServicesController extends BaseController
     public function getFeed()
     {
         try {
-            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
-            $feedType = $_GET['feed'] ?? '';
+            $feedType = $_GET['feed'] ?? ''; // codacy:ignore - CSRF validated globally in api.php before all controller invocations
 
             if (empty($feedType)) {
                 ApiResponse::badRequest('Missing feed parameter');
@@ -118,8 +116,7 @@ class ExternalServicesController extends BaseController
             }
 
             // Sanitize optional filter parameter
-            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
-            $filter = $_GET['filter'] ?? null;
+            $filter = $_GET['filter'] ?? null; // codacy:ignore - CSRF validated globally in api.php before all controller invocations
             if ($filter !== null) {
                 $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
                 $filter = substr($filter, 0, 50);
@@ -149,8 +146,7 @@ class ExternalServicesController extends BaseController
     public function getPluginInfo()
     {
         try {
-            // codacy:ignore - CSRF validated globally in api.php before all controller invocations; wp_unslash() not available in standalone API
-            $slug = trim($_GET['slug'] ?? '');
+            $slug = trim($_GET['slug'] ?? ''); // codacy:ignore - CSRF validated globally in api.php before all controller invocations
 
             if (empty($slug)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
