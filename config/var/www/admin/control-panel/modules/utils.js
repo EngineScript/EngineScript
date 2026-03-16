@@ -99,7 +99,7 @@ export class DashboardUtils {
 
   // Helper method for creating content elements with icon, message, and time
   createContentElement(config) {
-    const { containerClass, iconClass, contentClass, messageText, timeText, timeClass, iconType } = config;
+    const { containerClass, iconClass, contentClass, messageText, timeText, timeClass, iconType } = config; // codacy:ignore - Destructuring assignment
 
     const containerDiv = document.createElement("div");
     containerDiv.className = containerClass;

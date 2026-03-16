@@ -23,13 +23,13 @@
     --skeleton-base: #333;
     --skeleton-highlight: #3e3e3e;
     --input-bg: #2d2d2d;
-    --hover-overlay: rgba(255, 255, 255, 0.05);
+    --hover-overlay: rgb(255 255 255 / 5%);
     
     /* Layout */
     --sidebar-width: 280px;
     --header-height: 80px;
     --border-radius: 12px;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow: 0 4px 20px rgb(0 0 0 / 30%);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -51,8 +51,8 @@
     --skeleton-base: #e0e0e0;
     --skeleton-highlight: #f0f0f0;
     --input-bg: #f5f5f5;
-    --hover-overlay: rgba(0, 0, 0, 0.05);
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    --hover-overlay: rgb(0 0 0 / 5%);
+    --shadow: 0 4px 20px rgb(0 0 0 / 10%);
 }
 
 body {
@@ -125,10 +125,7 @@ body {
 .skeleton-chart::after {
     content: '';
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
     animation: skeleton-shimmer 2s infinite;
     will-change: transform;
@@ -269,7 +266,7 @@ body {
 }
 
 .nav-item a:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgb(255 255 255 / 5%);
     color: var(--text-primary);
 }
 
@@ -344,7 +341,7 @@ body {
 }
 
 .mobile-menu-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255 255 255 / 10%);
     color: var(--accent-color);
 }
 
@@ -359,10 +356,10 @@ body {
     font-size: 1rem;
     font-weight: bold;
     color: var(--accent-color);
-    background: rgba(0, 212, 170, 0.1);
+    background: rgb(0 212 170 / 10%);
     padding: 0.5rem 1rem;
     border-radius: var(--border-radius);
-    border: 1px solid rgba(0, 212, 170, 0.2);
+    border: 1px solid rgb(0 212 170 / 20%);
 }
 
 /* Buttons */
@@ -434,7 +431,7 @@ body {
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 30px rgb(0 0 0 / 40%);
 }
 
 .card-header {
@@ -526,7 +523,7 @@ body {
 }
 
 .service-item {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgb(255 255 255 / 3%);
     border-radius: var(--border-radius);
     padding: 1.25rem;
     display: flex;
@@ -538,7 +535,7 @@ body {
 }
 
 .service-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgb(255 255 255 / 5%);
     border-color: var(--accent-color);
 }
 
@@ -549,7 +546,7 @@ body {
 .service-item .service-content h4 {
     font-size: 1rem;
     font-weight: 600;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.25rem;
     color: var(--text-primary);
 }
 
@@ -750,7 +747,7 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
     :root {
         --sidebar-width: 250px;
     }
@@ -764,7 +761,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .mobile-menu-toggle {
         display: block;
     }
@@ -783,11 +780,8 @@ body {
     .sidebar.mobile-open::before {
         content: '';
         position: fixed;
-        top: 0;
-        left: var(--sidebar-width);
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        inset: 0 0 0 var(--sidebar-width);
+        background: rgb(0 0 0 / 50%);
         z-index: -1;
     }
     
@@ -830,7 +824,7 @@ body {
 }
 
 /* Animations */
-@keyframes fadeIn {
+@keyframes fade-in {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -843,7 +837,7 @@ body {
 }
 
 .page-content {
-    animation: fadeIn 0.5s ease;
+    animation: fade-in 0.5s ease;
 }
 
 /* Scrollbar Styling */
@@ -926,17 +920,17 @@ button:focus, select:focus, input:focus {
 
 .monitor-status.up .status-dot {
     background: var(--success-color);
-    box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+    box-shadow: 0 0 10px rgb(0 212 170 / 50%);
 }
 
 .monitor-status.down .status-dot {
     background: var(--error-color);
-    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    box-shadow: 0 0 10px rgb(255 68 68 / 50%);
 }
 
 .monitor-status.paused .status-dot {
     background: var(--warning-color);
-    box-shadow: 0 0 10px rgba(255, 184, 0, 0.5);
+    box-shadow: 0 0 10px rgb(255 184 0 / 50%);
 }
 
 .monitor-status.unknown .status-dot {
@@ -1097,8 +1091,8 @@ button:focus, select:focus, input:focus {
     gap: 20px;
     margin-bottom: 25px;
     padding: 20px;
-    background: rgba(0, 212, 170, 0.05);
-    border: 1px solid rgba(0, 212, 170, 0.2);
+    background: rgb(0 212 170 / 5%);
+    border: 1px solid rgb(0 212 170 / 20%);
     border-radius: var(--border-radius);
 }
 
@@ -1132,7 +1126,7 @@ button:focus, select:focus, input:focus {
     font-weight: 500;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
     .uptime-summary {
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;

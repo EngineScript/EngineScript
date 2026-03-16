@@ -55,34 +55,13 @@ class CacheController extends BaseController
                 return;
             }
 
-            // Get and validate cache types
-            $typeParam = trim($_GET['type'] ?? ''); // codacy:ignore - CSRF validated globally in api.php before all controller invocations
-
-            if (empty($typeParam)) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Cache type parameter required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            // Validate and parse cache types from request
+            $validated = $this->validateCacheTypes();
+            if ($validated === null) {
                 return;
             }
 
-            // Parse and validate requested types
-            $requestedTypes = array_map('trim', explode(',', $typeParam));
-            $validTypes = [];
-            $invalidTypes = [];
-
-            foreach ($requestedTypes as $type) {
-                $type = strtolower($type);
-                if (in_array($type, self::VALID_CACHE_TYPES, true)) {
-                    $validTypes[] = $type;
-                } elseif (!empty($type)) {
-                    $invalidTypes[] = $type;
-                }
-            }
-
-            if (empty($validTypes)) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
-                return;
-            }
+            [$validTypes, $invalidTypes] = $validated;
 
             // Clear requested caches
             $results = [];
@@ -120,6 +99,43 @@ class CacheController extends BaseController
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::serverError('Unable to clear cache');
         }
+    }
+
+    /**
+     * Validate and parse cache types from the request
+     * 
+     * @return array|null [validTypes, invalidTypes] or null if validation failed (response already sent)
+     */
+    private function validateCacheTypes()
+    {
+        $typeParam = trim($_GET['type'] ?? ''); // codacy:ignore - CSRF validated globally in api.php before all controller invocations
+
+        if (empty($typeParam)) {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::badRequest('Cache type parameter required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            return null;
+        }
+
+        $requestedTypes = array_map('trim', explode(',', $typeParam));
+        $validTypes = [];
+        $invalidTypes = [];
+
+        foreach ($requestedTypes as $type) {
+            $type = strtolower($type);
+            if (in_array($type, self::VALID_CACHE_TYPES, true)) {
+                $validTypes[] = $type;
+            } elseif (!empty($type)) {
+                $invalidTypes[] = $type;
+            }
+        }
+
+        if (empty($validTypes)) {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            return null;
+        }
+
+        return [$validTypes, $invalidTypes];
     }
 
     /**

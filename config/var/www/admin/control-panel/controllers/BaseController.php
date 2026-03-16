@@ -201,7 +201,7 @@ abstract class BaseController
         $cache_key = $endpoint;
         if (!empty($params)) {
             ksort($params);
-            $cache_key .= '_' . md5(json_encode($params));
+            $cache_key .= '_' . hash('xxh128', json_encode($params));
         }
         
         // Sanitize cache key for filesystem
@@ -292,13 +292,10 @@ abstract class BaseController
         switch ($type) {
             case 'string':
                 return $this->validateString($input, $max_length);
-                
             case 'path':
                 return $this->validatePath($input);
-                
             case 'service':
                 return $this->validateService($input);
-                
             default:
                 return false;
         }
@@ -401,26 +398,45 @@ abstract class BaseController
      */
     protected function sweepExpiredCache()
     {
-        $lockFile = self::CACHE_DIR . '.sweep_lock';
-        $now = time();
-
         // codacy:ignore - is_dir() required for cache directory validation in standalone API
         if (!is_dir(self::CACHE_DIR)) {
             return;
         }
 
-        // Attempt to obtain a non-blocking lock; if not possible, skip sweep
+        $lockFile = self::CACHE_DIR . '.sweep_lock';
+        $lockHandle = $this->acquireSweepLock($lockFile);
+        if ($lockHandle === null) {
+            return;
+        }
+
+        $this->deleteExpiredCacheFiles(time());
+
+        flock($lockHandle, LOCK_UN);
+        // codacy:ignore - fclose() required for lock file cleanup in standalone API
+        fclose($lockHandle);
+    }
+
+    /**
+     * Acquire sweep lock and check interval
+     * 
+     * Returns a locked file handle if the sweep should proceed,
+     * or null if the lock could not be acquired or sweep is not due.
+     * 
+     * @param string $lockFile Path to the lock file
+     * @return resource|null Locked file handle or null
+     */
+    private function acquireSweepLock(string $lockFile)
+    {
         // codacy:ignore - fopen() required for lock file management in standalone API
         $lockHandle = @fopen($lockFile, 'c');
         if ($lockHandle === false) {
-            return;
+            return null;
         }
-        
-        $gotLock = flock($lockHandle, LOCK_EX | LOCK_NB);
-        if (!$gotLock) {
+
+        if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
             // codacy:ignore - fclose() required for lock file cleanup in standalone API
             fclose($lockHandle);
-            return;
+            return null;
         }
 
         // Read last sweep time
@@ -430,16 +446,16 @@ abstract class BaseController
         if ($contents !== false) {
             $lastSweep = (int) $contents;
         }
-        
-        if ($now - $lastSweep < self::CACHE_SWEEP_INTERVAL) {
-            // Not time yet
+
+        if (time() - $lastSweep < self::CACHE_SWEEP_INTERVAL) {
             flock($lockHandle, LOCK_UN);
             // codacy:ignore - fclose() required for lock file cleanup in standalone API
             fclose($lockHandle);
-            return;
+            return null;
         }
 
-        // Update lock file with now; keep exclusive lock while sweeping
+        // Update lock file timestamp
+        $now = time();
         ftruncate($lockHandle, 0);
         rewind($lockHandle);
         // codacy:ignore - fwrite() required for lock file timestamp in standalone API
@@ -447,22 +463,32 @@ abstract class BaseController
         // codacy:ignore - fflush() required for lock file sync in standalone API
         fflush($lockHandle);
 
-        // Scan cache files and remove expired ones (limit to 200 deletions per sweep)
+        return $lockHandle;
+    }
+
+    /**
+     * Delete expired cache files up to the maximum limit
+     * 
+     * @param int $now Current timestamp
+     * @return int Number of files deleted
+     */
+    private function deleteExpiredCacheFiles(int $now): int
+    {
         $deleted = 0;
         $maxDeletes = 200;
-        
+
         // codacy:ignore - glob() required for cache file enumeration on hardcoded path
         foreach (glob(self::CACHE_DIR . '*.json') as $cacheFile) {
             if ($deleted >= $maxDeletes) {
                 break;
             }
-            
+
             // codacy:ignore - file_get_contents() required for cache file reading on hardcoded path
             $raw = @file_get_contents($cacheFile);
             if ($raw === false) {
                 continue;
             }
-            
+
             $data = json_decode($raw, true);
             if (!$data || !isset($data['timestamp'])) {
                 // codacy:ignore - unlink() required for cache cleanup in standalone API
@@ -470,21 +496,17 @@ abstract class BaseController
                 $deleted++;
                 continue;
             }
-            
+
             $endpoint = $data['endpoint'] ?? '';
-            $timestamp = (int) $data['timestamp'];
             $ttl = $this->getTtl($endpoint);
-            
-            if ($now - $timestamp > $ttl) {
+
+            if ($now - (int) $data['timestamp'] > $ttl) {
                 // codacy:ignore - unlink() required for expired cache removal in standalone API
                 @unlink($cacheFile);
                 $deleted++;
             }
         }
 
-        // Release lock
-        flock($lockHandle, LOCK_UN);
-        // codacy:ignore - fclose() required for lock file cleanup in standalone API
-        fclose($lockHandle);
+        return $deleted;
     }
 }

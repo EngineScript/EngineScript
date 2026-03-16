@@ -1,8 +1,6 @@
 /**
  * External Services Configuration
  * Service definitions for all supported external service providers
- * 
- * @version 1.0.0
  */
 
 export const SERVICE_DEFINITIONS = {

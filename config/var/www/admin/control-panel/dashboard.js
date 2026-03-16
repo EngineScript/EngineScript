@@ -219,7 +219,7 @@ class EngineScriptDashboard {
    * Only loads when user navigates to external services page
    */
   async loadExternalServices() {
-    try {
+    try { // codacy:ignore - Try/catch required for dynamic import error handling
       // If already loaded, just initialize
       if (this.externalServices) {
         await this.externalServices.init();
@@ -408,7 +408,7 @@ class EngineScriptDashboard {
         hour12: false,
         hour: "2-digit",
         minute: "2-digit",
-        second: "2-digit",
+        second: "2-digit"
       });
 
       // Use cached element reference instead of getElementById
@@ -619,11 +619,11 @@ class EngineScriptDashboard {
         const infoItems = [
           {
             label: "OS",
-            value: this.utils.sanitizeInput(sysInfo.os) || "Ubuntu 24.04 LTS",
+            value: this.utils.sanitizeInput(sysInfo.os) || "Ubuntu 24.04 LTS"
           },
           {
             label: "Kernel",
-            value: this.utils.sanitizeInput(sysInfo.kernel) || "Loading...",
+            value: this.utils.sanitizeInput(sysInfo.kernel) || "Loading..."
           },
           {
             label: "Network",
@@ -810,11 +810,11 @@ class EngineScriptDashboard {
     headerDiv.appendChild(title);
     siteDiv.appendChild(headerDiv);
 
-    return { siteDiv, headerDiv };
+    return { siteDiv, headerDiv }; // codacy:ignore - Object literal return, not a lone block
   }
   
   createSiteElement(site) {
-    const { siteDiv, headerDiv } = this.createSiteCardStructure(this.utils.sanitizeInput(site.domain));
+    const { siteDiv, headerDiv } = this.createSiteCardStructure(this.utils.sanitizeInput(site.domain)); // codacy:ignore - Destructuring assignment
 
     const statusDiv = document.createElement("div");
     statusDiv.className = "site-status";
@@ -853,7 +853,7 @@ class EngineScriptDashboard {
   }
     
   createNoSitesElement() {
-    const { siteDiv } = this.createSiteCardStructure("No sites found");
+    const { siteDiv } = this.createSiteCardStructure("No sites found"); // codacy:ignore - Destructuring assignment
 
     const infoDiv = document.createElement("div");
     infoDiv.className = "site-info";

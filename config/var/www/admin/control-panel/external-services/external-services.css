@@ -57,7 +57,7 @@
 }
 
 .settings-toggle-btn:hover {
-    background: rgba(0, 212, 170, 0.05);
+    background: rgb(0 212 170 / 5%);
 }
 
 .settings-toggle-btn .toggle-icon {
@@ -67,10 +67,9 @@
 
 .settings-content {
     max-height: 80vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden auto;
     transition: max-height 0.3s ease, padding 0.3s ease;
-    padding: 0 1.5rem 1.5rem 1.5rem;
+    padding: 0 1.5rem 1.5rem;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-color) var(--card-bg);
 }
@@ -186,7 +185,7 @@
 
 .service-toggle:hover {
     border-color: var(--accent-color);
-    background: rgba(0, 212, 170, 0.05);
+    background: rgb(0 212 170 / 5%);
 }
 
 .service-toggle input[type="checkbox"] {
@@ -231,7 +230,7 @@
 
 .settings-save-btn:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+    box-shadow: 0 4px 12px rgb(0 212 170 / 30%);
 }
 
 /* Service Cards */
@@ -259,14 +258,14 @@
 
 .external-service-card.drag-over {
     border: 2px dashed var(--accent-color);
-    background: rgba(0, 212, 170, 0.05);
+    background: rgb(0 212 170 / 5%);
 }
 
 /* Keyboard reorder mode indicator */
 .external-service-card.reorder-active {
     outline: 3px solid var(--accent-color);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(0, 212, 170, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 6px rgb(0 212 170 / 20%), 0 8px 24px rgb(0 0 0 / 30%);
     transform: scale(1.02);
     z-index: 10;
     position: relative;
@@ -289,7 +288,7 @@
 
 .external-service-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
 }
 
 .external-service-card:focus-visible {
@@ -321,12 +320,12 @@
 
 .external-service-card.status-warning {
     border-color: var(--warning-color);
-    background: rgba(255, 184, 0, 0.02);
+    background: rgb(255 184 0 / 2%);
 }
 
 .external-service-card.status-error {
     border-color: var(--error-color);
-    background: rgba(244, 68, 68, 0.03);
+    background: rgb(244 68 68 / 3%);
 }
 
 /* Service Header */
@@ -457,7 +456,7 @@
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--accent-color);
-    background: rgba(0, 212, 170, 0.1);
+    background: rgb(0 212 170 / 10%);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     text-transform: uppercase;
@@ -510,7 +509,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .service-category-grid {
         grid-template-columns: 1fr;
     }
@@ -528,9 +527,9 @@
     padding: 15px 20px;
     color: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
     z-index: 10000;
-    animation: slideIn 0.3s ease;
+    animation: slide-in 0.3s ease;
 }
 
 .es-notification.notification-success {
@@ -554,7 +553,7 @@
     overflow: hidden;
 }
 
-@keyframes slideIn {
+@keyframes slide-in {
     from {
         transform: translateX(100%);
         opacity: 0;
@@ -566,7 +565,7 @@
     }
 }
 
-@keyframes slideOut {
+@keyframes slide-out {
     from {
         transform: translateX(0);
         opacity: 1;

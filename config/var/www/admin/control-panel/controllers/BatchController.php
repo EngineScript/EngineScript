@@ -62,30 +62,8 @@ class BatchController extends BaseController
     public function handle()
     {
         try {
-            // Only accept POST for batch requests
-            // codacy:ignore - Direct $_SERVER access required for method checking in standalone API
-            if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::methodNotAllowed('Method not allowed. Use POST.');
-                return;
-            }
-
-            // Parse JSON body
-            $input = file_get_contents('php://input'); // codacy:ignore - file_get_contents() required for reading POST body
-            $data = json_decode($input, true);
-
-            if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
-                return;
-            }
-
-            $requests = $data['requests'];
-
-            // Limit batch size to prevent abuse
-            if (count($requests) > self::MAX_BATCH_SIZE) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
+            $requests = $this->validateBatchInput();
+            if ($requests === null) {
                 return;
             }
 
@@ -139,6 +117,41 @@ class BatchController extends BaseController
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::serverError('Unable to process batch request');
         }
+    }
+
+    /**
+     * Validate batch request input
+     * 
+     * @return array|null Validated requests array or null if validation failed (response already sent)
+     */
+    private function validateBatchInput()
+    {
+        // Only accept POST for batch requests
+        // codacy:ignore - Direct $_SERVER access required for method checking in standalone API
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::methodNotAllowed('Method not allowed. Use POST.');
+            return null;
+        }
+
+        // Parse JSON body
+        $input = file_get_contents('php://input'); // codacy:ignore - file_get_contents() required for reading POST body
+        $data = json_decode($input, true);
+
+        if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
+            return null;
+        }
+
+        // Limit batch size to prevent abuse
+        if (count($data['requests']) > self::MAX_BATCH_SIZE) {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
+            return null;
+        }
+
+        return $data['requests'];
     }
 
     /**
