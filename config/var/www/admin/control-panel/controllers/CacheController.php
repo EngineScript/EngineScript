@@ -146,17 +146,17 @@ class CacheController extends BaseController
     private function clearCacheType(string $type)
     {
         switch ($type) {
-            case 'redis':
-                return $this->clearRedisCache();
-            case 'fastcgi':
-                return $this->clearFastCgiCache();
-            case 'opcache':
-                return $this->clearOpcache();
-            default:
-                return [
-                    'success' => false,
-                    'message' => 'Unknown cache type'
-                ];
+        case 'redis':
+            return $this->clearRedisCache();
+        case 'fastcgi':
+            return $this->clearFastCgiCache();
+        case 'opcache':
+            return $this->clearOpcache();
+        default:
+            return [
+                'success' => false,
+                'message' => 'Unknown cache type'
+            ];
         }
     }
 

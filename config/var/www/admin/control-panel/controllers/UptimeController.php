@@ -192,19 +192,19 @@ class UptimeController extends BaseController
         foreach ($monitors as $monitor) {
             $status = (int) ($monitor['status'] ?? 0);
             switch ($status) {
-                case 2: // Up
-                    $upCount++;
-                    break;
-                case 8: // Seems down
-                case 9: // Down
-                    $down++;
-                    break;
-                case 0: // Paused
-                case 1: // Not checked yet
-                    $paused++;
-                    break;
-                default:
-                    break;
+            case 2: // Up
+                $upCount++;
+                break;
+            case 8: // Seems down
+            case 9: // Down
+                $down++;
+                break;
+            case 0: // Paused
+            case 1: // Not checked yet
+                $paused++;
+                break;
+            default:
+                break;
             }
         }
 
