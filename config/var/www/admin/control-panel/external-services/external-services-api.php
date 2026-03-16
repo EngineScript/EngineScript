@@ -508,86 +508,87 @@ class ExternalServicesFeedParser
     }
 
     /**
-     * Parse Google Workspace incidents JSON API
-     * Custom title parser for Google's unique format
+     * Get JSON API handler configurations keyed by feed type
+     *
+     * Each entry maps a feed type to its URL and parseJsonAPI config array.
+     * Consolidates all JSON API handler definitions in one place.
+     *
+     * @return array<string, array{url: string, config: array}>
      */
-    public function parseGoogleWorkspaceIncidents(string $apiUrl): array
+    private function getJsonApiConfigs(): array
     {
-        return $this->parseJsonAPI($apiUrl, [
-            'title_field' => 'external_desc',
-            'description_field' => 'external_desc',
-            'severity_field' => 'severity',
-            'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
-            'missing_is_operational' => true,
-            'title_parser' => function($incident) {
-                $description = $incident['external_desc'] ?? '';
+        return [
+            'vultr' => [
+                'url' => 'https://status.vultr.com/alerts.json',
+                'config' => [
+                    'incidents_path' => 'service_alerts',
+                    'title_field' => 'subject',
+                    'filter_field' => 'status',
+                    'filter_value' => 'ongoing',
+                    'missing_is_operational' => true
+                ]
+            ],
+            'postmark' => [
+                'url' => 'https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned',
+                'config' => [
+                    'incidents_path' => 'notices',
+                    'title_field' => 'title',
+                    'filter_field' => 'multiple',
+                    'filter_value' => ['type' => 'unplanned', 'timeline_state' => 'present'],
+                    'missing_is_operational' => true
+                ]
+            ],
+            'googleworkspace' => [
+                'url' => 'https://www.google.com/appsstatus/dashboard/incidents.json',
+                'config' => [
+                    'title_field' => 'external_desc',
+                    'description_field' => 'external_desc',
+                    'severity_field' => 'severity',
+                    'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
+                    'missing_is_operational' => true,
+                    'title_parser' => function($incident) {
+                        $description = $incident['external_desc'] ?? '';
 
-                // Parse title - extract text after **Title:** marker
-                if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
-                    return trim($matches[1]);
-                } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
-                    return trim($matches[1]);
-                }
+                        // Parse title - extract text after **Title:** marker
+                        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
+                            return trim($matches[1]);
+                        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
+                            return trim($matches[1]);
+                        }
 
-                // No title marker, use first line
-                return strtok($description, "\n");
-            }
-        ]);
-    }
-
-    /**
-     * Parse Wistia summary JSON API
-     */
-    public function parseWistiaSummary(string $apiUrl): array
-    {
-        return $this->parseJsonAPI($apiUrl, [
-            'type' => 'page_status',
-            'page_path' => 'page',
-            'incidents_path' => 'activeIncidents',
-            'title_field' => 'name',
-            'severity_field' => 'impact',
-            'required_field' => 'page'
-        ]);
-    }
-
-    /**
-     * Parse Vultr alerts JSON API
-     */
-    public function parseVultrAlerts(string $apiUrl): array
-    {
-        return $this->parseJsonAPI($apiUrl, [
-            'incidents_path' => 'service_alerts',
-            'title_field' => 'subject',
-            'filter_field' => 'status',
-            'filter_value' => 'ongoing',
-            'missing_is_operational' => true
-        ]);
-    }
-
-    /**
-     * Parse Postmark notices API
-     */
-    public function parsePostmarkNotices(string $apiUrl): array
-    {
-        return $this->parseJsonAPI($apiUrl, [
-            'incidents_path' => 'notices',
-            'title_field' => 'title',
-            'filter_field' => 'multiple',
-            'filter_value' => ['type' => 'unplanned', 'timeline_state' => 'present'],
-            'missing_is_operational' => true
-        ]);
-    }
-
-    /**
-     * Parse standard StatusPage.io JSON API
-     */
-    public function parseStatusPageAPI(string $apiUrl): array
-    {
-        return $this->parseJsonAPI($apiUrl, [
-            'type' => 'direct_status',
-            'status_path' => 'status',
-            'required_field' => 'status'
-        ]);
+                        // No title marker, use first line
+                        return strtok($description, "\n");
+                    }
+                ]
+            ],
+            'wistia' => [
+                'url' => 'https://status.wistia.com/summary.json',
+                'config' => [
+                    'type' => 'page_status',
+                    'page_path' => 'page',
+                    'incidents_path' => 'activeIncidents',
+                    'title_field' => 'name',
+                    'severity_field' => 'impact',
+                    'required_field' => 'page'
+                ]
+            ],
+            'sendgrid' => [
+                'url' => 'https://status.sendgrid.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'spotify' => [
+                'url' => 'https://spotify.statuspage.io/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'trello' => [
+                'url' => 'https://trello.status.atlassian.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'pipedream' => [
+                'url' => 'https://status.pipedream.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+        ];
     }
 
     /**
@@ -616,20 +617,11 @@ class ExternalServicesFeedParser
                 return;
             }
 
-            // Handle JSON API feeds via dispatch map
-            $jsonApiHandlers = [
-                'vultr' => fn() => $this->parseVultrAlerts('https://status.vultr.com/alerts.json'),
-                'postmark' => fn() => $this->parsePostmarkNotices('https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned'),
-                'googleworkspace' => fn() => $this->parseGoogleWorkspaceIncidents('https://www.google.com/appsstatus/dashboard/incidents.json'),
-                'wistia' => fn() => $this->parseWistiaSummary('https://status.wistia.com/summary.json'),
-                'sendgrid' => fn() => $this->parseStatusPageAPI('https://status.sendgrid.com/api/v2/status.json'),
-                'spotify' => fn() => $this->parseStatusPageAPI('https://spotify.statuspage.io/api/v2/status.json'),
-                'trello' => fn() => $this->parseStatusPageAPI('https://trello.status.atlassian.com/api/v2/status.json'),
-                'pipedream' => fn() => $this->parseStatusPageAPI('https://status.pipedream.com/api/v2/status.json'),
-            ];
-
-            if (isset($jsonApiHandlers[$feedType])) {
-                $status = $jsonApiHandlers[$feedType]();
+            // Handle JSON API feeds via config map
+            $jsonApiConfigs = $this->getJsonApiConfigs();
+            if (isset($jsonApiConfigs[$feedType])) {
+                $entry = $jsonApiConfigs[$feedType];
+                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
                 ApiResponse::success(['status' => $status]);
                 return;
             }

@@ -290,14 +290,14 @@ abstract class BaseController
         }
         
         switch ($type) {
-            case 'string':
-                return $this->validateString($input, $max_length);
-            case 'path':
-                return $this->validatePath($input);
-            case 'service':
-                return $this->validateService($input);
-            default:
-                return false;
+        case 'string':
+            return $this->validateString($input, $max_length);
+        case 'path':
+            return $this->validatePath($input);
+        case 'service':
+            return $this->validateService($input);
+        default:
+            return false;
         }
     }
 
@@ -389,124 +389,15 @@ abstract class BaseController
     }
 
     /**
-     * Sweep expired cache files
-     * 
-     * Runs at most once every CACHE_SWEEP_INTERVAL seconds to reduce IO overhead.
-     * Limited to 200 deletions per sweep to prevent blocking.
-     * 
-     * @return void
+     * Get HTTP request method
+     *
+     * Centralizes $_SERVER access to avoid super-global access in subclasses.
+     *
+     * @return string HTTP method (uppercase), defaults to 'GET'
      */
-    protected function sweepExpiredCache()
+    protected function getRequestMethod(): string
     {
-        // codacy:ignore - is_dir() required for cache directory validation in standalone API
-        if (!is_dir(self::CACHE_DIR)) {
-            return;
-        }
-
-        $lockFile = self::CACHE_DIR . '.sweep_lock';
-        $lockHandle = $this->acquireSweepLock($lockFile);
-        if ($lockHandle === null) {
-            return;
-        }
-
-        $this->deleteExpiredCacheFiles(time());
-
-        flock($lockHandle, LOCK_UN);
-        // codacy:ignore - fclose() required for lock file cleanup in standalone API
-        fclose($lockHandle);
-    }
-
-    /**
-     * Acquire sweep lock and check interval
-     * 
-     * Returns a locked file handle if the sweep should proceed,
-     * or null if the lock could not be acquired or sweep is not due.
-     * 
-     * @param string $lockFile Path to the lock file
-     * @return resource|null Locked file handle or null
-     */
-    private function acquireSweepLock(string $lockFile)
-    {
-        // codacy:ignore - fopen() required for lock file management in standalone API
-        $lockHandle = @fopen($lockFile, 'c');
-        if ($lockHandle === false) {
-            return null;
-        }
-
-        if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
-            // codacy:ignore - fclose() required for lock file cleanup in standalone API
-            fclose($lockHandle);
-            return null;
-        }
-
-        // Read last sweep time
-        $lastSweep = 0;
-        // codacy:ignore - file_get_contents() required for lock file reading in standalone API
-        $contents = @file_get_contents($lockFile);
-        if ($contents !== false) {
-            $lastSweep = (int) $contents;
-        }
-
-        if (time() - $lastSweep < self::CACHE_SWEEP_INTERVAL) {
-            flock($lockHandle, LOCK_UN);
-            // codacy:ignore - fclose() required for lock file cleanup in standalone API
-            fclose($lockHandle);
-            return null;
-        }
-
-        // Update lock file timestamp
-        $now = time();
-        ftruncate($lockHandle, 0);
-        rewind($lockHandle);
-        // codacy:ignore - fwrite() required for lock file timestamp in standalone API
-        fwrite($lockHandle, (string)$now);
-        // codacy:ignore - fflush() required for lock file sync in standalone API
-        fflush($lockHandle);
-
-        return $lockHandle;
-    }
-
-    /**
-     * Delete expired cache files up to the maximum limit
-     * 
-     * @param int $now Current timestamp
-     * @return int Number of files deleted
-     */
-    private function deleteExpiredCacheFiles(int $now): int
-    {
-        $deleted = 0;
-        $maxDeletes = 200;
-
-        // codacy:ignore - glob() required for cache file enumeration on hardcoded path
-        foreach (glob(self::CACHE_DIR . '*.json') as $cacheFile) {
-            if ($deleted >= $maxDeletes) {
-                break;
-            }
-
-            // codacy:ignore - file_get_contents() required for cache file reading on hardcoded path
-            $raw = @file_get_contents($cacheFile);
-            if ($raw === false) {
-                continue;
-            }
-
-            $data = json_decode($raw, true);
-            if (!$data || !isset($data['timestamp'])) {
-                // codacy:ignore - unlink() required for cache cleanup in standalone API
-                @unlink($cacheFile);
-                $deleted++;
-                continue;
-            }
-
-            $endpoint = $data['endpoint'] ?? '';
-            $ttl = $this->getTtl($endpoint);
-
-            if ($now - (int) $data['timestamp'] > $ttl) {
-                // codacy:ignore - unlink() required for expired cache removal in standalone API
-                @unlink($cacheFile);
-                $deleted++;
-            }
-        }
-
-        return $deleted;
+        // codacy:ignore - Direct $_SERVER access centralized here to prevent super-global access in subclasses
+        return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
     }
 }

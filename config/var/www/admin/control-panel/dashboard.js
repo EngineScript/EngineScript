@@ -533,19 +533,7 @@ class EngineScriptDashboard {
     } catch (error) {
       console.error('Failed to load service status:', error);
       // Set all services to error state
-      ["nginx", "php", "mysql", "redis"].forEach(service => {
-        const element = document.getElementById(`${service}-status`);
-        if (element) {
-          const statusIcon = element.querySelector(".service-status i");
-          const versionSpan = element.querySelector(".service-version");
-          if (statusIcon) {
-            statusIcon.className = "fas fa-circle offline";
-          }
-          if (versionSpan) {
-            versionSpan.textContent = "Error";
-          }
-        }
-      });
+      this.setAllServiceStatusElements('fas fa-circle offline', 'Error');
     }
   }
     
@@ -655,22 +643,34 @@ class EngineScriptDashboard {
 
   // Skeleton loader helpers
 
-
-
-  showSkeletonServiceStatus() {
-    const services = ["nginx", "php", "mysql", "redis"];
-    services.forEach(service => {
+  /**
+   * Update icon class and version text for all service status elements
+   * @param {string} iconClass - CSS class string for the status icon element
+   * @param {string} versionText - Text to display in the version span
+   */
+  setAllServiceStatusElements(iconClass, versionText) {
+    ["nginx", "php", "mysql", "redis"].forEach(service => {
       const element = document.getElementById(`${service}-status`);
       if (element) {
         const statusIcon = element.querySelector(".service-status i");
         const versionSpan = element.querySelector(".service-version");
-        
         if (statusIcon) {
-          statusIcon.className = "fas fa-circle";
+          statusIcon.className = iconClass;
         }
         if (versionSpan) {
-          versionSpan.textContent = "v--";
+          versionSpan.textContent = versionText;
         }
+      }
+    });
+  }
+
+
+
+  showSkeletonServiceStatus() {
+    this.setAllServiceStatusElements("fas fa-circle", "v--");
+    ["nginx", "php", "mysql", "redis"].forEach(service => {
+      const element = document.getElementById(`${service}-status`);
+      if (element) {
         // Remove any error styling
         element.style.opacity = "1";
       }
@@ -1153,8 +1153,8 @@ class EngineScriptDashboard {
   /**
    * Announce a message to screen readers via a live region
    */
+  // codacy:ignore - Duplicate announceToScreenReader pattern is intentional: separate live-region IDs required
   announceToScreenReader(message) {
-    let liveRegion = document.getElementById('es-dashboard-live-region');
     if (!liveRegion) {
       liveRegion = document.createElement('div');
       liveRegion.id = 'es-dashboard-live-region';

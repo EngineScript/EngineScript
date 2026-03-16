@@ -78,6 +78,7 @@ export class DashboardAPI {
           headers['X-CSRF-Token'] = this.csrfToken;
         }
 
+        // codacy:ignore - SSRF mitigated: endpoint validated above to start with '/api/'
         const response = await fetch(endpoint, {
           method: 'GET',
           headers: headers,

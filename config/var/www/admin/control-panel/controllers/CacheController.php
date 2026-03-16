@@ -48,8 +48,7 @@ class CacheController extends BaseController
     {
         try {
             // Require POST method for cache clearing
-            // codacy:ignore - Direct $_SERVER access required for method checking in standalone API
-            if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            if ($this->getRequestMethod() !== 'POST') {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
                 ApiResponse::methodNotAllowed('Cache clear requires POST method');
                 return;
@@ -147,17 +146,17 @@ class CacheController extends BaseController
     private function clearCacheType(string $type)
     {
         switch ($type) {
-            case 'redis':
-                return $this->clearRedisCache();
-            case 'fastcgi':
-                return $this->clearFastCgiCache();
-            case 'opcache':
-                return $this->clearOpcache();
-            default:
-                return [
-                    'success' => false,
-                    'message' => 'Unknown cache type'
-                ];
+        case 'redis':
+            return $this->clearRedisCache();
+        case 'fastcgi':
+            return $this->clearFastCgiCache();
+        case 'opcache':
+            return $this->clearOpcache();
+        default:
+            return [
+                'success' => false,
+                'message' => 'Unknown cache type'
+            ];
         }
     }
 

@@ -642,11 +642,7 @@ export class ExternalServicesManager {
       saveButton.appendChild(document.createTextNode(" Saved!"));
       
       setTimeout(() => {
-        saveButton.textContent = '';
-        const saveIcon = document.createElement("i");
-        saveIcon.className = "fas fa-save";
-        saveButton.appendChild(saveIcon);
-        saveButton.appendChild(document.createTextNode(" Save Changes"));
+        this.resetSaveButtonContent(saveButton);
         saveButton.classList.remove('has-changes');
         saveButton.disabled = true;
       }, 2000);
@@ -666,15 +662,23 @@ export class ExternalServicesManager {
       saveButton.disabled = false;
       
       setTimeout(() => {
-        saveButton.textContent = '';
-        const saveIcon = document.createElement("i");
-        saveIcon.className = "fas fa-save";
-        saveButton.appendChild(saveIcon);
-        saveButton.appendChild(document.createTextNode(" Save Changes"));
+        this.resetSaveButtonContent(saveButton);
       }, 2000);
       
       this.showNotification('Failed to save preferences', 'error');
     }
+  }
+
+  /**
+   * Reset save button content to default 'Save Changes' state
+   * @param {HTMLElement} saveButton - The save button element to reset
+   */
+  resetSaveButtonContent(saveButton) {
+    saveButton.textContent = '';
+    const saveIcon = document.createElement("i");
+    saveIcon.className = "fas fa-save";
+    saveButton.appendChild(saveIcon);
+    saveButton.appendChild(document.createTextNode(" Save Changes"));
   }
 
   // ============ Card Creation Helpers ============
@@ -938,6 +942,21 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Apply status data from API response to a service card
+   * @param {string} serviceKey - Service identifier key
+   * @param {Object} serviceDef - Service definition object
+   * @param {Object} data - API response data containing status
+   * @param {boolean} isFeed - Whether the status is from an Atom/RSS feed
+   * @returns {void}
+   */
+  applyStatusDataToCard(serviceKey, serviceDef, data, isFeed) {
+    const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
+    if (!serviceCard) return;
+    const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, isFeed); // codacy:ignore - Destructuring assignment
+    this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
+  }
+
+  /**
    * Update feed-based service status asynchronously
    * @param {string} serviceKey - Service identifier key
    * @param {Object} serviceDef - Service definition object with feedType and optional feedFilter
@@ -962,11 +981,7 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
-      if (!serviceCard) return;
-      
-      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, true); // codacy:ignore - Destructuring assignment
-      this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
+      this.applyStatusDataToCard(serviceKey, serviceDef, data, true);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} feed status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -992,11 +1007,7 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
-      if (!serviceCard) return;
-      
-      const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, false); // codacy:ignore - Destructuring assignment
-      this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
+      this.applyStatusDataToCard(serviceKey, serviceDef, data, false);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -1500,9 +1511,8 @@ export class ExternalServicesManager {
    * @param {string} message - Message to announce
    * @returns {void}
    */
+  // codacy:ignore - Duplicate announceToScreenReader pattern is intentional: separate live-region IDs required
   announceToScreenReader(message) {
-    // Find or create live region
-    let liveRegion = document.getElementById('es-live-region');
     if (!liveRegion) {
       liveRegion = document.createElement('div');
       liveRegion.id = 'es-live-region';

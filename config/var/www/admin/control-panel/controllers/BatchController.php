@@ -127,8 +127,7 @@ class BatchController extends BaseController
     private function validateBatchInput()
     {
         // Only accept POST for batch requests
-        // codacy:ignore - Direct $_SERVER access required for method checking in standalone API
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+        if ($this->getRequestMethod() !== 'POST') {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::methodNotAllowed('Method not allowed. Use POST.');
             return null;
