@@ -47,13 +47,9 @@ updates:
     groups:
       # Group all dev dependencies together
       dev-dependencies:
-        patterns:
-          - "*"
         dependency-type: "development"
       # Group production dependencies (if any are added later)
       production-dependencies:
-        patterns:
-          - "*"
         dependency-type: "production"
     # Allow updates to all dependency types
     allow:

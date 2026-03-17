@@ -2,5 +2,15 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "composer": {
+    "enabled": true
+  },
+  "updateInternalDependencies": true,
+  "packageRules": [
+    {
+      "matchDatasources": ["composer"],
+      "rangeStrategy": "auto"
+    }
   ]
 }
