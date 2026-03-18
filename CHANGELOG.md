@@ -4,6 +4,21 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-18
+
+### 🔧 SERVICE CHECK AND CODE QUALITY FIXES IN SHARED VHOST FUNCTIONS
+
+- **Fixed database service check** in `scripts/functions/shared/enginescript-shared-vhost.sh`:
+  - Changed MariaDB and MySQL checks from requiring **both** services to be active to requiring **either** MariaDB **or** MySQL to be running. MariaDB and MySQL are mutually exclusive on a typical system.
+- **Fixed numeric comparison** in `configure_redis()`:
+  - Replaced `== "1"` with `-eq 1` for integer comparison, following bash best practices.
+- **Fixed Redis key prefix generation** in `configure_redis()`:
+  - Replaced hardcoded 5-character domain substring with a hash-based prefix (`es_` + first 12 chars of SHA1) to avoid collisions with short or similar domain names.
+- **Fixed unsafe `find | xargs rm`** in `perform_site_backup()`:
+  - Replaced `find ... | xargs rm -fR` with `find ... -delete` to handle empty results gracefully.
+- **Fixed label formatting** in `display_credentials_summary()`:
+  - Added missing colon to `Site Prefix:` for consistency with other labels.
+
 ## 2026-03-03
 
 ### 🌐 NON-WORDPRESS DOMAIN SUPPORT (Tasks 113 & 114)
