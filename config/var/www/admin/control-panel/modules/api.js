@@ -93,13 +93,8 @@ export class DashboardAPI {
       });
 
       // Handle different response formats
-      if (endpoint.includes("/system/memory") && data.usage) {
-        return data.usage;
-      }
-      if (endpoint.includes("/system/disk") && data.usage) {
-        return data.usage;
-      }
-      if (endpoint.includes("/system/cpu") && data.usage) {
+      const usageEndpoints = ['/system/memory', '/system/disk', '/system/cpu'];
+      if (usageEndpoints.some(path => endpoint.includes(path)) && data.usage) {
         return data.usage;
       }
       if (endpoint.includes("/sites/count") && data.count !== undefined) {
@@ -153,7 +148,9 @@ export class DashboardAPI {
    * Batch multiple API requests into a single call
    * Reduces network round-trips and improves performance
    * 
-   * @param {string[]} endpoints - Array of API endpoints to fetch
+   * @param {string[]} endpoints - Array of API endpoints to fetch. If more than
+   *   the maximum batch size are provided, only the first `maxBatchSize`
+   *   endpoints are sent in the request.
    * @returns {Promise<Object>} Object with results keyed by endpoint
    * 
    * @example
@@ -172,9 +169,10 @@ export class DashboardAPI {
 
       // Limit batch size client-side to match server limit
       const maxBatchSize = 10;
+      let limitedEndpoints = endpoints;
       if (endpoints.length > maxBatchSize) {
         console.warn(`Batch size ${endpoints.length} exceeds max ${maxBatchSize}, truncating`);
-        endpoints = endpoints.slice(0, maxBatchSize);
+        limitedEndpoints = endpoints.slice(0, maxBatchSize);
       }
 
       const headers = {
@@ -188,7 +186,7 @@ export class DashboardAPI {
         method: 'POST',
         headers: headers,
         credentials: 'include',
-        body: JSON.stringify({ requests: endpoints })
+        body: JSON.stringify({ requests: limitedEndpoints })
       });
 
       if (!response.ok) {

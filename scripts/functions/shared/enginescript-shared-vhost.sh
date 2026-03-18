@@ -15,22 +15,19 @@
 check_required_services() {
   echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 
-  # MariaDB Service Check
-  STATUS="$(systemctl is-active mariadb)"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: MariaDB is running."
-  else
-    echo "FAILED: MariaDB not running. Please diagnose this issue before proceeding."
+  # Database Service Check (MariaDB or MySQL)
+  MARIADB_STATUS="$(systemctl is-active mariadb)"
+  MYSQL_STATUS="$(systemctl is-active mysql)"
+
+  if [[ "${MARIADB_STATUS}" != "active" && "${MYSQL_STATUS}" != "active" ]]; then
+    echo "FAILED: Neither MariaDB nor MySQL is running. Please diagnose this issue before proceeding."
     exit 1
   fi
 
-  # MySQL Service Check
-  STATUS="$(systemctl is-active mysql)"
-  if [[ "${STATUS}" == "active" ]]; then
+  if [[ "${MARIADB_STATUS}" == "active" ]]; then
+    echo "PASSED: MariaDB is running."
+  elif [[ "${MYSQL_STATUS}" == "active" ]]; then
     echo "PASSED: MySQL is running."
-  else
-    echo "FAILED: MySQL not running. Please diagnose this issue before proceeding."
-    exit 1
   fi
 
   # Nginx Service Check
@@ -653,7 +650,7 @@ configure_redis() {
   # Redis Config
   # Scale Redis Databases to Number of Installed Domains
   source /home/EngineScript/sites-list/sites.sh
-  if [[ "${#SITES[@]}" == "1" ]];
+  if [[ "${#SITES[@]}" -eq 1 ]];
     then
       # If number of installed domains = 1, leave Redis at 1 database and WordPress set to use database 0
       echo "There is only 1 domain in the site list. Not adding additional Redis databases."
@@ -669,7 +666,8 @@ configure_redis() {
   fi
 
   # Set Redis Prefix
-  REDISPREFIX="$(echo "${DOMAIN::5}")" && sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "${WP_CONFIG_PATH}"
+  REDISPREFIX="es_$(printf '%s' "${DOMAIN}" | sha1sum | cut -c1-12)"
+  sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "${WP_CONFIG_PATH}"
 }
 
 
@@ -744,12 +742,12 @@ perform_site_backup() {
   gzip -cf "${WP_ROOT_PATH}/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE"
 
   # Remove old backups
-  find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 | xargs rm -fR
-  find "/home/EngineScript/site-backups/${SITE_URL}/nginx" -type f -mtime +7 | xargs rm -fR
-  find "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys" -type f -mtime +7 | xargs rm -fR
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-config" -type f -mtime +7 | xargs rm -fR
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-content" -type f -mtime +15 | xargs rm -fR
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads" -type f -mtime +15  | xargs rm -fR
+  find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 -delete
+  find "/home/EngineScript/site-backups/${SITE_URL}/nginx" -type f -mtime +7 -delete
+  find "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys" -type f -mtime +7 -delete
+  find "/home/EngineScript/site-backups/${SITE_URL}/wp-config" -type f -mtime +7 -delete
+  find "/home/EngineScript/site-backups/${SITE_URL}/wp-content" -type f -mtime +15 -delete
+  find "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads" -type f -mtime +15 -delete
 
   echo "Backup: Complete"
   clear
@@ -775,7 +773,7 @@ display_credentials_summary() {
   echo "${BOLD}URL:${NORMAL}               ${SITE_URL}"
   echo "-----------------"
   echo "${BOLD}Database:${NORMAL}          ${DB}"
-  echo "${BOLD}Site Prefix${NORMAL}        ${PREFIX}"
+  echo "${BOLD}Site Prefix:${NORMAL}       ${PREFIX}"
   echo "${BOLD}DB User:${NORMAL}           ${USR}"
   echo "${BOLD}DB Password:${NORMAL}       ${PSWD}"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
