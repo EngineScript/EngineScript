@@ -29,13 +29,13 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 
 # Substitute frontend dependency versions
 sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
-sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/index.html
-sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/dashboard.js
-sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" /var/www/admin/control-panel/external-services/external-services.js
+for file in index.html dashboard.js external-services/external-services.js; do
+    sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
+done
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
-    # More robust removal: match any <div> with id="adminer-tool" regardless of attribute order/whitespace
+    # Remove the Adminer tool card by matching any <div> with id="adminer-tool" regardless of attribute order/whitespace
     sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
 fi
 

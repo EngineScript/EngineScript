@@ -186,7 +186,7 @@ class UptimeController extends BaseController
     {
         $total = count($monitors);
         $upCount = 0;
-        $down = 0;
+        $downCount = 0;
         $paused = 0;
 
         foreach ($monitors as $monitor) {
@@ -197,7 +197,7 @@ class UptimeController extends BaseController
                 break;
             case 8: // Seems down
             case 9: // Down
-                $down++;
+                $downCount++;
                 break;
             case 0: // Paused
             case 1: // Not checked yet
@@ -211,7 +211,7 @@ class UptimeController extends BaseController
         // Determine overall status
         $overall_status = 'unknown';
         if ($total > 0) {
-            if ($down > 0) {
+            if ($downCount > 0) {
                 $overall_status = 'critical';
             } elseif ($upCount === $total) {
                 $overall_status = 'healthy';
@@ -225,7 +225,7 @@ class UptimeController extends BaseController
             'overall_status' => $overall_status,
             'total_monitors' => $total,
             'up' => $upCount,
-            'down' => $down,
+            'down' => $downCount,
             'paused' => $paused
         ];
     }
