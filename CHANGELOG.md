@@ -11,6 +11,14 @@ Changes are organized by date, with the most recent changes listed first.
 - **Renamed** local variable `$overall_status` to `$overallStatus` in `UptimeController.php` to follow PHP camelCase convention for local variables.
 - **Refactored** `getStatusText()` to use class constants (`STATUS_PAUSED`, `STATUS_NOT_CHECKED`, `STATUS_UP`) as array keys instead of magic numbers, maintaining a single source of truth.
 - **Added** `string` type hint to `$ratio` parameter in `parseUptimeRatio()` to improve type safety and match the existing docblock.
+### 🔒 VHOST SCRIPT ROBUSTNESS AND SAFETY IMPROVEMENTS
+
+- **Quoted `SSL_KEYLENGTH` variable** in `scripts/functions/shared/enginescript-shared-vhost.sh`.
+  - Changed `-k ${SSL_KEYLENGTH}` to `-k "${SSL_KEYLENGTH}"` to prevent word-splitting issues if the variable is empty or contains spaces.
+- **Added error handling** for `wget` and `unzip` commands in `install_enginescript_custom_plugins()`.
+  - Downloads and extractions now fail fast (`return 1`) with a clear error message and temp directory cleanup if a download or extraction fails.
+- **Added source documentation comment** to `enginescript-shared-vhost.sh` header.
+  - Documents that `prompt_yes_no()` and `restart_service()` are provided by `enginescript-common.sh` and must be sourced before this file.
 
 ## 2026-03-03
 
