@@ -28,9 +28,10 @@ mkdir -p /var/www/admin/control-panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/
 
 # Substitute frontend dependency versions
-# Note: The Font Awesome version placeholder {FONTAWESOME_VER} is only used in index.html,
-# so we only need to substitute it in that file.
-sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
+# Note: The Font Awesome version placeholder {FONTAWESOME_VER} may also appear in
+# inline JS comments/strings in index.html, so we scope the substitution to only
+# lines that reference the Font Awesome asset (containing 'fontawesome').
+sed -i "/fontawesome/ s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
 for file in index.html dashboard.js external-services/external-services.js; do
     sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
 done
