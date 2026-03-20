@@ -2,6 +2,8 @@
 // Input sanitization, validation, and UI helpers
 
 export class DashboardUtils {
+  static MAX_DASHBOARD_METRIC = 999999;
+
   sanitizeInput(input) {
     if (typeof input !== "string") {
       return String(input || "");
@@ -27,7 +29,7 @@ export class DashboardUtils {
     }
     
     // Reasonable bounds for dashboard metrics
-    if (parsed < 0 || parsed > 999999) {
+    if (parsed < 0 || parsed > DashboardUtils.MAX_DASHBOARD_METRIC) {
       return fallback;
     }
     
@@ -45,7 +47,7 @@ export class DashboardUtils {
     }
     
     // Basic URL validation and sanitization
-    const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?(?:\/\S*)?$/;
+    const urlPattern = /^https?:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*(?::\d+)?(?:\/\S*)?$/;
     const sanitized = String(input)
       // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters
