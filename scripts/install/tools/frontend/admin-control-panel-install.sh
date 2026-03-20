@@ -28,7 +28,10 @@ mkdir -p /var/www/admin/control-panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/
 
 # Substitute frontend dependency versions
-sed -i "s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
+# Note: The Font Awesome version placeholder {FONTAWESOME_VER} may also appear in
+# inline JS comments/strings in index.html, so we scope the substitution to only
+# lines that reference the Font Awesome asset (containing 'fontawesome').
+sed -i "/fontawesome/ s|{FONTAWESOME_VER}|${FONTAWESOME_VER}|g" /var/www/admin/control-panel/index.html
 for file in index.html dashboard.js external-services/external-services.js; do
     sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
 done
@@ -40,7 +43,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     #   - the opening <div> with id="adminer-tool" and its matching closing </div> must each be on a single line
     #   - the block must not contain nested <div> elements whose closing tags appear before the end of the card
     # If this structure changes, update this command (or switch to an HTML-aware tool) to avoid partial removal.
-    sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/{1d;$d;}' "/var/www/admin/control-panel/index.html"
+    sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
 fi
 
 # Set permissions for the EngineScript frontend

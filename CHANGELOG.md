@@ -6,19 +6,10 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-03-20
 
-### 🛠️ CODE QUALITY IMPROVEMENTS (UptimeController)
+### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES
 
-- **Renamed** local variable `$overall_status` to `$overallStatus` in `UptimeController.php` to align with existing camelCase usage in this controller.
-- **Refactored** `getStatusText()` to use class constants (`STATUS_PAUSED`, `STATUS_NOT_CHECKED`, `STATUS_UP`) as array keys instead of magic numbers, maintaining a single source of truth.
-- **Added** `string` type hint to `$ratio` parameter in `parseUptimeRatio()` to improve type safety and match the existing docblock.
-### 🔒 VHOST SCRIPT ROBUSTNESS AND SAFETY IMPROVEMENTS
-
-- **Quoted `SSL_KEYLENGTH` variable** in `scripts/functions/shared/enginescript-shared-vhost.sh`.
-  - Changed `-k ${SSL_KEYLENGTH}` to `-k "${SSL_KEYLENGTH}"` to prevent word-splitting issues if the variable is empty or contains spaces.
-- **Added error handling** for `wget` and `unzip` commands in `install_enginescript_custom_plugins()`.
-  - Downloads and extractions now fail fast (`return 1`) with a clear error message and temp directory cleanup if a download or extraction fails.
-- **Added source documentation comment** to `enginescript-shared-vhost.sh` header.
-  - Documents that `prompt_yes_no()` and `restart_service()` are provided by `enginescript-common.sh` and must be sourced before this file.
+- **Added explanatory comment** in `scripts/install/tools/frontend/admin-control-panel-install.sh` clarifying that the `{FONTAWESOME_VER}` placeholder only appears in `index.html`, so its substitution is intentionally scoped to that file rather than included in the multi-file loop.
+- **Fixed sed range command** used to remove the Adminer tool card (`adminer-tool` div) when `INSTALL_ADMINER=0`. Changed `{1d;$d;}` to `d` so the command deletes all lines in the matching range, not only the first and last lines of the range.
 
 ## 2026-03-03
 
