@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-20 (2)
+
+### 🔧 UPTIMECONTROLLER CODE QUALITY FIXES
+
+- **Removed redundant inline comment** `// Up` from `case self::STATUS_UP:` in `UptimeController.php`. The constant name is self-documenting and the comment was unnecessary.
+- **Replaced magic numbers** `8` and `9` in `getStatusText()` with class constants `self::STATUS_SEEMS_DOWN` and `self::STATUS_DOWN` for consistency and maintainability.
+
 ## 2026-03-20
 
 ### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES
