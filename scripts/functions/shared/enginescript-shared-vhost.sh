@@ -9,6 +9,11 @@
 # Shared Virtual Host Functions
 # This file contains common functions used by both vhost-install.sh and vhost-import.sh
 #----------------------------------------------------------------------------------
+# Note: This file requires enginescript-common.sh to be sourced before it.
+# The following functions are defined in enginescript-common.sh and used here:
+#   - prompt_yes_no()   : Prompts the user for a yes/no answer with optional default and timeout
+#   - restart_service() : Restarts a named system service via systemctl or service
+#----------------------------------------------------------------------------------
 
 
 # Check if required services are running
@@ -115,7 +120,7 @@ create_ssl_certificate() {
   mkdir -p "/etc/nginx/ssl/${DOMAIN}"
 
   # Issue SSL Certificate
-  /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k ${SSL_KEYLENGTH}
+  /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k "${SSL_KEYLENGTH}"
 
   # Install SSL Certificate
   /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
@@ -637,14 +642,30 @@ install_enginescript_custom_plugins() {
     
     # 1. EngineScript Site Optimizer plugin
     mkdir -p "/tmp/enginescript-es-so-plugin"
-    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip"
-    unzip -q -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" || {
+      echo "ERROR: Failed to download EngineScript Site Optimizer plugin (version ${ES_SO_PLUGIN_VER})."
+      rm -rf "/tmp/enginescript-es-so-plugin"
+      return 1
+    }
+    unzip -q -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/" || {
+      echo "ERROR: Failed to extract EngineScript Site Optimizer plugin archive."
+      rm -rf "/tmp/enginescript-es-so-plugin"
+      return 1
+    }
     rm -rf "/tmp/enginescript-es-so-plugin"
 
     # 2. EngineScript Site Exporter plugin
     mkdir -p "/tmp/enginescript-es-se-plugin"
-    wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip"
-    unzip -q -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/"
+    wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" || {
+      echo "ERROR: Failed to download EngineScript Site Exporter plugin (version ${ES_SE_PLUGIN_VER})."
+      rm -rf "/tmp/enginescript-es-se-plugin"
+      return 1
+    }
+    unzip -q -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/" || {
+      echo "ERROR: Failed to extract EngineScript Site Exporter plugin archive."
+      rm -rf "/tmp/enginescript-es-se-plugin"
+      return 1
+    }
     rm -rf "/tmp/enginescript-es-se-plugin"
   else
     echo "Skipping EngineScript custom plugins installation (disabled in config)..."
