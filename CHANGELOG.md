@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-20
+
+### 🛠️ CODE QUALITY IMPROVEMENTS (UptimeController)
+
+- **Renamed** local variable `$overall_status` to `$overallStatus` in `UptimeController.php` to follow PHP camelCase convention for local variables.
+- **Refactored** `getStatusText()` to use class constants (`STATUS_PAUSED`, `STATUS_NOT_CHECKED`, `STATUS_UP`) as array keys instead of magic numbers, maintaining a single source of truth.
+- **Added** `string` type hint to `$ratio` parameter in `parseUptimeRatio()` to improve type safety and match the existing docblock.
+
 ## 2026-03-03
 
 ### 🌐 NON-WORDPRESS DOMAIN SUPPORT (Tasks 113 & 114)
