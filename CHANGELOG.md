@@ -8,7 +8,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🛠️ CODE QUALITY IMPROVEMENTS (UptimeController)
 
-- **Renamed** local variable `$overall_status` to `$overallStatus` in `UptimeController.php` to follow PHP camelCase convention for local variables.
+- **Renamed** local variable `$overall_status` to `$overallStatus` in `UptimeController.php` to align with existing camelCase usage in this controller.
 - **Refactored** `getStatusText()` to use class constants (`STATUS_PAUSED`, `STATUS_NOT_CHECKED`, `STATUS_UP`) as array keys instead of magic numbers, maintaining a single source of truth.
 - **Added** `string` type hint to `$ratio` parameter in `parseUptimeRatio()` to improve type safety and match the existing docblock.
 ### 🔒 VHOST SCRIPT ROBUSTNESS AND SAFETY IMPROVEMENTS
