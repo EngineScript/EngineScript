@@ -220,20 +220,20 @@ class UptimeController extends BaseController
         }
 
         // Determine overall status
-        $overall_status = 'unknown';
+        $overallStatus = 'unknown';
         if ($total > 0) {
             if ($downCount > 0) {
-                $overall_status = 'critical';
+                $overallStatus = 'critical';
             } elseif ($upCount === $total) {
-                $overall_status = 'healthy';
+                $overallStatus = 'healthy';
             } elseif ($upCount > 0) {
-                $overall_status = 'partial';
+                $overallStatus = 'partial';
             }
         }
 
         return [
             'enabled' => true,
-            'overall_status' => $overall_status,
+            'overall_status' => $overallStatus,
             'total_monitors' => $total,
             'up' => $upCount,
             'down' => $downCount,
@@ -284,11 +284,11 @@ class UptimeController extends BaseController
     private function getStatusText(int $status)
     {
         $statuses = [
-            0 => 'Paused',
-            1 => 'Not checked yet',
-            2 => 'Up',
-            8 => 'Seems down',
-            9 => 'Down'
+            self::STATUS_PAUSED      => 'Paused',
+            self::STATUS_NOT_CHECKED => 'Not checked yet',
+            self::STATUS_UP          => 'Up',
+            8                        => 'Seems down',
+            9                        => 'Down'
         ];
 
         return $statuses[$status] ?? 'Unknown';
@@ -301,7 +301,7 @@ class UptimeController extends BaseController
      * @param int $index Index to extract (0=day, 1=week, 2=month)
      * @return float|null Parsed ratio or null
      */
-    private function parseUptimeRatio($ratio, int $index)
+    private function parseUptimeRatio(string $ratio, int $index)
     {
         if (empty($ratio)) {
             return null;
