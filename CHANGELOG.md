@@ -4,6 +4,17 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-20
+
+### 🔒 VHOST SCRIPT ROBUSTNESS AND SAFETY IMPROVEMENTS
+
+- **Quoted `SSL_KEYLENGTH` variable** in `scripts/functions/shared/enginescript-shared-vhost.sh`.
+  - Changed `-k ${SSL_KEYLENGTH}` to `-k "${SSL_KEYLENGTH}"` to prevent word-splitting issues if the variable is empty or contains spaces.
+- **Added error handling** for `wget` and `unzip` commands in `install_enginescript_custom_plugins()`.
+  - Downloads and extractions now fail fast (`return 1`) with a clear error message and temp directory cleanup if a download or extraction fails.
+- **Added source documentation comment** to `enginescript-shared-vhost.sh` header.
+  - Documents that `prompt_yes_no()` and `restart_service()` are provided by `enginescript-common.sh` and must be sourced before this file.
+
 ## 2026-03-03
 
 ### 🌐 NON-WORDPRESS DOMAIN SUPPORT (Tasks 113 & 114)
