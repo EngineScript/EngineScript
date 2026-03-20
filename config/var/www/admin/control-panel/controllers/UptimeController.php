@@ -26,6 +26,17 @@ class UptimeController extends BaseController
     private const ENDPOINT_MONITORS = '/monitoring/uptime/monitors';
 
     /**
+     * Monitor status codes
+     * 
+     * Correspond to UptimeRobot API status values.
+     */
+    private const STATUS_PAUSED       = 0;
+    private const STATUS_NOT_CHECKED  = 1;
+    private const STATUS_UP           = 2;
+    private const STATUS_SEEMS_DOWN   = 8;
+    private const STATUS_DOWN         = 9;
+
+    /**
      * UptimeRobot API instance
      * 
      * @var UptimeRobotAPI|null
@@ -192,15 +203,15 @@ class UptimeController extends BaseController
         foreach ($monitors as $monitor) {
             $status = (int) ($monitor['status'] ?? 0);
             switch ($status) {
-            case 2: // Up
+            case self::STATUS_UP: // Up
                 $upCount++;
                 break;
-            case 8: // Seems down
-            case 9: // Down
+            case self::STATUS_SEEMS_DOWN: // Seems down
+            case self::STATUS_DOWN: // Down
                 $downCount++;
                 break;
-            case 0: // Paused
-            case 1: // Not checked yet
+            case self::STATUS_PAUSED: // Paused
+            case self::STATUS_NOT_CHECKED: // Not checked yet
                 $paused++;
                 break;
             default:
