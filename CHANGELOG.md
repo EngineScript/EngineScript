@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-20
+
+### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES
+
+- **Added explanatory comment** in `scripts/install/tools/frontend/admin-control-panel-install.sh` clarifying that the `{FONTAWESOME_VER}` placeholder only appears in `index.html`, so its substitution is intentionally scoped to that file rather than included in the multi-file loop.
+- **Fixed sed range command** used to remove the Adminer tool card (`adminer-tool` div) when `INSTALL_ADMINER=0`. Changed `{1d;$d;}` to `d` so the command deletes all lines in the matching range, not only the first and last lines of the range.
+
 ## 2026-03-03
 
 ### 🌐 NON-WORDPRESS DOMAIN SUPPORT (Tasks 113 & 114)
