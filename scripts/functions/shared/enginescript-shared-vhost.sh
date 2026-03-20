@@ -250,8 +250,19 @@ configure_cloudflare_settings() {
         
         # Validate backup IP
         if ! [[ "$SERVER_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-          echo "ERROR: Could not obtain valid IP address from any source"
-          echo "Received: ${SERVER_IP}"
+          echo "ERROR: Could not obtain valid IP address from any source."
+          echo "Received response: ${SERVER_IP}"
+          echo ""
+          echo "Troubleshooting suggestions:"
+          echo "  1) Verify this server has internet connectivity:"
+          echo "     - ping -c 3 8.8.8.8"
+          echo "     - curl -I https://www.google.com"
+          echo "  2) Ensure outbound HTTPS (TCP port 443) is allowed in any firewall/security group."
+          echo "  3) Check DNS resolution for the IP services:"
+          echo "     - dig +short ipinfo.io"
+          echo "     - dig +short icanhazip.com"
+          echo "  4) If using a proxy or restrictive network, allow access to ipinfo.io and icanhazip.com."
+          echo "  5) After fixing connectivity, re-run this installation script."
           exit 1
         fi
       fi
@@ -666,7 +677,7 @@ configure_redis() {
   fi
 
   # Set Redis Prefix
-  REDISPREFIX="es_$(printf '%s' "${DOMAIN}" | sha1sum | cut -c1-12)"
+  REDISPREFIX="es_$(printf '%s' "${SITE_URL}" | sha1sum | cut -c1-12)"
   sed -i "s|SEDREDISPREFIX|${REDISPREFIX}|g" "${WP_CONFIG_PATH}"
 }
 
