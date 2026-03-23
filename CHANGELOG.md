@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-03-23
-
-### 🔧 VHOST SHARED SCRIPT BUG FIXES
-
-- **Fixed CF_CHOICE condition** in `scripts/functions/shared/enginescript-shared-vhost.sh`: Changed `=~ ^[Yy]` to `== "y"` to correctly compare the string value set by the `prompt_yes_no` helper.
-- **Fixed IP regex** in `scripts/functions/shared/enginescript-shared-vhost.sh`: Corrected fourth octet pattern from `2[0-5][0-9]` to `2[0-4][0-9]` to properly match range 200–249 (the previous pattern incorrectly matched 250–259, overlapping with the separately-handled `25[0-5]` group and accepting invalid values).
-
 ## 2026-03-20 (2)
 
 ### 🔧 UPTIMECONTROLLER CODE QUALITY FIXES
