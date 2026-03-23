@@ -206,7 +206,7 @@ configure_cloudflare_settings() {
   fi
 
   # Only continue with Cloudflare configuration if the user chose to proceed
-  if [[ "$CF_CHOICE" =~ ^[Yy] ]]; then
+  if [[ "$CF_CHOICE" == "y" ]]; then
     # Cloudflare Keys
     export CF_Key="${CF_GLOBAL_API_KEY}"
     export CF_Email="${CF_ACCOUNT_EMAIL}"
@@ -254,7 +254,7 @@ configure_cloudflare_settings() {
         SERVER_IP=$(curl -s --max-time 5 https://icanhazip.com)
         
         # Validate backup IP (ensure each octet is within 0-255)
-        if ! [[ "$SERVER_IP" =~ ^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-5][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+        if ! [[ "$SERVER_IP" =~ ^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
           echo "ERROR: Could not obtain valid IP address from any source."
           echo "Received response: ${SERVER_IP}"
           echo ""
