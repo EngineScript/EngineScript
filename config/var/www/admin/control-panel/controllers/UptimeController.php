@@ -206,12 +206,12 @@ class UptimeController extends BaseController
             case self::STATUS_UP:
                 $upCount++;
                 break;
-            case self::STATUS_SEEMS_DOWN: // Seems down
-            case self::STATUS_DOWN: // Down
+            case self::STATUS_SEEMS_DOWN:
+            case self::STATUS_DOWN:
                 $downCount++;
                 break;
-            case self::STATUS_PAUSED: // Paused
-            case self::STATUS_NOT_CHECKED: // Not checked yet
+            case self::STATUS_PAUSED:
+            case self::STATUS_NOT_CHECKED:
                 $paused++;
                 break;
             default:

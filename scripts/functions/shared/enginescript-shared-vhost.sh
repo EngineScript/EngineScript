@@ -248,13 +248,13 @@ configure_cloudflare_settings() {
       echo "Detecting server public IP address..."
       SERVER_IP=$(curl -s --max-time 5 https://ipinfo.io/ip)
       
-      # Validate IP format
-      if ! [[ "$SERVER_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+      # Validate IP format (ensure each octet is within 0-255)
+      if ! [[ "$SERVER_IP" =~ ^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
         echo "WARNING: Invalid IP from ipinfo.io (${SERVER_IP}), trying backup source..."
         SERVER_IP=$(curl -s --max-time 5 https://icanhazip.com)
         
-        # Validate backup IP
-        if ! [[ "$SERVER_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        # Validate backup IP (ensure each octet is within 0-255)
+        if ! [[ "$SERVER_IP" =~ ^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-5][0-9]|[01]?[0-9][0-9]?)$ ]]; then
           echo "ERROR: Could not obtain valid IP address from any source."
           echo "Received response: ${SERVER_IP}"
           echo ""
