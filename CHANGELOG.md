@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-24
+
+### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT ROBUSTNESS FIXES
+
+- **Added Font Awesome substitution validation** in `scripts/install/tools/frontend/admin-control-panel-install.sh`. After the `sed` substitution, a `grep` check verifies the `{FONTAWESOME_VER}` placeholder is no longer present in `index.html`; if it is, the script exits with an error to prevent silent failures when the CDN URL format changes.
+- **Added `exit 1`** when the expected Adminer tool `<div>` is not found in `index.html` during Adminer card removal (`INSTALL_ADMINER=0`), so automated installations surface the failure instead of silently continuing.
+- **Added nested `<div>` sanity check** before deleting the Adminer card block. The block is extracted first and its opening/closing `<div>` counts are compared; if they are not both exactly 1, removal is skipped with a warning to avoid corrupting the HTML structure.
+
 ## 2026-03-20 (2)
 
 ### 🔧 UPTIMECONTROLLER CODE QUALITY FIXES

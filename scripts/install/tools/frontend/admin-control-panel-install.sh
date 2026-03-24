@@ -33,6 +33,13 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 # the specific Font Awesome CDN URL that contains the version segment. If the
 # Font Awesome CDN path changes, update the pattern below accordingly.
 sed -i 's|\(cdnjs\.cloudflare\.com/ajax/libs/font-awesome/\){FONTAWESOME_VER}\(/css/all\.min\.css\)|\1'"${FONTAWESOME_VER}"'\2|g' /var/www/admin/control-panel/index.html
+
+# Verify that the Font Awesome placeholder was successfully replaced to avoid silent failures
+if grep -q '{FONTAWESOME_VER}' /var/www/admin/control-panel/index.html; then
+    echo "Error: Failed to substitute Font Awesome version in index.html; placeholder {FONTAWESOME_VER} still present." >&2
+    exit 1
+fi
+
 for file in index.html dashboard.js external-services/external-services.js; do
     sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
 done
@@ -47,9 +54,21 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # To avoid corrupting the page if the structure has changed, first ensure that the expected
     # single-line opening <div> for the Adminer card is present before applying the sed range.
     if grep -qE '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
-        sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
+        # Extract the block that would be deleted, then perform a simple sanity check
+        # to ensure there are no nested <div> elements that would cause a partial removal.
+        adminer_block="$(
+            sed -n '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/p' "/var/www/admin/control-panel/index.html"
+        )"
+        open_div_count=$(printf '%s\n' "$adminer_block" | grep -o '<div' | wc -l | tr -d '[:space:]')
+        close_div_count=$(printf '%s\n' "$adminer_block" | grep -o '</div>' | wc -l | tr -d '[:space:]')
+        if [[ "$open_div_count" -eq 1 && "$close_div_count" -eq 1 ]]; then
+            sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
+        else
+            echo "Warning: Adminer tool block appears to contain nested <div> elements; skipping Adminer card removal to avoid corrupting index.html." >&2
+        fi
     else
         echo "Warning: Expected Adminer tool div not found in index.html; skipping Adminer card removal." >&2
+        exit 1
     fi
 fi
 
