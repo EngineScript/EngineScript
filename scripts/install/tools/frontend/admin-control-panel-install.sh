@@ -32,8 +32,7 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 # inline JS comments/strings in index.html, so we scope the substitution to only
 # the specific Font Awesome CDN URL that contains the version segment. If the
 # Font Awesome CDN path changes, update the pattern below accordingly.
-sed -i 's|\(cdnjs\.cloudflare\.com/ajax/libs/font-awesome/\){FONTAWESOME_VER}\(/css/all\.min\.css\)|\1'"${FONTAWESOME_VER}"'\2|g' /var/www/admin/control-panel/index.html
-
+sed -i "s|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${FONTAWESOME_VER}/css/all.min.css|g" /var/www/admin/control-panel/index.html
 # Verify that the Font Awesome placeholder was successfully replaced to avoid silent failures
 if grep -q '{FONTAWESOME_VER}' /var/www/admin/control-panel/index.html; then
     echo "Error: Failed to substitute Font Awesome version in index.html; placeholder {FONTAWESOME_VER} still present." >&2
@@ -68,7 +67,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
         fi
     else
         echo "Warning: Expected Adminer tool div not found in index.html; skipping Adminer card removal." >&2
-        exit 1
+
     fi
 fi
 

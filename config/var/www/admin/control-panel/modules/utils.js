@@ -46,20 +46,24 @@ export class DashboardUtils {
       return fallback;
     }
     
-    // Basic URL validation and sanitization
-    const urlPattern = /^https?:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?){0,126}(?::\d{1,5})?(?:\/\S*)?$/;
+    // Strip control characters and limit length before parsing
     const sanitized = String(input)
       // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters
       .trim()
       .substring(0, 2048); // Limit URL length
-    
-    // Reject if it doesn't match the strict https?:// pattern
-    // This already blocks data:, javascript:, vbscript: and other dangerous schemes
-    if (!urlPattern.test(sanitized)) {
+
+    // Use the native URL constructor for spec-compliant, ReDoS-safe validation.
+    // This inherently blocks data:, javascript:, vbscript: and other dangerous schemes.
+    try {
+      const parsed = new URL(sanitized);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return fallback;
+      }
+    } catch {
       return fallback;
     }
-    
+
     return sanitized;
   }
 
