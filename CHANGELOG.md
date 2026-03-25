@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-25
+
+### 🔒 ADMIN CONTROL PANEL UTILS.JS SANITIZATION FIXES
+
+- **Fixed `sanitizeNumeric`** in `config/var/www/admin/control-panel/modules/utils.js`: replaced the permissive `/[^\d.-]/g` regex (which allowed multiple decimal points and minus signs such as `1.2.3` or `1-2-3`) with a proper anchored pattern match. The function now returns `String(parsed)` instead of the raw `cleaned` string, ensuring the returned value always matches the validated numeric range.
+- **Fixed `sanitizePercentage`**: added validation against `/^\d+(\.\d+)?%?$/` after stripping non-numeric characters, so invalid inputs like `1.2.3%%` fall back to the default instead of being returned as-is.
+- **Fixed `createContentElement`**: added a guard for null/non-object `config` arguments and type/length validation for all required CSS class name properties (`containerClass`, `iconClass`, `contentClass`, `timeClass`). Returns `null` on invalid input instead of creating DOM elements with `undefined` class names. Added a default value (`fa-info-circle`) for the optional `iconType` property. Updated `messageText` and `timeText` to use `?? ""` so `null`/`undefined` values are passed safely to `sanitizeInput`.
+
 ## 2026-03-20
 
 ### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES

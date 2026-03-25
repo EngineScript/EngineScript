@@ -20,25 +20,50 @@ export class DashboardUtils {
   }
 
   sanitizeNumeric(input, fallback = "0") {
-    const cleaned = String(input || "").replace(/[^\d.-]/g, "");
-    const parsed = parseFloat(cleaned);
-    
+    const str = String(input ?? "").trim();
+
+    // Build a well-formed numeric string: optional leading '-', digits, optional '.' and more digits.
+    const match = str.match(/^(-)?(\d+)?(?:\.(\d+))?/);
+    if (!match) {
+      return fallback;
+    }
+
+    const sign = match[1] || "";
+    const intPart = match[2] || "";
+    const fracPart = match[3] || "";
+
+    // Require at least one digit overall
+    if (!intPart && !fracPart) {
+      return fallback;
+    }
+
+    const normalized = sign + (intPart || "0") + (fracPart ? "." + fracPart : "");
+    const parsed = parseFloat(normalized);
+
     // Check if it's a valid number and within reasonable bounds
     if (isNaN(parsed) || !isFinite(parsed)) {
       return fallback;
     }
-    
+
     // Reasonable bounds for dashboard metrics
     if (parsed < 0 || parsed > DashboardUtils.MAX_DASHBOARD_METRIC) {
       return fallback;
     }
-    
-    return cleaned || fallback;
+
+    return String(parsed);
   }
 
   sanitizePercentage(input, fallback = "0%") {
     const cleaned = String(input || "").replace(/[^\d.%]/g, "");
-    return cleaned || fallback;
+
+    // Ensure the cleaned value is a syntactically valid percentage:
+    // one or more digits, optional single decimal part, optional trailing '%'.
+    const percentagePattern = /^\d+(\.\d+)?%?$/;
+    if (!cleaned || !percentagePattern.test(cleaned)) {
+      return fallback;
+    }
+
+    return cleaned;
   }
 
   sanitizeUrl(input, fallback = "") {
@@ -105,7 +130,34 @@ export class DashboardUtils {
 
   // Helper method for creating content elements with icon, message, and time
   createContentElement(config) {
-    const { containerClass, iconClass, contentClass, messageText, timeText, timeClass, iconType } = config;
+    // Basic validation to avoid undefined class names and malformed DOM
+    if (!config || typeof config !== "object") {
+      return null;
+    }
+
+    const {
+      containerClass,
+      iconClass,
+      contentClass,
+      messageText,
+      timeText,
+      timeClass,
+      iconType = "fa-info-circle", // default icon when not specified
+    } = config;
+
+    // Ensure required class names are non-empty strings
+    if (
+      typeof containerClass !== "string" ||
+      containerClass.length === 0 ||
+      typeof iconClass !== "string" ||
+      iconClass.length === 0 ||
+      typeof contentClass !== "string" ||
+      contentClass.length === 0 ||
+      typeof timeClass !== "string" ||
+      timeClass.length === 0
+    ) {
+      return null;
+    }
 
     const containerDiv = document.createElement("div");
     containerDiv.className = containerClass;
@@ -121,11 +173,11 @@ export class DashboardUtils {
     contentDiv.className = contentClass;
 
     const message = document.createElement("p");
-    message.textContent = this.sanitizeInput(messageText);
+    message.textContent = this.sanitizeInput(messageText ?? "");
 
     const time = document.createElement("span");
     time.className = timeClass;
-    time.textContent = this.sanitizeInput(timeText);
+    time.textContent = this.sanitizeInput(timeText ?? "");
 
     contentDiv.appendChild(message);
     contentDiv.appendChild(time);
