@@ -47,7 +47,7 @@ export class DashboardUtils {
     }
     
     // Basic URL validation and sanitization
-    const urlPattern = /^https?:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*(?::\d+)?(?:\/\S*)?$/;
+    const urlPattern = /^https?:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?){0,126}(?::\d{1,5})?(?:\/\S*)?$/;
     const sanitized = String(input)
       // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters

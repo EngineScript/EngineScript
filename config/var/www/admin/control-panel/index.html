@@ -11,11 +11,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous" id="fontawesome-css">
     <script>
     // Detect if Font Awesome failed to load (e.g. {FONTAWESOME_VER} placeholder not replaced)
-    document.addEventListener('DOMContentLoaded', function() {
-      var fa = document.getElementById('fontawesome-css');
+    document.addEventListener('DOMContentLoaded', () => {
+      const fa = document.getElementById('fontawesome-css');
       if (!fa || !fa.sheet || fa.sheet.cssRules.length === 0) {
         console.warn('Font Awesome failed to load. Icons will be missing. Ensure {FONTAWESOME_VER} is replaced during installation.');
-        var banner = document.createElement('div');
+        const banner = document.createElement('div');
         banner.style.cssText = 'background:#d32f2f;color:#fff;padding:8px 16px;text-align:center;font-size:14px;';
         banner.textContent = 'Warning: Font Awesome icons failed to load. Run the EngineScript installer to configure the Font Awesome version.';
         document.body.prepend(banner);

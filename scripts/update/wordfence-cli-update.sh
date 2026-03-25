@@ -22,6 +22,5 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Update Wordfence CLI
 
-cd /usr/src
-wget -O /usr/src https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb --no-check-certificate
+safe_wget "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb"
 sudo apt install /usr/src/wordfence.deb -y

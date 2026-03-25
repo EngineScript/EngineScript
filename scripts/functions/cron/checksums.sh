@@ -26,25 +26,20 @@ source /home/EngineScript/sites-list/sites.sh
 source /home/EngineScript/enginescript-install-options.txt
 
 # Store sites with errors
-ERRORS=""
+ERRORS=()
 
 for i in "${SITES[@]}"
 do
     cd "/var/www/sites/$i/html"
     # Verify checksums
     if ! wp core verify-checksums --allow-root; then
-        # Append site name with a leading space for separation
-        ERRORS="${ERRORS} ${i}"
+        ERRORS+=("$i")
     fi
 done
 
-# Trim leading space if ERRORS is not empty
-ERRORS="${ERRORS##*( )}"
-
-if [[ -n "$ERRORS" ]]; then
-    # Use multiple -d options for clarity and proper quoting
+if [[ ${#ERRORS[@]} -gt 0 ]]; then
     curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
         -d type=note \
         -d "title=Server: $IP_ADDRESS" \
-        -d "body=Checksums verification failed for the following sites: $ERRORS"
+        -d "body=Checksums verification failed for the following sites: ${ERRORS[*]}"
 fi

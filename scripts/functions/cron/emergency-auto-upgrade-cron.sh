@@ -19,5 +19,5 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Get Latest Version
-wget -O /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh https://raw.githubusercontent.com/EngineScript/EngineScript/master/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh --no-check-certificate
+safe_wget "https://raw.githubusercontent.com/EngineScript/EngineScript/master/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh" "/usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh"
 sudo bash /usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh

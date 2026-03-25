@@ -8,6 +8,8 @@ on:
   pull_request_target:
     types: [opened]
 
+permissions: {} # Deny all by default; specific permissions granted at job level
+
 jobs:
   guide:
     runs-on: ubuntu-latest

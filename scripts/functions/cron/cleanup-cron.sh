@@ -20,7 +20,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Removes stuck lock files (older than 6 hours)
 # Credit SlickStack for the idea.
-/usr/bin/find /tmp/*.lock -mmin +360 -delete > /dev/null 2>&1
+find /tmp -maxdepth 1 -name '*.lock' -mmin +360 -delete 2>/dev/null
 
 # Remove PHP session files older than 6 hours
 find /var/cache/php-sessions -type f -mmin +360 -delete > /dev/null 2>&1

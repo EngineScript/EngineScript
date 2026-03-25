@@ -25,7 +25,7 @@ CVE_FILE="/usr/local/bin/mysqltuner/vulnerabilities.csv"
 if [ ! -f "${CVE_FILE}" ] || [ $(( $(date +%s) - $(stat -c %Y "${CVE_FILE}" 2>/dev/null || echo 0) )) -gt $((7 * 24 * 60 * 60)) ]; then
 	echo "Updating MySQLTuner CVE database..."
 	mkdir -p "$(dirname "${CVE_FILE}")"
-	if wget -q -O "${CVE_FILE}" https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv --no-check-certificate; then
+	if wget -q -O "${CVE_FILE}" https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv; then
 		chmod 644 "${CVE_FILE}" 2>/dev/null || true
 		echo "Vulnerabilities CVE database updated: ${CVE_FILE}"
 	else

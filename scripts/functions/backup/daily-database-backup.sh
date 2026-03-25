@@ -41,7 +41,7 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 for i in "${SITES[@]}"
 do
     echo "Running Database Backup for ${i}"
-    cd "/var/www/sites/$i/html"
+    cd "/var/www/sites/$i/html" || { echo "ERROR: Site directory not found for ${i}" >&2; continue; }
 
     # Local Database Backup
       mkdir -p "/home/EngineScript/site-backups/$i/database/daily/${NOW}"

@@ -26,7 +26,7 @@ mv /var/www/admin/tools/phpmyadmin/config.inc.php /usr/src/config.inc.php
 rm -rf /var/www/admin/tools/phpmyadmin
 
 # Download phpMyAdmin
-wget -O "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" --no-check-certificate
+safe_wget "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
 unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d /usr/src
 mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" /var/www/admin/tools/phpmyadmin
 mkdir -p /var/www/admin/tools/phpmyadmin/tmp
