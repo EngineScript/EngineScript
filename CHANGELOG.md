@@ -4,12 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-03-25
-
-### 🔧 CRON JOB SCRIPT EXECUTION FIX
-
-- **Fixed missing `bash` invocation** in `scripts/install/cron/cron-install.sh` for the emergency auto-upgrade cron job. The `emergency-auto-upgrade.sh` script was referenced without the `bash` interpreter, causing it to fail at execution time when run via `cd ... ; script.sh`. Added `bash` before the script name to match the pattern used by all other cron entries.
-
 ## 2026-03-20
 
 ### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES
