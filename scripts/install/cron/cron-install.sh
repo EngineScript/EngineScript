@@ -33,7 +33,7 @@ fi
 #----------------------------------------------------------------------------------
 
 # Security and Updates
-[[ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" == "1" ]] && add_cron_job "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; emergency-auto-upgrade.sh >/dev/null 2>&1"
+[[ "${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" == "1" ]] && add_cron_job "1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; bash emergency-auto-upgrade.sh >/dev/null 2>&1"
 
 [[ "${ENGINESCRIPT_AUTO_UPDATE}" == "1" ]] && add_cron_job "55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1"
 
