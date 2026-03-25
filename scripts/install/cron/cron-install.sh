@@ -13,12 +13,12 @@ source /home/EngineScript/enginescript-install-options.txt
 
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
-
+if ! crontab -l 2>/dev/null | grep -qF "$entry"; then
 
 # Add a cron job only if it doesn't already exist
 add_cron_job() {
     local entry="$1"
-    if ! crontab -l 2>/dev/null | grep -qF "$entry"; then
+    if ! crontab -l 2>/dev/null | awk -v entry="$entry" '$0 == entry { found=1; exit } END { exit !found }'; then
         (crontab -l 2>/dev/null; echo "$entry") | crontab -
     fi
 }
@@ -45,7 +45,7 @@ add_cron_job "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron
 
 [[ "${HOURLY_LOCAL_DATABASE_BACKUP}" == "1" ]] && add_cron_job "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash hourly-database-backup.sh >/dev/null 2>&1"
 
-[[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" == "1" ]] && add_cron_job "10 1 */7 * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1"
+[[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" == "1" ]] && add_cron_job "10 1 * * 0 cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1"
 
 # System Maintenance
 add_cron_job "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1"
@@ -53,7 +53,7 @@ add_cron_job "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; b
 # API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
 add_cron_job "* * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
 
-[[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]] && add_cron_job "37 5 */7 * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1"
+[[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]] && add_cron_job "37 5 * * 0 cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1"
 
 # Configuration Backups
 add_cron_job "47 6 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash nginx-backup.sh >/dev/null 2>&1"

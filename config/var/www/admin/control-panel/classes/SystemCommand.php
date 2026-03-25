@@ -2,55 +2,78 @@
 /**
  * SystemCommand Class
  * Encapsulates all shell command executions for security, testing, and maintainability
- * 
- * @version 1.0.0
- * @security HIGH - Centralized command execution with validation
+ *
+ * Every command runs via proc_open() with array syntax — the OS spawns the
+ * process directly, bypassing the shell entirely so no injection is possible.
+ *
+ * @version 1.2.0
+ * @security HIGH - Zero shell_exec/exec usage; all execution via proc_open array
  */
 
 class SystemCommand
 {
-    
+
     /**
-     * Execute a shell command with validation and error handling
-     * @param string $command The command to execute
-     * @return string|false Command output or false on failure
+     * Check if shell commands should be mocked (for testing)
      */
-    private static function execute($command)
+    private static function isMocked(): bool
     {
-        if (empty($command)) {
-            return false;
-        }
-        
-        // For testing environments, we can mock this
-        if (defined('ENGINESCRIPT_MOCK_SHELL') && ENGINESCRIPT_MOCK_SHELL) {
-            return self::mockCommand();
-        }
-        
-        // Execute command
-        $output = shell_exec($command);
-        
-        return $output !== null ? trim($output) : false;
+        return defined('ENGINESCRIPT_MOCK_SHELL') && ENGINESCRIPT_MOCK_SHELL;
     }
-    
+
     /**
      * Mock command execution for testing
-     * @return string Mocked output
      */
-    private static function mockCommand()
+    private static function mockCommand(): string
     {
-        // Testing hook - can be extended for unit tests
         return '';
     }
 
     /**
+     * Execute a process via proc_open without shell interpretation
+     *
+     * @param array<int,string> $argv Command array (binary + arguments)
+     * @param bool $captureStderr Read stderr instead of stdout (e.g. nginx -v)
+     * @return string|false Trimmed output or false on failure
+     */
+    private static function execProc(array $argv, bool $captureStderr = false): string|false
+    {
+        if ($argv === []) {
+            return false;
+        }
+
+        if (self::isMocked()) {
+            return self::mockCommand();
+        }
+
+        $descriptors = [
+            0 => ['file', '/dev/null', 'r'],
+            1 => $captureStderr ? ['file', '/dev/null', 'w'] : ['pipe', 'w'],
+            2 => $captureStderr ? ['pipe', 'w'] : ['file', '/dev/null', 'w'],
+        ];
+
+        $proc = proc_open($argv, $descriptors, $pipes);
+
+        if (!is_resource($proc)) {
+            return false;
+        }
+
+        $pipe = $captureStderr ? 2 : 1;
+        $output = stream_get_contents($pipes[$pipe]);
+        fclose($pipes[$pipe]);
+        proc_close($proc);
+
+        return (is_string($output) && $output !== '') ? trim($output) : false;
+    }
+
+    /**
      * Run a whitelisted binary with arguments
-     * Public interface for controllers that need to run specific commands
      *
      * @param string $binary The binary name (must be whitelisted)
-     * @param array $args Arguments to pass to the binary
+     * @param array<int,string> $args Arguments to pass to the binary
      * @return string|false Command output or false on failure
      */
-    public static function run($binary, array $args = [])
+    public static function run(string $binary, array $args = []): string|false
     {
         $allowedBinaries = ['redis-cli', 'find', 'du'];
 
@@ -59,107 +82,109 @@ class SystemCommand
             return false;
         }
 
-        // Build escaped command
-        $command = escapeshellarg($binary);
-        foreach ($args as $arg) {
-            $command .= ' ' . escapeshellarg($arg);
-        }
-
-        return self::execute($command);
+        return self::execProc([$binary, ...$args]);
     }
 
     /**
      * Get systemd services
-     * @return string Raw systemctl output
+     * @return string|false Raw systemctl output or false on failure
      */
-    public static function getSystemdServices()
+    public static function getSystemdServices(): string|false
     {
-        $command = 'systemctl list-units --type=service --all --no-pager --no-legend 2>/dev/null';
-        return self::execute($command);
+        return self::execProc(['systemctl', 'list-units', '--type=service', '--all', '--no-pager', '--no-legend']);
     }
-    
+
     /**
      * Get kernel version
-     * @return string Kernel version or empty string
+     * @return string|false Kernel version or false on failure
      */
-    public static function getKernelVersion()
+    public static function getKernelVersion(): string|false
     {
-        return self::execute('uname -r 2>/dev/null');
+        return self::execProc(['uname', '-r']);
     }
-    
+
     /**
      * Get primary network IP address
-     * @return string IP address or empty string
+     * @return string|false IP address or false on failure
      */
-    public static function getNetworkIP()
+    public static function getNetworkIP(): string|false
     {
-        $command = "ip route get 8.8.8.8 2>/dev/null | awk '{print \$7; exit}'";
-        return self::execute($command);
+        // Run ip directly, parse in PHP instead of piping through awk
+        $output = self::execProc(['ip', 'route', 'get', '8.8.8.8']);
+
+        if ($output === false) {
+            return false;
+        }
+
+        // Extract source IP from "... src 10.0.0.1 ..."
+        if (preg_match('/src\s+(\S+)/', $output, $matches)) {
+            return $matches[1];
+        }
+
+        return false;
     }
-    
+
     /**
      * Get service status
-     * @param string $service Service name (validated, alphanumeric + dash/underscore/dot)
-     * @return string|false Service status (active/inactive) or false on error
+     * @param string $service Service name (alphanumeric + dash/underscore/dot)
+     * @return string|false Service status (active/inactive/failed/unknown) or false on error
      */
-    public static function getServiceStatus($service)
+    public static function getServiceStatus(string $service): string|false
     {
         // Validate service name (alphanumeric, dash, underscore, dot only)
-        // Dot added to support PHP-FPM services like php-fpm8.4
+        // Dot supports PHP-FPM services like php-fpm8.4
         if (!preg_match('/^[a-zA-Z0-9._-]+$/', $service)) {
             return false;
         }
-        
-        // @codacy suppress [The use of function escapeshellarg() is discouraged] Required for shell command safety - input is validated
-        $command = sprintf('systemctl status %s --no-pager 2>/dev/null', escapeshellarg($service));
-        $output = self::execute($command);
-        
-        if ($output === false || empty($output)) {
+
+        $output = self::execProc(['systemctl', 'status', $service, '--no-pager']);
+
+        if ($output === false || $output === '') {
             return false;
         }
-        
-        // Parse the Active line from systemctl status output
-        // Format: "     Active: active (running) since ..."
+
+        // Parse the Active line: "     Active: active (running) since ..."
         if (preg_match('/Active:\s+(active|inactive|failed|unknown)/', $output, $matches)) {
             return $matches[1];
         }
-        
+
         return false;
     }
-    
+
     /**
      * Get Nginx version
-     * @return string Nginx version output
+     * @return string|false Nginx version output or false on failure
      */
-    public static function getNginxVersion()
+    public static function getNginxVersion(): string|false
     {
-        return self::execute('nginx -v 2>&1');
+        // nginx -v writes to stderr
+        return self::execProc(['nginx', '-v'], captureStderr: true);
     }
-    
+
     /**
      * Get PHP version
-     * @return string PHP version output
+     * @return string|false PHP version output or false on failure
      */
-    public static function getPhpVersion()
+    public static function getPhpVersion(): string|false
     {
-        return self::execute('php -v 2>/dev/null');
+        return self::execProc(['php', '-v']);
     }
-    
+
     /**
      * Get MariaDB version
-     * @return string MariaDB version output
+     * @return string|false MariaDB version output or false on failure
      */
-    public static function getMariadbVersion()
+    public static function getMariadbVersion(): string|false
     {
-        return self::execute('mariadb --version 2>/dev/null');
+        return self::execProc(['mariadb', '--version']);
     }
-    
+
     /**
      * Get Redis version
-     * @return string Redis version output
+     * @return string|false Redis version output or false on failure
      */
-    public static function getRedisVersion()
+    public static function getRedisVersion(): string|false
     {
-        return self::execute('redis-server --version 2>/dev/null');
+        return self::execProc(['redis-server', '--version']);
     }
 }
