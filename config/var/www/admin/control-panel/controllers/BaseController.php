@@ -290,14 +290,14 @@ abstract class BaseController
         }
         
         switch ($type) {
-        case 'string':
-            return $this->validateString($input, $max_length);
-        case 'path':
-            return $this->validatePath($input);
-        case 'service':
-            return $this->validateService($input);
-        default:
-            return false;
+            case 'string':
+                return $this->validateString($input, $max_length);
+            case 'path':
+                return $this->validatePath($input);
+            case 'service':
+                return $this->validateService($input);
+            default:
+                return false;
         }
     }
 
