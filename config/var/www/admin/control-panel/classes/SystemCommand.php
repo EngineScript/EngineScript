@@ -7,14 +7,16 @@
  * @security HIGH - Centralized command execution with validation
  */
 
-class SystemCommand {
+class SystemCommand
+{
     
     /**
      * Execute a shell command with validation and error handling
      * @param string $command The command to execute
      * @return string|false Command output or false on failure
      */
-    private static function execute($command) {
+    private static function execute($command)
+    {
         if (empty($command)) {
             return false;
         }
@@ -34,7 +36,8 @@ class SystemCommand {
      * Mock command execution for testing
      * @return string Mocked output
      */
-    private static function mockCommand() {
+    private static function mockCommand()
+    {
         // Testing hook - can be extended for unit tests
         return '';
     }
@@ -47,7 +50,8 @@ class SystemCommand {
      * @param array $args Arguments to pass to the binary
      * @return string|false Command output or false on failure
      */
-    public static function run($binary, array $args = []) {
+    public static function run($binary, array $args = [])
+    {
         $allowedBinaries = ['redis-cli', 'find', 'du'];
 
         if (!in_array($binary, $allowedBinaries, true)) {
@@ -68,7 +72,8 @@ class SystemCommand {
      * Get systemd services
      * @return string Raw systemctl output
      */
-    public static function getSystemdServices() {
+    public static function getSystemdServices()
+    {
         $command = 'systemctl list-units --type=service --all --no-pager --no-legend 2>/dev/null';
         return self::execute($command);
     }
@@ -77,7 +82,8 @@ class SystemCommand {
      * Get kernel version
      * @return string Kernel version or empty string
      */
-    public static function getKernelVersion() {
+    public static function getKernelVersion()
+    {
         return self::execute('uname -r 2>/dev/null');
     }
     
@@ -85,7 +91,8 @@ class SystemCommand {
      * Get primary network IP address
      * @return string IP address or empty string
      */
-    public static function getNetworkIP() {
+    public static function getNetworkIP()
+    {
         $command = "ip route get 8.8.8.8 2>/dev/null | awk '{print \$7; exit}'";
         return self::execute($command);
     }
@@ -95,7 +102,8 @@ class SystemCommand {
      * @param string $service Service name (validated, alphanumeric + dash/underscore/dot)
      * @return string|false Service status (active/inactive) or false on error
      */
-    public static function getServiceStatus($service) {
+    public static function getServiceStatus($service)
+    {
         // Validate service name (alphanumeric, dash, underscore, dot only)
         // Dot added to support PHP-FPM services like php-fpm8.4
         if (!preg_match('/^[a-zA-Z0-9._-]+$/', $service)) {
@@ -123,7 +131,8 @@ class SystemCommand {
      * Get Nginx version
      * @return string Nginx version output
      */
-    public static function getNginxVersion() {
+    public static function getNginxVersion()
+    {
         return self::execute('nginx -v 2>&1');
     }
     
@@ -131,7 +140,8 @@ class SystemCommand {
      * Get PHP version
      * @return string PHP version output
      */
-    public static function getPhpVersion() {
+    public static function getPhpVersion()
+    {
         return self::execute('php -v 2>/dev/null');
     }
     
@@ -139,7 +149,8 @@ class SystemCommand {
      * Get MariaDB version
      * @return string MariaDB version output
      */
-    public static function getMariadbVersion() {
+    public static function getMariadbVersion()
+    {
         return self::execute('mariadb --version 2>/dev/null');
     }
     
@@ -147,7 +158,8 @@ class SystemCommand {
      * Get Redis version
      * @return string Redis version output
      */
-    public static function getRedisVersion() {
+    public static function getRedisVersion()
+    {
         return self::execute('redis-server --version 2>/dev/null');
     }
 }
