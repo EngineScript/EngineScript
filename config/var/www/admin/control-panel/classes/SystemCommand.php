@@ -12,6 +12,35 @@
 
 class SystemCommand
 {
+    /**
+     * Central allowlist — single source of truth for every executable we may invoke.
+     *
+     * @var array<int,string>
+     */
+    private const ALLOWED_BINARIES = [
+        'du',
+        'find',
+        'ip',
+        'mariadb',
+        'nginx',
+        'php',
+        'redis-cli',
+        'redis-server',
+        'systemctl',
+        'uname',
+    ];
+
+    /**
+     * Binaries permitted through the public run() API — a restricted subset of
+     * ALLOWED_BINARIES intentionally exposed for general-purpose command invocation.
+     *
+     * @var array<int,string>
+     */
+    private const RUN_ALLOWED_BINARIES = [
+        'du',
+        'find',
+        'redis-cli',
+    ];
 
     /**
      * Check if shell commands should be mocked (for testing)
@@ -49,13 +78,10 @@ class SystemCommand
         // Central allowlist — single source of truth for every executable we may
         // invoke. proc_open with an array calls execve(2) directly (no shell), so
         // shell metacharacters in arguments are inert by design.
-        $allowed = [
-            'du', 'find', 'ip', 'mariadb', 'nginx',
-            'php', 'redis-cli', 'redis-server', 'systemctl', 'uname',
-        ];
+        $allowed = self::ALLOWED_BINARIES;
 
         if (!in_array($argv[0], $allowed, true)) {
-            error_log('[EngineScript] SystemCommand blocked non-whitelisted command: ' . $argv[0]);
+            error_log('[EngineScript] SystemCommand blocked non-allowlisted command: ' . $argv[0]);
             return false;
         }
 
@@ -71,7 +97,13 @@ class SystemCommand
         }
 
         $output = trim((string) stream_get_contents($pipes[$pipeIndex]));
-        fclose($pipes[$pipeIndex]);
+
+        foreach ($pipes as $pipe) {
+            if (is_resource($pipe)) {
+                fclose($pipe);
+            }
+        }
+
         proc_close($proc);
 
         return $output !== '' ? $output : false;
@@ -95,18 +127,16 @@ class SystemCommand
     }
 
     /**
-     * Run a whitelisted binary with arguments
+     * Run an allowlisted binary with arguments
      *
-     * @param string $binary The binary name (must be whitelisted)
+     * @param string $binary The binary name (must be in the allowlist)
      * @param array<int,string> $args Arguments to pass to the binary
      * @return string|false Command output or false on failure
      */
     public static function run(string $binary, array $args = []): string|false
     {
-        $allowedBinaries = ['redis-cli', 'find', 'du'];
-
-        if (!in_array($binary, $allowedBinaries, true)) {
-            error_log('[EngineScript] SystemCommand::run() blocked non-whitelisted binary: ' . $binary);
+        if (!in_array($binary, self::RUN_ALLOWED_BINARIES, true)) {
+            error_log('[EngineScript] SystemCommand::run() blocked non-allowlisted binary: ' . $binary);
             return false;
         }
 
