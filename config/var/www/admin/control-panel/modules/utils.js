@@ -114,7 +114,7 @@ export class DashboardUtils {
 
   showError(message) {
     // Sanitize error message
-    const sanitizedMessage = this.sanitizeInput(message) || "An unknown error occurred";
+    const sanitizedMessage = DashboardUtils.sanitizeInput(message) || "An unknown error occurred";
 
     // Create a simple error notification
     const notification = document.createElement("div");
@@ -173,11 +173,11 @@ export class DashboardUtils {
     contentDiv.className = contentClass;
 
     const message = document.createElement("p");
-    message.textContent = this.sanitizeInput(messageText ?? "");
+    message.textContent = DashboardUtils.sanitizeInput(messageText ?? "");
 
     const time = document.createElement("span");
     time.className = timeClass;
-    time.textContent = this.sanitizeInput(timeText ?? "");
+    time.textContent = DashboardUtils.sanitizeInput(timeText ?? "");
 
     contentDiv.appendChild(message);
     contentDiv.appendChild(time);
