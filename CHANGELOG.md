@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-27 (2)
+
+### 🐛 PHP CONFIG UPDATE: REMOVE QUOTES FROM SED REPLACEMENT STRINGS
+
+- **Fixed sed replacement strings** in `scripts/update/php-config-update.sh` to remove unnecessary surrounding quotes from the replacement values for `SEDPHPMEMLIMIT`, `SEDOPCACHEJITBUFFER`, `SEDOPCACHEINTBUF`, and `SEDOPCACHEMEM`. The template placeholders do not expect quoted values, so the replacements now insert bare values (e.g., `512M` instead of `"512M"`), matching the intended `php.ini` format.
+
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS

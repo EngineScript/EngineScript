@@ -79,11 +79,11 @@ calculate_php() {
   sed -i "s|pm.max_children = .*|pm.max_children = ${PHP_FPM_MAX_CHILDREN}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
   # Apply memory and OpCache settings to php.ini
-  sed -i "s|SEDPHPMEMLIMIT|\"${PHP_MEMORY_LIMIT}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEJITBUFFER|\"${OPCACHE_JIT_BUFFER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEINTBUF|\"${OPCACHE_INT_BUFFER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  # Arithmetic expansion result is unlikely to need quoting, but added for consistency
-  sed -i "s|SEDOPCACHEMEM|\"$((AVAILABLE_MEMORY / 8))M\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDPHPMEMLIMIT|${PHP_MEMORY_LIMIT}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDOPCACHEJITBUFFER|${OPCACHE_JIT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDOPCACHEINTBUF|${OPCACHE_INT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+  # Arithmetic expansion result is unlikely to need quoting; template controls any surrounding quotes
+  sed -i "s|SEDOPCACHEMEM|$((AVAILABLE_MEMORY / 8))M|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
 }
 
 # Update PHP config
