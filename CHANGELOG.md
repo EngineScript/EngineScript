@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-03-27
-
-### 🔒 SYSTEMCOMMAND CLASS REFACTORING AND BUG FIXES
-
-- **Introduced `ALLOWED_BINARIES` class constant** in `config/var/www/admin/control-panel/classes/SystemCommand.php` as a single source of truth for the executable allowlist, replacing the duplicated inline array in `execProc()`.
-- **Fixed resource leak** in `execProc()`: all open pipes are now closed in a loop before `proc_close()` is called, preventing potential file descriptor leaks when stdin or other pipes are open.
-- **Corrected log message terminology**: replaced `non-whitelisted` with `disallowlisted` in `execProc()` and `non-allowlisted` in `run()` for consistency with the allowlist-based language used throughout the codebase.
-
 ## 2026-03-20
 
 ### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES
