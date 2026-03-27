@@ -30,7 +30,11 @@ class SystemCommand
     }
 
     /**
-     * Execute a process via proc_open without shell interpretation
+     * Execute a process via proc_open without shell interpretation.
+     *
+     * The binary must be present in the internal allowlist. proc_open array
+     * syntax calls execve(2) directly — the shell is never invoked, so
+     * metacharacters in arguments are inert.
      *
      * @param array<int,string> $argv Command array (binary + arguments)
      * @param bool $captureStderr Read stderr instead of stdout (e.g. nginx -v)
@@ -42,28 +46,52 @@ class SystemCommand
             return false;
         }
 
+        // Central allowlist — single source of truth for every executable we may
+        // invoke. proc_open with an array calls execve(2) directly (no shell), so
+        // shell metacharacters in arguments are inert by design.
+        $allowed = [
+            'du', 'find', 'ip', 'mariadb', 'nginx',
+            'php', 'redis-cli', 'redis-server', 'systemctl', 'uname',
+        ];
+
+        if (!in_array($argv[0], $allowed, true)) {
+            error_log('[EngineScript] SystemCommand blocked non-whitelisted command: ' . $argv[0]);
+            return false;
+        }
+
         if (self::isMocked()) {
             return self::mockCommand();
         }
 
-        $descriptors = [
-            0 => ['file', '/dev/null', 'r'],
-            1 => $captureStderr ? ['file', '/dev/null', 'w'] : ['pipe', 'w'],
-            2 => $captureStderr ? ['pipe', 'w'] : ['file', '/dev/null', 'w'],
-        ];
-
+        [$descriptors, $pipeIndex] = self::buildPipeSpec($captureStderr);
         $proc = proc_open($argv, $descriptors, $pipes);
 
         if (!is_resource($proc)) {
             return false;
         }
 
-        $pipe = $captureStderr ? 2 : 1;
-        $output = stream_get_contents($pipes[$pipe]);
-        fclose($pipes[$pipe]);
+        $output = trim((string) stream_get_contents($pipes[$pipeIndex]));
+        fclose($pipes[$pipeIndex]);
         proc_close($proc);
 
-        return (is_string($output) && $output !== '') ? trim($output) : false;
+        return $output !== '' ? $output : false;
+    }
+
+    /**
+     * Build the proc_open descriptor array and pipe-read index.
+     *
+     * @return array{0: array<int, array<int, string>>, 1: int}
+     */
+    private static function buildPipeSpec(bool $captureStderr): array
+    {
+        $null = ['file', '/dev/null', 'w'];
+        $pipe = ['pipe', 'w'];
+
+        if ($captureStderr) {
+            return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];
+        }
+
+        return [[0 => ['file', '/dev/null', 'r'], 1 => $pipe, 2 => $null], 1];
     }
 
     /**
