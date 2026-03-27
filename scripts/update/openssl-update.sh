@@ -22,22 +22,29 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 download_and_extract \
     "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" \
     "/usr/src/openssl-${OPENSSL_VER}.tar.gz" \
-    "/usr/src"
+    "/usr/src" 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "OpenSSL Download"
+
 cd "/usr/src/openssl-${OPENSSL_VER}"
 
 # Compile OpenSSL
 chmod +x ./config
-./Configure
-make -j"${CPU_COUNT}"
+./Configure 2>> /tmp/enginescript_install_errors.log
+make -j"${CPU_COUNT}" 2>> /tmp/enginescript_install_errors.log
 #make test
-make install
+make install 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "OpenSSL Compilation"
 
 # Link OpenSSL
 sudo touch /etc/ld.so.conf.d/openssl.conf
 echo "/usr/local/lib64" >> /etc/ld.so.conf.d/openssl.conf
-ldconfig
+ldconfig 2>> /tmp/enginescript_install_errors.log
 ln -s /usr/local/bin/openssl /usr/bin/
 openssl version
+print_last_errors
+debug_pause "OpenSSL Linking"
 
 # OpenSSL Update Completed
 echo ""

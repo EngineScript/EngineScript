@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-27
+
+### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
+
+Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install and update script that was missing it. When `DEBUG_INSTALL=1` is set in `enginescript-install-options.txt`, each script now:
+
 ## 2026-03-20
 
 ### 🔧 ADMIN CONTROL PANEL INSTALL SCRIPT FIXES

@@ -24,16 +24,22 @@ if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis wi
 else
     echo "Skipping EngineScript update."
 fi
+print_last_errors
+debug_pause "EngineScript Update"
 
 # Remove Old MariaDB Repo
 rm -rf /etc/apt/sources.list.d/mariadb.list
 
 # Add New MariaDB Repo
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale
+curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Repository"
 
 # Upgrade MariaDB
-apt update --allow-releaseinfo-change -y
-sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
+apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
+sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Installation"
 
 # Ensure MariaDB service always restarts on failure
 if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
@@ -46,7 +52,9 @@ systemctl stop mariadb.service
 cp -rf /usr/local/bin/enginescript/config/etc/mysql/my.cnf /etc/mysql/my.cnf
 
 # Tune MariaDB configuration
-/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
+/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Configuration"
 
 # Restart Service
 systemctl daemon-reload
@@ -73,6 +81,8 @@ else
 fi
 
 # MariaDB Database Upgrade
-mariadb-upgrade --force
+mariadb-upgrade --force 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Database Upgrade"
 
 mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'

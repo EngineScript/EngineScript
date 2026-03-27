@@ -19,7 +19,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "System Update"
 
 # Install PHP
 # Define the PHP packages to install
@@ -46,7 +48,7 @@ fi
 
 # Install the packages with error checking
 # Unquoted expansion relies on word splitting (spaces and newlines)
-apt install -qy $php_packages || {
+apt install -qy $php_packages 2>> /tmp/enginescript_install_errors.log || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
@@ -58,21 +60,25 @@ php${PHP_VER}-sqlite3"
 
     # Install the packages with error checking
     # Unquoted expansion relies on word splitting (spaces and newlines)
-    apt install -qy $expanded_php_packages || {
+    apt install -qy $expanded_php_packages 2>> /tmp/enginescript_install_errors.log || {
       echo "Error: Unable to install one or more packages. Exiting..."
       exit 1
     }
 fi
+print_last_errors
+debug_pause "PHP Package Installation"
 
 # Logrotate
 cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/opcache" "/etc/logrotate.d/opcache"
 sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${PHP_VER}-fpm"
 
 # Backup PHP config
-/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh
+/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
 
 # Update PHP config
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh
+/usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "PHP Configuration"
 
 mkdir -p /var/cache/opcache
 mkdir -p /var/cache/php-sessions
@@ -98,8 +104,10 @@ verify_service_running "php${PHP_VER}-fpm" "PHP" "PHP ${PHP_VER}"
 print_install_banner "PHP ${PHP_VER}"
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Cleanup"
 
 # References:
 # https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions

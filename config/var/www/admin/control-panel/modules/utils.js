@@ -4,7 +4,7 @@
 export class DashboardUtils {
   static MAX_DASHBOARD_METRIC = 999999;
 
-  sanitizeInput(input) {
+  static sanitizeInput(input) {
     if (typeof input !== "string") {
       return String(input || "");
     }
@@ -19,7 +19,7 @@ export class DashboardUtils {
       .substring(0, 1000); // Limit length
   }
 
-  sanitizeNumeric(input, fallback = "0") {
+  static sanitizeNumeric(input, fallback = "0") {
     const str = String(input ?? "").trim();
 
     // Build a well-formed numeric string: optional leading '-', digits, optional '.' and more digits.
@@ -53,7 +53,7 @@ export class DashboardUtils {
     return String(parsed);
   }
 
-  sanitizePercentage(input, fallback = "0%") {
+  static sanitizePercentage(input, fallback = "0%") {
     const cleaned = String(input || "").replace(/[^\d.%]/g, "");
 
     // Ensure the cleaned value is a syntactically valid percentage:
@@ -66,7 +66,7 @@ export class DashboardUtils {
     return cleaned;
   }
 
-  sanitizeUrl(input, fallback = "") {
+  static sanitizeUrl(input, fallback = "") {
     if (typeof input !== "string") {
       return fallback;
     }
@@ -101,7 +101,7 @@ export class DashboardUtils {
   }
 
 
-  isValidSite(site) {
+  static isValidSite(site) {
     return (
       site &&
       typeof site === "object" &&

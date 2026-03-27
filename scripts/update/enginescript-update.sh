@@ -36,9 +36,11 @@ fi
 # Copy EngineScript
 cd /usr/local/bin/enginescript
 echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
-git fetch origin "${ENGINESCRIPT_BRANCH}"
-git checkout -f "${ENGINESCRIPT_BRANCH}"
-git reset --hard FETCH_HEAD
+git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "EngineScript Git Pull"
 
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*
@@ -75,8 +77,10 @@ echo ""
 
 # --------------------------------------------------------
 # Updating files from previous versions
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh
+/usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Auto-Upgrades"
 
 
 # --------------------------------------------------------
@@ -113,11 +117,15 @@ else
     exit 1
 fi
 
-/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Admin Control Panel Update"
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Config Files Update"
 
 # Set permissions for EngineScript frontend directories
 set_enginescript_frontend_permissions
@@ -192,6 +200,8 @@ if [[ -f "$SITES_FILE" ]]; then
 else
   echo "Warning: SITES file $SITES_FILE not found. Skipping plugin updates for sites."
 fi
+print_last_errors
+debug_pause "EngineScript Plugins Update"
 
 echo ""
 echo ""

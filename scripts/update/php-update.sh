@@ -24,6 +24,8 @@ if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis wi
 else
     echo "Skipping EngineScript update."
 fi
+print_last_errors
+debug_pause "EngineScript Update"
 
 # Accept target version from argument (used by menu) or fall back to variables + override
 if [[ -n "${1}" ]]; then
@@ -91,7 +93,7 @@ php${NEW_PHP_VER}-opcache"
 fi
 
 # Install the packages with error checking
-apt install -qy $php_packages || {
+apt install -qy $php_packages 2>> /tmp/enginescript_install_errors.log || {
     echo "Error: Unable to install PHP ${NEW_PHP_VER} packages. Exiting..."
     exit 1
 }
@@ -102,11 +104,13 @@ if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
     expanded_php_packages="php${NEW_PHP_VER}-soap
 php${NEW_PHP_VER}-sqlite3"
 
-    apt install -qy $expanded_php_packages || {
+    apt install -qy $expanded_php_packages 2>> /tmp/enginescript_install_errors.log || {
         echo "Error: Unable to install expanded PHP ${NEW_PHP_VER} packages. Exiting..."
         exit 1
     }
 fi
+print_last_errors
+debug_pause "PHP Package Installation"
 
 # Logrotate
 if [[ -f "/etc/logrotate.d/php${NEW_PHP_VER}-fpm" ]]; then
@@ -114,10 +118,12 @@ if [[ -f "/etc/logrotate.d/php${NEW_PHP_VER}-fpm" ]]; then
 fi
 
 # Backup PHP config
-/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh
+/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
 
 # Update PHP config with the latest EngineScript settings
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh
+/usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "PHP Configuration"
 
 # Create necessary directories and log files
 mkdir -p /var/cache/opcache
@@ -164,12 +170,14 @@ fi
 
 # Start new PHP service
 echo "Starting PHP ${NEW_PHP_VER} service..."
-systemctl enable "php${NEW_PHP_VER}-fpm"
-systemctl start "php${NEW_PHP_VER}-fpm"
+systemctl enable "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
+systemctl start "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
 
 # Reload Nginx to pick up the new PHP configuration
 echo "Reloading Nginx configuration..."
-systemctl reload nginx
+systemctl reload nginx 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "PHP Service Start"
 
 # PHP Service Check
 STATUS="$(systemctl is-active "php${NEW_PHP_VER}-fpm")"
@@ -205,8 +213,10 @@ fi
 echo "PHP ${OLD_PHP_VER} has been removed."
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Cleanup"
 
 # Display PHP version and modules
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nPHP Info\n=-=-=-=-=-=-=-=-=-\n"

@@ -13,7 +13,6 @@ source /home/EngineScript/enginescript-install-options.txt
 
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
-if ! crontab -l 2>/dev/null | grep -qF "$entry"; then
 
 # Add a cron job only if it doesn't already exist
 add_cron_job() {

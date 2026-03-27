@@ -24,42 +24,60 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Updating Adminer"
-    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> /tmp/enginescript_install_errors.log
   else
     echo "Skipping Adminer update"
 fi
+print_last_errors
+debug_pause "Adminer"
 
 # Update liburing
-/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
+/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "liburing"
 
 # Update MYSQLTuner
-/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
+/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MYSQLTuner"
 
 # Update phpMyAdmin
 if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then
     echo "Updating phpMyAdmin"
-    /usr/local/bin/enginescript/scripts/update/phpmyadmin-update.sh
+    /usr/local/bin/enginescript/scripts/update/phpmyadmin-update.sh 2>> /tmp/enginescript_install_errors.log
   else
     echo "Skipping phpMyAdmin update"
 fi
+print_last_errors
+debug_pause "phpMyAdmin"
 
 # Update WP-CLI
-echo "y" | wp cli update --stable --allow-root
-echo "y" | wp package update --allow-root
+echo "y" | wp cli update --stable --allow-root 2>> /tmp/enginescript_install_errors.log
+echo "y" | wp package update --allow-root 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "WP-CLI"
 
 # Update WP-Scan
-gem update wpscan
+gem update wpscan 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "WP-Scan"
 
 # Update zImageOptimizer
-/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
+/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "zImageOptimizer"
 
 # Update Zlib
-/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh
+/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Zlib"
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Cleanup"
 
 echo ""
 echo "============================================================="

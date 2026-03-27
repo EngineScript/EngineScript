@@ -21,5 +21,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------
 
 # Update WP-CLI
-echo "y" | wp cli update --stable --allow-root
-echo "y" | wp package update --allow-root
+echo "y" | wp cli update --stable --allow-root 2>> /tmp/enginescript_install_errors.log
+echo "y" | wp package update --allow-root 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "WP-CLI Update"

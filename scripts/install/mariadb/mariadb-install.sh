@@ -19,18 +19,24 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Add MariaDB repository
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale
+curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Repository"
 
 # Install MariaDB
-apt update --allow-releaseinfo-change -y
-sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y'
+apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
+sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Installation"
 
 # Update
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
-apt upgrade -y
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
+apt upgrade -y 2>> /tmp/enginescript_install_errors.log
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "System Update and Cleanup"
 
 # New MariaDB Secure Method
 # Probably safer to do the secure installation manually, as the previous method would break if MariaDB changed anything in the order that they ask questions.
@@ -78,7 +84,9 @@ chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
-/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
+/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "MariaDB Configuration"
 
 # Ensure MariaDB service always restarts on failure
 if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
