@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-27 (SystemCommand improvements)
+
+### 🔧 SYSTEMCOMMAND CLASS IMPROVEMENTS
+
+- **Flexible mock system**: Replaced the stub `mockCommand()` with a configurable mock mechanism. New public helpers (`setMockResultForCommand()`, `setDefaultMockResult()`, `enqueueMockResult()`, `resetMockResults()`) allow tests to configure per-command responses, an ordered result queue, or a global default — while preserving the existing empty-string fallback.
+- **Pipe mode fix**: Corrected `['pipe', 'w']` → `['pipe', 'r']` in `buildPipeSpec()`. The parent process reads from stdout/stderr, so the pipe must be opened in read mode (`r`).
+- **IP address validation**: `getNetworkIP()` now validates the captured value with `filter_var($ip, FILTER_VALIDATE_IP)` before returning it, preventing compromised `ip` command output from propagating unexpected strings.
+- **Service name regex hardening**: Tightened the `getServiceStatus()` regex from `/^[a-zA-Z0-9._-]+$/` to `/^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$/`. Separators (`.`, `_`, `-`) are now only permitted between alphanumeric segments, blocking names like `../malicious-service` while still supporting PHP-FPM names such as `php-fpm8.4`.
+
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
