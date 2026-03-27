@@ -41,7 +41,11 @@ php${PHP_VER}-xml
 php${PHP_VER}-zip"
 
 # PHP 8.5+ has opcache built-in; older versions need the separate package
-if [[ "$(echo "${PHP_VER} < 8.5" | bc -l)" -eq 1 ]]; then
+# Convert PHP_VER (e.g. "8.4") into an integer (e.g. 84) for numeric comparison
+php_major=${PHP_VER%%.*}
+php_minor=${PHP_VER#*.}
+php_ver_int=$((php_major * 10 + php_minor))
+if (( php_ver_int < 85 )); then
     php_packages="${php_packages}
 php${PHP_VER}-opcache"
 fi

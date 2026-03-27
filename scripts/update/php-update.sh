@@ -87,7 +87,9 @@ php${NEW_PHP_VER}-xml
 php${NEW_PHP_VER}-zip"
 
 # PHP 8.5+ has opcache built-in; older versions need the separate package
-if [[ "$(echo "${NEW_PHP_VER} < 8.5" | bc -l)" -eq 1 ]]; then
+php_major="${NEW_PHP_VER%%.*}"
+php_minor="${NEW_PHP_VER#*.}"
+if (( php_major < 8 || (php_major == 8 && php_minor < 5) )); then
     php_packages="${php_packages}
 php${NEW_PHP_VER}-opcache"
 fi
