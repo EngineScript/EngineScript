@@ -43,6 +43,30 @@ class SystemCommand
     ];
 
     /**
+     * Default mock result when mocking is enabled but no specific configuration
+     * has been provided. Use `false` to simulate a command failure, or a non-empty
+     * string to simulate successful output.
+     *
+     * @var string|false
+     */
+    private static string|false $defaultMockResult = '';
+
+    /**
+     * Map of command signatures to specific mock results.
+     * The key is the binary followed by its arguments, joined with a single space.
+     *
+     * @var array<string,string|false>
+     */
+    private static array $mockResultsByCommand = [];
+
+    /**
+     * Optional queue of mock results to return in order, regardless of command.
+     *
+     * @var list<string|false>
+     */
+    private static array $mockResultQueue = [];
+
+    /**
      * Check if shell commands should be mocked (for testing)
      */
     private static function isMocked(): bool
@@ -51,11 +75,75 @@ class SystemCommand
     }
 
     /**
-     * Mock command execution for testing
+     * Configure a specific mock result for a given command (binary + args).
+     *
+     * @param array<int,string> $argv
+     * @param string|false $result
      */
-    private static function mockCommand(): string
+    public static function setMockResultForCommand(array $argv, string|false $result): void
     {
-        return '';
+        if ($argv === []) {
+            return;
+        }
+        $key = implode(' ', $argv);
+        self::$mockResultsByCommand[$key] = $result;
+    }
+
+    /**
+     * Configure the default mock result used when no command-specific mock is set.
+     *
+     * @param string|false $result
+     */
+    public static function setDefaultMockResult(string|false $result): void
+    {
+        self::$defaultMockResult = $result;
+    }
+
+    /**
+     * Push a mock result onto the queue to be returned by subsequent calls
+     * in the order added.
+     *
+     * @param string|false $result
+     */
+    public static function enqueueMockResult(string|false $result): void
+    {
+        self::$mockResultQueue[] = $result;
+    }
+
+    /**
+     * Reset all configured mock results to their defaults.
+     */
+    public static function resetMockResults(): void
+    {
+        self::$defaultMockResult    = '';
+        self::$mockResultsByCommand = [];
+        self::$mockResultQueue      = [];
+    }
+
+    /**
+     * Mock command execution for testing.
+     *
+     * @param array<int,string> $argv
+     * @return string|false
+     */
+    private static function mockCommand(array $argv): string|false
+    {
+        // If a queued result exists, use it first to allow ordered scenarios.
+        if (self::$mockResultQueue !== []) {
+            return array_shift(self::$mockResultQueue);
+        }
+
+        // Next, try a command-specific mock result.
+        if ($argv !== []) {
+            $key = implode(' ', $argv);
+            if (array_key_exists($key, self::$mockResultsByCommand)) {
+                return self::$mockResultsByCommand[$key];
+            }
+        }
+
+        // Fall back to the default mock result (empty string by default,
+        // preserving existing behavior).
+        return self::$defaultMockResult;
     }
 
     /**
@@ -86,7 +174,7 @@ class SystemCommand
         }
 
         if (self::isMocked()) {
-            return self::mockCommand();
+            return self::mockCommand($argv);
         }
 
         [$descriptors, $pipeIndex] = self::buildPipeSpec($captureStderr);
@@ -117,7 +205,7 @@ class SystemCommand
     private static function buildPipeSpec(bool $captureStderr): array
     {
         $null = ['file', '/dev/null', 'w'];
-        $pipe = ['pipe', 'w'];
+        $pipe = ['pipe', 'r'];
 
         if ($captureStderr) {
             return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];
@@ -174,9 +262,12 @@ class SystemCommand
             return false;
         }
 
-        // Extract source IP from "... src 10.0.0.1 ..."
+        // Extract source IP from "... src 10.0.0.1 ..." and validate it
         if (preg_match('/src\s+(\S+)/', $output, $matches)) {
-            return $matches[1];
+            $ip = $matches[1];
+            if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+                return $ip;
+            }
         }
 
         return false;
@@ -189,9 +280,11 @@ class SystemCommand
      */
     public static function getServiceStatus(string $service): string|false
     {
-        // Validate service name (alphanumeric, dash, underscore, dot only)
-        // Dot supports PHP-FPM services like php-fpm8.4
-        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $service)) {
+        // Validate service name:
+        // - must start with alphanumeric
+        // - may contain '.', '_', '-' only between alphanumeric segments
+        // This still supports PHP-FPM services like php-fpm8.4
+        if (!preg_match('/^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$/', $service)) {
             return false;
         }
 
