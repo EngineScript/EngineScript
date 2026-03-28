@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-03-27
 
-### 🐛 SYSTEMCOMMAND PHP CLASS FIXES
-
-- **Fixed pipe mode** in `buildPipeSpec()`: changed `['pipe', 'r']` to `['pipe', 'w']` so the child process can write to the pipe and the parent can read from it via `proc_open`.
-- **Expanded service name validation** in `getServiceStatus()`: updated regex to allow `@` for systemd template units (e.g. `getty@tty1`) and an optional `.service` suffix.
-- **Added service name normalization** in `getServiceStatus()`: automatically appends `.service` suffix when not already present, allowing callers to pass bare names like `nginx` or `php-fpm8.4`.
-- **Broadened Active state parsing** in `getServiceStatus()`: updated regex from a fixed list to match any alphabetic systemd active state token (e.g. `activating`, `deactivating`, `reloading`, `maintenance`), so all valid states are returned instead of only the original four.
-
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
 
 Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install and update script that was missing it. When `DEBUG_INSTALL=1` is set in `enginescript-install-options.txt`, each script now:
