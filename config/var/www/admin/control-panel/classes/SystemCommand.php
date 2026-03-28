@@ -205,7 +205,7 @@ class SystemCommand
     private static function buildPipeSpec(bool $captureStderr): array
     {
         $null = ['file', '/dev/null', 'w'];
-        $pipe = ['pipe', 'r'];
+        $pipe = ['pipe', 'w'];
 
         if ($captureStderr) {
             return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];
@@ -275,17 +275,23 @@ class SystemCommand
 
     /**
      * Get service status
-     * @param string $service Service name (alphanumeric + dash/underscore/dot)
-     * @return string|false Service status (active/inactive/failed/unknown) or false on error
+     * @param string $service Service name (e.g. nginx, php-fpm8.4, getty@tty1, nginx.service)
+     * @return string|false Service status string (active/inactive/failed/activating/etc.) or false on error
      */
     public static function getServiceStatus(string $service): string|false
     {
         // Validate service name:
         // - must start with alphanumeric
-        // - may contain '.', '_', '-' only between alphanumeric segments
-        // This still supports PHP-FPM services like php-fpm8.4
-        if (!preg_match('/^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$/', $service)) {
+        // - may contain '.', '_', '-', '@' only between alphanumeric segments
+        // - may optionally end with a '.service' suffix
+        if (!preg_match('/^[A-Za-z0-9]+([._@-][A-Za-z0-9]+)*(\\.service)?$/', $service)) {
             return false;
+        }
+
+        // Normalize to full unit name: append ".service" if no suffix is present
+        // This allows callers to pass "nginx" or "php-fpm8.4" without the ".service" suffix
+        if (!str_ends_with($service, '.service')) {
+            $service .= '.service';
         }
 
         $output = self::execProc(['systemctl', 'status', $service, '--no-pager']);
@@ -295,7 +301,9 @@ class SystemCommand
         }
 
         // Parse the Active line: "     Active: active (running) since ..."
-        if (preg_match('/Active:\s+(active|inactive|failed|unknown)/', $output, $matches)) {
+        // Match any primary systemd active state token (e.g. active, inactive, failed, unknown,
+        // activating, deactivating, reloading, maintenance, etc.)
+        if (preg_match('/Active:\s+([a-zA-Z]+(?:-[a-zA-Z]+)*)/', $output, $matches)) {
             return $matches[1];
         }
 
