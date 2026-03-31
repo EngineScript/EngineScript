@@ -23,14 +23,13 @@ calculate_php() {
   # No fallbacks needed as this script will be run on a system with a modern kernel.
   # MemAvailable field will be present in /proc/meminfo on modern kernels and is the most accurate representation of available memory for applications.
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
-  AVERAGE_PHP_MEMORY_REQ=80
+  AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
   CPU_COUNT="$(nproc --all)" # Get the number of CPU threads
-  #PHP_FPM_MAX_CHILDREN_ALT=$((AVAILABLE_MEMORY/AVERAGE_PHP_MEMORY_REQ))
-  #PHP_FPM_MAX_CHILDREN=$(( "$(free -m | awk 'NR==2{printf "%d", $2/80 }')" ))
-  #SERVER_MEMORY_TOTAL_01="$(free -m | awk 'NR==2{printf "%d", $2*0.01 }')"
-  #SERVER_MEMORY_TOTAL_03=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.03 }')" ))
-  #SERVER_MEMORY_TOTAL_13=$(( "$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')" ))
-  #SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2 }')"
+  # Memory thresholds in MB for tuning PHP-FPM and PHP settings
+  MEMORY_THRESHOLD_LOW=1200
+  MEMORY_THRESHOLD_MEDIUM=2200
+  MEMORY_THRESHOLD_HIGH=4200
+  # PHP-FPM process limits are tuned using available memory and average per-process usage.
 
   # Dynamically calculate pm.start_servers, pm.min_spare_servers, and pm.max_spare_servers based on CPU threads
   if [[ "${CPU_COUNT}" -eq 1 ]]; then
@@ -42,7 +41,7 @@ calculate_php() {
     PHP_FPM_MIN_SPARE_SERVERS=2
     PHP_FPM_MAX_SPARE_SERVERS=5
   elif [[ "${CPU_COUNT}" -eq 3 ]]; then
-    PHP_FPM_START_SERVERS=4
+    PHP_FPM_START_SERVERS=3
     PHP_FPM_MIN_SPARE_SERVERS=3
     PHP_FPM_MAX_SPARE_SERVERS=6
   elif [[ "${CPU_COUNT}" -eq 4 ]]; then
@@ -64,17 +63,17 @@ calculate_php() {
   fi
   
   # Calculate pm.max_children based on available memory
-  if [[ "${AVAILABLE_MEMORY}" -lt 1200 ]]; then
+  if [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_LOW}" ]]; then
     PHP_FPM_MAX_CHILDREN=8
     PHP_MEMORY_LIMIT="256M"
     OPCACHE_JIT_BUFFER="64M"
     OPCACHE_INT_BUFFER=16
-  elif [[ "${AVAILABLE_MEMORY}" -lt 2200 ]]; then
+  elif [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_MEDIUM}" ]]; then
     PHP_FPM_MAX_CHILDREN=16
     PHP_MEMORY_LIMIT="256M"
     OPCACHE_JIT_BUFFER="64M"
     OPCACHE_INT_BUFFER=16
-  elif [[ "${AVAILABLE_MEMORY}" -lt 4200 ]]; then
+  elif [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_HIGH}" ]]; then
     PHP_FPM_MAX_CHILDREN=24
     PHP_MEMORY_LIMIT="512M"
     OPCACHE_JIT_BUFFER="96M"
