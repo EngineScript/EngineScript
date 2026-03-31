@@ -21,8 +21,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------
 
 # Update WP-CLI
+# The intent is to fail when either command fails 
 if ! wp cli update --stable --allow-root --yes 2>> /tmp/enginescript_install_errors.log \
-    && ! wp package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log; then
+    || ! wp package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log; then
     echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
     exit 1
 fi

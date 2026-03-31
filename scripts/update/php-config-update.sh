@@ -19,8 +19,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Calculate PHP FPM tune depending on RAM
-# No fallbacks needed as this script will be run on a system with a modern kernel and the /proc/meminfo file should be present and properly formatted.
 calculate_php() {
+  # No fallbacks needed as this script will be run on a system with a modern kernel.
+  # MemAvailable field will be present in /proc/meminfo on modern kernels and is the most accurate representation of available memory for applications.
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
   AVERAGE_PHP_MEMORY_REQ=80
   CPU_COUNT="$(nproc --all)" # Get the number of CPU threads
