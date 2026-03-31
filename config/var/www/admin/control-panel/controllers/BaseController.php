@@ -325,10 +325,10 @@ abstract class BaseController
 
     /**
      * Log a security event
-     * 
+     *
      * Sanitizes all inputs to prevent log injection attacks.
      * Logs to /var/log/EngineScript/enginescript-api-security.log
-     * 
+     *
      * @param string $event The security event description
      * @param string $details Optional additional details
      * @return void
@@ -386,6 +386,21 @@ abstract class BaseController
         // Encode any remaining special characters for safe output
         // codacy:ignore - addcslashes() required for log injection prevention
         return addcslashes($sanitized, '\\');
+    }
+
+    /**
+     * Retrieve a value from the session superglobal.
+     *
+     * Encapsulates direct $_SESSION access so callers never touch the superglobal
+     * directly, satisfying static-analysis and testability requirements.
+     *
+     * @param string $key     The session key to look up.
+     * @param mixed  $default Value returned when the key is absent.
+     * @return mixed The session value or $default.
+     */
+    protected function getSessionValue(string $key, mixed $default = null): mixed
+    {
+        return $_SESSION[$key] ?? $default;
     }
 
     /**

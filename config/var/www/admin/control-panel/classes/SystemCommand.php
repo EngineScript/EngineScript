@@ -264,9 +264,9 @@ class SystemCommand
 
         // Extract source IP from "... src 10.0.0.1 ..." and validate it
         if (preg_match('/\bsrc\s+([0-9a-fA-F:.]+)/', $output, $matches)) {
-            $ip = $matches[1];
-            if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
-                return $ip;
+            $ipAddress = $matches[1];
+            if (filter_var($ipAddress, FILTER_VALIDATE_IP) !== false) {
+                return $ipAddress;
             }
         }
 
