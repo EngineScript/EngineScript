@@ -30,6 +30,12 @@ class Session
      */
     public function get(string $key, mixed $default = null): mixed
     {
+        // If the session has not been started, honour the documented contract and
+        // return the default value without touching $_SESSION.
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return $default;
+        }
+
         // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
         return $_SESSION[$key] ?? $default;
     }
