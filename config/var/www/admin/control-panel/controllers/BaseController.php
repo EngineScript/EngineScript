@@ -20,6 +20,10 @@
 // codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
 require_once __DIR__ . '/../classes/ApiResponse.php';
 
+// Ensure Session wrapper is loaded
+// codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
+require_once __DIR__ . '/../classes/Session.php';
+
 /**
  * Abstract Base Controller
  * 
@@ -389,10 +393,11 @@ abstract class BaseController
     }
 
     /**
-     * Retrieve a value from the session superglobal.
+     * Retrieve a value from the session.
      *
-     * Encapsulates direct $_SESSION access so callers never touch the superglobal
-     * directly, satisfying static-analysis and testability requirements.
+     * Delegates to the Session wrapper class so that no controller ever accesses
+     * the $_SESSION superglobal directly, satisfying PHPMD's SuperGlobals rule
+     * and improving testability.
      *
      * @param string $key     The session key to look up.
      * @param mixed  $default Value returned when the key is absent.
@@ -400,7 +405,7 @@ abstract class BaseController
      */
     protected function getSessionValue(string $key, mixed $default = null): mixed
     {
-        return $_SESSION[$key] ?? $default;
+        return Session::get($key, $default);
     }
 
     /**
