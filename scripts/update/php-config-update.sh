@@ -40,7 +40,11 @@ calculate_php() {
     PHP_FPM_START_SERVERS=3
     PHP_FPM_MIN_SPARE_SERVERS=2
     PHP_FPM_MAX_SPARE_SERVERS=5
-  elif [[ "${CPU_COUNT}" -ge 3 && "${CPU_COUNT}" -le 4 ]]; then
+  elif [[ "${CPU_COUNT}" -eq 3 ]]; then
+    PHP_FPM_START_SERVERS=3
+    PHP_FPM_MIN_SPARE_SERVERS=3
+    PHP_FPM_MAX_SPARE_SERVERS=6
+  elif [[ "${CPU_COUNT}" -eq 4 ]]; then
     PHP_FPM_START_SERVERS=4
     PHP_FPM_MIN_SPARE_SERVERS=3
     PHP_FPM_MAX_SPARE_SERVERS=6
