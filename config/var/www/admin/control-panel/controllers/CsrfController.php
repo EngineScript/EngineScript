@@ -32,13 +32,15 @@ class CsrfController extends BaseController
     public function getToken()
     {
         try {
-            if ($this->getSessionValue('csrf_token') === null) {
-                $this->logSecurityEvent('CSRF token missing', 'Session token not set');
-                $this->response->serverError('Unable to retrieve CSRF token');
-                return;
+            $csrfToken = $this->getSessionValue('csrf_token');
+            if ($csrfToken === null) {
+                // Generate a new CSRF token if one does not exist
+                $csrfToken = bin2hex(random_bytes(32));
+                $this->setSessionValue('csrf_token', $csrfToken);
+                $this->logSecurityEvent('CSRF token generated', 'New session token created');
             }
             $this->response->success([
-                'csrf_token' => $this->getSessionValue('csrf_token'),
+                'csrf_token' => $csrfToken,
                 'token_name' => '_csrf_token'
             ]);
         } catch (Exception $e) {

@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-31
+
+### 🔐 CSRF TOKEN GENERATION FIX
+
+- **Fixed CSRF token retrieval** in `config/var/www/admin/control-panel/controllers/CsrfController.php`.
+  - Previously, the `getToken()` endpoint returned a server error when no CSRF token existed in the session, preventing legitimate users from obtaining a token.
+  - Now generates and stores a new cryptographically secure CSRF token (`bin2hex(random_bytes(32))`) when one does not exist, and logs the generation event.
+
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
