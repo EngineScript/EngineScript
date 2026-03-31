@@ -8,11 +8,11 @@
 #----------------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
 source /home/EngineScript/enginescript-install-options.txt
 
 # Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------

@@ -205,7 +205,7 @@ class SystemCommand
     private static function buildPipeSpec(bool $captureStderr): array
     {
         $null = ['file', '/dev/null', 'w'];
-        $pipe = ['pipe', 'w'];
+        $pipe = ['pipe', 'r'];
 
         if ($captureStderr) {
             return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];
@@ -263,7 +263,7 @@ class SystemCommand
         }
 
         // Extract source IP from "... src 10.0.0.1 ..." and validate it
-        if (preg_match('/src\s+(\S+)/', $output, $matches)) {
+        if (preg_match('/\bsrc\s+([0-9a-fA-F:.]+)/', $output, $matches)) {
             $ip = $matches[1];
             if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
                 return $ip;

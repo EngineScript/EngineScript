@@ -36,11 +36,11 @@ chown -R root:root /usr/local/bin/enginescript
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
 source /home/EngineScript/enginescript-install-options.txt
 
 # Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 # Reboot Warning
 echo -e "\nATTENTION:\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2

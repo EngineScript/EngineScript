@@ -63,7 +63,9 @@ export class DashboardUtils {
       return fallback;
     }
 
-    return cleaned;
+    // Normalize output so that it always includes a '%' symbol.
+    const normalized = cleaned.endsWith("%") ? cleaned : cleaned + "%";
+    return normalized;
   }
 
   static sanitizeUrl(input, fallback = "") {
@@ -92,7 +94,7 @@ export class DashboardUtils {
     return sanitized;
   }
 
-  setTextContent(elementId, content) {
+  static setTextContent(elementId, content) {
     const element = document.getElementById(elementId);
     if (element) {
       const safeContent = content ?? "";

@@ -8,17 +8,18 @@
 #----------------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
+source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
 
 # Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
 # Calculate PHP FPM tune depending on RAM
+# No fallbacks needed as this script will be run on a system with a modern kernel and the /proc/meminfo file should be present and properly formatted.
 calculate_php() {
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
   AVERAGE_PHP_MEMORY_REQ=80
@@ -39,10 +40,22 @@ calculate_php() {
     PHP_FPM_START_SERVERS=3
     PHP_FPM_MIN_SPARE_SERVERS=2
     PHP_FPM_MAX_SPARE_SERVERS=5
+  elif [[ "${CPU_COUNT}" -eq 3 ]]; then
+    PHP_FPM_START_SERVERS=4
+    PHP_FPM_MIN_SPARE_SERVERS=3
+    PHP_FPM_MAX_SPARE_SERVERS=6
   elif [[ "${CPU_COUNT}" -eq 4 ]]; then
     PHP_FPM_START_SERVERS=4
     PHP_FPM_MIN_SPARE_SERVERS=3
     PHP_FPM_MAX_SPARE_SERVERS=6
+  elif [[ "${CPU_COUNT}" -le 8 ]]; then
+    PHP_FPM_START_SERVERS=5
+    PHP_FPM_MIN_SPARE_SERVERS=4
+    PHP_FPM_MAX_SPARE_SERVERS=7
+  elif [[ "${CPU_COUNT}" -le 16 ]]; then
+    PHP_FPM_START_SERVERS=8
+    PHP_FPM_MIN_SPARE_SERVERS=6
+    PHP_FPM_MAX_SPARE_SERVERS=14
   else
     PHP_FPM_START_SERVERS=5
     PHP_FPM_MIN_SPARE_SERVERS=4
@@ -87,13 +100,22 @@ calculate_php() {
 }
 
 # Update PHP config
-cp -rf /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+if [ -f "/etc/php/${PHP_VER}/fpm/php.ini" ]; then
+  cp -p "/etc/php/${PHP_VER}/fpm/php.ini" "/etc/php/${PHP_VER}/fpm/php.ini.bak" 2>> /tmp/enginescript_install_errors.log
+fi
+cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
 
-cp -rf /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
+if [ -f "/etc/php/${PHP_VER}/fpm/php-fpm.conf" ]; then
+  cp -p "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/php-fpm.conf.bak" 2>> /tmp/enginescript_install_errors.log
+fi
+cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
 
-cp -rf /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
+if [ -f "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ]; then
+  cp -p "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf.bak" 2>> /tmp/enginescript_install_errors.log
+fi
+cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
 # Tune PHP Configuration

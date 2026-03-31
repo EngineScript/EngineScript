@@ -8,11 +8,11 @@
 #----------------------------------------------------------------------------------
 
 # EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt
-source /home/EngineScript/enginescript-install-options.txt
+source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
+source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
 
 # Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -21,7 +21,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------
 
 # Update WP-CLI
-wp cli update --stable --allow-root --yes 2>> /tmp/enginescript_install_errors.log
+if ! wp cli update --stable --allow-root --yes 2>> /tmp/enginescript_install_errors.log \
+    || ! wp package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log; then
+    echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
+    exit 1
+fi
 wp package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "WP-CLI Update"

@@ -391,7 +391,7 @@ jobs:
           
           # Test sourcing the files to ensure they don't hang
           echo "🧪 Testing configuration file loading..."
-          if timeout 10 bash -c "source /usr/local/bin/enginescript/enginescript-variables.txt"; then
+          if timeout 10 bash -c "source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }"; then
             echo "✅ Variables file loads successfully"
           else
             echo "❌ Variables file failed to load or timed out"
