@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-03-31
-
-### 🔧 PHP-CONFIG-UPDATE.SH CODE QUALITY IMPROVEMENTS
-
-- **Renamed variable** `AVERAGE_PHP_MEMORY_REQ` to `AVERAGE_PHP_MEMORY_REQ_MB` in `scripts/update/php-config-update.sh` with a clarifying comment to indicate the value is in megabytes.
-- **Removed commented-out dead code** (obsolete alternative calculations) and replaced with a descriptive comment clarifying the intent.
-- **Consolidated duplicate CPU_COUNT branches** for values 3 and 4 into a single range check (`-ge 3 && -le 4`) to reduce code duplication.
-- **Introduced named memory threshold constants** (`MEMORY_THRESHOLD_LOW`, `MEMORY_THRESHOLD_MEDIUM`, `MEMORY_THRESHOLD_HIGH`) to replace magic numbers 1200, 2200, and 4200 in memory-based conditionals.
-
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
