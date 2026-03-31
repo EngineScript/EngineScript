@@ -26,6 +26,5 @@ if ! wp cli update --stable --allow-root --yes 2>> /tmp/enginescript_install_err
     echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
     exit 1
 fi
-wp package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "WP-CLI Update"

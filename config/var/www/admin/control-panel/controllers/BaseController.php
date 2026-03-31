@@ -63,6 +63,28 @@ abstract class BaseController
     protected const CACHE_SWEEP_INTERVAL = 60;
 
     /**
+     * Session wrapper instance — single point of $_SESSION access.
+     */
+    protected Session $session;
+
+    /**
+     * API response helper instance — avoids static calls in subclasses.
+     */
+    protected ApiResponse $response;
+
+    /**
+     * Initialise shared dependencies.
+     *
+     * Child controllers that define their own constructor must call
+     * parent::__construct() to ensure these properties are available.
+     */
+    public function __construct()
+    {
+        $this->session  = new Session();
+        $this->response = new ApiResponse();
+    }
+
+    /**
      * Cache TTL configuration per endpoint (in seconds)
      * Controllers can override this or use getTtl() method
      * 
@@ -395,9 +417,9 @@ abstract class BaseController
     /**
      * Retrieve a value from the session.
      *
-     * Delegates to the Session wrapper class so that no controller ever accesses
-     * the $_SESSION superglobal directly, satisfying PHPMD's SuperGlobals rule
-     * and improving testability.
+     * Delegates to the Session instance so that no controller ever accesses
+     * the $_SESSION superglobal directly, satisfying PHPMD's SuperGlobals and
+     * StaticAccess rules and improving testability.
      *
      * @param string $key     The session key to look up.
      * @param mixed  $default Value returned when the key is absent.
@@ -405,7 +427,7 @@ abstract class BaseController
      */
     protected function getSessionValue(string $key, mixed $default = null): mixed
     {
-        return Session::get($key, $default);
+        return $this->session->get($key, $default);
     }
 
     /**

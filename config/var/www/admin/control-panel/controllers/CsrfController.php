@@ -34,19 +34,16 @@ class CsrfController extends BaseController
         try {
             if ($this->getSessionValue('csrf_token') === null) {
                 $this->logSecurityEvent('CSRF token missing', 'Session token not set');
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::serverError('Unable to retrieve CSRF token');
+                $this->response->serverError('Unable to retrieve CSRF token');
                 return;
             }
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success([
+            $this->response->success([
                 'csrf_token' => $this->getSessionValue('csrf_token'),
                 'token_name' => '_csrf_token'
             ]);
         } catch (Exception $e) {
             $this->logSecurityEvent('CSRF token error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve CSRF token');
+            $this->response->serverError('Unable to retrieve CSRF token');
         }
     }
 }

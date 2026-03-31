@@ -17,14 +17,20 @@ class Session
     /**
      * Retrieve a value from the session.
      *
+     * This is the single, intentional access point for $_SESSION in the entire
+     * dashboard.  The @SuppressWarnings annotation suppresses PHPMD's Superglobals
+     * rule here by design — all other classes must go through this method.
+     *
+     * @SuppressWarnings(PHPMD.Superglobals)
+     *
      * @param string $key     Session key to look up.
      * @param mixed  $default Value returned when the key is absent or the
      *                        session has not been started.
      * @return mixed The stored value, or $default.
      */
-    // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
-    public static function get(string $key, mixed $default = null): mixed
+    public function get(string $key, mixed $default = null): mixed
     {
+        // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
         return $_SESSION[$key] ?? $default;
     }
 }
