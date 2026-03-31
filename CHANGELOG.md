@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-03-31
+
+### 🛡️ ERROR HANDLING IMPROVEMENTS IN WP-CLI UPDATE SCRIPT
+
+- **Added error handling to `source` commands** in `scripts/update/wp-cli-update.sh`. If any required file is missing or unreadable, the script now exits immediately with a descriptive error message instead of failing with an unclear error.
+- **Added error checking after WP-CLI update commands** in `scripts/update/wp-cli-update.sh`. If `wp cli update` or `wp package update` fails, the script now exits with an informative message pointing to the error log at `/tmp/enginescript_install_errors.log`.
+
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
