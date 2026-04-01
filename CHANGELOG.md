@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-01
-
-### 🐛 PHP CONFIG UPDATE SCRIPT HARDENING
-
-- **Added `AVAILABLE_MEMORY` validation** in `scripts/update/php-config-update.sh`. If `/proc/meminfo` is unavailable or `awk` returns an empty/non-numeric value, the script now falls back to `MemTotal`, and if that also fails, uses a conservative default of 1024 MB with a warning message.
-- **Added error checking for `cp -f` operations** in `scripts/update/php-config-update.sh`. The three config file copy operations (`php.ini`, `php-fpm.conf`, `www.conf`) now use `if ! cp -f ...` to detect failures and exit with an error message rather than silently continuing with a broken or missing configuration.
-
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS
