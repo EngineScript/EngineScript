@@ -23,13 +23,13 @@ calculate_php() {
   # No fallbacks needed as this script will be run on a system with a modern kernel.
   # MemAvailable field will be present in /proc/meminfo on modern kernels and is the most accurate representation of available memory for applications.
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
-  # Validate that AVAILABLE_MEMORY is a non-empty numeric value; fall back conservatively if not.
+  # Validate that AVAILABLE_MEMORY is a non-empty numeric value; exit if it cannot be determined.
   if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
-    # Fallback: use MemTotal if available, otherwise default to 1024 MB.
+    # Fallback: use MemTotal if available, otherwise exit with an error.
     AVAILABLE_MEMORY=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo "")
     if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
-      echo "Warning: Unable to determine available memory from /proc/meminfo; using conservative default of 1024 MB." >&2
-      AVAILABLE_MEMORY=1024
+      echo "Error: Unable to determine available memory from /proc/meminfo; cannot continue." >&2
+      exit 1
     fi
   fi
   AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
