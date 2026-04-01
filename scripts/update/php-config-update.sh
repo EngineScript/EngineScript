@@ -23,6 +23,15 @@ calculate_php() {
   # No fallbacks needed as this script will be run on a system with a modern kernel.
   # MemAvailable field will be present in /proc/meminfo on modern kernels and is the most accurate representation of available memory for applications.
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
+  # Validate that AVAILABLE_MEMORY is a non-empty numeric value; exit if it cannot be determined.
+  if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
+    # Fallback: use MemTotal if available, otherwise exit with an error.
+    AVAILABLE_MEMORY=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo "")
+    if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
+      echo "Error: Unable to determine available memory from /proc/meminfo; cannot continue." >&2
+      exit 1
+    fi
+  fi
   AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
   CPU_COUNT="$(nproc --all)" # Get the number of CPU threads
   # Memory thresholds in MB for tuning PHP-FPM and PHP settings
@@ -103,19 +112,28 @@ calculate_php() {
 if [ -f "/etc/php/${PHP_VER}/fpm/php.ini" ]; then
   cp -p "/etc/php/${PHP_VER}/fpm/php.ini" "/etc/php/${PHP_VER}/fpm/php.ini.bak" 2>> /tmp/enginescript_install_errors.log
 fi
-cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log; then
+  echo "Error: Failed to copy php.ini for PHP ${PHP_VER}" >&2
+  exit 1
+fi
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
 
 if [ -f "/etc/php/${PHP_VER}/fpm/php-fpm.conf" ]; then
   cp -p "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/php-fpm.conf.bak" 2>> /tmp/enginescript_install_errors.log
 fi
-cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log; then
+  echo "Error: Failed to copy php-fpm.conf for PHP ${PHP_VER}" >&2
+  exit 1
+fi
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
 
 if [ -f "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ]; then
   cp -p "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf.bak" 2>> /tmp/enginescript_install_errors.log
 fi
-cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log; then
+  echo "Error: Failed to copy www.conf for PHP ${PHP_VER}" >&2
+  exit 1
+fi
 sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
 # Tune PHP Configuration
