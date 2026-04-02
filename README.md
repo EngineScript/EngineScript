@@ -178,7 +178,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.29.5|<https://nginx.org/en/download.html>|
+|NGINX MAINLINE|1.29.7|<https://nginx.org/en/download.html>|
 |NGINX CACHE PURGE|2.5.6|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
