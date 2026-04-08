@@ -26,12 +26,19 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Analyze All Tables & Databases" "MariaDB-Check Database Optimizer" "MySQLreport" "MySQLtuner" "Exit Server Tools")
+    secoptions=("Analyze All Tables & Databases" "MariaDB Diagnostic & Recovery" "MariaDB-Check Database Optimizer" "MySQLreport" "MySQLtuner" "Exit Server Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
         "Analyze All Tables & Databases")
           /usr/local/bin/enginescript/scripts/functions/server-tools/analyze-tables.sh
+          break
+          ;;
+        "MariaDB Diagnostic & Recovery")
+          /usr/local/bin/enginescript/scripts/functions/mariadb-diagnostic.sh
+          echo ""
+          read -n 1 -s -r -p "Press any key to continue"
+          echo ""
           break
           ;;
         "MariaDB-Check Database Optimizer")

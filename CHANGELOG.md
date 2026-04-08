@@ -4,6 +4,20 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-08
+
+### 🧹 NGINX MIME AND COMPRESSION CLEANUP
+
+- Removed obsolete and irrelevant MIME mappings from `config/etc/nginx/globals/mime-types.conf` for legacy Java Web Start, legacy package formats, and obsolete browser component types.
+- Kept modern MIME coverage for WordPress-hosted assets while trimming project-irrelevant legacy entries.
+- Updated `config/etc/nginx/globals/compression-gzip.conf` and `config/etc/nginx/globals/compression-brotli.conf` to remove deprecated compression MIME aliases and legacy dead types.
+- Aligned gzip and brotli compression type lists to prioritize modern text-based and web-relevant content types.
+
+### 🔧 PHP AND MARIADB TUNING
+
+- Updated the logic across the codebase to better optimize the server for a variety of configuration scenarios, including low an high memory environments.
+
+
 ## 2026-03-27
 
 ### 🐛 DEBUG MODE ADDED TO ALL INSTALL AND UPDATE SCRIPTS

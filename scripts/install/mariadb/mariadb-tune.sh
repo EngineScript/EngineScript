@@ -56,11 +56,11 @@ sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
 
 # Max Connections
 # Scaled proportionally to PHP-FPM pm.max_children with headroom for WP-CLI, cron, and admin tasks
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]]; then
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
   sed -i "s|SEDMAXCON|50|g" /etc/mysql/my.cnf
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]]; then
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
   sed -i "s|SEDMAXCON|75|g" /etc/mysql/my.cnf
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 8000 ]]; then
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 8200 ]]; then
   sed -i "s|SEDMAXCON|100|g" /etc/mysql/my.cnf
 else
   sed -i "s|SEDMAXCON|150|g" /etc/mysql/my.cnf
@@ -83,33 +83,16 @@ if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
     sed -i "s|SEDTOC|4000|g" /etc/mysql/my.cnf
 fi
 
-# For Servers with 1GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ]];
-  then
-    sed -i "s|SEDINOF|1000|g" /etc/mysql/my.cnf
+# Innodb Open Files - scaled by RAM tier
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1200 ]]; then
+  sed -i "s|SEDINOF|1000|g" /etc/mysql/my.cnf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
+  sed -i "s|SEDINOF|2000|g" /etc/mysql/my.cnf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
+  sed -i "s|SEDINOF|4000|g" /etc/mysql/my.cnf
+else
+  sed -i "s|SEDINOF|8000|g" /etc/mysql/my.cnf
 fi
-
-# For Servers with 2GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]];
-  then
-    sed -i "s|SEDINOF|2000|g" /etc/mysql/my.cnf
-fi
-
-# For Servers with 4GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]];
-  then
-    sed -i "s|SEDINOF|4000|g" /etc/mysql/my.cnf
-fi
-
-# For Servers with 8GB RAM+
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ]];
-  then
-    sed -i "s|SEDINOF|8000|g" /etc/mysql/my.cnf
-fi
-
-sed -i "s|SEDMYSQL016PERCENT|${SERVER_MEMORY_TOTAL_016}|g" /etc/mysql/my.cnf
-sed -i "s|SEDMYSQL02PERCENT|${SERVER_MEMORY_TOTAL_02}|g" /etc/mysql/my.cnf
-sed -i "s|SEDMYSQL03PERCENT|${SERVER_MEMORY_TOTAL_03}|g" /etc/mysql/my.cnf
 
 # Cap innodb_log_file_size at 512MB
 if [[ "${SERVER_MEMORY_TOTAL_09}" -gt 512 ]]; then
@@ -129,17 +112,21 @@ MARIADB_CONFIG="/etc/mysql/my.cnf"
 IOPS_AVG_VAR="SEDAVGIOPS"  # Placeholder for avg IOPS
 IOPS_MAX_VAR="SEDMAXIOPS"  # Placeholder for max IOPS
 
-# Run fio and get results (with progress)
+# Run fio IOPS benchmark with JSON output for reliable parsing across versions
 echo "Running fio test (random mixed read/write)..."
-fio_full_output=$(sudo fio --ioengine=libaio --direct=1 --name=test --filename="$TEST_FILE" --bs=4k --size=500M --readwrite=randrw --rwmixread=70)
+fio_json_output="/tmp/fio_output.json"
+sudo fio --ioengine=libaio --direct=1 --name=test --filename="$TEST_FILE" --bs=4k --size=500M --readwrite=randrw --rwmixread=70 --output-format=json --output="$fio_json_output" > /dev/null 2>&1
 
-# Extract avg and max IOPS values
-avg_iops=$(echo "$fio_full_output" | grep "iops" | awk -F',' '{print $3}' | awk -F'=' '{print $2}')
-max_iops=$(echo "$fio_full_output" | grep "iops" | awk -F',' '{print $2}' | awk -F'=' '{print $2}')
-
-# Remove decimals and ALL whitespace
-avg_iops=$(echo "$avg_iops" | cut -d '.' -f 1 | xargs)
-max_iops=$(echo "$max_iops" | cut -d '.' -f 1 | sed 's/^[ \t]*//;s/[ \t]*$//') # Remove leading/trailing whitespace
+# Extract IOPS from JSON - uses jq for reliable parsing across fio versions
+# Read IOPS = average IOPS metric, Write IOPS = secondary metric for headroom
+if jq empty "$fio_json_output" 2>/dev/null; then
+    avg_iops=$(jq -r '.jobs[0].read.iops // .jobs[0].iops // 0' "$fio_json_output" 2>/dev/null | cut -d '.' -f 1)
+    max_iops=$(jq -r '.jobs[0].write.iops // .jobs[0].iops // 0' "$fio_json_output" 2>/dev/null | cut -d '.' -f 1)
+else
+    avg_iops=""
+    max_iops=""
+    echo "Warning: Failed to parse fio JSON output"
+fi
 
 # Failsafe: Set avg IOPS to 500 and max IOPS to 1000 if avg IOPS is less than 500 or if extraction failed
 if [[ -z "$avg_iops" ]] || [[ "$avg_iops" -lt 500 ]]; then
@@ -155,6 +142,9 @@ echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
 # Modify MariaDB config for max IOPS
 sed -i "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_MAX_VAR updated to $max_iops."
+
+# Clean up fio test file to prevent /tmp exhaustion
+rm -f "$TEST_FILE"
 
 # Reload systemd daemon to apply the new override configuration
 systemctl daemon-reload

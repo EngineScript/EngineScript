@@ -14,6 +14,9 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
+# Validate required capacity signals before tuning.
+require_basic_system_resources "MEMORY_TOTAL_MB" "CPU_COUNT"
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -33,7 +36,6 @@ calculate_php() {
     fi
   fi
   AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
-  CPU_COUNT="$(nproc --all)" # Get the number of CPU threads
   # Memory thresholds in MB for tuning PHP-FPM and PHP settings
   MEMORY_THRESHOLD_LOW=1200
   MEMORY_THRESHOLD_MEDIUM=2200
@@ -71,7 +73,7 @@ calculate_php() {
     PHP_FPM_MAX_SPARE_SERVERS=7
   fi
   
-  # Calculate pm.max_children based on available memory
+  # Calculate server configuration based on available memory
   if [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_LOW}" ]]; then
     PHP_FPM_MAX_CHILDREN=8
     PHP_MEMORY_LIMIT="256M"
@@ -81,7 +83,7 @@ calculate_php() {
     PHP_FPM_MAX_CHILDREN=16
     PHP_MEMORY_LIMIT="256M"
     OPCACHE_JIT_BUFFER="64M"
-    OPCACHE_INT_BUFFER=16
+    OPCACHE_INT_BUFFER=32
   elif [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_HIGH}" ]]; then
     PHP_FPM_MAX_CHILDREN=24
     PHP_MEMORY_LIMIT="512M"
@@ -102,7 +104,6 @@ calculate_php() {
 
   # Apply memory and OpCache settings to php.ini
   sed -i "s|SEDPHPMEMLIMIT|${PHP_MEMORY_LIMIT}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEJITBUFFER|${OPCACHE_JIT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
   sed -i "s|SEDOPCACHEINTBUF|${OPCACHE_INT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
   # Arithmetic expansion result is unlikely to need quoting; template controls any surrounding quotes
   sed -i "s|SEDOPCACHEMEM|$((AVAILABLE_MEMORY / 8))M|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
@@ -134,7 +135,7 @@ if ! cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_V
   echo "Error: Failed to copy www.conf for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
 # Tune PHP Configuration
 calculate_php

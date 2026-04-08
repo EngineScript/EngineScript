@@ -66,32 +66,19 @@ echo "L3 Cache: $CPU_CACHE"
 sed -i "s|SEDHBS|$(lscpu | grep "L1d cache:" | awk '{print $3 * 2}')|g" /etc/nginx/nginx.conf
 
 # Tuning Worker Connections
-# For Servers with 1GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1000 ]];
-  then
-    sed -i "s|SEDNGINXRLIMIT|1024|g" /etc/nginx/nginx.conf
-    sed -i "s|SEDNGINXWORKERCONNECTIONS|512|g" /etc/nginx/nginx.conf
-fi
-
-# For Servers with 2GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2000 ]];
-  then
-    sed -i "s|SEDNGINXRLIMIT|2048|g" /etc/nginx/nginx.conf
-    sed -i "s|SEDNGINXWORKERCONNECTIONS|1024|g" /etc/nginx/nginx.conf
-fi
-
-# For Servers with 4GB RAM
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4000 ]];
-  then
-    sed -i "s|SEDNGINXRLIMIT|8192|g" /etc/nginx/nginx.conf
-    sed -i "s|SEDNGINXWORKERCONNECTIONS|4096|g" /etc/nginx/nginx.conf
-fi
-
-# For Servers with 8GB RAM+
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 128000 ]];
-  then
-    sed -i "s|SEDNGINXRLIMIT|10240|g" /etc/nginx/nginx.conf
-    sed -i "s|SEDNGINXWORKERCONNECTIONS|5120|g" /etc/nginx/nginx.conf
+# Nginx Worker Connections - scaled by RAM tier
+if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1200 ]]; then
+  sed -i "s|SEDNGINXRLIMIT|1024|g" /etc/nginx/nginx.conf
+  sed -i "s|SEDNGINXWORKERCONNECTIONS|512|g" /etc/nginx/nginx.conf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
+  sed -i "s|SEDNGINXRLIMIT|2048|g" /etc/nginx/nginx.conf
+  sed -i "s|SEDNGINXWORKERCONNECTIONS|1024|g" /etc/nginx/nginx.conf
+elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
+  sed -i "s|SEDNGINXRLIMIT|8192|g" /etc/nginx/nginx.conf
+  sed -i "s|SEDNGINXWORKERCONNECTIONS|4096|g" /etc/nginx/nginx.conf
+else
+  sed -i "s|SEDNGINXRLIMIT|10240|g" /etc/nginx/nginx.conf
+  sed -i "s|SEDNGINXWORKERCONNECTIONS|5120|g" /etc/nginx/nginx.conf
 fi
 
 # Hash Bucket Size

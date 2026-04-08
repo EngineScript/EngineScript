@@ -67,15 +67,14 @@ echo ""
 
 # Attempt to fix common issues
 echo "============================================================="
-echo "Attempting automatic fixes..."
+echo "CORRECTIVE MEASURES"
 echo "============================================================="
 echo ""
 
-# Ensure systemd override directory exists
-mkdir -p /etc/systemd/system/mariadb.service.d
-
-# Recreate the override file with proper environment variables
-cat > /etc/systemd/system/mariadb.service.d/enginescript-limits.conf << 'EOF'
+# Fix 1: Systemd override file
+if prompt_yes_no "[1/5] Recreate systemd override file with proper environment variables?"; then
+    mkdir -p /etc/systemd/system/mariadb.service.d
+    cat > /etc/systemd/system/mariadb.service.d/enginescript-limits.conf << 'EOF'
 [Service]
 # EngineScript MariaDB Performance Tuning
 LimitNOFILE=60556
@@ -85,41 +84,64 @@ LimitMEMLOCK=524288
 Environment="MYSQLD_OPTS="
 Environment="_WSREP_NEW_CLUSTER="
 EOF
-
-echo "Created/updated systemd override file."
-
-# Reload systemd and attempt to start MariaDB
-systemctl daemon-reload
-echo "Reloaded systemd daemon."
-
-# Check if MariaDB data directory is properly initialized
-if [ ! -d /var/lib/mysql/mysql ]; then
-    echo "MariaDB data directory not properly initialized. Running mysql_install_db..."
-    /usr/bin/mysql_install_db --user=mysql --datadir=/var/lib/mysql
-fi
-
-# Set proper ownership on MariaDB files
-chown -R mysql:mysql /var/lib/mysql
-chown -R mysql:adm /var/log/mysql
-
-echo "Fixed file ownership."
-
-# Try to start MariaDB
-echo "Attempting to start MariaDB..."
-systemctl start mariadb.service
-
-# Check final status
-sleep 3
-if systemctl is-active mariadb.service --quiet; then
-    echo "SUCCESS: MariaDB is now running!"
+    echo "✓ Created/updated systemd override file."
 else
-    echo "FAILED: MariaDB still not running. Manual intervention required."
-    echo ""
-    echo "Recent systemd journal entries for mariadb:"
-    journalctl -u mariadb.service --no-pager -n 20
+    echo "⊘ Skipped systemd override file update."
 fi
-
 echo ""
+
+# Fix 2: Reload systemd daemon
+if prompt_yes_no "[2/5] Reload systemd daemon?"; then
+    systemctl daemon-reload
+    echo "✓ Reloaded systemd daemon."
+else
+    echo "⊘ Skipped systemd daemon reload."
+fi
+echo ""
+
+# Fix 3: Initialize MariaDB data directory if needed
+echo "[3/5] Initialize MariaDB data directory if not already initialized?"
+if [ ! -d /var/lib/mysql/mysql ]; then
+    echo "MariaDB data directory not properly initialized."
+    if prompt_yes_no "Proceed with mysql_install_db?"; then
+        /usr/bin/mysql_install_db --user=mysql --datadir=/var/lib/mysql
+        echo "✓ Initialized MariaDB data directory."
+    else
+        echo "⊘ Skipped data directory initialization."
+    fi
+else
+    echo "MariaDB data directory already initialized. Skipping."
+fi
+echo ""
+
+# Fix 4: Fix file ownership
+if prompt_yes_no "[4/5] Fix file ownership for MariaDB directories?"; then
+    chown -R mysql:mysql /var/lib/mysql
+    chown -R mysql:adm /var/log/mysql
+    echo "✓ Fixed file ownership."
+else
+    echo "⊘ Skipped file ownership fix."
+fi
+echo ""
+
+# Fix 5: Start MariaDB service
+if prompt_yes_no "[5/5] Attempt to start MariaDB service?"; then
+    systemctl start mariadb.service
+    echo "Attempting to start MariaDB..."
+    sleep 3
+    if systemctl is-active mariadb.service --quiet; then
+        echo "✓ SUCCESS: MariaDB is now running!"
+    else
+        echo "✗ FAILED: MariaDB still not running. Manual intervention required."
+        echo ""
+        echo "Recent systemd journal entries for mariadb:"
+        journalctl -u mariadb.service --no-pager -n 20
+    fi
+else
+    echo "⊘ Skipped MariaDB service start."
+fi
+echo ""
+
 echo "============================================================="
 echo "Diagnostic complete."
 echo "============================================================="

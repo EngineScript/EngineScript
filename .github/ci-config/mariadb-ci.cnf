@@ -63,11 +63,5 @@ max_allowed_packet = 16M
 [mysql]
 #no-auto-rehash
 
-[myisamchk]
-key_buffer_size = 16M
-sort_buffer_size = 4M
-read_buffer = 2M
-write_buffer = 2M
-
 [mysqlhotcopy]
 interactive-timeout

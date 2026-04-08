@@ -732,6 +732,66 @@ function auto_detect_digitalocean() {
 
 
 # ----------------------------------------------------------------
+# Read total memory (MB) from /proc/meminfo
+function read_total_memory_mb() {
+    awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo ""
+}
+
+
+# ----------------------------------------------------------------
+# Read CPU thread count
+function read_cpu_count() {
+    nproc --all 2>/dev/null || echo ""
+}
+
+
+# ----------------------------------------------------------------
+# Validate total memory is readable and numeric; assign to output variable
+# Usage: require_total_memory_readable "OUTPUT_VAR"
+function require_total_memory_readable() {
+    local output_var="${1:-MEMORY_TOTAL_MB}"
+    local memory_total_mb
+
+    memory_total_mb="$(read_total_memory_mb)"
+    if ! [[ "${memory_total_mb}" =~ ^[0-9]+$ ]] || [[ "${memory_total_mb}" -le 0 ]]; then
+        echo "Error: Unable to determine total memory from /proc/meminfo; cannot continue." >&2
+        exit 1
+    fi
+
+    printf -v "${output_var}" '%s' "${memory_total_mb}"
+}
+
+
+# ----------------------------------------------------------------
+# Validate CPU count is readable and numeric; assign to output variable
+# Usage: require_cpu_count_readable "OUTPUT_VAR"
+function require_cpu_count_readable() {
+    local output_var="${1:-CPU_COUNT}"
+    local cpu_count
+
+    cpu_count="$(read_cpu_count)"
+    if ! [[ "${cpu_count}" =~ ^[0-9]+$ ]] || [[ "${cpu_count}" -le 0 ]]; then
+        echo "Error: Unable to determine CPU count via nproc; cannot continue." >&2
+        exit 1
+    fi
+
+    printf -v "${output_var}" '%s' "${cpu_count}"
+}
+
+
+# ----------------------------------------------------------------
+# Validate both total memory and CPU count and assign to caller variables
+# Usage: require_basic_system_resources "MEM_OUTPUT_VAR" "CPU_OUTPUT_VAR"
+function require_basic_system_resources() {
+    local memory_output_var="${1:-MEMORY_TOTAL_MB}"
+    local cpu_output_var="${2:-CPU_COUNT}"
+
+    require_total_memory_readable "${memory_output_var}"
+    require_cpu_count_readable "${cpu_output_var}"
+}
+
+
+# ----------------------------------------------------------------
 # Validate that a configuration variable is not still set to PLACEHOLDER
 # Exits with warning if the variable value is "PLACEHOLDER"
 # Usage: validate_not_placeholder "VARIABLE_NAME" "$VARIABLE_VALUE" ["custom message"]

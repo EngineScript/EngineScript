@@ -100,6 +100,18 @@ chown -R root:root /usr/local/bin/enginescript
 # Make shell scripts executable
 find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
+# Source shared functions now that EngineScript is cloned and ready.
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || {
+  echo "Error: Failed to source shared functions from /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh"
+  exit 1
+}
+
+# Pre-install resource checks so setup fails early on unsupported/misreported systems.
+require_basic_system_resources "MEMORY_TOTAL_MB" "CPU_COUNT"
+
+echo "Detected total memory: ${MEMORY_TOTAL_MB} MB"
+echo "Detected CPU count: ${CPU_COUNT}"
+
 # Create EngineScript Home Directory
 mkdir -p "/home/EngineScript/config-backups/nginx"
 mkdir -p "/home/EngineScript/config-backups/php"
