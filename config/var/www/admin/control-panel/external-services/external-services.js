@@ -620,17 +620,20 @@ export class ExternalServicesManager {
       spinnerIcon.className = "fas fa-spinner fa-spin";
       saveButton.appendChild(spinnerIcon);
       saveButton.appendChild(document.createTextNode(" Saving..."));
+
+      const safeChanges = this.getAllowedPreferenceChanges(pendingChanges);
       
       // Load and update preferences
-      let currentPreferences = this.loadServicePreferences() || {};
-      Object.assign(currentPreferences, pendingChanges);
+      const storedPreferences = this.loadServicePreferences() || {};
+      const currentPreferences = this.getAllowedPreferenceChanges(storedPreferences);
+      this.applyPreferenceChanges(currentPreferences, safeChanges);
       
       // Save to cookie
       this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
-      Object.assign(services, pendingChanges);
+      this.applyPreferenceChanges(services, safeChanges);
       
       // Clear pending changes
-      for (const key in pendingChanges) {
+      for (const key of Object.keys(pendingChanges)) {
         delete pendingChanges[key];
       }
       
@@ -667,6 +670,36 @@ export class ExternalServicesManager {
       
       this.showNotification('Failed to save preferences', 'error');
     }
+  }
+
+  /**
+   * Filter arbitrary preference objects to known service keys with boolean values.
+   * @param {Object} changes - Source preference map
+   * @returns {Object} Sanitized preference map
+   */
+  getAllowedPreferenceChanges(changes) {
+    const allowedKeys = new Set(Object.keys(this.getServiceDefinitions()));
+    const safeChanges = {};
+
+    Object.entries(changes || {}).forEach(([key, value]) => {
+      if (allowedKeys.has(key) && typeof value === 'boolean') {
+        safeChanges[key] = value;
+      }
+    });
+
+    return safeChanges;
+  }
+
+  /**
+   * Apply already-sanitized preference changes to a target object.
+   * @param {Object} target - Target preferences object
+   * @param {Object} changes - Sanitized preference changes
+   * @returns {void}
+   */
+  applyPreferenceChanges(target, changes) {
+    Object.keys(changes).forEach((key) => {
+      target[key] = changes[key];
+    });
   }
 
   /**

@@ -2,15 +2,23 @@ name: EngineScript Nginx Build Test
 
 on:
   pull_request:
-    # Run on all pull requests for comprehensive testing
-  push:
-    # Run on all pushes to any branch for comprehensive testing
+    # Only run expensive build tests when relevant files are changed.
     paths:
       - 'scripts/**'
       - 'config/**'
+      - 'patches/**'
+      - '.github/ci-config/**'
+      - '.github/workflows/enginescript-build-test.yml'
       - 'enginescript-variables.txt'
-  create:
-    # Run when new branches are created
+  push:
+    # Only run expensive build tests when relevant files are changed.
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - 'patches/**'
+      - '.github/ci-config/**'
+      - '.github/workflows/enginescript-build-test.yml'
+      - 'enginescript-variables.txt'
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +28,6 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
-  actions: read
   issues: write
 
 jobs:
@@ -44,15 +51,12 @@ jobs:
           sudo rm -rf /usr/local/graalvm
           sudo rm -rf /usr/local/.ghcup
           sudo docker system prune -af
-          sudo apt-get autoremove -y
-          sudo apt-get autoclean
           echo "💾 Available disk space:"
           df -h
 
       - name: Setup Nginx Build Environment
         run: |
           echo "🏗️ Setting up Nginx build environment..."
-          sudo apt-get update -qq
           
           # Create required directories including log directories
           sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript /tmp/ci-logs
@@ -198,10 +202,8 @@ jobs:
           sudo apt-get remove 'apache2.*' -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Old packages cleaned up" | sudo tee -a /tmp/ci-logs/setup.log
           
-          # Final update
-          echo "� Final system update..." | sudo tee -a /tmp/ci-logs/setup.log
-          sudo apt update --allow-releaseinfo-change -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
-          sudo apt upgrade -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
+          # Skip duplicate full upgrade pass to reduce CI runtime
+          echo "⏭️ Skipping duplicate final apt update/upgrade pass in CI" | sudo tee -a /tmp/ci-logs/setup.log
           
           # Skip timezone configuration (problematic in CI)
           echo "⏭️ Skipping timezone configuration (not suitable for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
@@ -457,75 +459,35 @@ jobs:
 
       - name: Install GCC
         run: |
-          echo "🔨 Installing GCC..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          timeout 600 sudo bash ./gcc/gcc-install.sh 2>&1 | sudo tee /tmp/ci-logs/gcc.log || {
-            echo "⚠️ GCC installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/gcc.log 2>/dev/null || echo "No GCC log available"
-          }
-          sudo sync
-          echo "✅ GCC installation completed"
+          /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
+            "GCC" \
+            "600" \
+            "/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh" \
+            "/tmp/ci-logs/gcc.log"
 
       - name: Install OpenSSL
         run: |
-          echo "� Installing OpenSSL..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          timeout 900 sudo bash ./openssl/openssl-install.sh 2>&1 | sudo tee /tmp/ci-logs/openssl.log || {
-            echo "⚠️ OpenSSL installation had issues, continuing..."
-            tail -50 /tmp/ci-logs/openssl.log 2>/dev/null || echo "No OpenSSL log available"
-          }
-          sudo sync
-          echo "✅ OpenSSL installation completed"
+          /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
+            "OpenSSL" \
+            "900" \
+            "/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh" \
+            "/tmp/ci-logs/openssl.log"
 
       - name: Install PCRE
         run: |
-          echo "� Installing PCRE..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          timeout 600 sudo bash ./pcre/pcre-install.sh 2>&1 | sudo tee /tmp/ci-logs/pcre.log || {
-            echo "⚠️ PCRE installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/pcre.log 2>/dev/null || echo "No PCRE log available"
-          }
-          sudo sync
-          echo "✅ PCRE installation completed"
+          /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
+            "PCRE" \
+            "600" \
+            "/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh" \
+            "/tmp/ci-logs/pcre.log"
 
       - name: Install Zlib
         run: |
-          echo "📦 Installing Zlib..."
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          # Set CI environment variables
-          export CI_ENVIRONMENT=true
-          export DEBIAN_FRONTEND=noninteractive
-          
-          cd /usr/local/bin/enginescript/scripts/install
-          
-          timeout 600 sudo bash ./zlib/zlib-install.sh 2>&1 | sudo tee /tmp/ci-logs/zlib.log || {
-            echo "⚠️ Zlib installation had issues, continuing..."
-            tail -30 /tmp/ci-logs/zlib.log 2>/dev/null || echo "No Zlib log available"
-          }
-          sudo sync
-          echo "✅ Zlib installation completed"
+          /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
+            "Zlib" \
+            "600" \
+            "/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh" \
+            "/tmp/ci-logs/zlib.log"
 
       - name: Build Nginx Component
         run: |

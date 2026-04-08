@@ -267,60 +267,19 @@ class ExternalServicesFeedParser
     public function parseJsonAPI(string $apiUrl, array $config): array
     {
         try {
-            // Fetch API response via cURL with SSL verification
-            // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => $apiUrl,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_CONNECTTIMEOUT => 5,
-                CURLOPT_HTTPHEADER => [
-                    'User-Agent: EngineScript Admin Dashboard'
-                ],
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_MAXREDIRS => 0
-            ]);
+            $fetchResult = $this->fetchJsonApiData($apiUrl);
 
-            $response = curl_exec($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            curl_close($curl);
-
-            if ($response === false || $httpCode !== 200) {
-                return [
-                    'indicator' => 'major',
-                    'description' => 'Unable to fetch status'
-                ];
+            if ($fetchResult['error'] !== null) {
+                return $fetchResult['error'];
             }
 
-            $data = json_decode($response, true);
-            if (!$data) {
-                return [
-                    'indicator' => 'major',
-                    'description' => 'Unable to parse status'
-                ];
+            $data = $fetchResult['data'];
+
+            if (!$this->hasRequiredField($data, $config)) {
+                return $this->getMissingFieldStatus($config);
             }
 
-            // Check if data structure is valid
-            if (isset($config['required_field']) && !isset($data[$config['required_field']])) {
-                // Required field missing - treat as operational or error based on config
-                return isset($config['missing_is_operational']) && $config['missing_is_operational']
-                    ? ['indicator' => 'none', 'description' => 'All Systems Operational']
-                    : ['indicator' => 'major', 'description' => 'Unable to fetch status'];
-            }
-
-            // Dispatch to type-specific handler
-            if (isset($config['type']) && $config['type'] === 'direct_status') {
-                return $this->parseDirectStatusResult($data, $config);
-            }
-
-            if (isset($config['type']) && $config['type'] === 'page_status') {
-                return $this->parsePageStatusResult($data, $config);
-            }
-
-            return $this->parseIncidentListResult($data, $config);
+            return $this->dispatchJsonApiParser($data, $config);
 
         } catch (Exception $e) {
             return [
@@ -328,6 +287,106 @@ class ExternalServicesFeedParser
                 'description' => 'Unable to fetch status'
             ];
         }
+    }
+
+    /**
+     * Fetch and decode JSON API data.
+     *
+     * @param string $apiUrl API endpoint URL
+     * @return array{data: array, error: ?array}
+     */
+    private function fetchJsonApiData(string $apiUrl): array
+    {
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript Admin Dashboard'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($response === false || $httpCode !== 200) {
+            return [
+                'data' => [],
+                'error' => ['indicator' => 'major', 'description' => 'Unable to fetch status']
+            ];
+        }
+
+        $data = json_decode($response, true);
+
+        if (!is_array($data)) {
+            return [
+                'data' => [],
+                'error' => ['indicator' => 'major', 'description' => 'Unable to parse status']
+            ];
+        }
+
+        return ['data' => $data, 'error' => null];
+    }
+
+    /**
+     * Validate required top-level JSON field when configured.
+     *
+     * @param array $data Parsed JSON payload
+     * @param array $config Parser configuration
+     * @return bool True when payload has required shape
+     */
+    private function hasRequiredField(array $data, array $config): bool
+    {
+        if (!isset($config['required_field'])) {
+            return true;
+        }
+
+        return isset($data[$config['required_field']]);
+    }
+
+    /**
+     * Build status result when required field is missing.
+     *
+     * @param array $config Parser configuration
+     * @return array Status information
+     */
+    private function getMissingFieldStatus(array $config): array
+    {
+        if (!empty($config['missing_is_operational'])) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+
+        return ['indicator' => 'major', 'description' => 'Unable to fetch status'];
+    }
+
+    /**
+     * Route payload to the configured parser strategy.
+     *
+     * @param array $data Parsed JSON payload
+     * @param array $config Parser configuration
+     * @return array Status information
+     */
+    private function dispatchJsonApiParser(array $data, array $config): array
+    {
+        $type = $config['type'] ?? 'incident_list';
+
+        if ($type === 'direct_status') {
+            return $this->parseDirectStatusResult($data, $config);
+        }
+
+        if ($type === 'page_status') {
+            return $this->parsePageStatusResult($data, $config);
+        }
+
+        return $this->parseIncidentListResult($data, $config);
     }
 
     /**
@@ -348,7 +407,6 @@ class ExternalServicesFeedParser
         }
 
         $indicator = $statusData['indicator'] ?? 'none';
-        $description = $statusData['description'] ?? 'All Systems Operational';
 
         // Standardize indicator
         if ($indicator === 'none' || $indicator === 'operational') {
@@ -411,100 +469,253 @@ class ExternalServicesFeedParser
      */
     private function parseIncidentListResult(array $data, array $config): array
     {
-        $incidents = $data;
-
-        // Navigate to incidents array if path specified
-        if (isset($config['incidents_path'])) {
-            $path = explode('.', $config['incidents_path']);
-            foreach ($path as $key) {
-                if (!isset($incidents[$key])) {
-                    return ['indicator' => 'none', 'description' => 'All Systems Operational'];
-                }
-                $incidents = $incidents[$key];
-            }
-        }
+        $incidents = $this->getConfiguredIncidents($data, $config);
 
         if (empty($incidents)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Filter incidents based on status field
-        if (isset($config['filter_field']) && isset($config['filter_value'])) {
-            $filteredIncidents = array_filter($incidents, function($incident) use ($config) {
-                if (is_array($config['filter_value'])) {
-                    foreach ($config['filter_value'] as $field => $value) {
-                        if (!isset($incident[$field]) || $incident[$field] !== $value) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                return isset($incident[$config['filter_field']]) && $incident[$config['filter_field']] === $config['filter_value'];
-            });
-
-            if (empty($filteredIncidents)) {
-                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
-            }
-
-            $incidents = $filteredIncidents;
-        }
-
         // Get latest incident
         $latestIncident = reset($incidents);
 
-        // Extract title with custom parser if provided
-        if (isset($config['title_parser']) && is_callable($config['title_parser'])) {
-            $title = $config['title_parser']($latestIncident);
-        }
-        if (!isset($title) || empty($title)) {
-            $title = $latestIncident[$config['title_field']] ?? '';
-        }
-
-        // Get description field if specified
-        $description = '';
-        if (isset($config['description_field']) && isset($latestIncident[$config['description_field']])) {
-            $description = $latestIncident[$config['description_field']];
-        }
-
-        if (empty($title)) {
+        if (!is_array($latestIncident)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Check recency if timestamp field configured
-        if (isset($config['timestamp_fields'])) {
-            $incidentDate = null;
-            foreach ($config['timestamp_fields'] as $field) {
-                if (isset($latestIncident[$field])) {
-                    $incidentDate = strtotime($latestIncident[$field]);
-                    break;
-                }
-            }
+        $title = $this->extractIncidentTitle($latestIncident, $config);
 
-            if ($incidentDate && (time() - $incidentDate) > 86400) {
-                return ['indicator' => 'none', 'description' => 'All Systems Operational'];
-            }
+        if ($title === '') {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Check if resolved
+        if (!$this->isIncidentRecent($latestIncident, $config)) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+
+        $description = $this->extractIncidentDescription($latestIncident, $config);
         $fullText = $title . ' ' . $description;
-        if (preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $fullText)) {
+
+        if ($this->isResolvedIncidentText($fullText)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Determine severity - check keywords first
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if ($this->isMajorIncident($latestIncident, $config, $fullText)) {
             return ['indicator' => 'major', 'description' => 'Major Outage'];
         }
 
-        // Check severity field if configured
-        if (isset($config['severity_field']) && isset($latestIncident[$config['severity_field']])) {
-            $severity = strtolower($latestIncident[$config['severity_field']]);
-            if (in_array($severity, ['high', 'critical', 'major'])) {
-                return ['indicator' => 'major', 'description' => 'Major Outage'];
+        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+    }
+
+    /**
+     * Resolve and filter incidents according to parser configuration.
+     *
+     * @param array $data Parsed API payload
+     * @param array $config Parser configuration
+     * @return array Incidents array, or empty array when none apply
+     */
+    private function getConfiguredIncidents(array $data, array $config): array
+    {
+        $incidents = $data;
+
+        if (isset($config['incidents_path'])) {
+            $incidents = $this->resolveIncidentsPath($data, $config['incidents_path']);
+        }
+
+        if (empty($incidents) || !is_array($incidents)) {
+            return [];
+        }
+
+        return $this->filterIncidents($incidents, $config);
+    }
+
+    /**
+     * Follow a dotted path and return the incidents array.
+     *
+     * @param array $data Parsed API payload
+     * @param string $incidentsPath Dotted path to incidents data
+     * @return array Resolved incidents array or empty array
+     */
+    private function resolveIncidentsPath(array $data, string $incidentsPath): array
+    {
+        $incidents = $data;
+
+        foreach (explode('.', $incidentsPath) as $key) {
+            if (!is_array($incidents) || !isset($incidents[$key])) {
+                return [];
+            }
+
+            $incidents = $incidents[$key];
+        }
+
+        return is_array($incidents) ? $incidents : [];
+    }
+
+    /**
+     * Apply optional incident filters from configuration.
+     *
+     * @param array $incidents Incident list
+     * @param array $config Parser configuration
+     * @return array Filtered incident list
+     */
+    private function filterIncidents(array $incidents, array $config): array
+    {
+        if (!isset($config['filter_field']) || !isset($config['filter_value'])) {
+            return $incidents;
+        }
+
+        $filteredIncidents = array_filter($incidents, function ($incident) use ($config) {
+            return is_array($incident) && $this->incidentMatchesFilter($incident, $config);
+        });
+
+        return empty($filteredIncidents) ? [] : $filteredIncidents;
+    }
+
+    /**
+     * Check whether a single incident matches configured filter criteria.
+     *
+     * @param array $incident Incident data
+     * @param array $config Parser configuration
+     * @return bool True when incident matches filter
+     */
+    private function incidentMatchesFilter(array $incident, array $config): bool
+    {
+        $filterValue = $config['filter_value'];
+
+        if (is_array($filterValue)) {
+            foreach ($filterValue as $field => $value) {
+                if (!isset($incident[$field]) || $incident[$field] !== $value) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        $filterField = $config['filter_field'];
+
+        return isset($incident[$filterField]) && $incident[$filterField] === $filterValue;
+    }
+
+    /**
+     * Extract incident title using optional custom parser.
+     *
+     * @param array $incident Incident data
+     * @param array $config Parser configuration
+     * @return string Incident title or empty string
+     */
+    private function extractIncidentTitle(array $incident, array $config): string
+    {
+        if (isset($config['title_parser']) && is_callable($config['title_parser'])) {
+            $customTitle = $config['title_parser']($incident);
+            if (is_string($customTitle)) {
+                $customTitle = trim($customTitle);
+                if ($customTitle !== '') {
+                    return $customTitle;
+                }
             }
         }
 
-        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+        if (!isset($config['title_field']) || !isset($incident[$config['title_field']])) {
+            return '';
+        }
+
+        return trim((string)$incident[$config['title_field']]);
+    }
+
+    /**
+     * Extract optional incident description.
+     *
+     * @param array $incident Incident data
+     * @param array $config Parser configuration
+     * @return string Incident description or empty string
+     */
+    private function extractIncidentDescription(array $incident, array $config): string
+    {
+        if (!isset($config['description_field']) || !isset($incident[$config['description_field']])) {
+            return '';
+        }
+
+        return (string)$incident[$config['description_field']];
+    }
+
+    /**
+     * Check whether incident is recent when timestamp fields are configured.
+     *
+     * @param array $incident Incident data
+     * @param array $config Parser configuration
+     * @return bool True when incident should be considered active by time
+     */
+    private function isIncidentRecent(array $incident, array $config): bool
+    {
+        if (!isset($config['timestamp_fields']) || !is_array($config['timestamp_fields'])) {
+            return true;
+        }
+
+        $incidentDate = $this->extractIncidentTimestamp($incident, $config['timestamp_fields']);
+
+        if ($incidentDate === null) {
+            return true;
+        }
+
+        return (time() - $incidentDate) <= 86400;
+    }
+
+    /**
+     * Extract first valid timestamp from configured fields.
+     *
+     * @param array $incident Incident data
+     * @param array $timestampFields Candidate timestamp fields
+     * @return int|null Unix timestamp or null
+     */
+    private function extractIncidentTimestamp(array $incident, array $timestampFields): ?int
+    {
+        foreach ($timestampFields as $field) {
+            if (!isset($incident[$field])) {
+                continue;
+            }
+
+            $timestamp = strtotime((string)$incident[$field]);
+
+            if ($timestamp !== false) {
+                return $timestamp;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine if incident text indicates resolution.
+     *
+     * @param string $text Combined incident text
+     * @return bool True when resolved keywords are present
+     */
+    private function isResolvedIncidentText(string $text): bool
+    {
+        return preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $text) === 1;
+    }
+
+    /**
+     * Determine major outage status from keywords or severity field.
+     *
+     * @param array $incident Incident data
+     * @param array $config Parser configuration
+     * @param string $fullText Combined title/description text
+     * @return bool True when incident severity should be treated as major
+     */
+    private function isMajorIncident(array $incident, array $config, string $fullText): bool
+    {
+        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+            return true;
+        }
+
+        if (!isset($config['severity_field']) || !isset($incident[$config['severity_field']])) {
+            return false;
+        }
+
+        $severity = strtolower((string)$incident[$config['severity_field']]);
+
+        return in_array($severity, ['high', 'critical', 'major'], true);
     }
 
     /**

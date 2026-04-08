@@ -108,7 +108,7 @@ class ExternalServicesController extends BaseController
     public function getFeed()
     {
         try {
-            $feedType = $_GET['feed'] ?? ''; // codacy:ignore - CSRF validated globally in api.php before all controller invocations
+            $feedType = $this->getQueryParam('feed') ?? '';
 
             if (empty($feedType)) {
                 ApiResponse::badRequest('Missing feed parameter');
@@ -116,7 +116,7 @@ class ExternalServicesController extends BaseController
             }
 
             // Sanitize optional filter parameter
-            $filter = $_GET['filter'] ?? null; // codacy:ignore - CSRF validated globally in api.php before all controller invocations
+            $filter = $this->getQueryParam('filter');
             if ($filter !== null) {
                 $filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $filter);
                 $filter = substr($filter, 0, 50);
@@ -146,7 +146,7 @@ class ExternalServicesController extends BaseController
     public function getPluginInfo()
     {
         try {
-            $slug = trim($_GET['slug'] ?? ''); // codacy:ignore - CSRF validated globally in api.php before all controller invocations
+            $slug = $this->getQueryParam('slug') ?? '';
 
             if (empty($slug)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
@@ -194,6 +194,26 @@ class ExternalServicesController extends BaseController
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::serverError('Unable to retrieve plugin information');
         }
+    }
+
+    /**
+     * Retrieve a GET query value without direct super-global access.
+     *
+     * @param string $key Query parameter name
+     * @return string|null Trimmed value or null when absent/invalid
+     */
+    private function getQueryParam(string $key): ?string
+    {
+        // codacy:ignore - filter_input() safely centralizes query access without exposing $_GET in controller actions
+        $value = filter_input(INPUT_GET, $key, FILTER_UNSAFE_RAW);
+
+        if ($value === null || $value === false || !is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 
     /**

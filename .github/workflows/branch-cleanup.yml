@@ -14,34 +14,43 @@ permissions:
 
 jobs:
   cleanup:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Delete merged branch
-        if: github.event.pull_request.merged == true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          echo "Checking branch: $BRANCH_NAME"
-          
-          # Protected branch check - using quotes to prevent injection
-          if [[ "$BRANCH_NAME" =~ ^(main|master|dev|develop|staging|production)$ ]]; then
-            echo "::warning::Skipping deletion of protected branch: $BRANCH_NAME"
-            exit 0
-          fi
-          
-          # Attempt branch deletion - using quotes to prevent injection
-          echo "Attempting to delete branch: $BRANCH_NAME"
-          if git push origin --delete "$BRANCH_NAME" 2>/dev/null; then
-            echo "::notice::Successfully deleted branch: $BRANCH_NAME"
-          else
-            echo "::error::Failed to delete branch: $BRANCH_NAME"
-            exit 1
-          fi
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const protectedPattern = /^(main|master|dev|develop|staging|production)$/;
+            const pullRequest = context.payload.pull_request;
+            const branchName = pullRequest.head.ref;
+            const sourceRepo = pullRequest.head.repo.full_name;
+            const targetRepo = `${context.repo.owner}/${context.repo.repo}`;
+
+            core.info(`Checking branch: ${branchName}`);
+
+            if (protectedPattern.test(branchName)) {
+              core.warning(`Skipping deletion of protected branch: ${branchName}`);
+              return;
+            }
+
+            if (sourceRepo !== targetRepo) {
+              core.notice(`Skipping deletion for fork branch ${sourceRepo}:${branchName}`);
+              return;
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branchName}`
+              });
+              core.notice(`Successfully deleted branch: ${branchName}`);
+            } catch (error) {
+              if (error.status === 404 || error.status === 422) {
+                core.warning(`Branch already deleted or unavailable: ${branchName}`);
+                return;
+              }
+              throw error;
+            }

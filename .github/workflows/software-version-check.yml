@@ -13,7 +13,7 @@ on:
     paths:
       - 'enginescript-variables.txt'
     branches:
-      - main
+      - master
 
 permissions:
   contents: write
@@ -404,23 +404,6 @@ jobs:
           else
             echo "software_versions_changed=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Check for existing PR
-        if: steps.version-check.outputs.software_versions_changed == 'true'
-        id: check-pr
-        run: |
-          # Check if there's already an open PR for software version updates
-          EXISTING_PR=$(gh pr list --state open --head update-software-versions --json number --jq '.[0].number // empty')
-          
-          if [[ -n "$EXISTING_PR" ]]; then
-            echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "Found existing PR #$EXISTING_PR"
-          else
-            echo "existing_pr=" >> $GITHUB_OUTPUT
-            echo "No existing PR found"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update existing PR or create new one
         if: steps.version-check.outputs.software_versions_changed == 'true'
