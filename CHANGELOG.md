@@ -6,16 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-09
 
-### 🐛 EXTERNAL SERVICES CONTROL PANEL FIXES
-
-- **Fixed checkbox state initialization** in `createServicesGrid`: added a `preferences` parameter so the settings panel now reads actual saved user preferences instead of the all-`true` `services` object. Checkboxes correctly reflect the user's saved state when the settings panel is reopened.
-- **Threaded `preferences` through the call chain**: `loadExternalServices` → `renderServiceSettings` → `createSettingsCategorySection` → `createServicesGrid` so user preferences are available at every level.
-- **Replaced full re-initialization on save** (`initialized = false; init()`) with a targeted `refreshServicesDisplay()` call that only re-renders the visible service cards, preserving the cache and avoiding unnecessary API calls.
-- **Improved screen reader accessibility** for drag-and-drop cards: moved the reorder keyboard instructions to a single visually-hidden `<p>` element referenced by `aria-describedby`, and simplified per-card `aria-label` to just `"<Name> (reorderable)"` to reduce repetitive announcements.
-- **Extracted notification timing magic numbers** into class properties `notificationDurationMs` (3000 ms) and `notificationAnimationDurationMs` (300 ms) for easier maintenance.
-
-
-
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
 
 - Removed obsolete and irrelevant MIME mappings from `config/etc/nginx/globals/mime-types.conf` for legacy Java Web Start, legacy package formats, and obsolete browser component types.
