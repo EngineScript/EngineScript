@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-09
-
-### 🐛 EXTERNAL SERVICES JS BUG FIXES
-
-- Fixed incorrect `querySelector('h3')` selector in reorder-mode screen-reader announcement; service cards use `h4` elements so the selector now correctly targets `h4`.
-- Fixed `ReferenceError` caused by referencing an undeclared `liveRegion` variable in `announceToScreenReader`; the live-region element is now stored as `this.liveRegion` on the class instance, initialised to `null` in the constructor.
-
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
