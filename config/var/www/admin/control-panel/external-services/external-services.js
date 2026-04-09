@@ -59,7 +59,7 @@ export class ExternalServicesManager {
    */
   async loadExternalServices() {
     try { // codacy:ignore - Try/catch required for service loading
-      this.container.innerHTML = "";
+      this.container.replaceChildren();
 
       // Get service definitions and preferences
       const serviceDefinitions = this.getServiceDefinitions();
@@ -168,7 +168,7 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   renderErrorState() {
-    this.container.innerHTML = "";
+    this.container.replaceChildren();
     
     const errorDiv = document.createElement("div");
     errorDiv.className = "error-state";
@@ -352,13 +352,13 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   renderServiceSettings(settingsContainer, services, serviceDefinitions) {
-    settingsContainer.innerHTML = "";
+    settingsContainer.replaceChildren();
     
     // Track pending changes (shared across components)
     const pendingChanges = {};
     
     // Create main UI structure
-    const { settingsToggle, settingsContent } = this.createSettingsStructure(); // codacy:ignore - Destructuring assignment
+    const { settingsToggle, settingsContent } = this.createSettingsStructure();
     settingsContainer.appendChild(settingsToggle);
     settingsContainer.appendChild(settingsContent);
 
@@ -1545,7 +1545,7 @@ export class ExternalServicesManager {
    * @param {string} message - Message to announce
    * @returns {void}
    */
-  // codacy:ignore - Duplicate announceToScreenReader pattern is intentional: separate live-region IDs required
+  // Uses a dedicated live region for accessibility announcements in this module.
   announceToScreenReader(message) {
     if (!this.liveRegion) {
       this.liveRegion = document.createElement('div');
