@@ -4,6 +4,18 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-09
+
+### 🔒 SECURITY: ICON CLASS VALIDATION AND COOKIE HARDENING IN EXTERNAL SERVICES
+
+- **Strict FontAwesome icon class validation** in `createServiceCardHeader`: replaced permissive `replace` sanitization with a regex whitelist test (`/^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/`) to prevent crafted inputs like `--dangerous-class` or consecutive hyphens.
+- **Removed space character** from status icon class sanitization in `createServiceCardHeader` to prevent space-separated class injection.
+- **Added `sanitizeIconClass` helper method** providing a centralized, consistent icon suffix validator used by `updateServiceCardStatus`, replacing the previously inline sanitization.
+- **Added `isValidCookieName` helper method** implementing RFC 6265 token validation to prevent cookie injection via crafted cookie names.
+- **Validated cookie names** in `getCookie`, `setCookie`, and `deleteCookie` using the new helper; invalid names produce a `console.warn` and a safe early return.
+- **URL-encoded cookie values** in `setCookie` using `encodeURIComponent` and added corresponding `decodeURIComponent` in `getCookie` to prevent cookie injection through untrusted values.
+- **Improved days validation** in `setCookie` to use `Number.isFinite(days) && days > 0` instead of a loose truthiness check.
+
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
