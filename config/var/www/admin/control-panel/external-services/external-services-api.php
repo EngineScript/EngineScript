@@ -266,6 +266,212 @@ class ExternalServicesFeedParser
      */
     public function parseJsonAPI(string $apiUrl, array $config): array
     {
+        $jsonApiParser = new ExternalServicesJsonApiParser();
+        return $jsonApiParser->parse($apiUrl, $config);
+    }
+
+    /**
+     * Get JSON API handler configurations keyed by feed type
+     *
+     * Each entry maps a feed type to its URL and parseJsonAPI config array.
+     * Consolidates all JSON API handler definitions in one place.
+     *
+     * @return array<string, array{url: string, config: array}>
+     */
+    private function getJsonApiConfigs(): array
+    {
+        return [
+            'vultr' => [
+                'url' => 'https://status.vultr.com/alerts.json',
+                'config' => [
+                    'incidents_path' => 'service_alerts',
+                    'title_field' => 'subject',
+                    'filter_field' => 'status',
+                    'filter_value' => 'ongoing',
+                    'missing_is_operational' => true
+                ]
+            ],
+            'postmark' => [
+                'url' => 'https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned',
+                'config' => [
+                    'incidents_path' => 'notices',
+                    'title_field' => 'title',
+                    'filter_field' => 'multiple',
+                    'filter_value' => ['type' => 'unplanned', 'timeline_state' => 'present'],
+                    'missing_is_operational' => true
+                ]
+            ],
+            'googleworkspace' => [
+                'url' => 'https://www.google.com/appsstatus/dashboard/incidents.json',
+                'config' => [
+                    'title_field' => 'external_desc',
+                    'description_field' => 'external_desc',
+                    'severity_field' => 'severity',
+                    'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
+                    'missing_is_operational' => true,
+                    'title_parser' => function($incident) {
+                        $description = $incident['external_desc'] ?? '';
+
+                        // Parse title - extract text after **Title:** marker
+                        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
+                            return trim($matches[1]);
+                        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
+                            return trim($matches[1]);
+                        }
+
+                        // No title marker, use first line
+                        return strtok($description, "\n");
+                    }
+                ]
+            ],
+            'wistia' => [
+                'url' => 'https://status.wistia.com/summary.json',
+                'config' => [
+                    'type' => 'page_status',
+                    'page_path' => 'page',
+                    'incidents_path' => 'activeIncidents',
+                    'title_field' => 'name',
+                    'severity_field' => 'impact',
+                    'required_field' => 'page'
+                ]
+            ],
+            'sendgrid' => [
+                'url' => 'https://status.sendgrid.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'spotify' => [
+                'url' => 'https://spotify.statuspage.io/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'trello' => [
+                'url' => 'https://trello.status.atlassian.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+            'pipedream' => [
+                'url' => 'https://status.pipedream.com/api/v2/status.json',
+                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
+            ],
+        ];
+    }
+
+    /**
+     * Handle RSS/Atom feed status requests
+     * 
+     * @param string $feedType The feed type identifier (must be whitelisted)
+     * @param string|null $filter Optional service name filter for multi-service feeds
+     * @return void Outputs JSON response via ApiResponse
+     */
+    public function handleStatusFeed(string $feedType, ?string $filter = null): void
+    {
+        try {
+            // Whitelist validation for feed types to prevent injection
+            $allowedFeedTypes = [
+                'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
+                'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
+                'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
+                'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
+                'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
+                'trello', 'pipedream', 'codacy', 'openai',
+                'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
+            ];
+
+            if (!in_array($feedType, $allowedFeedTypes, true)) {
+                ApiResponse::badRequest('Invalid feed type');
+                return;
+            }
+
+            // Handle JSON API feeds via config map
+            $jsonApiConfigs = $this->getJsonApiConfigs();
+            if (isset($jsonApiConfigs[$feedType])) {
+                $entry = $jsonApiConfigs[$feedType];
+                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
+                ApiResponse::success(['status' => $status]);
+                return;
+            }
+
+            // Whitelist allowed RSS/Atom feeds for security
+            $allowedFeeds = [
+                'stripe' => 'https://www.stripestatus.com/history.atom',
+                'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
+                'flare' => 'https://status.flare.io/history/rss',
+                'slack' => 'https://slack-status.com/feed/atom',
+                'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
+                'square' => 'https://www.issquareup.com/united-states/feed.atom',
+                'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
+                'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
+                'googlesearch' => 'https://status.search.google.com/en/feed.atom',
+                'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
+                'paypal' => 'https://www.paypal-status.com/feed/atom',
+                'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
+                'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
+                'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
+                'brevo' => 'https://status.brevo.com/feed.atom',
+                'automattic' => 'https://automatticstatus.com/rss',
+                'anthropic' => 'https://status.claude.com/history.atom',
+                'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
+                'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
+                'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
+                'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
+                'codacy' => 'https://status.codacy.com/history.rss',
+                'openai' => 'https://status.openai.com/feed.atom',
+                'sparkpost' => 'https://status.sparkpost.com/history.atom',
+                'zoho' => 'https://status.zoho.com/rss',
+                'mailjet' => 'https://status.mailjet.com/history.rss',
+                'mailersend' => 'https://status.mailersend.com/history.rss',
+                'resend' => 'https://resend-status.com/feed.rss',
+                'smtp2go' => 'https://smtp2gostatus.com/history.atom',
+                'sendlayer' => 'https://status.sendlayer.com/history/rss'
+            ];
+
+            if (!isset($allowedFeeds[$feedType])) {
+                ApiResponse::badRequest('Invalid feed type');
+                return;
+            }
+
+            $feedUrl = $allowedFeeds[$feedType];
+
+            // Parse feed and return status
+            $status = $this->parseStatusFeed($feedUrl, $filter);
+
+            ApiResponse::success(['status' => $status]);
+            return;
+
+        } catch (Exception $e) {
+            error_log('Status feed error: ' . $e->getMessage());
+            ApiResponse::serverError('Unable to fetch status feed');
+            return;
+        }
+    }
+
+    /**
+     * Get external services configuration
+     * Returns all available services (preferences stored client-side)
+     * 
+     * @return array<string, bool> Map of service identifiers to enabled status
+     */
+    public static function getServicesConfig(): array
+    {
+        return ExternalServicesServiceCatalog::getServicesConfig();
+    }
+}
+
+/**
+ * Dedicated JSON API parser for external service status endpoints.
+ *
+ * Splits JSON parsing complexity out of ExternalServicesFeedParser
+ * to keep that class focused and easier to maintain.
+ */
+class ExternalServicesJsonApiParser
+{
+    /**
+     * Parse JSON API status payloads with feed-specific configuration.
+     *
+     * @param string $apiUrl API endpoint URL
+     * @param array $config Parser configuration
+     * @return array Status information with indicator and description
+     */
+    public function parse(string $apiUrl, array $config): array
+    {
         try {
             $fetchResult = $this->fetchJsonApiData($apiUrl);
 
@@ -280,7 +486,6 @@ class ExternalServicesFeedParser
             }
 
             return $this->dispatchJsonApiParser($data, $config);
-
         } catch (Exception $e) {
             return [
                 'indicator' => 'major',
@@ -408,7 +613,6 @@ class ExternalServicesFeedParser
 
         $indicator = $statusData['indicator'] ?? 'none';
 
-        // Standardize indicator
         if ($indicator === 'none' || $indicator === 'operational') {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
@@ -434,7 +638,6 @@ class ExternalServicesFeedParser
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Check for active incidents
         if (isset($data[$config['incidents_path']]) && !empty($data[$config['incidents_path']])) {
             $latestIncident = reset($data[$config['incidents_path']]);
             $title = $latestIncident[$config['title_field']] ?? '';
@@ -443,10 +646,9 @@ class ExternalServicesFeedParser
                 return ['indicator' => 'major', 'description' => 'Major Outage'];
             }
 
-            // Check severity field if configured
             if (isset($config['severity_field']) && isset($latestIncident[$config['severity_field']])) {
                 $severity = strtoupper($latestIncident[$config['severity_field']]);
-                if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'])) {
+                if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'], true)) {
                     return ['indicator' => 'major', 'description' => 'Major Outage'];
                 }
             }
@@ -475,7 +677,6 @@ class ExternalServicesFeedParser
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        // Get latest incident
         $latestIncident = reset($incidents);
 
         if (!is_array($latestIncident)) {
@@ -717,347 +918,125 @@ class ExternalServicesFeedParser
 
         return in_array($severity, ['high', 'critical', 'major'], true);
     }
+}
+
+/**
+ * Catalog of dashboard services enabled in the external services settings UI.
+ */
+class ExternalServicesServiceCatalog
+{
+    private const HOSTING_SERVICES = [
+        'aws' => true,
+        'cloudflare' => true,
+        'cloudways' => true,
+        'digitalocean' => true,
+        'googlecloud' => true,
+        'hostinger' => true,
+        'jetpackapi' => true,
+        'kinsta' => true,
+        'linode' => true,
+        'oracle' => true,
+        'ovh' => true,
+        'scaleway' => true,
+        'upcloud' => true,
+        'vercel' => true,
+        'vultr' => true,
+        'godaddy' => true,
+        'wordpressapi' => true,
+        'wpcloudapi' => true,
+    ];
+
+    private const DEVELOPER_TOOLS_SERVICES = [
+        'codacy' => true,
+        'github' => true,
+        'gitlab' => true,
+        'notion' => true,
+        'pipedream' => true,
+        'postmark' => true,
+        'trello' => true,
+        'twilio' => true,
+    ];
+
+    private const ECOMMERCE_SERVICES = [
+        'coinbase' => true,
+        'intuit' => true,
+        'metafb' => true,
+        'paypal' => true,
+        'recurly' => true,
+        'shopify' => true,
+        'square' => true,
+        'stripe' => true,
+        'woocommercepay' => true,
+    ];
+
+    private const EMAIL_SERVICES = [
+        'brevo' => true,
+        'mailersend' => true,
+        'mailgun' => true,
+        'mailjet' => true,
+        'mailpoet' => true,
+        'postmark' => true,
+        'resend' => true,
+        'sendgrid' => true,
+        'sendlayer' => true,
+        'smtp2go' => true,
+        'sparkpost' => true,
+        'zoho' => true,
+    ];
+
+    private const COMMUNICATION_SERVICES = [
+        'discord' => true,
+        'slack' => true,
+        'zoom' => true,
+    ];
+
+    private const MEDIA_SERVICES = [
+        'dropbox' => true,
+        'reddit' => true,
+        'spotify' => true,
+        'udemy' => true,
+        'vimeo' => true,
+        'wistia' => true,
+    ];
+
+    private const AI_SERVICES = [
+        'anthropic' => true,
+        'openai' => true,
+    ];
+
+    private const ADVERTISING_SERVICES = [
+        'googleads' => true,
+        'googlesearch' => true,
+        'googleworkspace' => true,
+        'metafb' => true,
+        'metafbs' => true,
+        'metalogin' => true,
+        'metamarketingapi' => true,
+        'microsoftads' => true,
+    ];
+
+    private const SECURITY_SERVICES = [
+        'letsencrypt' => true,
+        'flare' => true,
+    ];
 
     /**
-     * Get JSON API handler configurations keyed by feed type
+     * Get external services configuration map.
      *
-     * Each entry maps a feed type to its URL and parseJsonAPI config array.
-     * Consolidates all JSON API handler definitions in one place.
-     *
-     * @return array<string, array{url: string, config: array}>
-     */
-    private function getJsonApiConfigs(): array
-    {
-        return [
-            'vultr' => [
-                'url' => 'https://status.vultr.com/alerts.json',
-                'config' => [
-                    'incidents_path' => 'service_alerts',
-                    'title_field' => 'subject',
-                    'filter_field' => 'status',
-                    'filter_value' => 'ongoing',
-                    'missing_is_operational' => true
-                ]
-            ],
-            'postmark' => [
-                'url' => 'https://status.postmarkapp.com/api/v1/notices?filter[timeline_state_eq]=present&filter[type_eq]=unplanned',
-                'config' => [
-                    'incidents_path' => 'notices',
-                    'title_field' => 'title',
-                    'filter_field' => 'multiple',
-                    'filter_value' => ['type' => 'unplanned', 'timeline_state' => 'present'],
-                    'missing_is_operational' => true
-                ]
-            ],
-            'googleworkspace' => [
-                'url' => 'https://www.google.com/appsstatus/dashboard/incidents.json',
-                'config' => [
-                    'title_field' => 'external_desc',
-                    'description_field' => 'external_desc',
-                    'severity_field' => 'severity',
-                    'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
-                    'missing_is_operational' => true,
-                    'title_parser' => function($incident) {
-                        $description = $incident['external_desc'] ?? '';
-
-                        // Parse title - extract text after **Title:** marker
-                        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
-                            return trim($matches[1]);
-                        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
-                            return trim($matches[1]);
-                        }
-
-                        // No title marker, use first line
-                        return strtok($description, "\n");
-                    }
-                ]
-            ],
-            'wistia' => [
-                'url' => 'https://status.wistia.com/summary.json',
-                'config' => [
-                    'type' => 'page_status',
-                    'page_path' => 'page',
-                    'incidents_path' => 'activeIncidents',
-                    'title_field' => 'name',
-                    'severity_field' => 'impact',
-                    'required_field' => 'page'
-                ]
-            ],
-            'sendgrid' => [
-                'url' => 'https://status.sendgrid.com/api/v2/status.json',
-                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
-            ],
-            'spotify' => [
-                'url' => 'https://spotify.statuspage.io/api/v2/status.json',
-                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
-            ],
-            'trello' => [
-                'url' => 'https://trello.status.atlassian.com/api/v2/status.json',
-                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
-            ],
-            'pipedream' => [
-                'url' => 'https://status.pipedream.com/api/v2/status.json',
-                'config' => ['type' => 'direct_status', 'status_path' => 'status', 'required_field' => 'status']
-            ],
-        ];
-    }
-
-    /**
-     * Handle RSS/Atom feed status requests
-     * 
-     * @param string $feedType The feed type identifier (must be whitelisted)
-     * @param string|null $filter Optional service name filter for multi-service feeds
-     * @return void Outputs JSON response via ApiResponse
-     */
-    public function handleStatusFeed(string $feedType, ?string $filter = null): void
-    {
-        try {
-            // Whitelist validation for feed types to prevent injection
-            $allowedFeedTypes = [
-                'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
-                'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
-                'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
-                'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
-                'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
-                'trello', 'pipedream', 'codacy', 'openai',
-                'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
-            ];
-
-            if (!in_array($feedType, $allowedFeedTypes, true)) {
-                ApiResponse::badRequest('Invalid feed type');
-                return;
-            }
-
-            // Handle JSON API feeds via config map
-            $jsonApiConfigs = $this->getJsonApiConfigs();
-            if (isset($jsonApiConfigs[$feedType])) {
-                $entry = $jsonApiConfigs[$feedType];
-                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
-                ApiResponse::success(['status' => $status]);
-                return;
-            }
-
-            // Whitelist allowed RSS/Atom feeds for security
-            $allowedFeeds = [
-                'stripe' => 'https://www.stripestatus.com/history.atom',
-                'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
-                'flare' => 'https://status.flare.io/history/rss',
-                'slack' => 'https://slack-status.com/feed/atom',
-                'gitlab' => 'https://status.gitlab.com/pages/5b36dc6502d06804c08349f7/rss',
-                'square' => 'https://www.issquareup.com/united-states/feed.atom',
-                'recurly' => 'https://status.recurly.com/statuspage/recurly/subscribe/rss',
-                'googleads' => 'https://ads.google.com/status/publisher/en/feed.atom',
-                'googlesearch' => 'https://status.search.google.com/en/feed.atom',
-                'microsoftads' => 'https://status.ads.microsoft.com/feed?cat=27',
-                'paypal' => 'https://www.paypal-status.com/feed/atom',
-                'googlecloud' => 'https://status.cloud.google.com/en/feed.atom',
-                'oracle' => 'https://ocistatus.oraclecloud.com/api/v2/incident-summary.rss',
-                'ovh' => 'https://public-cloud.status-ovhcloud.com/history.atom',
-                'brevo' => 'https://status.brevo.com/feed.atom',
-                'automattic' => 'https://automatticstatus.com/rss',
-                'anthropic' => 'https://status.claude.com/history.atom',
-                'metafb' => 'https://metastatus.com/outage-events-feed-fb-ig-shops.rss',
-                'metamarketingapi' => 'https://metastatus.com/outage-events-feed-marketing-api.rss',
-                'metafbs' => 'https://metastatus.com/outage-events-feed-fbs.rss',
-                'metalogin' => 'https://metastatus.com/outage-events-feed-facebook-login.rss',
-                'codacy' => 'https://status.codacy.com/history.rss',
-                'openai' => 'https://status.openai.com/feed.atom',
-                'sparkpost' => 'https://status.sparkpost.com/history.atom',
-                'zoho' => 'https://status.zoho.com/rss',
-                'mailjet' => 'https://status.mailjet.com/history.rss',
-                'mailersend' => 'https://status.mailersend.com/history.rss',
-                'resend' => 'https://resend-status.com/feed.rss',
-                'smtp2go' => 'https://smtp2gostatus.com/history.atom',
-                'sendlayer' => 'https://status.sendlayer.com/history/rss'
-            ];
-
-            if (!isset($allowedFeeds[$feedType])) {
-                ApiResponse::badRequest('Invalid feed type');
-                return;
-            }
-
-            $feedUrl = $allowedFeeds[$feedType];
-
-            // Parse feed and return status
-            $status = $this->parseStatusFeed($feedUrl, $filter);
-
-            ApiResponse::success(['status' => $status]);
-            return;
-
-        } catch (Exception $e) {
-            error_log('Status feed error: ' . $e->getMessage());
-            ApiResponse::serverError('Unable to fetch status feed');
-            return;
-        }
-    }
-
-    /**
-     * Get external services configuration
-     * Returns all available services (preferences stored client-side)
-     * 
      * @return array<string, bool> Map of service identifiers to enabled status
      */
     public static function getServicesConfig(): array
     {
         return array_merge(
-            self::getHostingServices(),
-            self::getDeveloperToolsServices(),
-            self::getEcommerceServices(),
-            self::getEmailServices(),
-            self::getCommunicationServices(),
-            self::getMediaServices(),
-            self::getAiServices(),
-            self::getAdvertisingServices(),
-            self::getSecurityServices()
+            self::HOSTING_SERVICES,
+            self::DEVELOPER_TOOLS_SERVICES,
+            self::ECOMMERCE_SERVICES,
+            self::EMAIL_SERVICES,
+            self::COMMUNICATION_SERVICES,
+            self::MEDIA_SERVICES,
+            self::AI_SERVICES,
+            self::ADVERTISING_SERVICES,
+            self::SECURITY_SERVICES
         );
-    }
-
-    /**
-     * Hosting & Infrastructure services
-     */
-    private static function getHostingServices(): array
-    {
-        return [
-            'aws' => true,
-            'cloudflare' => true,
-            'cloudways' => true,
-            'digitalocean' => true,
-            'googlecloud' => true,
-            'hostinger' => true,
-            'jetpackapi' => true,
-            'kinsta' => true,
-            'linode' => true,
-            'oracle' => true,
-            'ovh' => true,
-            'scaleway' => true,
-            'upcloud' => true,
-            'vercel' => true,
-            'vultr' => true,
-            'godaddy' => true,
-            'wordpressapi' => true,
-            'wpcloudapi' => true,
-        ];
-    }
-
-    /**
-     * Developer Tools services
-     */
-    private static function getDeveloperToolsServices(): array
-    {
-        return [
-            'codacy' => true,
-            'github' => true,
-            'gitlab' => true,
-            'notion' => true,
-            'pipedream' => true,
-            'postmark' => true,
-            'trello' => true,
-            'twilio' => true,
-        ];
-    }
-
-    /**
-     * E-Commerce & Payments services
-     */
-    private static function getEcommerceServices(): array
-    {
-        return [
-            'coinbase' => true,
-            'intuit' => true,
-            'metafb' => true,
-            'paypal' => true,
-            'recurly' => true,
-            'shopify' => true,
-            'square' => true,
-            'stripe' => true,
-            'woocommercepay' => true,
-        ];
-    }
-
-    /**
-     * Email services
-     */
-    private static function getEmailServices(): array
-    {
-        return [
-            'brevo' => true,
-            'mailersend' => true,
-            'mailgun' => true,
-            'mailjet' => true,
-            'mailpoet' => true,
-            'postmark' => true,
-            'resend' => true,
-            'sendgrid' => true,
-            'sendlayer' => true,
-            'smtp2go' => true,
-            'sparkpost' => true,
-            'zoho' => true,
-        ];
-    }
-
-    /**
-     * Communication services
-     */
-    private static function getCommunicationServices(): array
-    {
-        return [
-            'discord' => true,
-            'slack' => true,
-            'zoom' => true,
-        ];
-    }
-
-    /**
-     * Media & Content services
-     */
-    private static function getMediaServices(): array
-    {
-        return [
-            'dropbox' => true,
-            'reddit' => true,
-            'spotify' => true,
-            'udemy' => true,
-            'vimeo' => true,
-            'wistia' => true,
-        ];
-    }
-
-    /**
-     * AI & Machine Learning services
-     */
-    private static function getAiServices(): array
-    {
-        return [
-            'anthropic' => true,
-            'openai' => true,
-        ];
-    }
-
-    /**
-     * Advertising services
-     */
-    private static function getAdvertisingServices(): array
-    {
-        return [
-            'googleads' => true,
-            'googlesearch' => true,
-            'googleworkspace' => true,
-            'metafb' => true,
-            'metafbs' => true,
-            'metalogin' => true,
-            'metamarketingapi' => true,
-            'microsoftads' => true,
-        ];
-    }
-
-    /**
-     * Security services
-     */
-    private static function getSecurityServices(): array
-    {
-        return [
-            'letsencrypt' => true,
-            'flare' => true,
-        ];
     }
 }

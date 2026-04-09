@@ -4,17 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-09
-
-### 🔒 SECURITY: ICON CLASS VALIDATION AND COOKIE HARDENING IN EXTERNAL SERVICES
-
-- **Strict FontAwesome icon class validation** in `createServiceCardHeader`: replaced permissive `replace` sanitization with a regex whitelist test (`/^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/`) to prevent crafted inputs like `--dangerous-class` or consecutive hyphens.
-- **Removed space character** from status icon class sanitization in `createServiceCardHeader` to prevent space-separated class injection.
-- **Added `sanitizeIconClass` helper method** providing a centralized, consistent icon suffix validator used by `updateServiceCardStatus`, replacing the previously inline sanitization.
-- **Added `isValidCookieName` helper method** implementing RFC 6265 token validation to prevent cookie injection via crafted cookie names.
-- **Validated cookie names** in `getCookie`, `setCookie`, and `deleteCookie` using the new helper; invalid names produce a `console.warn` and a safe early return.
-- **URL-encoded cookie values** in `setCookie` using `encodeURIComponent` and added corresponding `decodeURIComponent` in `getCookie` to prevent cookie injection through untrusted values.
-- **Improved days validation** in `setCookie` to use `Number.isFinite(days) && days > 0` instead of a loose truthiness check.
 
 ## 2026-04-08
 
@@ -28,7 +17,6 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🔧 PHP AND MARIADB TUNING
 
 - Updated the logic across the codebase to better optimize the server for a variety of configuration scenarios, including low an high memory environments.
-
 
 ## 2026-03-27
 
@@ -143,12 +131,12 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 - **Opcache Handling**: `php-install.sh` and `php-update.sh` conditionally skip `php-opcache` package for PHP 8.5+ (built-in)
 - **php-update.sh Rewrite**: Complete rewrite — auto-detects currently installed PHP version, version-agnostic upgrade logic, no hardcoded versions
 
-### 🐛 BUG FIXES
+### 🐛 BUG FIXES (SERVICE STATUS)
 
 - **alias-debug.sh**: Fixed hardcoded `php8.3-fpm` service name; now uses `${PHP_VER}` dynamically
 - **enginescript-common.sh**: Updated `restart_php_fpm()` version array to include PHP 8.5
 
-### 🔒 SECURITY IMPROVEMENTS
+### 🔒 SECURITY IMPROVEMENTS (CSRF)
 
 - **HIGH_SECURITY_SSL TLS Enhancement**: When `HIGH_SECURITY_SSL=1` is configured, TLS 1.1 is now disabled in nginx
   - SSL protocols reduced from `TLSv1.1 TLSv1.2 TLSv1.3` to `TLSv1.2 TLSv1.3`

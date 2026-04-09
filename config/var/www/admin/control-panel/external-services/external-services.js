@@ -3,6 +3,7 @@
 
 import { DashboardUtils } from '../modules/utils.js?v={ES_DASHBOARD_VER}';
 import { SERVICE_DEFINITIONS } from './services-config.js?v={ES_DASHBOARD_VER}';
+import { readCookie, writeCookie, removeCookie, sanitizeFaIconClass, sanitizeFaIconSuffix } from './external-services-utils.js?v={ES_DASHBOARD_VER}';
 
 export class ExternalServicesManager {
   /**
@@ -669,7 +670,7 @@ export class ExternalServicesManager {
       this.applyPreferenceChanges(currentPreferences, safeChanges);
       
       // Save to cookie
-      this.setCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
+      writeCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
       this.applyPreferenceChanges(services, safeChanges);
       
       // Clear pending changes
@@ -774,8 +775,7 @@ export class ExternalServicesManager {
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
     // Validate icon class with strict token format: fa-<alnum>(-<alnum>)*
-    const iconCandidate = String(serviceDef.icon || 'fa-question').trim().toLowerCase();
-    const safeIcon = /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(iconCandidate) ? iconCandidate : 'fa-question';
+    const safeIcon = sanitizeFaIconClass(serviceDef.icon || 'fa-question');
     iconElement.className = `fas ${safeIcon}`;
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
@@ -890,17 +890,6 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Sanitize icon class suffix to a safe, consistent token.
-   * Allows only alphanumeric characters and hyphens.
-   * @param {string} iconName - FontAwesome icon suffix (without "fa-" prefix)
-   * @returns {string} Sanitized icon suffix
-   */
-  sanitizeIconClass(iconName) {
-    const candidate = String(iconName || 'question').trim().toLowerCase();
-    return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate) ? candidate : 'question';
-  }
-
-  /**
    * Update service card with status data
    * @param {HTMLElement} serviceCard - Service card element to update
    * @param {string} statusDescription - Human-readable status text
@@ -922,7 +911,7 @@ export class ExternalServicesManager {
       // Create icon element safely
       const iconElement = document.createElement("i");
       // Sanitize icon class suffix using centralized validator for consistency
-      const safeIcon = this.sanitizeIconClass(statusIcon);
+      const safeIcon = sanitizeFaIconSuffix(statusIcon);
       iconElement.className = `fas fa-${safeIcon}`;
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
@@ -1192,83 +1181,6 @@ export class ExternalServicesManager {
 
   // ============ Cookie Management ============
 
-  /**
-   * Validate cookie name against RFC token-safe characters
-   * @param {string} name - Cookie name
-   * @returns {boolean} True when cookie name is safe to use
-   */
-  isValidCookieName(name) {
-    return typeof name === 'string' && /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name);
-  }
-
-  /**
-   * Get cookie value
-   * @param {string} name - Cookie name
-   * @returns {string|null} Cookie value or null if not found
-   */
-  getCookie(name) {
-    if (!this.isValidCookieName(name)) {
-      console.warn('Invalid cookie name provided to getCookie');
-      return null;
-    }
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) {
-        const rawValue = c.substring(nameEQ.length, c.length);
-        try {
-          return decodeURIComponent(rawValue);
-        } catch (_e) {
-          return rawValue;
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Set cookie value
-   * @param {string} name - Cookie name
-   * @param {string} value - Cookie value
-   * @param {number} [days=365] - Expiration in days
-   * @returns {void}
-   */
-  setCookie(name, value, days = 365) {
-    if (!this.isValidCookieName(name)) {
-      console.warn('Invalid cookie name provided to setCookie');
-      return;
-    }
-    let expires = "";
-    if (Number.isFinite(days) && days > 0) {
-      const date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-      expires = "; expires=" + date.toUTCString();
-    }
-
-    const encodedValue = encodeURIComponent(value == null ? "" : String(value));
-
-    // Set cookie with Secure, HttpOnly cannot be set via JS, SameSite=Strict for maximum security
-    // Secure flag ensures cookie only sent over HTTPS
-    // SameSite=Strict prevents CSRF attacks (stricter than Lax)
-    document.cookie = name + "=" + encodedValue + expires + "; path=/; SameSite=Strict; Secure";
-  }
-
-  /**
-   * Delete cookie
-   * Include Secure flag in deletion for consistency
-   * @param {string} name - Cookie name to delete
-   * @returns {void}
-   */
-  deleteCookie(name) {
-    if (!this.isValidCookieName(name)) {
-      console.warn('Invalid cookie name provided to deleteCookie');
-      return;
-    }
-    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure';
-  }
-
   // ============ Service Preferences ============
 
   /**
@@ -1278,7 +1190,7 @@ export class ExternalServicesManager {
   loadServicePreferences() {
     try {
       // Try to load from cookie first
-      const cookiePrefs = this.getCookie('servicePreferences');
+      const cookiePrefs = readCookie('servicePreferences');
       if (cookiePrefs) {
         try {
           const parsed = JSON.parse(decodeURIComponent(cookiePrefs));
@@ -1289,7 +1201,7 @@ export class ExternalServicesManager {
         } catch (parseError) {
           console.error('Failed to parse cookie preferences:', parseError);
           // Clear invalid cookie
-          this.deleteCookie('servicePreferences');
+          removeCookie('servicePreferences');
         }
       }
       
@@ -1306,7 +1218,7 @@ export class ExternalServicesManager {
    * @returns {string[]} Array of service keys in display order
    */
   getServiceOrder() {
-    const orderCookie = this.getCookie('serviceOrder');
+    const orderCookie = readCookie('serviceOrder');
     if (orderCookie) {
       try {
         return JSON.parse(decodeURIComponent(orderCookie));
@@ -1346,7 +1258,7 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   saveServiceOrder(orderArray) {
-    this.setCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
+    writeCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
   }
 
   // ============ Drag and Drop ============
