@@ -26,6 +26,10 @@ export class ExternalServicesManager {
     this.activeRequests = 0;
     this.requestQueue = [];
     
+    // Notification timing configuration
+    this.notificationDurationMs = 3000;
+    this.notificationAnimationDurationMs = 300;
+    
     // Keyboard navigation state for accessibility
     this.reorderMode = false;
     this.selectedCard = null;
@@ -67,7 +71,7 @@ export class ExternalServicesManager {
       const services = this.buildServicesObject(serviceDefinitions);
 
       // Render settings panel
-      this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions);
+      this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
 
       // Get ordered and enabled services
       const orderedServiceKeys = this.getOrderedServiceKeys(services);
@@ -87,6 +91,37 @@ export class ExternalServicesManager {
       this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error('Failed to load external services:', error);
+      this.renderErrorState();
+    }
+  }
+
+  /**
+   * Refresh the services display without full re-initialization
+   * Updates visible cards using current preferences without clearing cache or re-fetching settings panel
+   * @returns {Promise<void>}
+   */
+  async refreshServicesDisplay() {
+    try {
+      this.container.replaceChildren();
+
+      const serviceDefinitions = this.getServiceDefinitions();
+      const preferences = this.loadServicePreferences() || {};
+      const services = this.buildServicesObject(serviceDefinitions);
+
+      const orderedServiceKeys = this.getOrderedServiceKeys(services);
+      const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
+
+      if (enabledServices.length === 0) {
+        this.renderEmptyState();
+        return;
+      }
+
+      const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
+      this.renderServiceCategories(servicesByCategory);
+
+      this.enableServiceDragDrop(this.container);
+    } catch (error) {
+      console.error('Failed to refresh services display:', error);
       this.renderErrorState();
     }
   }
@@ -349,9 +384,10 @@ export class ExternalServicesManager {
    * @param {HTMLElement} settingsContainer - Container element for settings panel
    * @param {Object} services - Services object keyed by service identifier
    * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} preferences - User preference overrides keyed by service identifier
    * @returns {void}
    */
-  renderServiceSettings(settingsContainer, services, serviceDefinitions) {
+  renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences) {
     settingsContainer.replaceChildren();
     
     // Track pending changes (shared across components)
@@ -369,7 +405,7 @@ export class ExternalServicesManager {
     for (const category of categoryOrder) {
       if (!categories[category]) continue;
       const categorySection = this.createSettingsCategorySection(
-        category, categories[category], services, serviceDefinitions, pendingChanges
+        category, categories[category], services, serviceDefinitions, preferences, pendingChanges
       );
       settingsContent.appendChild(categorySection);
     }
@@ -465,10 +501,11 @@ export class ExternalServicesManager {
    * @param {string[]} serviceKeys - Array of service keys in this category
    * @param {Object} services - Services object keyed by service identifier
    * @param {Object} serviceDefinitions - Map of service keys to definition objects
+   * @param {Object} preferences - User preference overrides keyed by service identifier
    * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
    * @returns {HTMLElement} Category section element
    */
-  createSettingsCategorySection(category, serviceKeys, services, serviceDefinitions, pendingChanges) {
+  createSettingsCategorySection(category, serviceKeys, services, serviceDefinitions, preferences, pendingChanges) {
     const categorySection = document.createElement("div");
     categorySection.className = "category-section";
 
@@ -478,7 +515,7 @@ export class ExternalServicesManager {
 
     // Create services grid with checkboxes
     const { servicesGrid, categoryCheckboxes } = this.createServicesGrid( // codacy:ignore - Destructuring assignment
-      serviceKeys, services, serviceDefinitions, pendingChanges
+      serviceKeys, services, preferences, serviceDefinitions, pendingChanges
     );
     categorySection.appendChild(servicesGrid);
 
@@ -531,25 +568,27 @@ export class ExternalServicesManager {
    * Create services grid with checkboxes for each service
    * @param {string[]} serviceKeys - Array of service keys
    * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} preferences - User preference overrides keyed by service identifier
    * @param {Object} serviceDefinitions - Map of service keys to definition objects
    * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
    * @returns {{servicesGrid: HTMLElement, categoryCheckboxes: HTMLInputElement[]}} Grid element and checkbox references
    */
-  createServicesGrid(serviceKeys, services, serviceDefinitions, pendingChanges) {
+  createServicesGrid(serviceKeys, services, preferences, serviceDefinitions, pendingChanges) {
     const servicesGrid = document.createElement("div");
     servicesGrid.className = "services-grid";
     const categoryCheckboxes = [];
     
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const isEnabled = services[serviceKey];
+      const hasPreference = preferences && Object.prototype.hasOwnProperty.call(preferences, serviceKey);
+      const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
       
       const toggleLabel = document.createElement("label");
       toggleLabel.className = "service-toggle";
       
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.checked = isEnabled;
+      checkbox.checked = Boolean(isEnabled);
       checkbox.dataset.service = serviceKey;
       
       checkbox.addEventListener("change", () => {
@@ -651,9 +690,10 @@ export class ExternalServicesManager {
         saveButton.disabled = true;
       }, 2000);
       
-      // Reload services display
-      this.initialized = false;
-      await this.init();
+      // Refresh visible services display without full re-initialization
+      if (typeof this.refreshServicesDisplay === 'function') {
+        await this.refreshServicesDisplay();
+      }
       
       this.showNotification('Service preferences saved', 'success');
     } catch (error) {
@@ -1277,13 +1317,24 @@ export class ExternalServicesManager {
     const serviceCards = container.querySelectorAll('.external-service-card');
     let draggedElement = null;
 
+    const reorderInstructionsId = 'external-services-reorder-instructions';
+    let reorderInstructions = container.querySelector(`#${reorderInstructionsId}`);
+    if (!reorderInstructions) {
+      reorderInstructions = document.createElement('p');
+      reorderInstructions.id = reorderInstructionsId;
+      reorderInstructions.className = 'sr-only';
+      reorderInstructions.textContent = 'To reorder services, press Enter on a card to enter reorder mode, then use arrow keys to move it.';
+      container.insertBefore(reorderInstructions, container.firstChild);
+    }
+
     serviceCards.forEach((card) => {
       card.draggable = true;
       
       // Add tabindex for keyboard accessibility
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'listitem');
-      card.setAttribute('aria-label', `${card.querySelector('h4')?.textContent || 'Service'} - Press Enter to enter reorder mode, then use arrow keys to move`);
+      card.setAttribute('aria-label', `${card.querySelector('h4')?.textContent || 'Service'} (reorderable)`);
+      card.setAttribute('aria-describedby', reorderInstructionsId);
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
@@ -1591,10 +1642,10 @@ export class ExternalServicesManager {
     
     document.body.appendChild(notification);
     
-    // Remove after 3 seconds
+    // Remove after configured duration
     setTimeout(() => {
-      notification.style.animation = 'slide-out 0.3s ease';
-      setTimeout(() => notification.remove(), 300);
-    }, 3000);
+      notification.style.animation = `slide-out ${this.notificationAnimationDurationMs / 1000}s ease`;
+      setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
+    }, this.notificationDurationMs);
   }
 }
