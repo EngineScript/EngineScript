@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-09
+
+### 🔒 FIX LOG FILE PERMISSIONS IN CI INSTALL STEP SCRIPT
+
+- Replaced `sudo tee` with regular file redirection (`>` / `>>`) in `scripts/ci/run-install-step.sh` to prevent log files from being created with root ownership.
+- Added a writability check before the script runs: attempts to `touch` the log file and verifies it is writable, exiting with a clear error message if not.
+
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
