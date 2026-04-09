@@ -773,8 +773,9 @@ export class ExternalServicesManager {
     
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
-    // Validate icon class contains only safe characters (alphanumeric, hyphens)
-    const safeIcon = (serviceDef.icon || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
+    // Validate icon class with strict token format: fa-<alnum>(-<alnum>)*
+    const iconCandidate = String(serviceDef.icon || 'fa-question').trim().toLowerCase();
+    const safeIcon = /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(iconCandidate) ? iconCandidate : 'fa-question';
     iconElement.className = `fas ${safeIcon}`;
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
@@ -790,8 +791,8 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Validate status icon class contains only safe characters
-    const safeStatusIcon = (statusIconClass || 'fa-question').replace(/[^a-zA-Z0-9- ]/g, '');
+    // Validate status icon class contains only safe characters (single class token)
+    const safeStatusIcon = (statusIconClass || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
     statusIcon.className = `fas ${safeStatusIcon}`;
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
@@ -889,6 +890,17 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Sanitize icon class suffix to a safe, consistent token.
+   * Allows only alphanumeric characters and hyphens.
+   * @param {string} iconName - FontAwesome icon suffix (without "fa-" prefix)
+   * @returns {string} Sanitized icon suffix
+   */
+  sanitizeIconClass(iconName) {
+    const candidate = String(iconName || 'question').trim().toLowerCase();
+    return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate) ? candidate : 'question';
+  }
+
+  /**
    * Update service card with status data
    * @param {HTMLElement} serviceCard - Service card element to update
    * @param {string} statusDescription - Human-readable status text
@@ -909,8 +921,8 @@ export class ExternalServicesManager {
       statusSpan.textContent = '';
       // Create icon element safely
       const iconElement = document.createElement("i");
-      // Validate icon class contains only safe characters (alphanumeric, hyphens)
-      const safeIcon = (statusIcon || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
+      // Sanitize icon class suffix using centralized validator for consistency
+      const safeIcon = this.sanitizeIconClass(statusIcon);
       iconElement.className = `fas fa-${safeIcon}`;
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
@@ -1181,17 +1193,37 @@ export class ExternalServicesManager {
   // ============ Cookie Management ============
 
   /**
+   * Validate cookie name against RFC token-safe characters
+   * @param {string} name - Cookie name
+   * @returns {boolean} True when cookie name is safe to use
+   */
+  isValidCookieName(name) {
+    return typeof name === 'string' && /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name);
+  }
+
+  /**
    * Get cookie value
    * @param {string} name - Cookie name
    * @returns {string|null} Cookie value or null if not found
    */
   getCookie(name) {
+    if (!this.isValidCookieName(name)) {
+      console.warn('Invalid cookie name provided to getCookie');
+      return null;
+    }
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
       while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      if (c.indexOf(nameEQ) === 0) {
+        const rawValue = c.substring(nameEQ.length, c.length);
+        try {
+          return decodeURIComponent(rawValue);
+        } catch (_e) {
+          return rawValue;
+        }
+      }
     }
     return null;
   }
@@ -1204,16 +1236,23 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   setCookie(name, value, days = 365) {
+    if (!this.isValidCookieName(name)) {
+      console.warn('Invalid cookie name provided to setCookie');
+      return;
+    }
     let expires = "";
-    if (days) {
+    if (Number.isFinite(days) && days > 0) {
       const date = new Date();
       date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
       expires = "; expires=" + date.toUTCString();
     }
+
+    const encodedValue = encodeURIComponent(value == null ? "" : String(value));
+
     // Set cookie with Secure, HttpOnly cannot be set via JS, SameSite=Strict for maximum security
     // Secure flag ensures cookie only sent over HTTPS
     // SameSite=Strict prevents CSRF attacks (stricter than Lax)
-    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Strict; Secure";
+    document.cookie = name + "=" + encodedValue + expires + "; path=/; SameSite=Strict; Secure";
   }
 
   /**
@@ -1223,6 +1262,10 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   deleteCookie(name) {
+    if (!this.isValidCookieName(name)) {
+      console.warn('Invalid cookie name provided to deleteCookie');
+      return;
+    }
     document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict; Secure';
   }
 
