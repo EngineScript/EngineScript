@@ -30,6 +30,7 @@ export class ExternalServicesManager {
     this.reorderMode = false;
     this.selectedCard = null;
     this.keyboardHandler = null;
+    this.liveRegion = null;
   }
 
   /**
@@ -1459,7 +1460,7 @@ export class ExternalServicesManager {
       card.setAttribute('aria-grabbed', 'true');
       
       // Announce to screen readers
-      this.announceToScreenReader(`Reorder mode. Use arrow keys to move ${card.querySelector('h3')?.textContent || 'service'}. Press Enter or Escape to exit.`);
+      this.announceToScreenReader(`Reorder mode. Use arrow keys to move ${card.querySelector('h4')?.textContent || 'service'}. Press Enter or Escape to exit.`);
       this.showNotification('Reorder mode: Use arrow keys to move, Enter/Escape to exit', 'info');
     }
   }
@@ -1546,19 +1547,19 @@ export class ExternalServicesManager {
    */
   // codacy:ignore - Duplicate announceToScreenReader pattern is intentional: separate live-region IDs required
   announceToScreenReader(message) {
-    if (!liveRegion) {
-      liveRegion = document.createElement('div');
-      liveRegion.id = 'es-live-region';
-      liveRegion.setAttribute('aria-live', 'polite');
-      liveRegion.setAttribute('aria-atomic', 'true');
-      liveRegion.className = 'sr-only';
-      document.body.appendChild(liveRegion);
+    if (!this.liveRegion) {
+      this.liveRegion = document.createElement('div');
+      this.liveRegion.id = 'es-live-region';
+      this.liveRegion.setAttribute('aria-live', 'polite');
+      this.liveRegion.setAttribute('aria-atomic', 'true');
+      this.liveRegion.className = 'sr-only';
+      document.body.appendChild(this.liveRegion);
     }
     
     // Clear and set message (triggers announcement)
-    liveRegion.textContent = '';
+    this.liveRegion.textContent = '';
     setTimeout(() => {
-      liveRegion.textContent = message;
+      this.liveRegion.textContent = message;
     }, 100);
   }
 
