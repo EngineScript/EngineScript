@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-09
-
-### 🔒 EXTERNAL SERVICES JS: DOM SECURITY AND CODE QUALITY IMPROVEMENTS
-
-- Replaced `innerHTML = ""` with `replaceChildren()` in `loadExternalServices()`, `renderErrorState()`, and `renderServiceSettings()` for consistency with the secure DOM manipulation pattern used throughout the file.
-- Removed unnecessary `// codacy:ignore - Destructuring assignment` comment from `renderServiceSettings()`, as destructuring is standard ES6 and does not require suppression.
-- Replaced misleading `codacy:ignore` comment before `announceToScreenReader()` with an accurate description of the method's purpose.
-
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
