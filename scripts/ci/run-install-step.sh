@@ -22,20 +22,25 @@ if [ ! -f "$INSTALL_SCRIPT_PATH" ]; then
   exit 1
 fi
 
+if ! touch "$LOG_PATH" 2>/dev/null; then
+  echo "Error: log file is not writable: $LOG_PATH" >&2
+  exit 1
+fi
+
 echo "Installing ${COMPONENT_NAME}..."
-echo "Script start time: $(date)" | sudo tee "$LOG_PATH"
+echo "Script start time: $(date)" > "$LOG_PATH"
 
 set +e
 timeout "$TIMEOUT_SECONDS" \
   sudo env CI_ENVIRONMENT=true DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 \
-  bash "$INSTALL_SCRIPT_PATH" 2>&1 | sudo tee -a "$LOG_PATH"
+  bash "$INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
 SCRIPT_EXIT_CODE=${PIPESTATUS[0]}
 set -e
 
 if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   echo "${COMPONENT_NAME} installation failed or timed out"
   echo "Exit code: $SCRIPT_EXIT_CODE"
-  echo "Script end time: $(date)" | sudo tee -a "$LOG_PATH"
+  echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
   tail -50 "$LOG_PATH" 2>/dev/null || echo "No log output available"
 
@@ -46,6 +51,6 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   exit 1
 fi
 
-echo "Script end time: $(date)" | sudo tee -a "$LOG_PATH"
+echo "Script end time: $(date)" >> "$LOG_PATH"
 sudo sync
 echo "${COMPONENT_NAME} installation completed successfully"
