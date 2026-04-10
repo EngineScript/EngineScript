@@ -12,7 +12,10 @@ TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
 INTEGER_REGEX='^[0-9]+$'
-ALLOWED_INSTALL_DIR="$(realpath "$(pwd)/scripts/ci")"
+if ! ALLOWED_INSTALL_DIR="$(realpath "$(pwd)/scripts/ci" 2>/dev/null)"; then
+  echo "Error: allowed install directory not found or not resolvable: $(pwd)/scripts/ci" >&2
+  exit 1
+fi
 CANONICAL_INSTALL_SCRIPT_PATH=""
 # `timeout` returns 124 when the wrapped command times out.
 TIMEOUT_EXIT_CODE=124
@@ -40,7 +43,10 @@ case "$CANONICAL_INSTALL_SCRIPT_PATH" in
     ;;
 esac
 
-ALLOWED_LOG_BASE_DIR="$(realpath "$(pwd)")"
+if ! ALLOWED_LOG_BASE_DIR="$(realpath "$(pwd)" 2>/dev/null)"; then
+  echo "Error: unable to resolve current working directory path" >&2
+  exit 1
+fi
 LOG_PARENT_DIR="$(dirname -- "$LOG_PATH")"
 LOG_FILENAME="$(basename -- "$LOG_PATH")"
 
@@ -129,9 +135,7 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
     echo "$TAIL_OUTPUT"
   else
     echo "Failed to display log file contents: $LOG_PATH"
-    TAIL_ERROR_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1 >/dev/null || true)"
-    SANITIZED_TAIL_ERROR="$(printf '%s' "$TAIL_ERROR_OUTPUT" | tr '\n' ' ' | tr -cd '[:print:]\t ')"
-    echo "tail error: ${SANITIZED_TAIL_ERROR:-unable to read log output}"
+    echo "tail failed with exit code: $TAIL_EXIT_CODE"
   fi
 
   exit 1

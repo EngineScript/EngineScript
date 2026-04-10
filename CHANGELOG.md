@@ -6,6 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 CI RUN-INSTALL-STEP ERROR HANDLING IMPROVEMENTS
+
+- Added explicit error handling for `realpath` when resolving `ALLOWED_INSTALL_DIR` in `scripts/ci/run-install-step.sh`; the script now exits with a descriptive message if the directory is not found or not resolvable instead of silently failing.
+- Added explicit error handling for `realpath` when resolving `ALLOWED_LOG_BASE_DIR`; the script now exits with a descriptive message if the current working directory path cannot be resolved.
+- Simplified the `tail` failure branch in the log-display logic: removed the redundant second `tail` read (which would fail for the same reason as the first) and replaced it with a plain exit-code message.
+
+## 2026-04-10
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
