@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### ♿ EXTERNAL SERVICES CONTROL PANEL ACCESSIBILITY & ROBUSTNESS
-
-- Updated the "Toggle All" button in `external-services.js` to display dynamic label and text ("Enable All" / "Disable All") that reflects the action it will perform, replacing the static "Toggle All" label.
-- Added `updateToggleButtonState()` helper that updates both the visible button text and the `aria-label` attribute so screen reader users are informed of the intended action before activating the button.
-- `updateToggleButtonState()` is called once on section creation (initial state) and again after every toggle-all click.
-- Added `hasAnimationKeyframes(animationName)` method that inspects all accessible loaded stylesheets to confirm a named `@keyframes` rule exists before applying it as an inline animation style in `scheduleNotificationRemoval()`, preventing silent failures when CSS animation names change.
-
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
