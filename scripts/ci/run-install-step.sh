@@ -113,7 +113,7 @@ if ! ACTUAL_SCRIPT_SHA256="$(sha256sum "$CANONICAL_INSTALL_SCRIPT_PATH" 2>/dev/n
   exit 1
 fi
 
-if [ "$ACTUAL_SCRIPT_SHA256" != "$EXPECTED_SCRIPT_SHA256" ]; then
+if [[ "$ACTUAL_SCRIPT_SHA256" != "$EXPECTED_SCRIPT_SHA256" ]]; then
   echo "Error: install script checksum mismatch for $CANONICAL_INSTALL_SCRIPT_PATH" >&2
   echo "Expected: $EXPECTED_SCRIPT_SHA256" >&2
   echo "Actual:   $ACTUAL_SCRIPT_SHA256" >&2
