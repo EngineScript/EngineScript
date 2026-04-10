@@ -6,14 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS (PART 2)
-
-- Replaced fragile `sed \3` capture-group back-reference in `extract_prefix_from_db` with explicit shell parameter expansion: grep now captures the full matched token, and pure Bash string trimming strips the surrounding quotes/backticks and the `_options`/`_users` suffix to derive the prefix, eliminating any dependency on group-numbering in `search_pattern`.
-- Renamed the initial domain-extraction variable from `SITE_URL` to `EXTRACTED_DOMAIN` in `scripts/functions/vhost/vhost-import.sh` to clearly express that it holds only the domain without a protocol; `SITE_URL` is immediately initialised from `EXTRACTED_DOMAIN` so all downstream logic continues to work unchanged.
-- Removed redundant `sed` protocol-strip from the `DOMAIN` derivation at the end of the confirmation loop; since `SITE_URL` is already a clean domain at that point, `DOMAIN` is now assigned directly as `DOMAIN="${SITE_URL}"`.
-- Derived `HTTPS_ORIGINAL_URL` from `ORIGINAL_URL` and built `HTTP_ORIGINAL_URL` via a parameter substitution (`${HTTPS_ORIGINAL_URL/#https:\/\//http://}`) instead of constructing both independently from `DOMAIN`, consolidating URL-building logic to a single source of truth.
-- Guarded the `WP_ARCHIVE_FILE` move-to-backup block with an explicit `IMPORT_FORMAT == "two_file"` check so it is never attempted during `single_zip` imports (where `WP_ARCHIVE_FILE` is never set).
-
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
