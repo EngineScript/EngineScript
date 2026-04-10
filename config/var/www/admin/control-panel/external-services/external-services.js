@@ -461,6 +461,7 @@ export class ExternalServicesManager {
   createSettingsStructure() {
     const settingsToggle = document.createElement("button");
     settingsToggle.className = "settings-toggle-btn";
+    settingsToggle.setAttribute("aria-label", "Service Settings");
     
     const cogIcon = document.createElement("i");
     cogIcon.className = "fas fa-cog";
@@ -560,7 +561,7 @@ export class ExternalServicesManager {
       if (toggleTextEl) {
         toggleTextEl.textContent = actionText;
       } else {
-        console.warn(`Missing .toggle-all-text element for category "${category}". Falling back to non-destructive button text update.`);
+        console.warn(`Missing .toggle-all-text element for category "${category}" while updating toggle-all button state. This may indicate a template structure mismatch. Attempting text node fallback.`);
         const textNode = Array.from(toggleBtn.childNodes).find(
           node => node.nodeType === Node.TEXT_NODE
         );
@@ -673,6 +674,7 @@ export class ExternalServicesManager {
   createSaveButton(settingsContent, services, pendingChanges) {
     const saveButton = document.createElement("button");
     saveButton.className = "settings-save-btn";
+    saveButton.setAttribute("aria-label", "Save Changes");
     
     const saveIcon = document.createElement("i");
     saveIcon.className = "fas fa-save";
@@ -1088,7 +1090,7 @@ export class ExternalServicesManager {
     const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
     if (!serviceCard) {
       const name = serviceDef && serviceDef.name ? serviceDef.name : serviceKey;
-      console.error(`Card not found for service: ${serviceKey} (${name})`);
+      console.error(`Card not found for service: ${serviceKey} (${name}). Ensure the service is enabled in preferences and the DOM has been rendered.`);
       return null;
     }
     return serviceCard;
