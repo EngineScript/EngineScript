@@ -34,15 +34,20 @@ set +e
 timeout "$TIMEOUT_SECONDS" \
   sudo env CI_ENVIRONMENT=true DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 \
   bash "$INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
-SCRIPT_EXIT_CODE=${PIPESTATUS[0]}
+PIPE_EXIT_CODES=("${PIPESTATUS[@]}")
+SCRIPT_EXIT_CODE="${PIPE_EXIT_CODES[0]}"
+TEE_EXIT_CODE="${PIPE_EXIT_CODES[1]}"
 set -e
 
 if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   echo "${COMPONENT_NAME} installation failed or timed out"
   echo "Exit code: $SCRIPT_EXIT_CODE"
+  if [ "${TEE_EXIT_CODE:-0}" -ne 0 ]; then
+    echo "Log streaming (tee) exit code: $TEE_EXIT_CODE"
+  fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
-  tail -50 "$LOG_PATH" 2>/dev/null || echo "No log output available"
+  tail -50 "$LOG_PATH" 2>/dev/null || echo "Unable to read log file: $LOG_PATH"
 
   if [ "$SCRIPT_EXIT_CODE" -eq 124 ]; then
     echo "${COMPONENT_NAME} installation timed out after ${TIMEOUT_SECONDS} seconds"
@@ -52,5 +57,7 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
 fi
 
 echo "Script end time: $(date)" >> "$LOG_PATH"
+# Ensure installer/log writes are flushed before subsequent CI steps that may read logs
+# or create snapshots/caches; this is intentional despite the small performance cost.
 sudo sync
 echo "${COMPONENT_NAME} installation completed successfully"
