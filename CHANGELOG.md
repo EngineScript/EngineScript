@@ -6,14 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS (SECOND PASS)
-
-- Made `URL_VALIDATION_REGEX` overridable via environment variable in `scripts/functions/vhost/vhost-import.sh`; the built-in pattern is now stored as `DEFAULT_URL_VALIDATION_REGEX` and used as the fallback, improving consistency and testability.
-- Fixed `extract_define` to escape special regex characters in the key parameter before passing it to `grep -E`, preventing unexpected behavior when keys contain metacharacters.
-- Removed a dead-code comment (`# Removed intermediate echo: ...`) from `extract_prefix_from_db` in `scripts/functions/vhost/vhost-import.sh`.
-- Eliminated the unnecessary `EXTRACTED_DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from the `sed` expression, and the corresponding echo label updated accordingly.
-- Consolidated `ORIGINAL_URL` and `NEW_URL` into a single `NEW_URL` variable; the downstream `HTTPS_ORIGINAL_URL` assignment now references `NEW_URL` directly, removing redundant dead code.
-
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
