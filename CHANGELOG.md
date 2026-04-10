@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-10
+
+### 🔧 CI INSTALL STEP ERROR MESSAGE IMPROVEMENTS
+
+- Restructured error handling in `scripts/ci/run-install-step.sh` to check for timeout (exit code 124) first, providing distinct error paths for timeout versus other failures.
+- Timeout now immediately reports "installation timed out after N seconds" as the first output line; other failures report "installation failed".
+- Removed the ambiguous combined "failed or timed out" message.
+
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
