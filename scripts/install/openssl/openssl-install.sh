@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
 #----------------------------------------------------------------------------------
 # EngineScript - A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 #----------------------------------------------------------------------------------

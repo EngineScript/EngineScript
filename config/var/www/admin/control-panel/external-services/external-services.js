@@ -65,7 +65,7 @@ export class ExternalServicesManager {
    * @returns {Promise<void>}
    */
   async loadExternalServices() {
-    try { // codacy:ignore - Try/catch required for service loading
+    try { // codacy:ignore - Top-level UI orchestration boundary: DOM/rendering and service-processing steps may throw; catch here to log once and show renderErrorState instead of leaving a partially rendered dashboard.
       this.container.replaceChildren();
 
       // Get service definitions and preferences
@@ -1025,7 +1025,7 @@ export class ExternalServicesManager {
   applyStatusDataToCard(serviceKey, serviceDef, data, isFeed) {
     const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
     if (!serviceCard) return;
-    const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, isFeed); // codacy:ignore - Destructuring assignment
+    const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, isFeed);
     this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
   }
 
@@ -1545,11 +1545,11 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Announce message to screen readers via live region
+   * Announce message to screen readers via live region.
+   * Uses a dedicated live region for accessibility announcements in this module.
    * @param {string} message - Message to announce
    * @returns {void}
    */
-  // Uses a dedicated live region for accessibility announcements in this module.
   announceToScreenReader(message) {
     if (!this.liveRegion) {
       this.liveRegion = document.createElement('div');

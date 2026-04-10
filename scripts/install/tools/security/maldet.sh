@@ -21,7 +21,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Maldet Install
 cd /usr/local/src
 download_and_extract "https://www.rfxn.com/downloads/maldetect-current.tar.gz" "/usr/local/src/maldetect-current.tar.gz" "/usr/local/src"
-cd maldetect-1.6.4/
+cd /usr/local/src/maldetect-*/ || { echo "Error: Failed to locate extracted maldetect directory in /usr/local/src" >&2; exit 1; }
 ./install.sh
 echo "/sys" >> /usr/local/maldetect/ignore_paths
 

@@ -51,7 +51,7 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
-  tail -50 "$LOG_PATH" 2>/dev/null || echo "Unable to read log file: $LOG_PATH"
+  tail -50 "$LOG_PATH" || echo "Failed to display log file contents: $LOG_PATH"
 
   exit 1
 fi

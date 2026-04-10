@@ -253,51 +253,6 @@ echo "PASSED: Determined table prefix from database: ${PREFIX}"
 # --- End Prefix Extraction ---
 
 
-# --- Extract WordPress Archive ---
-echo "Extracting WordPress archive..."
-# Clean up any previous extraction attempt
-rm -rf "${WP_EXTRACTED_PATH}"
-mkdir -p "${WP_EXTRACTED_PATH}"
-
-if [[ "${WP_ARCHIVE_FILE}" == *.zip ]]; then
-    unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
-    EXTRACT_STATUS=$?
-elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
-    tar -zxf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
-    EXTRACT_STATUS=$?
-else
-    echo "FAILED: Unrecognized archive format for ${WP_ARCHIVE_FILE}"
-    exit 1
-fi
-
-if [[ $EXTRACT_STATUS -ne 0 ]]; then
-    echo "FAILED: Could not extract archive file ${WP_ARCHIVE_FILE}"
-    rm -rf "${WP_EXTRACTED_PATH}" # Clean up failed extraction
-    exit 1
-fi
-
-# Check for wp-config.php within the extracted directory
-# Handle cases where tar/zip might create a subdirectory
-# Find wp-config.php within the extracted path, potentially in a subdirectory
-WP_CONFIG_REL_PATH=$(find "${WP_EXTRACTED_PATH}" -name "wp-config.php" -printf "%P\n" | head -n 1)
-if [[ -z "$WP_CONFIG_REL_PATH" ]]; then
-    echo "FAILED: wp-config.php not found within the extracted archive content in ${WP_EXTRACTED_PATH}"
-    rm -rf "${WP_EXTRACTED_PATH}" # Clean up
-    exit 1
-fi
-
-# Determine the actual source path (could be WP_EXTRACTED_PATH or a subdirectory within it)
-if [[ "$WP_CONFIG_REL_PATH" == "wp-config.php" ]]; then
-    # wp-config.php is directly in WP_EXTRACTED_PATH
-    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}"
-else
-    # wp-config.php is in a subdirectory, adjust the source path
-    SUBDIR=$(dirname "$WP_CONFIG_REL_PATH")
-    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}/${SUBDIR}"
-fi
-echo "PASSED: Archive extracted. WordPress source path set to: ${WP_FILES_SOURCE_PATH}"
-
-
 # --- Extract Information from wp-config.php ---
 echo "Extracting site information from wp-config.php..."
 WP_CONFIG_PATH="${WP_FILES_SOURCE_PATH}/wp-config.php" # Use the determined source path

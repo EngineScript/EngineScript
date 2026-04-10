@@ -19,6 +19,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # WPScan
-gem install wpscan
+gem install wpscan || { echo "Error: Failed to install WPScan via gem" >&2; exit 1; }
 
 print_install_banner "WPScan"

@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-10
+
+### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
+
+- Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
+- Prevented a single-zip import failure path where the duplicate block referenced `${WP_ARCHIVE_FILE}` (only populated in the two-file flow), which could trigger an unrecognized archive error.
+- Kept the unified conditional extraction logic as the single source of truth for both `single_zip` and `two_file` import formats.
+
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
