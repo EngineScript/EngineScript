@@ -6,21 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 EXTERNAL SERVICES JS VARIABLE NAMING AND READABILITY IMPROVEMENTS
-
-- Renamed `safeIcon` to `safeIconClass` in `createServiceCardHeader()` to clarify that the variable holds the full FontAwesome CSS class (e.g. `fa-question`) rather than just an icon identifier.
-- Renamed `safeStatusIcon` to `safeStatusIconClass` in `createServiceCardHeader()` for the same reason, improving naming consistency between the two icon variables in that method.
-- Renamed `safeIcon` to `safeIconSuffix` in `updateServiceCardStatus()` to match the naming pattern used in `createServiceCardHeader()` and make clear the value is a sanitized suffix (e.g. `question`) that gets prefixed with `fa-`.
-- Added inline comments to the `dragstart` handler explaining that the transferred index payload is set for drag-and-drop protocol compliance/browser compatibility, while the `drop` handler intentionally recalculates positions from the live DOM for accuracy.
-- Extracted the two-stage notification removal timing logic into a dedicated `scheduleNotificationRemoval()` helper method, reducing nesting depth in `showNotification()` and documenting why two separate timeouts are used (display duration then animation duration).
-
-### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
-
-- Extracted the duplicated category order list in `external-services.js` into a single module-level `CATEGORY_ORDER` constant shared by `getCategoryOrder()` and `getServiceOrder()`, eliminating the risk of inconsistencies when categories are added or changed.
-- Replaced `sanitizeFaIconClass` with `sanitizeFaIconSuffix` for the fallback icon in `createServiceCardHeader()` so that the suffix (e.g. `'question'`) is sanitized and then prefixed with `'fa-'` to form the canonical FontAwesome token, removing the previous ambiguity between full-class and suffix inputs.
-- Changed the `dragstart` handler to store only the integer card index as `text/plain` drag data instead of serialising `card.innerHTML`, preventing potential HTML injection and leakage of sensitive markup through the drag-and-drop API.
-- Added `this.notificationSlideOutAnimationName = 'slide-out'` as an instance property alongside the other notification timing constants, and updated the notification dismiss logic to reference this property, making the animation name consistent and preventing typos.
-
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
