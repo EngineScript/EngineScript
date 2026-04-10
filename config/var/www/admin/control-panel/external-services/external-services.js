@@ -452,7 +452,7 @@ export class ExternalServicesManager {
       icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
     });
     
-    return { settingsToggle, settingsContent }; // codacy:ignore - Object literal return
+    return { settingsToggle, settingsContent };
   }
 
   /**
@@ -513,7 +513,7 @@ export class ExternalServicesManager {
     categorySection.appendChild(categoryHeader);
 
     // Create services grid with checkboxes
-    const { servicesGrid, categoryCheckboxes } = this.createServicesGrid( // codacy:ignore - Destructuring assignment
+    const { servicesGrid, categoryCheckboxes } = this.createServicesGrid(
       serviceKeys, services, preferences, serviceDefinitions, pendingChanges
     );
     categorySection.appendChild(servicesGrid);
@@ -604,7 +604,7 @@ export class ExternalServicesManager {
       categoryCheckboxes.push(checkbox);
     });
 
-    return { servicesGrid, categoryCheckboxes }; // codacy:ignore - Object literal return
+    return { servicesGrid, categoryCheckboxes };
   }
 
   /**
@@ -880,11 +880,11 @@ export class ExternalServicesManager {
     // For Atom/RSS feeds, map major->error, minor->warning
     if (isFeed) {
       const statusColor = statusClass === 'operational' ? 'success' : (statusClass === 'major' ? 'error' : 'warning');
-      return { statusClass, statusIcon, statusColor }; // codacy:ignore - Object literal return
+      return { statusClass, statusIcon, statusColor };
     }
 
     const statusColor = statusClass === 'operational' ? 'success' : statusClass === 'minor' ? 'warning' : 'error';
-    return { statusClass, statusIcon, statusColor }; // codacy:ignore - Object literal return
+    return { statusClass, statusIcon, statusColor };
   }
 
   /**
