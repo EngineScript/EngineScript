@@ -1508,7 +1508,7 @@ export class ExternalServicesManager {
       const announcementName =
         serviceName ||
         card.getAttribute('data-service-name') ||
-        card.getAttribute('aria-label') ||
+        card.querySelector('h4')?.textContent ||
         'service';
 
       // Announce to screen readers
