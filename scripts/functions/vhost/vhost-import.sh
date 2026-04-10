@@ -427,7 +427,7 @@ for allowed_charset in "${ALLOWED_DB_CHARSETS[@]}"; do
     fi
 done
 if [[ "${DB_CHARSET_ALLOWED}" != true ]]; then
-    ALLOWED_DB_CHARSETS_CSV="$(IFS=', '; echo "${ALLOWED_DB_CHARSETS[*]}")"
+    ALLOWED_DB_CHARSETS_CSV="$(printf '%s, ' "${ALLOWED_DB_CHARSETS[@]}" | sed 's/, $//')"
     echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: ${ALLOWED_DB_CHARSETS_CSV}." >&2
     exit 1
 fi
@@ -551,51 +551,13 @@ HTTP_ORIGINAL_URL="http://${DOMAIN}"
 HTTPS_ORIGINAL_URL="https://${DOMAIN}"
 
 # Only run expensive full-table replacements when the source URL is present.
-HTTP_EXISTS_QUERY="$(cat <<EOF
-SELECT 1
-FROM INFORMATION_SCHEMA.COLUMNS c
-JOIN INFORMATION_SCHEMA.TABLES t
-  ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
- AND t.TABLE_NAME = c.TABLE_NAME
-WHERE c.TABLE_SCHEMA = DATABASE()
-  AND t.TABLE_TYPE = 'BASE TABLE'
-  AND c.DATA_TYPE IN ('char','varchar','tinytext','text','mediumtext','longtext')
-  AND EXISTS (
-    SELECT 1
-    FROM \`${c.TABLE_NAME}\`
-    WHERE \`${c.COLUMN_NAME}\` LIKE CONCAT('%', '${HTTP_ORIGINAL_URL}', '%')
-    LIMIT 1
-  )
-LIMIT 1;
-EOF
-)"
-
-HTTPS_EXISTS_QUERY="$(cat <<EOF
-SELECT 1
-FROM INFORMATION_SCHEMA.COLUMNS c
-JOIN INFORMATION_SCHEMA.TABLES t
-  ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
- AND t.TABLE_NAME = c.TABLE_NAME
-WHERE c.TABLE_SCHEMA = DATABASE()
-  AND t.TABLE_TYPE = 'BASE TABLE'
-  AND c.DATA_TYPE IN ('char','varchar','tinytext','text','mediumtext','longtext')
-  AND EXISTS (
-    SELECT 1
-    FROM \`${c.TABLE_NAME}\`
-    WHERE \`${c.COLUMN_NAME}\` LIKE CONCAT('%', '${HTTPS_ORIGINAL_URL}', '%')
-    LIMIT 1
-  )
-LIMIT 1;
-EOF
-)"
-
-if wp db query "${HTTP_EXISTS_QUERY}" --skip-column-names --allow-root | grep -q '^1$'; then
+if wp db search "${HTTP_ORIGINAL_URL}" --all-tables --allow-root 2>/dev/null | grep -qF "${HTTP_ORIGINAL_URL}"; then
     wp search-replace "${HTTP_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
 else
     echo "Skipping http search-replace: '${HTTP_ORIGINAL_URL}' not found in database text columns."
 fi
 
-if wp db query "${HTTPS_EXISTS_QUERY}" --skip-column-names --allow-root | grep -q '^1$'; then
+if wp db search "${HTTPS_ORIGINAL_URL}" --all-tables --allow-root 2>/dev/null | grep -qF "${HTTPS_ORIGINAL_URL}"; then
     wp search-replace "${HTTPS_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
 else
     echo "Skipping https search-replace: '${HTTPS_ORIGINAL_URL}' not found in database text columns."
