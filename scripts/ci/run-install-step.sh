@@ -60,7 +60,7 @@ fi
 
 if ! RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>/dev/null)"; then
   echo "Error: unable to resolve log directory path: $LOG_PARENT_DIR" >&2
-  echo "realpath: $RESOLVED_LOG_PARENT" >&2
+  echo "realpath input: $LOG_PARENT_DIR" >&2
   exit 1
 fi
 
