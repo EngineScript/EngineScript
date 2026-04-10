@@ -68,7 +68,7 @@ validate_zip_archive_paths() {
 # Returns true (0) when a directory is absent or contains no files/subdirs
 is_directory_absent_or_empty() {
     local dir="$1"
-    [[ ! -d "$dir" ]] || [[ -z "$(find "$dir" -mindepth 1 -print -quit 2>/dev/null)" ]]
+    [[ ! -d "$dir" ]] || [[ -z "$(find "$dir" -mindepth 1 -print -quit)" ]]
 }
 
 # --- Instructions for Preparing Files ---
@@ -156,6 +156,8 @@ extract_prefix_from_db() {
     # Look for CREATE TABLE or INSERT INTO lines with common tables (_options or _users)
     # Capture the table name between backticks/quotes, then strip _options/_users to derive prefix
     local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")[^\`\"]+_(options|users)(\`|\")"
+    # NOTE: [^\`\"]+ intentionally allows hyphens and other characters valid in MySQL table names,
+    # broadening the previous [a-zA-Z0-9_]+ which would miss prefixes like "my-site_".
     local table_name=""
 
     # Use zgrep for .gz, grep for .sql.
