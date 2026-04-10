@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔒 CI SCRIPT SECURITY AND RELIABILITY IMPROVEMENTS
-
-- Improved `realpath` error handling in `scripts/ci/run-install-step.sh`: instead of silently continuing with an empty string on failure, the script now captures and displays the `realpath` error message and exits immediately to aid diagnosis of path resolution failures.
-- Added SHA256 checksum verification to `scripts/ci/run-install-step.sh`: the script now accepts a 5th argument `<expected-script-sha256>` and verifies the install script's hash before executing it with elevated privileges, preventing tampered scripts from running under `sudo`.
-- Extracted the hardcoded log tail line count (`50`) into a named constant `LOG_TAIL_LINES` in `scripts/ci/run-install-step.sh` for improved maintainability; also updated `tail` usage to use the POSIX-compliant `-n` flag.
-- Updated `enginescript-build-test.yml` to compute SHA256 hashes from the trusted repository checkout and pass them to `run-install-step.sh` for all four install steps (GCC, OpenSSL, PCRE, Zlib).
-
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
