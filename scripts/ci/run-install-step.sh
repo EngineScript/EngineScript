@@ -11,9 +11,9 @@ COMPONENT_NAME="$1"
 TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
-EXPECTED_SCRIPT_SHA256="$5"
+EXPECTED_SCRIPT_SHA256="${5,,}"
 INTEGER_REGEX='^[0-9]+$'
-SHA256_REGEX='^[A-Fa-f0-9]{64}$'
+SHA256_REGEX='^[a-f0-9]{64}$'
 LOG_TAIL_LINES=50
 if ! ALLOWED_INSTALL_DIR="$(realpath "$(pwd)/scripts/ci" 2>/dev/null)"; then
   echo "Error: allowed install directory not found or not resolvable: $(pwd)/scripts/ci" >&2
@@ -103,6 +103,11 @@ if ! command -v sudo >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v sha256sum >/dev/null 2>&1; then
+  echo "Error: sha256sum is required but not available in PATH" >&2
+  exit 1
+fi
+
 if ! sudo -n true >/dev/null 2>&1; then
   echo "Error: sudo privileges are required to run installation steps non-interactively" >&2
   exit 1
@@ -151,7 +156,7 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   TAIL_OUTPUT="$(tail -n "$LOG_TAIL_LINES" "$LOG_PATH" 2>/dev/null)"
   TAIL_EXIT_CODE=$?
   if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
-    echo "$TAIL_OUTPUT"
+    printf '%s\n' "$TAIL_OUTPUT"
   else
     echo "Failed to display log file contents: $LOG_PATH"
     echo "tail failed with exit code: $TAIL_EXIT_CODE"
