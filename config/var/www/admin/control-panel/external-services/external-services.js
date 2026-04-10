@@ -533,12 +533,29 @@ export class ExternalServicesManager {
 
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
+    const updateToggleButtonState = () => {
+      const allEnabled = categoryCheckboxes.every(cb => cb.checked);
+      const actionText = allEnabled ? "Disable All" : "Enable All";
+      const actionAria = allEnabled
+        ? `Disable all ${category} services`
+        : `Enable all ${category} services`;
+
+      const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
+      if (toggleTextEl) {
+        toggleTextEl.textContent = actionText;
+      }
+      toggleBtn.setAttribute("aria-label", actionAria);
+    };
+
+    updateToggleButtonState();
+
     toggleBtn.addEventListener("click", () => {
       const allEnabled = categoryCheckboxes.every(cb => cb.checked);
       categoryCheckboxes.forEach(cb => {
         cb.checked = !allEnabled;
         cb.dispatchEvent(new Event('change'));
       });
+      updateToggleButtonState();
     });
 
     return categorySection;
@@ -560,11 +577,11 @@ export class ExternalServicesManager {
     const toggleAllBtn = document.createElement("button");
     toggleAllBtn.className = "category-toggle-all-btn";
     toggleAllBtn.dataset.category = category;
-    toggleAllBtn.setAttribute("aria-label", `Toggle all ${category} services`);
+    toggleAllBtn.setAttribute("aria-label", `Enable all ${category} services`);
     
     const toggleText = document.createElement("span");
     toggleText.className = "toggle-all-text";
-    toggleText.textContent = "Toggle All";
+    toggleText.textContent = "Enable All";
     toggleAllBtn.appendChild(toggleText);
     
     const toggleIcon = document.createElement("i");
@@ -1628,6 +1645,36 @@ export class ExternalServicesManager {
   // ============ Notifications ============
 
   /**
+   * Check whether a keyframes animation exists in currently loaded stylesheets.
+   * @param {string} animationName - CSS keyframes name to look for
+   * @returns {boolean}
+   */
+  hasAnimationKeyframes(animationName) {
+    const styleSheets = Array.from(document.styleSheets || []);
+
+    for (const styleSheet of styleSheets) {
+      let rules;
+      try {
+        rules = styleSheet.cssRules || styleSheet.rules;
+      } catch (e) {
+        // Ignore cross-origin or otherwise inaccessible stylesheets.
+        continue;
+      }
+
+      if (!rules) continue;
+
+      const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : 7;
+      for (const rule of Array.from(rules)) {
+        if (rule.type === keyframesType && rule.name === animationName) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Schedule notification slide-out and removal.
    * Uses two-stage timing: display duration first, then animation duration before DOM removal.
    * @param {HTMLElement} notification - Notification element to remove
@@ -1635,7 +1682,9 @@ export class ExternalServicesManager {
    */
   scheduleNotificationRemoval(notification) {
     setTimeout(() => {
-      notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
+      if (this.hasAnimationKeyframes(this.notificationSlideOutAnimationName)) {
+        notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
+      }
       setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
     }, this.notificationDurationMs);
   }
