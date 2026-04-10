@@ -61,11 +61,15 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Main method to load and display all external services
+   * Main method to load and display all external services.
+   * This method is a top-level UI orchestration boundary: DOM/rendering and
+   * service-processing steps may throw. Errors are caught here so they are logged
+   * once and the UI can transition to renderErrorState instead of leaving a
+   * partially rendered dashboard.
    * @returns {Promise<void>}
    */
   async loadExternalServices() {
-    try { // codacy:ignore - Top-level UI orchestration boundary: DOM/rendering and service-processing steps may throw; catch here to log once and show renderErrorState instead of leaving a partially rendered dashboard.
+    try {
       this.container.replaceChildren();
 
       // Get service definitions and preferences
@@ -789,8 +793,8 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Validate status icon class using shared sanitizer utility for consistency
-    const safeStatusIcon = sanitizeFaIconSuffix(statusIconClass || 'fa-question');
+    // Validate status icon class with the same sanitizer used for service icons
+    const safeStatusIcon = sanitizeFaIconClass(statusIconClass || 'fa-question');
     statusIcon.className = `fas ${safeStatusIcon}`;
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
@@ -908,7 +912,7 @@ export class ExternalServicesManager {
       statusSpan.textContent = '';
       // Create icon element safely
       const iconElement = document.createElement("i");
-      // Sanitize icon class suffix using centralized validator for consistency
+      // Use suffix sanitizer here because class is constructed as `fas fa-${suffix}`
       const safeIcon = sanitizeFaIconSuffix(statusIcon);
       iconElement.className = `fas fa-${safeIcon}`;
       statusSpan.appendChild(iconElement);
@@ -1019,12 +1023,12 @@ export class ExternalServicesManager {
    * @param {string} serviceKey - Service identifier key
    * @param {Object} serviceDef - Service definition object
    * @param {Object} data - API response data containing status
-   * @param {boolean} isFeed - Whether the status is from an Atom/RSS feed
    * @returns {void}
    */
-  applyStatusDataToCard(serviceKey, serviceDef, data, isFeed) {
+  applyStatusDataToCard(serviceKey, serviceDef, data) {
     const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
     if (!serviceCard) return;
+    const isFeed = Boolean(serviceDef.feedType);
     const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, isFeed);
     this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
   }
@@ -1054,7 +1058,7 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      this.applyStatusDataToCard(serviceKey, serviceDef, data, true);
+      this.applyStatusDataToCard(serviceKey, serviceDef, data);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} feed status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);
@@ -1080,7 +1084,7 @@ export class ExternalServicesManager {
       }
 
       // Find the card and update it
-      this.applyStatusDataToCard(serviceKey, serviceDef, data, false);
+      this.applyStatusDataToCard(serviceKey, serviceDef, data);
     } catch (error) {
       console.error(`Failed to load ${serviceDef.name} status:`, error);
       this.handleServiceError(serviceKey, serviceDef, error);

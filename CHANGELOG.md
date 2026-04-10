@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🧹 EXTERNAL SERVICES CODE QUALITY IMPROVEMENTS
+
+- Moved the long inline `try` comment in `loadExternalServices()` into the JSDoc block above the method to improve code readability.
+- Replaced `sanitizeFaIconSuffix` with `sanitizeFaIconClass` for the status icon in `createServiceCardHeader`, aligning it with the service icon sanitizer and the `fas <class>` template pattern used there.
+- Updated the comment in `updateServiceCardStatus` to clarify that `sanitizeFaIconSuffix` is used because the class is constructed as `fas fa-${suffix}`.
+- Removed the `isFeed` parameter from `applyStatusDataToCard` and made it dynamic by deriving it from `serviceDef.feedType`, eliminating hardcoded `true`/`false` arguments at call sites.
+
 ### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
