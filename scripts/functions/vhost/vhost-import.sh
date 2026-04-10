@@ -379,7 +379,7 @@ LOG_FILE="/var/log/EngineScript/vhost-import.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 if [ "${IMPORT_FORMAT}" = "single_zip" ]; then
   echo "Starting domain import for ${DOMAIN} from single ZIP ${SINGLE_ZIP_FILE} at $(date)"
-elif [ "${IMPORT_FORMAT}" = "original" ]; then
+elif [ "${IMPORT_FORMAT}" = "two_file" ]; then
   echo "Starting domain import for ${DOMAIN} from archive ${WP_ARCHIVE_FILE} and DB ${DB_SOURCE_PATH} at $(date)"
 else
   echo "Starting domain import for ${DOMAIN} (format: ${IMPORT_FORMAT}) with inputs ZIP=${SINGLE_ZIP_FILE}, archive=${WP_ARCHIVE_FILE}, DB=${DB_SOURCE_PATH} at $(date)"
@@ -620,7 +620,7 @@ else
     echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
     rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
     if [[ -n "${WP_ARCHIVE_FILE}" ]]; then
-        echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
+        echo "Original archive file (${WP_ARCHIVE_FILE}) in ${WP_ARCHIVE_DIR_ORIGINAL} and database file (${DB_SOURCE_PATH}) in ${DB_IMPORT_DIR_ORIGINAL} will NOT be removed."
     else
         echo "Original import file (${SINGLE_ZIP_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
     fi
