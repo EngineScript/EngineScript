@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🐛 VHOST IMPORT LOGGING AND CLEANUP FIXES
+
+- Fixed the import start log message in `scripts/functions/vhost/vhost-import.sh` to conditionally reference `SINGLE_ZIP_FILE` for `single_zip` format, `WP_ARCHIVE_FILE`/`DB_SOURCE_PATH` for `original` format, or a generic fallback for other formats, instead of always referencing the empty `WP_ARCHIVE_FILE`.
+- Removed leftover debug `echo` statements (`DEBUG: Attempting to set prefix` and `DEBUG: sed command exit status for prefix`) from production code in `scripts/functions/vhost/vhost-import.sh`.
+- Added cleanup logic to move `SINGLE_ZIP_FILE` to `BACKUP_DIR` when `IMPORT_FORMAT` is `single_zip`, matching the existing two-file cleanup behaviour.
+- Fixed the site-verification failure message to reference `SINGLE_ZIP_FILE` instead of `DB_SOURCE_PATH` when `WP_ARCHIVE_FILE` is unset, correctly identifying the original import file for `single_zip` imports.
+
 ### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
