@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 CI SCRIPT PORTABILITY AND MEMORY IMPROVEMENTS
+
+- Replaced bash 4.0+ `${5,,}` lowercase expansion in `scripts/ci/run-install-step.sh` with `$(printf '%s' "$5" | tr '[:upper:]' '[:lower:]')` for compatibility with older bash versions.
+- Removed intermediate `TAIL_OUTPUT` variable in `scripts/ci/run-install-step.sh`; `tail` output is now piped directly to stdout, avoiding unnecessary memory consumption for large log files.
+
+## 2026-04-10
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).

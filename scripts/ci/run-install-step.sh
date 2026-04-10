@@ -11,7 +11,7 @@ COMPONENT_NAME="$1"
 TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
-EXPECTED_SCRIPT_SHA256="${5,,}"
+EXPECTED_SCRIPT_SHA256="$(printf '%s' "$5" | tr '[:upper:]' '[:lower:]')"
 INTEGER_REGEX='^[0-9]+$'
 SHA256_REGEX='^[a-f0-9]{64}$'
 LOG_TAIL_LINES=50
@@ -153,11 +153,8 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last ${LOG_TAIL_LINES} lines of output:"
-  TAIL_OUTPUT="$(tail -n "$LOG_TAIL_LINES" "$LOG_PATH" 2>/dev/null)"
-  TAIL_EXIT_CODE=$?
-  if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
-    printf '%s\n' "$TAIL_OUTPUT"
-  else
+  if ! tail -n "$LOG_TAIL_LINES" "$LOG_PATH" 2>/dev/null; then
+    TAIL_EXIT_CODE=$?
     echo "Failed to display log file contents: $LOG_PATH"
     echo "tail failed with exit code: $TAIL_EXIT_CODE"
   fi
