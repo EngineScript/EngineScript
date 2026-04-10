@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10 (2)
-
-### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS (CONTINUED)
-
-- Fixed error message in prefix-extraction failure branch to reference both `_options` and `_users` table patterns, matching the actual search logic in `extract_prefix_from_db`.
-- Removed redundant `DOMAIN` re-assignment inside the confirmation-and-correction loop; `DOMAIN` is already set from `SITE_URL` before the loop and does not need updating on each iteration.
-- Simplified DB charset validation from a `for`-loop with a flag variable to a `case` statement, improving readability and performance.
-- Extracted duplicated HTTP/HTTPS search-replace logic into a `run_url_search_replace_if_present` helper function to reduce code duplication and improve maintainability.
-
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
