@@ -6,6 +6,12 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🐛 FIX UNDEFINED VARIABLE REFERENCES IN VHOST IMPORT
+
+- Fixed undefined variable references `WP_ARCHIVE_DIR_ORIGINAL` and `DB_IMPORT_DIR_ORIGINAL` in `scripts/functions/vhost/vhost-import.sh`, replacing them with the correctly defined `WP_ARCHIVE_DIR` and `DB_IMPORT_DIR` variables. These undefined variables caused import format detection to always fail when using the two-file import method.
+
+## 2026-04-10
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.

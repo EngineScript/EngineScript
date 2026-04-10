@@ -135,19 +135,19 @@ DB_SOURCE_PATH=""  # Path to the DB file (set differently for each method)
 mapfile -d '' -t SINGLE_ZIP_CANDIDATES < <(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip" -print0)
 SINGLE_ZIP_COUNT=${#SINGLE_ZIP_CANDIDATES[@]}
 
-if [[ "$SINGLE_ZIP_COUNT" -eq 1 && ! -d "${WP_ARCHIVE_DIR_ORIGINAL}" && ! -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
+if [[ "$SINGLE_ZIP_COUNT" -eq 1 && ! -d "${WP_ARCHIVE_DIR}" && ! -d "${DB_IMPORT_DIR}" ]]; then
     # Found exactly one zip file in the base dir, and the old dirs don't exist
     IMPORT_FORMAT="single_zip"
     SINGLE_ZIP_FILE="${SINGLE_ZIP_CANDIDATES[0]}"
     echo "PASSED: Detected Single Export Zip format: ${SINGLE_ZIP_FILE}"
-elif [[ -d "${WP_ARCHIVE_DIR_ORIGINAL}" && -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
+elif [[ -d "${WP_ARCHIVE_DIR}" && -d "${DB_IMPORT_DIR}" ]]; then
     # Check the original two-file method
     # Find WP archive file
-    mapfile -d '' -t WP_ARCHIVE_FILE_CANDIDATES < <(find "${WP_ARCHIVE_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \) -print0)
+    mapfile -d '' -t WP_ARCHIVE_FILE_CANDIDATES < <(find "${WP_ARCHIVE_DIR}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \) -print0)
     WP_ARCHIVE_COUNT=${#WP_ARCHIVE_FILE_CANDIDATES[@]}
 
     # Find DB file
-    mapfile -d '' -t DB_SOURCE_FILE_CANDIDATES < <(find "${DB_IMPORT_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0)
+    mapfile -d '' -t DB_SOURCE_FILE_CANDIDATES < <(find "${DB_IMPORT_DIR}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0)
     DB_SOURCE_COUNT=${#DB_SOURCE_FILE_CANDIDATES[@]}
 
     if [[ "$WP_ARCHIVE_COUNT" -eq 1 && "$DB_SOURCE_COUNT" -eq 1 ]]; then
@@ -165,7 +165,7 @@ if [[ -z "$IMPORT_FORMAT" ]]; then
     echo "FAILED: Could not detect a valid import format."
     echo "Please ensure you have either:"
     echo "  - Exactly one .zip file in ${IMPORT_BASE_DIR} (and no subdirectories like 'root-directory' or 'database-file')."
-    echo "  - OR Exactly one archive (.zip, .tar.gz, .tgz) in ${WP_ARCHIVE_DIR_ORIGINAL} AND exactly one database file (.sql, .sql.gz) in ${DB_IMPORT_DIR_ORIGINAL}."
+    echo "  - OR Exactly one archive (.zip, .tar.gz, .tgz) in ${WP_ARCHIVE_DIR} AND exactly one database file (.sql, .sql.gz) in ${DB_IMPORT_DIR}."
     exit 1
 fi
 
@@ -653,7 +653,7 @@ else
     echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
     rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
     if [[ -n "${WP_ARCHIVE_FILE}" ]]; then
-        echo "Original archive file (${WP_ARCHIVE_FILE}) in ${WP_ARCHIVE_DIR_ORIGINAL} and database file (${DB_SOURCE_PATH}) in ${DB_IMPORT_DIR_ORIGINAL} will NOT be removed."
+        echo "Original archive file (${WP_ARCHIVE_FILE}) in ${WP_ARCHIVE_DIR} and database file (${DB_SOURCE_PATH}) in ${DB_IMPORT_DIR} will NOT be removed."
     else
         echo "Original import file (${SINGLE_ZIP_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
     fi
