@@ -6,14 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔒 CI SECURITY HARDENING: run-install-step.sh
-
-- Added install script path validation using `realpath` to prevent directory traversal attacks; the resolved canonical path must be within `scripts/ci/` and is used in place of the raw input when invoking `bash`.
-- Added log path validation to restrict log files to the current working directory, block symlinks, and reject non-regular-file targets before `touch` is called.
-- Added a pre-flight check for `sudo` availability and non-interactive sudo privileges before attempting any privileged commands, producing a clear error message if either requirement is not met.
-
-## 2026-04-10
-
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
