@@ -6,6 +6,11 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTERNAL SERVICES SONARCLOUD FIXES
+
+- Extracted stylesheet rules access from `hasAnimationKeyframes` into a new `getSheetRules(styleSheet)` helper method, reducing `hasAnimationKeyframes` cognitive complexity from 17 to 10 (SonarCloud failure fix).
+- Replaced `if (e && e.name === 'SecurityError')` with optional chaining `if (e?.name === 'SecurityError')` in `getSheetRules` (SonarCloud warning fix).
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Removed redundant `DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from `SITE_URL_RAW` via sed, eliminating the circular dependency pattern in `scripts/functions/vhost/vhost-import.sh`.
