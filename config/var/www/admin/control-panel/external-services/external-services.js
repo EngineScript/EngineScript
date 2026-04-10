@@ -5,6 +5,19 @@ import { DashboardUtils } from '../modules/utils.js?v={ES_DASHBOARD_VER}';
 import { SERVICE_DEFINITIONS } from './services-config.js?v={ES_DASHBOARD_VER}';
 import { readCookie, writeCookie, removeCookie, sanitizeFaIconClass, sanitizeFaIconSuffix } from './external-services-utils.js?v={ES_DASHBOARD_VER}';
 
+const CATEGORY_ORDER = [
+  'Hosting & Infrastructure',
+  'Developer Tools',
+  'E-Commerce & Payments',
+  'Email Services',
+  'Communication',
+  'Media & Content',
+  'Gaming',
+  'AI & Machine Learning',
+  'Advertising',
+  'Security'
+];
+
 export class ExternalServicesManager {
   /**
    * Create an ExternalServicesManager instance
@@ -30,6 +43,7 @@ export class ExternalServicesManager {
     // Notification timing configuration
     this.notificationDurationMs = 3000;
     this.notificationAnimationDurationMs = 300;
+    this.notificationSlideOutAnimationName = 'slide-out';
     this.requestTimeoutMs = 60000;
     this.liveRegionAnnouncementDelayMs = 100;
     
@@ -488,18 +502,7 @@ export class ExternalServicesManager {
    * @returns {string[]} Array of category names in display order
    */
   getCategoryOrder() {
-    return [
-      'Hosting & Infrastructure',
-      'Developer Tools',
-      'E-Commerce & Payments',
-      'Email Services',
-      'Communication',
-      'Media & Content',
-      'Gaming',
-      'AI & Machine Learning',
-      'Advertising',
-      'Security'
-    ];
+    return [...CATEGORY_ORDER];
   }
 
   /**
@@ -778,8 +781,9 @@ export class ExternalServicesManager {
     
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
-    // Validate icon class with strict token format: fa-<alnum>(-<alnum>)*
-    const safeIcon = sanitizeFaIconClass(serviceDef.icon || 'fa-question');
+    // Sanitize icon suffix, then build canonical FontAwesome token
+    const safeIconSuffix = sanitizeFaIconSuffix(serviceDef.icon || 'question');
+    const safeIcon = `fa-${safeIconSuffix}`;
     iconElement.className = `fas ${safeIcon}`;
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
@@ -795,8 +799,9 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Validate status icon class with the same sanitizer used for service icons
-    const safeStatusIcon = sanitizeFaIconClass(statusIconClass || 'fa-question');
+    // Sanitize icon suffix, then build canonical FontAwesome token
+    const safeStatusIconSuffix = sanitizeFaIconSuffix(statusIconClass || 'question');
+    const safeStatusIcon = `fa-${safeStatusIconSuffix}`;
     statusIcon.className = `fas ${safeStatusIcon}`;
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
@@ -1298,8 +1303,12 @@ export class ExternalServicesManager {
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
         card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', card.innerHTML);
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          // Use a minimal plain-text token instead of serializing HTML content
+          const cardIndex = Array.from(container.querySelectorAll('.external-service-card')).indexOf(card);
+          e.dataTransfer.setData('text/plain', String(cardIndex));
+        }
       });
 
       card.addEventListener('dragover', (e) => {
@@ -1603,7 +1612,7 @@ export class ExternalServicesManager {
     
     // Remove after configured duration
     setTimeout(() => {
-      notification.style.animation = `slide-out ${this.notificationAnimationDurationMs / 1000}s ease`;
+      notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
       setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
     }, this.notificationDurationMs);
   }
