@@ -1311,7 +1311,7 @@ export class ExternalServicesManager {
     serviceKeys.forEach((key) => {
       const definition = SERVICE_DEFINITIONS[key] || {};
       const category = typeof definition.category === 'string' && definition.category.trim()
-        ? definition.category
+        ? definition.category.trim()
         : 'Uncategorized';
 
       if (!servicesByCategory.has(category)) {
@@ -1325,7 +1325,7 @@ export class ExternalServicesManager {
     // First: known categories in configured display order.
     CATEGORY_ORDER.forEach((category) => {
       const keys = servicesByCategory.get(category);
-      if (keys && keys.length) {
+      if (keys && keys.length > 0) {
         ordered.push(...keys.sort((a, b) => a.localeCompare(b)));
         servicesByCategory.delete(category);
       }
