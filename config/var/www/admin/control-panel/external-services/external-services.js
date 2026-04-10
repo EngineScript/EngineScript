@@ -339,6 +339,19 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Build a map with all configured services enabled
+   * @returns {Object} Services object with every known key set to true
+   */
+  buildAllServicesEnabledMap() {
+    const serviceDefinitions = this.getServiceDefinitions();
+    const services = {};
+    Object.keys(serviceDefinitions).forEach(key => {
+      services[key] = true;
+    });
+    return services;
+  }
+
+  /**
    * Fetch available services from API
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
@@ -354,23 +367,14 @@ export class ExternalServicesManager {
       
       // If API failed or returned empty, use all services from definitions
       if (!services || Object.keys(services).length === 0) {
-        const serviceDefinitions = this.getServiceDefinitions();
-        services = {};
-        Object.keys(serviceDefinitions).forEach(key => {
-          services[key] = true;
-        });
+        services = this.buildAllServicesEnabledMap();
       }
       
       return services;
     } catch (error) {
       console.error('Failed to fetch services config:', error);
       // Fallback: return all services enabled
-      const serviceDefinitions = this.getServiceDefinitions();
-      const services = {};
-      Object.keys(serviceDefinitions).forEach(key => {
-        services[key] = true;
-      });
-      return services;
+      return this.buildAllServicesEnabledMap();
     }
   }
 
@@ -591,7 +595,7 @@ export class ExternalServicesManager {
       
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.checked = Boolean(isEnabled);
+      checkbox.checked = isEnabled;
       checkbox.dataset.service = serviceKey;
       
       checkbox.addEventListener("change", () => {
@@ -694,9 +698,7 @@ export class ExternalServicesManager {
       }, 2000);
       
       // Refresh visible services display without full re-initialization
-      if (typeof this.refreshServicesDisplay === 'function') {
-        await this.refreshServicesDisplay();
-      }
+      await this.refreshServicesDisplay();
       
       this.showNotification('Service preferences saved', 'success');
     } catch (error) {
@@ -1028,7 +1030,7 @@ export class ExternalServicesManager {
   applyStatusDataToCard(serviceKey, serviceDef, data) {
     const serviceCard = this.getServiceCardElement(serviceKey, serviceDef);
     if (!serviceCard) return;
-    const isFeed = Boolean(serviceDef.feedType);
+    const isFeed = !!serviceDef.feedType;
     const { statusClass, statusIcon, statusColor } = this.getStatusDisplayValues(data.status.indicator, isFeed);
     this.updateServiceCardStatus(serviceCard, data.status.description, statusClass, statusIcon, statusColor);
   }
