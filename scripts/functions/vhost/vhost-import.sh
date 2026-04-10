@@ -556,6 +556,7 @@ run_url_search_replace_if_present() {
     else
         echo "Skipping search-replace: '${original_url}' not found in database text columns."
     fi
+    return
 }
 
 run_url_search_replace_if_present "${HTTP_ORIGINAL_URL}"

@@ -8,6 +8,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
+- Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
 - Removed redundant `DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from `SITE_URL_RAW` via sed, eliminating the circular dependency pattern in `scripts/functions/vhost/vhost-import.sh`.
 - Added clarifying comment to `ORIGINAL_URL`/`NEW_URL` assignments explaining that both variables are kept intentionally for search-replace workflows and may diverge in future modifications.
 - Extracted the supported DB charset whitelist (`utf8mb4`, `utf8`, `latin1`) into a `readonly ALLOWED_DB_CHARSETS` array at the top of `scripts/functions/vhost/vhost-import.sh`, making it easier to update supported charsets in the future.
