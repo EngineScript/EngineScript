@@ -247,7 +247,7 @@ echo "Extracting table prefix from database file: ${DB_SOURCE_PATH}"
 PREFIX=$(extract_prefix_from_db "$DB_SOURCE_PATH")
 if [[ -z "$PREFIX" ]]; then
     echo "FAILED: Could not automatically determine table prefix from database file: ${DB_SOURCE_PATH}"
-    echo "Please ensure the database dump contains standard WordPress tables like 'wp_options' or 'yourprefix_options'."
+    echo "Please ensure the database dump contains standard WordPress tables like 'wp_options'/'yourprefix_options' or 'wp_users'/'yourprefix_users'."
     rm -rf "${WP_EXTRACTED_PATH}" # Clean up
     exit 1 # Exit if DB extraction fails
 fi
@@ -339,9 +339,6 @@ while true; do
           DB_CHARSET="$new_db_charset"
       fi
 
-      # Re-assign DOMAIN based on potentially updated SITE_URL
-      DOMAIN=$(echo "$SITE_URL" | sed -E 's#^https?://##; s#/$##')
-
       echo "Values updated. Please review again."
       sleep 1
       ;; # Loop back to show updated values
@@ -422,18 +419,15 @@ echo "Generated new MySQL database credentials for ${SITE_URL}."
 # Create *new* database and user (Use extracted charset if needed, though default is usually fine)
 # Validate SQL inputs before interpolation to prevent SQL injection/syntax issues.
 DB_CHARSET_VALIDATED="$(printf '%s' "${DB_CHARSET}" | tr '[:upper:]' '[:lower:]')"
-DB_CHARSET_ALLOWED=false
-for allowed_charset in "${ALLOWED_DB_CHARSETS[@]}"; do
-    if [[ "${DB_CHARSET_VALIDATED}" == "${allowed_charset}" ]]; then
-        DB_CHARSET_ALLOWED=true
-        break
-    fi
-done
-if [[ "${DB_CHARSET_ALLOWED}" != true ]]; then
-    ALLOWED_DB_CHARSETS_CSV="$(printf '%s, ' "${ALLOWED_DB_CHARSETS[@]}" | sed 's/, $//')"
-    echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: ${ALLOWED_DB_CHARSETS_CSV}." >&2
-    exit 1
-fi
+case "${DB_CHARSET_VALIDATED}" in
+    utf8mb4|utf8|latin1)
+        ;;
+    *)
+        ALLOWED_DB_CHARSETS_CSV="$(printf '%s, ' "${ALLOWED_DB_CHARSETS[@]}" | sed 's/, $//')"
+        echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: ${ALLOWED_DB_CHARSETS_CSV}." >&2
+        exit 1
+        ;;
+esac
 DB_COLLATION="${DB_CHARSET_VALIDATED}_unicode_ci"
 if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
     echo "Error: Generated database name contains invalid characters: ${DB}" >&2
@@ -553,18 +547,20 @@ echo "Ensuring URL is '${NEW_URL}'"
 HTTP_ORIGINAL_URL="http://${DOMAIN}"
 HTTPS_ORIGINAL_URL="https://${DOMAIN}"
 
-# Only run expensive full-table replacements when the source URL is present.
-if wp db search "${HTTP_ORIGINAL_URL}" --all-tables --allow-root 2>/dev/null | grep -qF "${HTTP_ORIGINAL_URL}"; then
-    wp search-replace "${HTTP_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
-else
-    echo "Skipping http search-replace: '${HTTP_ORIGINAL_URL}' not found in database text columns."
-fi
+run_url_search_replace_if_present() {
+    local original_url="$1"
 
-if wp db search "${HTTPS_ORIGINAL_URL}" --all-tables --allow-root 2>/dev/null | grep -qF "${HTTPS_ORIGINAL_URL}"; then
-    wp search-replace "${HTTPS_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
-else
-    echo "Skipping https search-replace: '${HTTPS_ORIGINAL_URL}' not found in database text columns."
-fi
+    # Only run expensive full-table replacements when the source URL is present.
+    if wp db search "${original_url}" --all-tables --allow-root 2>/dev/null | grep -qF "${original_url}"; then
+        wp search-replace "${original_url}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
+    else
+        echo "Skipping search-replace: '${original_url}' not found in database text columns."
+    fi
+    return
+}
+
+run_url_search_replace_if_present "${HTTP_ORIGINAL_URL}"
+run_url_search_replace_if_present "${HTTPS_ORIGINAL_URL}"
 
 # Flush Cache and Rewrite Rules
 clear_wordpress_caches
