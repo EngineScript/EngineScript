@@ -30,6 +30,8 @@ export class ExternalServicesManager {
     // Notification timing configuration
     this.notificationDurationMs = 3000;
     this.notificationAnimationDurationMs = 300;
+    this.requestTimeoutMs = 60000;
+    this.liveRegionAnnouncementDelayMs = 100;
     
     // Keyboard navigation state for accessibility
     this.reorderMode = false;
@@ -133,11 +135,7 @@ export class ExternalServicesManager {
    * @returns {Object} Services object with all keys set to true
    */
   buildServicesObject(serviceDefinitions) {
-    const services = {};
-    Object.keys(serviceDefinitions).forEach(key => {
-      services[key] = true;
-    });
-    return services;
+    return Object.fromEntries(Object.keys(serviceDefinitions).map(key => [key, true]));
   }
 
   /**
@@ -791,8 +789,8 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Validate status icon class contains only safe characters (single class token)
-    const safeStatusIcon = (statusIconClass || 'fa-question').replace(/[^a-zA-Z0-9-]/g, '');
+    // Validate status icon class using shared sanitizer utility for consistency
+    const safeStatusIcon = sanitizeFaIconSuffix(statusIconClass || 'fa-question');
     statusIcon.className = `fas ${safeStatusIcon}`;
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
@@ -965,7 +963,7 @@ export class ExternalServicesManager {
    * Fetch data with timeout, caching support, and concurrency limiting
    * @param {Function} fetchFn - Function that accepts an AbortSignal and returns a fetch Promise
    * @param {string} serviceKey - Service identifier key for cache lookup
-   * @returns {Promise<Object>} Parsed JSON response data
+   * @returns {Promise<Object>} Promise resolving to service data (from cache or parsed JSON response)
    */
   async fetchServiceData(fetchFn, serviceKey) {
     // Check cache first - no need to queue if cached
@@ -975,7 +973,7 @@ export class ExternalServicesManager {
       // Not in cache, queue the fetch request with concurrency limiting
       data = await this.queueRequest(async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
         
         try {
           const response = await fetchFn(controller.signal);
@@ -1566,7 +1564,7 @@ export class ExternalServicesManager {
     this.liveRegion.textContent = '';
     setTimeout(() => {
       this.liveRegion.textContent = message;
-    }, 100);
+    }, this.liveRegionAnnouncementDelayMs);
   }
 
   /**
