@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10 (2)
-
-### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS (CONTINUED)
-
-- Replaced two-pass `find -print -quit` + second `find ! -samefile` SQL file detection with `mapfile` + `find -print0 | sort -z` in `scripts/functions/vhost/vhost-import.sh`, ensuring deterministic selection and a single-pass exact-count check.
-- Extracted the URL validation regex to a `readonly URL_VALIDATION_REGEX` variable at the top of `scripts/functions/vhost/vhost-import.sh` to eliminate duplication and simplify future maintenance.
-- Improved the WordPress salt fetch error message to include troubleshooting guidance (internet connection, DNS/firewall/proxy settings, retry instructions).
-- Replaced `wp db search … | grep -qF` with `wp db search … --quiet` so the exit status is used directly, eliminating a redundant full-database grep pass in `run_url_search_replace_if_present`.
-
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
