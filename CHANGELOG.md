@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-10 (2)
+
+### 🐛 VHOST IMPORT ERROR HANDLING AND CODE QUALITY FIXES
+
+- Added error handling for sourcing `enginescript-shared-vhost.sh` in `scripts/functions/vhost/vhost-import.sh`, matching the existing `|| { echo ... exit 1; }` pattern used for other sourced files.
+- Split `local line` declaration and assignment in `extract_define()` so the command substitution exit status is not masked by the `local` builtin.
+- Refactored `extract_prefix_from_db()` to use a `grep_cmd` variable instead of duplicating the complex pipeline for both compressed and uncompressed database files.
+- Added robust error handling for the `curl` call that fetches WordPress salts: uses `--fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 30`, exits on curl failure, and validates that the retrieved content contains `define(` before proceeding.
+
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
