@@ -18,6 +18,8 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+const DEFAULT_ICON_SUFFIX = 'question';
+
 export class ExternalServicesManager {
   /**
    * Create an ExternalServicesManager instance
@@ -782,7 +784,7 @@ export class ExternalServicesManager {
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
     // Sanitize icon suffix, then build canonical FontAwesome token
-    const safeIconSuffix = sanitizeFaIconSuffix(serviceDef.icon || 'question');
+    const safeIconSuffix = sanitizeFaIconSuffix(serviceDef.icon || DEFAULT_ICON_SUFFIX);
     const safeIconClass = `fa-${safeIconSuffix}`;
     iconElement.className = `fas ${safeIconClass}`;
     iconElement.setAttribute("aria-hidden", "true");
@@ -799,8 +801,8 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Sanitize icon suffix, then build canonical FontAwesome token
-    const safeStatusIconSuffix = sanitizeFaIconSuffix(statusIconClass || 'question');
+    // Sanitize icon suffix, then apply fallback and build canonical FontAwesome token
+    const safeStatusIconSuffix = sanitizeFaIconSuffix(statusIconClass) || DEFAULT_ICON_SUFFIX;
     const safeStatusIconClass = `fa-${safeStatusIconSuffix}`;
     statusIcon.className = `fas ${safeStatusIconClass}`;
     statusIcon.setAttribute("aria-hidden", "true");
@@ -842,9 +844,9 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   renderStaticServiceCard(container, serviceKey, serviceDef) {
-    const statusIconClass = "fa-external-link-alt";
+    const statusIconSuffix = "external-link-alt";
     const contentNode = document.createTextNode(serviceDef.statusText || 'Visit status page');
-    const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusIconClass);
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusIconSuffix);
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
     
@@ -862,9 +864,9 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   renderServiceCardLoadingState(container, serviceKey, serviceDef) {
-    const statusIconClass = "fa-spinner fa-spin";
+    const statusIconSuffix = "spinner fa-spin";
     const contentNode = document.createTextNode("Loading...");
-    const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusIconClass);
+    const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusIconSuffix);
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
     
@@ -903,11 +905,11 @@ export class ExternalServicesManager {
    * @param {HTMLElement} serviceCard - Service card element to update
    * @param {string} statusDescription - Human-readable status text
    * @param {string} statusClass - CSS class name for the status
-   * @param {string} statusIcon - FontAwesome icon name (without fa- prefix)
+   * @param {string} statusIconSuffix - FontAwesome icon suffix (without fa- prefix)
    * @param {string} statusColor - Color category ('success', 'warning', or 'error')
    * @returns {void}
    */
-  updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIcon, statusColor) {
+  updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIconSuffix, statusColor) {
     // Update card class
     serviceCard.classList.remove("loading", "error", "status-success", "status-warning", "status-error");
     
@@ -920,7 +922,7 @@ export class ExternalServicesManager {
       // Create icon element safely
       const iconElement = document.createElement("i");
       // Use suffix sanitizer here because class is constructed as `fas fa-${suffix}`
-      const safeIconSuffix = sanitizeFaIconSuffix(statusIcon);
+      const safeIconSuffix = sanitizeFaIconSuffix(statusIconSuffix);
       iconElement.className = `fas fa-${safeIconSuffix}`;
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
