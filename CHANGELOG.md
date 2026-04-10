@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10 (2)
-
-### 🐛 VHOST IMPORT LOG MESSAGE FIXES
-
-- Fixed the import start log message condition in `scripts/functions/vhost/vhost-import.sh` that referenced `original` as an import format identifier, which was never set by the validation logic. Changed to correctly match `two_file`.
-- Fixed the site-verification failure message to reference the precise file locations (`${WP_ARCHIVE_DIR_ORIGINAL}` and `${DB_IMPORT_DIR_ORIGINAL}`) instead of the generic `${IMPORT_BASE_DIR}` for two-file imports.
-
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
