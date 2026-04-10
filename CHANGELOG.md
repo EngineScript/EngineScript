@@ -6,6 +6,11 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 CI STDERR HANDLING FIXES IN RUN-INSTALL-STEP.SH
+
+- Fixed `realpath` error redirection in `scripts/ci/run-install-step.sh`: changed `2>&1` to `2>/dev/null` so that `realpath` error messages are not captured into `RESOLVED_LOG_PARENT`, consistent with the pattern used elsewhere in the script.
+- Removed `2>/dev/null` from the `sha256sum` command in `scripts/ci/run-install-step.sh` so that checksum computation failures surface actionable diagnostics on stderr instead of being silently suppressed.
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
