@@ -940,10 +940,10 @@ export class ExternalServicesManager {
       // Create icon element safely
       const iconElement = document.createElement("i");
       // Use suffix sanitizer here because class is constructed as `fas fa-${suffix}`
-      const safeIconSuffix = sanitizeFaIconSuffix(statusIconSuffix);
+      const safeIconSuffix = sanitizeFaIconSuffix(statusIconSuffix) || DEFAULT_ICON_SUFFIX;
       iconElement.className = `fas fa-${safeIconSuffix}`;
       statusSpan.appendChild(iconElement);
-      statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
+      statusSpan.appendChild(document.createTextNode(` ${this.utils.sanitizeInput(statusDescription)}`));
     }
 
     // Add card-level status class for visual emphasis
@@ -1317,7 +1317,8 @@ export class ExternalServicesManager {
       // Add tabindex for keyboard accessibility
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'listitem');
-      card.setAttribute('aria-label', `${card.querySelector('h4')?.textContent || 'Service'} (reorderable)`);
+      const serviceName = card.dataset.serviceName || card.querySelector('h4')?.textContent || 'Service';
+      card.setAttribute('aria-label', `${serviceName} (reorderable)`);
       card.setAttribute('aria-describedby', reorderInstructionsId);
 
       card.addEventListener('dragstart', (e) => {
@@ -1334,7 +1335,9 @@ export class ExternalServicesManager {
       });
 
       card.addEventListener('dragover', (e) => {
-        e.dataTransfer.dropEffect = 'move';
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move';
+        }
         e.preventDefault();
         
         const targetCard = e.target.closest('.external-service-card');
@@ -1487,9 +1490,10 @@ export class ExternalServicesManager {
    * Toggle reorder mode for a card
    * When in reorder mode, arrow keys move the card instead of navigating
    * @param {HTMLElement} card - Service card element to toggle reorder mode on
+   * @param {string|null} serviceName - Optional service name for announcements
    * @returns {void}
    */
-  toggleReorderMode(card) {
+  toggleReorderMode(card, serviceName = null) {
     if (this.reorderMode && this.selectedCard === card) {
       // Exit reorder mode
       this.exitReorderMode();
@@ -1500,9 +1504,15 @@ export class ExternalServicesManager {
       this.selectedCard = card;
       card.classList.add('reorder-active');
       card.setAttribute('aria-grabbed', 'true');
-      
+
+      const announcementName =
+        serviceName ||
+        card.getAttribute('data-service-name') ||
+        card.getAttribute('aria-label') ||
+        'service';
+
       // Announce to screen readers
-      this.announceToScreenReader(`Reorder mode. Use arrow keys to move ${card.querySelector('h4')?.textContent || 'service'}. Press Enter or Escape to exit.`);
+      this.announceToScreenReader(`Reorder mode. Use arrow keys to move ${announcementName}. Press Enter or Escape to exit.`);
       this.showNotification('Reorder mode: Use arrow keys to move, Enter/Escape to exit', 'info');
     }
   }

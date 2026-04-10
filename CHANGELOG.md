@@ -6,6 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🐛 EXTERNAL SERVICES CONTROL PANEL BUG FIXES
+
+- Added `|| DEFAULT_ICON_SUFFIX` fallback after `sanitizeFaIconSuffix` in `updateServiceCardStatus` to prevent invalid class names like `fas fa-undefined` when the sanitizer returns null or undefined.
+- Replaced string concatenation with a template literal when creating the status description text node in `updateServiceCardStatus` for consistency and readability.
+- Replaced fragile DOM h4 query for aria-label construction in `setupDragAndDrop` with `card.dataset.serviceName` as the primary source, falling back to the h4 query, to avoid depending on DOM structure that may not yet exist.
+- Added a null check for `e.dataTransfer` in the `dragover` event handler, matching the existing guard in the `dragstart` handler, to prevent potential errors when `dataTransfer` is undefined.
+- Updated `toggleReorderMode` to accept an optional `serviceName` parameter and use it (with fallbacks to `data-service-name` attribute, `aria-label`, and `'service'`) for screen reader announcements instead of querying the DOM for an h4 element.
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
