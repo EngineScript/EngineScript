@@ -12,6 +12,8 @@ TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
 INTEGER_REGEX='^[0-9]+$'
+ALLOWED_INSTALL_DIR="$(realpath "$(pwd)/scripts/ci")"
+CANONICAL_INSTALL_SCRIPT_PATH=""
 # `timeout` returns 124 when the wrapped command times out.
 TIMEOUT_EXIT_CODE=124
 
@@ -25,8 +27,65 @@ if [ ! -f "$INSTALL_SCRIPT_PATH" ]; then
   exit 1
 fi
 
+if ! CANONICAL_INSTALL_SCRIPT_PATH="$(realpath "$INSTALL_SCRIPT_PATH" 2>/dev/null)"; then
+  echo "Error: unable to resolve install script path: $INSTALL_SCRIPT_PATH" >&2
+  exit 1
+fi
+
+case "$CANONICAL_INSTALL_SCRIPT_PATH" in
+  "$ALLOWED_INSTALL_DIR"/*) ;;
+  *)
+    echo "Error: install script path must be within $ALLOWED_INSTALL_DIR" >&2
+    exit 1
+    ;;
+esac
+
+ALLOWED_LOG_BASE_DIR="$(pwd -P)"
+LOG_PARENT_DIR="$(dirname -- "$LOG_PATH")"
+LOG_FILENAME="$(basename -- "$LOG_PATH")"
+RESOLVED_LOG_PARENT="$(cd "$LOG_PARENT_DIR" 2>/dev/null && pwd -P)"
+
+if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
+  echo "Error: log directory does not exist or is not accessible: $LOG_PARENT_DIR" >&2
+  exit 1
+fi
+
+case "$RESOLVED_LOG_PARENT" in
+  "$ALLOWED_LOG_BASE_DIR"|"$ALLOWED_LOG_BASE_DIR"/*)
+    ;;
+  *)
+    echo "Error: log path must be within $ALLOWED_LOG_BASE_DIR: $LOG_PATH" >&2
+    exit 1
+    ;;
+esac
+
+if [ "$LOG_FILENAME" = "." ] || [ "$LOG_FILENAME" = ".." ]; then
+  echo "Error: invalid log file name: $LOG_PATH" >&2
+  exit 1
+fi
+
+if [ -L "$LOG_PATH" ]; then
+  echo "Error: log path must not be a symlink: $LOG_PATH" >&2
+  exit 1
+fi
+
+if [ -e "$LOG_PATH" ] && [ ! -f "$LOG_PATH" ]; then
+  echo "Error: log path must be a regular file: $LOG_PATH" >&2
+  exit 1
+fi
+
 if ! touch "$LOG_PATH" 2>/dev/null; then
   echo "Error: log file is not writable: $LOG_PATH" >&2
+  exit 1
+fi
+
+if ! command -v sudo >/dev/null 2>&1; then
+  echo "Error: sudo is required but not available in PATH" >&2
+  exit 1
+fi
+
+if ! sudo -n true >/dev/null 2>&1; then
+  echo "Error: sudo privileges are required to run installation steps non-interactively" >&2
   exit 1
 fi
 
@@ -36,7 +95,7 @@ echo "Script start time: $(date)" > "$LOG_PATH"
 set +e
 timeout "$TIMEOUT_SECONDS" \
   sudo env CI_ENVIRONMENT=true DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 \
-  bash "$INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
+  bash "$CANONICAL_INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
 PIPE_EXIT_CODES=("${PIPESTATUS[@]}")
 SCRIPT_EXIT_CODE="${PIPE_EXIT_CODES[0]}"
 TEE_EXIT_CODE="${PIPE_EXIT_CODES[1]}"
