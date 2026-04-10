@@ -6,6 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔒 CI SCRIPT SECURITY AND CONSISTENCY IMPROVEMENTS
+
+- Updated `ALLOWED_LOG_BASE_DIR` in `scripts/ci/run-install-step.sh` to use `realpath "$(pwd)"` instead of `pwd -P` for consistency with the `ALLOWED_INSTALL_DIR` resolution on line 15.
+- Updated `RESOLVED_LOG_PARENT` in `scripts/ci/run-install-step.sh` to use `realpath` instead of `cd ... && pwd -P`, making path resolution more explicit and avoiding an unnecessary directory change.
+- Replaced `sudo -E` with explicit `--preserve-env` flags (`CI_ENVIRONMENT`, `DEBIAN_FRONTEND`, `NEEDRESTART_MODE`, `NEEDRESTART_SUSPEND`) in `scripts/ci/run-install-step.sh` to limit environment variable exposure when running install scripts with elevated privileges.
+
+
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.

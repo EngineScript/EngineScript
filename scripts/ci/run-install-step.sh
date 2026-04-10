@@ -40,7 +40,7 @@ case "$CANONICAL_INSTALL_SCRIPT_PATH" in
     ;;
 esac
 
-ALLOWED_LOG_BASE_DIR="$(pwd -P)"
+ALLOWED_LOG_BASE_DIR="$(realpath "$(pwd)")"
 LOG_PARENT_DIR="$(dirname -- "$LOG_PATH")"
 LOG_FILENAME="$(basename -- "$LOG_PATH")"
 
@@ -49,7 +49,7 @@ if [ ! -d "$LOG_PARENT_DIR" ]; then
   exit 1
 fi
 
-RESOLVED_LOG_PARENT="$(cd "$LOG_PARENT_DIR" 2>/dev/null && pwd -P)"
+RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>/dev/null || true)"
 
 if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
   echo "Error: unable to resolve log directory path: $LOG_PARENT_DIR" >&2
@@ -104,7 +104,8 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 export NEEDRESTART_SUSPEND=1
 timeout "$TIMEOUT_SECONDS" \
-  sudo -E bash "$CANONICAL_INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
+  sudo --preserve-env=CI_ENVIRONMENT --preserve-env=DEBIAN_FRONTEND --preserve-env=NEEDRESTART_MODE --preserve-env=NEEDRESTART_SUSPEND \
+  bash "$CANONICAL_INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
 PIPE_EXIT_CODES=("${PIPESTATUS[@]}")
 SCRIPT_EXIT_CODE="${PIPE_EXIT_CODES[0]}"
 TEE_EXIT_CODE="${PIPE_EXIT_CODES[1]}"
