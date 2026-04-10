@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10 (2)
-
-### 🔒 CI SCRIPT HARDENING FOR SHA256 AND OUTPUT SAFETY
-
-- Normalised the `EXPECTED_SCRIPT_SHA256` argument to lowercase via Bash parameter expansion (`${5,,}`) so that any upper-case hex digits provided by callers are silently folded to lowercase before comparison, matching the always-lowercase output of `sha256sum`.
-- Simplified `SHA256_REGEX` from `^[A-Fa-f0-9]{64}$` to `^[a-f0-9]{64}$` now that the input is always lowercase; this removes the redundant uppercase character class.
-- Added an early `command -v sha256sum` availability check in `scripts/ci/run-install-step.sh`, placed alongside the existing `sudo` availability check, so a missing `sha256sum` binary is reported clearly before any installation work begins.
-- Replaced `echo "$TAIL_OUTPUT"` with `printf '%s\n' "$TAIL_OUTPUT"` when printing the tail of the log file on failure, preventing potential misinterpretation of log content that contains escape sequences or command-substitution syntax.
-
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
