@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🧹 EXTERNAL SERVICES JS REFACTORING
+
+- Extracted duplicated "all services enabled" map construction into a new `buildAllServicesEnabledMap()` helper method in `external-services.js`, replacing three identical code blocks in `fetchAvailableServices()`.
+- Removed unnecessary `Boolean()` wrapper on `checkbox.checked` assignment since the property already handles boolean coercion.
+- Removed redundant `typeof this.refreshServicesDisplay === 'function'` guard since `refreshServicesDisplay` is always defined as a class method.
+- Replaced `Boolean(serviceDef.feedType)` with `!!serviceDef.feedType` for idiomatic boolean coercion.
+
 ### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
