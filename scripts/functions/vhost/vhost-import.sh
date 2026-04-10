@@ -21,13 +21,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# --- Define Fixed Import Paths (Needed for instructions) ---
+# --- Define Fixed Import Paths ---
 IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
-# Directories for the original two-file method (keep variable names consistent)
-WP_ARCHIVE_DIR_ORIGINAL="${IMPORT_BASE_DIR}/root-directory"
-DB_IMPORT_DIR_ORIGINAL="${IMPORT_BASE_DIR}/database-file"
-# Temporary path for extracted files (used by both methods)
-WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root"
+WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the archive
+DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
+WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
 
 # --- Instructions for Preparing Files ---
 echo ""
@@ -54,23 +52,17 @@ echo "${BOLD}Method 2: Separate Files (Manual Export)${NORMAL}"
 echo "   1. ${BOLD}WordPress Root Directory Archive:${NORMAL}"
 echo "      - Compress your WordPress root directory content (.tar.gz or .zip)."
 echo "      - Place the archive file inside:"
-echo "        \`${WP_ARCHIVE_DIR_ORIGINAL}\`"
+echo "        \`${WP_ARCHIVE_DIR}\`"
 echo "   2. ${BOLD}WordPress Database Dump:${NORMAL}"
 echo "      - Export your database (.sql or .sql.gz)."
 echo "      - Place the database file inside:"
-echo "        \`${DB_IMPORT_DIR_ORIGINAL}\`"
+echo "        \`${DB_IMPORT_DIR}\`"
 echo "---------------------------------------------------------------------"
 prompt_continue "Press [Enter] when your files are prepared and ready" 600
 # --- End Instructions ---
 
 # Check if services are running
 check_required_services
-
-# --- Define Fixed Import Paths ---
-IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
-WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the archive
-DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
-WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
 
 # Intro Warning
 echo ""
@@ -407,7 +399,7 @@ echo "System Date: $(date)"
 # Table Prefix is already extracted and stored in $PREFIX
 
 # Domain Creation Variables (Generate *new* secure credentials for this server)
-sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
+domain_base="${DOMAIN}" && SANDOMAIN="${domain_base%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
@@ -422,9 +414,33 @@ source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 echo "Generated new MySQL database credentials for ${SITE_URL}."
 
 # Create *new* database and user (Use extracted charset if needed, though default is usually fine)
-sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET ${DB_CHARSET} COLLATE ${DB_CHARSET}_unicode_ci;" # Use extracted charset
+# Validate SQL inputs before interpolation to prevent SQL injection/syntax issues.
+DB_CHARSET_VALIDATED="$(printf '%s' "${DB_CHARSET}" | tr '[:upper:]' '[:lower:]')"
+case "${DB_CHARSET_VALIDATED}" in
+    utf8mb4|utf8|latin1)
+        ;;
+    *)
+        echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: utf8mb4, utf8, latin1." >&2
+        exit 1
+        ;;
+esac
+DB_COLLATION="${DB_CHARSET_VALIDATED}_unicode_ci"
+if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Generated database name contains invalid characters: ${DB}" >&2
+    exit 1
+fi
+if [[ ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Generated database user contains invalid characters: ${USR}" >&2
+    exit 1
+fi
+if [[ "${PSWD}" == *"'"* || "${PSWD}" == *"\\"* ]]; then
+    echo "Error: Generated database password contains unsupported SQL-unsafe characters." >&2
+    exit 1
+fi
+
+sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};" # Use validated charset
 sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
 sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;" # Needed for mariadb-health-checks plugin
 
 # Create backup directories
@@ -453,13 +469,14 @@ create_extra_wp_dirs "${SITE_URL}"
 echo "Creating new wp-config.php with EngineScript settings..."
 cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php" "${TARGET_WP_PATH}/wp-config.php"
 # Use *new* DB credentials and *original* prefix
-sed -i "s|SEDWPDB|${DB}|g" "${TARGET_WP_PATH}/wp-config.php"
-sed -i "s|SEDWPUSER|${USR}|g" "${TARGET_WP_PATH}/wp-config.php"
-sed -i "s|SEDWPPASS|${PSWD}|g" "${TARGET_WP_PATH}/wp-config.php"
-
-sed -i "s|SEDPREFIX_|${PREFIX}|g" "${TARGET_WP_PATH}/wp-config.php" # Use original prefix
-sed -i "s|SEDURL|${SITE_URL}|g" "${TARGET_WP_PATH}/wp-config.php"
-sed -i "s|define( 'DB_CHARSET', 'utf8mb4' );|define( 'DB_CHARSET', '${DB_CHARSET}' );|g" "${TARGET_WP_PATH}/wp-config.php" # Use extracted DB Charset
+sed -i \
+    -e "s|SEDWPDB|${DB}|g" \
+    -e "s|SEDWPUSER|${USR}|g" \
+    -e "s|SEDWPPASS|${PSWD}|g" \
+    -e "s|SEDPREFIX_|${PREFIX}|g" \
+    -e "s|SEDURL|${SITE_URL}|g" \
+    -e "s|define( 'DB_CHARSET', 'utf8mb4' );|define( 'DB_CHARSET', '${DB_CHARSET}' );|g" \
+    "${TARGET_WP_PATH}/wp-config.php" # Use original prefix and extracted DB Charset
 
 # Configure Redis for WordPress
 configure_redis "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
