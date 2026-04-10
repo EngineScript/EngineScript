@@ -6,20 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🐛 VHOST IMPORT FILE DETECTION AND URL VALIDATION FIXES
-
-- Replaced `find | wc -l` file-counting patterns in `scripts/functions/vhost/vhost-import.sh` with `mapfile -d '' -t ARRAY < <(find ... -print0)` and `${#ARRAY[@]}` to correctly count files even when filenames contain newlines or when `find` returns no results (empty string would previously count as 1).
-- Used `${ARRAY[0]}` to safely extract the first matched file path for `SINGLE_ZIP_FILE`, `WP_ARCHIVE_FILE`, and `DB_SOURCE_PATH` assignments.
-- Fixed single-zip SQL detection to use `find -print -quit` to find the first `.sql` file and then confirm no second `.sql` file exists, replacing the unreliable `wc -l` count approach.
-- Updated URL validation regex in the site URL prompt to properly validate domain labels (no leading/trailing hyphens, max 63 characters per label) and support optional port numbers (`:[0-9]{1,5}`), replacing the previous overly permissive pattern.
-
-### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
-
-- Extracted the duplicated category order list in `external-services.js` into a single module-level `CATEGORY_ORDER` constant shared by `getCategoryOrder()` and `getServiceOrder()`, eliminating the risk of inconsistencies when categories are added or changed.
-- Replaced `sanitizeFaIconClass` with `sanitizeFaIconSuffix` for the fallback icon in `createServiceCardHeader()` so that the suffix (e.g. `'question'`) is sanitized and then prefixed with `'fa-'` to form the canonical FontAwesome token, removing the previous ambiguity between full-class and suffix inputs.
-- Changed the `dragstart` handler to store only the integer card index as `text/plain` drag data instead of serialising `card.innerHTML`, preventing potential HTML injection and leakage of sensitive markup through the drag-and-drop API.
-- Added `this.notificationSlideOutAnimationName = 'slide-out'` as an instance property alongside the other notification timing constants, and updated the notification dismiss logic to reference this property, making the animation name consistent and preventing typos.
-
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
