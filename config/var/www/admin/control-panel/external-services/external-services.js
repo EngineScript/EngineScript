@@ -560,8 +560,15 @@ export class ExternalServicesManager {
       if (toggleTextEl) {
         toggleTextEl.textContent = actionText;
       } else {
-        console.warn(`Missing .toggle-all-text element for category "${category}". Falling back to button text content.`);
-        toggleBtn.textContent = actionText;
+        console.warn(`Missing .toggle-all-text element for category "${category}". Falling back to non-destructive button text update.`);
+        const textNode = Array.from(toggleBtn.childNodes).find(
+          node => node.nodeType === Node.TEXT_NODE
+        );
+        if (textNode) {
+          textNode.textContent = ` ${actionText}`;
+        } else {
+          toggleBtn.appendChild(document.createTextNode(` ${actionText}`));
+        }
       }
       toggleBtn.setAttribute("aria-label", actionAria);
     };
@@ -694,6 +701,24 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Update save button icon + text consistently.
+   * @param {HTMLElement} saveButton - Save button element
+   * @param {string} iconClass - Icon class to apply
+   * @param {string} text - Button label text
+   */
+  setSaveButtonContent(saveButton, iconClass, text) {
+    while (saveButton.firstChild) {
+      saveButton.removeChild(saveButton.firstChild);
+    }
+
+    const icon = document.createElement("i");
+    icon.className = iconClass;
+    icon.setAttribute("aria-hidden", "true");
+    saveButton.appendChild(icon);
+    saveButton.appendChild(document.createTextNode(text));
+  }
+
+  /**
    * Handle save preferences button click
    * @param {HTMLElement} saveButton - Save button element
    * @param {Object} services - Services object keyed by service identifier
@@ -703,11 +728,7 @@ export class ExternalServicesManager {
   async handleSavePreferences(saveButton, services, pendingChanges) {
     try {
       saveButton.disabled = true;
-      saveButton.textContent = '';
-      const spinnerIcon = document.createElement("i");
-      spinnerIcon.className = "fas fa-spinner fa-spin";
-      saveButton.appendChild(spinnerIcon);
-      saveButton.appendChild(document.createTextNode(" Saving..."));
+      this.setSaveButtonContent(saveButton, "fas fa-spinner fa-spin", " Saving...");
 
       const safeChanges = this.getAllowedPreferenceChanges(pendingChanges);
       
@@ -726,11 +747,7 @@ export class ExternalServicesManager {
       }
       
       // Show success state
-      saveButton.textContent = '';
-      const checkIcon = document.createElement("i");
-      checkIcon.className = "fas fa-check";
-      saveButton.appendChild(checkIcon);
-      saveButton.appendChild(document.createTextNode(" Saved!"));
+      this.setSaveButtonContent(saveButton, "fas fa-check", " Saved!");
       
       setTimeout(() => {
         this.resetSaveButtonContent(saveButton);
@@ -744,11 +761,7 @@ export class ExternalServicesManager {
       this.showNotification('Service preferences saved', 'success');
     } catch (error) {
       console.error("Save error:", error);
-      saveButton.textContent = '';
-      const timesIcon = document.createElement("i");
-      timesIcon.className = "fas fa-times";
-      saveButton.appendChild(timesIcon);
-      saveButton.appendChild(document.createTextNode(" Save Failed"));
+      this.setSaveButtonContent(saveButton, "fas fa-times", " Save Failed");
       saveButton.disabled = false;
       
       setTimeout(() => {
@@ -1291,30 +1304,42 @@ export class ExternalServicesManager {
         console.error('Failed to parse service order:', e);
       }
     }
-    // Default alphabetical order by category
-    return [
-      // Hosting & Infrastructure
-      'aws', 'cloudflare', 'cloudways', 'digitalocean', 'googlecloud', 'godaddy', 'hostinger', 'jetpackapi', 'kinsta', 
-      'linode', 'oracle', 'ovh', 'scaleway', 'upcloud', 'vercel', 'vultr', 'wordpressapi', 'wpcloudapi',
-      // Developer Tools
-      'codacy', 'github', 'gitlab', 'googleworkspace', 'metalogin', 'notion', 'pipedream', 'trello', 'twilio',
-      // E-Commerce & Payments
-      'coinbase', 'intuit', 'metafb', 'paypal', 'recurly', 'shopify', 'square', 'stripe', 'woocommercepay',
-      // Email Services
-      'brevo', 'mailersend', 'mailgun', 'mailjet', 'mailpoet', 'postmark', 'resend', 'sendgrid', 'sendlayer', 'smtp2go', 'sparkpost', 'zoho',
-      // Communication
-      'discord', 'slack', 'zoom',
-      // Media & Content
-      'dropbox', 'reddit', 'spotify', 'udemy', 'vimeo', 'wistia',
-      // Gaming
-      'epicgames',
-      // AI & Machine Learning
-      'anthropic', 'openai',
-      // Advertising
-      'googleads', 'googlesearch', 'metafbs', 'metamarketingapi', 'microsoftads',
-      // Security
-      'flare', 'letsencrypt'
-    ];
+    // Build default order dynamically from SERVICE_DEFINITIONS to avoid drift.
+    const servicesByCategory = new Map();
+    const serviceKeys = Object.keys(SERVICE_DEFINITIONS || {});
+
+    serviceKeys.forEach((key) => {
+      const definition = SERVICE_DEFINITIONS[key] || {};
+      const category = typeof definition.category === 'string' && definition.category.trim()
+        ? definition.category
+        : 'Uncategorized';
+
+      if (!servicesByCategory.has(category)) {
+        servicesByCategory.set(category, []);
+      }
+      servicesByCategory.get(category).push(key);
+    });
+
+    const ordered = [];
+
+    // First: known categories in configured display order.
+    CATEGORY_ORDER.forEach((category) => {
+      const keys = servicesByCategory.get(category);
+      if (keys && keys.length) {
+        ordered.push(...keys.sort((a, b) => a.localeCompare(b)));
+        servicesByCategory.delete(category);
+      }
+    });
+
+    // Then: any categories not listed in CATEGORY_ORDER.
+    Array.from(servicesByCategory.keys())
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((category) => {
+        const keys = servicesByCategory.get(category) || [];
+        ordered.push(...keys.sort((a, b) => a.localeCompare(b)));
+      });
+
+    return ordered;
   }
 
   /**
@@ -1674,7 +1699,7 @@ export class ExternalServicesManager {
       return styleSheet.cssRules || styleSheet.rules;
     } catch (e) {
       // Ignore expected cross-origin access errors, but surface unexpected failures.
-      if (e?.name === 'SecurityError') {
+      if (e.name === 'SecurityError') {
         return null;
       }
       console.warn('Unexpected error while accessing stylesheet rules:', e);
