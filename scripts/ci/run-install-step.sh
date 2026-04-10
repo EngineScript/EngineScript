@@ -127,7 +127,6 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
     echo "$TAIL_OUTPUT"
   else
-    TAIL_ERROR_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1 >/dev/null || true)"
     echo "Failed to display log file contents: $LOG_PATH"
     TAIL_ERROR_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1 >/dev/null || true)"
     SANITIZED_TAIL_ERROR="$(printf '%s' "$TAIL_ERROR_OUTPUT" | tr '\n' ' ' | tr -cd '[:print:]\t ')"
