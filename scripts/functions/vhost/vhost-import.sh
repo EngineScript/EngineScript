@@ -138,28 +138,28 @@ WP_ARCHIVE_FILE="" # Path to WP files archive (for two_file method)
 DB_SOURCE_PATH=""  # Path to the DB file (set differently for each method)
 
 # Try detecting Single Zip format first
-SINGLE_ZIP_CANDIDATE=$(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip")
-SINGLE_ZIP_COUNT=$(echo "$SINGLE_ZIP_CANDIDATE" | wc -l)
+mapfile -d '' -t SINGLE_ZIP_CANDIDATES < <(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip" -print0)
+SINGLE_ZIP_COUNT=${#SINGLE_ZIP_CANDIDATES[@]}
 
 if [[ "$SINGLE_ZIP_COUNT" -eq 1 && ! -d "${WP_ARCHIVE_DIR_ORIGINAL}" && ! -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
     # Found exactly one zip file in the base dir, and the old dirs don't exist
     IMPORT_FORMAT="single_zip"
-    SINGLE_ZIP_FILE="$SINGLE_ZIP_CANDIDATE"
+    SINGLE_ZIP_FILE="${SINGLE_ZIP_CANDIDATES[0]}"
     echo "PASSED: Detected Single Export Zip format: ${SINGLE_ZIP_FILE}"
 elif [[ -d "${WP_ARCHIVE_DIR_ORIGINAL}" && -d "${DB_IMPORT_DIR_ORIGINAL}" ]]; then
     # Check the original two-file method
     # Find WP archive file
-    WP_ARCHIVE_FILE_CANDIDATE=$(find "${WP_ARCHIVE_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \))
-    WP_ARCHIVE_COUNT=$(echo "$WP_ARCHIVE_FILE_CANDIDATE" | wc -l)
+    mapfile -d '' -t WP_ARCHIVE_FILE_CANDIDATES < <(find "${WP_ARCHIVE_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \) -print0)
+    WP_ARCHIVE_COUNT=${#WP_ARCHIVE_FILE_CANDIDATES[@]}
 
     # Find DB file
-    DB_SOURCE_FILE_CANDIDATE=$(find "${DB_IMPORT_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \))
-    DB_SOURCE_COUNT=$(echo "$DB_SOURCE_FILE_CANDIDATE" | wc -l)
+    mapfile -d '' -t DB_SOURCE_FILE_CANDIDATES < <(find "${DB_IMPORT_DIR_ORIGINAL}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0)
+    DB_SOURCE_COUNT=${#DB_SOURCE_FILE_CANDIDATES[@]}
 
     if [[ "$WP_ARCHIVE_COUNT" -eq 1 && "$DB_SOURCE_COUNT" -eq 1 ]]; then
         IMPORT_FORMAT="two_file"
-        WP_ARCHIVE_FILE="$WP_ARCHIVE_FILE_CANDIDATE"
-        DB_SOURCE_PATH="$DB_SOURCE_FILE_CANDIDATE" # Set DB path directly for this format
+        WP_ARCHIVE_FILE="${WP_ARCHIVE_FILE_CANDIDATES[0]}"
+        DB_SOURCE_PATH="${DB_SOURCE_FILE_CANDIDATES[0]}" # Set DB path directly for this format
         echo "PASSED: Detected Two-File format."
         echo "  WordPress archive: ${WP_ARCHIVE_FILE}"
         echo "  Database file: ${DB_SOURCE_PATH}"
@@ -188,15 +188,20 @@ if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
     unzip -q "${SINGLE_ZIP_FILE}" -d "${WP_EXTRACTED_PATH}"
     EXTRACT_STATUS=$?
     if [[ $EXTRACT_STATUS -eq 0 ]]; then
-        # Find the .sql file within the extracted content
-        DB_SOURCE_CANDIDATE=$(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql")
-        DB_SOURCE_FOUND_COUNT=$(echo "$DB_SOURCE_CANDIDATE" | wc -l)
-        if [[ "$DB_SOURCE_FOUND_COUNT" -eq 1 ]]; then
-            DB_SOURCE_PATH="$DB_SOURCE_CANDIDATE" # Set DB path for single_zip format
-            echo "PASSED: Found database file within extracted content: ${DB_SOURCE_PATH}"
-        else
+        # Find exactly one .sql file within the extracted content
+        DB_SOURCE_CANDIDATE=$(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql" -print -quit)
+        if [[ -z "$DB_SOURCE_CANDIDATE" ]]; then
             echo "FAILED: Could not find exactly one .sql file within the extracted single zip content in ${WP_EXTRACTED_PATH}"
             EXTRACT_STATUS=1 # Mark as failure
+        else
+            DB_SOURCE_SECOND_CANDIDATE=$(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql" ! -samefile "$DB_SOURCE_CANDIDATE" -print -quit)
+            if [[ -n "$DB_SOURCE_SECOND_CANDIDATE" ]]; then
+                echo "FAILED: Could not find exactly one .sql file within the extracted single zip content in ${WP_EXTRACTED_PATH}"
+                EXTRACT_STATUS=1 # Mark as failure
+            else
+                DB_SOURCE_PATH="$DB_SOURCE_CANDIDATE" # Set DB path for single_zip format
+                echo "PASSED: Found database file within extracted content: ${DB_SOURCE_PATH}"
+            fi
         fi
     fi
 elif [[ "$IMPORT_FORMAT" == "two_file" ]]; then
@@ -308,7 +313,7 @@ while true; do
       
       # Site URL input with validation
       while true; do
-          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300 "^https?://[a-zA-Z0-9.-]+[a-zA-Z0-9](/.*)?$")
+          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300 "^https?://([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(:[0-9]{1,5})?([/?#].*)?$")
           if [[ -n "$new_site_url" ]]; then
               if validate_url "$new_site_url"; then
                   SITE_URL="$new_site_url"
