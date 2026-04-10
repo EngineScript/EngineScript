@@ -50,10 +50,14 @@ if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
   exit 1
 fi
 
-if [ "$RESOLVED_LOG_PARENT" != "$ALLOWED_LOG_BASE_DIR" ] && [[ "$RESOLVED_LOG_PARENT"/ != "$ALLOWED_LOG_BASE_DIR"/* ]]; then
-  echo "Error: log path must be within $ALLOWED_LOG_BASE_DIR: $LOG_PATH" >&2
-  exit 1
-fi
+case "$RESOLVED_LOG_PARENT" in
+  "$ALLOWED_LOG_BASE_DIR"|"$ALLOWED_LOG_BASE_DIR"/*)
+    ;;
+  *)
+    echo "Error: log path must be within $ALLOWED_LOG_BASE_DIR: $LOG_PATH" >&2
+    exit 1
+    ;;
+esac
 
 if [ "$LOG_FILENAME" = "." ] || [ "$LOG_FILENAME" = ".." ]; then
   echo "Error: invalid log file name: $LOG_PATH" >&2
