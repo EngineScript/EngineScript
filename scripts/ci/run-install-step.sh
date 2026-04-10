@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [ "$#" -ne 4 ]; then
-  echo "Usage: $0 <component-name> <timeout-seconds> <install-script-path> <log-path>" >&2
+if [ "$#" -ne 5 ]; then
+  echo "Usage: $0 <component-name> <timeout-seconds> <install-script-path> <log-path> <expected-script-sha256>" >&2
   exit 1
 fi
 
@@ -11,7 +11,10 @@ COMPONENT_NAME="$1"
 TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
+EXPECTED_SCRIPT_SHA256="$5"
 INTEGER_REGEX='^[0-9]+$'
+SHA256_REGEX='^[A-Fa-f0-9]{64}$'
+LOG_TAIL_LINES=50
 if ! ALLOWED_INSTALL_DIR="$(realpath "$(pwd)/scripts/ci" 2>/dev/null)"; then
   echo "Error: allowed install directory not found or not resolvable: $(pwd)/scripts/ci" >&2
   exit 1
@@ -55,10 +58,9 @@ if [ ! -d "$LOG_PARENT_DIR" ]; then
   exit 1
 fi
 
-RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>/dev/null || true)"
-
-if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
+if ! RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>&1)"; then
   echo "Error: unable to resolve log directory path: $LOG_PARENT_DIR" >&2
+  echo "realpath: $RESOLVED_LOG_PARENT" >&2
   exit 1
 fi
 
@@ -86,6 +88,11 @@ if [ -e "$LOG_PATH" ] && [ ! -f "$LOG_PATH" ]; then
   exit 1
 fi
 
+if [[ ! "$EXPECTED_SCRIPT_SHA256" =~ $SHA256_REGEX ]]; then
+  echo "Error: expected script sha256 must be a 64-character hexadecimal string" >&2
+  exit 1
+fi
+
 if ! touch "$LOG_PATH" 2>/dev/null; then
   echo "Error: log file is not writable: $LOG_PATH" >&2
   exit 1
@@ -98,6 +105,18 @@ fi
 
 if ! sudo -n true >/dev/null 2>&1; then
   echo "Error: sudo privileges are required to run installation steps non-interactively" >&2
+  exit 1
+fi
+
+if ! ACTUAL_SCRIPT_SHA256="$(sha256sum "$CANONICAL_INSTALL_SCRIPT_PATH" 2>/dev/null | awk '{print $1}')"; then
+  echo "Error: failed to compute sha256 for install script: $CANONICAL_INSTALL_SCRIPT_PATH" >&2
+  exit 1
+fi
+
+if [ "$ACTUAL_SCRIPT_SHA256" != "$EXPECTED_SCRIPT_SHA256" ]; then
+  echo "Error: install script checksum mismatch for $CANONICAL_INSTALL_SCRIPT_PATH" >&2
+  echo "Expected: $EXPECTED_SCRIPT_SHA256" >&2
+  echo "Actual:   $ACTUAL_SCRIPT_SHA256" >&2
   exit 1
 fi
 
@@ -128,8 +147,8 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
     echo "Log streaming (tee) exit code: $TEE_EXIT_CODE"
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
-  echo "Last 50 lines of output:"
-  TAIL_OUTPUT="$(tail -50 "$LOG_PATH" 2>/dev/null)"
+  echo "Last ${LOG_TAIL_LINES} lines of output:"
+  TAIL_OUTPUT="$(tail -n "$LOG_TAIL_LINES" "$LOG_PATH" 2>/dev/null)"
   TAIL_EXIT_CODE=$?
   if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
     echo "$TAIL_OUTPUT"
