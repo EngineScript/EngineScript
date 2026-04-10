@@ -58,7 +58,7 @@ if [ ! -d "$LOG_PARENT_DIR" ]; then
   exit 1
 fi
 
-if ! RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>&1)"; then
+if ! RESOLVED_LOG_PARENT="$(realpath "$LOG_PARENT_DIR" 2>/dev/null)"; then
   echo "Error: unable to resolve log directory path: $LOG_PARENT_DIR" >&2
   echo "realpath: $RESOLVED_LOG_PARENT" >&2
   exit 1
@@ -108,7 +108,7 @@ if ! sudo -n true >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! ACTUAL_SCRIPT_SHA256="$(sha256sum "$CANONICAL_INSTALL_SCRIPT_PATH" 2>/dev/null | awk '{print $1}')"; then
+if ! ACTUAL_SCRIPT_SHA256="$(sha256sum "$CANONICAL_INSTALL_SCRIPT_PATH" | awk '{print $1}')"; then
   echo "Error: failed to compute sha256 for install script: $CANONICAL_INSTALL_SCRIPT_PATH" >&2
   exit 1
 fi
