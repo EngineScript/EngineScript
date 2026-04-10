@@ -27,6 +27,9 @@ WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the ar
 DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
 WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
 
+# --- Supported DB Charset Configuration ---
+readonly ALLOWED_DB_CHARSETS=("utf8mb4" "utf8" "latin1")
+
 # --- Instructions for Preparing Files ---
 echo ""
 echo "${BOLD}Preparing Files for Import:${NORMAL}"
@@ -268,8 +271,7 @@ if [[ -z "$SITE_URL_RAW" ]]; then
 fi
 
 # Extract domain from URL (remove http(s):// and potential trailing slash)
-DOMAIN=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##')
-SITE_URL="$DOMAIN" # Use the clean domain as SITE_URL
+SITE_URL=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain as SITE_URL
 
 # Extract DB Charset (optional, for reference)
 DB_CHARSET=$(extract_define 'DB_CHARSET')
@@ -369,7 +371,8 @@ else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
 fi
 
-# Set Original URL from extracted data for search-replace consistency check
+# Keep both variables intentionally: ORIGINAL_URL is the source URL and NEW_URL is the target URL
+# for search-replace workflows. They are initialized identically by default and may diverge later.
 ORIGINAL_URL="https://${SITE_URL}" # Assume https for consistency
 NEW_URL="https://${SITE_URL}"
 
@@ -416,14 +419,18 @@ echo "Generated new MySQL database credentials for ${SITE_URL}."
 # Create *new* database and user (Use extracted charset if needed, though default is usually fine)
 # Validate SQL inputs before interpolation to prevent SQL injection/syntax issues.
 DB_CHARSET_VALIDATED="$(printf '%s' "${DB_CHARSET}" | tr '[:upper:]' '[:lower:]')"
-case "${DB_CHARSET_VALIDATED}" in
-    utf8mb4|utf8|latin1)
-        ;;
-    *)
-        echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: utf8mb4, utf8, latin1." >&2
-        exit 1
-        ;;
-esac
+DB_CHARSET_ALLOWED=false
+for allowed_charset in "${ALLOWED_DB_CHARSETS[@]}"; do
+    if [[ "${DB_CHARSET_VALIDATED}" == "${allowed_charset}" ]]; then
+        DB_CHARSET_ALLOWED=true
+        break
+    fi
+done
+if [[ "${DB_CHARSET_ALLOWED}" != true ]]; then
+    ALLOWED_DB_CHARSETS_CSV="$(IFS=', '; echo "${ALLOWED_DB_CHARSETS[*]}")"
+    echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: ${ALLOWED_DB_CHARSETS_CSV}." >&2
+    exit 1
+fi
 DB_COLLATION="${DB_CHARSET_VALIDATED}_unicode_ci"
 if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
     echo "Error: Generated database name contains invalid characters: ${DB}" >&2
@@ -540,11 +547,59 @@ fi
 # Search and Replace URLs
 echo "Running search-replace for URL consistency in the database..."
 echo "Ensuring URL is '${NEW_URL}'"
-# Run search-replace for both http and https versions of the extracted domain to be safe
 HTTP_ORIGINAL_URL="http://${DOMAIN}"
 HTTPS_ORIGINAL_URL="https://${DOMAIN}"
-wp search-replace "${HTTP_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
-wp search-replace "${HTTPS_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
+
+# Only run expensive full-table replacements when the source URL is present.
+HTTP_EXISTS_QUERY="$(cat <<EOF
+SELECT 1
+FROM INFORMATION_SCHEMA.COLUMNS c
+JOIN INFORMATION_SCHEMA.TABLES t
+  ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
+ AND t.TABLE_NAME = c.TABLE_NAME
+WHERE c.TABLE_SCHEMA = DATABASE()
+  AND t.TABLE_TYPE = 'BASE TABLE'
+  AND c.DATA_TYPE IN ('char','varchar','tinytext','text','mediumtext','longtext')
+  AND EXISTS (
+    SELECT 1
+    FROM \`${c.TABLE_NAME}\`
+    WHERE \`${c.COLUMN_NAME}\` LIKE CONCAT('%', '${HTTP_ORIGINAL_URL}', '%')
+    LIMIT 1
+  )
+LIMIT 1;
+EOF
+)"
+
+HTTPS_EXISTS_QUERY="$(cat <<EOF
+SELECT 1
+FROM INFORMATION_SCHEMA.COLUMNS c
+JOIN INFORMATION_SCHEMA.TABLES t
+  ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
+ AND t.TABLE_NAME = c.TABLE_NAME
+WHERE c.TABLE_SCHEMA = DATABASE()
+  AND t.TABLE_TYPE = 'BASE TABLE'
+  AND c.DATA_TYPE IN ('char','varchar','tinytext','text','mediumtext','longtext')
+  AND EXISTS (
+    SELECT 1
+    FROM \`${c.TABLE_NAME}\`
+    WHERE \`${c.COLUMN_NAME}\` LIKE CONCAT('%', '${HTTPS_ORIGINAL_URL}', '%')
+    LIMIT 1
+  )
+LIMIT 1;
+EOF
+)"
+
+if wp db query "${HTTP_EXISTS_QUERY}" --skip-column-names --allow-root | grep -q '^1$'; then
+    wp search-replace "${HTTP_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
+else
+    echo "Skipping http search-replace: '${HTTP_ORIGINAL_URL}' not found in database text columns."
+fi
+
+if wp db query "${HTTPS_EXISTS_QUERY}" --skip-column-names --allow-root | grep -q '^1$'; then
+    wp search-replace "${HTTPS_ORIGINAL_URL}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
+else
+    echo "Skipping https search-replace: '${HTTPS_ORIGINAL_URL}' not found in database text columns."
+fi
 
 # Flush Cache and Rewrite Rules
 clear_wordpress_caches
@@ -652,7 +707,7 @@ else
     echo "Site verification failed by user."
     echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
     rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
-    if [[ -n "${WP_ARCHIVE_FILE}" ]]; then
+    if [[ "${IMPORT_FORMAT}" == "two_file" ]]; then
         echo "Original archive file (${WP_ARCHIVE_FILE}) in ${WP_ARCHIVE_DIR} and database file (${DB_SOURCE_PATH}) in ${DB_IMPORT_DIR} will NOT be removed."
     else
         echo "Original import file (${SINGLE_ZIP_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
