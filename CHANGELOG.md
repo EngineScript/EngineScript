@@ -8,8 +8,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🧹 EXTERNAL SERVICES JS CLEANUP
 
-- Removed `?v={ES_DASHBOARD_VER}` query string cache-busting placeholders from ES6 import statements in `config/var/www/admin/control-panel/external-services/external-services.js` to prevent 404 errors if the placeholder is not substituted at runtime.
-- Removed unnecessary `// codacy:ignore` comments for object literal returns and destructuring assignments, as these are standard JavaScript and do not require suppression comments.
+- Removed unnecessary `// codacy:ignore` comments for object literal returns and destructuring assignments in `config/var/www/admin/control-panel/external-services/external-services.js`, as these are standard JavaScript and do not require suppression comments.
 
 ## 2026-04-08
 
