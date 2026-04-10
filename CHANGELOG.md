@@ -4,16 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10 (2)
-
-### 🔒 VHOST IMPORT SECURITY AND CODE QUALITY IMPROVEMENTS
-
-- Removed duplicate variable definitions (lines 24–30) in `scripts/functions/vhost/vhost-import.sh`; the paths are already defined later in the script, eliminating maintenance overhead and potential inconsistency.
-- Renamed the cryptic `sand` variable to `domain_base` in `scripts/functions/vhost/vhost-import.sh` to improve code readability.
-- Added `DB_CHARSET` whitelist validation (allowed values: `utf8mb4`, `utf8`, `latin1`) before using the value in SQL commands to prevent SQL injection via charset interpolation.
-- Added input validation for `DB`, `USR`, and `PSWD` variables before interpolating them into SQL commands; database name and user are now validated to contain only alphanumeric characters and underscores, and the database name is quoted with backticks in `CREATE DATABASE` and `GRANT` statements.
-- Combined six sequential `sed -i` invocations on `wp-config.php` into a single `sed -i` call with multiple `-e` expressions, reducing I/O operations and improving performance.
-
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
