@@ -459,35 +459,43 @@ jobs:
 
       - name: Install GCC
         run: |
+          GCC_SHA256="$(sha256sum "$GITHUB_WORKSPACE/scripts/install/gcc/gcc-install.sh" | awk '{print $1}')"
           /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
             "GCC" \
             "600" \
             "/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh" \
-            "/tmp/ci-logs/gcc.log"
+            "/tmp/ci-logs/gcc.log" \
+            "$GCC_SHA256"
 
       - name: Install OpenSSL
         run: |
+          OPENSSL_SHA256="$(sha256sum "$GITHUB_WORKSPACE/scripts/install/openssl/openssl-install.sh" | awk '{print $1}')"
           /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
             "OpenSSL" \
             "900" \
             "/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh" \
-            "/tmp/ci-logs/openssl.log"
+            "/tmp/ci-logs/openssl.log" \
+            "$OPENSSL_SHA256"
 
       - name: Install PCRE
         run: |
+          PCRE_SHA256="$(sha256sum "$GITHUB_WORKSPACE/scripts/install/pcre/pcre-install.sh" | awk '{print $1}')"
           /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
             "PCRE" \
             "600" \
             "/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh" \
-            "/tmp/ci-logs/pcre.log"
+            "/tmp/ci-logs/pcre.log" \
+            "$PCRE_SHA256"
 
       - name: Install Zlib
         run: |
+          ZLIB_SHA256="$(sha256sum "$GITHUB_WORKSPACE/scripts/install/zlib/zlib-install.sh" | awk '{print $1}')"
           /usr/local/bin/enginescript/scripts/ci/run-install-step.sh \
             "Zlib" \
             "600" \
             "/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh" \
-            "/tmp/ci-logs/zlib.log"
+            "/tmp/ci-logs/zlib.log" \
+            "$ZLIB_SHA256"
 
       - name: Build Nginx Component
         run: |
