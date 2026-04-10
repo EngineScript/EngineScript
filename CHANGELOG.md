@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10
-
-### 🔧 CI INSTALL STEP SCRIPT IMPROVEMENTS
-
-- Capture the full `PIPESTATUS` array after the `timeout | tee` pipeline in `scripts/ci/run-install-step.sh` so that both the install-script exit code and the `tee` exit code are available; the `tee` exit code is reported in the failure output when it is non-zero.
-- Replaced the misleading "No log output available" fallback message (which could only fire after the log file was already confirmed writable) with the more accurate "Unable to read log file: $LOG_PATH".
-- Added an explanatory comment before `sudo sync` clarifying that the filesystem flush is intentional to ensure log writes are committed before subsequent CI steps read logs or create snapshots/caches.
-
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
