@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 CI RUN-INSTALL-STEP ERROR HANDLING IMPROVEMENTS
+
+- Enhanced log directory validation in `scripts/ci/run-install-step.sh` to separately check for non-existent directories (`[ ! -d ]`) and inaccessible directories (`[ ! -x ]`) before attempting to resolve the path, providing more specific error messages instead of a single combined error.
+- Updated the fallback error message when `tail` fails to capture and display the actual error output from `tail`, making it easier to debug why log file contents could not be displayed.
+
+
+
 ### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
 
 - Extracted the duplicated category order list in `external-services.js` into a single module-level `CATEGORY_ORDER` constant shared by `getCategoryOrder()` and `getServiceOrder()`, eliminating the risk of inconsistencies when categories are added or changed.
