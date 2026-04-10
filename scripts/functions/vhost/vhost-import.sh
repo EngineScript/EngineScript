@@ -103,15 +103,27 @@ extract_prefix_from_db() {
     local prefix=""
     local grep_cmd="grep"
     # Look for CREATE TABLE or INSERT INTO lines with common tables (_options or _users)
-    # Capture the part between backticks/quotes before _options or _users
-    # Regex: Match CREATE/INSERT, whitespace, quote/backtick, capture prefix (group 3), match _options/_users, quote/backtick
-    local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")([a-zA-Z0-9_]+)_(options|users)(\`|\")"
+    # Capture the table name between backticks/quotes, then strip _options/_users to derive prefix
+    local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")[a-zA-Z0-9_]+_(options|users)(\`|\")"
+    local table_name=""
 
-    # Use zgrep for .gz, grep for .sql. Extract the captured group 3 (the prefix part).
+    # Use zgrep for .gz, grep for .sql.
     if [[ "$db_file" == *.gz ]]; then
         grep_cmd="zgrep"
     fi
-    prefix=$("$grep_cmd" -m 1 -oE "${search_pattern}" "$db_file" | sed -E "s/${search_pattern}/\3/" | head -n 1)
+    table_name=$("$grep_cmd" -m 1 -oE "${search_pattern}" "$db_file" | head -n 1)
+
+    if [[ -n "$table_name" ]]; then
+        # Keep only the quoted/backticked table identifier token (last whitespace-delimited field)
+        table_name="${table_name##* }"
+        # Remove surrounding quote/backtick and known suffix
+        table_name="${table_name%\`}"
+        table_name="${table_name%\"}"
+        table_name="${table_name#\`}"
+        table_name="${table_name#\"}"
+        prefix="${table_name%_options}"
+        prefix="${prefix%_users}"
+    fi
 
     if [[ -n "$prefix" ]]; then
         # Ensure it ends with an underscore if it doesn't already
@@ -266,7 +278,8 @@ if [[ -z "$SITE_URL_RAW" ]]; then
 fi
 
 # Extract domain from URL (remove http(s):// and potential trailing slash)
-SITE_URL=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain as SITE_URL
+EXTRACTED_DOMAIN=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain extracted from URL
+SITE_URL="${EXTRACTED_DOMAIN}"
 
 # Extract DB Charset (optional, for reference)
 DB_CHARSET=$(extract_define 'DB_CHARSET')
@@ -276,7 +289,7 @@ if [[ -z "$DB_CHARSET" ]]; then
 fi
 
 echo "Extracted Information:"
-echo "  Domain (SITE_URL): ${SITE_URL}"
+echo "  Domain (EXTRACTED_DOMAIN): ${EXTRACTED_DOMAIN}"
 echo "  Table Prefix (PREFIX): ${PREFIX}" # Already extracted from DB
 echo "  DB Charset: ${DB_CHARSET}"
 sleep 1 # Short pause
@@ -351,7 +364,7 @@ done
 # --- End Confirmation and Correction Step ---
 
 # Derive DOMAIN from the final SITE_URL (after any user corrections)
-DOMAIN=$(echo "$SITE_URL" | sed -E 's#^https?://##; s#/$##')
+DOMAIN="${SITE_URL}"
 
 
 # Cloudflare API Settings
@@ -539,8 +552,8 @@ fi
 # Search and Replace URLs
 echo "Running search-replace for URL consistency in the database..."
 echo "Ensuring URL is '${NEW_URL}'"
-HTTP_ORIGINAL_URL="http://${DOMAIN}"
-HTTPS_ORIGINAL_URL="https://${DOMAIN}"
+HTTPS_ORIGINAL_URL="${ORIGINAL_URL}"
+HTTP_ORIGINAL_URL="${HTTPS_ORIGINAL_URL/#https:\/\//http://}"
 
 run_url_search_replace_if_present() {
     local original_url="$1"
@@ -645,7 +658,7 @@ if prompt_yes_no "Is the imported site at https://${SITE_URL} working correctly?
     # Move import files to completed-backups directory
     BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
     mkdir -p "${BACKUP_DIR}"
-    if [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
+    if [[ "${IMPORT_FORMAT}" == "two_file" ]] && [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
         mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
         echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
     fi
