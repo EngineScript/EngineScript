@@ -11,8 +11,9 @@ COMPONENT_NAME="$1"
 TIMEOUT_SECONDS="$2"
 INSTALL_SCRIPT_PATH="$3"
 LOG_PATH="$4"
+INTEGER_REGEX='^[0-9]+$'
 
-if ! [[ "$TIMEOUT_SECONDS" =~ ^[0-9]+$ ]]; then
+if ! [[ "$TIMEOUT_SECONDS" =~ $INTEGER_REGEX ]]; then
   echo "Error: timeout must be an integer (seconds): $TIMEOUT_SECONDS" >&2
   exit 1
 fi

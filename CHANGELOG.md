@@ -6,6 +6,10 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTRACT INTEGER REGEX CONSTANT IN CI SCRIPT
+
+- Extracted the integer validation regex `'^[0-9]+$'` as a named constant `INTEGER_REGEX` at the top of `scripts/ci/run-install-step.sh` for better maintainability and readability.
+
 ### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
