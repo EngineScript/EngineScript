@@ -29,7 +29,8 @@ WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extra
 
 # --- Supported DB Charset Configuration ---
 readonly ALLOWED_DB_CHARSETS=("utf8mb4" "utf8" "latin1")
-readonly URL_VALIDATION_REGEX="^https?://([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(:[0-9]{1,5})?([/?#].*)?$"
+readonly DEFAULT_URL_VALIDATION_REGEX="^https?://([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(:[0-9]{1,5})?([/?#].*)?$"
+URL_VALIDATION_REGEX="${URL_VALIDATION_REGEX:-$DEFAULT_URL_VALIDATION_REGEX}"
 
 # --- Instructions for Preparing Files ---
 echo ""
@@ -88,9 +89,11 @@ sleep 1
 # Function to extract define values (Handles single/double quotes)
 extract_define() {
     local key="$1"
+    local escaped_key
+    escaped_key=$(printf '%s' "$key" | sed -E 's#[][(){}.^$*+?|\\/-]#\\&#g')
     # Find the line defining the key
     local line
-    line=$(grep -E "^\s*define\(\s*['\"]${key}['\"]\s*," "$WP_CONFIG_PATH")
+    line=$(grep -E "^\s*define\(\s*['\"]${escaped_key}['\"]\s*," "$WP_CONFIG_PATH")
     # Extract the value between single or double quotes after the comma
     local value
     value=$(echo "$line" | sed -E "s/.*,\s*['\"]([^'\"]*)['\"].*/\1/")
@@ -130,7 +133,6 @@ extract_prefix_from_db() {
         if [[ "${prefix: -1}" != "_" ]]; then
             prefix="${prefix}_"
         fi
-        # Removed intermediate echo: echo "Found and cleaned prefix: ${prefix}"
     else
          echo "Warning: Could not find common table pattern (like 'prefix_options') in the DB file." >&2 # Output warning to stderr
     fi
@@ -278,8 +280,7 @@ if [[ -z "$SITE_URL_RAW" ]]; then
 fi
 
 # Extract domain from URL (remove http(s):// and potential trailing slash)
-EXTRACTED_DOMAIN=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain extracted from URL
-SITE_URL="${EXTRACTED_DOMAIN}"
+SITE_URL=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain extracted from URL
 
 # Extract DB Charset (optional, for reference)
 DB_CHARSET=$(extract_define 'DB_CHARSET')
@@ -289,7 +290,7 @@ if [[ -z "$DB_CHARSET" ]]; then
 fi
 
 echo "Extracted Information:"
-echo "  Domain (EXTRACTED_DOMAIN): ${EXTRACTED_DOMAIN}"
+echo "  Domain (SITE_URL): ${SITE_URL}"
 echo "  Table Prefix (PREFIX): ${PREFIX}" # Already extracted from DB
 echo "  DB Charset: ${DB_CHARSET}"
 sleep 1 # Short pause
@@ -379,10 +380,9 @@ else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
 fi
 
-# Keep both variables intentionally: ORIGINAL_URL is the source URL and NEW_URL is the target URL
-# for search-replace workflows. They are initialized identically by default and may diverge later.
-ORIGINAL_URL="https://${SITE_URL}" # Assume https for consistency
-NEW_URL="https://${SITE_URL}"
+# Canonical URL used for import/search-replace workflows.
+# Currently source and target are the same during import.
+NEW_URL="https://${SITE_URL}" # Assume https for consistency
 
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-import.log"
@@ -552,7 +552,7 @@ fi
 # Search and Replace URLs
 echo "Running search-replace for URL consistency in the database..."
 echo "Ensuring URL is '${NEW_URL}'"
-HTTPS_ORIGINAL_URL="${ORIGINAL_URL}"
+HTTPS_ORIGINAL_URL="${NEW_URL}"
 HTTP_ORIGINAL_URL="${HTTPS_ORIGINAL_URL/#https:\/\//http://}"
 
 run_url_search_replace_if_present() {
