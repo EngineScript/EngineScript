@@ -388,8 +388,13 @@ export class ExternalServicesManager {
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     try {
-      const response = await fetch("/api/external-services/config", { credentials: 'include' });
+      const response = await fetch("/api/external-services/config", {
+        credentials: 'include',
+        signal: controller.signal
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -407,6 +412,8 @@ export class ExternalServicesManager {
       console.error('Failed to fetch services config:', error);
       // Fallback: return all services enabled
       return this.buildAllServicesEnabledMap();
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -550,8 +557,9 @@ export class ExternalServicesManager {
 
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
+    const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const updateToggleButtonState = () => {
-      const allEnabled = categoryCheckboxes.every(cb => cb.checked);
+      const allEnabled = areAllCategoryServicesEnabled();
       const actionText = allEnabled ? "Disable All" : "Enable All";
       const actionAria = allEnabled
         ? `Disable all ${category} services`
@@ -561,7 +569,7 @@ export class ExternalServicesManager {
       if (toggleTextEl) {
         toggleTextEl.textContent = actionText;
       } else {
-        console.warn(`Missing .toggle-all-text element for category "${category}" while updating toggle-all button state. This may indicate a template structure mismatch. Attempting text node fallback.`);
+        console.warn(`Template element .toggle-all-text not found for category "${category}". Using fallback rendering.`);
         const textNode = Array.from(toggleBtn.childNodes).find(
           node => node.nodeType === Node.TEXT_NODE
         );
@@ -577,7 +585,7 @@ export class ExternalServicesManager {
     updateToggleButtonState();
 
     toggleBtn.addEventListener("click", () => {
-      const allEnabled = categoryCheckboxes.every(cb => cb.checked);
+      const allEnabled = areAllCategoryServicesEnabled();
       categoryCheckboxes.forEach(cb => {
         cb.checked = !allEnabled;
         cb.dispatchEvent(new Event('change'));
@@ -1374,6 +1382,8 @@ export class ExternalServicesManager {
       container.insertBefore(reorderInstructions, container.firstChild);
     }
 
+    let cachedCardOrder = null;
+
     serviceCards.forEach((card) => {
       card.draggable = true;
       
@@ -1386,6 +1396,7 @@ export class ExternalServicesManager {
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
+        cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
         card.classList.add('dragging');
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = 'move';
@@ -1430,9 +1441,7 @@ export class ExternalServicesManager {
         if (targetCard && targetCard !== draggedElement) {
           targetCard.classList.remove('drag-over');
           
-          // Swap positions using current DOM order for accuracy at drop-time
-          // (instead of trusting transferred index payload from dragstart).
-          const allCards = Array.from(container.querySelectorAll('.external-service-card'));
+          const allCards = cachedCardOrder || Array.from(container.querySelectorAll('.external-service-card'));
           const draggedIndex = allCards.indexOf(draggedElement);
           const targetIndex = allCards.indexOf(targetCard);
           
@@ -1442,6 +1451,8 @@ export class ExternalServicesManager {
             targetCard.parentNode.insertBefore(draggedElement, targetCard);
           }
           
+          cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
+
           // Save new order
           this.saveCardOrder();
         }
@@ -1449,6 +1460,7 @@ export class ExternalServicesManager {
 
       card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
+        cachedCardOrder = null;
         // Remove drag-over from all cards
         container.querySelectorAll('.external-service-card').forEach(c => {
           c.classList.remove('drag-over');
@@ -1684,7 +1696,9 @@ export class ExternalServicesManager {
    */
   saveCardOrder() {
     const cards = document.querySelectorAll('.external-service-card');
-    const orderArray = Array.from(cards).map(card => card.dataset.serviceKey);
+    const orderArray = Array.from(cards)
+      .filter(card => card?.dataset?.serviceKey)
+      .map(card => card.dataset.serviceKey);
     this.saveServiceOrder(orderArray);
   }
 

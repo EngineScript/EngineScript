@@ -6,6 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTERNAL SERVICES CONTROL PANEL CODE QUALITY IMPROVEMENTS
+
+- Added `AbortController` with a 10-second timeout to the `fetchAvailableServices()` fetch call in `config/var/www/admin/control-panel/external-services/external-services.js` to prevent the request from hanging indefinitely, matching the pattern already used in `fetchServiceData`.
+- Extracted `categoryCheckboxes.every(cb => cb.checked)` into a cached helper function `areAllCategoryServicesEnabled` to avoid redundant array iteration when the toggle-all button state is updated and when the button is clicked.
+- Simplified the overly verbose `console.warn` message for a missing `.toggle-all-text` element to a concise, actionable message: `Template element .toggle-all-text not found for category. Using fallback rendering.`
+- Introduced `cachedCardOrder` in the drag-and-drop reorder logic: the card list is cached on `dragstart`, updated after each successful `drop`, and cleared on `dragend`, avoiding repeated DOM queries during rapid reordering.
+- Added a `.filter(card => card?.dataset?.serviceKey)` guard in `saveCardOrder()` to exclude cards missing the `data-service-key` attribute, preventing `undefined` values from corrupting the saved order array.
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
