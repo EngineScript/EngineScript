@@ -364,7 +364,7 @@ configure_cloudflare_settings "${DOMAIN}"
 
 # Verify if the extracted domain is already configured
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
-  echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} (extracted from wp-config.php) is already configured in EngineScript.${NORMAL}\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
+  echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} (extracted from wp-config.php) is already configured in EngineScript.\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
   exit 1
 else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
@@ -615,7 +615,11 @@ else
     echo "Site verification failed by user."
     echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
     rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
-    echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
+    if [[ -n "${WP_ARCHIVE_FILE}" ]]; then
+        echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
+    else
+        echo "Original import file (${DB_SOURCE_PATH}) in ${IMPORT_BASE_DIR} will NOT be removed."
+    fi
     echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
     echo "Exiting script now."
     exit 1 # Exit without full cleanup
