@@ -49,7 +49,7 @@ jobs:
             Body: ${{ env.ISSUE_BODY }}
 
       - name: Upsert guidance comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           AI_SUMMARY: ${{ steps.inference.outputs.response }}
         with:

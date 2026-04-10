@@ -759,7 +759,7 @@ jobs:
 
       - name: Create Issue Report for Failed Build
         if: failure() && steps.report-test-results.outputs.TEST_FAILED == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -966,7 +966,7 @@ jobs:
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
