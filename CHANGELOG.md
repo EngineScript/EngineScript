@@ -4,17 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-
-## 2026-04-09
-
-### 🔧 EXTERNAL SERVICES CODE QUALITY IMPROVEMENTS
-
-- Simplified `buildServicesObject` in `external-services.js` to use `Object.fromEntries()` instead of `forEach` loop.
-- Replaced inline regex sanitization with `sanitizeFaIconSuffix()` utility for status icon class validation, improving DRY compliance.
-- Updated JSDoc for `fetchServiceData` to accurately describe the return type as resolving from cache or network.
-- Extracted hardcoded `60000` ms request timeout to `this.requestTimeoutMs` class property in the constructor.
-- Extracted hardcoded `100` ms live-region announcement delay to `this.liveRegionAnnouncementDelayMs` class property in the constructor.
-
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
