@@ -47,7 +47,7 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
     echo "${COMPONENT_NAME} installation failed"
   fi
   echo "Exit code: $SCRIPT_EXIT_CODE"
-  if [ "${TEE_EXIT_CODE:-0}" -ne 0 ]; then
+  if [ "$TEE_EXIT_CODE" -ne 0 ]; then
     echo "Log streaming (tee) exit code: $TEE_EXIT_CODE"
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
