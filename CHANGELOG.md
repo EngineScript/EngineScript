@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-10 (2)
+
+### 🔒 CI RUN-INSTALL-STEP SECURITY AND ROBUSTNESS FIXES
+
+- Removed redundant execute-permission check on the log directory in `scripts/ci/run-install-step.sh`; the subsequent `cd` already handles inaccessible directories, making the pre-check misleading.
+- Replaced `sudo env VAR=value` with explicit `export` statements followed by `sudo -E` in `scripts/ci/run-install-step.sh` to prevent potential environment-variable bypass via shell metacharacters or PATH manipulation.
+- Fixed `tail` stderr capture in the failure-reporting block of `scripts/ci/run-install-step.sh` to redirect stderr to `/dev/null` for the main output capture and sanitize any tail error message before display, preventing sensitive log content from being inadvertently exposed.
+
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
