@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 CI SCRIPT ERROR HANDLING FIXES
-
-- Fixed `realpath` error redirection in `scripts/ci/run-install-step.sh`: changed `2>&1` to `2>/dev/null` so error messages are not captured into `RESOLVED_LOG_PARENT`, consistent with the pattern used elsewhere in the script.
-- Removed `2>/dev/null` suppression from the `sha256sum` command in `scripts/ci/run-install-step.sh` so that checksum computation failures surface diagnostic output to the user instead of being silently discarded.
-
-## 2026-04-10
-
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Removed redundant `DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from `SITE_URL_RAW` via sed, eliminating the circular dependency pattern in `scripts/functions/vhost/vhost-import.sh`.
