@@ -6,6 +6,12 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🐛 CI ERROR MESSAGE FIX
+
+- Fixed misleading error message in `scripts/ci/run-install-step.sh`: when `realpath` fails to resolve the log directory path, the second debug line now prints `realpath input: $LOG_PARENT_DIR` (the original path that failed) instead of `realpath: $RESOLVED_LOG_PARENT` (which would always be empty at that point, making debugging harder).
+
+
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
