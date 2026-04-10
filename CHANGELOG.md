@@ -6,6 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTERNAL SERVICES CODE QUALITY IMPROVEMENTS
+
+- Fixed the `initialized` flag in `ExternalServicesManager.init()` so it is only set to `true` after `loadExternalServices()` completes successfully; if `loadExternalServices()` throws, `initialized` is reset to `false` and the error is re-thrown, preventing the manager from being permanently marked as initialized after a failed load.
+- Extracted the negated boolean condition `!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api` in `renderCategoryCards` into a new `isStaticService(serviceDef)` helper method to improve readability and make the intent clearer.
+- Added a fallback branch in `updateToggleButtonState` for the case where the `.toggle-all-text` child element is missing: a `console.warn` is emitted identifying the affected category and the action text falls back to setting the button's own `textContent`.
+- Introduced a `DND_MOVE_TOKEN` module-level constant to replace the magic string `'moving'` used as the drag-and-drop `text/plain` payload, making its purpose explicit and easier to find during debugging.
+- Tightened the `catch` block in `hasAnimationKeyframes` so that only `SecurityError` exceptions (expected for cross-origin stylesheets) trigger a silent `continue`; all other unexpected errors are surfaced via `console.warn` before continuing.
+
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Removed redundant `DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from `SITE_URL_RAW` via sed, eliminating the circular dependency pattern in `scripts/functions/vhost/vhost-import.sh`.
