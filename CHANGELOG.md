@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### ♿ EXTERNAL SERVICES CONTROL PANEL ACCESSIBILITY AND LOGGING IMPROVEMENTS
-
-- Added `aria-label="Service Settings"` to the settings toggle button in `config/var/www/admin/control-panel/external-services/external-services.js` to provide a robust accessible name for assistive technologies, independent of icon or text span visibility.
-- Added `aria-label="Save Changes"` to the save button in `config/var/www/admin/control-panel/external-services/external-services.js` to ensure a consistent accessible name even when the text node fails to append.
-- Improved the `console.warn` message for a missing `.toggle-all-text` element to include actionable context: the operation being performed, the implication (template structure mismatch), and the fallback strategy being attempted.
-- Improved the `console.error` message for a missing service card to include guidance on how to resolve the issue (verify the service is enabled in preferences and the DOM has been rendered).
-
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
