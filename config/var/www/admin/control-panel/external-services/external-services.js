@@ -768,6 +768,26 @@ export class ExternalServicesManager {
   // ============ Card Creation Helpers ============
 
   /**
+   * Build a canonical, sanitized FontAwesome class string.
+   * @param {string} iconSuffix - Icon suffix (for example: "spinner" or "fa-spinner fa-spin")
+   * @param {string|null} fallbackSuffix - Optional fallback icon suffix
+   * @returns {string} Sanitized class string (for example: "fas fa-spinner")
+   */
+  buildFaIconClass(iconSuffix, fallbackSuffix = null) {
+    let safeSuffix = sanitizeFaIconSuffix(iconSuffix);
+
+    if (!safeSuffix && fallbackSuffix) {
+      safeSuffix = sanitizeFaIconSuffix(fallbackSuffix);
+    }
+
+    if (!safeSuffix) {
+      safeSuffix = DEFAULT_ICON_SUFFIX;
+    }
+
+    return `fas fa-${safeSuffix}`;
+  }
+
+  /**
    * Create service card header (icon + info)
    * @param {Object} serviceDef - Service definition
    * @param {string} statusClassName - CSS class for status
@@ -783,10 +803,7 @@ export class ExternalServicesManager {
     
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
-    // Sanitize icon suffix, then build canonical FontAwesome token
-    const safeIconSuffix = sanitizeFaIconSuffix(serviceDef.icon || DEFAULT_ICON_SUFFIX);
-    const safeIconClass = `fa-${safeIconSuffix}`;
-    iconElement.className = `fas ${safeIconClass}`;
+    iconElement.className = this.buildFaIconClass(serviceDef.icon, DEFAULT_ICON_SUFFIX);
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
     
@@ -801,10 +818,7 @@ export class ExternalServicesManager {
     
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    // Sanitize icon suffix, then apply fallback and build canonical FontAwesome token
-    const safeStatusIconSuffix = sanitizeFaIconSuffix(statusIconClass) || DEFAULT_ICON_SUFFIX;
-    const safeStatusIconClass = `fa-${safeStatusIconSuffix}`;
-    statusIcon.className = `fas ${safeStatusIconClass}`;
+    statusIcon.className = this.buildFaIconClass(statusIconClass, DEFAULT_ICON_SUFFIX);
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
     statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
@@ -864,9 +878,13 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   renderServiceCardLoadingState(container, serviceKey, serviceDef) {
-    const statusIconSuffix = "spinner fa-spin";
+    const statusIconSuffix = "spinner";
     const contentNode = document.createTextNode("Loading...");
     const headerDiv = this.createServiceCardHeader(serviceDef, "status-loading", statusIconSuffix);
+    const iconElement = headerDiv.querySelector(".service-status i");
+    if (iconElement) {
+      iconElement.classList.add("fa-spin");
+    }
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
     
@@ -1311,14 +1329,13 @@ export class ExternalServicesManager {
           // Note: drop handling intentionally recalculates positions from the live DOM
           // (see drop listener below) for accuracy; this payload is set for DnD protocol
           // compliance/browser compatibility.
-          const cardIndex = Array.from(container.querySelectorAll('.external-service-card')).indexOf(card);
-          e.dataTransfer.setData('text/plain', String(cardIndex));
+          e.dataTransfer.setData('text/plain', 'moving');
         }
       });
 
       card.addEventListener('dragover', (e) => {
-        e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        e.preventDefault();
         
         const targetCard = e.target.closest('.external-service-card');
         if (targetCard && targetCard !== draggedElement) {

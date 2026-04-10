@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTERNAL SERVICES CONTROL PANEL REFACTORS AND BUG FIXES
+
+- Extracted duplicated FontAwesome icon class construction into a new `buildFaIconClass(iconSuffix, fallbackSuffix)` helper method on `ExternalServicesManager`, replacing three independent sanitize-and-build patterns in `createServiceCardHeader`.
+- Fixed the loading spinner animation in `renderServiceCardLoadingState` by separating `"spinner"` from the `"fa-spin"` animation class; `fa-spin` is now applied via `classList.add` after the header is created so `sanitizeFaIconSuffix` no longer strips the multi-token suffix.
+- Simplified the drag-and-drop `dragstart` payload in the card reorder handler from a live DOM index calculation to a static `'moving'` placeholder, removing misleading code since the drop handler recalculates positions from the live DOM anyway.
+- Fixed drag-and-drop `dragover` handler to set `e.dataTransfer.dropEffect` before calling `e.preventDefault()`, ensuring the drop effect is properly applied by the browser.
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
