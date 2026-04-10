@@ -377,7 +377,13 @@ NEW_URL="https://${SITE_URL}"
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-import.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
-echo "Starting domain import for ${DOMAIN} from archive ${WP_ARCHIVE_FILE} and DB ${DB_SOURCE_PATH} at $(date)" # Updated log message
+if [ "${IMPORT_FORMAT}" = "single_zip" ]; then
+  echo "Starting domain import for ${DOMAIN} from single ZIP ${SINGLE_ZIP_FILE} at $(date)"
+elif [ "${IMPORT_FORMAT}" = "original" ]; then
+  echo "Starting domain import for ${DOMAIN} from archive ${WP_ARCHIVE_FILE} and DB ${DB_SOURCE_PATH} at $(date)"
+else
+  echo "Starting domain import for ${DOMAIN} (format: ${IMPORT_FORMAT}) with inputs ZIP=${SINGLE_ZIP_FILE}, archive=${WP_ARCHIVE_FILE}, DB=${DB_SOURCE_PATH} at $(date)"
+fi
 
 # Continue the installation
 # Create nginx vhost configuration files
@@ -444,13 +450,7 @@ sed -i "s|SEDWPDB|${DB}|g" "${TARGET_WP_PATH}/wp-config.php"
 sed -i "s|SEDWPUSER|${USR}|g" "${TARGET_WP_PATH}/wp-config.php"
 sed -i "s|SEDWPPASS|${PSWD}|g" "${TARGET_WP_PATH}/wp-config.php"
 
-# --- Debugging line added ---
-echo "DEBUG: Attempting to set prefix. Value of PREFIX is: '${PREFIX}'"
-# --- End Debugging line ---
-
 sed -i "s|SEDPREFIX_|${PREFIX}|g" "${TARGET_WP_PATH}/wp-config.php" # Use original prefix
-echo "DEBUG: sed command exit status for prefix: $?" # Check if sed reported an error
-
 sed -i "s|SEDURL|${SITE_URL}|g" "${TARGET_WP_PATH}/wp-config.php"
 sed -i "s|define( 'DB_CHARSET', 'utf8mb4' );|define( 'DB_CHARSET', '${DB_CHARSET}' );|g" "${TARGET_WP_PATH}/wp-config.php" # Use extracted DB Charset
 
@@ -604,6 +604,10 @@ if prompt_yes_no "Is the imported site at https://${SITE_URL} working correctly?
         mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
         echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
     fi
+    if [[ "${IMPORT_FORMAT}" == "single_zip" ]] && [[ -n "${SINGLE_ZIP_FILE}" ]] && [[ -f "${SINGLE_ZIP_FILE}" ]]; then
+        mv "${SINGLE_ZIP_FILE}" "${BACKUP_DIR}/"
+        echo "Moved ${SINGLE_ZIP_FILE} to ${BACKUP_DIR}/"
+    fi
     if [[ -n "${DB_SOURCE_PATH}" ]] && [[ -f "${DB_SOURCE_PATH}" ]]; then
         mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
         echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
@@ -618,7 +622,7 @@ else
     if [[ -n "${WP_ARCHIVE_FILE}" ]]; then
         echo "Original archive (${WP_ARCHIVE_FILE}) and database (${DB_SOURCE_PATH}) files in ${IMPORT_BASE_DIR} will NOT be removed."
     else
-        echo "Original import file (${DB_SOURCE_PATH}) in ${IMPORT_BASE_DIR} will NOT be removed."
+        echo "Original import file (${SINGLE_ZIP_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
     fi
     echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
     echo "Exiting script now."
