@@ -6,13 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
-
-- Fixed toggle button fallback to use non-destructive text node updates instead of `textContent` assignment, preserving icon child elements in `external-services.js`.
-- Added `setSaveButtonContent` helper method in `external-services.js` and replaced three repeated inline save-button icon/text patterns in `handleSavePreferences` with calls to the new helper for consistency.
-- Replaced the hardcoded default service order array in `getServiceOrder` with dynamic generation from `SERVICE_DEFINITIONS` grouped by `CATEGORY_ORDER`, eliminating the risk of drift when new services are added.
-- Removed unnecessary optional chaining (`e?.name` → `e.name`) in `getSheetRules` catch block, since the caught error object is always defined.
-
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
 - Added explicit `return` statement at the end of `run_url_search_replace_if_present` in `scripts/functions/vhost/vhost-import.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
