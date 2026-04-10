@@ -4,12 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-10
-
-### 🧹 EXTERNAL SERVICES JS CLEANUP
-
-- Removed unnecessary `// codacy:ignore` comments for object literal returns and destructuring assignments in `config/var/www/admin/control-panel/external-services/external-services.js`, as these are standard JavaScript and do not require suppression comments.
-
 ## 2026-04-08
 
 ### 🧹 NGINX MIME AND COMPRESSION CLEANUP
