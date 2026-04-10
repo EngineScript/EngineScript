@@ -15,7 +15,7 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 # Source shared vhost functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -93,9 +93,11 @@ sleep 1
 extract_define() {
     local key="$1"
     # Find the line defining the key
-    local line=$(grep -E "^\s*define\(\s*['\"]${key}['\"]\s*," "$WP_CONFIG_PATH")
+    local line
+    line=$(grep -E "^\s*define\(\s*['\"]${key}['\"]\s*," "$WP_CONFIG_PATH")
     # Extract the value between single or double quotes after the comma
-    local value=$(echo "$line" | sed -E "s/.*,\s*['\"]([^'\"]*)['\"].*/\1/")
+    local value
+    value=$(echo "$line" | sed -E "s/.*,\s*['\"]([^'\"]*)['\"].*/\1/")
     echo "$value"
 }
 
@@ -103,6 +105,7 @@ extract_define() {
 extract_prefix_from_db() {
     local db_file="$1"
     local prefix=""
+    local grep_cmd="grep"
     # Look for CREATE TABLE or INSERT INTO lines with common tables (_options or _users)
     # Capture the part between backticks/quotes before _options or _users
     # Regex: Match CREATE/INSERT, whitespace, quote/backtick, capture prefix (group 3), match _options/_users, quote/backtick
@@ -110,10 +113,9 @@ extract_prefix_from_db() {
 
     # Use zgrep for .gz, grep for .sql. Extract the captured group 3 (the prefix part).
     if [[ "$db_file" == *.gz ]]; then
-        prefix=$(zgrep -m 1 -oE "${search_pattern}" "$db_file" | sed -E "s/${search_pattern}/\3/" | head -n 1)
-    else
-        prefix=$(grep -m 1 -oE "${search_pattern}" "$db_file" | sed -E "s/${search_pattern}/\3/" | head -n 1)
+        grep_cmd="zgrep"
     fi
+    prefix=$("$grep_cmd" -m 1 -oE "${search_pattern}" "$db_file" | sed -E "s/${search_pattern}/\3/" | head -n 1)
 
     if [[ -n "$prefix" ]]; then
         # Ensure it ends with an underscore if it doesn't already
@@ -464,7 +466,16 @@ configure_redis "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
 
 # WP Salt Creation (Generate new salts)
 echo "Generating new WordPress salts..."
-SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+SALT=$(curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 30 "https://api.wordpress.org/secret-key/1.1/salt/") || {
+    echo "Error: Failed to fetch WordPress salts from api.wordpress.org" >&2
+    exit 1
+}
+
+if [ -z "${SALT}" ] || ! printf '%s' "${SALT}" | grep -q "define("; then
+    echo "Error: Retrieved invalid WordPress salts content" >&2
+    exit 1
+fi
+
 STRING='put your unique phrase here'
 printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "${TARGET_WP_PATH}/wp-config.php"
 
