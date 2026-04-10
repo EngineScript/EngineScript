@@ -4,10 +4,11 @@ updates:
   # Updates for GitHub Actions used in workflows
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "master"
     schedule:
       interval: "daily"
-      day: "monday"
       time: "09:00"
+      timezone: "UTC"
     # Set custom labels on pull requests
     labels:
       - "dependencies"
@@ -24,14 +25,18 @@ updates:
       actions:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Updates for Composer dependencies (PHP packages)
   - package-ecosystem: "composer"
     directory: "/"
+    target-branch: "master"
     schedule:
       interval: "daily"
-      day: "monday"
       time: "09:00"
+      timezone: "UTC"
     # Set custom labels on pull requests
     labels:
       - "dependencies"
@@ -48,9 +53,15 @@ updates:
       # Group all dev dependencies together
       dev-dependencies:
         dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
       # Group production dependencies (if any are added later)
       production-dependencies:
         dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
     # Allow updates to all dependency types
     allow:
       - dependency-type: "direct"
