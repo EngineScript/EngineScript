@@ -40,7 +40,11 @@ TEE_EXIT_CODE="${PIPE_EXIT_CODES[1]}"
 set -e
 
 if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
-  echo "${COMPONENT_NAME} installation failed or timed out"
+  if [ "$SCRIPT_EXIT_CODE" -eq 124 ]; then
+    echo "${COMPONENT_NAME} installation timed out after ${TIMEOUT_SECONDS} seconds"
+  else
+    echo "${COMPONENT_NAME} installation failed"
+  fi
   echo "Exit code: $SCRIPT_EXIT_CODE"
   if [ "${TEE_EXIT_CODE:-0}" -ne 0 ]; then
     echo "Log streaming (tee) exit code: $TEE_EXIT_CODE"
@@ -48,10 +52,6 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
   tail -50 "$LOG_PATH" 2>/dev/null || echo "Unable to read log file: $LOG_PATH"
-
-  if [ "$SCRIPT_EXIT_CODE" -eq 124 ]; then
-    echo "${COMPONENT_NAME} installation timed out after ${TIMEOUT_SECONDS} seconds"
-  fi
 
   exit 1
 fi
