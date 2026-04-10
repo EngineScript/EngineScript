@@ -19,6 +19,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # WPScan
-gem install wpscan || { echo "Error: Failed to install WPScan via gem. Please verify Ruby and gem are installed and available in PATH, check internet connectivity, and confirm gem sources/permissions (for example: 'gem sources -l')." >&2; exit 1; }
+gem install wpscan || { echo "Error: Failed to install WPScan via gem. Check logs or documentation for troubleshooting." >&2; exit 1; }
 
 print_install_banner "WPScan"
