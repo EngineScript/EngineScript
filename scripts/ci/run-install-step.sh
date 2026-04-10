@@ -43,10 +43,21 @@ esac
 ALLOWED_LOG_BASE_DIR="$(pwd -P)"
 LOG_PARENT_DIR="$(dirname -- "$LOG_PATH")"
 LOG_FILENAME="$(basename -- "$LOG_PATH")"
+
+if [ ! -d "$LOG_PARENT_DIR" ]; then
+  echo "Error: log directory does not exist: $LOG_PARENT_DIR" >&2
+  exit 1
+fi
+
+if [ ! -x "$LOG_PARENT_DIR" ]; then
+  echo "Error: log directory is not accessible (missing execute permission): $LOG_PARENT_DIR" >&2
+  exit 1
+fi
+
 RESOLVED_LOG_PARENT="$(cd "$LOG_PARENT_DIR" 2>/dev/null && pwd -P)"
 
 if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
-  echo "Error: log directory does not exist or is not accessible: $LOG_PARENT_DIR" >&2
+  echo "Error: unable to resolve log directory path: $LOG_PARENT_DIR" >&2
   exit 1
 fi
 
@@ -113,7 +124,14 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
-  tail -50 "$LOG_PATH" || echo "Failed to display log file contents: $LOG_PATH"
+  TAIL_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1)"
+  TAIL_EXIT_CODE=$?
+  if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
+    echo "$TAIL_OUTPUT"
+  else
+    echo "Failed to display log file contents: $LOG_PATH"
+    echo "tail error: $TAIL_OUTPUT"
+  fi
 
   exit 1
 fi
