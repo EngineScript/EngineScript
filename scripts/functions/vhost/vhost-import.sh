@@ -358,6 +358,9 @@ while true; do
 done
 # --- End Confirmation and Correction Step ---
 
+# Derive DOMAIN from the final SITE_URL (after any user corrections)
+DOMAIN=$(echo "$SITE_URL" | sed -E 's#^https?://##; s#/$##')
+
 
 # Cloudflare API Settings
 # Set Cloudflare settings for the domain using the Cloudflare API
