@@ -6,20 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-### 🔧 CI RUN-INSTALL-STEP ERROR HANDLING IMPROVEMENTS
-
-- Enhanced log directory validation in `scripts/ci/run-install-step.sh` to separately check for non-existent directories (`[ ! -d ]`) and inaccessible directories (`[ ! -x ]`) before attempting to resolve the path, providing more specific error messages instead of a single combined error.
-- Updated the fallback error message when `tail` fails to capture and display the actual error output from `tail`, making it easier to debug why log file contents could not be displayed.
-
-
-
-### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
-
-- Extracted the duplicated category order list in `external-services.js` into a single module-level `CATEGORY_ORDER` constant shared by `getCategoryOrder()` and `getServiceOrder()`, eliminating the risk of inconsistencies when categories are added or changed.
-- Replaced `sanitizeFaIconClass` with `sanitizeFaIconSuffix` for the fallback icon in `createServiceCardHeader()` so that the suffix (e.g. `'question'`) is sanitized and then prefixed with `'fa-'` to form the canonical FontAwesome token, removing the previous ambiguity between full-class and suffix inputs.
-- Changed the `dragstart` handler to store only the integer card index as `text/plain` drag data instead of serialising `card.innerHTML`, preventing potential HTML injection and leakage of sensitive markup through the drag-and-drop API.
-- Added `this.notificationSlideOutAnimationName = 'slide-out'` as an instance property alongside the other notification timing constants, and updated the notification dismiss logic to reference this property, making the animation name consistent and preventing typos.
-
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
