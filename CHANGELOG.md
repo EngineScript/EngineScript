@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-10 (2)
+
+### 🔧 CI RUN-INSTALL-STEP IMPROVEMENTS
+
+- Defined `TIMEOUT_EXIT_CODE=124` as a named constant with an explanatory comment in `scripts/ci/run-install-step.sh`, replacing the undocumented magic number in the timeout exit-code comparison.
+- Added a `TEE_EXIT_CODE` failure check after a successful installation: if `tee` exits non-zero the script now reports that log streaming failed and exits with code 1, ensuring incomplete logs are surfaced.
+
 ## 2026-04-10
 
 ### 🐛 VHOST IMPORT EXTRACTION FLOW FIX
