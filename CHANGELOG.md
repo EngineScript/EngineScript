@@ -6,10 +6,14 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
-## 2026-04-10
+### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
 
-### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
-
+- Removed redundant `DOMAIN` intermediate variable; `SITE_URL` is now assigned directly from `SITE_URL_RAW` via sed, eliminating the circular dependency pattern in `scripts/functions/vhost/vhost-import.sh`.
+- Added clarifying comment to `ORIGINAL_URL`/`NEW_URL` assignments explaining that both variables are kept intentionally for search-replace workflows and may diverge in future modifications.
+- Extracted the supported DB charset whitelist (`utf8mb4`, `utf8`, `latin1`) into a `readonly ALLOWED_DB_CHARSETS` array at the top of `scripts/functions/vhost/vhost-import.sh`, making it easier to update supported charsets in the future.
+- Replaced the hardcoded `case` statement for charset validation with a loop over `ALLOWED_DB_CHARSETS`, so the error message dynamically reflects the authoritative list.
+- Optimised the post-import search-replace step: added `wp db search` pre-checks before each `wp search-replace` call to skip full-table scans when the source URL (`http://` or `https://`) is not present in the database, avoiding unnecessary work on large databases.
+- Fixed the site-verification failure branch to use `IMPORT_FORMAT == "two_file"` instead of `[[ -n "${WP_ARCHIVE_FILE}" ]]` for format detection, consistent with the rest of the script.
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
 - Prevented a single-zip import failure path where the duplicate block referenced `${WP_ARCHIVE_FILE}` (only populated in the two-file flow), which could trigger an unrecognized archive error.
 - Kept the unified conditional extraction logic as the single source of truth for both `single_zip` and `two_file` import formats.
