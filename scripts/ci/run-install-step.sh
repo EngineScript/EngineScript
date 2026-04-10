@@ -49,11 +49,6 @@ if [ ! -d "$LOG_PARENT_DIR" ]; then
   exit 1
 fi
 
-if [ ! -x "$LOG_PARENT_DIR" ]; then
-  echo "Error: log directory is not accessible (missing execute permission): $LOG_PARENT_DIR" >&2
-  exit 1
-fi
-
 RESOLVED_LOG_PARENT="$(cd "$LOG_PARENT_DIR" 2>/dev/null && pwd -P)"
 
 if [ -z "${RESOLVED_LOG_PARENT:-}" ]; then
@@ -104,9 +99,12 @@ echo "Installing ${COMPONENT_NAME}..."
 echo "Script start time: $(date)" > "$LOG_PATH"
 
 set +e
+export CI_ENVIRONMENT=true
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+export NEEDRESTART_SUSPEND=1
 timeout "$TIMEOUT_SECONDS" \
-  sudo env CI_ENVIRONMENT=true DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 \
-  bash "$CANONICAL_INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
+  sudo -E bash "$CANONICAL_INSTALL_SCRIPT_PATH" 2>&1 | tee -a "$LOG_PATH"
 PIPE_EXIT_CODES=("${PIPESTATUS[@]}")
 SCRIPT_EXIT_CODE="${PIPE_EXIT_CODES[0]}"
 TEE_EXIT_CODE="${PIPE_EXIT_CODES[1]}"
@@ -124,13 +122,15 @@ if [ "$SCRIPT_EXIT_CODE" -ne 0 ]; then
   fi
   echo "Script end time: $(date)" >> "$LOG_PATH"
   echo "Last 50 lines of output:"
-  TAIL_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1)"
+  TAIL_OUTPUT="$(tail -50 "$LOG_PATH" 2>/dev/null)"
   TAIL_EXIT_CODE=$?
   if [ "$TAIL_EXIT_CODE" -eq 0 ]; then
     echo "$TAIL_OUTPUT"
   else
     echo "Failed to display log file contents: $LOG_PATH"
-    echo "tail error: $TAIL_OUTPUT"
+    TAIL_ERROR_OUTPUT="$(tail -50 "$LOG_PATH" 2>&1 >/dev/null || true)"
+    SANITIZED_TAIL_ERROR="$(printf '%s' "$TAIL_ERROR_OUTPUT" | tr '\n' ' ' | tr -cd '[:print:]\t ')"
+    echo "tail error: ${SANITIZED_TAIL_ERROR:-unable to read log output}"
   fi
 
   exit 1
