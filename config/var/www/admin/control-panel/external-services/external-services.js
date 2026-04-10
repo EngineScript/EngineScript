@@ -18,6 +18,8 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+const DND_MOVE_TOKEN = 'moving';
+
 const DEFAULT_ICON_SUFFIX = 'question';
 
 export class ExternalServicesManager {
@@ -72,8 +74,13 @@ export class ExternalServicesManager {
       return;
     }
 
-    this.initialized = true;
-    await this.loadExternalServices();
+    try {
+      await this.loadExternalServices();
+      this.initialized = true;
+    } catch (error) {
+      this.initialized = false;
+      throw error;
+    }
   }
 
   /**
@@ -318,6 +325,15 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Determine whether a service should be rendered as a static card
+   * @param {Object} serviceDef - Service definition object
+   * @returns {boolean} True when service has no dynamic status source
+   */
+  isStaticService(serviceDef) {
+    return !serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api;
+  }
+
+  /**
    * Render service cards within a category container
    * @param {HTMLElement} container - Category container element
    * @param {Array<{key: string, def: Object}>} services - Array of service key/definition pairs
@@ -325,7 +341,7 @@ export class ExternalServicesManager {
    */
   renderCategoryCards(container, services) {
     for (const { key: serviceKey, def: serviceDef } of services) {
-      if (!serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api) {
+      if (this.isStaticService(serviceDef)) {
         // Render static card immediately (e.g., AWS)
         this.renderStaticServiceCard(container, serviceKey, serviceDef);
       } else {
@@ -543,6 +559,9 @@ export class ExternalServicesManager {
       const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
       if (toggleTextEl) {
         toggleTextEl.textContent = actionText;
+      } else {
+        console.warn(`Missing .toggle-all-text element for category "${category}". Falling back to button text content.`);
+        toggleBtn.textContent = actionText;
       }
       toggleBtn.setAttribute("aria-label", actionAria);
     };
@@ -1347,7 +1366,7 @@ export class ExternalServicesManager {
           // Note: drop handling intentionally recalculates positions from the live DOM
           // (see drop listener below) for accuracy; this payload is set for DnD protocol
           // compliance/browser compatibility.
-          e.dataTransfer.setData('text/plain', 'moving');
+          e.dataTransfer.setData('text/plain', DND_MOVE_TOKEN);
         }
       });
 
@@ -1645,25 +1664,37 @@ export class ExternalServicesManager {
   // ============ Notifications ============
 
   /**
+   * Safely retrieve CSS rules from a single stylesheet.
+   * Returns null when the sheet is inaccessible (e.g. cross-origin SecurityError).
+   * @param {CSSStyleSheet} styleSheet
+   * @returns {CSSRuleList|null}
+   */
+  getSheetRules(styleSheet) {
+    try {
+      return styleSheet.cssRules || styleSheet.rules;
+    } catch (e) {
+      // Ignore expected cross-origin access errors, but surface unexpected failures.
+      if (e?.name === 'SecurityError') {
+        return null;
+      }
+      console.warn('Unexpected error while accessing stylesheet rules:', e);
+      return null;
+    }
+  }
+
+  /**
    * Check whether a keyframes animation exists in currently loaded stylesheets.
    * @param {string} animationName - CSS keyframes name to look for
    * @returns {boolean}
    */
   hasAnimationKeyframes(animationName) {
     const styleSheets = Array.from(document.styleSheets || []);
+    const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : 7;
 
     for (const styleSheet of styleSheets) {
-      let rules;
-      try {
-        rules = styleSheet.cssRules || styleSheet.rules;
-      } catch (e) {
-        // Ignore cross-origin or otherwise inaccessible stylesheets.
-        continue;
-      }
-
+      const rules = this.getSheetRules(styleSheet);
       if (!rules) continue;
 
-      const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : 7;
       for (const rule of Array.from(rules)) {
         if (rule.type === keyframesType && rule.name === animationName) {
           return true;
