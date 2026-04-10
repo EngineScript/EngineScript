@@ -6,6 +6,16 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-10
 
+### 🔧 EXTERNAL SERVICES ICON SUFFIX CONSISTENCY FIXES
+
+- Extracted `DEFAULT_ICON_SUFFIX = 'question'` constant in `external-services.js` and replaced all inline `'question'` fallback strings to ensure a single source of truth for the default icon.
+- Fixed fallback order for status icon in `createServiceCardHeader`: the fallback to `DEFAULT_ICON_SUFFIX` is now applied **after** `sanitizeFaIconSuffix()` rather than before, so an empty sanitized result correctly falls back to the default instead of bypassing sanitization.
+- Renamed `statusIconClass` to `statusIconSuffix` in `renderStaticServiceCard` and updated the value from `"fa-external-link-alt"` to `"external-link-alt"` (without the `fa-` prefix) to match the suffix-only convention expected by `createServiceCardHeader`.
+- Renamed `statusIconClass` to `statusIconSuffix` in `renderServiceCardLoadingState` and updated the value from `"fa-spinner fa-spin"` to `"spinner fa-spin"` (without the redundant `fa-` prefix) for the same consistency reason.
+- Renamed the `statusIcon` parameter to `statusIconSuffix` in `updateServiceCardStatus` (and updated its JSDoc) to clarify that the argument is a FontAwesome suffix without the `fa-` prefix, matching all other icon-suffix parameters in the file.
+
+
+
 ### 🐛 VHOST IMPORT LOGGING / EXTRACTION FLOW FIXES
 
 - Removed a duplicate WordPress extraction block in `scripts/functions/vhost/vhost-import.sh` that re-ran archive extraction and wp-config path detection after those steps had already completed.
