@@ -19,10 +19,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Maldet Install
-cd /usr/local/src
+cd /usr/local/src || { echo "Error: Failed to change to /usr/local/src" >&2; exit 1; }
 download_and_extract "https://www.rfxn.com/downloads/maldetect-current.tar.gz" "/usr/local/src/maldetect-current.tar.gz" "/usr/local/src"
 cd /usr/local/src/maldetect-*/ || { echo "Error: Failed to locate extracted maldetect directory in /usr/local/src" >&2; exit 1; }
 ./install.sh || { echo "Error: Maldet installation failed while running install.sh" >&2; exit 1; }
-echo "/sys" >> /usr/local/maldetect/ignore_paths
+echo "/sys" >> /usr/local/maldetect/ignore_paths || { echo "Error: Failed to update maldetect ignore_paths" >&2; exit 1; }
 
 print_install_banner "Maldet"
