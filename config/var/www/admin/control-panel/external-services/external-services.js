@@ -783,8 +783,8 @@ export class ExternalServicesManager {
     const iconElement = document.createElement("i");
     // Sanitize icon suffix, then build canonical FontAwesome token
     const safeIconSuffix = sanitizeFaIconSuffix(serviceDef.icon || 'question');
-    const safeIcon = `fa-${safeIconSuffix}`;
-    iconElement.className = `fas ${safeIcon}`;
+    const safeIconClass = `fa-${safeIconSuffix}`;
+    iconElement.className = `fas ${safeIconClass}`;
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
     
@@ -801,8 +801,8 @@ export class ExternalServicesManager {
     const statusIcon = document.createElement("i");
     // Sanitize icon suffix, then build canonical FontAwesome token
     const safeStatusIconSuffix = sanitizeFaIconSuffix(statusIconClass || 'question');
-    const safeStatusIcon = `fa-${safeStatusIconSuffix}`;
-    statusIcon.className = `fas ${safeStatusIcon}`;
+    const safeStatusIconClass = `fa-${safeStatusIconSuffix}`;
+    statusIcon.className = `fas ${safeStatusIconClass}`;
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
     statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
@@ -920,8 +920,8 @@ export class ExternalServicesManager {
       // Create icon element safely
       const iconElement = document.createElement("i");
       // Use suffix sanitizer here because class is constructed as `fas fa-${suffix}`
-      const safeIcon = sanitizeFaIconSuffix(statusIcon);
-      iconElement.className = `fas fa-${safeIcon}`;
+      const safeIconSuffix = sanitizeFaIconSuffix(statusIcon);
+      iconElement.className = `fas fa-${safeIconSuffix}`;
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + this.utils.sanitizeInput(statusDescription)));
     }
@@ -1305,7 +1305,10 @@ export class ExternalServicesManager {
         card.classList.add('dragging');
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = 'move';
-          // Use a minimal plain-text token instead of serializing HTML content
+          // Use a minimal plain-text token instead of serializing HTML content.
+          // Note: drop handling intentionally recalculates positions from the live DOM
+          // (see drop listener below) for accuracy; this payload is set for DnD protocol
+          // compliance/browser compatibility.
           const cardIndex = Array.from(container.querySelectorAll('.external-service-card')).indexOf(card);
           e.dataTransfer.setData('text/plain', String(cardIndex));
         }
@@ -1342,7 +1345,8 @@ export class ExternalServicesManager {
         if (targetCard && targetCard !== draggedElement) {
           targetCard.classList.remove('drag-over');
           
-          // Swap positions
+          // Swap positions using current DOM order for accuracy at drop-time
+          // (instead of trusting transferred index payload from dragstart).
           const allCards = Array.from(container.querySelectorAll('.external-service-card'));
           const draggedIndex = allCards.indexOf(draggedElement);
           const targetIndex = allCards.indexOf(targetCard);
@@ -1595,6 +1599,19 @@ export class ExternalServicesManager {
   // ============ Notifications ============
 
   /**
+   * Schedule notification slide-out and removal.
+   * Uses two-stage timing: display duration first, then animation duration before DOM removal.
+   * @param {HTMLElement} notification - Notification element to remove
+   * @returns {void}
+   */
+  scheduleNotificationRemoval(notification) {
+    setTimeout(() => {
+      notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
+      setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
+    }, this.notificationDurationMs);
+  }
+
+  /**
    * Show notification to user
    * @param {string} message - Notification message text
    * @param {string} [type='info'] - Notification type ('info', 'success', or 'error')
@@ -1609,11 +1626,6 @@ export class ExternalServicesManager {
     notification.setAttribute('aria-live', 'polite');
     
     document.body.appendChild(notification);
-    
-    // Remove after configured duration
-    setTimeout(() => {
-      notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
-      setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
-    }, this.notificationDurationMs);
+    this.scheduleNotificationRemoval(notification);
   }
 }
