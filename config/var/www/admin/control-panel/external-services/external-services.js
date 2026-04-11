@@ -245,7 +245,7 @@ export class ExternalServicesManager {
     h3.textContent = "Error Loading External Services";
     
     const p = document.createElement("p");
-    p.textContent = "Failed to fetch external service status. Please try again later.";
+    p.textContent = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
     
     errorDiv.appendChild(iconDiv);
     errorDiv.appendChild(h3);
@@ -1095,7 +1095,7 @@ export class ExternalServicesManager {
     const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
     if (!serviceCard) {
       const name = serviceDef && serviceDef.name ? serviceDef.name : serviceKey;
-      console.error(`Card not found for service: ${serviceKey} (${name}). Ensure the service is enabled in preferences and the DOM has been rendered.`);
+      console.error(`Card not found for service: ${serviceKey} (${name}). This may occur if the service is disabled in preferences or the DOM has not finished rendering. Status updates for this service will be skipped.`);
       return null;
     }
     return serviceCard;
@@ -1308,7 +1308,7 @@ export class ExternalServicesManager {
       try {
         return JSON.parse(decodeURIComponent(orderCookie));
       } catch (e) {
-        console.error('Failed to parse service order:', e);
+        console.error('Failed to parse service order, falling back to default order:', e);
       }
     }
     // Build default order dynamically from SERVICE_DEFINITIONS to avoid drift.
@@ -1715,7 +1715,7 @@ export class ExternalServicesManager {
       if (e.name === 'SecurityError') {
         return null;
       }
-      console.warn('Unexpected error while accessing stylesheet rules:', e);
+      console.warn('Unexpected error while accessing stylesheet rules (non-CORS related). Check for malformed stylesheets or browser compatibility issues:', e);
       return null;
     }
   }
