@@ -19,6 +19,12 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+const FA_ICON_MODIFIER_SUFFIXES = [
+  'spin', 'pulse', 'fw', 'lg', 'xs', 'sm',
+  '1x', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x'
+];
+
+const FA_ICON_MODIFIER_PATTERN = new RegExp(`^fa-(${FA_ICON_MODIFIER_SUFFIXES.join("|")})$`);
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
 
 const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
@@ -762,7 +768,7 @@ export class ExternalServicesManager {
         globalThis.localStorage.removeItem(storageTestKey);
       } catch (availabilityError) {
         console.error('localStorage availability check failed:', availabilityError);
-        throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
+        throw new Error('Unable to save preferences: browser storage availability check failed (storage may be disabled).');
       }
 
       try {
@@ -874,13 +880,13 @@ export class ExternalServicesManager {
       let iconName = null;
 
       for (const part of parts) {
+        // Font Awesome shorthand style prefixes: r=regular, s=solid, b=brands, d=duotone, l=light (far/fas/fab/fad/fal)
         if (/^fa[rsbdl]$/.test(part) || /^fa-(solid|regular|brands|light|duotone)$/.test(part)) {
           stylePrefix = part;
           continue;
         }
 
-        if (!iconName && /^fa-[a-z0-9-]+$/.test(part) && !/^fa-(spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/.test(part)) {
-          iconName = part.replace(/^fa-/, "");
+        if (!iconName && /^fa-[a-z0-9-]+$/.test(part) && !FA_ICON_MODIFIER_PATTERN.test(part)) {
         }
       }
 
