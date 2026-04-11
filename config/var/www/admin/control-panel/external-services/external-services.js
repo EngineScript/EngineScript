@@ -756,10 +756,28 @@ export class ExternalServicesManager {
       this.applyPreferenceChanges(currentPreferences, safeChanges);
       
       // Save preferences to local storage (avoid tamper-prone cookie storage)
+      const storageTestKey = '__servicePreferences_storage_test__';
+      try {
+        window.localStorage.setItem(storageTestKey, '1');
+        window.localStorage.removeItem(storageTestKey);
+      } catch (availabilityError) {
+        console.error('localStorage availability check failed:', availabilityError);
+        throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
+      }
+
       try {
         window.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
       } catch (storageError) {
-        throw new Error('Unable to save preferences: browser storage is full or disabled.');
+        const isQuotaExceeded = storageError && (
+          storageError.name === 'QuotaExceededError' ||
+          storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+          storageError.code === 22 ||
+          storageError.code === 1014
+        );
+        if (isQuotaExceeded) {
+          throw new Error('Unable to save preferences: browser storage is full.');
+        }
+        throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
       }
       this.applyPreferenceChanges(services, safeChanges);
       
@@ -1091,35 +1109,48 @@ export class ExternalServicesManager {
    * @returns {Promise<Object>} Promise resolving to service data (from cache or parsed JSON response)
    */
   async fetchServiceData(fetchFn, serviceKey) {
+    // Initialize in-flight request map lazily if not already set
+    if (!this.inFlightRequests) {
+      this.inFlightRequests = {};
+    }
+
     // Check cache first - no need to queue if cached
     let data = this.getCachedService(serviceKey);
-    
+
     if (!data) {
-      // Not in cache, queue the fetch request with concurrency limiting
-      data = await this.queueRequest(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-        
-        try {
-          const response = await fetchFn(controller.signal);
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+      // Reuse existing in-flight request for this serviceKey to avoid duplicate fetches
+      if (!this.inFlightRequests[serviceKey]) {
+        this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+
+          try {
+            const response = await fetchFn(controller.signal);
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+
+            // Cache the response
+            this.setCachedService(serviceKey, responseData);
+            return responseData;
+          } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
           }
-          
-          const responseData = await response.json();
-          
-          // Cache the response
-          this.setCachedService(serviceKey, responseData);
-          return responseData;
-        } catch (error) {
-          clearTimeout(timeoutId);
-          throw error;
-        }
-      });
+        });
+      }
+
+      try {
+        data = await this.inFlightRequests[serviceKey];
+      } finally {
+        delete this.inFlightRequests[serviceKey];
+      }
     }
-    
+
     return data;
   }
 
@@ -1311,36 +1342,39 @@ export class ExternalServicesManager {
    * @returns {Object|null} Parsed preferences object or null if not found/invalid
    */
   loadServicePreferences() {
+    // Try to load from local storage
+    let storedPrefs = null;
     try {
-      // Try to load from local storage
-      let storedPrefs = null;
-      try {
-        storedPrefs = window.localStorage.getItem('servicePreferences');
-      } catch (storageError) {
-        console.error('Failed to access localStorage for service preferences:', storageError);
-        return null;
-      }
-
-      if (storedPrefs) {
-        try {
-          const parsed = JSON.parse(storedPrefs);
-          // Validate it's an object with expected structure
-          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch (parseError) {
-          console.error('Failed to parse stored preferences:', parseError);
-          // Clear invalid entry
-          window.localStorage.removeItem('servicePreferences');
-        }
-      }
-      
-      // Return null if no valid preferences found - will use defaults
-      return null;
-    } catch (error) {
-      console.error('Failed to load service preferences:', error);
+      storedPrefs = window.localStorage.getItem('servicePreferences');
+    } catch (storageError) {
+      console.error('Failed to access localStorage for service preferences:', storageError);
       return null;
     }
+
+    if (!storedPrefs) {
+      // Return null if no valid preferences found - will use defaults
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(storedPrefs);
+      // Validate it's an object with expected structure
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (parseError) {
+      console.error('Failed to parse stored preferences:', parseError);
+      console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.');
+      // Clear invalid entry
+      try {
+        window.localStorage.removeItem('servicePreferences');
+      } catch (removeError) {
+        console.error('Failed to clear invalid stored preferences:', removeError);
+      }
+    }
+
+    // Return null if no valid preferences found - will use defaults
+    return null;
   }
 
   /**

@@ -6,6 +6,15 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
+### 🔧 EXTERNAL SERVICES CONTROL PANEL IMPROVEMENTS
+
+- Improved `handleSavePreferences` in `external-services.js` to distinguish between localStorage being unavailable/disabled versus storage being full: a separate availability pre-check now throws `'browser storage is unavailable or disabled'`, while quota-exceeded errors (`QuotaExceededError`, `NS_ERROR_DOM_QUOTA_REACHED`, error code 22/1014) now throw `'browser storage is full'`.
+- Added request deduplication to `fetchServiceData` via a lazily-initialised `inFlightRequests` map: concurrent calls for the same uncached service key now share a single in-flight Promise rather than queuing separate fetch operations.
+- Refactored `loadServicePreferences` to use flat, sequential try-catch blocks instead of nested ones, eliminating the outer catch that could mask the distinction between localStorage access failures and JSON parse failures.
+- Added `console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.')` when invalid stored preferences are detected during parsing, and wrapped the subsequent `localStorage.removeItem` call in its own try-catch to handle removal failures gracefully.
+
+
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
