@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-11
+
+### 🔧 EXTERNAL SERVICES CONTROL PANEL CODE QUALITY IMPROVEMENTS
+
+- Consolidated timeout values in `config/var/www/admin/control-panel/external-services/external-services.js`: replaced the hardcoded `10000ms` timeout in `fetchAvailableServices()` with `this.requestTimeoutMs` to match the value used in `fetchServiceData()` and ensure a single configuration point for request timeouts.
+- Simplified toggle button text update logic in `updateToggleButtonState()`: extracted an `ensureToggleTextElement()` helper that creates the `.toggle-all-text` span if missing, removing the complex fallback branch and eliminating the associated `console.warn` call.
+
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
