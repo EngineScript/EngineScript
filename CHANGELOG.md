@@ -11,7 +11,7 @@ Changes are organized by date, with the most recent changes listed first.
 - Extracted the error UI message into a `ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE` constant in `config/var/www/admin/control-panel/external-services/external-services.js` for easier maintenance and potential localization.
 - Extracted the settings panel instruction text into a `SETTINGS_INSTRUCTION_TEXT` constant for the same reason.
 - Refactored `pendingChanges` from a local variable passed through multiple nested function calls to an instance property (`this.pendingChanges`) in `renderServiceSettings`, avoiding deep parameter-passing.
-- Simplified the console.error message for a missing service card to `Service card not found: ${name}. Status updates will be skipped.`, removing implementation-detail noise.
+- Simplified the console.error message for a missing service card to `Service card not found: [service name]. Status updates will be skipped.`, removing implementation-detail noise.
 - Simplified the console.warn message for stylesheet rule access errors to `Error accessing stylesheet rules:`, removing overly technical troubleshooting instructions from the console log.
 
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
