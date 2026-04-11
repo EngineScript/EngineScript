@@ -6,15 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
-### 🔒 VHOST INSTALL SECURITY & VALIDATION FIXES
-
-- Fixed domain name regex in `scripts/functions/vhost/vhost-install.sh` to allow single-character domain names (e.g., `x.com`) by changing `^[a-z0-9][a-z0-9-]*[a-z0-9]$` to `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`, while still rejecting hyphens at the start or end.
-- Expanded the comment above the domain name regex with a detailed "INTENTIONAL DESIGN — DO NOT CHANGE" block explaining the RFC basis, the purpose of the optional group, and why reverting to a two-character minimum would silently break one-letter domains.
-- Added early database name (`database_name`) validation immediately after it is constructed and before the credentials file is created, preventing a stale credentials file being left on disk if validation fails.
-- Fixed indentation of the late `DB` validation comment to match surrounding code style.
-- Added validation of the database user (`USR`) against `^[A-Za-z0-9_]+$` before it is interpolated into SQL commands, guarding against shell metacharacters or SQL injection characters.
-- Added validation of the database password (`PSWD`) against an allowlist (`^[A-Za-z0-9@%+=:,./_-]+$`) before it is interpolated into SQL commands, rejecting characters (e.g., single quotes, backslashes) that could alter SQL parsing.
-
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
