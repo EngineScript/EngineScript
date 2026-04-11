@@ -314,7 +314,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Email: basic format validation
   # Single character addresses such as a@example.com are valid and accepted by the regex.
-  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
+  EMAIL_REGEX='^[A-Za-z0-9](?:[A-Za-z0-9_%+-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9_%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
   if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
