@@ -4,16 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-11
-
-### 🧹 EXTERNAL SERVICES CODE QUALITY IMPROVEMENTS
-
-- Extracted cache configuration values (`SERVICE_CACHE_TTL_MS`, `SERVICE_CACHE_MAX_SIZE`) as module-level constants in `external-services.js` to make them easier to adjust without modifying the constructor.
-- Extracted notification timing and animation configuration values (`DEFAULT_NOTIFICATION_DURATION_MS`, `DEFAULT_NOTIFICATION_ANIMATION_DURATION_MS`, `DEFAULT_NOTIFICATION_SLIDE_OUT_ANIMATION_NAME`, `DEFAULT_REQUEST_TIMEOUT_MS`, `DEFAULT_LIVE_REGION_ANNOUNCEMENT_DELAY_MS`) as module-level constants in `external-services.js` to eliminate magic numbers in the constructor.
-- Renamed `buildServicesObject` to `createAllServicesEnabledMap` to clarify that it creates a new object rather than returning a cached reference, and updated all call sites and JSDoc accordingly.
-- Replaced inefficient `removeChild` loop in `setSaveButtonContent` with `textContent = ""` for better DOM-clearing performance, consistent with patterns used elsewhere in the file.
-- Replaced `sanitizeInput` call in the status-update path with a direct null-safe `String()` conversion; DOM text nodes already prevent XSS injection, making the extra sanitization pass redundant overhead.
-
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
