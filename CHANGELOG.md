@@ -8,6 +8,8 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🔧 EXTERNAL SERVICES CONTROL PANEL IMPROVEMENTS
 
+- Replaced all `window.localStorage` references in `external-services.js` with `globalThis.localStorage` to satisfy the `prefer-globalThis` lint rule and improve cross-environment compatibility.
+
 - Improved `handleSavePreferences` in `external-services.js` to distinguish between localStorage being unavailable/disabled versus storage being full: a separate availability pre-check now throws `'browser storage is unavailable or disabled'`, while quota-exceeded errors (`QuotaExceededError`, `NS_ERROR_DOM_QUOTA_REACHED`, error code 22/1014) now throw `'browser storage is full'`.
 - Added request deduplication to `fetchServiceData` via a lazily-initialised `inFlightRequests` map: concurrent calls for the same uncached service key now share a single in-flight Promise rather than queuing separate fetch operations.
 - Refactored `loadServicePreferences` to use flat, sequential try-catch blocks instead of nested ones, eliminating the outer catch that could mask the distinction between localStorage access failures and JSON parse failures.

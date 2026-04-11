@@ -758,15 +758,15 @@ export class ExternalServicesManager {
       // Save preferences to local storage (avoid tamper-prone cookie storage)
       const storageTestKey = '__servicePreferences_storage_test__';
       try {
-        window.localStorage.setItem(storageTestKey, '1');
-        window.localStorage.removeItem(storageTestKey);
+        globalThis.localStorage.setItem(storageTestKey, '1');
+        globalThis.localStorage.removeItem(storageTestKey);
       } catch (availabilityError) {
         console.error('localStorage availability check failed:', availabilityError);
         throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
       }
 
       try {
-        window.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
+        globalThis.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
       } catch (storageError) {
         const isQuotaExceeded = storageError && (
           storageError.name === 'QuotaExceededError' ||
@@ -1345,7 +1345,7 @@ export class ExternalServicesManager {
     // Try to load from local storage
     let storedPrefs = null;
     try {
-      storedPrefs = window.localStorage.getItem('servicePreferences');
+      storedPrefs = globalThis.localStorage.getItem('servicePreferences');
     } catch (storageError) {
       console.error('Failed to access localStorage for service preferences:', storageError);
       return null;
@@ -1367,7 +1367,7 @@ export class ExternalServicesManager {
       console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.');
       // Clear invalid entry
       try {
-        window.localStorage.removeItem('servicePreferences');
+        globalThis.localStorage.removeItem('servicePreferences');
       } catch (removeError) {
         console.error('Failed to clear invalid stored preferences:', removeError);
       }
