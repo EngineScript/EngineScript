@@ -45,7 +45,7 @@ echo ""
 # Prompt for domain name
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
@@ -189,7 +189,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Download WordPress using WP-CLI
   wp core download --allow-root
-  rm -f "/var/www/sites/${DOMAIN}/html/wp-content/plugins/hello.php"
+  if ! wp plugin delete hello --allow-root; then
+    echo "Warning: Failed to delete default 'hello' plugin via WP-CLI. Continuing if plugin is already absent."
+  fi
 
   # Create Extra WordPress Directories
   # WordPress often doesn't include these directories by default, despite them being used or checked in the Health Check plugin.
@@ -231,8 +233,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # WP-CLI Install WordPress
   cd "/var/www/sites/${DOMAIN}/html"
   wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
-
-  clear_wordpress_caches
 
   # Install and activate required WordPress plugins
   install_required_wp_plugins
@@ -298,9 +298,9 @@ else
   chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
 
   # Backup nginx vhost and SSL keys
-  NOW=$(date +%m-%d-%Y-%H)
-  gzip -cf "/etc/nginx/sites-enabled/${DOMAIN}.conf" > "/home/EngineScript/site-backups/${DOMAIN}/nginx/${NOW}-nginx-vhost.conf.gz"
-  tar -zcf "/home/EngineScript/site-backups/${DOMAIN}/ssl-keys/${NOW}-ssl-keys.gz" "/etc/nginx/ssl/${DOMAIN}"
+  BACKUP_DATE_HOUR=$(date +%m-%d-%Y-%H)
+  gzip -cf "/etc/nginx/sites-enabled/${DOMAIN}.conf" > "/home/EngineScript/site-backups/${DOMAIN}/nginx/${BACKUP_DATE_HOUR}-nginx-vhost.conf.gz"
+  tar -zcf "/home/EngineScript/site-backups/${DOMAIN}/ssl-keys/${BACKUP_DATE_HOUR}-ssl-keys.gz" "/etc/nginx/ssl/${DOMAIN}"
 
   clear
 
