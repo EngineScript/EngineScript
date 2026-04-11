@@ -1492,10 +1492,10 @@ export class ExternalServicesManager {
         if (targetCard && targetCard !== draggedElement) {
           targetCard.classList.remove('drag-over');
           
-          if (!cachedCardOrder) {
+          if (!this.cachedCardOrder) {
             return;
           }
-          const allCards = cachedCardOrder;
+          const allCards = this.cachedCardOrder;
           const draggedIndex = allCards.indexOf(draggedElement);
           const targetIndex = allCards.indexOf(targetCard);
           
@@ -1505,7 +1505,7 @@ export class ExternalServicesManager {
             targetCard.parentNode.insertBefore(draggedElement, targetCard);
           }
           
-          cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
+          this.cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
 
           // Save new order
           this.saveCardOrder();
@@ -1514,7 +1514,7 @@ export class ExternalServicesManager {
 
       card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
-        cachedCardOrder = null;
+        this.cachedCardOrder = null;
         // Remove drag-over from all cards
         container.querySelectorAll('.external-service-card').forEach(c => {
           c.classList.remove('drag-over');
