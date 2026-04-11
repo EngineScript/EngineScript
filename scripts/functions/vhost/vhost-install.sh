@@ -45,7 +45,7 @@ echo ""
 # Prompt for domain name
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
@@ -116,7 +116,7 @@ echo "  Without WordPress: Nginx vhost, SSL certificates, and a"
 echo "                     placeholder page. No database or CMS."
 echo ""
 
-if prompt_yes_no "Would you like to install WordPress on this domain?" "y" 300; then
+if prompt_yes_no "Would you like to install WordPress on this domain?" "y" 300; then  # 300-second timeout
   INSTALL_WORDPRESS="1"
   echo "WordPress will be installed on ${DOMAIN}."
 else
@@ -157,6 +157,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
 
   # Domain Creation Variables
+  # RAND_CHAR2 is sourced from /usr/local/bin/enginescript/enginescript-variables.txt
   PREFIX="${RAND_CHAR2}"
   domain_input="${DOMAIN}"
   IFS='.' read -r -a domain_parts <<< "${domain_input}"
@@ -169,6 +170,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
         ;;
     esac
   fi
+  # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
+  # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
   database_name="${domain_without_tld}_${RAND_CHAR4}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
@@ -184,6 +187,12 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   source "${credentials_file}"
 
+# Validate DB identifier before interpolating into SQL
+  if [[ -z "${DB}" || ! "${DB}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+  
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
   if ! sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; then
