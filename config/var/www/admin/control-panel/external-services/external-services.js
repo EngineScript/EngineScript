@@ -18,6 +18,9 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+// Standard CSSOM numeric value for KEYFRAMES_RULE, used when CSSRule.KEYFRAMES_RULE is unavailable (legacy browsers).
+const LEGACY_KEYFRAMES_RULE_TYPE = 7;
+
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
 
 const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
@@ -1767,8 +1770,6 @@ export class ExternalServicesManager {
    */
   hasAnimationKeyframes(animationName) {
     const styleSheets = Array.from(document.styleSheets || []);
-    // Standard CSSOM numeric value for KEYFRAMES_RULE, used when CSSRule.KEYFRAMES_RULE is unavailable (legacy browsers).
-    const LEGACY_KEYFRAMES_RULE_TYPE = 7;
     const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : LEGACY_KEYFRAMES_RULE_TYPE;
 
     for (const styleSheet of styleSheets) {
@@ -1786,6 +1787,15 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Convert milliseconds to seconds for CSS time values.
+   * @param {number} durationMs
+   * @returns {number}
+   */
+  millisecondsToSeconds(durationMs) {
+    return durationMs / 1000;
+  }
+
+  /**
    * Schedule notification slide-out and removal.
    * Uses two-stage timing: display duration first, then animation duration before DOM removal.
    * @param {HTMLElement} notification - Notification element to remove
@@ -1794,7 +1804,7 @@ export class ExternalServicesManager {
   scheduleNotificationRemoval(notification) {
     setTimeout(() => {
       if (this.hasAnimationKeyframes(this.notificationSlideOutAnimationName)) {
-        notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.notificationAnimationDurationMs / 1000}s ease`;
+        notification.style.animation = `${this.notificationSlideOutAnimationName} ${this.millisecondsToSeconds(this.notificationAnimationDurationMs)}s ease`;
       }
       setTimeout(() => notification.remove(), this.notificationAnimationDurationMs);
     }, this.notificationDurationMs);
