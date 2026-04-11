@@ -4,6 +4,8 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-11
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
