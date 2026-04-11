@@ -15,7 +15,7 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 # Source shared vhost functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -140,14 +140,14 @@ create_ssl_certificate "${DOMAIN}"
 echo "System Date: $(date)"
 
 # Create backup directories
-create_backup_directories "${SITE_URL}"
+create_backup_directories "${DOMAIN}"
 
 # Site Root
-mkdir -p "/var/www/sites/${SITE_URL}/html"
-cd "/var/www/sites/${SITE_URL}/html"
+mkdir -p "/var/www/sites/${DOMAIN}/html"
+cd "/var/www/sites/${DOMAIN}/html"
 
 # Create domain log directories and files
-create_domain_logs "${SITE_URL}"
+create_domain_logs "${DOMAIN}"
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
