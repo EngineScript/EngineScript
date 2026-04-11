@@ -45,7 +45,7 @@ echo ""
 # Prompt for domain name
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9-]+$ ]]; then
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
