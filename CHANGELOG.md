@@ -4,6 +4,17 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-11
+
+### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
+
+- Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
+- Removed the duplicate `URL_VALIDATION_REGEX` argument from the `prompt_input` call for the Site URL field; validation is now handled exclusively by the subsequent `validate_url` function call, eliminating redundant logic.
+- Added `DB_CHARSET="${DB_CHARSET_VALIDATED}"` after the charset `case` statement so `DB_CHARSET` is always the validated, lowercase value when used in the `wp-config.php` `sed` replacement, preventing a potential mismatch if the user supplies a mixed-case charset.
+- Simplified `run_url_search_replace_if_present` to run `wp search-replace` directly with `--report-changed-only`, removing the preliminary `wp db search` pre-check that unnecessarily doubled full-table scans on large databases.
+- Extracted WordPress salt generation into a new shared `fetch_wp_salts()` function in `scripts/functions/shared/enginescript-shared-vhost.sh`, replacing the divergent inline implementations in both `vhost-install.sh` and `vhost-import.sh`.
+- `fetch_wp_salts()` retries up to 5 times with a 15-second delay between attempts, validates each response contains the expected `define(` content, and only hard-fails with a clear error message after all attempts are exhausted—preventing a transient WordPress.org API outage from permanently breaking a new install or import.
+
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS

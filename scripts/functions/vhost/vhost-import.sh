@@ -257,10 +257,10 @@ if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
         EXTRACT_STATUS=1
     fi
     if [[ $EXTRACT_STATUS -eq 0 ]]; then
-        # Find exactly one .sql file within the extracted content (deterministic order)
-        mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql" -print0 | sort -z)
+        # Find exactly one database dump file (.sql or .sql.gz) within the extracted content (deterministic order)
+        mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0 | sort -z)
         if [[ ${#DB_SOURCE_CANDIDATES[@]} -ne 1 ]]; then
-            echo "FAILED: Could not find exactly one .sql file within the extracted single zip content in ${WP_EXTRACTED_PATH}"
+            echo "FAILED: Could not find exactly one database file (.sql or .sql.gz) within the extracted single zip content in ${WP_EXTRACTED_PATH}"
             EXTRACT_STATUS=1 # Mark as failure
         else
             DB_SOURCE_PATH="${DB_SOURCE_CANDIDATES[0]}" # Set DB path for single_zip format
@@ -379,7 +379,7 @@ while true; do
       
       # Site URL input with validation
       while true; do
-          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300 "${URL_VALIDATION_REGEX}")
+          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300)
           if [[ -n "$new_site_url" ]]; then
               if validate_url "$new_site_url"; then
                   SITE_URL="$new_site_url"
@@ -497,6 +497,7 @@ case "${DB_CHARSET_VALIDATED}" in
         exit 1
         ;;
 esac
+DB_CHARSET="${DB_CHARSET_VALIDATED}"
 DB_COLLATION="${DB_CHARSET_VALIDATED}_unicode_ci"
 if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
     echo "Error: Generated database name contains invalid characters: ${DB}" >&2
@@ -555,19 +556,7 @@ sed -i \
 configure_redis "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
 
 # WP Salt Creation (Generate new salts)
-echo "Generating new WordPress salts..."
-SALT=$(curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 30 "https://api.wordpress.org/secret-key/1.1/salt/") || {
-    echo "Error: Failed to fetch WordPress salts from api.wordpress.org. Please check your internet connection, DNS/firewall/proxy settings, and try running the import again." >&2
-    exit 1
-}
-
-if [ -z "${SALT}" ] || ! printf '%s' "${SALT}" | grep -q "define("; then
-    echo "Error: Retrieved invalid WordPress salts content" >&2
-    exit 1
-fi
-
-STRING='put your unique phrase here'
-printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "${TARGET_WP_PATH}/wp-config.php"
+fetch_wp_salts "${TARGET_WP_PATH}/wp-config.php"
 
 # Configure wp-config.php settings
 configure_wpconfig_settings "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
@@ -619,13 +608,8 @@ HTTP_ORIGINAL_URL="${HTTPS_ORIGINAL_URL/#https:\/\//http://}"
 run_url_search_replace_if_present() {
     local original_url="$1"
 
-    # Only run expensive full-table replacements when the source URL is present.
-    # Use `wp db search --quiet` exit status directly to avoid an extra grep pass.
-    if wp db search "${original_url}" --all-tables --allow-root --quiet 2>/dev/null; then
-        wp search-replace "${original_url}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
-    else
-        echo "Skipping search-replace: '${original_url}' not found in database text columns."
-    fi
+    # Run search-replace directly; --report-changed-only will emit output only for changed rows.
+    wp search-replace "${original_url}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
     return
 }
 
