@@ -6,16 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
-### 🐛 BUG FIX: EXTERNAL SERVICES FALLBACK MAP
-
-- Fixed `buildAllServicesEnabledMap()` in `external-services.js` to pass `this.getServiceDefinitions()` to `createAllServicesEnabledMap()`; the missing argument caused `Object.keys(undefined)` → `TypeError` in both API-failure fallback branches of `fetchAvailableServices()`, meaning the UI could never recover gracefully from a failed or empty config API response.
-
-### 🔧 CODE QUALITY: REMOVE UNREACHABLE CODE IN EXTERNAL SERVICES
-
-- Removed unreachable dead code in `buildAllServicesEnabledMap()` in `external-services.js`; the five lines following `return this.createAllServicesEnabledMap()` (a stale `services` object build-up that also referenced an undefined `serviceDefinitions` variable) could never execute and have been deleted.
-
-
-
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
