@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-11
+
+### 🔧 VHOST IMPORT SONARCLOUD WARNING FIXES
+
+- Added explicit `return 0` at the end of `build_default_url_validation_regex()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
+- Added explicit `return $?` at the end of `is_directory_absent_or_empty()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
+- Added explicit `return 0` at the end of `escape_ere_literal_for_sed()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
+
 ## 2026-04-10 (2)
 
 ### 🔒 VHOST IMPORT SECURITY AND MAINTAINABILITY IMPROVEMENTS

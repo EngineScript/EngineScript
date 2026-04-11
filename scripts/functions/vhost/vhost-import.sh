@@ -44,6 +44,7 @@ build_default_url_validation_regex() {
   local suffix='([/?#].*)?'
 
   echo "^${scheme}${host}${port}${suffix}$"
+  return 0
 }
 
 readonly DEFAULT_URL_VALIDATION_REGEX="$(build_default_url_validation_regex)"
@@ -69,6 +70,7 @@ validate_zip_archive_paths() {
 is_directory_absent_or_empty() {
     local dir="$1"
     [[ ! -d "$dir" ]] || [[ -z "$(find "$dir" -mindepth 1 -print -quit)" ]]
+    return $?
 }
 
 # --- Instructions for Preparing Files ---
@@ -132,6 +134,7 @@ sleep 1
 escape_ere_literal_for_sed() {
     local raw="$1"
     printf '%s' "$raw" | sed -E 's#[][(){}.^$*+?|\\/-]#\\&#g'
+    return 0
 }
 
 # Function to extract define values (Handles single/double quotes)
