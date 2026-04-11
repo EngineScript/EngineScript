@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-11 (2)
+
+### 🔒 VHOST INSTALL SECURITY & CODE QUALITY IMPROVEMENTS
+
+- Fixed domain name validation regex in `scripts/functions/vhost/vhost-install.sh` to require a minimum of 2 characters by changing `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$` to `^[a-z0-9][a-z0-9-]*[a-z0-9]$`, preventing single-character domain names.
+- Expanded the multi-part TLD list in `scripts/functions/vhost/vhost-install.sh` to include common public suffixes: `co.jp`, `com.au`, `co.nz`, `com.sg`, `com.my`, `com.br`, `com.mx`, `co.za`, `com.tr`, `com.hk`, making the TLD selection consistent and comprehensive.
+- Renamed ambiguous variables in `scripts/functions/vhost/vhost-install.sh`: `sand` → `domain_input`, `SANDOMAIN` → `domain_without_tld`, `SDB` → `database_name`, `SUSR` → `database_user`, `SPS` → `database_password`, improving code readability.
+- Added error handling for all MariaDB operations in `scripts/functions/vhost/vhost-install.sh`; each `CREATE DATABASE`, `CREATE USER`, and `GRANT` command now exits with a descriptive error message if it fails, preventing broken installations from continuing silently.
+- Removed the critical security risk of `GRANT ALL ON mysql.*` to the WordPress application user in `scripts/functions/vhost/vhost-install.sh`; the application user now only has privileges on its own database.
+
 ## 2026-04-11
 
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS

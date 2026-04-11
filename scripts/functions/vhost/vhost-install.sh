@@ -45,7 +45,7 @@ echo ""
 # Prompt for domain name
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
@@ -69,7 +69,9 @@ VALID_TLDS=(
     "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
     "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
     "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
-    "co.uk"
+
+    # Common multi-part public suffixes
+    "co.uk" "co.jp" "com.au" "co.nz" "com.sg" "com.my" "com.br" "com.mx" "co.za" "com.tr" "com.hk"
 )
 select TLD in "${VALID_TLDS[@]}"; do
   if [[ -n "$TLD" ]]; then
@@ -156,24 +158,34 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Domain Creation Variables
   PREFIX="${RAND_CHAR2}"
-  sand="${DOMAIN}" && SANDOMAIN="${sand%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
-  SUSR="${RAND_CHAR16}"
-  SPS="${RAND_CHAR32}"
+  domain_input="${DOMAIN}" && domain_without_tld="${domain_input%.*}" && database_name="${domain_without_tld}_${RAND_CHAR4}"
+  database_user="${RAND_CHAR16}"
+  database_password="${RAND_CHAR32}"
 
   # Domain Database Credentials
-  echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-  echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-  echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "DB=\"${database_name}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "USR=\"${database_user}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  echo "PSWD=\"${database_password}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
   echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
   source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
-  sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-  sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
-  sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
+  if ! sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; then
+    echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+
+  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+    echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+
+  if ! sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+    echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
+    exit 1
+  fi
 
   # Download WordPress using WP-CLI
   wp core download --allow-root
