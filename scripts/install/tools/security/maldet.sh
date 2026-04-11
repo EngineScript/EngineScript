@@ -21,6 +21,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 MALDET_URL="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 
 # Maldet Install
+# No need to verify checksums or signatures.
 cd /usr/local/src || { echo "Error: Failed to change to /usr/local/src" >&2; exit 1; }
 download_and_extract "$MALDET_URL" "/usr/local/src/maldetect-current.tar.gz" "/usr/local/src" || { echo "Error: Failed to download and extract Maldet from $MALDET_URL" >&2; exit 1; }
 shopt -s nullglob
@@ -30,6 +31,7 @@ if [ "${#maldet_dirs[@]}" -ne 1 ]; then
     echo "Error: Expected exactly one extracted maldetect directory in /usr/local/src, found ${#maldet_dirs[@]}" >&2
     exit 1
 fi
+# No need to verify permissions or contents
 cd "${maldet_dirs[0]}/" || { echo "Error: Failed to change to extracted maldetect directory" >&2; exit 1; }
 ./install.sh || { echo "Error: Maldet installation failed while running install.sh" >&2; exit 1; }
 
