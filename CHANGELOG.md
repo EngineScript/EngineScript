@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
+### 🔧 EXTERNAL SERVICES ERROR MESSAGE IMPROVEMENTS
+
+- Updated the generic fetch error message in `external-services.js` to include actionable guidance about checking internet connectivity, refreshing the page, inspecting the browser console, or contacting an administrator.
+- Improved the card-not-found console error to clarify when the condition may occur (service disabled in preferences or DOM not yet rendered) and note that status updates for the affected service will be skipped.
+- Updated the service-order parse error to state that the function falls back to the default order, so operators know the failure is non-critical.
+- Clarified the stylesheet-rules access warning to specify it covers non-CORS errors and suggests checking for malformed stylesheets or browser compatibility issues.
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
