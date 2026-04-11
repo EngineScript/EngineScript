@@ -6,14 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
-### 🔧 EXTERNAL-SERVICES.JS CODE QUALITY IMPROVEMENTS
-
-- Updated cache comment from "LRU cache" to "TTL cache and FIFO eviction" to accurately describe the eviction strategy used in `external-services.js`.
-- Added keyboard navigation instructions to the settings header text, informing users they can press Enter to activate reorder mode and use arrow keys to move service cards.
-- Extracted the magic number `7` (CSSRule.KEYFRAMES_RULE fallback) into a named constant `LEGACY_KEYFRAMES_RULE_TYPE` with an explanatory comment for clarity and maintainability.
-
-## 2026-04-11
-
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
