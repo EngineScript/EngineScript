@@ -186,7 +186,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   if (( ${#domain_parts[@]} >= 3 )); then
     public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
     case "${public_suffix}" in
-      co.uk|org.uk|gov.uk|ac.uk|com.au|net.au|org.au|co.nz|org.nz|com.br)
+      co.uk|org.uk|gov.uk|ac.uk|com.au|net.au|org.au|co.nz|org.nz|com.br|com.sg|com.my|com.mx|co.za|com.tr|com.hk)
         domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
         ;;
     esac
@@ -194,8 +194,10 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
   # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
   database_name="${domain_without_tld}_${RAND_CHAR4}"
+  # Normalize to lowercase for MySQL/MariaDB portability across platforms
+  database_name="${database_name,,}"
   # Validate DB identifier before writing credentials file or interpolating into SQL
-  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${database_name}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
