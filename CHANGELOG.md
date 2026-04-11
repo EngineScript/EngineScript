@@ -4,24 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-11
-
-### 🔧 VHOST IMPORT SONARCLOUD WARNING FIXES
-
-- Added explicit `return 0` at the end of `build_default_url_validation_regex()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
-- Added explicit `return $?` at the end of `is_directory_absent_or_empty()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
-- Added explicit `return 0` at the end of `escape_ere_literal_for_sed()` in `scripts/functions/vhost/vhost-import.sh` to satisfy SonarCloud explicit-return rule.
-
-## 2026-04-10 (2)
-
-### 🔒 VHOST IMPORT SECURITY AND MAINTAINABILITY IMPROVEMENTS
-
-- Extracted the URL validation regex into a documented `build_default_url_validation_regex()` function in `scripts/functions/vhost/vhost-import.sh`, making each component (scheme, host label, port, suffix) self-explanatory.
-- Extracted the ERE literal escaping logic into a reusable `escape_ere_literal_for_sed()` function with inline documentation listing every escaped metacharacter and the reason for escaping it.
-- Broadened the table-prefix detection regex character class from `[a-zA-Z0-9_]+` to `[^\`\"]+` so prefixes containing hyphens or other valid MySQL table-name characters are correctly recognised.
-- Fixed the single-zip import format detection condition to treat empty `root-directory` and `database-file` directories the same as absent ones, preventing a false two-file detection when those directories exist but contain no files.
-- Added `validate_zip_archive_paths()` to scan ZIP archive entries for absolute paths and `..` directory traversal segments before extraction, protecting against Zip Slip path traversal attacks in both single-zip and two-file import flows.
-
 ## 2026-04-10
 
 ### 🔧 VHOST IMPORT CODE QUALITY IMPROVEMENTS
