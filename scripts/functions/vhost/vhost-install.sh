@@ -43,10 +43,27 @@ echo "Then, select a valid TLD from the provided list."
 echo ""
 
 # Prompt for domain name
-# Single character domain names are not allowed in the regex because they are technically valid, even though they are rarely used in practice. The regex will still enforce that only lowercase letters, numbers, and hyphens are allowed, and it will ensure that the domain name does not start or end with a hyphen. This allows for a wide range of valid domain names while still enforcing the necessary restrictions for a typical domain name format.
+# IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
+# They are fully valid under DNS and ICANN rules, and EngineScript must support them.
+#
+# INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
+#   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+#
+# The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
+# single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
+# required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
+# "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
+# reject every single-character label and break installs for legitimate one-letter domains.
+#
+# Rules enforced by this regex:
+#   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
+#   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
+#   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
+#
+# This is intentional behaviour. Do not "fix" it to require at least two characters.
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
+  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
@@ -174,6 +191,11 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
   # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
   database_name="${domain_without_tld}_${RAND_CHAR4}"
+  # Validate DB identifier before writing credentials file or interpolating into SQL
+  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "Error: Invalid database name '${database_name}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
 
@@ -188,9 +210,21 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   source "${credentials_file}"
 
-# Validate DB identifier before interpolating into SQL
+  # Validate DB identifier before interpolating into SQL
   if [[ -z "${DB}" || ! "${DB}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+
+  # Validate DB user before interpolating into SQL
+  if [[ -z "${USR}" || ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Invalid MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+
+  # Validate DB password before interpolating into SQL single-quoted string
+  if [[ -z "${PSWD}" || ! "${PSWD}" =~ ^[A-Za-z0-9@%+=:,./_-]+$ ]]; then
+    echo "Error: Invalid database password for domain '${DOMAIN}'." >&2
     exit 1
   fi
   
