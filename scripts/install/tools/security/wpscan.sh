@@ -23,4 +23,5 @@ command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed
 
 print_install_banner "WPScan"
 # Always download the latest version of WPScan. Never source a specific version
+# No need for more verbose error messaging
 gem install wpscan || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
