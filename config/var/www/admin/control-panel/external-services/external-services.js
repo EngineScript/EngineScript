@@ -411,6 +411,12 @@ export class ExternalServicesManager {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
+
+      const expectedOrigin = window.location.origin;
+      const responseOrigin = new URL(response.url, window.location.href).origin;
+      if (responseOrigin !== expectedOrigin) {
+        throw new Error(`Unexpected response origin: ${responseOrigin}`);
+      }
       
       const data = await response.json();
       let services = data.services || data;
@@ -755,8 +761,8 @@ export class ExternalServicesManager {
       const currentPreferences = this.getAllowedPreferenceChanges(storedPreferences);
       this.applyPreferenceChanges(currentPreferences, safeChanges);
       
-      // Save to cookie
-      writeCookie('servicePreferences', encodeURIComponent(JSON.stringify(currentPreferences)), 365);
+      // Save preferences to local storage (avoid tamper-prone cookie storage)
+      window.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
       this.applyPreferenceChanges(services, safeChanges);
       
       // Clear pending changes
@@ -836,22 +842,46 @@ export class ExternalServicesManager {
 
   /**
    * Build a canonical, sanitized FontAwesome class string.
-   * @param {string} iconSuffix - Icon suffix (for example: "spinner" or "fa-spinner fa-spin")
-   * @param {string|null} fallbackSuffix - Optional fallback icon suffix
+   * Supports explicit style prefixes in the input (for example: "fab fa-github").
+   * @param {string} iconSuffix - Icon suffix or class list (for example: "spinner", "fa-spinner fa-spin", "far fa-clock")
+   * @param {string|null} fallbackSuffix - Optional fallback icon suffix/class list
    * @returns {string} Sanitized class string (for example: "fas fa-spinner")
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
-    let safeSuffix = sanitizeFaIconSuffix(iconSuffix);
+    const parseIconInput = (value) => {
+      if (typeof value !== "string" || !value.trim()) {
+        return { stylePrefix: null, iconName: null };
+      }
 
-    if (!safeSuffix && fallbackSuffix) {
-      safeSuffix = sanitizeFaIconSuffix(fallbackSuffix);
-    }
+      const parts = value.trim().split(/\s+/);
+      let stylePrefix = null;
+      let iconName = null;
 
-    if (!safeSuffix) {
-      safeSuffix = DEFAULT_ICON_SUFFIX;
-    }
+      for (const part of parts) {
+        if (/^fa[rsbdl]$/.test(part) || /^fa-(solid|regular|brands|light|duotone)$/.test(part)) {
+          stylePrefix = part;
+          continue;
+        }
 
-    return `fas fa-${safeSuffix}`;
+        if (!iconName && /^fa-[a-z0-9-]+$/.test(part) && !/^fa-(spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/.test(part)) {
+          iconName = part.replace(/^fa-/, "");
+        }
+      }
+
+      if (!iconName) {
+        iconName = sanitizeFaIconSuffix(value);
+      }
+
+      return { stylePrefix, iconName };
+    };
+
+    const primary = parseIconInput(iconSuffix);
+    const fallback = parseIconInput(fallbackSuffix);
+
+    const stylePrefix = primary.stylePrefix || fallback.stylePrefix || "fas";
+    const safeSuffix = primary.iconName || fallback.iconName || DEFAULT_ICON_SUFFIX;
+
+    return sanitizeFaIconClass(`${stylePrefix} fa-${safeSuffix}`);
   }
 
   /**
@@ -1006,9 +1036,7 @@ export class ExternalServicesManager {
       statusSpan.textContent = '';
       // Create icon element safely
       const iconElement = document.createElement("i");
-      // Use suffix sanitizer here because class is constructed as `fas fa-${suffix}`
-      const safeIconSuffix = sanitizeFaIconSuffix(statusIconSuffix) || DEFAULT_ICON_SUFFIX;
-      iconElement.className = `fas fa-${safeIconSuffix}`;
+      iconElement.className = this.buildFaIconClass(statusIconSuffix);
       statusSpan.appendChild(iconElement);
       const safeStatusText = statusDescription == null ? '' : String(statusDescription);
       statusSpan.appendChild(document.createTextNode(` ${safeStatusText}`));
@@ -1144,7 +1172,7 @@ export class ExternalServicesManager {
         
         return fetch(apiUrl, {
           signal: signal,
-          credentials: 'include'
+          credentials: 'same-origin'
         });
       }, serviceKey);
       
@@ -1286,19 +1314,19 @@ export class ExternalServicesManager {
    */
   loadServicePreferences() {
     try {
-      // Try to load from cookie first
-      const cookiePrefs = readCookie('servicePreferences');
-      if (cookiePrefs) {
+      // Try to load from local storage
+      const storedPrefs = window.localStorage.getItem('servicePreferences');
+      if (storedPrefs) {
         try {
-          const parsed = JSON.parse(decodeURIComponent(cookiePrefs));
+          const parsed = JSON.parse(storedPrefs);
           // Validate it's an object with expected structure
           if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
             return parsed;
           }
         } catch (parseError) {
-          console.error('Failed to parse cookie preferences:', parseError);
-          // Clear invalid cookie
-          removeCookie('servicePreferences');
+          console.error('Failed to parse stored preferences:', parseError);
+          // Clear invalid entry
+          window.localStorage.removeItem('servicePreferences');
         }
       }
       
