@@ -29,8 +29,49 @@ WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extra
 
 # --- Supported DB Charset Configuration ---
 readonly ALLOWED_DB_CHARSETS=("utf8mb4" "utf8" "latin1")
-readonly DEFAULT_URL_VALIDATION_REGEX="^https?://([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(:[0-9]{1,5})?([/?#].*)?$"
+
+# Build the default URL validation regex from documented components.
+# Pattern intent:
+# - scheme: http:// or https://
+# - host: one or more DNS labels separated by dots
+# - port: optional :<1-5 digits>
+# - suffix: optional path/query/fragment beginning with /, ?, or #
+build_default_url_validation_regex() {
+  local scheme='https?://'
+  local host_label='[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?'
+  local host="(${host_label}\\.)*${host_label}"
+  local port='(:[0-9]{1,5})?'
+  local suffix='([/?#].*)?'
+
+  echo "^${scheme}${host}${port}${suffix}$"
+  return 0
+}
+
+readonly DEFAULT_URL_VALIDATION_REGEX="$(build_default_url_validation_regex)"
 URL_VALIDATION_REGEX="${URL_VALIDATION_REGEX:-$DEFAULT_URL_VALIDATION_REGEX}"
+
+# Validate ZIP archive entries to prevent path traversal (Zip Slip)
+validate_zip_archive_paths() {
+    local archive_file="$1"
+    local entry=""
+
+    while IFS= read -r entry; do
+        # Reject absolute paths and parent-directory traversal segments
+        if [[ "$entry" == /* ]] || [[ "$entry" =~ (^|/)\.\.(\/|$) ]]; then
+            echo "FAILED: Unsafe path detected in archive ${archive_file}: ${entry}"
+            return 1
+        fi
+    done < <(unzip -Z -1 "$archive_file")
+
+    return 0
+}
+
+# Returns true (0) when a directory is absent or contains no files/subdirs
+is_directory_absent_or_empty() {
+    local dir="$1"
+    [[ ! -d "$dir" ]] || [[ -z "$(find "$dir" -mindepth 1 -print -quit)" ]]
+    return $?
+}
 
 # --- Instructions for Preparing Files ---
 echo ""
@@ -86,11 +127,21 @@ sleep 1
 
 # --- Function Definitions ---
 
+# Escape a string so it can be safely embedded as a literal inside a sed/grep -E pattern.
+# Escaped characters:
+#   [](){}.^$*+?|\\/-
+# These are ERE metacharacters or delimiter-sensitive characters in this sed usage.
+escape_ere_literal_for_sed() {
+    local raw="$1"
+    printf '%s' "$raw" | sed -E 's#[][(){}.^$*+?|\\/-]#\\&#g'
+    return 0
+}
+
 # Function to extract define values (Handles single/double quotes)
 extract_define() {
     local key="$1"
     local escaped_key
-    escaped_key=$(printf '%s' "$key" | sed -E 's#[][(){}.^$*+?|\\/-]#\\&#g')
+    escaped_key=$(escape_ere_literal_for_sed "$key")
     # Find the line defining the key
     local line
     line=$(grep -E "^\s*define\(\s*['\"]${escaped_key}['\"]\s*," "$WP_CONFIG_PATH")
@@ -107,7 +158,9 @@ extract_prefix_from_db() {
     local grep_cmd="grep"
     # Look for CREATE TABLE or INSERT INTO lines with common tables (_options or _users)
     # Capture the table name between backticks/quotes, then strip _options/_users to derive prefix
-    local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")[a-zA-Z0-9_]+_(options|users)(\`|\")"
+    local search_pattern="(CREATE TABLE|INSERT INTO)[[:space:]]+(\`|\")[^\`\"]+_(options|users)(\`|\")"
+    # NOTE: [^\`\"]+ intentionally allows hyphens and other characters valid in MySQL table names,
+    # broadening the previous [a-zA-Z0-9_]+ which would miss prefixes like "my-site_".
     local table_name=""
 
     # Use zgrep for .gz, grep for .sql.
@@ -153,8 +206,8 @@ DB_SOURCE_PATH=""  # Path to the DB file (set differently for each method)
 mapfile -d '' -t SINGLE_ZIP_CANDIDATES < <(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip" -print0)
 SINGLE_ZIP_COUNT=${#SINGLE_ZIP_CANDIDATES[@]}
 
-if [[ "$SINGLE_ZIP_COUNT" -eq 1 && ! -d "${WP_ARCHIVE_DIR}" && ! -d "${DB_IMPORT_DIR}" ]]; then
-    # Found exactly one zip file in the base dir, and the old dirs don't exist
+if [[ "$SINGLE_ZIP_COUNT" -eq 1 ]] && is_directory_absent_or_empty "${WP_ARCHIVE_DIR}" && is_directory_absent_or_empty "${DB_IMPORT_DIR}"; then
+    # Found exactly one zip file in the base dir, and the two-file dirs are absent or empty
     IMPORT_FORMAT="single_zip"
     SINGLE_ZIP_FILE="${SINGLE_ZIP_CANDIDATES[0]}"
     echo "PASSED: Detected Single Export Zip format: ${SINGLE_ZIP_FILE}"
@@ -197,8 +250,12 @@ EXTRACT_STATUS=1 # Default to failure
 
 if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
     echo "Extracting single zip file: ${SINGLE_ZIP_FILE}"
-    unzip -q "${SINGLE_ZIP_FILE}" -d "${WP_EXTRACTED_PATH}"
-    EXTRACT_STATUS=$?
+    if validate_zip_archive_paths "${SINGLE_ZIP_FILE}"; then
+        unzip -q "${SINGLE_ZIP_FILE}" -d "${WP_EXTRACTED_PATH}"
+        EXTRACT_STATUS=$?
+    else
+        EXTRACT_STATUS=1
+    fi
     if [[ $EXTRACT_STATUS -eq 0 ]]; then
         # Find exactly one .sql file within the extracted content (deterministic order)
         mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f -name "*.sql" -print0 | sort -z)
@@ -213,8 +270,12 @@ if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
 elif [[ "$IMPORT_FORMAT" == "two_file" ]]; then
     echo "Extracting WordPress archive file: ${WP_ARCHIVE_FILE}"
     if [[ "${WP_ARCHIVE_FILE}" == *.zip ]]; then
-        unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
-        EXTRACT_STATUS=$?
+        if validate_zip_archive_paths "${WP_ARCHIVE_FILE}"; then
+            unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
+            EXTRACT_STATUS=$?
+        else
+            EXTRACT_STATUS=1
+        fi
     elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
         tar -zxf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
         EXTRACT_STATUS=$?
