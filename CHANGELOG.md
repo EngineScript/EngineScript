@@ -6,6 +6,16 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
+### 🧹 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
+
+- Extracted the "Failed to fetch external service status" error message into a `ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE` constant in `external-services.js` for easier maintenance and potential localization.
+- Extracted the settings panel instruction text into a `SETTINGS_INSTRUCTION_TEXT` constant in `external-services.js` for easier updates and potential internationalization support.
+- Refactored `pendingChanges` in `renderServiceSettings` from a local variable to an instance property (`this.pendingChanges`) to reduce deep parameter passing through nested function calls.
+- Simplified the `console.error` message in `getServiceCardElement` to focus on actionable information: `Service card not found: ${name}. Status updates will be skipped.`
+- Simplified the `console.warn` message in `getSheetRules` to: `Error accessing stylesheet rules:` followed by the error object.
+
+## 2026-04-11
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.

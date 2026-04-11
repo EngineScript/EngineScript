@@ -18,6 +18,10 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
+
+const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
+
 const DND_MOVE_TOKEN = 'moving';
 
 const DEFAULT_ICON_SUFFIX = 'question';
@@ -245,7 +249,7 @@ export class ExternalServicesManager {
     h3.textContent = "Error Loading External Services";
     
     const p = document.createElement("p");
-    p.textContent = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
+    p.textContent = ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE;
     
     errorDiv.appendChild(iconDiv);
     errorDiv.appendChild(h3);
@@ -436,8 +440,8 @@ export class ExternalServicesManager {
   renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences) {
     settingsContainer.replaceChildren();
     
-    // Track pending changes (shared across components)
-    const pendingChanges = {};
+    // Track pending changes as instance state (shared across components)
+    this.pendingChanges = {};
     
     // Create main UI structure
     const { settingsToggle, settingsContent } = this.createSettingsStructure();
@@ -451,13 +455,13 @@ export class ExternalServicesManager {
     for (const category of categoryOrder) {
       if (!categories[category]) continue;
       const categorySection = this.createSettingsCategorySection(
-        category, categories[category], services, serviceDefinitions, preferences, pendingChanges
+        category, categories[category], services, serviceDefinitions, preferences, this.pendingChanges
       );
       settingsContent.appendChild(categorySection);
     }
 
     // Create and append save button
-    const saveButton = this.createSaveButton(settingsContent, services, pendingChanges);
+    const saveButton = this.createSaveButton(settingsContent, services, this.pendingChanges);
     settingsContent.appendChild(saveButton);
   }
 
@@ -489,7 +493,7 @@ export class ExternalServicesManager {
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
     const headerP = document.createElement("p");
-    headerP.textContent = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
+    headerP.textContent = SETTINGS_INSTRUCTION_TEXT;
     settingsHeader.appendChild(headerP);
     settingsContent.appendChild(settingsHeader);
     
@@ -1095,7 +1099,7 @@ export class ExternalServicesManager {
     const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
     if (!serviceCard) {
       const name = serviceDef && serviceDef.name ? serviceDef.name : serviceKey;
-      console.error(`Card not found for service: ${serviceKey} (${name}). This may occur if the service is disabled in preferences or the DOM has not finished rendering. Status updates for this service will be skipped.`);
+      console.error(`Service card not found: ${name}. Status updates will be skipped.`);
       return null;
     }
     return serviceCard;
@@ -1715,7 +1719,7 @@ export class ExternalServicesManager {
       if (e.name === 'SecurityError') {
         return null;
       }
-      console.warn('Unexpected error while accessing stylesheet rules (non-CORS related). Check for malformed stylesheets or browser compatibility issues:', e);
+      console.warn('Error accessing stylesheet rules:', e);
       return null;
     }
   }
