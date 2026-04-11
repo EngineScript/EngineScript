@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
+### 🔧 EXTERNAL SERVICES CODE QUALITY IMPROVEMENTS
+
+- Extracted `LEGACY_KEYFRAMES_RULE_TYPE = 7` to a named module-level constant in `external-services.js`, replacing the magic number defined inside `hasAnimationKeyframes()` to improve maintainability and make the value reusable.
+- Added `millisecondsToSeconds()` helper method to `ExternalServicesManager` in `external-services.js`, replacing the inline `/ 1000` conversion in `scheduleNotificationRemoval()` to eliminate duplication and clarify intent.
+
+## 2026-04-11
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
