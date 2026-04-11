@@ -21,6 +21,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Prompt timeout settings (seconds)
+WORDPRESS_PROMPT_TIMEOUT=300
+
 # Check if services are running
 check_required_services
 
@@ -134,7 +137,7 @@ echo "  Without WordPress: Nginx vhost, SSL certificates, and a"
 echo "                     placeholder page. No database or CMS."
 echo ""
 
-if prompt_yes_no "Would you like to install WordPress on this domain?" "y" 300; then  # 300-second timeout
+if prompt_yes_no "Would you like to install WordPress on this domain?" "y" "${WORDPRESS_PROMPT_TIMEOUT}"; then
   INSTALL_WORDPRESS="1"
   echo "WordPress will be installed on ${DOMAIN}."
 else
@@ -298,15 +301,21 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
-  # Length math: first class enforces 1 required leading char, `{2,59}` adds 2-59 more => 3-60 total.
-  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{2,59}$ ]]; then
-      echo "Error: WP_ADMIN_USERNAME is invalid. Use 3-60 characters: letters, numbers, underscore, dot, or hyphen." >&2
+  # Use explicit length checks for clarity and maintainability, then validate allowed characters.
+  if [[ ${#WP_ADMIN_USERNAME} -lt 3 || ${#WP_ADMIN_USERNAME} -gt 60 ]]; then
+      echo "Error: WP_ADMIN_USERNAME must be between 3 and 60 characters long." >&2
+      exit 1
+  fi
+
+  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+      echo "Error: WP_ADMIN_USERNAME is invalid. Use letters, numbers, underscore, dot, or hyphen, and start with a letter or number." >&2
       exit 1
   fi
 
   # Email: basic format validation
   # Single character addresses such as a@example.com are valid and accepted by the regex.
-  if [[ ! "${WP_ADMIN_EMAIL}" =~ ^[A-Za-z0-9]([A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$ ]]; then
+  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
+  if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
   fi
@@ -427,4 +436,4 @@ echo "        Returning to main menu in 5 seconds."
 echo ""
 echo "============================================================="
 echo ""
-sleep 3
+sleep 5
