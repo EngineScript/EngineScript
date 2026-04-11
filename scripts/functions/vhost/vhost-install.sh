@@ -67,7 +67,7 @@ while true; do
     echo "You entered: ${DOMAIN_NAME}"
     break
   else
-    echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed."
+    echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed. Hyphens cannot be at the start or end."
   fi
 done
 
@@ -298,13 +298,15 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
+  # Length math: first class enforces 1 required leading char, `{2,59}` adds 2-59 more => 3-60 total.
   if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{2,59}$ ]]; then
       echo "Error: WP_ADMIN_USERNAME is invalid. Use 3-60 characters: letters, numbers, underscore, dot, or hyphen." >&2
       exit 1
   fi
 
   # Email: basic format validation
-  if [[ ! "${WP_ADMIN_EMAIL}" =~ ^[A-Za-z0-9][A-Za-z0-9._%+-]*[A-Za-z0-9]@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$ ]]; then
+  # Single character addresses such as a@example.com are valid and accepted by the regex.
+  if [[ ! "${WP_ADMIN_EMAIL}" =~ ^[A-Za-z0-9]([A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$ ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
   fi
