@@ -391,7 +391,7 @@ export class ExternalServicesManager {
    * @returns {Object} Services object with every known key set to true
    */
   buildAllServicesEnabledMap() {
-    return this.createAllServicesEnabledMap();
+    return this.createAllServicesEnabledMap(this.getServiceDefinitions());
   }
 
   /**
