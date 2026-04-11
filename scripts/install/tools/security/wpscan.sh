@@ -19,11 +19,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # WPScan
-command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed or not in PATH. On Ubuntu/Debian, install with: apt-get install ruby-full. For other systems, see: https://www.ruby-lang.org/en/documentation/installation/. Then rerun this script." >&2; exit 1; }
+command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed or not in PATH. On Ubuntu/Debian, install with: apt install ruby-full. For other systems, see: https://www.ruby-lang.org/en/documentation/installation/. Then rerun this script." >&2; exit 1; }
 
 # Install Banner
 print_install_banner "WPScan"
 
 # Always download the latest version of WPScan. Never source a specific version
 # No need for more verbose error messaging
+# Better to not use --user-install so the application has better system access to WordPress. No further changes are needed.
 gem install wpscan || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
