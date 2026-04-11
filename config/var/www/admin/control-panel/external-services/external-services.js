@@ -33,7 +33,7 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
-    // State management with TTL cache and FIFO eviction (5-minute TTL, max 100 entries)
+    // State management with TTL cache and LRU eviction (5-minute TTL, max 100 entries)
     this.serviceCache = new Map();
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
     this.cacheMaxSize = 100; // Limit cache size to prevent memory growth
