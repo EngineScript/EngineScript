@@ -26,6 +26,15 @@ const DND_MOVE_TOKEN = 'moving';
 
 const DEFAULT_ICON_SUFFIX = 'question';
 
+const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
+
+const DEFAULT_NOTIFICATION_DURATION_MS = 3000;
+const DEFAULT_NOTIFICATION_ANIMATION_DURATION_MS = 300;
+const DEFAULT_NOTIFICATION_SLIDE_OUT_ANIMATION_NAME = 'slide-out';
+const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
+const DEFAULT_LIVE_REGION_ANNOUNCEMENT_DELAY_MS = 100;
+
 export class ExternalServicesManager {
   /**
    * Create an ExternalServicesManager instance
@@ -39,8 +48,8 @@ export class ExternalServicesManager {
     
     // State management with TTL cache and LRU eviction (5-minute TTL, max 100 entries)
     this.serviceCache = new Map();
-    this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-    this.cacheMaxSize = 100; // Limit cache size to prevent memory growth
+    this.cacheTTL = SERVICE_CACHE_TTL_MS;
+    this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
     this.initialized = false; // Track if services have been loaded (lazy loading)
     
     // Limits concurrent requests to prevent overwhelming the server/browser
@@ -49,11 +58,11 @@ export class ExternalServicesManager {
     this.requestQueue = [];
     
     // Notification timing configuration
-    this.notificationDurationMs = 3000;
-    this.notificationAnimationDurationMs = 300;
-    this.notificationSlideOutAnimationName = 'slide-out';
-    this.requestTimeoutMs = 60000;
-    this.liveRegionAnnouncementDelayMs = 100;
+    this.notificationDurationMs = DEFAULT_NOTIFICATION_DURATION_MS;
+    this.notificationAnimationDurationMs = DEFAULT_NOTIFICATION_ANIMATION_DURATION_MS;
+    this.notificationSlideOutAnimationName = DEFAULT_NOTIFICATION_SLIDE_OUT_ANIMATION_NAME;
+    this.requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS;
+    this.liveRegionAnnouncementDelayMs = DEFAULT_LIVE_REGION_ANNOUNCEMENT_DELAY_MS;
     
     // Keyboard navigation state for accessibility
     this.reorderMode = false;
@@ -102,7 +111,7 @@ export class ExternalServicesManager {
       // Get service definitions and preferences
       const serviceDefinitions = this.getServiceDefinitions();
       const preferences = this.loadServicePreferences() || {};
-      const services = this.buildServicesObject(serviceDefinitions);
+      const services = this.createAllServicesEnabledMap(serviceDefinitions);
 
       // Render settings panel
       this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
@@ -140,7 +149,7 @@ export class ExternalServicesManager {
 
       const serviceDefinitions = this.getServiceDefinitions();
       const preferences = this.loadServicePreferences() || {};
-      const services = this.buildServicesObject(serviceDefinitions);
+      const services = this.createAllServicesEnabledMap(serviceDefinitions);
 
       const orderedServiceKeys = this.getOrderedServiceKeys(services);
       const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
@@ -161,11 +170,11 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Build services object from definitions
+   * Create a new map with all services enabled from definitions
    * @param {Object} serviceDefinitions - Map of service keys to definition objects
-   * @returns {Object} Services object with all keys set to true
+   * @returns {Object} New services object with all keys set to true
    */
-  buildServicesObject(serviceDefinitions) {
+  createAllServicesEnabledMap(serviceDefinitions) {
     return Object.fromEntries(Object.keys(serviceDefinitions).map(key => [key, true]));
   }
 
@@ -718,9 +727,7 @@ export class ExternalServicesManager {
    * @param {string} text - Button label text
    */
   setSaveButtonContent(saveButton, iconClass, text) {
-    while (saveButton.firstChild) {
-      saveButton.removeChild(saveButton.firstChild);
-    }
+    saveButton.textContent = "";
 
     const icon = document.createElement("i");
     icon.className = iconClass;
@@ -1003,7 +1010,8 @@ export class ExternalServicesManager {
       const safeIconSuffix = sanitizeFaIconSuffix(statusIconSuffix) || DEFAULT_ICON_SUFFIX;
       iconElement.className = `fas fa-${safeIconSuffix}`;
       statusSpan.appendChild(iconElement);
-      statusSpan.appendChild(document.createTextNode(` ${this.utils.sanitizeInput(statusDescription)}`));
+      const safeStatusText = statusDescription == null ? '' : String(statusDescription);
+      statusSpan.appendChild(document.createTextNode(` ${safeStatusText}`));
     }
 
     // Add card-level status class for visual emphasis
