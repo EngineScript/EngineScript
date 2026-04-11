@@ -6,14 +6,6 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
-### 🔒 EXTERNAL SERVICES SECURITY & FLEXIBILITY IMPROVEMENTS
-
-- Added response origin validation in `fetchAvailableServices`: after a successful HTTP response, the response URL origin is now compared against `window.location.origin` and an error is thrown if they do not match, preventing credential exposure via redirected or compromised API endpoints.
-- Moved service preferences from cookie storage to `localStorage` in `handleSavePreferences` and `loadServicePreferences`, eliminating the risk of tampered cookie values being injected by a malicious user.
-- Enhanced `buildFaIconClass` to detect and honour explicit FontAwesome style prefixes (e.g. `fab`, `far`, `fa-brands`) embedded in the icon input string, removing the previous hardcoded `fas`-only restriction.
-- Consolidated icon construction in `updateServiceCardStatus` to use `this.buildFaIconClass` instead of inline sanitization, ensuring all icon class building goes through the same validated path.
-- Changed `credentials: 'include'` to `credentials: 'same-origin'` in `updateFeedServiceStatus` to prevent credentials from being sent to potentially untrusted or user-configurable feed URLs.
-
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
