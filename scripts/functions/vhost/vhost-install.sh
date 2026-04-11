@@ -158,17 +158,31 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Domain Creation Variables
   PREFIX="${RAND_CHAR2}"
-  domain_input="${DOMAIN}" && domain_without_tld="${domain_input%.*}" && database_name="${domain_without_tld}_${RAND_CHAR4}"
+  domain_input="${DOMAIN}"
+  IFS='.' read -r -a domain_parts <<< "${domain_input}"
+  domain_without_tld="${domain_input%.*}"
+  if (( ${#domain_parts[@]} >= 3 )); then
+    public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
+    case "${public_suffix}" in
+      co.uk|org.uk|gov.uk|ac.uk|com.au|net.au|org.au|co.nz|org.nz|com.br)
+        domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
+        ;;
+    esac
+  fi
+  database_name="${domain_without_tld}_${RAND_CHAR4}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
 
   # Domain Database Credentials
-  echo "DB=\"${database_name}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-  echo "USR=\"${database_user}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-  echo "PSWD=\"${database_password}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-  echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  credentials_file="/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  # Create the file with restrictive permissions before writing any sensitive data
+  install -m 600 /dev/null "${credentials_file}"
+  echo "DB=\"${database_name}\"" >> "${credentials_file}"
+  echo "USR=\"${database_user}\"" >> "${credentials_file}"
+  echo "PSWD=\"${database_password}\"" >> "${credentials_file}"
+  echo "" >> "${credentials_file}"
 
-  source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  source "${credentials_file}"
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
@@ -190,7 +204,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Download WordPress using WP-CLI
   wp core download --allow-root
   if ! wp plugin delete hello --allow-root; then
-    echo "Warning: Failed to delete default 'hello' plugin via WP-CLI. Continuing if plugin is already absent."
+    echo "Warning: Failed to delete default 'hello' plugin via WP-CLI. It may already be deleted or another error occurred. Continuing installation."
   fi
 
   # Create Extra WordPress Directories
@@ -232,6 +246,35 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # WP-CLI Install WordPress
   cd "/var/www/sites/${DOMAIN}/html"
+
+  # Validate WordPress admin credentials before install
+  if [[ -z "${WP_ADMIN_USERNAME}" || -z "${WP_ADMIN_PASSWORD}" || -z "${WP_ADMIN_EMAIL}" ]]; then
+      echo "Error: WP admin credentials must not be empty (WP_ADMIN_USERNAME, WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL)." >&2
+      exit 1
+  fi
+
+  # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
+  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{2,59}$ ]]; then
+      echo "Error: WP_ADMIN_USERNAME is invalid. Use 3-60 characters: letters, numbers, underscore, dot, or hyphen." >&2
+      exit 1
+  fi
+
+  # Email: basic format validation
+  if [[ ! "${WP_ADMIN_EMAIL}" =~ ^[A-Za-z0-9][A-Za-z0-9._%+-]*[A-Za-z0-9]@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$ ]]; then
+      echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
+      exit 1
+  fi
+
+  # Password: minimum complexity requirements
+  if [[ ${#WP_ADMIN_PASSWORD} -lt 12 ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
+      echo "Error: WP_ADMIN_PASSWORD must be at least 12 characters and include uppercase, lowercase, number, and special character." >&2
+      exit 1
+  fi
+
   wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
 
   # Install and activate required WordPress plugins
