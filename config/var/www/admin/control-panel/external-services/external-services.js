@@ -391,7 +391,7 @@ export class ExternalServicesManager {
    * @returns {Object} Services object with every known key set to true
    */
   buildAllServicesEnabledMap() {
-    const serviceDefinitions = this.getServiceDefinitions();
+    return this.createAllServicesEnabledMap();
     const services = {};
     Object.keys(serviceDefinitions).forEach(key => {
       services[key] = true;
@@ -765,7 +765,11 @@ export class ExternalServicesManager {
       this.applyPreferenceChanges(currentPreferences, safeChanges);
       
       // Save preferences to local storage (avoid tamper-prone cookie storage)
-      window.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
+      try {
+        window.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
+      } catch (storageError) {
+        throw new Error('Unable to save preferences: browser storage is full or disabled.');
+      }
       this.applyPreferenceChanges(services, safeChanges);
       
       // Clear pending changes
@@ -795,7 +799,7 @@ export class ExternalServicesManager {
         this.resetSaveButtonContent(saveButton);
       }, 2000);
       
-      this.showNotification('Failed to save preferences', 'error');
+      this.showNotification(error && error.message ? error.message : 'Failed to save preferences', 'error');
     }
   }
 
@@ -1318,7 +1322,14 @@ export class ExternalServicesManager {
   loadServicePreferences() {
     try {
       // Try to load from local storage
-      const storedPrefs = window.localStorage.getItem('servicePreferences');
+      let storedPrefs = null;
+      try {
+        storedPrefs = window.localStorage.getItem('servicePreferences');
+      } catch (storageError) {
+        console.error('Failed to access localStorage for service preferences:', storageError);
+        return null;
+      }
+
       if (storedPrefs) {
         try {
           const parsed = JSON.parse(storedPrefs);
@@ -1422,7 +1433,7 @@ export class ExternalServicesManager {
       container.insertBefore(reorderInstructions, container.firstChild);
     }
 
-    let cachedCardOrder = null;
+    this.cachedCardOrder = null;
 
     serviceCards.forEach((card) => {
       card.draggable = true;
@@ -1436,7 +1447,7 @@ export class ExternalServicesManager {
 
       card.addEventListener('dragstart', (e) => {
         draggedElement = card;
-        cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
+        this.cachedCardOrder = Array.from(container.querySelectorAll('.external-service-card'));
         card.classList.add('dragging');
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = 'move';
@@ -1481,7 +1492,10 @@ export class ExternalServicesManager {
         if (targetCard && targetCard !== draggedElement) {
           targetCard.classList.remove('drag-over');
           
-          const allCards = cachedCardOrder || Array.from(container.querySelectorAll('.external-service-card'));
+          if (!cachedCardOrder) {
+            return;
+          }
+          const allCards = cachedCardOrder;
           const draggedIndex = allCards.indexOf(draggedElement);
           const targetIndex = allCards.indexOf(targetCard);
           
