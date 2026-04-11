@@ -33,7 +33,7 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
-    // State management with LRU cache (5-minute TTL, max 100 entries)
+    // State management with TTL cache and FIFO eviction (5-minute TTL, max 100 entries)
     this.serviceCache = new Map();
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
     this.cacheMaxSize = 100; // Limit cache size to prevent memory growth
@@ -489,7 +489,7 @@ export class ExternalServicesManager {
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
     const headerP = document.createElement("p");
-    headerP.textContent = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them. Click "Save Changes" to apply. Services are organized by category.';
+    headerP.textContent = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
     settingsHeader.appendChild(headerP);
     settingsContent.appendChild(settingsHeader);
     
@@ -1727,7 +1727,9 @@ export class ExternalServicesManager {
    */
   hasAnimationKeyframes(animationName) {
     const styleSheets = Array.from(document.styleSheets || []);
-    const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : 7;
+    // Standard CSSOM numeric value for KEYFRAMES_RULE, used when CSSRule.KEYFRAMES_RULE is unavailable (legacy browsers).
+    const LEGACY_KEYFRAMES_RULE_TYPE = 7;
+    const keyframesType = typeof CSSRule !== 'undefined' ? CSSRule.KEYFRAMES_RULE : LEGACY_KEYFRAMES_RULE_TYPE;
 
     for (const styleSheet of styleSheets) {
       const rules = this.getSheetRules(styleSheet);
