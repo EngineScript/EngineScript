@@ -20,6 +20,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # WPScan
 command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed or not in PATH. Please install Ruby/RubyGems before installing WPScan." >&2; exit 1; }
-gem install wpscan || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
 
 print_install_banner "WPScan"
+# Always download the latest version of WPScan. Never source a specific version
+gem install wpscan || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
