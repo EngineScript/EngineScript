@@ -718,6 +718,38 @@ configure_wpconfig_settings() {
 
 
 #----------------------------------------------------------------------------------
+# Fetch WordPress salts from api.wordpress.org and apply them to wp-config.php.
+# Retries up to 5 times with a 15-second delay between attempts so that a
+# transient WordPress.org API outage does not permanently break the install.
+fetch_wp_salts() {
+  local wp_config_path="$1"
+  local max_attempts=5
+  local retry_delay=15
+  local salt=""
+  local attempt
+
+  echo "Generating new WordPress salts..."
+  for (( attempt=1; attempt<=max_attempts; attempt++ )); do
+    salt=$(curl --fail --silent --show-error --location --connect-timeout 10 --max-time 30 \
+      "https://api.wordpress.org/secret-key/1.1/salt/" 2>/dev/null)
+    if [[ -n "${salt}" ]] && printf '%s' "${salt}" | grep -q "define("; then
+      local string='put your unique phrase here'
+      printf '%s\n' "g/${string}/d" a "${salt}" . w | ed -s "${wp_config_path}"
+      echo "WordPress salts applied successfully."
+      return 0
+    fi
+    if [[ ${attempt} -lt ${max_attempts} ]]; then
+      echo "Warning: Failed to fetch valid WordPress salts (attempt ${attempt}/${max_attempts}). Retrying in ${retry_delay} seconds..." >&2
+      sleep "${retry_delay}"
+    fi
+  done
+
+  echo "Error: Failed to fetch valid WordPress salts from api.wordpress.org after ${max_attempts} attempts. Please check your internet connection and DNS/firewall/proxy settings. If the issue persists, the WordPress.org API may be temporarily unavailable—please retry the import later." >&2
+  exit 1
+}
+
+
+#----------------------------------------------------------------------------------
 # Create robots.txt file
 create_robots_txt() {
   local SITE_URL="$1"

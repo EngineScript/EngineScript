@@ -556,19 +556,7 @@ sed -i \
 configure_redis "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
 
 # WP Salt Creation (Generate new salts)
-echo "Generating new WordPress salts..."
-SALT=$(curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 30 "https://api.wordpress.org/secret-key/1.1/salt/") || {
-    echo "Error: Failed to fetch WordPress salts from api.wordpress.org. Please check your internet connection and DNS/firewall/proxy settings. If the issue persists, the WordPress.org API may be temporarily unavailable—please retry the import later." >&2
-    exit 1
-}
-
-if [ -z "${SALT}" ] || ! printf '%s' "${SALT}" | grep -q "define("; then
-    echo "Error: Retrieved invalid WordPress salts content" >&2
-    exit 1
-fi
-
-STRING='put your unique phrase here'
-printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "${TARGET_WP_PATH}/wp-config.php"
+fetch_wp_salts "${TARGET_WP_PATH}/wp-config.php"
 
 # Configure wp-config.php settings
 configure_wpconfig_settings "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"

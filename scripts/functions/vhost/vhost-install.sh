@@ -195,9 +195,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   configure_redis "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
   # WP Salt Creation
-  SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
-  STRING='put your unique phrase here'
-  printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s "/var/www/sites/${SITE_URL}/html/wp-config.php"
+  fetch_wp_salts "/var/www/sites/${SITE_URL}/html/wp-config.php"
 
   # Configure wp-config.php settings
   configure_wpconfig_settings "${SITE_URL}" "/var/www/sites/${SITE_URL}/html/wp-config.php"
