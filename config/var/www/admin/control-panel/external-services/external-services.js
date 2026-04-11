@@ -389,7 +389,7 @@ export class ExternalServicesManager {
    */
   async fetchAvailableServices() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
     try {
       const response = await fetch("/api/external-services/config", {
         credentials: 'include',
@@ -558,6 +558,15 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
+    const ensureToggleTextElement = () => {
+      let toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
+      if (!toggleTextEl) {
+        toggleTextEl = document.createElement("span");
+        toggleTextEl.className = "toggle-all-text";
+        toggleBtn.appendChild(toggleTextEl);
+      }
+      return toggleTextEl;
+    };
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
       const actionText = allEnabled ? "Disable All" : "Enable All";
@@ -565,20 +574,8 @@ export class ExternalServicesManager {
         ? `Disable all ${category} services`
         : `Enable all ${category} services`;
 
-      const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
-      if (toggleTextEl) {
-        toggleTextEl.textContent = actionText;
-      } else {
-        console.warn(`Template element .toggle-all-text not found for category "${category}". Using fallback rendering.`);
-        const textNode = Array.from(toggleBtn.childNodes).find(
-          node => node.nodeType === Node.TEXT_NODE
-        );
-        if (textNode) {
-          textNode.textContent = ` ${actionText}`;
-        } else {
-          toggleBtn.appendChild(document.createTextNode(` ${actionText}`));
-        }
-      }
+      const toggleTextEl = ensureToggleTextElement();
+      toggleTextEl.textContent = actionText;
       toggleBtn.setAttribute("aria-label", actionAria);
     };
 
