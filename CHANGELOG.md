@@ -6,6 +6,10 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-11
 
+### 🐛 VHOST INSTALL BUG FIX
+
+- Fixed undefined variable `SITE_URL` used throughout `scripts/functions/vhost/vhost-install.sh`; replaced all occurrences with the correct `DOMAIN` variable (defined at line 84). Affected areas include database credential logging, WordPress download, wp-config.php setup, Redis/salt/wpconfig configuration, file permissions, WP-CLI install, plugin installation, placeholder page, backups, and summary output.
+
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
 
 - Updated the single-zip database file detection in `scripts/functions/vhost/vhost-import.sh` to search for both `*.sql` and `*.sql.gz` patterns, so compressed database dumps are correctly found and imported instead of failing silently.
