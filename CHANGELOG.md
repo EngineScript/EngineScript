@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-11 (2)
-
-### 🔒 VHOST INSTALL SECURITY & ROBUSTNESS IMPROVEMENTS
-
-- Fixed `domain_without_tld` extraction in `scripts/functions/vhost/vhost-install.sh` to correctly handle multi-part TLDs (e.g., `co.uk`, `com.au`, `org.nz`). For a domain like `example.co.uk` the extracted base is now `example` instead of `example.co`, preventing unexpected database naming.
-- Added `chmod 600` on the MySQL credentials file immediately after writing it in `scripts/functions/vhost/vhost-install.sh`, ensuring sensitive database credentials are protected from unauthorised access by other system users.
-- Clarified the warning message when WP-CLI fails to delete the default `hello` plugin: the new message reads "It may already be deleted or another error occurred. Continuing installation." instead of the misleading "Continuing if plugin is already absent."
-- Added pre-install validation of WordPress admin credentials (`WP_ADMIN_USERNAME`, `WP_ADMIN_PASSWORD`, `WP_ADMIN_EMAIL`) in `scripts/functions/vhost/vhost-install.sh` before calling `wp core install`, enforcing non-empty values, a valid username format (3-60 alphanumeric/underscore/dot/hyphen characters), a valid email address format, and a minimum password complexity of 12+ characters with upper, lower, digit, and special-character requirements.
-
 ## 2026-04-11
 
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
