@@ -43,7 +43,24 @@ echo "Then, select a valid TLD from the provided list."
 echo ""
 
 # Prompt for domain name
-# Single character domain names are allowed in the regex, as they are technically valid (e.g., 'x.com'), even though they are rarely used in practice. The regex will still enforce that only lowercase letters, numbers, and hyphens are allowed, and it will ensure that the domain name does not start or end with a hyphen. This allows for a wide range of valid domain names while still enforcing the necessary restrictions for a typical domain name format.
+# IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
+# They are fully valid under DNS and ICANN rules, and EngineScript must support them.
+#
+# INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
+#   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+#
+# The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
+# single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
+# required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
+# "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
+# reject every single-character label and break installs for legitimate one-letter domains.
+#
+# Rules enforced by this regex:
+#   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
+#   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
+#   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
+#
+# This is intentional behaviour. Do not "fix" it to require at least two characters.
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
   if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
