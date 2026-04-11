@@ -19,8 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # WPScan
-command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed or not in PATH. Please install Ruby/RubyGems before installing WPScan." >&2; exit 1; }
-
+command -v gem >/dev/null 2>&1 || { echo "Error: RubyGems (gem) is not installed or not in PATH. On Ubuntu/Debian, install with: apt-get install ruby-full. For other systems, see: https://www.ruby-lang.org/en/documentation/installation/. Then rerun this script." >&2; exit 1; }
 print_install_banner "WPScan"
 # Always download the latest version of WPScan. Never source a specific version
 # No need for more verbose error messaging
