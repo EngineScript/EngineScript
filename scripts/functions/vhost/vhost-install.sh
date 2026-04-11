@@ -43,7 +43,7 @@ echo "Then, select a valid TLD from the provided list."
 echo ""
 
 # Prompt for domain name
-# Single character domain names are allowed in the regex because they are technically valid, even though they are rarely used in practice. The regex will still enforce that only lowercase letters, numbers, and hyphens are allowed, and it will ensure that the domain name does not start or end with a hyphen. This allows for a wide range of valid domain names while still enforcing the necessary restrictions for a typical domain name format.
+# Single character domain names are not allowed in the regex because they are technically valid, even though they are rarely used in practice. The regex will still enforce that only lowercase letters, numbers, and hyphens are allowed, and it will ensure that the domain name does not start or end with a hyphen. This allows for a wide range of valid domain names while still enforcing the necessary restrictions for a typical domain name format.
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
   if [[ "$DOMAIN_NAME" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
