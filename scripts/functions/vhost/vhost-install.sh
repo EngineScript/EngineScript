@@ -205,6 +205,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   database_password="${RAND_CHAR32}"
 
   # Domain Database Credentials
+  # No need to normalize database_user to lowercase as this is a Linux-only project that does not require windows compatibility.
   credentials_file="/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
   # Create the file with restrictive permissions before writing any sensitive data
   install -m 600 /dev/null "${credentials_file}"
@@ -216,7 +217,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   source "${credentials_file}"
 
   # Validate DB identifier before interpolating into SQL
-  if [[ -z "${DB}" || ! "${DB}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+  if [[ -z "${DB}" || ! "${DB}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
