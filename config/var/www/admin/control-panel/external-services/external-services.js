@@ -392,11 +392,6 @@ export class ExternalServicesManager {
    */
   buildAllServicesEnabledMap() {
     return this.createAllServicesEnabledMap();
-    const services = {};
-    Object.keys(serviceDefinitions).forEach(key => {
-      services[key] = true;
-    });
-    return services;
   }
 
   /**
