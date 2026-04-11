@@ -31,6 +31,32 @@ require_once __DIR__ . '/../classes/ApiResponse.php';
 class ExternalServicesFeedParser
 {
     /**
+     * Dedicated JSON API parser dependency.
+     *
+     * @var ExternalServicesJsonApiParser
+     */
+    private ExternalServicesJsonApiParser $jsonApiParser;
+
+    /**
+     * Service catalog dependency.
+     *
+     * @var ExternalServicesServiceCatalog
+     */
+    private ExternalServicesServiceCatalog $serviceCatalog;
+
+    /**
+     * @param ExternalServicesJsonApiParser|null $jsonApiParser Optional JSON parser dependency
+     * @param ExternalServicesServiceCatalog|null $serviceCatalog Optional service catalog dependency
+     */
+    public function __construct(
+        ?ExternalServicesJsonApiParser $jsonApiParser = null,
+        ?ExternalServicesServiceCatalog $serviceCatalog = null
+    ) {
+        $this->jsonApiParser = $jsonApiParser ?? new ExternalServicesJsonApiParser();
+        $this->serviceCatalog = $serviceCatalog ?? new ExternalServicesServiceCatalog();
+    }
+
+    /**
      * Parse RSS/Atom feed and extract status information
      * @param string $feedUrl The URL of the RSS/Atom feed
      * @param string|null $filter Optional filter to match specific service name in feed items
@@ -266,8 +292,7 @@ class ExternalServicesFeedParser
      */
     public function parseJsonAPI(string $apiUrl, array $config): array
     {
-        $jsonApiParser = new ExternalServicesJsonApiParser();
-        return $jsonApiParser->parse($apiUrl, $config);
+        return $this->jsonApiParser->parse($apiUrl, $config);
     }
 
     /**
@@ -449,9 +474,9 @@ class ExternalServicesFeedParser
      * 
      * @return array<string, bool> Map of service identifiers to enabled status
      */
-    public static function getServicesConfig(): array
+    public function getServicesConfig(): array
     {
-        return ExternalServicesServiceCatalog::getServicesConfig();
+        return $this->serviceCatalog->getServicesConfig();
     }
 }
 
@@ -464,6 +489,28 @@ class ExternalServicesFeedParser
 class ExternalServicesJsonApiParser
 {
     /**
+     * @var ExternalServicesJsonApiResponseFetcher
+     */
+    private ExternalServicesJsonApiResponseFetcher $responseFetcher;
+
+    /**
+     * @var ExternalServicesJsonApiResultDispatcher
+     */
+    private ExternalServicesJsonApiResultDispatcher $resultDispatcher;
+
+    /**
+     * @param ExternalServicesJsonApiResponseFetcher|null $responseFetcher Optional response fetcher dependency
+     * @param ExternalServicesJsonApiResultDispatcher|null $resultDispatcher Optional result dispatcher dependency
+     */
+    public function __construct(
+        ?ExternalServicesJsonApiResponseFetcher $responseFetcher = null,
+        ?ExternalServicesJsonApiResultDispatcher $resultDispatcher = null
+    ) {
+        $this->responseFetcher = $responseFetcher ?? new ExternalServicesJsonApiResponseFetcher();
+        $this->resultDispatcher = $resultDispatcher ?? new ExternalServicesJsonApiResultDispatcher();
+    }
+
+    /**
      * Parse JSON API status payloads with feed-specific configuration.
      *
      * @param string $apiUrl API endpoint URL
@@ -473,7 +520,7 @@ class ExternalServicesJsonApiParser
     public function parse(string $apiUrl, array $config): array
     {
         try {
-            $fetchResult = $this->fetchJsonApiData($apiUrl);
+            $fetchResult = $this->responseFetcher->fetch($apiUrl);
 
             if ($fetchResult['error'] !== null) {
                 return $fetchResult['error'];
@@ -485,60 +532,13 @@ class ExternalServicesJsonApiParser
                 return $this->getMissingFieldStatus($config);
             }
 
-            return $this->dispatchJsonApiParser($data, $config);
+            return $this->resultDispatcher->dispatch($data, $config);
         } catch (Exception $e) {
             return [
                 'indicator' => 'major',
                 'description' => 'Unable to fetch status'
             ];
         }
-    }
-
-    /**
-     * Fetch and decode JSON API data.
-     *
-     * @param string $apiUrl API endpoint URL
-     * @return array{data: array, error: ?array}
-     */
-    private function fetchJsonApiData(string $apiUrl): array
-    {
-        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $apiUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: EngineScript Admin Dashboard'
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_MAXREDIRS => 0
-        ]);
-
-        $response = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-
-        if ($response === false || $httpCode !== 200) {
-            return [
-                'data' => [],
-                'error' => ['indicator' => 'major', 'description' => 'Unable to fetch status']
-            ];
-        }
-
-        $data = json_decode($response, true);
-
-        if (!is_array($data)) {
-            return [
-                'data' => [],
-                'error' => ['indicator' => 'major', 'description' => 'Unable to parse status']
-            ];
-        }
-
-        return ['data' => $data, 'error' => null];
     }
 
     /**
@@ -579,7 +579,83 @@ class ExternalServicesJsonApiParser
      * @param array $config Parser configuration
      * @return array Status information
      */
-    private function dispatchJsonApiParser(array $data, array $config): array
+}
+
+/**
+ * Fetches raw JSON payloads from external APIs.
+ */
+class ExternalServicesJsonApiResponseFetcher
+{
+    /**
+     * @param string $apiUrl API endpoint URL
+     * @return array{data: array, error: ?array}
+     */
+    public function fetch(string $apiUrl): array
+    {
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript Admin Dashboard'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($response === false || $httpCode !== 200) {
+            return [
+                'data' => [],
+                'error' => ['indicator' => 'major', 'description' => 'Unable to fetch status']
+            ];
+        }
+
+        $data = json_decode($response, true);
+
+        if (!is_array($data)) {
+            return [
+                'data' => [],
+                'error' => ['indicator' => 'major', 'description' => 'Unable to parse status']
+            ];
+        }
+
+        return ['data' => $data, 'error' => null];
+    }
+}
+
+/**
+ * Dispatches parsed JSON payloads to feed-type-specific interpreters.
+ */
+class ExternalServicesJsonApiResultDispatcher
+{
+    /**
+     * @var ExternalServicesJsonIncidentEvaluator
+     */
+    private ExternalServicesJsonIncidentEvaluator $incidentEvaluator;
+
+    /**
+     * @param ExternalServicesJsonIncidentEvaluator|null $incidentEvaluator Optional incident evaluator dependency
+     */
+    public function __construct(?ExternalServicesJsonIncidentEvaluator $incidentEvaluator = null)
+    {
+        $this->incidentEvaluator = $incidentEvaluator ?? new ExternalServicesJsonIncidentEvaluator();
+    }
+
+    /**
+     * @param array $data Parsed API payload
+     * @param array $config Parser configuration
+     * @return array Status information with indicator and description
+     */
+    public function dispatch(array $data, array $config): array
     {
         $type = $config['type'] ?? 'incident_list';
 
@@ -591,24 +667,21 @@ class ExternalServicesJsonApiParser
             return $this->parsePageStatusResult($data, $config);
         }
 
-        return $this->parseIncidentListResult($data, $config);
+        return $this->incidentEvaluator->evaluate($data, $config);
     }
 
     /**
-     * Handle direct status indicator APIs (like StatusPage.io)
-     * @param array $data The parsed API response data
-     * @param array $config Configuration for parsing
+     * @param array $data Parsed API payload
+     * @param array $config Parser configuration
      * @return array Status information with indicator and description
      */
     private function parseDirectStatusResult(array $data, array $config): array
     {
-        $statusPath = explode('.', $config['status_path']);
-        $statusData = $data;
-        foreach ($statusPath as $key) {
-            if (!isset($statusData[$key])) {
-                return ['indicator' => 'major', 'description' => 'Unable to parse status'];
-            }
-            $statusData = $statusData[$key];
+        $statusPath = isset($config['status_path']) ? (string)$config['status_path'] : '';
+        $statusData = $this->resolvePathValue($data, $statusPath);
+
+        if (!is_array($statusData)) {
+            return ['indicator' => 'major', 'description' => 'Unable to parse status'];
         }
 
         $indicator = $statusData['indicator'] ?? 'none';
@@ -616,38 +689,48 @@ class ExternalServicesJsonApiParser
         if ($indicator === 'none' || $indicator === 'operational') {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
+
         if ($indicator === 'major' || $indicator === 'critical') {
             return ['indicator' => 'major', 'description' => 'Major Outage'];
         }
+
         return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
     }
 
     /**
-     * Handle page status APIs (like Wistia)
-     * @param array $data The parsed API response data
-     * @param array $config Configuration for parsing
+     * @param array $data Parsed API payload
+     * @param array $config Parser configuration
      * @return array Status information with indicator and description
      */
     private function parsePageStatusResult(array $data, array $config): array
     {
-        $pageStatus = isset($data[$config['page_path']]['status'])
-            ? strtoupper($data[$config['page_path']]['status'])
+        $pagePath = isset($config['page_path']) ? (string)$config['page_path'] : '';
+        $pageData = $this->resolvePathValue($data, $pagePath);
+        $pageStatus = (is_array($pageData) && isset($pageData['status']))
+            ? strtoupper((string)$pageData['status'])
             : 'UNKNOWN';
 
         if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        if (isset($data[$config['incidents_path']]) && !empty($data[$config['incidents_path']])) {
-            $latestIncident = reset($data[$config['incidents_path']]);
-            $title = $latestIncident[$config['title_field']] ?? '';
+        $incidentsPath = isset($config['incidents_path']) ? (string)$config['incidents_path'] : '';
+        $incidents = $this->resolvePathValue($data, $incidentsPath);
+
+        if (is_array($incidents) && !empty($incidents)) {
+            $latestIncident = reset($incidents);
+            $titleField = isset($config['title_field']) ? (string)$config['title_field'] : '';
+            $title = (is_array($latestIncident) && $titleField !== '' && isset($latestIncident[$titleField]))
+                ? (string)$latestIncident[$titleField]
+                : '';
 
             if (preg_match('/outage|down|major|critical|offline/i', $title)) {
                 return ['indicator' => 'major', 'description' => 'Major Outage'];
             }
 
-            if (isset($config['severity_field']) && isset($latestIncident[$config['severity_field']])) {
-                $severity = strtoupper($latestIncident[$config['severity_field']]);
+            $severityField = isset($config['severity_field']) ? (string)$config['severity_field'] : '';
+            if (is_array($latestIncident) && $severityField !== '' && isset($latestIncident[$severityField])) {
+                $severity = strtoupper((string)$latestIncident[$severityField]);
                 if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'], true)) {
                     return ['indicator' => 'major', 'description' => 'Major Outage'];
                 }
@@ -664,62 +747,113 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Handle incident list APIs (Vultr, Postmark, Google Workspace)
-     * @param array $data The parsed API response data
-     * @param array $config Configuration for parsing
+     * @param array $data Parsed API payload
+     * @param string $path Dotted path expression
+     * @return mixed
+     */
+    private function resolvePathValue(array $data, string $path)
+    {
+        if ($path === '') {
+            return $data;
+        }
+
+        $resolved = $data;
+        foreach (explode('.', $path) as $segment) {
+            if (!is_array($resolved) || !isset($resolved[$segment])) {
+                return null;
+            }
+            $resolved = $resolved[$segment];
+        }
+
+        return $resolved;
+    }
+}
+
+/**
+ * Evaluates incident-based payloads and produces normalized status output.
+ */
+class ExternalServicesJsonIncidentEvaluator
+{
+    /**
+     * @var ExternalServicesJsonIncidentCollectionResolver
+     */
+    private ExternalServicesJsonIncidentCollectionResolver $incidentResolver;
+
+    /**
+     * @var ExternalServicesJsonIncidentClassifier
+     */
+    private ExternalServicesJsonIncidentClassifier $incidentClassifier;
+
+    /**
+     * @param ExternalServicesJsonIncidentCollectionResolver|null $incidentResolver Optional incident resolver dependency
+     * @param ExternalServicesJsonIncidentClassifier|null $incidentClassifier Optional incident classifier dependency
+     */
+    public function __construct(
+        ?ExternalServicesJsonIncidentCollectionResolver $incidentResolver = null,
+        ?ExternalServicesJsonIncidentClassifier $incidentClassifier = null
+    ) {
+        $this->incidentResolver = $incidentResolver ?? new ExternalServicesJsonIncidentCollectionResolver();
+        $this->incidentClassifier = $incidentClassifier ?? new ExternalServicesJsonIncidentClassifier();
+    }
+
+    /**
+     * @param array $data Parsed API payload
+     * @param array $config Parser configuration
      * @return array Status information with indicator and description
      */
-    private function parseIncidentListResult(array $data, array $config): array
+    public function evaluate(array $data, array $config): array
     {
-        $incidents = $this->getConfiguredIncidents($data, $config);
+        $incidents = $this->incidentResolver->getConfiguredIncidents($data, $config);
 
         if (empty($incidents)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
         $latestIncident = reset($incidents);
-
         if (!is_array($latestIncident)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        $title = $this->extractIncidentTitle($latestIncident, $config);
-
+        $title = $this->incidentClassifier->extractIncidentTitle($latestIncident, $config);
         if ($title === '') {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        if (!$this->isIncidentRecent($latestIncident, $config)) {
+        if (!$this->incidentClassifier->isIncidentRecent($latestIncident, $config)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        $description = $this->extractIncidentDescription($latestIncident, $config);
+        $description = $this->incidentClassifier->extractIncidentDescription($latestIncident, $config);
         $fullText = $title . ' ' . $description;
 
-        if ($this->isResolvedIncidentText($fullText)) {
+        if ($this->incidentClassifier->isResolvedIncidentText($fullText)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        if ($this->isMajorIncident($latestIncident, $config, $fullText)) {
+        if ($this->incidentClassifier->isMajorIncident($latestIncident, $config, $fullText)) {
             return ['indicator' => 'major', 'description' => 'Major Outage'];
         }
 
         return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
     }
+}
 
+/**
+ * Resolves and filters incident collections from API payloads.
+ */
+class ExternalServicesJsonIncidentCollectionResolver
+{
     /**
-     * Resolve and filter incidents according to parser configuration.
-     *
      * @param array $data Parsed API payload
      * @param array $config Parser configuration
-     * @return array Incidents array, or empty array when none apply
+     * @return array Filtered incident list
      */
-    private function getConfiguredIncidents(array $data, array $config): array
+    public function getConfiguredIncidents(array $data, array $config): array
     {
         $incidents = $data;
 
         if (isset($config['incidents_path'])) {
-            $incidents = $this->resolveIncidentsPath($data, $config['incidents_path']);
+            $incidents = $this->resolveIncidentsPath($data, (string)$config['incidents_path']);
         }
 
         if (empty($incidents) || !is_array($incidents)) {
@@ -730,11 +864,9 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Follow a dotted path and return the incidents array.
-     *
      * @param array $data Parsed API payload
      * @param string $incidentsPath Dotted path to incidents data
-     * @return array Resolved incidents array or empty array
+     * @return array Resolved incidents
      */
     private function resolveIncidentsPath(array $data, string $incidentsPath): array
     {
@@ -752,8 +884,6 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Apply optional incident filters from configuration.
-     *
      * @param array $incidents Incident list
      * @param array $config Parser configuration
      * @return array Filtered incident list
@@ -764,19 +894,17 @@ class ExternalServicesJsonApiParser
             return $incidents;
         }
 
-        $filteredIncidents = array_filter($incidents, function ($incident) use ($config) {
+        $filtered = array_filter($incidents, function ($incident) use ($config) {
             return is_array($incident) && $this->incidentMatchesFilter($incident, $config);
         });
 
-        return empty($filteredIncidents) ? [] : $filteredIncidents;
+        return empty($filtered) ? [] : $filtered;
     }
 
     /**
-     * Check whether a single incident matches configured filter criteria.
-     *
-     * @param array $incident Incident data
+     * @param array $incident Incident payload
      * @param array $config Parser configuration
-     * @return bool True when incident matches filter
+     * @return bool
      */
     private function incidentMatchesFilter(array $incident, array $config): bool
     {
@@ -792,19 +920,23 @@ class ExternalServicesJsonApiParser
             return true;
         }
 
-        $filterField = $config['filter_field'];
+        $filterField = (string)$config['filter_field'];
 
         return isset($incident[$filterField]) && $incident[$filterField] === $filterValue;
     }
+}
 
+/**
+ * Classifies incidents by recency, severity and textual markers.
+ */
+class ExternalServicesJsonIncidentClassifier
+{
     /**
-     * Extract incident title using optional custom parser.
-     *
      * @param array $incident Incident data
      * @param array $config Parser configuration
-     * @return string Incident title or empty string
+     * @return string
      */
-    private function extractIncidentTitle(array $incident, array $config): string
+    public function extractIncidentTitle(array $incident, array $config): string
     {
         if (isset($config['title_parser']) && is_callable($config['title_parser'])) {
             $customTitle = $config['title_parser']($incident);
@@ -824,13 +956,11 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Extract optional incident description.
-     *
      * @param array $incident Incident data
      * @param array $config Parser configuration
-     * @return string Incident description or empty string
+     * @return string
      */
-    private function extractIncidentDescription(array $incident, array $config): string
+    public function extractIncidentDescription(array $incident, array $config): string
     {
         if (!isset($config['description_field']) || !isset($incident[$config['description_field']])) {
             return '';
@@ -840,13 +970,11 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Check whether incident is recent when timestamp fields are configured.
-     *
      * @param array $incident Incident data
      * @param array $config Parser configuration
-     * @return bool True when incident should be considered active by time
+     * @return bool
      */
-    private function isIncidentRecent(array $incident, array $config): bool
+    public function isIncidentRecent(array $incident, array $config): bool
     {
         if (!isset($config['timestamp_fields']) || !is_array($config['timestamp_fields'])) {
             return true;
@@ -862,49 +990,21 @@ class ExternalServicesJsonApiParser
     }
 
     /**
-     * Extract first valid timestamp from configured fields.
-     *
-     * @param array $incident Incident data
-     * @param array $timestampFields Candidate timestamp fields
-     * @return int|null Unix timestamp or null
-     */
-    private function extractIncidentTimestamp(array $incident, array $timestampFields): ?int
-    {
-        foreach ($timestampFields as $field) {
-            if (!isset($incident[$field])) {
-                continue;
-            }
-
-            $timestamp = strtotime((string)$incident[$field]);
-
-            if ($timestamp !== false) {
-                return $timestamp;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Determine if incident text indicates resolution.
-     *
      * @param string $text Combined incident text
-     * @return bool True when resolved keywords are present
+     * @return bool
      */
-    private function isResolvedIncidentText(string $text): bool
+    public function isResolvedIncidentText(string $text): bool
     {
         return preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $text) === 1;
     }
 
     /**
-     * Determine major outage status from keywords or severity field.
-     *
      * @param array $incident Incident data
      * @param array $config Parser configuration
      * @param string $fullText Combined title/description text
-     * @return bool True when incident severity should be treated as major
+     * @return bool
      */
-    private function isMajorIncident(array $incident, array $config, string $fullText): bool
+    public function isMajorIncident(array $incident, array $config, string $fullText): bool
     {
         if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
             return true;
@@ -917,6 +1017,27 @@ class ExternalServicesJsonApiParser
         $severity = strtolower((string)$incident[$config['severity_field']]);
 
         return in_array($severity, ['high', 'critical', 'major'], true);
+    }
+
+    /**
+     * @param array $incident Incident data
+     * @param array $timestampFields Candidate timestamp fields
+     * @return int|null
+     */
+    private function extractIncidentTimestamp(array $incident, array $timestampFields): ?int
+    {
+        foreach ($timestampFields as $field) {
+            if (!isset($incident[$field])) {
+                continue;
+            }
+
+            $timestamp = strtotime((string)$incident[$field]);
+            if ($timestamp !== false) {
+                return $timestamp;
+            }
+        }
+
+        return null;
     }
 }
 
@@ -1025,7 +1146,7 @@ class ExternalServicesServiceCatalog
      *
      * @return array<string, bool> Map of service identifiers to enabled status
      */
-    public static function getServicesConfig(): array
+    public function getServicesConfig(): array
     {
         return array_merge(
             self::HOSTING_SERVICES,

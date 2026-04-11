@@ -85,7 +85,7 @@ class ExternalServicesController extends BaseController
 
             $this->loadExternalApi();
 
-            $config = ExternalServicesFeedParser::getServicesConfig();
+            $config = $this->feedParser->getServicesConfig();
             $this->setCached($cacheKey, $config);
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
             ApiResponse::success($config, $this->getTtl($cacheKey));
