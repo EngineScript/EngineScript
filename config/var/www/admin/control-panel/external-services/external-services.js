@@ -585,7 +585,11 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
-      console.error(`Toggle button (.category-toggle-all-btn) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
+      console.error(`Toggle control is unavailable for category: ${category}.`, {
+        category,
+        missingElement: ".category-toggle-all-btn",
+        component: "ExternalServicesManager.createSettingsCategorySection"
+      });
       return categorySection;
     }
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
@@ -914,9 +918,8 @@ export class ExternalServicesManager {
       let iconName = null;
 
       for (const part of parts) {
-        // Font Awesome style prefixes: shorthand (far/fas/fab/fad/fal/fat) and longhand (fa-regular/fa-solid/fa-brands/fa-duotone/fa-light/fa-thin)
-        // /^fa[rsbdlt]$/ maps to: far (regular), fas (solid), fab (brands), fad (duotone), fal (light), fat (thin).
-        // Match FA shorthand style prefix tokens exactly (far, fas, fab, fad, fal, fat).
+        // /^fa[rsbdlt]$/ maps to: far (regular), fas (solid), fab (brands), fad (duotone), fal (light), fat (thin), and matches only exact 3-character tokens.
+        // Because of ^...$ anchors, longer strings like "far-extra" do not match; only exact tokens (far, fas, fab, fad, fal, fat) are accepted.
         if (FA_STYLE_PREFIX_SHORT_PATTERN.test(part) || FA_STYLE_PREFIX_LONG_PATTERN.test(part)) {
           stylePrefix = part;
           continue;
