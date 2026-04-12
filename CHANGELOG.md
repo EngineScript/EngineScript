@@ -8,6 +8,7 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🔒 VHOST INSTALL SECURITY & VALIDATION FIXES
 
+- Added explicit `return` statement at the end of `escape_sql_string_literal()` in `scripts/functions/vhost/vhost-install.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
 - Removed `database_name` and `database_user` lowercase normalizations from `scripts/functions/vhost/vhost-install.sh`; the random character sources (`RAND_CHAR4` and `RAND_CHAR16`) are `a-zA-Z0-9` and must not be altered, as normalization would corrupt generated identifiers.
 - Updated `validate_db_identifier` regex from `^[a-z][a-z0-9_]*$` to `^[A-Za-z][A-Za-z0-9_]*$` to correctly accept mixed-case identifiers produced by `RAND_CHAR4`.
 - Updated the pre-write `database_user` validation regex from `^[A-Za-z0-9_]+$` (already fixed from earlier lowercase-only pattern) to correctly reflect the `RAND_CHAR16` charset (`a-zA-Z0-9`).

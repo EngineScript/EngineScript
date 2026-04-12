@@ -30,6 +30,7 @@ escape_sql_string_literal() {
   input="${input//\\/\\\\}"
   input="${input//\'/\'\'}"
   printf '%s' "$input"
+  return
 }
 
 # Shared multi-part public suffixes for domain parsing logic.
