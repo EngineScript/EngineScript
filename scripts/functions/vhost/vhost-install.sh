@@ -24,6 +24,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
 
+# Database username validation bounds
+DB_USER_MIN_LENGTH=8
+DB_USER_MAX_LENGTH=80
+
+# WordPress admin username length policy
+MIN_WP_ADMIN_USERNAME_LENGTH=3
+MAX_WP_ADMIN_USERNAME_LENGTH=60
+
+# Security policy settings
+MIN_WP_ADMIN_PASSWORD_LENGTH=12
+
 # Escape arbitrary text for safe inclusion in MariaDB single-quoted string literals.
 escape_sql_string_literal() {
   local input="$1"
@@ -256,8 +267,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Ensure parent directory exists and is restricted before writing sensitive data
   # Validate generated credentials before writing any sensitive data to disk.
   # RAND_CHAR16 uses a-zA-Z0-9 only; regex matches that exact charset.
-  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ${#database_user} -gt 80 || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
-    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be 8-80 characters and contain only letters or numbers)." >&2
+  if [[ -z "${database_user}" || ${#database_user} -lt "${DB_USER_MIN_LENGTH}" || ${#database_user} -gt "${DB_USER_MAX_LENGTH}" || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
+    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be ${DB_USER_MIN_LENGTH}-${DB_USER_MAX_LENGTH} characters and contain only letters or numbers)." >&2
     exit 1
   fi
   
@@ -351,8 +362,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
   # Use explicit length checks for clarity and maintainability, then validate allowed characters.
-  if [[ ${#WP_ADMIN_USERNAME} -lt 3 || ${#WP_ADMIN_USERNAME} -gt 60 ]]; then
-      echo "Error: WP_ADMIN_USERNAME must be between 3 and 60 characters long." >&2
+  if [[ ${#WP_ADMIN_USERNAME} -lt ${MIN_WP_ADMIN_USERNAME_LENGTH} || ${#WP_ADMIN_USERNAME} -gt ${MAX_WP_ADMIN_USERNAME_LENGTH} ]]; then
+      echo "Error: WP_ADMIN_USERNAME must be between ${MIN_WP_ADMIN_USERNAME_LENGTH} and ${MAX_WP_ADMIN_USERNAME_LENGTH} characters long." >&2
       exit 1
   fi
 
@@ -370,12 +381,12 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Password: minimum complexity requirements
-  if [[ ${#WP_ADMIN_PASSWORD} -lt 12 ]] || \
+  if [[ ${#WP_ADMIN_PASSWORD} -lt ${MIN_WP_ADMIN_PASSWORD_LENGTH} ]] || \
      [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
      [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
      [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
      [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
-      echo "Error: WP_ADMIN_PASSWORD must be at least 12 characters and include uppercase, lowercase, number, and special character." >&2
+      echo "Error: WP_ADMIN_PASSWORD must be at least ${MIN_WP_ADMIN_PASSWORD_LENGTH} characters and include uppercase, lowercase, number, and special character." >&2
       exit 1
   fi
 
