@@ -579,7 +579,8 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
         if (!toggleTextEl) {
-          throw new Error(`Settings UI component missing for category: ${category}. This indicates a rendering issue; please refresh the page or contact support.`);
+          console.error(`Settings UI component missing for category: ${category}. Skipping toggle-all wiring for this category section.`);
+          return categorySection;
         }
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
@@ -743,6 +744,15 @@ export class ExternalServicesManager {
    * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
    * @returns {Promise<void>}
    */
+  isQuotaExceededError(error) {
+    return !!error && (
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 ||
+      error.code === 1014
+    );
+  }
+  
   async handleSavePreferences(saveButton, services, pendingChanges) {
     try {
       saveButton.disabled = true;
@@ -768,13 +778,7 @@ export class ExternalServicesManager {
       try {
         globalThis.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
       } catch (storageError) {
-        const isQuotaExceeded = storageError && (
-          storageError.name === 'QuotaExceededError' ||
-          storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-          storageError.code === 22 ||
-          storageError.code === 1014
-        );
-        if (isQuotaExceeded) {
+        if (this.isQuotaExceededError(storageError)) {
           throw new Error('Unable to save preferences: browser storage is full.');
         }
         throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
@@ -875,6 +879,7 @@ export class ExternalServicesManager {
 
       for (const part of parts) {
         // Font Awesome style prefixes: shorthand (far/fas/fab/fad/fal/fat) and longhand (fa-regular/fa-solid/fa-brands/fa-duotone/fa-light/fa-thin)
+        // /^fa[rsbdlt]$/ maps to: far (regular), fas (solid), fab (brands), fad (duotone), fal (light), fat (thin).
         if (/^fa[rsbdlt]$/.test(part) || /^fa-(solid|regular|brands|light|duotone|thin)$/.test(part)) {
           stylePrefix = part;
           continue;
@@ -1076,6 +1081,7 @@ export class ExternalServicesManager {
    */
   // NOTE: constructor initializes all stateful request-management fields, including:
   // this.inFlightRequests = {};
+  // Constructor must include: this.inFlightRequests = {};
   async queueRequest(requestFn) {
     return new Promise((resolve, reject) => {
       const executeRequest = async () => {
