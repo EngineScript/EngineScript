@@ -588,7 +588,6 @@ export class ExternalServicesManager {
         ? `Disable all ${category} services`
         : `Enable all ${category} services`;
 
-      const toggleTextEl = ensureToggleTextElement();
       toggleTextEl.textContent = actionText;
       toggleBtn.setAttribute("aria-label", actionAria);
     };
