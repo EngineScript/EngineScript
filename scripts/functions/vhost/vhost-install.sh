@@ -46,7 +46,8 @@ MULTIPART_PUBLIC_SUFFIXES=(
 validate_db_identifier() {
   local db_identifier="$1"
   local domain_context="$2"
-  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[A-Za-z][A-Za-z0-9_]*$ ]]; then
+  # Explicitly reject backticks as defense-in-depth for backtick-quoted SQL identifiers.
+  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[A-Za-z][A-Za-z0-9_]*$ || "${db_identifier}" == *'`'* ]]; then
     echo "Error: Invalid database name '${db_identifier}' for domain '${domain_context}'." >&2
     exit 1
   fi
@@ -224,10 +225,18 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
   # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
   # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
-  db_name_suffix="_${RAND_CHAR4}"
+  # Include a stable hash of the full domain to avoid collisions when truncation occurs.
+  domain_hash="$(printf '%s' "${DOMAIN}" | sha256sum | awk '{print $1}' | cut -c1-8)"
+  if [[ ! "${domain_hash}" =~ ^[0-9a-f]{8}$ ]]; then
+    echo "Error: Failed to generate domain hash for database name suffix (got '${domain_hash}')." >&2
+    exit 1
+  fi
+  db_name_suffix="_${domain_hash}_${RAND_CHAR4}"
   max_db_name_len=64
-  if (( ${#db_name_suffix} >= max_db_name_len )); then
-    echo "Error: Invalid random suffix length for database name generation." >&2
+  # Expected: '_' (1) + domain_hash (8) + '_' (1) + RAND_CHAR4 (4) = 14 chars.
+  expected_db_name_suffix_len=14
+  if (( ${#db_name_suffix} != expected_db_name_suffix_len )); then
+    echo "Error: Invalid random suffix length for database name generation (expected ${expected_db_name_suffix_len}, got ${#db_name_suffix})." >&2
     exit 1
   fi
   max_domain_without_tld_len=$((max_db_name_len - ${#db_name_suffix}))
@@ -245,13 +254,14 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   credentials_dir="/home/EngineScript/mysql-credentials"
   credentials_file="${credentials_dir}/${DOMAIN}.txt"
   # Ensure parent directory exists and is restricted before writing sensitive data
-  # Validate generated credentials before writing any sensitive data to disk
-  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ${#database_user} -gt 80 || ! "${database_user}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be 8-80 characters and contain only letters, numbers, or underscores)." >&2
+  # Validate generated credentials before writing any sensitive data to disk.
+  # RAND_CHAR16 uses a-zA-Z0-9 only; regex matches that exact charset.
+  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ${#database_user} -gt 80 || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
+    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be 8-80 characters and contain only letters or numbers)." >&2
     exit 1
   fi
   
-  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9_]+$ || "${database_password}" == *"'"* || "${database_password}" == *"\\"* ]]; then
+  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9_]+$ ]]; then
     echo "Error: Invalid generated database password for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -266,20 +276,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   echo "" >> "${credentials_file}"
 
   source "${credentials_file}"
-
-  # Validate DB identifier before interpolating into SQL
-  if [[ -z "${DB}" || ! "${DB}" =~ ^[A-Za-z][A-Za-z0-9_]*$ ]]; then
-    echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-
-  # Validate DB password before interpolating into SQL single-quoted string.
-  # Allow printable ASCII generally, but reject characters that would break
-  # single-quoted SQL interpolation without escaping (' and \).
-  if [[ -z "${PSWD}" || ! "${PSWD}" =~ ^[[:print:]]+$ || "${PSWD}" == *"'"* || "${PSWD}" == *"\\"* ]]; then
-    echo "Error: Invalid database password for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 

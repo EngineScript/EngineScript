@@ -6,6 +6,15 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-12
 
+### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
+
+- Added domain hash (`sha256sum`, first 8 hex chars) to `db_name_suffix` in `vhost-install.sh` to prevent silent database name collisions when long domain names are truncated to fit MariaDB's 64-character identifier limit. Added explicit regex validation of the hash output (`^[0-9a-f]{8}$`) to catch pipeline failures with a clear error message.
+- Replaced the overly-broad suffix length guard (`>= 64`) with an exact-length check (`!= 14`) that precisely validates the expected suffix format: `_<8-char-hash>_<RAND_CHAR4>`.
+- Added backtick rejection to `validate_db_identifier()` as defense-in-depth against SQL injection via backtick-quoted identifiers, guarding against future regex changes.
+- Tightened `database_user` validation regex from `^[A-Za-z0-9_]+$` to `^[A-Za-z0-9]+$` to accurately reflect the `RAND_CHAR16` source charset (`a-zA-Z0-9`, no underscores).
+- Removed redundant single-quote and backslash sub-checks from `database_password` validation; these are already excluded by the `^[A-Za-z0-9_]+$` regex and were unnecessarily duplicated.
+- Removed duplicate post-`source` validations of `${DB}` and `${PSWD}`; both values are fully validated pre-write before the credentials file is created, eliminating double validation.
+
 ### 🐛 VHOST INSTALL SHELL CORRECTNESS & SECURITY FIXES
 
 - Removed invalid `local` keyword from `create_db_sql` declaration in `scripts/functions/vhost/vhost-install.sh`; `local` has no effect outside a function and was misleading.
