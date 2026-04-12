@@ -239,8 +239,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   credentials_file="${credentials_dir}/${DOMAIN}.txt"
   # Ensure parent directory exists and is restricted before writing sensitive data
   # Validate generated credentials before writing any sensitive data to disk
-  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ! "${database_user}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be at least 8 characters and contain only letters, numbers, or underscores)." >&2
+  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ${#database_user} -gt 80 || ! "${database_user}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be 8-80 characters and contain only letters, numbers, or underscores)." >&2
     exit 1
   fi
   
@@ -294,7 +294,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Download WordPress using WP-CLI
   wp core download --allow-root
   if ! wp plugin delete hello-dolly --allow-root; then
-    echo "Warning: Failed to delete default 'hello-dolly' plugin via WP-CLI. It may already be deleted or another error occurred. Continuing installation."
+    echo "Notice: Could not delete 'hello-dolly' via WP-CLI. This is expected on newer WordPress versions where the plugin is not installed by default. Continuing installation."
   fi
 
   # Create Extra WordPress Directories
