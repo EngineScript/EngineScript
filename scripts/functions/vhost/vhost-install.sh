@@ -207,11 +207,11 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
   db_name_suffix="_${RAND_CHAR4}"
   max_db_name_len=64
-  max_domain_without_tld_len=$((max_db_name_len - ${#db_name_suffix}))
-  if (( max_domain_without_tld_len < 1 )); then
+  if (( ${#db_name_suffix} >= max_db_name_len )); then
     echo "Error: Invalid random suffix length for database name generation." >&2
     exit 1
   fi
+  max_domain_without_tld_len=$((max_db_name_len - ${#db_name_suffix}))
   if (( ${#domain_without_tld} > max_domain_without_tld_len )); then
     echo "Warning: Truncating database name base '${domain_without_tld}' to ${max_domain_without_tld_len} characters for domain '${DOMAIN}'." >&2
     domain_without_tld="${domain_without_tld:0:max_domain_without_tld_len}"
@@ -232,6 +232,22 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   credentials_dir="/home/EngineScript/mysql-credentials"
   credentials_file="${credentials_dir}/${DOMAIN}.txt"
   # Ensure parent directory exists and is restricted before writing sensitive data
+  # Validate generated credentials before writing any sensitive data to disk
+  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z][a-z0-9_]*$ ]]; then
+    echo "Error: Invalid generated database name '${database_name}' for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+  
+  if [[ -z "${database_user}" || ${#database_user} -lt 8 || ! "${database_user}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be at least 8 characters and contain only letters, numbers, or underscores)." >&2
+    exit 1
+  fi
+  
+  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9@%+=:,./_-]+$ ]]; then
+    echo "Error: Invalid generated database password for domain '${DOMAIN}'." >&2
+    exit 1
+  fi
+  
   install -d -m 700 "${credentials_dir}"
   chmod 700 "${credentials_dir}"
   # Create the file with restrictive permissions before writing any sensitive data
@@ -255,11 +271,16 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
 
-  # Validate DB password before interpolating into SQL single-quoted string
-  if [[ -z "${PSWD}" || ! "${PSWD}" =~ ^[A-Za-z0-9@%+=:,./_-]+$ ]]; then
+  # Validate DB password before interpolating into SQL single-quoted string.
+  # Allow printable ASCII generally, but reject characters that would break
+  # single-quoted SQL interpolation without escaping (' and \).
+  if [[ -z "${PSWD}" || ! "${PSWD}" =~ ^[[:print:]]+$ || "${PSWD}" == *"'"* || "${PSWD}" == *"\\"* ]]; then
     echo "Error: Invalid database password for domain '${DOMAIN}'." >&2
     exit 1
   fi
+
+   # Escape password for safe use inside SQL single-quoted literal
+  ESCAPED_PSWD="${PSWD//\'/\'\'}"
   
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
@@ -268,7 +289,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${ESCAPED_PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -344,7 +365,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Email: basic format validation
   # Single character addresses such as a@example.com are valid and accepted by the regex.
-  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9_%+-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9_%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
+  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9.%+-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9.%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
   if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
