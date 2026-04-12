@@ -238,7 +238,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
   
-  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9@%+=:,./_-]+$ ]]; then
+  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9@%+=:,./-]+$ ]]; then
     echo "Error: Invalid generated database password for domain '${DOMAIN}'." >&2
     exit 1
   fi
