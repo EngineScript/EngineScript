@@ -577,15 +577,10 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
-    const ensureToggleTextElement = () => {
-      let toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
-      if (!toggleTextEl) {
-        toggleTextEl = document.createElement("span");
-        toggleTextEl.className = "toggle-all-text";
-        toggleBtn.appendChild(toggleTextEl);
-      }
-      return toggleTextEl;
-    };
+    const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
+        if (!toggleTextEl) {
+          throw new Error("Expected .toggle-all-text span in category toggle button.");
+        }
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
       const actionText = allEnabled ? "Disable All" : "Enable All";
@@ -1080,6 +1075,8 @@ export class ExternalServicesManager {
    * @param {Function} requestFn - Async function that performs the actual request
    * @returns {Promise} Resolves when request completes
    */
+  // NOTE: constructor should initialize all stateful request-management fields, including:
+  // this.inFlightRequests = {};
   async queueRequest(requestFn) {
     return new Promise((resolve, reject) => {
       const executeRequest = async () => {
@@ -1121,10 +1118,6 @@ export class ExternalServicesManager {
    * @returns {Promise<Object>} Promise resolving to service data (from cache or parsed JSON response)
    */
   async fetchServiceData(fetchFn, serviceKey) {
-    // Initialize in-flight request map lazily if not already set
-    if (!this.inFlightRequests) {
-      this.inFlightRequests = {};
-    }
 
     // Check cache first - no need to queue if cached
     let data = this.getCachedService(serviceKey);
@@ -1419,12 +1412,13 @@ export class ExternalServicesManager {
     });
 
     const ordered = [];
-
+    const sortServiceKeys = (a, b) => a.localeCompare(b);
+    
     // First: known categories in configured display order.
     CATEGORY_ORDER.forEach((category) => {
       const keys = servicesByCategory.get(category);
       if (keys && keys.length > 0) {
-        ordered.push(...keys.sort((a, b) => a.localeCompare(b)));
+        ordered.push(...keys.sort(sortServiceKeys));
         servicesByCategory.delete(category);
       }
     });
@@ -1434,7 +1428,7 @@ export class ExternalServicesManager {
       .sort((a, b) => a.localeCompare(b))
       .forEach((category) => {
         const keys = servicesByCategory.get(category) || [];
-        ordered.push(...keys.sort((a, b) => a.localeCompare(b)));
+        ordered.push(...keys.sort(sortServiceKeys));
       });
 
     return ordered;
