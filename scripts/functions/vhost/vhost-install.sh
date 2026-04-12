@@ -233,11 +233,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   credentials_file="${credentials_dir}/${DOMAIN}.txt"
   # Ensure parent directory exists and is restricted before writing sensitive data
   # Validate generated credentials before writing any sensitive data to disk
-  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z][a-z0-9_]*$ ]]; then
-    echo "Error: Invalid generated database name '${database_name}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-  
   if [[ -z "${database_user}" || ${#database_user} -lt 8 || ! "${database_user}" =~ ^[A-Za-z0-9_]+$ ]]; then
     echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be at least 8 characters and contain only letters, numbers, or underscores)." >&2
     exit 1
@@ -279,9 +274,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
 
-   # Escape password for safe use inside SQL single-quoted literal
-  ESCAPED_PSWD="${PSWD//\'/\'\'}"
-  
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
   if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;"; then
@@ -289,7 +281,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${ESCAPED_PSWD}';"; then
+  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -301,8 +293,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Download WordPress using WP-CLI
   wp core download --allow-root
-  if ! wp plugin delete hello --allow-root; then
-    echo "Warning: Failed to delete default 'hello' plugin via WP-CLI. It may already be deleted or another error occurred. Continuing installation."
+  if ! wp plugin delete hello-dolly --allow-root; then
+    echo "Warning: Failed to delete default 'hello-dolly' plugin via WP-CLI. It may already be deleted or another error occurred. Continuing installation."
   fi
 
   # Create Extra WordPress Directories
@@ -363,9 +355,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
       exit 1
   fi
 
-  # Email: basic format validation
-  # Single character addresses such as a@example.com are valid and accepted by the regex.
-  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9.%+-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9.%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
+  # Email: basic format validation (practical, non-RFC-complete).
+  # Accepts common addresses like a@example.com and user.name+tag@example.co.uk.
+  EMAIL_REGEX='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
   if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
