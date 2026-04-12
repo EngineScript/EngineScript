@@ -880,19 +880,24 @@ export class ExternalServicesManager {
       let iconName = null;
 
       for (const part of parts) {
-        // Font Awesome shorthand style prefixes: r=regular, s=solid, b=brands, d=duotone, l=light, t=thin (far/fas/fab/fad/fal/fat)
+        // Font Awesome style prefixes: shorthand (far/fas/fab/fad/fal/fat) and longhand (fa-regular/fa-solid/fa-brands/fa-duotone/fa-light/fa-thin)
         if (/^fa[rsbdlt]$/.test(part) || /^fa-(solid|regular|brands|light|duotone|thin)$/.test(part)) {
           stylePrefix = part;
           continue;
         }
 
-        if (!iconName && /^fa-[a-z0-9-]+$/.test(part) && !FA_ICON_MODIFIER_PATTERN.test(part)) {
+        if (!iconName && /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(part) && !FA_ICON_MODIFIER_PATTERN.test(part)) {
           iconName = part;
         }
       }
 
       if (!iconName) {
-        iconName = sanitizeFaIconSuffix(value);
+        const iconCandidates = parts.filter((part) =>
+          !/^fa[rsbdlt]$/.test(part) &&
+          !/^fa-(solid|regular|brands|light|duotone|thin)$/.test(part) &&
+          !FA_ICON_MODIFIER_PATTERN.test(part)
+        );
+        iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
       }
 
       return { stylePrefix, iconName };
@@ -1403,9 +1408,9 @@ export class ExternalServicesManager {
 
     serviceKeys.forEach((key) => {
       const definition = SERVICE_DEFINITIONS[key] || {};
-      const category = typeof definition.category === 'string' && definition.category.trim()
-        ? definition.category.trim()
-        : 'Uncategorized';
+      const rawCategory = definition.category;
+      const trimmedCategory = typeof rawCategory === 'string' ? rawCategory.trim() : '';
+      const category = trimmedCategory || 'Uncategorized';
 
       if (!servicesByCategory.has(category)) {
         servicesByCategory.set(category, []);
