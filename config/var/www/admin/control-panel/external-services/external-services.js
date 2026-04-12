@@ -55,6 +55,7 @@ export class ExternalServicesManager {
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
     // State management with TTL cache and LRU eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE)
+    // serviceCache entries are stored as: { data: Object, timestamp: number }
     this.serviceCache = new Map();
     this.cacheTTL = SERVICE_CACHE_TTL_MS;
     this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
@@ -64,6 +65,7 @@ export class ExternalServicesManager {
     this.maxConcurrentRequests = 6;
     this.activeRequests = 0;
     this.requestQueue = [];
+    // Stores in-flight Promises keyed by serviceKey to deduplicate concurrent requests for the same service.
     this.inFlightRequests = {};
     
     // Notification timing configuration
@@ -581,7 +583,6 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
-      console.error(`Failed to find toggle button for category: ${category}`);
       console.error(`Toggle button (.category-toggle-all-btn) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
       return categorySection;
     }
@@ -765,6 +766,28 @@ export class ExternalServicesManager {
   }
 
   /**
+   * Validate browser storage availability for preferences persistence
+   * @returns {Storage}
+   * @throws {Error} If browser storage is unavailable or disabled
+   */
+  validateStorageAvailability() {
+    const storageTestKey = '__servicePreferences_storage_test__';
+    const storage = globalThis.localStorage;
+    if (!storage || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
+      throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
+    }
+    
+    try {
+      storage.setItem(storageTestKey, '1');
+      storage.removeItem(storageTestKey);
+    } catch (availabilityError) {
+      console.error('localStorage availability check failed:', availabilityError);
+      throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
+    }
+    return storage;
+  }
+  
+  /**  
    * Handle save preferences button click
    * @param {HTMLElement} saveButton - Save button element
    * @param {Object} services - Services object keyed by service identifier
@@ -784,21 +807,10 @@ export class ExternalServicesManager {
       this.applyPreferenceChanges(currentPreferences, safeChanges);
       
       // Save preferences to local storage (avoid tamper-prone cookie storage)
-      const storageTestKey = '__servicePreferences_storage_test__';
-      const storage = globalThis.localStorage;
-      if (!storage || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
-        throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
-      }
-      try {
-        storage.setItem(storageTestKey, '1');
-        storage.removeItem(storageTestKey);
-      } catch (availabilityError) {
-        console.error('localStorage availability check failed:', availabilityError);
-        throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
-      }
+      const storage = this.validateStorageAvailability();
 
       try {
-        globalThis.localStorage.setItem('servicePreferences', JSON.stringify(currentPreferences));
+        storage.setItem('servicePreferences', JSON.stringify(currentPreferences));
       } catch (storageError) {
         if (this.isQuotaExceededError(storageError)) {
           throw new Error('Unable to save preferences: browser storage is full.');
@@ -834,7 +846,7 @@ export class ExternalServicesManager {
         this.resetSaveButtonContent(saveButton);
       }, 2000);
       
-      this.showNotification(error && error.message ? error.message : 'Failed to save preferences', 'error');
+      this.showNotification(error?.message || 'Failed to save preferences', 'error');
     }
   }
 
