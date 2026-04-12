@@ -193,7 +193,18 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
   # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
   # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
-  database_name="${domain_without_tld}_${RAND_CHAR4}"
+  # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
+  db_name_suffix="_${RAND_CHAR4}"
+  max_db_name_len=64
+  max_domain_without_tld_len=$((max_db_name_len - ${#db_name_suffix}))
+  if (( max_domain_without_tld_len < 1 )); then
+    echo "Error: Invalid random suffix length for database name generation." >&2
+    exit 1
+  fi
+  if (( ${#domain_without_tld} > max_domain_without_tld_len )); then
+    domain_without_tld="${domain_without_tld:0:max_domain_without_tld_len}"
+  fi
+  database_name="${domain_without_tld}${db_name_suffix}"
   # Normalize to lowercase for MySQL/MariaDB portability across platforms
   database_name="${database_name,,}"
   # Validate DB identifier before writing credentials file or interpolating into SQL
@@ -236,7 +247,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
-  if ! sudo mariadb -e "CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; then
+  if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;"; then
     echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -246,7 +257,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
 
-  if ! sudo mariadb -e "GRANT ALL ON ${DB}.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     exit 1
   fi
@@ -317,7 +328,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Email: basic format validation
   # Single character addresses such as a@example.com are valid and accepted by the regex.
-  EMAIL_REGEX='^[A-Za-z0-9](?:[A-Za-z0-9_%+-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9_%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
+  EMAIL_REGEX='^[A-Za-z0-9]([A-Za-z0-9_%+-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9_%+-]*[A-Za-z0-9])?)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$'
   if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
       echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
       exit 1
