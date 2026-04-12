@@ -31,7 +31,7 @@ const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard
 
 const DEFAULT_ICON_SUFFIX = 'question';
 
-const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
 
 const DEFAULT_NOTIFICATION_DURATION_MS = 3000;
@@ -51,7 +51,7 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
     
-    // State management with TTL cache and LRU eviction (5-minute TTL, max 100 entries)
+    // State management with TTL cache and LRU eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE)
     this.serviceCache = new Map();
     this.cacheTTL = SERVICE_CACHE_TTL_MS;
     this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
@@ -579,7 +579,7 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
         if (!toggleTextEl) {
-          throw new Error("Expected .toggle-all-text span in category toggle button.");
+          throw new Error(`Expected .toggle-all-text span in category toggle button for category: ${category}.`);
         }
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
@@ -1074,7 +1074,7 @@ export class ExternalServicesManager {
    * @param {Function} requestFn - Async function that performs the actual request
    * @returns {Promise} Resolves when request completes
    */
-  // NOTE: constructor should initialize all stateful request-management fields, including:
+  // NOTE: constructor initializes all stateful request-management fields, including:
   // this.inFlightRequests = {};
   async queueRequest(requestFn) {
     return new Promise((resolve, reject) => {
@@ -1306,7 +1306,7 @@ export class ExternalServicesManager {
 
   /**
    * Set cached service data with LRU eviction
-   * Implements LRU cache with max size of 100 entries
+   * Implements LRU cache with configured max size (`this.cacheMaxSize`)
    * @param {string} serviceKey - Service identifier key
    * @param {Object} data - Service data to cache
    * @returns {void}
