@@ -577,12 +577,16 @@ export class ExternalServicesManager {
 
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
+    if (!toggleBtn) {
+      console.error(`Toggle button (.category-toggle-all-btn) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
+      return categorySection;
+    }
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
-        if (!toggleTextEl) {
-          console.error(`Toggle button text element (.toggle-all-text) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
-          return categorySection;
-        }
+    if (!toggleTextEl) {
+      console.error(`Toggle button text element (.toggle-all-text) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
+      return categorySection;
+    }
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
       const actionText = allEnabled ? "Disable All" : "Enable All";
@@ -739,7 +743,7 @@ export class ExternalServicesManager {
     icon.className = iconClass;
     icon.setAttribute("aria-hidden", "true");
     saveButton.appendChild(icon);
-    saveButton.appendChild(document.createTextNode(text));
+    saveButton.appendChild(document.createTextNode(` ${text}`));
   }
 
   /**
