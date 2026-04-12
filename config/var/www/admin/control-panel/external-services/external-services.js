@@ -880,13 +880,14 @@ export class ExternalServicesManager {
       let iconName = null;
 
       for (const part of parts) {
-        // Font Awesome shorthand style prefixes: r=regular, s=solid, b=brands, d=duotone, l=light (far/fas/fab/fad/fal)
-        if (/^fa[rsbdl]$/.test(part) || /^fa-(solid|regular|brands|light|duotone)$/.test(part)) {
+        // Font Awesome shorthand style prefixes: r=regular, s=solid, b=brands, d=duotone, l=light, t=thin (far/fas/fab/fad/fal/fat)
+        if (/^fa[rsbdlt]$/.test(part) || /^fa-(solid|regular|brands|light|duotone|thin)$/.test(part)) {
           stylePrefix = part;
           continue;
         }
 
         if (!iconName && /^fa-[a-z0-9-]+$/.test(part) && !FA_ICON_MODIFIER_PATTERN.test(part)) {
+          iconName = part;
         }
       }
 
