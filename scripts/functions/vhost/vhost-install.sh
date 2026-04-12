@@ -198,7 +198,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
     case "${public_suffix}" in
       ${MULTIPART_SUFFIX_CASE_PATTERN})
-      
       domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
         ;;
     esac
@@ -214,6 +213,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
   if (( ${#domain_without_tld} > max_domain_without_tld_len )); then
+    echo "Warning: Truncating database name base '${domain_without_tld}' to ${max_domain_without_tld_len} characters for domain '${DOMAIN}'." >&2
     domain_without_tld="${domain_without_tld:0:max_domain_without_tld_len}"
   fi
   database_name="${domain_without_tld}${db_name_suffix}"
@@ -229,7 +229,11 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Domain Database Credentials
   # No need to normalize database_user to lowercase as this is a Linux-only project that does not require windows compatibility.
-  credentials_file="/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  credentials_dir="/home/EngineScript/mysql-credentials"
+  credentials_file="${credentials_dir}/${DOMAIN}.txt"
+  # Ensure parent directory exists and is restricted before writing sensitive data
+  install -d -m 700 "${credentials_dir}"
+  chmod 700 "${credentials_dir}"
   # Create the file with restrictive permissions before writing any sensitive data
   install -m 600 /dev/null "${credentials_file}"
   echo "DB=\"${database_name}\"" >> "${credentials_file}"
@@ -240,7 +244,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   source "${credentials_file}"
 
   # Validate DB identifier before interpolating into SQL
-  if [[ -z "${DB}" || ! "${DB}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
+  if [[ -z "${DB}" || ! "${DB}" =~ ^[a-z][a-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
