@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-12
 
+### 🐛 VHOST INSTALL SHELL CORRECTNESS & SECURITY FIXES
+
+- Removed invalid `local` keyword from `create_db_sql` declaration in `scripts/functions/vhost/vhost-install.sh`; `local` has no effect outside a function and was misleading.
+- Removed invalid `local` keyword from `SQL_ESCAPED_PSWD` declaration in `scripts/functions/vhost/vhost-install.sh` for the same reason.
+- Changed the `printf -v create_db_sql` format string from single quotes to double quotes (with backticks escaped as `\``) to satisfy shell best-practice linting (SC2016 — expressions don't expand in single quotes).
+- Replaced the IFS-manipulation subshell (`IFS='|'; echo "${MULTIPART_PUBLIC_SUFFIXES[*]}"`) used to build `MULTIPART_SUFFIX_CASE_PATTERN` with a `printf`-based join (`printf '%s|'` + trailing-`|` strip), eliminating the HIGH-severity IFS side-effect security concern.
+
 ### 🔒 VHOST INSTALL SECURITY & VALIDATION FIXES
 
 - Added explicit `return` statement at the end of `escape_sql_string_literal()` in `scripts/functions/vhost/vhost-install.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).

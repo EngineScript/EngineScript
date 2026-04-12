@@ -51,7 +51,8 @@ validate_db_identifier() {
     exit 1
   fi
 }
-MULTIPART_SUFFIX_CASE_PATTERN="$(IFS='|'; echo "${MULTIPART_PUBLIC_SUFFIXES[*]}")"
+MULTIPART_SUFFIX_CASE_PATTERN="$(printf '%s|' "${MULTIPART_PUBLIC_SUFFIXES[@]}")"
+MULTIPART_SUFFIX_CASE_PATTERN="${MULTIPART_SUFFIX_CASE_PATTERN%|}"
 
 # Check if services are running
 check_required_services
@@ -282,14 +283,12 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
-  local create_db_sql
-  printf -v create_db_sql 'CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;' "${DB}"
+  printf -v create_db_sql "CREATE DATABASE \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;" "${DB}"
   if ! sudo mariadb -e "${create_db_sql}"; then
     echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
 
-  local SQL_ESCAPED_PSWD
   SQL_ESCAPED_PSWD="$(escape_sql_string_literal "${PSWD}")"
 
   if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
