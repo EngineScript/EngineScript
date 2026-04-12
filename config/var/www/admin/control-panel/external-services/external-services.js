@@ -61,6 +61,7 @@ export class ExternalServicesManager {
     this.maxConcurrentRequests = 6;
     this.activeRequests = 0;
     this.requestQueue = [];
+    this.inFlightRequests = {};
     
     // Notification timing configuration
     this.notificationDurationMs = DEFAULT_NOTIFICATION_DURATION_MS;
@@ -579,7 +580,7 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
         if (!toggleTextEl) {
-          console.error(`Settings UI component missing for category: ${category}. Skipping toggle-all wiring for this category section.`);
+          console.error(`Toggle button text element (.toggle-all-text) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
           return categorySection;
         }
     const updateToggleButtonState = () => {
@@ -722,10 +723,14 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Update save button icon + text consistently.
-   * @param {HTMLElement} saveButton - Save button element
-   * @param {string} iconClass - Icon class to apply
-   * @param {string} text - Button label text
+   * Updates the save button's rendered content by replacing both its icon and label text.
+   * Use this method for non-default/transient UI states (for example: saving, saved, or error feedback)
+   * when the button should communicate progress or result to the user.
+   * Use `resetSaveButtonContent` when returning the button to its default idle "Save Changes" state.
+   *
+   * @param {HTMLElement} saveButton - Save button element to update.
+   * @param {string} iconClass - Full icon class string to apply to the `<i>` element (for example, "fas fa-save").
+   * @param {string} text - Visible button label text to render after the icon.
    */
   setSaveButtonContent(saveButton, iconClass, text) {
     saveButton.textContent = "";
@@ -1079,9 +1084,6 @@ export class ExternalServicesManager {
    * @param {Function} requestFn - Async function that performs the actual request
    * @returns {Promise} Resolves when request completes
    */
-  // NOTE: constructor initializes all stateful request-management fields, including:
-  // this.inFlightRequests = {};
-  // Constructor must include: this.inFlightRequests = {};
   async queueRequest(requestFn) {
     return new Promise((resolve, reject) => {
       const executeRequest = async () => {
