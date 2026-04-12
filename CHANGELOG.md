@@ -4,6 +4,21 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-12
+
+### 🔒 VHOST INSTALL SECURITY & VALIDATION FIXES
+
+- Added explicit `return` statement at the end of `escape_sql_string_literal()` in `scripts/functions/vhost/vhost-install.sh` to satisfy shell best-practice linting (SC2151/explicit-return warning).
+- Removed `database_name` and `database_user` lowercase normalizations from `scripts/functions/vhost/vhost-install.sh`; the random character sources (`RAND_CHAR4` and `RAND_CHAR16`) are `a-zA-Z0-9` and must not be altered, as normalization would corrupt generated identifiers.
+- Updated `validate_db_identifier` regex from `^[a-z][a-z0-9_]*$` to `^[A-Za-z][A-Za-z0-9_]*$` to correctly accept mixed-case identifiers produced by `RAND_CHAR4`.
+- Updated the pre-write `database_user` validation regex from `^[A-Za-z0-9_]+$` (already fixed from earlier lowercase-only pattern) to correctly reflect the `RAND_CHAR16` charset (`a-zA-Z0-9`).
+- Updated the post-source `DB` validation regex from `^[a-z][a-z0-9_]*$` to `^[A-Za-z][A-Za-z0-9_]*$` to match the mixed-case database name.
+- Updated the pre-write `database_password` validation regex to `^[A-Za-z0-9_]+$`, precisely matching the `RAND_CHAR32` charset (`a-zA-Z0-9_`), replacing the prior broader pattern that excluded `_` and would have incorrectly rejected valid generated passwords.
+- Consolidated password validation to also reject single quotes and backslashes at the pre-write stage, eliminating a TOCTOU gap where a password could pass the first check but fail a later one.
+- Added `escape_sql_string_literal()` helper function to safely escape MariaDB single-quoted string literals, guarding against SQL injection if password validation is ever bypassed.
+- Used `printf -v` to prepare the `CREATE DATABASE` SQL statement separately before passing it to `mariadb -e`, reducing direct interpolation risk.
+- Used `escape_sql_string_literal` on `PSWD` before interpolating into the `CREATE USER` SQL statement.
+
 ## 2026-04-11
 
 ### 🔧 VHOST IMPORT BUG FIXES & IMPROVEMENTS
