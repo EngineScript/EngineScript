@@ -33,6 +33,15 @@ MULTIPART_PUBLIC_SUFFIXES=(
   "com.br" "com.sg" "com.my" "com.mx"
   "co.za" "com.tr" "com.hk"
 )
+	
+validate_db_identifier() {
+  local db_identifier="$1"
+  local domain_context="$2"
+  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[a-z][a-z0-9_]*$ ]]; then
+    echo "Error: Invalid database name '${db_identifier}' for domain '${domain_context}'." >&2
+    exit 1
+  fi
+}
 MULTIPART_SUFFIX_CASE_PATTERN="$(IFS='|'; echo "${MULTIPART_PUBLIC_SUFFIXES[*]}")"
 
 # Check if services are running
@@ -220,10 +229,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Normalize to lowercase for MySQL/MariaDB portability across platforms
   database_name="${database_name,,}"
   # Validate DB identifier before writing credentials file or interpolating into SQL
-  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z][a-z0-9_]*$ ]]; then
-    echo "Error: Invalid database name '${database_name}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
+  validate_db_identifier "${database_name}" "${DOMAIN}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
 
@@ -257,12 +263,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Validate DB identifier before interpolating into SQL
   if [[ -z "${DB}" || ! "${DB}" =~ ^[a-z][a-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-
-  # Validate DB user before interpolating into SQL
-  if [[ -z "${USR}" || ${#USR} -lt 8 || ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Invalid MariaDB user '${USR}' for domain '${DOMAIN}' (must be at least 8 characters and contain only letters, numbers, or underscores)." >&2
     exit 1
   fi
 
