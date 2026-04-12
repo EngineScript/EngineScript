@@ -19,6 +19,9 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/;
+const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
+
 const FA_ICON_MODIFIER_SUFFIXES = [
   'spin', 'pulse', 'fw', 'lg', 'xs', 'sm',
   '1x', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x'
@@ -776,9 +779,13 @@ export class ExternalServicesManager {
       
       // Save preferences to local storage (avoid tamper-prone cookie storage)
       const storageTestKey = '__servicePreferences_storage_test__';
+      const storage = globalThis.localStorage;
+      if (!storage || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
+        throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
+      }
       try {
-        globalThis.localStorage.setItem(storageTestKey, '1');
-        globalThis.localStorage.removeItem(storageTestKey);
+        storage.setItem(storageTestKey, '1');
+        storage.removeItem(storageTestKey);
       } catch (availabilityError) {
         console.error('localStorage availability check failed:', availabilityError);
         throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
@@ -889,7 +896,8 @@ export class ExternalServicesManager {
       for (const part of parts) {
         // Font Awesome style prefixes: shorthand (far/fas/fab/fad/fal/fat) and longhand (fa-regular/fa-solid/fa-brands/fa-duotone/fa-light/fa-thin)
         // /^fa[rsbdlt]$/ maps to: far (regular), fas (solid), fab (brands), fad (duotone), fal (light), fat (thin).
-        if (/^fa[rsbdlt]$/.test(part) || /^fa-(solid|regular|brands|light|duotone|thin)$/.test(part)) {
+        // Match FA shorthand style prefix tokens exactly (far, fas, fab, fad, fal, fat).
+        if (FA_STYLE_PREFIX_SHORT_PATTERN.test(part) || FA_STYLE_PREFIX_LONG_PATTERN.test(part)) {
           stylePrefix = part;
           continue;
         }
@@ -901,8 +909,8 @@ export class ExternalServicesManager {
 
       if (!iconName) {
         const iconCandidates = parts.filter((part) =>
-          !/^fa[rsbdlt]$/.test(part) &&
-          !/^fa-(solid|regular|brands|light|duotone|thin)$/.test(part) &&
+          !FA_STYLE_PREFIX_SHORT_PATTERN.test(part) &&
+          !FA_STYLE_PREFIX_LONG_PATTERN.test(part) &&
           !FA_ICON_MODIFIER_PATTERN.test(part)
         );
         iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
