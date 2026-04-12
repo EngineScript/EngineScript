@@ -581,13 +581,14 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
+      console.error(`Failed to find toggle button for category: ${category}`);
       console.error(`Toggle button (.category-toggle-all-btn) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
       return categorySection;
     }
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
     if (!toggleTextEl) {
-      console.error(`Toggle button text element (.toggle-all-text) not found for category: ${category}. This indicates a UI rendering issue. Please check the createSettingsCategoryHeader method.`);
+      console.error(`Failed to find toggle button text element for category: ${category}`);
       return categorySection;
     }
     const updateToggleButtonState = () => {
@@ -750,11 +751,9 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Handle save preferences button click
-   * @param {HTMLElement} saveButton - Save button element
-   * @param {Object} services - Services object keyed by service identifier
-   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
-   * @returns {Promise<void>}
+   * Determines whether an error corresponds to storage quota exhaustion.
+   * @param {Error|DOMException|Object} error - Error thrown while writing to storage.
+   * @returns {boolean}
    */
   isQuotaExceededError(error) {
     return !!error && (
@@ -764,7 +763,14 @@ export class ExternalServicesManager {
       error.code === 1014
     );
   }
-  
+
+  /**
+   * Handle save preferences button click
+   * @param {HTMLElement} saveButton - Save button element
+   * @param {Object} services - Services object keyed by service identifier
+   * @param {Object} pendingChanges - Mutable object tracking unsaved toggle changes
+   * @returns {Promise<void>}
+   */
   async handleSavePreferences(saveButton, services, pendingChanges) {
     try {
       saveButton.disabled = true;
