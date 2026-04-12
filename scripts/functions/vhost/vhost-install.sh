@@ -24,6 +24,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
 
+# Escape arbitrary text for safe inclusion in MariaDB single-quoted string literals.
+escape_sql_string_literal() {
+  local input="$1"
+  input="${input//\\/\\\\}"
+  input="${input//\'/\'\'}"
+  printf '%s' "$input"
+}
+
 # Shared multi-part public suffixes for domain parsing logic.
 # Keep this aligned with supported multi-part entries in VALID_TLDS.
 MULTIPART_PUBLIC_SUFFIXES=(
@@ -37,7 +45,7 @@ MULTIPART_PUBLIC_SUFFIXES=(
 validate_db_identifier() {
   local db_identifier="$1"
   local domain_context="$2"
-  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[a-z][a-z0-9_]*$ ]]; then
+  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[A-Za-z][A-Za-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${db_identifier}' for domain '${domain_context}'." >&2
     exit 1
   fi
@@ -226,15 +234,12 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     domain_without_tld="${domain_without_tld:0:max_domain_without_tld_len}"
   fi
   database_name="${domain_without_tld}${db_name_suffix}"
-  # Normalize to lowercase for MySQL/MariaDB portability across platforms
-  database_name="${database_name,,}"
   # Validate DB identifier before writing credentials file or interpolating into SQL
   validate_db_identifier "${database_name}" "${DOMAIN}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
 
   # Domain Database Credentials
-  # No need to normalize database_user to lowercase as this is a Linux-only project that does not require windows compatibility.
   credentials_dir="/home/EngineScript/mysql-credentials"
   credentials_file="${credentials_dir}/${DOMAIN}.txt"
   # Ensure parent directory exists and is restricted before writing sensitive data
@@ -244,7 +249,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     exit 1
   fi
   
-  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9@%+=:,./-]+$ ]]; then
+  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9_]+$ || "${database_password}" == *"'"* || "${database_password}" == *"\\"* ]]; then
     echo "Error: Invalid generated database password for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -261,7 +266,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   source "${credentials_file}"
 
   # Validate DB identifier before interpolating into SQL
-  if [[ -z "${DB}" || ! "${DB}" =~ ^[a-z][a-z0-9_]*$ ]]; then
+  if [[ -z "${DB}" || ! "${DB}" =~ ^[A-Za-z][A-Za-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -276,12 +281,17 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
-  if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;"; then
+  local create_db_sql
+  printf -v create_db_sql 'CREATE DATABASE `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;' "${DB}"
+  if ! sudo mariadb -e "${create_db_sql}"; then
     echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+  local SQL_ESCAPED_PSWD
+  SQL_ESCAPED_PSWD="$(escape_sql_string_literal "${PSWD}")"
+
+  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
