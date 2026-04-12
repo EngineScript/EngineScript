@@ -24,6 +24,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
 
+# Shared multi-part public suffixes for domain parsing logic.
+# Keep this aligned with supported multi-part entries in VALID_TLDS.
+MULTIPART_PUBLIC_SUFFIXES=(
+  "co.uk" "org.uk" "gov.uk" "ac.uk"
+  "com.au" "net.au" "org.au"
+  "co.nz" "org.nz"
+  "com.br" "com.sg" "com.my" "com.mx"
+  "co.za" "com.tr" "com.hk"
+)
+MULTIPART_SUFFIX_CASE_PATTERN="$(IFS='|'; echo "${MULTIPART_PUBLIC_SUFFIXES[*]}")"
+
 # Check if services are running
 check_required_services
 
@@ -186,8 +197,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   if (( ${#domain_parts[@]} >= 3 )); then
     public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
     case "${public_suffix}" in
-      co.uk|org.uk|gov.uk|ac.uk|com.au|net.au|org.au|co.nz|org.nz|com.br|com.sg|com.my|com.mx|co.za|com.tr|com.hk)
-        domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
+      ${MULTIPART_SUFFIX_CASE_PATTERN})
+      
+      domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
         ;;
     esac
   fi
@@ -208,7 +220,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Normalize to lowercase for MySQL/MariaDB portability across platforms
   database_name="${database_name,,}"
   # Validate DB identifier before writing credentials file or interpolating into SQL
-  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
+  if [[ -z "${database_name}" || ! "${database_name}" =~ ^[a-z][a-z0-9_]*$ ]]; then
     echo "Error: Invalid database name '${database_name}' for domain '${DOMAIN}'." >&2
     exit 1
   fi
@@ -234,8 +246,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Validate DB user before interpolating into SQL
-  if [[ -z "${USR}" || ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Invalid MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
+  if [[ -z "${USR}" || ${#USR} -lt 8 || ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Invalid MariaDB user '${USR}' for domain '${DOMAIN}' (must be at least 8 characters and contain only letters, numbers, or underscores)." >&2
     exit 1
   fi
 
