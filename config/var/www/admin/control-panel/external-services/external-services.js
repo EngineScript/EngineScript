@@ -19,6 +19,8 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+// Accepts FA short style prefixes: fas, far, fab, fal, fad, fat.
+// Note: `fat` (thin) is a Font Awesome 6+ style; ensure the loaded FA version supports it.
 const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/;
 const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
 
@@ -940,8 +942,9 @@ export class ExternalServicesManager {
     const primary = parseIconInput(iconSuffix);
     const fallback = parseIconInput(fallbackSuffix);
 
-    const stylePrefix = primary.stylePrefix || fallback.stylePrefix || "fas";
-    const safeSuffix = primary.iconName || fallback.iconName || DEFAULT_ICON_SUFFIX;
+    const selected = primary.iconName ? primary : (fallback.iconName ? fallback : null);
+    const stylePrefix = selected ? (selected.stylePrefix || "fas") : "fas";
+    const safeSuffix = selected ? selected.iconName : DEFAULT_ICON_SUFFIX;
 
     return sanitizeFaIconClass(`${stylePrefix} fa-${safeSuffix}`);
   }
