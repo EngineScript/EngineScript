@@ -579,7 +579,7 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
         if (!toggleTextEl) {
-          throw new Error(`Expected .toggle-all-text span in category toggle button for category: ${category}.`);
+          throw new Error(`Settings UI component missing for category: ${category}. This indicates a rendering issue; please refresh the page or contact support.`);
         }
     const updateToggleButtonState = () => {
       const allEnabled = areAllCategoryServicesEnabled();
@@ -762,7 +762,7 @@ export class ExternalServicesManager {
         globalThis.localStorage.removeItem(storageTestKey);
       } catch (availabilityError) {
         console.error('localStorage availability check failed:', availabilityError);
-        throw new Error('Unable to save preferences: browser storage availability check failed (storage may be disabled).');
+        throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
       }
 
       try {
@@ -1411,13 +1411,13 @@ export class ExternalServicesManager {
     });
 
     const ordered = [];
-    const sortServiceKeys = (a, b) => a.localeCompare(b);
+    const compareServiceKeys = (a, b) => a.localeCompare(b);
     
     // First: known categories in configured display order.
     CATEGORY_ORDER.forEach((category) => {
       const keys = servicesByCategory.get(category);
       if (keys && keys.length > 0) {
-        ordered.push(...keys.sort(sortServiceKeys));
+        ordered.push(...keys.sort(compareServiceKeys));
         servicesByCategory.delete(category);
       }
     });
@@ -1427,7 +1427,7 @@ export class ExternalServicesManager {
       .sort((a, b) => a.localeCompare(b))
       .forEach((category) => {
         const keys = servicesByCategory.get(category) || [];
-        ordered.push(...keys.sort(sortServiceKeys));
+        ordered.push(...keys.sort(compareServiceKeys));
       });
 
     return ordered;
