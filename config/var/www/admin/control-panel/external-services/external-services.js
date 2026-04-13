@@ -21,7 +21,7 @@ const CATEGORY_ORDER = [
 
 // Accepts FA short style prefixes: fas, far, fab, fal, fad, fat.
 // Note: `fat` (thin) is a Font Awesome 6+ style; ensure the loaded FA version supports it.
-const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/;
+const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Includes `fat` (thin), which requires Font Awesome 6+.i
 const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
@@ -931,7 +931,7 @@ export class ExternalServicesManager {
    * Create service card header (icon + info)
    * @param {Object} serviceDef - Service definition
    * @param {string} statusClassName - CSS class for status
-   * @param {string} statusIconClass - FontAwesome icon class (e.g., 'fa-spinner fa-spin')
+   * @param {string} statusIconClass - FontAwesome icon identifier; accepts either an icon suffix (e.g., 'spinner', 'check-circle') or a full class string (e.g., 'fas fa-spinner fa-spin')
    * @returns {HTMLElement} Header div element containing icon and status info
    */
   createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
@@ -1063,7 +1063,7 @@ export class ExternalServicesManager {
    * @param {HTMLElement} serviceCard - Service card element to update
    * @param {string} statusDescription - Human-readable status text
    * @param {string} statusClass - CSS class name for the status
-   * @param {string} statusIconSuffix - FontAwesome icon suffix (without fa- prefix)
+   * @param {string} statusIconSuffix - FontAwesome icon name (accepts both `check-circle` and `fa-check-circle` formats)
    * @param {string} statusColor - Color category ('success', 'warning', or 'error')
    * @returns {void}
    */
