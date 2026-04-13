@@ -63,5 +63,5 @@ SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"
 
 # Shell text formatting
-BOLD="$(tput bold)"
-NORMAL="$(tput sgr0)"
+BOLD="$(tput bold 2>/dev/null || true)"
+NORMAL="$(tput sgr0 2>/dev/null || true)"
