@@ -40,12 +40,12 @@ UBUNTU_CODENAME="$(lsb_release -sc)"
 UBUNTU_VERSION="$(lsb_release -sr)"
 
 # Random Characters
-RAND_CHAR2="$(pwgen -A01 2)"
-RAND_CHAR4="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 4 | head -n 1)"
-RAND_CHAR8="$(pwgen -1Bcns 8)"
-RAND_CHAR16="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)"
-RAND_CHAR24="$(date +%s | sha256sum | base64 | head -c 24)"
-RAND_CHAR32="$(tr -dc 'a-zA-Z0-9_' < /dev/urandom | fold -w 32 | head -n 1)"
+RAND_CHAR2="$(openssl rand -base64 6 | tr -dc 'a-zA-Z0-9' | head -c 2)"
+RAND_CHAR4="$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 4)"
+RAND_CHAR8="$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 8)"
+RAND_CHAR16="$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 16)"
+RAND_CHAR24="$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 24)"
+RAND_CHAR32="$(openssl rand -base64 64 | tr -dc 'a-zA-Z0-9_' | head -c 32)"
 
 # Server Memory Calculations
 SERVER_MEMORY_TOTAL_01="$(free -m | awk 'NR==2{printf "%d", $2*0.01 }')"

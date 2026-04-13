@@ -17,6 +17,13 @@
 
 set -euo pipefail
 
+# CI safety net: if running inside GitHub Actions, re-exec under a timeout so a
+# future stall cannot reach the runner's default 6-hour limit.
+if [[ "${CI:-}" == "true" && "${_CI_TIMEOUT_GUARD:-}" != "1" ]]; then
+  export _CI_TIMEOUT_GUARD=1
+  exec timeout 600 "$0" "$@"
+fi
+
 # Resolve the repo root relative to this script's location (scripts/ci/)
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
@@ -50,8 +57,8 @@ echo "======================================================="
 echo ""
 
 # --- Step 1: Generate random characters ---
-echo "Step 1: generate_random_credentials"
-generate_random_credentials
+echo "Step 1: Source enginescript-variables.txt for random credentials"
+source "${REPO_ROOT}/enginescript-variables.txt"
 
 if [[ ${#RAND_CHAR2} -eq 2 ]]; then
   pass "RAND_CHAR2 length is 2 (got '${RAND_CHAR2}')"
@@ -173,8 +180,8 @@ echo "======================================================="
 echo ""
 
 # --- Step 1: Generate random characters (fresh set) ---
-echo "Step 1: generate_random_credentials (fresh)"
-generate_random_credentials
+echo "Step 1: Source enginescript-variables.txt for random credentials (fresh)"
+source "${REPO_ROOT}/enginescript-variables.txt"
 
 if [[ ${#RAND_CHAR4} -eq 4 && ${#RAND_CHAR16} -eq 16 && ${#RAND_CHAR32} -eq 32 ]]; then
   pass "Fresh RAND_CHAR4/16/32 generated with correct lengths"
@@ -184,18 +191,19 @@ fi
 
 # --- Step 2: Domain name construction (import method) ---
 echo ""
-echo "Step 2: Import-style DB name construction"
+echo "Step 2: generate_import_db_name"
 IMPORT_DOMAIN="importtest.com"
 DB_CHARSET="utf8mb4"
 
-domain_base="${IMPORT_DOMAIN}" && SANDOMAIN="${domain_base%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
+generate_import_db_name "${IMPORT_DOMAIN}" || { fail "generate_import_db_name returned non-zero"; }
+SDB="${ES_DB_NAME}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
 if [[ -n "${SDB}" && "${SDB}" == "importtest_${RAND_CHAR4}" ]]; then
-  pass "Import DB name constructed: '${SDB}'"
+  pass "Import ES_DB_NAME constructed: '${SDB}'"
 else
-  fail "Import DB name construction unexpected: '${SDB}'"
+  fail "Import ES_DB_NAME construction unexpected: '${SDB}'"
 fi
 
 # --- Step 3: Write credentials file ---

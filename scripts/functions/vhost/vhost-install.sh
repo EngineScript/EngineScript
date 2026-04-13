@@ -194,8 +194,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
 
   # Domain Creation Variables
-  # Generate random credential strings using shared function
-  generate_random_credentials
+  # Generate random credential strings using main variables file
+  source /usr/local/bin/enginescript/enginescript-variables.txt
   PREFIX="${RAND_CHAR2}"
 
   # Generate the database name using the install method (domain parsing, hash, suffix)

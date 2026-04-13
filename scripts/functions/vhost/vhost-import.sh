@@ -473,8 +473,9 @@ echo "System Date: $(date)"
 # Table Prefix is already extracted and stored in $PREFIX
 
 # Domain Creation Variables (Generate *new* secure credentials for this server)
-generate_random_credentials
-domain_base="${DOMAIN}" && SANDOMAIN="${domain_base%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
+source /usr/local/bin/enginescript/enginescript-variables.txt
+generate_import_db_name "${DOMAIN}" || exit 1
+SDB="${ES_DB_NAME}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 

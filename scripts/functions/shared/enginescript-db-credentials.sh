@@ -37,19 +37,6 @@ MULTIPART_SUFFIX_CASE_PATTERN="${MULTIPART_SUFFIX_CASE_PATTERN%|}"
 
 
 #----------------------------------------------------------------------------------
-# Generate random credential strings
-# Uses the exact same methods as enginescript-variables.txt.
-# Sets: RAND_CHAR2, RAND_CHAR4, RAND_CHAR16, RAND_CHAR32
-#----------------------------------------------------------------------------------
-generate_random_credentials() {
-  RAND_CHAR2="$(pwgen -A01 2)"
-  RAND_CHAR4="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 4 | head -n 1)"
-  RAND_CHAR16="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)"
-  RAND_CHAR32="$(tr -dc 'a-zA-Z0-9_' < /dev/urandom | fold -w 32 | head -n 1)"
-}
-
-
-#----------------------------------------------------------------------------------
 # Escape arbitrary text for safe inclusion in MariaDB single-quoted string literals.
 #----------------------------------------------------------------------------------
 escape_sql_string_literal() {
@@ -133,6 +120,28 @@ generate_install_db_name() {
   fi
   ES_DB_NAME="${domain_without_tld}${db_name_suffix}"
 
+  # Validate DB identifier before writing credentials file or interpolating into SQL
+  validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
+}
+
+
+#----------------------------------------------------------------------------------
+# Generate a database name using the vhost-import method.
+# Strips the top-level domain and appends a 4-character random suffix.
+#
+# Arguments:
+#   $1 - DOMAIN (e.g. "importtest.com")
+#
+# Requires: RAND_CHAR4 (set via enginescript-variables.txt)
+# Sets:     ES_DB_NAME (the constructed database name)
+#----------------------------------------------------------------------------------
+generate_import_db_name() {
+  local DOMAIN="$1"
+  local domain_base="${DOMAIN}"
+  local SANDOMAIN="${domain_base%.*}"
+  
+  ES_DB_NAME="${SANDOMAIN}_${RAND_CHAR4}"
+  
   # Validate DB identifier before writing credentials file or interpolating into SQL
   validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
 }
