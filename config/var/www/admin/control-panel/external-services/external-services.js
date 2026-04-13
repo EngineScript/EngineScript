@@ -135,13 +135,13 @@ export class ExternalServicesManager {
 
       const serviceDefinitions = this.getServiceDefinitions();
       const preferences = this.loadServicePreferences() || {};
-      const services = this.createAllServicesEnabledMap(serviceDefinitions);
+      const allServicesEnabled = this.createAllServicesEnabledMap(serviceDefinitions);
 
       if (isFullLoad) {
-        this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
+        this.renderServiceSettings(this.settingsContainer, allServicesEnabled, serviceDefinitions, preferences);
       }
 
-      const orderedServiceKeys = this.getOrderedServiceKeys(services);
+      const orderedServiceKeys = this.getOrderedServiceKeys(allServicesEnabled);
       const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
 
       if (enabledServices.length === 0) {
@@ -373,7 +373,13 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Fetch available services from API
+   * Fetch available services from API.
+   *
+   * Usage context: this method is part of the External Services Manager API and is
+   * intended to be invoked by initialization/interaction flows that may be wired
+   * outside this local section of the file (including module-level orchestration).
+   * It is intentionally retained even when no direct local call site appears nearby.
+   *
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {
@@ -565,6 +571,10 @@ export class ExternalServicesManager {
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
     if (!toggleTextEl) {
       console.error(`Failed to find toggle button text element for category: ${category}`);
+      toggleBtn.disabled = true;
+      toggleBtn.setAttribute("aria-disabled", "true");
+      toggleBtn.classList.add("is-disabled");
+      toggleBtn.setAttribute("title", `Toggle unavailable for ${category}`);
       return categorySection;
     }
     const updateToggleButtonState = () => {
@@ -735,8 +745,8 @@ export class ExternalServicesManager {
     return !!error && (
       error.name === 'QuotaExceededError' ||
       error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      error.code === 22 ||
-      error.code === 1014
+      error.code === 22 || // Legacy WebKit/Safari (and older Chromium) QuotaExceededError code.
+      error.code === 1014 // Legacy Firefox NS_ERROR_DOM_QUOTA_REACHED code.
     );
   }
 
@@ -1138,44 +1148,44 @@ export class ExternalServicesManager {
    */
   async fetchServiceData(fetchFn, serviceKey) {
 
-    // Check cache first - no need to queue if cached
-    let data = this.getCachedService(serviceKey);
-
-    if (!data) {
-      // Reuse existing in-flight request for this serviceKey to avoid duplicate fetches
-      if (!this.inFlightRequests[serviceKey]) {
-        this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-
-          try {
-            const response = await fetchFn(controller.signal);
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const responseData = await response.json();
-
-            // Cache the response
-            this.setCachedService(serviceKey, responseData);
-            return responseData;
-          } catch (error) {
-            clearTimeout(timeoutId);
-            throw error;
-          }
-        });
-      }
-
-      try {
-        data = await this.inFlightRequests[serviceKey];
-      } finally {
-        delete this.inFlightRequests[serviceKey];
-      }
+    // Reuse existing in-flight request first to avoid duplicate queue operations
+    if (this.inFlightRequests[serviceKey]) {
+      return await this.inFlightRequests[serviceKey];
     }
 
-    return data;
+    // Check cache if no request is currently in flight
+    const cachedData = this.getCachedService(serviceKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    // Create exactly one in-flight request per serviceKey and clean it up centrally
+    this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+
+      try {
+        const response = await fetchFn(controller.signal);
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+
+        // Cache the response
+        this.setCachedService(serviceKey, responseData);
+        return responseData;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    }).finally(() => {
+      delete this.inFlightRequests[serviceKey];
+    });
+
+    return await this.inFlightRequests[serviceKey];
   }
 
   /**
