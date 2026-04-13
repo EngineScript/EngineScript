@@ -704,39 +704,15 @@ class ExternalServicesJsonApiResultDispatcher
      */
     private function parsePageStatusResult(array $data, array $config): array
     {
-        $pagePath = isset($config['page_path']) ? (string)$config['page_path'] : '';
-        $pageData = $this->resolvePathValue($data, $pagePath);
-        $pageStatus = (is_array($pageData) && isset($pageData['status']))
-            ? strtoupper((string)$pageData['status'])
-            : 'UNKNOWN';
+        $pageStatus = $this->extractPageStatus($data, $config);
 
         if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        $incidentsPath = isset($config['incidents_path']) ? (string)$config['incidents_path'] : '';
-        $incidents = $this->resolvePathValue($data, $incidentsPath);
-
-        if (is_array($incidents) && !empty($incidents)) {
-            $latestIncident = reset($incidents);
-            $titleField = isset($config['title_field']) ? (string)$config['title_field'] : '';
-            $title = (is_array($latestIncident) && $titleField !== '' && isset($latestIncident[$titleField]))
-                ? (string)$latestIncident[$titleField]
-                : '';
-
-            if (preg_match('/outage|down|major|critical|offline/i', $title)) {
-                return ['indicator' => 'major', 'description' => 'Major Outage'];
-            }
-
-            $severityField = isset($config['severity_field']) ? (string)$config['severity_field'] : '';
-            if (is_array($latestIncident) && $severityField !== '' && isset($latestIncident[$severityField])) {
-                $severity = strtoupper((string)$latestIncident[$severityField]);
-                if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'], true)) {
-                    return ['indicator' => 'major', 'description' => 'Major Outage'];
-                }
-            }
-
-            return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+        $latestIncident = $this->extractLatestIncident($data, $config);
+        if ($latestIncident !== null) {
+            return $this->evaluateIncidentSeverity($latestIncident, $config);
         }
 
         if ($pageStatus === 'HASISSUES') {
@@ -744,6 +720,49 @@ class ExternalServicesJsonApiResultDispatcher
         }
 
         return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+    }
+
+    private function extractPageStatus(array $data, array $config): string
+    {
+        $pagePath = isset($config['page_path']) ? (string)$config['page_path'] : '';
+        $pageData = $this->resolvePathValue($data, $pagePath);
+        
+        return (is_array($pageData) && isset($pageData['status']))
+            ? strtoupper((string)$pageData['status'])
+            : 'UNKNOWN';
+    }
+
+    private function extractLatestIncident(array $data, array $config): ?array
+    {
+        $incidentsPath = isset($config['incidents_path']) ? (string)$config['incidents_path'] : '';
+        $incidents = $this->resolvePathValue($data, $incidentsPath);
+
+        if (is_array($incidents) && !empty($incidents)) {
+            $incident = reset($incidents);
+            return is_array($incident) ? $incident : null;
+        }
+        
+        return null;
+    }
+
+    private function evaluateIncidentSeverity(array $incident, array $config): array
+    {
+        $titleField = isset($config['title_field']) ? (string)$config['title_field'] : '';
+        $title = ($titleField !== '' && isset($incident[$titleField])) ? (string)$incident[$titleField] : '';
+
+        if (preg_match('/outage|down|major|critical|offline/i', $title)) {
+            return ['indicator' => 'major', 'description' => 'Major Outage'];
+        }
+
+        $severityField = isset($config['severity_field']) ? (string)$config['severity_field'] : '';
+        if ($severityField !== '' && isset($incident[$severityField])) {
+            $severity = strtoupper((string)$incident[$severityField]);
+            if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'], true)) {
+                return ['indicator' => 'major', 'description' => 'Major Outage'];
+            }
+        }
+
+        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
     }
 
     /**
@@ -775,9 +794,9 @@ class ExternalServicesJsonApiResultDispatcher
 class ExternalServicesJsonIncidentEvaluator
 {
     /**
-     * @var ExternalServicesJsonIncidentCollectionResolver
+     * @var ExternalServicesJsonIncidentsResolver
      */
-    private ExternalServicesJsonIncidentCollectionResolver $incidentResolver;
+    private ExternalServicesJsonIncidentsResolver $incidentResolver;
 
     /**
      * @var ExternalServicesJsonIncidentClassifier
@@ -785,14 +804,14 @@ class ExternalServicesJsonIncidentEvaluator
     private ExternalServicesJsonIncidentClassifier $incidentClassifier;
 
     /**
-     * @param ExternalServicesJsonIncidentCollectionResolver|null $incidentResolver Optional incident resolver dependency
+     * @param ExternalServicesJsonIncidentsResolver|null $incidentResolver Optional incident resolver dependency
      * @param ExternalServicesJsonIncidentClassifier|null $incidentClassifier Optional incident classifier dependency
      */
     public function __construct(
-        ?ExternalServicesJsonIncidentCollectionResolver $incidentResolver = null,
+        ?ExternalServicesJsonIncidentsResolver $incidentResolver = null,
         ?ExternalServicesJsonIncidentClassifier $incidentClassifier = null
     ) {
-        $this->incidentResolver = $incidentResolver ?? new ExternalServicesJsonIncidentCollectionResolver();
+        $this->incidentResolver = $incidentResolver ?? new ExternalServicesJsonIncidentsResolver();
         $this->incidentClassifier = $incidentClassifier ?? new ExternalServicesJsonIncidentClassifier();
     }
 
@@ -841,7 +860,7 @@ class ExternalServicesJsonIncidentEvaluator
 /**
  * Resolves and filters incident collections from API payloads.
  */
-class ExternalServicesJsonIncidentCollectionResolver
+class ExternalServicesJsonIncidentsResolver
 {
     /**
      * @param array $data Parsed API payload
