@@ -894,8 +894,7 @@ export class ExternalServicesManager {
       let iconName = null;
 
       for (const part of parts) {
-        // /^fa[rsbdlt]$/ maps to: far (regular), fas (solid), fab (brands), fad (duotone), fal (light), fat (thin), and matches only exact 3-character tokens.
-        // Because of ^...$ anchors, longer strings like "far-extra" do not match; only exact tokens (far, fas, fab, fad, fal, fat) are accepted.
+        // Accept only recognized FontAwesome style-prefix tokens (see pattern constants).
         if (FA_STYLE_PREFIX_SHORT_PATTERN.test(part) || FA_STYLE_PREFIX_LONG_PATTERN.test(part)) {
           stylePrefix = part;
           continue;
@@ -1415,8 +1414,13 @@ export class ExternalServicesManager {
       }
     }
     // Build default order dynamically from SERVICE_DEFINITIONS to avoid drift.
+    if (!SERVICE_DEFINITIONS || typeof SERVICE_DEFINITIONS !== 'object') {
+      console.error('SERVICE_DEFINITIONS is unavailable or invalid; cannot build default service order.');
+      return [];
+    }
+
     const servicesByCategory = new Map();
-    const serviceKeys = Object.keys(SERVICE_DEFINITIONS || {});
+    const serviceKeys = Object.keys(SERVICE_DEFINITIONS);
 
     serviceKeys.forEach((key) => {
       const definition = SERVICE_DEFINITIONS[key] || {};
