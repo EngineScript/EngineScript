@@ -17,6 +17,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Source shared vhost functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
 
+# Source shared database credential functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -27,8 +30,7 @@ WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the ar
 DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
 WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
 
-# --- Supported DB Charset Configuration ---
-readonly ALLOWED_DB_CHARSETS=("utf8mb4" "utf8" "latin1")
+# Note: ALLOWED_DB_CHARSETS is now defined in enginescript-db-credentials.sh
 
 # Build the default URL validation regex from documented components.
 # Pattern intent:
@@ -471,51 +473,24 @@ echo "System Date: $(date)"
 # Table Prefix is already extracted and stored in $PREFIX
 
 # Domain Creation Variables (Generate *new* secure credentials for this server)
+generate_random_credentials
 domain_base="${DOMAIN}" && SANDOMAIN="${domain_base%.*}" && SDB="${SANDOMAIN}_${RAND_CHAR4}"
 SUSR="${RAND_CHAR16}"
 SPS="${RAND_CHAR32}"
 
 # Domain Database Credentials (Store the *new* credentials)
-echo "DB=\"${SDB}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "USR=\"${SUSR}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "PSWD=\"${SPS}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-echo "" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
-
-source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+write_credentials_file "/home/EngineScript/mysql-credentials" "${DOMAIN}" "${SDB}" "${SUSR}" "${SPS}"
 
 echo "Generated new MySQL database credentials for ${SITE_URL}."
 
 # Create *new* database and user (Use extracted charset if needed, though default is usually fine)
 # Validate SQL inputs before interpolation to prevent SQL injection/syntax issues.
-DB_CHARSET_VALIDATED="$(printf '%s' "${DB_CHARSET}" | tr '[:upper:]' '[:lower:]')"
-case "${DB_CHARSET_VALIDATED}" in
-    utf8mb4|utf8|latin1)
-        ;;
-    *)
-        ALLOWED_DB_CHARSETS_CSV="$(printf '%s, ' "${ALLOWED_DB_CHARSETS[@]}" | sed 's/, $//')"
-        echo "Error: Invalid DB_CHARSET value '${DB_CHARSET}'. Allowed values: ${ALLOWED_DB_CHARSETS_CSV}." >&2
-        exit 1
-        ;;
-esac
-DB_CHARSET="${DB_CHARSET_VALIDATED}"
-DB_COLLATION="${DB_CHARSET_VALIDATED}_unicode_ci"
-if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Generated database name contains invalid characters: ${DB}" >&2
-    exit 1
-fi
-if [[ ! "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Generated database user contains invalid characters: ${USR}" >&2
-    exit 1
-fi
-if [[ "${PSWD}" == *"'"* || "${PSWD}" == *"\\"* ]]; then
-    echo "Error: Generated database password contains unsupported SQL-unsafe characters." >&2
-    exit 1
-fi
+DB_CHARSET="${DB_CHARSET:-utf8mb4}"
+validate_import_credentials "${DB}" "${USR}" "${PSWD}" "${DB_CHARSET}" || exit 1
+DB_CHARSET="${ES_DB_CHARSET_VALIDATED}"
+DB_COLLATION="${ES_DB_COLLATION}"
 
-sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};" # Use validated charset
-sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
-sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;" # Needed for mariadb-health-checks plugin
+execute_import_sql "${DB}" "${USR}" "${PSWD}" "${DB_CHARSET}" "${DB_COLLATION}"
 
 # Create backup directories
 create_backup_directories "${SITE_URL}"

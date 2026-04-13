@@ -17,16 +17,15 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Source shared vhost functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
 
+# Source shared database credential functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
-
-# Database username validation bounds
-DB_USER_MIN_LENGTH=8
-DB_USER_MAX_LENGTH=80
 
 # WordPress admin username length policy
 MIN_WP_ADMIN_USERNAME_LENGTH=3
@@ -35,36 +34,11 @@ MAX_WP_ADMIN_USERNAME_LENGTH=60
 # Security policy settings
 MIN_WP_ADMIN_PASSWORD_LENGTH=12
 
-# Escape arbitrary text for safe inclusion in MariaDB single-quoted string literals.
-escape_sql_string_literal() {
-  local input="$1"
-  input="${input//\\/\\\\}"
-  input="${input//\'/\'\'}"
-  printf '%s' "$input"
-  return
-}
-
-# Shared multi-part public suffixes for domain parsing logic.
-# Keep this aligned with supported multi-part entries in VALID_TLDS.
-MULTIPART_PUBLIC_SUFFIXES=(
-  "co.uk" "org.uk" "gov.uk" "ac.uk"
-  "com.au" "net.au" "org.au"
-  "co.nz" "org.nz"
-  "com.br" "com.sg" "com.my" "com.mx"
-  "co.za" "com.tr" "com.hk"
-)
-	
-validate_db_identifier() {
-  local db_identifier="$1"
-  local domain_context="$2"
-  # Explicitly reject backticks as defense-in-depth for backtick-quoted SQL identifiers.
-  if [[ -z "${db_identifier}" || ! "${db_identifier}" =~ ^[A-Za-z][A-Za-z0-9_]*$ || "${db_identifier}" == *'`'* ]]; then
-    echo "Error: Invalid database name '${db_identifier}' for domain '${domain_context}'." >&2
-    exit 1
-  fi
-}
-MULTIPART_SUFFIX_CASE_PATTERN="$(printf '%s|' "${MULTIPART_PUBLIC_SUFFIXES[@]}")"
-MULTIPART_SUFFIX_CASE_PATTERN="${MULTIPART_SUFFIX_CASE_PATTERN%|}"
+# Note: The following functions and constants are now defined in enginescript-db-credentials.sh:
+#   - escape_sql_string_literal()
+#   - validate_db_identifier()
+#   - MULTIPART_PUBLIC_SUFFIXES / MULTIPART_SUFFIX_CASE_PATTERN
+#   - DB_USER_MIN_LENGTH / DB_USER_MAX_LENGTH
 
 # Check if services are running
 check_required_services
@@ -220,93 +194,26 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
 
   # Domain Creation Variables
-  # RAND_CHAR2 is sourced from /usr/local/bin/enginescript/enginescript-variables.txt
+  # Generate random credential strings using shared function
+  generate_random_credentials
   PREFIX="${RAND_CHAR2}"
-  domain_input="${DOMAIN}"
-  IFS='.' read -r -a domain_parts <<< "${domain_input}"
-  domain_without_tld="${domain_input%.*}"
-  if (( ${#domain_parts[@]} >= 3 )); then
-    public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
-    case "${public_suffix}" in
-      ${MULTIPART_SUFFIX_CASE_PATTERN})
-      domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
-        ;;
-    esac
-  fi
-  # RAND_CHAR4, RAND_CHAR16, and RAND_CHAR32 are random strings (length 4/16/32)
-  # sourced from /usr/local/bin/enginescript/enginescript-variables.txt.
-  # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
-  # Include a stable hash of the full domain to avoid collisions when truncation occurs.
-  domain_hash="$(printf '%s' "${DOMAIN}" | sha256sum | awk '{print $1}' | cut -c1-8)"
-  if [[ ! "${domain_hash}" =~ ^[0-9a-f]{8}$ ]]; then
-    echo "Error: Failed to generate domain hash for database name suffix (got '${domain_hash}')." >&2
-    exit 1
-  fi
-  db_name_suffix="_${domain_hash}_${RAND_CHAR4}"
-  max_db_name_len=64
-  # Expected: '_' (1) + domain_hash (8) + '_' (1) + RAND_CHAR4 (4) = 14 chars.
-  expected_db_name_suffix_len=14
-  if (( ${#db_name_suffix} != expected_db_name_suffix_len )); then
-    echo "Error: Invalid random suffix length for database name generation (expected ${expected_db_name_suffix_len}, got ${#db_name_suffix})." >&2
-    exit 1
-  fi
-  max_domain_without_tld_len=$((max_db_name_len - ${#db_name_suffix}))
-  if (( ${#domain_without_tld} > max_domain_without_tld_len )); then
-    echo "Warning: Truncating database name base '${domain_without_tld}' to ${max_domain_without_tld_len} characters for domain '${DOMAIN}'." >&2
-    domain_without_tld="${domain_without_tld:0:max_domain_without_tld_len}"
-  fi
-  database_name="${domain_without_tld}${db_name_suffix}"
-  # Validate DB identifier before writing credentials file or interpolating into SQL
-  validate_db_identifier "${database_name}" "${DOMAIN}"
+
+  # Generate the database name using the install method (domain parsing, hash, suffix)
+  generate_install_db_name "${DOMAIN}" || exit 1
+  database_name="${ES_DB_NAME}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
 
-  # Domain Database Credentials
-  credentials_dir="/home/EngineScript/mysql-credentials"
-  credentials_file="${credentials_dir}/${DOMAIN}.txt"
-  # Ensure parent directory exists and is restricted before writing sensitive data
   # Validate generated credentials before writing any sensitive data to disk.
-  # RAND_CHAR16 uses a-zA-Z0-9 only; regex matches that exact charset.
-  if [[ -z "${database_user}" || ${#database_user} -lt "${DB_USER_MIN_LENGTH}" || ${#database_user} -gt "${DB_USER_MAX_LENGTH}" || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
-    echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be ${DB_USER_MIN_LENGTH}-${DB_USER_MAX_LENGTH} characters and contain only letters or numbers)." >&2
-    exit 1
-  fi
-  
-  if [[ -z "${database_password}" || ! "${database_password}" =~ ^[A-Za-z0-9_]+$ ]]; then
-    echo "Error: Invalid generated database password for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-  
-  install -d -m 700 "${credentials_dir}"
-  chmod 700 "${credentials_dir}"
-  # Create the file with restrictive permissions before writing any sensitive data
-  install -m 600 /dev/null "${credentials_file}"
-  echo "DB=\"${database_name}\"" >> "${credentials_file}"
-  echo "USR=\"${database_user}\"" >> "${credentials_file}"
-  echo "PSWD=\"${database_password}\"" >> "${credentials_file}"
-  echo "" >> "${credentials_file}"
+  validate_install_credentials "${database_user}" "${database_password}" "${DOMAIN}" || exit 1
 
-  source "${credentials_file}"
+  # Write credentials file and source it (sets DB, USR, PSWD)
+  write_credentials_file "/home/EngineScript/mysql-credentials" "${DOMAIN}" "${database_name}" "${database_user}" "${database_password}"
 
   echo "Randomly generated MySQL database credentials for ${DOMAIN}."
 
-  printf -v create_db_sql "CREATE DATABASE \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;" "${DB}"
-  if ! sudo mariadb -e "${create_db_sql}"; then
-    echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-
-  SQL_ESCAPED_PSWD="$(escape_sql_string_literal "${PSWD}")"
-
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
-    echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
-    exit 1
-  fi
-
-  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
-    echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
-    exit 1
-  fi
+  # Execute the SQL statements to create the database, user, and grant privileges
+  execute_install_sql "${DB}" "${USR}" "${PSWD}" "${DOMAIN}" || exit 1
 
   # Download WordPress using WP-CLI
   wp core download --allow-root
