@@ -4,16 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-13
-
-### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
-
-- Renamed the `services` local variable to `allServicesEnabled` in `_renderServices` to clarify that it represents a map of all services set to the enabled state, not actual service data, and to distinguish it from `serviceDefinitions`.
-- Expanded the JSDoc comment on `fetchAvailableServices` with a usage-context note explaining that the method is part of the External Services Manager API and is intentionally retained even when no direct local call site appears nearby.
-- When the `.toggle-all-text` element is missing inside a toggle button, the button is now explicitly disabled (`disabled`, `aria-disabled="true"`, `is-disabled` class, and a descriptive `title` attribute) before returning early, so users receive a clear indication that the control is non-functional rather than a silent no-op.
-- Added inline comments to the magic numbers `22` and `1014` in `isQuotaExceededError`, documenting that `22` is the legacy WebKit/Safari (and older Chromium) `QuotaExceededError` code and `1014` is the legacy Firefox `NS_ERROR_DOM_QUOTA_REACHED` code.
-- Refactored `fetchServiceData` to check `inFlightRequests` before the cache, eliminating a race condition where multiple concurrent callers could bypass the in-flight guard and enqueue duplicate requests; cleanup of the in-flight entry is now handled centrally via `.finally()`.
-
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
