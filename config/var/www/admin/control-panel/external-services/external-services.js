@@ -23,14 +23,10 @@ const CATEGORY_ORDER = [
 // Note: `fat` (thin) is a Font Awesome 6+ style; ensure the loaded FA version supports it.
 const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/;
 const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
-
-
-
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
+
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
-
 const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
-
 const DEFAULT_ICON_SUFFIX = 'question';
 
 const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -52,28 +48,28 @@ export class ExternalServicesManager {
     this.utils = new DashboardUtils();
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
-    
+
     // State management with TTL cache and LRU eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE)
     // serviceCache entries are stored as: { data: Object, timestamp: number }
     this.serviceCache = new Map();
     this.cacheTTL = SERVICE_CACHE_TTL_MS;
     this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
     this.initialized = false; // Track if services have been loaded (lazy loading)
-    
+
     // Limits concurrent requests to prevent overwhelming the server/browser
     this.maxConcurrentRequests = 6;
     this.activeRequests = 0;
     this.requestQueue = [];
     // Stores in-flight Promises keyed by serviceKey to deduplicate concurrent requests for the same service.
     this.inFlightRequests = {};
-    
+
     // Notification timing configuration
     this.notificationDurationMs = DEFAULT_NOTIFICATION_DURATION_MS;
     this.notificationAnimationDurationMs = DEFAULT_NOTIFICATION_ANIMATION_DURATION_MS;
     this.notificationSlideOutAnimationName = DEFAULT_NOTIFICATION_SLIDE_OUT_ANIMATION_NAME;
     this.requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS;
     this.liveRegionAnnouncementDelayMs = DEFAULT_LIVE_REGION_ANNOUNCEMENT_DELAY_MS;
-    
+
     // Keyboard navigation state for accessibility
     this.reorderMode = false;
     this.selectedCard = null;
@@ -115,37 +111,7 @@ export class ExternalServicesManager {
    * @returns {Promise<void>}
    */
   async loadExternalServices() {
-    try {
-      this.container.replaceChildren();
-
-      // Get service definitions and preferences
-      const serviceDefinitions = this.getServiceDefinitions();
-      const preferences = this.loadServicePreferences() || {};
-      const services = this.createAllServicesEnabledMap(serviceDefinitions);
-
-      // Render settings panel
-      this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
-
-      // Get ordered and enabled services
-      const orderedServiceKeys = this.getOrderedServiceKeys(services);
-      const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
-
-      // Show empty state if no services enabled
-      if (enabledServices.length === 0) {
-        this.renderEmptyState();
-        return;
-      }
-
-      // Group and render services by category
-      const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
-      this.renderServiceCategories(servicesByCategory);
-      
-      // Enable drag and drop for service cards
-      this.enableServiceDragDrop(this.container);
-    } catch (error) {
-      console.error('Failed to load external services:', error);
-      this.renderErrorState();
-    }
+    return this._renderServices(true);
   }
 
   /**
@@ -154,12 +120,26 @@ export class ExternalServicesManager {
    * @returns {Promise<void>}
    */
   async refreshServicesDisplay() {
+    return this._renderServices(false);
+  }
+
+  /**
+   * Internal method to render services with minimal code duplication
+   * @param {boolean} isFullLoad - Whether to render settings as well
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _renderServices(isFullLoad) {
     try {
       this.container.replaceChildren();
 
       const serviceDefinitions = this.getServiceDefinitions();
       const preferences = this.loadServicePreferences() || {};
       const services = this.createAllServicesEnabledMap(serviceDefinitions);
+
+      if (isFullLoad) {
+        this.renderServiceSettings(this.settingsContainer, services, serviceDefinitions, preferences);
+      }
 
       const orderedServiceKeys = this.getOrderedServiceKeys(services);
       const enabledServices = this.filterEnabledServices(orderedServiceKeys, serviceDefinitions, preferences);
@@ -171,10 +151,9 @@ export class ExternalServicesManager {
 
       const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
       this.renderServiceCategories(servicesByCategory);
-
       this.enableServiceDragDrop(this.container);
     } catch (error) {
-      console.error('Failed to refresh services display:', error);
+      console.error(`Failed to ${isFullLoad ? 'load' : 'refresh'} external services:`, error);
       this.renderErrorState();
     }
   }
@@ -196,14 +175,14 @@ export class ExternalServicesManager {
   getOrderedServiceKeys(services) {
     const serviceOrder = this.getServiceOrder();
     const orderedKeys = serviceOrder.filter(key => services[key]);
-    
+
     // Add any new services not in the saved order
     Object.keys(services).forEach(key => {
       if (!orderedKeys.includes(key)) {
         orderedKeys.push(key);
       }
     });
-    
+
     return orderedKeys;
   }
 
@@ -227,20 +206,20 @@ export class ExternalServicesManager {
   renderEmptyState() {
     const emptyState = document.createElement("div");
     emptyState.className = "empty-state";
-    
+
     const iconDiv = document.createElement("div");
     iconDiv.className = "empty-state-icon";
     const icon = document.createElement("i");
     icon.className = "fas fa-toggle-off";
     icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
-    
+
     const h3 = document.createElement("h3");
     h3.textContent = "No Services Selected";
-    
+
     const p = document.createElement("p");
     p.textContent = 'Click the "Service Settings" button above to enable external service monitoring.';
-    
+
     emptyState.appendChild(iconDiv);
     emptyState.appendChild(h3);
     emptyState.appendChild(p);
@@ -253,23 +232,23 @@ export class ExternalServicesManager {
    */
   renderErrorState() {
     this.container.replaceChildren();
-    
+
     const errorDiv = document.createElement("div");
     errorDiv.className = "error-state";
-    
+
     const iconDiv = document.createElement("div");
     iconDiv.className = "error-icon";
     const icon = document.createElement("i");
     icon.className = "fas fa-exclamation-circle";
     icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
-    
+
     const h3 = document.createElement("h3");
     h3.textContent = "Error Loading External Services";
-    
+
     const p = document.createElement("p");
     p.textContent = ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE;
-    
+
     errorDiv.appendChild(iconDiv);
     errorDiv.appendChild(h3);
     errorDiv.appendChild(p);
@@ -285,19 +264,19 @@ export class ExternalServicesManager {
    */
   groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences) {
     const servicesByCategory = {};
-    
+
     for (const serviceKey of orderedServiceKeys) {
       if (serviceDefinitions[serviceKey] && preferences[serviceKey] === true) {
         const serviceDef = serviceDefinitions[serviceKey];
         const category = serviceDef.category || 'Other';
-        
+
         if (!servicesByCategory[category]) {
           servicesByCategory[category] = [];
         }
         servicesByCategory[category].push({ key: serviceKey, def: serviceDef });
       }
     }
-    
+
     return servicesByCategory;
   }
 
@@ -422,15 +401,15 @@ export class ExternalServicesManager {
       if (responseOrigin !== expectedOrigin) {
         throw new Error(`Unexpected response origin: ${responseOrigin}`);
       }
-      
+
       const data = await response.json();
       let services = data.services || data;
-      
+
       // If API failed or returned empty, use all services from definitions
       if (!services || Object.keys(services).length === 0) {
         services = this.buildAllServicesEnabledMap();
       }
-      
+
       return services;
     } catch (error) {
       console.error('Failed to fetch services config:', error);
@@ -459,10 +438,10 @@ export class ExternalServicesManager {
    */
   renderServiceSettings(settingsContainer, services, serviceDefinitions, preferences) {
     settingsContainer.replaceChildren();
-    
+
     // Track pending changes as instance state (shared across components)
     this.pendingChanges = {};
-    
+
     // Create main UI structure
     const { settingsToggle, settingsContent } = this.createSettingsStructure();
     settingsContainer.appendChild(settingsToggle);
@@ -493,7 +472,7 @@ export class ExternalServicesManager {
     const settingsToggle = document.createElement("button");
     settingsToggle.className = "settings-toggle-btn";
     settingsToggle.setAttribute("aria-label", "Service Settings");
-    
+
     const cogIcon = document.createElement("i");
     cogIcon.className = "fas fa-cog";
     cogIcon.setAttribute("aria-hidden", "true");
@@ -502,28 +481,28 @@ export class ExternalServicesManager {
     const chevronIcon = document.createElement("i");
     chevronIcon.className = "fas fa-chevron-down toggle-icon";
     chevronIcon.setAttribute("aria-hidden", "true");
-    
+
     settingsToggle.appendChild(cogIcon);
     settingsToggle.appendChild(textSpan);
     settingsToggle.appendChild(chevronIcon);
-    
+
     const settingsContent = document.createElement("div");
     settingsContent.className = "settings-content collapsed";
-    
+
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
     const headerP = document.createElement("p");
     headerP.textContent = SETTINGS_INSTRUCTION_TEXT;
     settingsHeader.appendChild(headerP);
     settingsContent.appendChild(settingsHeader);
-    
+
     // Toggle collapse behavior
     settingsToggle.addEventListener("click", () => {
       const isCollapsed = settingsContent.classList.toggle("collapsed");
       const icon = settingsToggle.querySelector(".toggle-icon");
       icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
     });
-    
+
     return { settingsToggle, settingsContent };
   }
 
@@ -628,26 +607,26 @@ export class ExternalServicesManager {
   createSettingsCategoryHeader(category) {
     const categoryHeader = document.createElement("div");
     categoryHeader.className = "category-header";
-    
+
     const categorySpan = document.createElement("span");
     categorySpan.textContent = category;
     categoryHeader.appendChild(categorySpan);
-    
+
     const toggleAllBtn = document.createElement("button");
     toggleAllBtn.className = "category-toggle-all-btn";
     toggleAllBtn.dataset.category = category;
     toggleAllBtn.setAttribute("aria-label", `Enable all ${category} services`);
-    
+
     const toggleText = document.createElement("span");
     toggleText.className = "toggle-all-text";
     toggleText.textContent = "Enable All";
     toggleAllBtn.appendChild(toggleText);
-    
+
     const toggleIcon = document.createElement("i");
     toggleIcon.className = "fas fa-toggle-on";
     toggleIcon.setAttribute("aria-hidden", "true");
     toggleAllBtn.appendChild(toggleIcon);
-    
+
     categoryHeader.appendChild(toggleAllBtn);
     return categoryHeader;
   }
@@ -665,31 +644,31 @@ export class ExternalServicesManager {
     const servicesGrid = document.createElement("div");
     servicesGrid.className = "services-grid";
     const categoryCheckboxes = [];
-    
+
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
       const hasPreference = preferences && Object.prototype.hasOwnProperty.call(preferences, serviceKey);
       const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
-      
+
       const toggleLabel = document.createElement("label");
       toggleLabel.className = "service-toggle";
-      
+
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = isEnabled;
       checkbox.dataset.service = serviceKey;
-      
+
       checkbox.addEventListener("change", () => {
         pendingChanges[serviceKey] = checkbox.checked;
       });
-      
+
       const serviceName = document.createElement("span");
       serviceName.textContent = serviceDef.name;
-      
+
       toggleLabel.appendChild(checkbox);
       toggleLabel.appendChild(serviceName);
       servicesGrid.appendChild(toggleLabel);
-      
+
       categoryCheckboxes.push(checkbox);
     });
 
@@ -707,19 +686,19 @@ export class ExternalServicesManager {
     const saveButton = document.createElement("button");
     saveButton.className = "settings-save-btn";
     saveButton.setAttribute("aria-label", "Save Changes");
-    
+
     const saveIcon = document.createElement("i");
     saveIcon.className = "fas fa-save";
     saveIcon.setAttribute("aria-hidden", "true");
     saveButton.appendChild(saveIcon);
     saveButton.appendChild(document.createTextNode(" Save Changes"));
     saveButton.disabled = true;
-    
+
     // Save click handler
     saveButton.addEventListener("click", async () => {
       await this.handleSavePreferences(saveButton, services, pendingChanges);
     });
-    
+
     // Track changes to enable save button
     Object.keys(services).forEach(serviceKey => {
       const checkbox = settingsContent.querySelector(`input[data-service="${serviceKey}"]`);
@@ -730,7 +709,7 @@ export class ExternalServicesManager {
         });
       }
     });
-    
+
     return saveButton;
   }
 
@@ -779,7 +758,7 @@ export class ExternalServicesManager {
     if (!storage || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
       throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
     }
-    
+
     try {
       storage.setItem(storageTestKey, '1');
       storage.removeItem(storageTestKey);
@@ -789,7 +768,7 @@ export class ExternalServicesManager {
     }
     return storage;
   }
-  
+
   /**  
    * Handle save preferences button click
    * @param {HTMLElement} saveButton - Save button element
@@ -803,12 +782,12 @@ export class ExternalServicesManager {
       this.setSaveButtonContent(saveButton, "fas fa-spinner fa-spin", " Saving...");
 
       const safeChanges = this.getAllowedPreferenceChanges(pendingChanges);
-      
+
       // Load and update preferences
       const storedPreferences = this.loadServicePreferences() || {};
       const currentPreferences = this.getAllowedPreferenceChanges(storedPreferences);
       this.applyPreferenceChanges(currentPreferences, safeChanges);
-      
+
       // Save preferences to local storage (avoid tamper-prone cookie storage)
       const storage = this.validateStorageAvailability();
 
@@ -821,34 +800,34 @@ export class ExternalServicesManager {
         throw new Error('Unable to save preferences: browser storage is unavailable or disabled.');
       }
       this.applyPreferenceChanges(services, safeChanges);
-      
+
       // Clear pending changes
       for (const key of Object.keys(pendingChanges)) {
         delete pendingChanges[key];
       }
-      
+
       // Show success state
       this.setSaveButtonContent(saveButton, "fas fa-check", " Saved!");
-      
+
       setTimeout(() => {
         this.resetSaveButtonContent(saveButton);
         saveButton.classList.remove('has-changes');
         saveButton.disabled = true;
       }, 2000);
-      
+
       // Refresh visible services display without full re-initialization
       await this.refreshServicesDisplay();
-      
+
       this.showNotification('Service preferences saved', 'success');
     } catch (error) {
       console.error("Save error:", error);
       this.setSaveButtonContent(saveButton, "fas fa-times", " Save Failed");
       saveButton.disabled = false;
-      
+
       setTimeout(() => {
         this.resetSaveButtonContent(saveButton);
       }, 2000);
-      
+
       this.showNotification(error?.message || 'Failed to save preferences', 'error');
     }
   }
@@ -959,37 +938,37 @@ export class ExternalServicesManager {
   createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
-    
+
     const iconDiv = document.createElement("div");
     iconDiv.className = `service-icon ${serviceDef.color}`;
-    
+
     // Use DOM methods instead of innerHTML for security
     const iconElement = document.createElement("i");
     iconElement.className = this.buildFaIconClass(serviceDef.icon, DEFAULT_ICON_SUFFIX);
     iconElement.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(iconElement);
-    
+
     const infoDiv = document.createElement("div");
     infoDiv.className = "service-info";
-    
+
     const h4 = document.createElement("h4");
     h4.textContent = serviceDef.name;
-    
+
     const statusSpan = document.createElement("span");
     statusSpan.className = `service-status ${statusClassName}`;
-    
+
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
     statusIcon.className = this.buildFaIconClass(statusIconClass, DEFAULT_ICON_SUFFIX);
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
     statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
-    
+
     infoDiv.appendChild(h4);
     infoDiv.appendChild(statusSpan);
     headerDiv.appendChild(iconDiv);
     headerDiv.appendChild(infoDiv);
-    
+
     return headerDiv;
   }
 
@@ -1025,7 +1004,7 @@ export class ExternalServicesManager {
     const headerDiv = this.createServiceCardHeader(serviceDef, "status-info", statusIconSuffix);
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
-    
+
     const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "static", headerDiv);
     // Add success status class for green border like operational services
     serviceLink.classList.add('status-success');
@@ -1049,7 +1028,7 @@ export class ExternalServicesManager {
     }
     const statusSpan = headerDiv.querySelector(".service-status");
     statusSpan.appendChild(contentNode);
-    
+
     const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "loading", headerDiv);
     container.appendChild(serviceLink);
   }
@@ -1092,7 +1071,7 @@ export class ExternalServicesManager {
   updateServiceCardStatus(serviceCard, statusDescription, statusClass, statusIconSuffix, statusColor) {
     // Update card class
     serviceCard.classList.remove("loading", "error", "status-success", "status-warning", "status-error");
-    
+
     // Update status span using DOM methods instead of innerHTML
     const statusSpan = serviceCard.querySelector(".service-status");
     if (statusSpan) {
@@ -1243,13 +1222,13 @@ export class ExternalServicesManager {
         if (serviceDef.feedFilter) {
           apiUrl += `&filter=${encodeURIComponent(serviceDef.feedFilter)}`;
         }
-        
+
         return fetch(apiUrl, {
           signal: signal,
           credentials: 'same-origin'
         });
       }, serviceKey);
-      
+
       if (!data || !data.status) {
         throw new Error('Invalid feed response format');
       }
@@ -1275,7 +1254,7 @@ export class ExternalServicesManager {
           signal: signal
         });
       }, serviceKey);
-      
+
       if (!data || !data.status || !data.status.indicator) {
         throw new Error('Invalid API response format');
       }
@@ -1302,17 +1281,17 @@ export class ExternalServicesManager {
     } else if (error.message && error.message.startsWith('HTTP error!')) {
       errorMessage = 'Service unavailable';
     }
-    
+
     // Find the card and update it with error state
     const serviceCard = document.querySelector(`[data-service-key="${serviceKey}"]`);
     if (!serviceCard) {
       console.error(`Card not found for service: ${serviceKey}`);
       return;
     }
-    
+
     serviceCard.classList.remove("loading");
     serviceCard.classList.add("error");
-    
+
     const statusSpan = serviceCard.querySelector(".service-status");
     if (statusSpan) {
       statusSpan.className = "service-status status-error";
@@ -1335,13 +1314,13 @@ export class ExternalServicesManager {
   getCachedService(serviceKey) {
     const cached = this.serviceCache.get(serviceKey);
     if (!cached) return null;
-    
+
     const now = Date.now();
     if (now - cached.timestamp > this.cacheTTL) {
       this.serviceCache.delete(serviceKey);
       return null;
     }
-    
+
     return cached.data;
   }
 
@@ -1357,13 +1336,13 @@ export class ExternalServicesManager {
     if (this.serviceCache.has(serviceKey)) {
       this.serviceCache.delete(serviceKey);
     }
-    
+
     // Evict oldest entries if cache is full (LRU eviction)
     while (this.serviceCache.size >= this.cacheMaxSize) {
       const oldestKey = this.serviceCache.keys().next().value;
       this.serviceCache.delete(oldestKey);
     }
-    
+
     this.serviceCache.set(serviceKey, {
       data: data,
       timestamp: Date.now()
@@ -1453,7 +1432,7 @@ export class ExternalServicesManager {
 
     const ordered = [];
     const compareServiceKeys = (a, b) => a.localeCompare(b);
-    
+
     // First: known categories in configured display order.
     CATEGORY_ORDER.forEach((category) => {
       const keys = servicesByCategory.get(category);
