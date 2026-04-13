@@ -153,6 +153,7 @@ echo "  Without WordPress: Nginx vhost, SSL certificates, and a"
 echo "                     placeholder page. No database or CMS."
 echo ""
 
+# Keep WORDPRESS_PROMPT_TIMEOUT variable for this prompt.
 if prompt_yes_no "Would you like to install WordPress on this domain?" "y" "${WORDPRESS_PROMPT_TIMEOUT}"; then
   INSTALL_WORDPRESS="1"
   echo "WordPress will be installed on ${DOMAIN}."
