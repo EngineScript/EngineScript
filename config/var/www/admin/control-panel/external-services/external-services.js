@@ -21,7 +21,7 @@ const CATEGORY_ORDER = [
 
 // Accepts FA short style prefixes: fas, far, fab, fal, fad, fat.
 // Note: `fat` (thin) is a Font Awesome 6+ style; ensure the loaded FA version supports it.
-const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Includes `fat` (thin), which requires Font Awesome 6+.i
+const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Includes `fat` (thin), which requires Font Awesome 6+.
 const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
@@ -769,7 +769,7 @@ export class ExternalServicesManager {
     return storage;
   }
 
-  /**  
+  /**
    * Handle save preferences button click
    * @param {HTMLElement} saveButton - Save button element
    * @param {Object} services - Services object keyed by service identifier
