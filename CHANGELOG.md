@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-13
+
+### 🔧 EXTERNAL SERVICES JS CODE QUALITY IMPROVEMENTS
+
+- Removed duplicate `buildAllServicesEnabledMap()` method; updated its two call-sites in `fetchAvailableServices` to call `createAllServicesEnabledMap(this.getServiceDefinitions())` directly, eliminating the redundant wrapper.
+- Split the single `console.error` for a missing `.category-toggle-all-btn` element into a user-facing `console.error` (plain message) and a `console.debug` (implementation details), improving clarity for non-technical users.
+- Extracted the inline icon-name validation chain inside `buildFaIconClass` into a named `isValidIconNamePart` helper, improving readability and making the validation logic reusable.
+- Replaced the loose null check (`statusDescription == null ? '' : String(statusDescription)`) with the nullish coalescing operator (`String(statusDescription ?? '')`), making the intent explicit.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
