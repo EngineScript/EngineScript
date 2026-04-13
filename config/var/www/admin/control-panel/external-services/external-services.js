@@ -19,9 +19,9 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-// Accepts FA short style prefixes: fas, far, fab, fal, fad, fat.
-// Note: `fat` (thin) is a Font Awesome 6+ style; ensure the loaded FA version supports it.
-const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Includes `fat` (thin), which requires Font Awesome 6+.
+// Accepts FA short style prefixes (3 chars): `fa` + one style letter => fas, far, fab, fal, fad, fat.
+// Note: `t` in the character class maps to `fat` (thin), a Font Awesome 6+ style.
+const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Exact match for short prefixes only.
 const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
@@ -31,6 +31,9 @@ const DEFAULT_ICON_SUFFIX = 'question';
 
 const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
+
+const LEGACY_QUOTA_EXCEEDED_CODE_WEBKIT = 22; // Legacy WebKit/Safari (and older Chromium) QuotaExceededError code.
+const LEGACY_QUOTA_EXCEEDED_CODE_FIREFOX = 1014; // Legacy Firefox NS_ERROR_DOM_QUOTA_REACHED code.
 
 const DEFAULT_NOTIFICATION_DURATION_MS = 3000;
 const DEFAULT_NOTIFICATION_ANIMATION_DURATION_MS = 300;
@@ -745,8 +748,8 @@ export class ExternalServicesManager {
     return !!error && (
       error.name === 'QuotaExceededError' ||
       error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      error.code === 22 || // Legacy WebKit/Safari (and older Chromium) QuotaExceededError code.
-      error.code === 1014 // Legacy Firefox NS_ERROR_DOM_QUOTA_REACHED code.
+      error.code === LEGACY_QUOTA_EXCEEDED_CODE_WEBKIT ||
+      error.code === LEGACY_QUOTA_EXCEEDED_CODE_FIREFOX
     );
   }
 
@@ -1160,27 +1163,30 @@ export class ExternalServicesManager {
     }
 
     // Create exactly one in-flight request per serviceKey and clean it up centrally
-    this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    // Assign placeholder promise immediately to close race window before queueing
+    this.inFlightRequests[serviceKey] = new Promise((resolve, reject) => {
+      this.queueRequest(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
-      try {
-        const response = await fetchFn(controller.signal);
-        clearTimeout(timeoutId);
+        try {
+          const response = await fetchFn(controller.signal);
+          clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const responseData = await response.json();
+
+          // Cache the response
+          this.setCachedService(serviceKey, responseData);
+          return responseData;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
         }
-
-        const responseData = await response.json();
-
-        // Cache the response
-        this.setCachedService(serviceKey, responseData);
-        return responseData;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
+      }).then(resolve).catch(reject);
     }).finally(() => {
       delete this.inFlightRequests[serviceKey];
     });
