@@ -373,14 +373,6 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Build a map with all configured services enabled
-   * @returns {Object} Services object with every known key set to true
-   */
-  buildAllServicesEnabledMap() {
-    return this.createAllServicesEnabledMap(this.getServiceDefinitions());
-  }
-
-  /**
    * Fetch available services from API
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
@@ -407,14 +399,14 @@ export class ExternalServicesManager {
 
       // If API failed or returned empty, use all services from definitions
       if (!services || Object.keys(services).length === 0) {
-        services = this.buildAllServicesEnabledMap();
+        services = this.createAllServicesEnabledMap(this.getServiceDefinitions());
       }
 
       return services;
     } catch (error) {
       console.error('Failed to fetch services config:', error);
       // Fallback: return all services enabled
-      return this.buildAllServicesEnabledMap();
+      return this.createAllServicesEnabledMap(this.getServiceDefinitions());
     } finally {
       clearTimeout(timeoutId);
     }
@@ -561,7 +553,8 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
-      console.error(`Toggle control is unavailable for category: ${category}.`, {
+      console.error(`Unable to update category toggle for "${category}".`);
+      console.debug("External services category toggle control missing.", {
         category,
         missingElement: ".category-toggle-all-btn",
         component: "ExternalServicesManager.createSettingsCategorySection"
@@ -884,6 +877,14 @@ export class ExternalServicesManager {
    * @returns {string} Sanitized class string (for example: "fas fa-spinner")
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
+    const isValidIconNamePart = (part) => {
+      return part.startsWith('fa-') &&
+        /^fa-[a-z0-9-]+$/.test(part) &&
+        !part.includes('--') &&
+        !part.endsWith('-') &&
+        !FA_ICON_MODIFIER_PATTERN.test(part);
+    };
+
     const parseIconInput = (value) => {
       if (typeof value !== "string" || !value.trim()) {
         return { stylePrefix: null, iconName: null };
@@ -900,7 +901,7 @@ export class ExternalServicesManager {
           continue;
         }
 
-        if (!iconName && part.startsWith('fa-') && /^fa-[a-z0-9-]+$/.test(part) && !part.includes('--') && !part.endsWith('-') && !FA_ICON_MODIFIER_PATTERN.test(part)) {
+        if (!iconName && isValidIconNamePart(part)) {
           iconName = part;
         }
       }
@@ -1081,7 +1082,7 @@ export class ExternalServicesManager {
       const iconElement = document.createElement("i");
       iconElement.className = this.buildFaIconClass(statusIconSuffix);
       statusSpan.appendChild(iconElement);
-      const safeStatusText = statusDescription == null ? '' : String(statusDescription);
+      const safeStatusText = String(statusDescription ?? '');
       statusSpan.appendChild(document.createTextNode(` ${safeStatusText}`));
     }
 
