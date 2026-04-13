@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-13
-
-### 🐛 EXTERNAL SERVICES JS CODE QUALITY & BUG FIXES
-
-- Clarified comments on `FA_STYLE_PREFIX_SHORT_PATTERN` in `external-services.js` to document that the regex matches 3-character short prefixes (`fa` + one style letter) and that `t` maps to `fat` (thin), a Font Awesome 6+ style.
-- Replaced magic numbers `22` and `1014` in `isQuotaExceededError` with named constants (`LEGACY_QUOTA_EXCEEDED_CODE_WEBKIT` and `LEGACY_QUOTA_EXCEEDED_CODE_FIREFOX`) for improved readability and maintainability.
-- Fixed race condition in `fetchServiceData`: the `inFlightRequests` entry is now assigned a placeholder `Promise` immediately (before `queueRequest` is called) to ensure concurrent calls for the same `serviceKey` correctly reuse the in-flight request and cannot bypass the deduplication check.
-
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
