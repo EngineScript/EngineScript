@@ -19,10 +19,10 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-// Accepts FA short style prefixes (3 chars): `fa` + one style letter => fas, far, fab, fal, fad, fat.
-// Note: `t` in the character class maps to `fat` (thin), a Font Awesome 6+ style.
-const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdlt]$/; // Exact match for short prefixes only.
-const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone|thin)$/;
+// Accepts FA short style prefixes (3 chars): `fa` + one style letter => fas, far, fab, fal, fad.
+// Note: `t` (`fat` - thin) is a Font Awesome 6 Pro feature and is intentionally omitted for the free version.
+const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdl]$/; // Exact match for short prefixes only.
+const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
@@ -413,7 +413,11 @@ export class ExternalServicesManager {
 
       return services;
     } catch (error) {
-      console.error('Failed to fetch services config:', error);
+      if (error && error.name === 'AbortError') {
+        console.warn(`Fetch services config request timed out after ${this.requestTimeoutMs}ms`);
+      } else {
+        console.error('Failed to fetch services config:', error);
+      }
       // Fallback: return all services enabled
       return this.createAllServicesEnabledMap(this.getServiceDefinitions());
     } finally {
@@ -650,7 +654,7 @@ export class ExternalServicesManager {
 
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const hasPreference = preferences && Object.prototype.hasOwnProperty.call(preferences, serviceKey);
+      const hasPreference = preferences && Object.hasOwn(preferences, serviceKey);
       const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
 
       const toggleLabel = document.createElement("label");
@@ -895,10 +899,7 @@ export class ExternalServicesManager {
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
     const isValidIconNamePart = (part) => {
-      return part.startsWith('fa-') &&
-        /^fa-[a-z0-9-]+$/.test(part) &&
-        !part.includes('--') &&
-        !part.endsWith('-') &&
+      return /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(part) &&
         !FA_ICON_MODIFIER_PATTERN.test(part);
     };
 
