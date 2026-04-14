@@ -19,11 +19,8 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-// Accepts FA short style prefixes (3 chars): `fa` + one style letter => fas, far, fab, fal, fad.
-// Note: `t` (`fat` - thin) is a Font Awesome 6 Pro feature and is intentionally omitted for the free version.
-const FA_STYLE_PREFIX_SHORT_PATTERN = /^fa[rsbdl]$/; // Exact match for short prefixes only.
-const FA_STYLE_PREFIX_LONG_PATTERN = /^fa-(solid|regular|brands|light|duotone)$/;
-const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|fw|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
+const FA_STYLE_PREFIX_PATTERN = /^fa-(solid|regular|brands|light|duotone)$/;
+const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
 const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
@@ -213,7 +210,7 @@ export class ExternalServicesManager {
     const iconDiv = document.createElement("div");
     iconDiv.className = "empty-state-icon";
     const icon = document.createElement("i");
-    icon.className = "fas fa-toggle-off";
+    icon.className = "fa-solid fa-toggle-off";
     icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
 
@@ -242,7 +239,7 @@ export class ExternalServicesManager {
     const iconDiv = document.createElement("div");
     iconDiv.className = "error-icon";
     const icon = document.createElement("i");
-    icon.className = "fas fa-exclamation-circle";
+    icon.className = "fa-solid fa-exclamation-circle";
     icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
 
@@ -479,12 +476,12 @@ export class ExternalServicesManager {
     settingsToggle.setAttribute("aria-label", "Service Settings");
 
     const cogIcon = document.createElement("i");
-    cogIcon.className = "fas fa-cog";
+    cogIcon.className = "fa-solid fa-cog";
     cogIcon.setAttribute("aria-hidden", "true");
     const textSpan = document.createElement("span");
     textSpan.textContent = "Service Settings";
     const chevronIcon = document.createElement("i");
-    chevronIcon.className = "fas fa-chevron-down toggle-icon";
+    chevronIcon.className = "fa-solid fa-chevron-down toggle-icon";
     chevronIcon.setAttribute("aria-hidden", "true");
 
     settingsToggle.appendChild(cogIcon);
@@ -505,7 +502,7 @@ export class ExternalServicesManager {
     settingsToggle.addEventListener("click", () => {
       const isCollapsed = settingsContent.classList.toggle("collapsed");
       const icon = settingsToggle.querySelector(".toggle-icon");
-      icon.className = isCollapsed ? "fas fa-chevron-down toggle-icon" : "fas fa-chevron-up toggle-icon";
+      icon.className = isCollapsed ? "fa-solid fa-chevron-down toggle-icon" : "fa-solid fa-chevron-up toggle-icon";
     });
 
     return { settingsToggle, settingsContent };
@@ -630,7 +627,7 @@ export class ExternalServicesManager {
     toggleAllBtn.appendChild(toggleText);
 
     const toggleIcon = document.createElement("i");
-    toggleIcon.className = "fas fa-toggle-on";
+    toggleIcon.className = "fa-solid fa-toggle-on";
     toggleIcon.setAttribute("aria-hidden", "true");
     toggleAllBtn.appendChild(toggleIcon);
 
@@ -695,7 +692,7 @@ export class ExternalServicesManager {
     saveButton.setAttribute("aria-label", "Save Changes");
 
     const saveIcon = document.createElement("i");
-    saveIcon.className = "fas fa-save";
+    saveIcon.className = "fa-solid fa-save";
     saveIcon.setAttribute("aria-hidden", "true");
     saveButton.appendChild(saveIcon);
     saveButton.appendChild(document.createTextNode(" Save Changes"));
@@ -727,7 +724,7 @@ export class ExternalServicesManager {
    * Use `resetSaveButtonContent` when returning the button to its default idle "Save Changes" state.
    *
    * @param {HTMLElement} saveButton - Save button element to update.
-   * @param {string} iconClass - Full icon class string to apply to the `<i>` element (for example, "fas fa-save").
+   * @param {string} iconClass - Full icon class string to apply to the `<i>` element (for example, "fa-solid fa-save").
    * @param {string} text - Visible button label text to render after the icon.
    */
   setSaveButtonContent(saveButton, iconClass, text) {
@@ -786,7 +783,7 @@ export class ExternalServicesManager {
   async handleSavePreferences(saveButton, services, pendingChanges) {
     try {
       saveButton.disabled = true;
-      this.setSaveButtonContent(saveButton, "fas fa-spinner fa-spin", " Saving...");
+      this.setSaveButtonContent(saveButton, "fa-solid fa-spinner fa-spin", " Saving...");
 
       const safeChanges = this.getAllowedPreferenceChanges(pendingChanges);
 
@@ -814,7 +811,7 @@ export class ExternalServicesManager {
       }
 
       // Show success state
-      this.setSaveButtonContent(saveButton, "fas fa-check", " Saved!");
+      this.setSaveButtonContent(saveButton, "fa-solid fa-check", " Saved!");
 
       setTimeout(() => {
         this.resetSaveButtonContent(saveButton);
@@ -828,7 +825,7 @@ export class ExternalServicesManager {
       this.showNotification('Service preferences saved', 'success');
     } catch (error) {
       console.error("Save error:", error);
-      this.setSaveButtonContent(saveButton, "fas fa-times", " Save Failed");
+      this.setSaveButtonContent(saveButton, "fa-solid fa-times", " Save Failed");
       saveButton.disabled = false;
 
       setTimeout(() => {
@@ -876,7 +873,7 @@ export class ExternalServicesManager {
   resetSaveButtonContent(saveButton) {
     saveButton.textContent = '';
     const saveIcon = document.createElement("i");
-    saveIcon.className = "fas fa-save";
+    saveIcon.className = "fa-solid fa-save";
     saveButton.appendChild(saveIcon);
     saveButton.appendChild(document.createTextNode(" Save Changes"));
   }
@@ -888,14 +885,14 @@ export class ExternalServicesManager {
    * Supports explicit style prefixes in the input (for example: "fab fa-github").
    *
    * Edge-case behavior examples:
-   * - "spinner" -> "fas fa-spinner" (plain suffix defaults to "fas")
-   * - "fa-spinner" -> "fas fa-spinner" (already-prefixed icon token is normalized)
-   * - "fas fa-spinner" -> "fas fa-spinner" (explicit style + icon are preserved)
+   * - "spinner" -> "fa-solid fa-spinner" (plain suffix defaults to "fa-solid")
+   * - "fa-spinner" -> "fa-solid fa-spinner" (already-prefixed icon token is normalized)
+   * - "fa-solid fa-spinner" -> "fa-solid fa-spinner" (explicit style + icon are preserved)
    * - "fab fa-github fa-spin" -> "fab fa-github" (modifier tokens like "fa-spin" are ignored for icon selection)
    *
    * @param {string} iconSuffix - Icon suffix or class list (for example: "spinner", "fa-spinner fa-spin", "far fa-clock")
    * @param {string|null} fallbackSuffix - Optional fallback icon suffix/class list
-   * @returns {string} Sanitized class string (for example: "fas fa-spinner")
+   * @returns {string} Sanitized class string (for example: "fa-solid fa-spinner")
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
     const isValidIconNamePart = (part) => {
@@ -915,7 +912,7 @@ export class ExternalServicesManager {
 
       for (const part of parts) {
         // Accept only recognized FontAwesome style-prefix tokens (see pattern constants).
-        if (FA_STYLE_PREFIX_SHORT_PATTERN.test(part) || FA_STYLE_PREFIX_LONG_PATTERN.test(part)) {
+        if (FA_STYLE_PREFIX_PATTERN.test(part)) {
           stylePrefix = part;
           continue;
         }
@@ -927,8 +924,7 @@ export class ExternalServicesManager {
 
       if (!iconName) {
         const iconCandidates = parts.filter((part) =>
-          !FA_STYLE_PREFIX_SHORT_PATTERN.test(part) &&
-          !FA_STYLE_PREFIX_LONG_PATTERN.test(part) &&
+          !FA_STYLE_PREFIX_PATTERN.test(part) &&
           !FA_ICON_MODIFIER_PATTERN.test(part)
         );
         iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
@@ -941,7 +937,7 @@ export class ExternalServicesManager {
     const fallback = parseIconInput(fallbackSuffix);
 
     const selected = primary.iconName ? primary : (fallback.iconName ? fallback : null);
-    const stylePrefix = selected ? (selected.stylePrefix || "fas") : "fas";
+    const stylePrefix = selected ? (selected.stylePrefix || "fa-solid") : "fa-solid";
     const safeSuffix = selected ? selected.iconName : DEFAULT_ICON_SUFFIX;
     const cleanSuffix = safeSuffix.startsWith('fa-') ? safeSuffix.slice(3) : safeSuffix;
 
@@ -952,7 +948,7 @@ export class ExternalServicesManager {
    * Create service card header (icon + info)
    * @param {Object} serviceDef - Service definition
    * @param {string} statusClassName - CSS class for status
-   * @param {string} statusIconClass - FontAwesome icon identifier; accepts either an icon suffix (e.g., 'spinner', 'check-circle') or a full class string (e.g., 'fas fa-spinner fa-spin')
+   * @param {string} statusIconClass - FontAwesome icon identifier; accepts either an icon suffix (e.g., 'spinner', 'check-circle') or a full class string (e.g., 'fa-solid fa-spinner fa-spin')
    * @returns {HTMLElement} Header div element containing icon and status info
    */
   createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
@@ -1319,7 +1315,7 @@ export class ExternalServicesManager {
       // Clear existing content and use DOM methods instead of innerHTML
       statusSpan.textContent = '';
       const iconElement = document.createElement("i");
-      iconElement.className = "fas fa-times-circle";
+      iconElement.className = "fa-solid fa-times-circle";
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + errorMessage));
     }
