@@ -3,7 +3,7 @@
 
 import { DashboardUtils } from '../modules/utils.js?v={ES_DASHBOARD_VER}';
 import { SERVICE_DEFINITIONS } from './services-config.js?v={ES_DASHBOARD_VER}';
-import { readCookie, writeCookie, sanitizeFaIconClass, sanitizeFaIconSuffix } from './external-services-utils.js?v={ES_DASHBOARD_VER}';
+import { readCookie, writeCookie, sanitizeFaIconClass, sanitizeFaIconSuffix, isValidHyphenToken } from './external-services-utils.js?v={ES_DASHBOARD_VER}';
 import { attachExternalServicesInteractionMethods } from './external-services-interactions.js?v={ES_DASHBOARD_VER}';
 
 const CATEGORY_ORDER = [
@@ -899,7 +899,8 @@ export class ExternalServicesManager {
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
     const isValidIconNamePart = (part) => {
-      return /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(part) &&
+      return part.startsWith('fa-') && 
+        isValidHyphenToken(part.slice(3)) &&
         !FA_ICON_MODIFIER_PATTERN.test(part);
     };
 
@@ -942,8 +943,9 @@ export class ExternalServicesManager {
     const selected = primary.iconName ? primary : (fallback.iconName ? fallback : null);
     const stylePrefix = selected ? (selected.stylePrefix || "fas") : "fas";
     const safeSuffix = selected ? selected.iconName : DEFAULT_ICON_SUFFIX;
+    const cleanSuffix = safeSuffix.startsWith('fa-') ? safeSuffix.slice(3) : safeSuffix;
 
-    return sanitizeFaIconClass(`${stylePrefix} fa-${safeSuffix}`);
+    return sanitizeFaIconClass(`${stylePrefix} fa-${cleanSuffix}`);
   }
 
   /**
@@ -1024,8 +1026,8 @@ export class ExternalServicesManager {
     statusSpan.appendChild(contentNode);
 
     const serviceLink = this.createBaseServiceCard(serviceKey, serviceDef, "static", headerDiv);
-    // Add success status class for green border like operational services
-    serviceLink.classList.add('status-success');
+    // Use a dedicated class for static services instead of conflating with operational status
+    serviceLink.classList.add('static-service');
     container.appendChild(serviceLink);
   }
 

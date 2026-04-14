@@ -28,7 +28,7 @@ function normalizeToken(value, fallback) {
  * @param {string} value - Candidate token
  * @returns {boolean} True when token is valid
  */
-function isValidHyphenToken(value) {
+export function isValidHyphenToken(value) {
   if (value.length === 0) {
     return false;
   }
@@ -78,8 +78,8 @@ export function sanitizeFaIconClass(iconClass) {
  * @returns {string} Safe icon suffix
  */
 export function sanitizeFaIconSuffix(iconName) {
-  const candidate = normalizeToken(iconName, 'question');
-  return isValidHyphenToken(candidate) ? candidate : 'question';
+  const candidate = normalizeToken(iconName, '');
+  return isValidHyphenToken(candidate) ? candidate : '';
 }
 
 /**
