@@ -882,6 +882,13 @@ export class ExternalServicesManager {
   /**
    * Build a canonical, sanitized FontAwesome class string.
    * Supports explicit style prefixes in the input (for example: "fab fa-github").
+   *
+   * Edge-case behavior examples:
+   * - "spinner" -> "fas fa-spinner" (plain suffix defaults to "fas")
+   * - "fa-spinner" -> "fas fa-spinner" (already-prefixed icon token is normalized)
+   * - "fas fa-spinner" -> "fas fa-spinner" (explicit style + icon are preserved)
+   * - "fab fa-github fa-spin" -> "fab fa-github" (modifier tokens like "fa-spin" are ignored for icon selection)
+   *
    * @param {string} iconSuffix - Icon suffix or class list (for example: "spinner", "fa-spinner fa-spin", "far fa-clock")
    * @param {string|null} fallbackSuffix - Optional fallback icon suffix/class list
    * @returns {string} Sanitized class string (for example: "fas fa-spinner")
@@ -1160,7 +1167,8 @@ export class ExternalServicesManager {
     }
 
     // Create exactly one in-flight request per serviceKey and clean it up centrally
-    // Assign placeholder promise immediately to close race window before queueing
+    // IMPORTANT: assign inFlightRequests[serviceKey] immediately (before queued execution)
+    // so concurrent callers can await the same promise instead of enqueueing duplicates.
     this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
@@ -1347,8 +1355,8 @@ export class ExternalServicesManager {
       this.serviceCache.delete(serviceKey);
     }
 
-    // Evict oldest entries if cache exceeds max size (LRU eviction)
-    while (this.serviceCache.size > this.cacheMaxSize) {
+    // Evict oldest entries if cache reaches/exceeds max size (LRU eviction)
+    while (this.serviceCache.size >= this.cacheMaxSize) {
       const oldestKey = this.serviceCache.keys().next().value;
       this.serviceCache.delete(oldestKey);
     }
