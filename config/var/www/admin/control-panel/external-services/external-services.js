@@ -23,7 +23,7 @@ const FA_STYLE_PREFIX_PATTERN = /^fa-(solid|regular|brands|light|duotone)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:spin|pulse|lg|xs|sm|1x|2x|3x|4x|5x|6x|7x|8x|9x|10x)$/;
 
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
-const SETTINGS_INSTRUCTION_TEXT = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
+const SETTINGS_INSTRUCTION_MESSAGE = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
 const DEFAULT_ICON_SUFFIX = 'question';
 
 const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -494,7 +494,7 @@ export class ExternalServicesManager {
     const settingsHeader = document.createElement("div");
     settingsHeader.className = "settings-header";
     const headerP = document.createElement("p");
-    headerP.textContent = SETTINGS_INSTRUCTION_TEXT;
+    headerP.textContent = SETTINGS_INSTRUCTION_MESSAGE;
     settingsHeader.appendChild(headerP);
     settingsContent.appendChild(settingsHeader);
 
@@ -896,7 +896,7 @@ export class ExternalServicesManager {
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
     const isValidIconNamePart = (part) => {
-      return part.startsWith('fa-') && 
+      return part.startsWith('fa-') &&
         isValidHyphenToken(part.slice(3)) &&
         !FA_ICON_MODIFIER_PATTERN.test(part);
     };
