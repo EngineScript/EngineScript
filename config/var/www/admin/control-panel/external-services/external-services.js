@@ -573,11 +573,8 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
     if (!toggleTextEl) {
-      console.error(`Failed to find toggle button text element for category: ${category}`);
-      toggleBtn.disabled = true;
-      toggleBtn.setAttribute("aria-disabled", "true");
-      toggleBtn.classList.add("is-disabled");
-      toggleBtn.setAttribute("title", `Toggle unavailable for ${category}`);
+      console.warn(`Failed to find toggle button text element for category: ${category}`);
+      toggleBtn.remove();
       return categorySection;
     }
     const updateToggleButtonState = () => {
@@ -1164,29 +1161,26 @@ export class ExternalServicesManager {
 
     // Create exactly one in-flight request per serviceKey and clean it up centrally
     // Assign placeholder promise immediately to close race window before queueing
-    this.inFlightRequests[serviceKey] = new Promise((resolve, reject) => {
-      this.queueRequest(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
-        try {
-          const response = await fetchFn(controller.signal);
-          clearTimeout(timeoutId);
+      let response;
+      try {
+        response = await fetchFn(controller.signal);
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-          const responseData = await response.json();
+      const responseData = await response.json();
 
-          // Cache the response
-          this.setCachedService(serviceKey, responseData);
-          return responseData;
-        } catch (error) {
-          clearTimeout(timeoutId);
-          throw error;
-        }
-      }).then(resolve).catch(reject);
+      // Cache the response
+      this.setCachedService(serviceKey, responseData);
+      return responseData;
     }).finally(() => {
       delete this.inFlightRequests[serviceKey];
     });
@@ -1353,8 +1347,8 @@ export class ExternalServicesManager {
       this.serviceCache.delete(serviceKey);
     }
 
-    // Evict oldest entries if cache is full (LRU eviction)
-    while (this.serviceCache.size >= this.cacheMaxSize) {
+    // Evict oldest entries if cache exceeds max size (LRU eviction)
+    while (this.serviceCache.size > this.cacheMaxSize) {
       const oldestKey = this.serviceCache.keys().next().value;
       this.serviceCache.delete(oldestKey);
     }
