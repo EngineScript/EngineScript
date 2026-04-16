@@ -759,7 +759,14 @@ export class ExternalServicesManager {
    */
   validateStorageAvailability() {
     const storageTestKey = '__servicePreferences_storage_test__';
-    const storage = globalThis.localStorage;
+    let storage;
+    try {
+      storage = globalThis.localStorage;
+    } catch (availabilityError) {
+      console.error('localStorage access failed:', availabilityError);
+      throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
+    }
+
     if (!storage || typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function') {
       throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
     }
@@ -1386,8 +1393,13 @@ export class ExternalServicesManager {
   loadServicePreferences() {
     // Try to load from local storage
     let storedPrefs = null;
+    let storage = null;
     try {
-      storedPrefs = globalThis.localStorage.getItem('servicePreferences');
+      storage = globalThis.localStorage;
+      if (!storage) {
+        return null;
+      }
+      storedPrefs = storage.getItem('servicePreferences');
     } catch (storageError) {
       console.error('Failed to access localStorage for service preferences:', storageError);
       return null;
@@ -1409,7 +1421,9 @@ export class ExternalServicesManager {
       console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.');
       // Clear invalid entry
       try {
-        globalThis.localStorage.removeItem('servicePreferences');
+        if (storage) {
+          storage.removeItem('servicePreferences');
+        }
       } catch (removeError) {
         console.error('Failed to clear invalid stored preferences:', removeError);
       }
