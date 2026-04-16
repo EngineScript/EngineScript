@@ -26,7 +26,8 @@ const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external servic
 const SETTINGS_INSTRUCTION_MESSAGE = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
 const DEFAULT_ICON_SUFFIX = 'question';
 
-const SERVICE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SERVICE_CACHE_TTL_MINUTES = 5;
+const SERVICE_CACHE_TTL_MS = SERVICE_CACHE_TTL_MINUTES * 60 * 1000; // 5 minutes
 const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
 
 const LEGACY_QUOTA_EXCEEDED_CODE_WEBKIT = 22; // Legacy WebKit/Safari (and older Chromium) QuotaExceededError code.
@@ -651,7 +652,7 @@ export class ExternalServicesManager {
 
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const hasPreference = preferences && Object.hasOwn(preferences, serviceKey);
+      const hasPreference = Object.hasOwn(preferences, serviceKey);
       const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
 
       const toggleLabel = document.createElement("label");
