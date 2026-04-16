@@ -2,6 +2,7 @@
 // Handles external service status monitoring with drag-drop ordering and preferences
 // Utilizes FontAwesome 7+ for icons
 
+// ES_DASHBOARD_VER is replaced during build process
 import { DashboardUtils } from '../modules/utils.js?v={ES_DASHBOARD_VER}';
 import { SERVICE_DEFINITIONS } from './services-config.js?v={ES_DASHBOARD_VER}';
 import { readCookie, writeCookie, sanitizeFaIconClass, sanitizeFaIconSuffix, isValidHyphenToken } from './external-services-utils.js?v={ES_DASHBOARD_VER}';
