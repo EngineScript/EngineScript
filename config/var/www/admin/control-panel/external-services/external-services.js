@@ -1,5 +1,6 @@
 // EngineScript External Services Manager - ES6 Module
 // Handles external service status monitoring with drag-drop ordering and preferences
+// Utilizes FontAwesome 7+ for icons
 
 import { DashboardUtils } from '../modules/utils.js?v={ES_DASHBOARD_VER}';
 import { SERVICE_DEFINITIONS } from './services-config.js?v={ES_DASHBOARD_VER}';
@@ -477,7 +478,7 @@ export class ExternalServicesManager {
     settingsToggle.setAttribute("aria-label", "Service Settings");
 
     const cogIcon = document.createElement("i");
-    cogIcon.className = "fa-solid fa-cog";
+    cogIcon.className = "fa-solid fa-gear";
     cogIcon.setAttribute("aria-hidden", "true");
     const textSpan = document.createElement("span");
     textSpan.textContent = "Service Settings";
@@ -1069,8 +1070,8 @@ export class ExternalServicesManager {
     const statusClass = statusIndicator === "none" ? "operational" : statusIndicator;
     // Map icons per status
     let statusIcon = 'exclamation-triangle';
-    if (statusClass === 'operational') statusIcon = 'check-circle';
-    else if (statusClass === 'major') statusIcon = 'times-circle';
+    if (statusClass === 'operational') statusIcon = 'circle-check';
+    else if (statusClass === 'major') statusIcon = 'circle-xmark';
     else if (statusClass === 'minor') statusIcon = 'exclamation-triangle';
 
     // For Atom/RSS feeds, map major->error, minor->warning
@@ -1323,7 +1324,7 @@ export class ExternalServicesManager {
       // Clear existing content and use DOM methods instead of innerHTML
       statusSpan.textContent = '';
       const iconElement = document.createElement("i");
-      iconElement.className = "fa-solid fa-times-circle";
+      iconElement.className = "fa-solid fa-circle-xmark";
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + errorMessage));
     }
