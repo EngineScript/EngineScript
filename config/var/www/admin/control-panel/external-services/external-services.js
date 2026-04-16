@@ -387,7 +387,7 @@ export class ExternalServicesManager {
     const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
     try {
       const response = await fetch("/api/external-services/config", {
-        credentials: 'include',
+        credentials: 'same-origin',
         signal: controller.signal
       });
       if (!response.ok) {
@@ -563,7 +563,7 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
-      console.error(`Unable to update category toggle for "${category}".`);
+      console.warn(`Category toggle control missing for "${category}"; rendering section without toggle-all functionality.`);
       console.debug("External services category toggle control missing.", {
         category,
         missingElement: ".category-toggle-all-btn",
