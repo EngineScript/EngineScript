@@ -1183,10 +1183,18 @@ export class ExternalServicesManager {
       return cachedData;
     }
 
-    // Create exactly one in-flight request per serviceKey and clean it up centrally
-    // IMPORTANT: assign inFlightRequests[serviceKey] immediately (before queued execution)
-    // so concurrent callers can await the same promise instead of enqueueing duplicates.
-    this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
+    // Create exactly one in-flight request per serviceKey and clean it up centrally.
+    // Use a synchronous placeholder first so any concurrent/re-entrant caller
+    // immediately observes an in-flight promise and does not enqueue duplicates.
+    let resolveInFlight;
+    let rejectInFlight;
+    const inFlightPromise = new Promise((resolve, reject) => {
+      resolveInFlight = resolve;
+      rejectInFlight = reject;
+    });
+    this.inFlightRequests[serviceKey] = inFlightPromise;
+
+    this.queueRequest(async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
@@ -1211,11 +1219,13 @@ export class ExternalServicesManager {
       // Cache the response
       this.setCachedService(serviceKey, responseData);
       return responseData;
-    }).finally(() => {
-      delete this.inFlightRequests[serviceKey];
-    });
+    })
+      .then(resolveInFlight, rejectInFlight)
+      .finally(() => {
+        delete this.inFlightRequests[serviceKey];
+      });
 
-    return await this.inFlightRequests[serviceKey];
+    return await inFlightPromise;
   }
 
   /**
