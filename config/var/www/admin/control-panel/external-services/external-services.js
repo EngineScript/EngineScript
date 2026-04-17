@@ -657,7 +657,7 @@ export class ExternalServicesManager {
 
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const hasPreference = Object.prototype.hasOwnProperty.call(preferences, serviceKey);
+      const hasPreference = Object.hasOwn(preferences, serviceKey);
       const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
 
       const toggleLabel = document.createElement("label");
@@ -766,7 +766,7 @@ export class ExternalServicesManager {
     const storageTestKey = '__servicePreferences_storage_test__';
     let storage;
     try {
-      storage = window.localStorage;
+      storage = globalThis.localStorage;
     } catch (availabilityError) {
       console.error('localStorage access failed:', availabilityError);
       throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
@@ -1420,7 +1420,7 @@ export class ExternalServicesManager {
     let storedPrefs = null;
     let storage = null;
     try {
-      storage = window.localStorage;
+      storage = globalThis.localStorage;
       if (!storage) {
         return null;
       }
