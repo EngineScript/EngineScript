@@ -22,6 +22,8 @@ const CATEGORY_ORDER = [
 ];
 
 // FontAwesome 7+ icon patterns
+// Note: `sharp-*` style prefixes are part of Font Awesome Sharp (typically Pro/paid).
+// Keep these for compatibility only when this deployment includes a valid Pro license/assets.
 const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone)|kit)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
@@ -53,8 +55,9 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
 
-    // State management with TTL cache and LRU eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE)
-    // serviceCache entries are stored as: { data: Object, timestamp: number }
+    // State management with TTL cache and LRU-style capacity eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE).
+    // serviceCache entries are stored as: { data: Object, timestamp: number }.
+    // Eviction occurs on insertion when the cache is at capacity; the oldest (least recently used) entry is removed first.
     this.serviceCache = new Map();
     this.cacheTTL = SERVICE_CACHE_TTL_MS;
     this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
@@ -155,7 +158,11 @@ export class ExternalServicesManager {
 
       const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
       this.renderServiceCategories(servicesByCategory);
-      this.enableServiceDragDrop(this.container);
+      if (typeof this.enableServiceDragDrop === 'function') {
+        this.enableServiceDragDrop(this.container);
+      } else {
+        console.warn('enableServiceDragDrop is not available; skipping drag-drop initialization.');
+      }
     } catch (error) {
       console.error(`Failed to ${isFullLoad ? 'load' : 'refresh'} external services:`, error);
       this.renderErrorState();
@@ -384,6 +391,7 @@ export class ExternalServicesManager {
    * outside this local section of the file (including module-level orchestration).
    * It is intentionally retained even when no direct local call site appears nearby.
    *
+   * @public
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {

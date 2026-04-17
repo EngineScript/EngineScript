@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-17
+
+### 🔧 EXTERNAL SERVICES MANAGER CODE QUALITY FIXES
+
+- Added comment above `FA_STYLE_PREFIX_PATTERN` in `external-services.js` clarifying that `sharp-*` style prefixes belong to Font Awesome Sharp (Pro/paid) and require a valid license.
+- Improved the service cache comment in the constructor to explicitly describe the LRU-style eviction strategy: eviction occurs on insertion when the cache is at capacity, removing the oldest entry first.
+- Guarded the `enableServiceDragDrop` call with a runtime `typeof` check to prevent a potential `TypeError` when the method is not yet attached (e.g., if `attachExternalServicesInteractionMethods` has not run), with a `console.warn` fallback.
+- Added `@public` JSDoc tag to `fetchAvailableServices` to document that it is part of the External Services Manager public API and is intentionally retained for external call sites.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
