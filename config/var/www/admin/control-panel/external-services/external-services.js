@@ -966,10 +966,10 @@ export class ExternalServicesManager {
    * Create service card header (icon + info)
    * @param {Object} serviceDef - Service definition
    * @param {string} statusClassName - CSS class for status
-   * @param {string} statusIconClass - FontAwesome icon identifier; accepts either an icon suffix (e.g., 'spinner', 'check-circle') or a full class string (e.g., 'fa-solid fa-spinner fa-spin')
+   * @param {string} statusIconIdentifier - FontAwesome icon identifier; accepts either an icon suffix (e.g., 'spinner', 'check-circle') or a full class string (e.g., 'fa-solid fa-spinner fa-spin')
    * @returns {HTMLElement} Header div element containing icon and status info
    */
-  createServiceCardHeader(serviceDef, statusClassName, statusIconClass) {
+  createServiceCardHeader(serviceDef, statusClassName, statusIconIdentifier) {
     const headerDiv = document.createElement("div");
     headerDiv.className = "service-header";
 
@@ -993,7 +993,7 @@ export class ExternalServicesManager {
 
     // Create status icon using DOM methods instead of innerHTML
     const statusIcon = document.createElement("i");
-    statusIcon.className = this.buildFaIconClass(statusIconClass, DEFAULT_ICON_SUFFIX);
+    statusIcon.className = this.buildFaIconClass(statusIconIdentifier, DEFAULT_ICON_SUFFIX);
     statusIcon.setAttribute("aria-hidden", "true");
     statusSpan.appendChild(statusIcon);
     statusSpan.appendChild(document.createTextNode(" ")); // Add space after icon
