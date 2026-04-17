@@ -22,7 +22,7 @@ const CATEGORY_ORDER = [
 ];
 
 // FontAwesome 7+ icon patterns (free/open-source styles only)
-const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|duotone|kit)$/;
+const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone)|kit)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
