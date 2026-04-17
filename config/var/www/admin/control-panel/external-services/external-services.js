@@ -657,7 +657,7 @@ export class ExternalServicesManager {
 
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const hasPreference = Object.hasOwn(preferences, serviceKey);
+      const hasPreference = Object.prototype.hasOwnProperty.call(preferences, serviceKey);
       const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
 
       const toggleLabel = document.createElement("label");
@@ -766,7 +766,7 @@ export class ExternalServicesManager {
     const storageTestKey = '__servicePreferences_storage_test__';
     let storage;
     try {
-      storage = globalThis.localStorage;
+      storage = window.localStorage;
     } catch (availabilityError) {
       console.error('localStorage access failed:', availabilityError);
       throw new Error('Unable to save preferences: browser storage is disabled or unavailable.');
@@ -1183,10 +1183,18 @@ export class ExternalServicesManager {
       return cachedData;
     }
 
-    // Create exactly one in-flight request per serviceKey and clean it up centrally
-    // IMPORTANT: assign inFlightRequests[serviceKey] immediately (before queued execution)
-    // so concurrent callers can await the same promise instead of enqueueing duplicates.
-    this.inFlightRequests[serviceKey] = this.queueRequest(async () => {
+    // Create exactly one in-flight request per serviceKey and clean it up centrally.
+    // Use a synchronous placeholder first so any concurrent/re-entrant caller
+    // immediately observes an in-flight promise and does not enqueue duplicates.
+    let resolveInFlight;
+    let rejectInFlight;
+    const inFlightPromise = new Promise((resolve, reject) => {
+      resolveInFlight = resolve;
+      rejectInFlight = reject;
+    });
+    this.inFlightRequests[serviceKey] = inFlightPromise;
+
+    this.queueRequest(async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
@@ -1211,11 +1219,13 @@ export class ExternalServicesManager {
       // Cache the response
       this.setCachedService(serviceKey, responseData);
       return responseData;
-    }).finally(() => {
-      delete this.inFlightRequests[serviceKey];
-    });
+    })
+      .then(resolveInFlight, rejectInFlight)
+      .finally(() => {
+        delete this.inFlightRequests[serviceKey];
+      });
 
-    return await this.inFlightRequests[serviceKey];
+    return await inFlightPromise;
   }
 
   /**
@@ -1410,7 +1420,7 @@ export class ExternalServicesManager {
     let storedPrefs = null;
     let storage = null;
     try {
-      storage = globalThis.localStorage;
+      storage = window.localStorage;
       if (!storage) {
         return null;
       }

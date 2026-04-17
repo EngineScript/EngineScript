@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-17
+
+### 🐛 EXTERNAL SERVICES JS COMPATIBILITY & CORRECTNESS FIXES
+
+- Replaced `Object.hasOwn(preferences, serviceKey)` with `Object.prototype.hasOwnProperty.call(preferences, serviceKey)` in `createServicesGrid` for broader browser compatibility with environments that predate ES2022.
+- Replaced `globalThis.localStorage` with `window.localStorage` in `validateStorageAvailability` and `loadServicePreferences` for clarity and consistency in browser-specific code.
+- Fixed a race condition in `fetchServiceData`: a synchronous placeholder `Promise` is now assigned to `inFlightRequests[serviceKey]` before `queueRequest` is called, ensuring concurrent callers immediately observe an in-flight promise and do not enqueue duplicate requests.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
