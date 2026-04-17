@@ -53,8 +53,9 @@ export class ExternalServicesManager {
     this.container = document.querySelector(containerSelector);
     this.settingsContainer = document.querySelector(settingsContainerSelector);
 
-    // State management with TTL cache and LRU eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE)
-    // serviceCache entries are stored as: { data: Object, timestamp: number }
+    // State management with TTL cache and LRU-style capacity eviction (configured by SERVICE_CACHE_TTL_MS and SERVICE_CACHE_MAX_SIZE).
+    // serviceCache entries are stored as: { data: Object, timestamp: number }.
+    // Eviction occurs on insertion when the cache is at capacity; the oldest (least recently used) entry is removed first.
     this.serviceCache = new Map();
     this.cacheTTL = SERVICE_CACHE_TTL_MS;
     this.cacheMaxSize = SERVICE_CACHE_MAX_SIZE;
@@ -384,6 +385,7 @@ export class ExternalServicesManager {
    * outside this local section of the file (including module-level orchestration).
    * It is intentionally retained even when no direct local call site appears nearby.
    *
+   * @private
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {
