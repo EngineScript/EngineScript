@@ -21,10 +21,8 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-// FontAwesome 7+ icon patterns
-// Note: `sharp-*` style prefixes are part of Font Awesome Sharp (typically Pro/paid).
-// Keep these for compatibility only when this deployment includes a valid Pro license/assets.
-const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone)|kit)$/;
+// FontAwesome 7+ icon patterns (free/open-source styles only)
+const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|duotone|kit)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
@@ -158,11 +156,7 @@ export class ExternalServicesManager {
 
       const servicesByCategory = this.groupServicesByCategory(orderedServiceKeys, serviceDefinitions, preferences);
       this.renderServiceCategories(servicesByCategory);
-      if (typeof this.enableServiceDragDrop === 'function') {
-        this.enableServiceDragDrop(this.container);
-      } else {
-        console.warn('enableServiceDragDrop is not available; skipping drag-drop initialization.');
-      }
+      this.enableServiceDragDrop(this.container);
     } catch (error) {
       console.error(`Failed to ${isFullLoad ? 'load' : 'refresh'} external services:`, error);
       this.renderErrorState();
@@ -391,7 +385,7 @@ export class ExternalServicesManager {
    * outside this local section of the file (including module-level orchestration).
    * It is intentionally retained even when no direct local call site appears nearby.
    *
-   * @public
+   * @private
    * @returns {Promise<Object>} Services object with keys mapped to enabled state
    */
   async fetchAvailableServices() {
