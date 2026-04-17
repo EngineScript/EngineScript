@@ -21,7 +21,7 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-// FontAwesome 7+ icon patterns (free/open-source styles only)
+// FontAwesome 7+ icon patterns
 const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone)|kit)$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
