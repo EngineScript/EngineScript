@@ -949,7 +949,12 @@ export class ExternalServicesManager {
     const primary = parseIconInput(iconSuffix);
     const fallback = parseIconInput(fallbackSuffix);
 
-    const selected = primary.iconName ? primary : (fallback.iconName ? fallback : null);
+    let selected = null;
+    if (primary.iconName) {
+      selected = primary;
+    } else if (fallback.iconName) {
+      selected = fallback;
+    }
     const stylePrefix = selected ? (selected.stylePrefix || "fa-solid") : "fa-solid";
     const safeSuffix = selected ? selected.iconName : DEFAULT_ICON_SUFFIX;
     const cleanSuffix = safeSuffix.startsWith('fa-') ? safeSuffix.slice(3) : safeSuffix;
