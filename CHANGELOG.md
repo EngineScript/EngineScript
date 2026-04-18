@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-18
+
+### 🔧 COMPOSER DEPENDENCY FIXES
+
+- Updated `config.platform.php` from `8.3` to `8.4` in `composer.json` to satisfy `phpunit/phpunit 13.0.5`'s `php >=8.4.1` requirement.
+- Removed `yoast/phpunit-polyfills` from `require-dev`; version 4.x only supports PHPUnit 7.5–12.x and is incompatible with PHPUnit 13.x.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS

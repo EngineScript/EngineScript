@@ -42,7 +42,6 @@
         "phpstan/phpstan": "2.1",
         "squizlabs/php_codesniffer": "4.0",
         "friendsofphp/php-cs-fixer": "3.40",
-        "yoast/phpunit-polyfills": "4.0",
         "dealerdirect/phpcodesniffer-composer-installer": "1.0.0"
         },
     "autoload": {
@@ -78,7 +77,7 @@
             "phpstan/extension-installer": true
         },
         "platform": {
-            "php": "8.3"
+            "php": "8.4"
         }
     },
     "minimum-stability": "stable",
