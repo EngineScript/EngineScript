@@ -1505,9 +1505,7 @@ export class ExternalServicesManager {
       console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.');
       // Clear invalid entry
       try {
-        if (storage) {
-          storage.removeItem('servicePreferences');
-        }
+        storage.removeItem('servicePreferences');
       } catch (removeError) {
         console.error('Failed to clear invalid stored preferences:', removeError);
       }
