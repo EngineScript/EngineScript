@@ -388,10 +388,12 @@ export class ExternalServicesManager {
     if (serviceDef.useFeed) {
       this.updateFeedServiceStatus(serviceKey, serviceDef).catch(err => {
         console.error(`Failed to load ${serviceDef.name}:`, err);
+        this.handleServiceError(serviceKey, serviceDef, err);
       });
     } else if (serviceDef.corsEnabled && serviceDef.api) {
       this.updateStatusPageServiceStatus(serviceKey, serviceDef).catch(err => {
         console.error(`Failed to load ${serviceDef.name}:`, err);
+        this.handleServiceError(serviceKey, serviceDef, err);
       });
     }
   }
@@ -1192,9 +1194,6 @@ export class ExternalServicesManager {
    * @callback ExternalServiceFetchFn
    * @param {AbortSignal} signal - Abort signal used to cancel/timeout the request.
    * @returns {Promise<Response>} A fetch-like response promise.
-   * 
-   * JSON-like object returned for a service. The exact keys vary by service.
-   * @typedef {Object<string, any>} ServiceData
    */
 
   /**
