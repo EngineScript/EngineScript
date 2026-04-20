@@ -21,12 +21,6 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
-function isValidIconNamePart(part) {
-  return part.startsWith('fa-') &&
-    isValidHyphenToken(part.slice(3)) &&
-    !FA_ICON_MODIFIER_PATTERN.test(part);
-}
-
 // Allowed hosts for external StatusPage-style API requests.
 // Keep this list in sync with approved service definitions.
 const ALLOWED_STATUS_API_HOSTS = new Set([
@@ -41,6 +35,12 @@ const ALLOWED_STATUS_API_HOSTS = new Set([
 const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone))$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
+function isValidIconNamePart(part) {
+  return part.startsWith('fa-') &&
+    isValidHyphenToken(part.slice(3)) &&
+    !FA_ICON_MODIFIER_PATTERN.test(part);
+}
+
 const ERROR_LOADING_EXTERNAL_SERVICES_MESSAGE = "Failed to fetch external service status. Check your internet connection and refresh the page. If the problem continues, check the browser console for details or contact your administrator.";
 const SETTINGS_INSTRUCTION_MESSAGE = 'Toggle services to show/hide on the dashboard. Drag service cards to reorder them, or use the keyboard: press Enter to activate reorder mode and use arrow keys to move cards. Click "Save Changes" to apply. Services are organized by category.';
 const DEFAULT_ICON_SUFFIX = 'question';
@@ -49,6 +49,9 @@ const SERVICE_CACHE_TTL_MINUTES = 5;
 const SERVICE_CACHE_TTL_MS = SERVICE_CACHE_TTL_MINUTES * 60 * 1000; // 5 minutes
 const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
 
+// Keep legacy numeric quota-exceeded codes for compatibility with older/embedded engines
+// that may not reliably expose modern DOMException names across all storage backends.
+// These constants can be removed once supported browser policy excludes such environments.
 const LEGACY_QUOTA_EXCEEDED_CODE_WEBKIT = 22; // Legacy WebKit/Safari (and older Chromium) QuotaExceededError code.
 const LEGACY_QUOTA_EXCEEDED_CODE_FIREFOX = 1014; // Legacy Firefox NS_ERROR_DOM_QUOTA_REACHED code.
 
