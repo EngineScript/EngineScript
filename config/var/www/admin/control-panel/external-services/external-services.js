@@ -21,6 +21,12 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+function isValidIconNamePart(part) {
+  return part.startsWith('fa-') &&
+    isValidHyphenToken(part.slice(3)) &&
+    !FA_ICON_MODIFIER_PATTERN.test(part);
+}
+
 // Allowed hosts for external StatusPage-style API requests.
 // Keep this list in sync with approved service definitions.
 const ALLOWED_STATUS_API_HOSTS = new Set([
@@ -917,6 +923,46 @@ export class ExternalServicesManager {
   // ============ Card Creation Helpers ============
 
   /**
+   * Parse a FontAwesome icon input string into style prefix and icon token.
+   *
+   * @param {string|null} value - Icon suffix or class list
+   * @returns {{stylePrefix: string|null, iconName: string|null}}
+   */
+  parseIconInput(value) {
+    if (typeof value !== "string" || !value.trim()) {
+      return { stylePrefix: null, iconName: null };
+    }
+
+    const parts = value.trim().split(/\s+/);
+    let stylePrefix = null;
+    let iconName = null;
+
+    for (const part of parts) {
+      // Accept only recognized FontAwesome style-prefix tokens (see pattern constants).
+      if (FA_STYLE_PREFIX_PATTERN.test(part)) {
+        stylePrefix = part;
+        continue;
+      }
+
+      if (!iconName && isValidIconNamePart(part)) {
+        iconName = part;
+      }
+    }
+
+    if (!iconName) {
+      const iconCandidates = parts.filter((part) =>
+        !FA_STYLE_PREFIX_PATTERN.test(part) &&
+        !FA_ICON_MODIFIER_PATTERN.test(part)
+      );
+      // Fallback: prefer the last non-style/non-modifier token because FontAwesome class lists
+      // commonly place the icon token after style and utility/modifier classes.
+      iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
+    }
+
+    return { stylePrefix, iconName };
+  }
+
+  /**
    * Build a canonical, sanitized FontAwesome class string.
    * Supports explicit style prefixes in the input (for example: "fab fa-github").
    *
@@ -931,48 +977,8 @@ export class ExternalServicesManager {
    * @returns {string} Sanitized class string (for example: "fa-solid fa-spinner")
    */
   buildFaIconClass(iconSuffix, fallbackSuffix = null) {
-    const isValidIconNamePart = (part) => {
-      return part.startsWith('fa-') &&
-        isValidHyphenToken(part.slice(3)) &&
-        !FA_ICON_MODIFIER_PATTERN.test(part);
-    };
-
-    const parseIconInput = (value) => {
-      if (typeof value !== "string" || !value.trim()) {
-        return { stylePrefix: null, iconName: null };
-      }
-
-      const parts = value.trim().split(/\s+/);
-      let stylePrefix = null;
-      let iconName = null;
-
-      for (const part of parts) {
-        // Accept only recognized FontAwesome style-prefix tokens (see pattern constants).
-        if (FA_STYLE_PREFIX_PATTERN.test(part)) {
-          stylePrefix = part;
-          continue;
-        }
-
-        if (!iconName && isValidIconNamePart(part)) {
-          iconName = part;
-        }
-      }
-
-      if (!iconName) {
-        const iconCandidates = parts.filter((part) =>
-          !FA_STYLE_PREFIX_PATTERN.test(part) &&
-          !FA_ICON_MODIFIER_PATTERN.test(part)
-        );
-        // Fallback: prefer the last non-style/non-modifier token because FontAwesome class lists
-        // commonly place the icon token after style and utility/modifier classes.
-        iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
-      }
-
-      return { stylePrefix, iconName };
-    };
-
-    const primary = parseIconInput(iconSuffix);
-    const fallback = parseIconInput(fallbackSuffix);
+    const primary = this.parseIconInput(iconSuffix);
+    const fallback = this.parseIconInput(fallbackSuffix);
 
     let selected = null;
     if (primary.iconName) {
