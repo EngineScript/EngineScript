@@ -22,7 +22,7 @@ const CATEGORY_ORDER = [
 ];
 
 // FontAwesome 7 icon patterns
-// FontAwesome 7 released Released July 22, 2025
+// FontAwesome 7 released July 22, 2025
 const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone))$/;
 const FA_ICON_MODIFIER_PATTERN = /^fa-(?:2?xs|sm|lg|xl|2?xl|[1-9]x|10x|spin|pulse|beat|fade|beat-fade|bounce|shake|fw)$/;
 
