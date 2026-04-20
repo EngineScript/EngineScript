@@ -656,10 +656,13 @@ export class ExternalServicesManager {
     servicesGrid.className = "services-grid";
     const categoryCheckboxes = [];
 
+    // Guard against null/undefined preferences to make intent explicit
+    const safePreferences = preferences != null ? preferences : {};
+
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
-      const hasPreference = Object.hasOwn(preferences, serviceKey);
-      const isEnabled = hasPreference ? preferences[serviceKey] : services[serviceKey];
+      const hasPreference = Object.hasOwn(safePreferences, serviceKey);
+      const isEnabled = hasPreference ? safePreferences[serviceKey] : services[serviceKey];
 
       const toggleLabel = document.createElement("label");
       toggleLabel.className = "service-toggle";
@@ -1300,8 +1303,15 @@ export class ExternalServicesManager {
    */
   async updateStatusPageServiceStatus(serviceKey, serviceDef) {
     try {
+      // Validate the API URL origin before making the request to prevent
+      // SSRF or data exfiltration via manipulated service definitions.
+      const apiUrl = new URL(serviceDef.api, window.location.href);
+      if (apiUrl.protocol !== 'https:') {
+        throw new Error(`Refused to fetch status for "${serviceKey}": non-HTTPS protocol "${apiUrl.protocol}"`);
+      }
+
       const data = await this.fetchServiceData((signal) => {
-        return fetch(serviceDef.api, {
+        return fetch(apiUrl.href, {
           signal: signal
         });
       }, serviceKey);
@@ -1467,7 +1477,24 @@ export class ExternalServicesManager {
     const orderCookie = readCookie('serviceOrder');
     if (orderCookie) {
       try {
-        return JSON.parse(decodeURIComponent(orderCookie));
+        const parsed = JSON.parse(decodeURIComponent(orderCookie));
+
+        // Validate parsed cookie is an array of strings matching known service keys
+        // to prevent processing of maliciously crafted payloads.
+        if (!Array.isArray(parsed)) {
+          console.warn('Service order cookie is not an array; ignoring.');
+        } else {
+          const knownKeys = new Set(Object.keys(SERVICE_DEFINITIONS));
+          const validOrder = parsed.filter(item =>
+            typeof item === 'string' && knownKeys.has(item)
+          );
+          if (validOrder.length !== parsed.length) {
+            console.warn(
+              `Service order cookie contained ${parsed.length - validOrder.length} unknown or invalid key(s); they were discarded.`
+            );
+          }
+          return validOrder;
+        }
       } catch (e) {
         console.error('Failed to parse service order, falling back to default order:', e);
       }
