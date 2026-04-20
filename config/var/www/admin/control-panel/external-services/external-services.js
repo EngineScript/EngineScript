@@ -52,6 +52,8 @@ const DEFAULT_NOTIFICATION_SLIDE_OUT_ANIMATION_NAME = 'slide-out';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
 const DEFAULT_LIVE_REGION_ANNOUNCEMENT_DELAY_MS = 100;
 
+const MAX_PREFERENCES_SIZE = 100 * 1024; // 100KB safety limit for parsed preferences payload
+
 export class ExternalServicesManager {
   /**
    * Create an ExternalServicesManager instance
@@ -1093,10 +1095,10 @@ export class ExternalServicesManager {
   getStatusDisplayValues(statusIndicator, isFeed = false) {
     const statusClass = statusIndicator === "none" ? "operational" : statusIndicator;
     // Map icons per status
-    let statusIcon = 'exclamation-triangle';
+    let statusIcon;
     if (statusClass === 'operational') statusIcon = 'circle-check';
     else if (statusClass === 'major') statusIcon = 'circle-xmark';
-    else if (statusClass === 'minor') statusIcon = 'exclamation-triangle';
+    else statusIcon = 'exclamation-triangle';
 
     // For Atom/RSS feeds, map major->error, minor->warning
     if (isFeed) {
@@ -1471,7 +1473,7 @@ export class ExternalServicesManager {
     }
 
     try {
-      const MAX_PREFERENCES_SIZE = 100 * 1024; // 100KB safety limit for parsed preferences payload
+      // MAX_PREFERENCES_SIZE is defined at module level alongside other configuration constants.
       if (storedPrefs.length > MAX_PREFERENCES_SIZE) {
         console.warn('Stored service preferences exceed allowed size; resetting to defaults.');
         try {
