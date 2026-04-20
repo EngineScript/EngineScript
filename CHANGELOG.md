@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-20
-
-### ♻️ EXTERNAL SERVICES JS REFACTOR: ICON HELPER EXTRACTION
-
-- Extracted `isValidIconNamePart` from a nested closure inside `buildFaIconClass` to a module-level function in `external-services.js`, eliminating a new function instance being created on every call to `buildFaIconClass`.
-- Extracted `parseIconInput` from a nested closure inside `buildFaIconClass` to a dedicated `parseIconInput` class method on `ExternalServicesManager`, improving code organization, testability, and performance.
-- Updated `buildFaIconClass` to call `this.parseIconInput()` instead of the former local closure.
-
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
