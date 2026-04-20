@@ -581,8 +581,7 @@ export class ExternalServicesManager {
     // Wire up toggle all button
     const toggleBtn = categoryHeader.querySelector(".category-toggle-all-btn");
     if (!toggleBtn) {
-      console.warn(`Category toggle control missing for "${category}"; rendering section without toggle-all functionality.`);
-      console.debug("External services category toggle control missing.", {
+      console.warn(`Category toggle control missing for "${category}"; rendering section without toggle-all functionality.`, {
         category,
         missingElement: ".category-toggle-all-btn",
         component: "ExternalServicesManager.createSettingsCategorySection"
