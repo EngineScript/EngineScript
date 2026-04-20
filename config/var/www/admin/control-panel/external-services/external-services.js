@@ -1486,9 +1486,7 @@ export class ExternalServicesManager {
       if (storedPrefs.length > MAX_PREFERENCES_SIZE) {
         console.warn('Stored service preferences exceed allowed size; resetting to defaults.');
         try {
-          if (storage) {
-            storage.removeItem('servicePreferences');
-          }
+          storage.removeItem('servicePreferences');
         } catch (removeError) {
           console.error('Failed to clear oversized stored preferences:', removeError);
         }
@@ -1505,9 +1503,7 @@ export class ExternalServicesManager {
       console.warn('Corrupted service preferences detected; resetting stored preferences to defaults.');
       // Clear invalid entry
       try {
-        if (storage) {
-          storage.removeItem('servicePreferences');
-        }
+        storage.removeItem('servicePreferences');
       } catch (removeError) {
         console.error('Failed to clear invalid stored preferences:', removeError);
       }
