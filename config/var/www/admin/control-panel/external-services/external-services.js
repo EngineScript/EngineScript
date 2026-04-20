@@ -1182,13 +1182,18 @@ export class ExternalServicesManager {
   }
 
   /**
-  * Fetch callback used by {@link fetchServiceData}.
-  * @callback ExternalServiceFetchFn
-  * @param {AbortSignal} signal - Abort signal used to cancel/timeout the request.
-  * @returns {Promise<Response>} A fetch-like response promise.
-  * 
-  * JSON-like object returned for a service. The exact keys vary by service.
-  * @typedef {Object<string, any>} ServiceData
+   * Fetch callback used by {@link fetchServiceData}.
+   * @callback ExternalServiceFetchFn
+   * @param {AbortSignal} signal - Abort signal used to cancel/timeout the request.
+   * @returns {Promise<Response>} A fetch-like response promise.
+   * 
+   * JSON-like object returned for a service. The exact keys vary by service.
+   * @typedef {Object<string, any>} ServiceData
+   */
+
+  /**
+   * JSON-like object returned for a service. The exact keys vary by service.
+   * @typedef {Object<string, any>} ServiceData
    */
 
   /**
@@ -1198,7 +1203,6 @@ export class ExternalServicesManager {
    * @returns {Promise<ServiceData>} Promise resolving to service data (from cache or parsed JSON response).
    */
   async fetchServiceData(fetchFn, serviceKey) {
-
     // Reuse existing in-flight request first to avoid duplicate queue operations
     if (this.inFlightRequests[serviceKey]) {
       return await this.inFlightRequests[serviceKey];
