@@ -1180,10 +1180,20 @@ export class ExternalServicesManager {
   }
 
   /**
-   * Fetch data with timeout, caching support, and concurrency limiting
-   * @param {Function} fetchFn - Function that accepts an AbortSignal and returns a fetch Promise
-   * @param {string} serviceKey - Service identifier key for cache lookup
-   * @returns {Promise<Object>} Promise resolving to service data (from cache or parsed JSON response)
+  * Fetch callback used by {@link fetchServiceData}.
+  * @callback ExternalServiceFetchFn
+  * @param {AbortSignal} signal - Abort signal used to cancel/timeout the request.
+  * @returns {Promise<Response>} A fetch-like response promise.
+  * 
+  * JSON-like object returned for a service. The exact keys vary by service.
+  * @typedef {Object<string, any>} ServiceData
+   */
+
+  /**
+   * Fetch data with timeout, caching support, and concurrency limiting.
+   * @param {ExternalServiceFetchFn} fetchFn - Callback that performs the request using an AbortSignal and returns a fetch Response promise.
+   * @param {string} serviceKey - Service identifier key for cache lookup.
+   * @returns {Promise<ServiceData>} Promise resolving to service data (from cache or parsed JSON response).
    */
   async fetchServiceData(fetchFn, serviceKey) {
 
@@ -1319,9 +1329,9 @@ export class ExternalServicesManager {
       const apiUrl = new URL(serviceDef.api, window.location.href);
       if (apiUrl.protocol !== 'https:') {
         throw new Error(`Refused to fetch status for "${serviceKey}": non-HTTPS protocol "${apiUrl.protocol}"`);
-        if (!ALLOWED_STATUS_API_HOSTS.has(apiUrl.hostname)) {
-          throw new Error(`Refused to fetch status for "${serviceKey}": untrusted API host "${apiUrl.hostname}"`);
-        }
+      }
+      if (!ALLOWED_STATUS_API_HOSTS.has(apiUrl.hostname)) {
+        throw new Error(`Refused to fetch status for "${serviceKey}": untrusted API host "${apiUrl.hostname}"`);
       }
 
       const data = await this.fetchServiceData((signal) => {
