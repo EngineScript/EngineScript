@@ -21,6 +21,15 @@ const CATEGORY_ORDER = [
   'Security'
 ];
 
+// Allowed hosts for external StatusPage-style API requests.
+// Keep this list in sync with approved service definitions.
+const ALLOWED_STATUS_API_HOSTS = new Set([
+  'www.githubstatus.com',
+  'www.cloudflarestatus.com',
+  'status.openai.com',
+  'www.atlassianstatus.com'
+]);
+
 // FontAwesome 7 icon patterns
 // FontAwesome 7 released July 22, 2025
 const FA_STYLE_PREFIX_PATTERN = /^fa-(?:solid|regular|brands|light|thin|duotone|sharp-(?:solid|regular|light|thin|duotone))$/;
@@ -657,7 +666,7 @@ export class ExternalServicesManager {
     const categoryCheckboxes = [];
 
     // Guard against null/undefined preferences to make intent explicit
-    const safePreferences = preferences != null ? preferences : {};
+    const safePreferences = preferences ?? {};
 
     serviceKeys.forEach(serviceKey => {
       const serviceDef = serviceDefinitions[serviceKey];
@@ -944,6 +953,8 @@ export class ExternalServicesManager {
           !FA_STYLE_PREFIX_PATTERN.test(part) &&
           !FA_ICON_MODIFIER_PATTERN.test(part)
         );
+        // Fallback: prefer the last non-style/non-modifier token because FontAwesome class lists
+        // commonly place the icon token after style and utility/modifier classes.
         iconName = sanitizeFaIconSuffix(iconCandidates.length ? iconCandidates[iconCandidates.length - 1] : "");
       }
 
@@ -1303,11 +1314,14 @@ export class ExternalServicesManager {
    */
   async updateStatusPageServiceStatus(serviceKey, serviceDef) {
     try {
-      // Validate the API URL origin before making the request to prevent
+      // Validate the API URL before making the request to prevent
       // SSRF or data exfiltration via manipulated service definitions.
       const apiUrl = new URL(serviceDef.api, window.location.href);
       if (apiUrl.protocol !== 'https:') {
         throw new Error(`Refused to fetch status for "${serviceKey}": non-HTTPS protocol "${apiUrl.protocol}"`);
+        if (!ALLOWED_STATUS_API_HOSTS.has(apiUrl.hostname)) {
+          throw new Error(`Refused to fetch status for "${serviceKey}": untrusted API host "${apiUrl.hostname}"`);
+        }
       }
 
       const data = await this.fetchServiceData((signal) => {
@@ -1447,6 +1461,19 @@ export class ExternalServicesManager {
     }
 
     try {
+      const MAX_PREFERENCES_SIZE = 100 * 1024; // 100KB safety limit for parsed preferences payload
+      if (storedPrefs.length > MAX_PREFERENCES_SIZE) {
+        console.warn('Stored service preferences exceed allowed size; resetting to defaults.');
+        try {
+          if (storage) {
+            storage.removeItem('servicePreferences');
+          }
+        } catch (removeError) {
+          console.error('Failed to clear oversized stored preferences:', removeError);
+        }
+        return null;
+      }
+
       const parsed = JSON.parse(storedPrefs);
       // Validate it's an object with expected structure
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
