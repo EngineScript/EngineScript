@@ -1,4 +1,4 @@
-// EngineScript External Services Manager - ES6 Module
+// EngineScript External Services Manager
 // Handles external service status monitoring with drag-drop ordering and preferences
 // Utilizes FontAwesome 7+ for icons
 
