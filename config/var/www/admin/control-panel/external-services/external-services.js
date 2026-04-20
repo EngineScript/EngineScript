@@ -181,7 +181,14 @@ export class ExternalServicesManager {
    * @returns {Object} New services object with all keys set to true
    */
   createAllServicesEnabledMap(serviceDefinitions) {
-    return Object.fromEntries(Object.keys(serviceDefinitions).map(key => [key, true]));
+    // Cache by serviceDefinitions object identity to avoid rebuilding on repeated renders
+    if (this._allServicesEnabledSource === serviceDefinitions && this._allServicesEnabledCache) {
+      return this._allServicesEnabledCache;
+    }
+    const allServicesEnabled = Object.fromEntries(Object.keys(serviceDefinitions).map(key => [key, true]));
+    this._allServicesEnabledSource = serviceDefinitions;
+    this._allServicesEnabledCache = allServicesEnabled;
+    return allServicesEnabled;
   }
 
   /**
