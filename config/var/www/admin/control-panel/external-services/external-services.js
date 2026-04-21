@@ -365,6 +365,9 @@ export class ExternalServicesManager {
    * @returns {boolean} True when service has no dynamic status source
    */
   isStaticService(serviceDef) {
+    if (typeof serviceDef.isStatic === "boolean") {
+      return serviceDef.isStatic;
+    }
     return !serviceDef.useFeed && !serviceDef.corsEnabled && !serviceDef.api;
   }
 
@@ -609,7 +612,11 @@ export class ExternalServicesManager {
     const areAllCategoryServicesEnabled = () => categoryCheckboxes.every(cb => cb.checked);
     const toggleTextEl = toggleBtn.querySelector(".toggle-all-text");
     if (!toggleTextEl) {
-      console.warn(`Failed to find toggle button text element for category: ${category}`);
+      console.warn(`Failed to find toggle button text element for category: ${category}`, {
+        category,
+        missingElement: ".toggle-all-text",
+        component: "ExternalServicesManager.createSettingsCategorySection"
+      });
       toggleBtn.remove();
       return categorySection;
     }
@@ -1348,10 +1355,10 @@ export class ExternalServicesManager {
       // SSRF or data exfiltration via manipulated service definitions.
       const apiUrl = new URL(serviceDef.api, window.location.href);
       if (apiUrl.protocol !== 'https:') {
-        throw new Error(`Refused to fetch status for "${serviceKey}": non-HTTPS protocol "${apiUrl.protocol}"`);
+        throw new Error(`Refused to fetch status for "${serviceKey}": insecure protocol`);
       }
       if (!ALLOWED_STATUS_API_HOSTS.has(apiUrl.hostname)) {
-        throw new Error(`Refused to fetch status for "${serviceKey}": untrusted API host "${apiUrl.hostname}"`);
+        throw new Error(`Refused to fetch status for "${serviceKey}": untrusted API host`);
       }
 
       const data = await this.fetchServiceData((signal) => {
