@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-21
+
+### 🐛 EXTERNAL SERVICES API BUG FIXES & CODE QUALITY IMPROVEMENTS
+
+- Fixed potential array access error in Atom/XML feed parsing: added a guard to check that `$xml->entry[0]` is set before accessing it, returning an operational status when the feed has no entries.
+- Removed redundant CDATA stripping `preg_replace` calls in `parseAtomFeedEntries()`; CDATA sections are already stripped automatically by the `LIBXML_NOCDATA` flag passed during XML parsing.
+- Fixed potential array access error in RSS feed parsing: added a guard to check that `$xml->channel->item[0]` is set before accessing it, returning an operational status when the channel has no items.
+- Consolidated `allowedFeedTypes` whitelist in `handleStatusFeed()` to be derived at runtime from the union of `getJsonApiConfigs()` keys and `$allowedFeeds` keys, eliminating a separately maintained hardcoded list and reducing maintenance burden.
+- Removed unused `routePayloadToStrategy()` private method from `ExternalServicesJsonApiParser`. The method was never called — `parse()` delegates all dispatch to `ExternalServicesJsonApiResultDispatcher::dispatch()`, which already handles `direct_status`, `page_status`, and incident-list routing. No config in `getJsonApiConfigs()` used the `strategy: 'direct'` key the method expected.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS

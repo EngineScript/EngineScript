@@ -569,42 +569,6 @@ class ExternalServicesJsonApiParser
         return ['indicator' => 'major', 'description' => 'Unable to fetch status'];
     }
 
-    /**
-     * Route payload to the configured parser strategy.
-     *
-     * @param array $data Parsed JSON payload
-     * @param array $config Parser configuration
-     * @return array Status information
-     */
-    private function routePayloadToStrategy(array $data, array $config): array
-    {
-        // Default fallback when strategy is missing or payload shape is unknown.
-        $fallback = ['indicator' => 'major', 'description' => 'Unable to fetch status'];
-
-        // Generic direct-field strategy.
-        if (isset($config['strategy']) && $config['strategy'] === 'direct') {
-            $indicatorField = isset($config['indicator_field']) && is_string($config['indicator_field'])
-                ? $config['indicator_field']
-                : 'indicator';
-            $descriptionField = isset($config['description_field']) && is_string($config['description_field'])
-                ? $config['description_field']
-                : 'description';
-
-            if (isset($data[$indicatorField]) && isset($data[$descriptionField])) {
-                return [
-                    'indicator' => (string) $data[$indicatorField],
-                    'description' => (string) $data[$descriptionField]
-                ];
-            }
-        }
-
-        // If no explicit status can be derived, treat as operational when configured to do so.
-        if (!empty($config['missing_is_operational'])) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
-        }
-
-        return $fallback;
-    }
 }
 
 /**
