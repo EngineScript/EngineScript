@@ -284,7 +284,7 @@ class ExternalServicesFeedParser
         }
 
         // Check if item is within 24 hours (86400 seconds)
-        $isRecent = ($itemDate && (time() - $itemDate) <= 86400);
+        $isRecent = ($itemDate && (time() - $itemDate) <= self::RECENT_INCIDENT_THRESHOLD_SECONDS)
 
         // Combine title and description for better matching
         $fullText = $title . ' ' . $description;
@@ -1035,7 +1035,7 @@ class ExternalServicesJsonIncidentClassifier
             return true;
         }
 
-        return (time() - $incidentDate) <= 86400;
+        return (time() - $incidentDate) <= self::RECENT_INCIDENT_THRESHOLD_SECONDS;
     }
 
     /**
