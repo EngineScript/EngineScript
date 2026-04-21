@@ -157,7 +157,7 @@ class ExternalServicesFeedParser
             }
         }
         if ($latestEntry === null) {
-            if (!isset($xml->entry) || count($xml->entry) === 0) {
+            if (!isset($xml->entry[0])) {
                 return $status;
             }
             $latestEntry = $xml->entry[0];
@@ -432,10 +432,10 @@ class ExternalServicesFeedParser
             ];
 
             // Consolidated whitelist validation from actual configured handlers
-            $allowedFeedTypes = array_values(array_unique(array_merge(
+            $allowedFeedTypes = array_unique(array_merge(
                 array_keys($jsonApiConfigs),
                 array_keys($allowedFeeds)
-            )));
+            ));
 
             if (!in_array($feedType, $allowedFeedTypes, true)) {
                 ApiResponse::badRequest('Invalid feed type');
@@ -444,8 +444,8 @@ class ExternalServicesFeedParser
 
             // Handle JSON API feeds via config map
             if (isset($jsonApiConfigs[$feedType])) {
-                $entry = $jsonApiConfigs[$feedType];
-                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
+                $apiConfig = $jsonApiConfigs[$feedType];
+                $status = $this->parseJsonAPI($apiConfig['url'], $apiConfig['config']);
                 ApiResponse::success(['status' => $status]);
                 return;
             }
@@ -581,12 +581,8 @@ class ExternalServicesJsonApiParser
         // Default fallback when strategy is missing or payload shape is unknown.
         $fallback = ['indicator' => 'major', 'description' => 'Unable to fetch status'];
 
-        $strategy = isset($config['strategy']) && is_string($config['strategy'])
-            ? $config['strategy']
-            : 'default';
-
         // Generic direct-field strategy.
-        if ($strategy === 'direct') {
+        if (isset($config['strategy']) && $config['strategy'] === 'direct') {
             $indicatorField = isset($config['indicator_field']) && is_string($config['indicator_field'])
                 ? $config['indicator_field']
                 : 'indicator';
@@ -602,8 +598,7 @@ class ExternalServicesJsonApiParser
             }
         }
 
-        // Default behavior: if required field checks have already passed but
-        // no explicit status can be derived, treat as operational.
+        // If no explicit status can be derived, treat as operational when configured to do so.
         if (!empty($config['missing_is_operational'])) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
