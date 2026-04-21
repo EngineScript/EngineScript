@@ -1,4 +1,4 @@
-﻿/**
+/**
  * External Services Configuration
  * Service definitions for all supported external service providers
  */
