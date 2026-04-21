@@ -496,10 +496,12 @@ class ExternalServicesFeedParser
     /**
      * Parse Google Workspace incident title from markdown-style external description.
      *
+     * Called as a callable via [$this, 'parseGoogleWorkspaceTitle'] in getJsonApiConfigs().
+     *
      * @param array<string, mixed> $incident
      * @return string
      */
-    private function parseGoogleWorkspaceTitle(array $incident): string
+    public function parseGoogleWorkspaceTitle(array $incident): string
     {
         $description = (string)($incident['external_desc'] ?? '');
 
