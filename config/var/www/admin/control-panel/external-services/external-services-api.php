@@ -624,9 +624,6 @@ class ExternalServicesJsonApiResponseFetcher
     {
         // Reuse centralized secure cURL configuration to avoid drift/duplication.
         $curl = createSecureCurlHandle($apiUrl);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            'User-Agent: EngineScript Admin Dashboard'
-        ]);
 
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
