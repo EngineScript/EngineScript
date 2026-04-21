@@ -293,7 +293,7 @@ export class ExternalServicesManager {
     const iconDiv = document.createElement("div");
     iconDiv.className = "error-icon";
     const icon = document.createElement("i");
-    icon.className = "fa-solid fa-exclamation-circle";
+    icon.className = "fa-solid fa-circle-exclamation";
     icon.setAttribute("aria-hidden", "true");
     iconDiv.appendChild(icon);
 
@@ -1438,7 +1438,7 @@ export class ExternalServicesManager {
       // Clear existing content and use DOM methods instead of innerHTML
       statusSpan.textContent = '';
       const iconElement = document.createElement("i");
-      iconElement.className = "fa-solid fa-circle-xmark";
+      iconElement.className = this.buildFaIconClass("circle-xmark");
       statusSpan.appendChild(iconElement);
       statusSpan.appendChild(document.createTextNode(" " + errorMessage));
     }
