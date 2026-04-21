@@ -463,7 +463,7 @@ export const SERVICE_DEFINITIONS = {
     color: 'wordpress-icon',
     useFeed: true
   },
-  wordpressapi: {
+  wordpresscomapi: {
     name: 'WordPress.com API',
     category: 'Hosting & Infrastructure',
     feedType: 'automattic',

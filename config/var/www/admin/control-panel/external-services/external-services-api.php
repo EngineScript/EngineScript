@@ -1082,7 +1082,7 @@ class ExternalServicesServiceCatalog
         'vercel' => true,
         'vultr' => true,
         'godaddy' => true,
-        'wordpressapi' => true,
+        'wordpresscomapi' => true,
         'wpcloudapi' => true,
     ];
 
