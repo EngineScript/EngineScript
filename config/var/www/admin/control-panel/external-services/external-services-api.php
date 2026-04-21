@@ -31,6 +31,21 @@ require_once __DIR__ . '/../classes/ApiResponse.php';
 class ExternalServicesFeedParser
 {
     /**
+     * Threshold for considering an incident recent (24 hours in seconds).
+     */
+    private const RECENT_INCIDENT_THRESHOLD_SECONDS = 86400;
+
+    /**
+     * Canonical pattern for detecting resolved/completed incidents.
+     */
+    public const RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
+
+    /**
+     * Regex pattern for detecting major active incidents in status text.
+     */
+    public const MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
+
+    /**
      * Dedicated JSON API parser dependency.
      *
      * @var ExternalServicesJsonApiParser
@@ -57,6 +72,33 @@ class ExternalServicesFeedParser
     }
 
     /**
+     * Build a cURL handle with shared secure defaults.
+     *
+     * @param string $url Request URL
+     * @return resource|\CurlHandle
+     */
+    private function createSecureCurlHandle(string $url)
+    {
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript-StatusMonitor/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
+        ]);
+
+        return $curl;
+    }
+
+    /**
      * Parse RSS/Atom feed and extract status information
      * @param string $feedUrl The URL of the RSS/Atom feed
      * @param string|null $filter Optional filter to match specific service name in feed items
@@ -67,20 +109,7 @@ class ExternalServicesFeedParser
         try {
             // Fetch feed content via cURL with SSL verification
             // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => $feedUrl,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_CONNECTTIMEOUT => 5,
-                CURLOPT_HTTPHEADER => [
-                    'User-Agent: EngineScript-StatusMonitor/1.0'
-                ],
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_MAXREDIRS => 0
-            ]);
+            $curl = $this->createSecureCurlHandle($feedUrl);
 
             $feedContent = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -175,15 +204,15 @@ class ExternalServicesFeedParser
             $entryDate = strtotime((string)$latestEntry->published);
         }
 
-        // Check if entry is within 24 hours (86400 seconds)
-        $isRecent = ($entryDate && (time() - $entryDate) <= 86400);
+        // Check if entry is within the configured recency threshold
+        $isRecent = ($entryDate && (time() - $entryDate) <= self::RECENT_INCIDENT_THRESHOLD_SECONDS);
 
         // Combine title, content, summary for better matching
         $fullText = $title . ' ' . $content . ' ' . $summary;
 
         // Only show incidents if recent AND active (not resolved/completed)
         // Check for resolved/completed keywords which indicate the incident is over
-        $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
+        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $title);
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
@@ -194,7 +223,7 @@ class ExternalServicesFeedParser
         }
 
         // Check severity of active incident
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if (preg_match(self::MAJOR_INCIDENT_PATTERN, $fullText)) {
             return [
                 'indicator' => 'major',
                 'description' => 'Major Outage'
@@ -262,7 +291,7 @@ class ExternalServicesFeedParser
 
         // Only show incidents if recent AND active (not resolved/completed)
         // Check for resolved/completed keywords which indicate the incident is over
-        $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
+        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $title);
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
@@ -273,7 +302,7 @@ class ExternalServicesFeedParser
         }
 
         // Check severity of active incident
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if (preg_match(self::MAJOR_INCIDENT_PATTERN, $fullText)) {
             return [
                 'indicator' => 'major',
                 'description' => 'Major Outage'
@@ -339,19 +368,7 @@ class ExternalServicesFeedParser
                     'severity_field' => 'severity',
                     'timestamp_fields' => ['start_time', 'created_at', 'updated_at', 'time'],
                     'missing_is_operational' => true,
-                    'title_parser' => function($incident) {
-                        $description = $incident['external_desc'] ?? '';
-
-                        // Parse title - extract text after **Title:** marker
-                        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
-                            return trim($matches[1]);
-                        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
-                            return trim($matches[1]);
-                        }
-
-                        // No title marker, use first line
-                        return strtok($description, "\n");
-                    }
+                    'title_parser' => [$this, 'parseGoogleWorkspaceTitle']
                 ]
             ],
             'wistia' => [
@@ -474,6 +491,29 @@ class ExternalServicesFeedParser
     public function getServicesConfig(): array
     {
         return $this->serviceCatalog->getServicesConfig();
+    }
+
+    /**
+     * Parse Google Workspace incident title from markdown-style external description.
+     *
+     * Called as a callable via [$this, 'parseGoogleWorkspaceTitle'] in getJsonApiConfigs().
+     *
+     * @param array<string, mixed> $incident
+     * @return string
+     */
+    public function parseGoogleWorkspaceTitle(array $incident): string
+    {
+        $description = (string)($incident['external_desc'] ?? '');
+
+        // Parse title - extract text after **Title:** marker
+        if (preg_match('/\*\*Title:?\*\*\s*\n(.+?)(?:\n|$)/s', $description, $matches)) {
+            return trim($matches[1]);
+        } elseif (preg_match('/\*\*Title:?\*\*\s*(.+?)(?:\n|$)/s', $description, $matches)) {
+            return trim($matches[1]);
+        }
+
+        // No title marker, use first line
+        return strtok($description, "\n") ?: '';
     }
 }
 
@@ -740,7 +780,7 @@ class ExternalServicesJsonApiResultDispatcher
         $titleField = isset($config['title_field']) ? (string)$config['title_field'] : '';
         $title = ($titleField !== '' && isset($incident[$titleField])) ? (string)$incident[$titleField] : '';
 
-        if (preg_match('/outage|down|major|critical|offline/i', $title)) {
+        if (preg_match(ExternalServicesFeedParser::MAJOR_INCIDENT_PATTERN, $title)) {
             return ['indicator' => 'major', 'description' => 'Major Outage'];
         }
 
@@ -1004,7 +1044,7 @@ class ExternalServicesJsonIncidentClassifier
      */
     public function isResolvedIncidentText(string $text): bool
     {
-        return preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $text) === 1;
+        return preg_match(ExternalServicesFeedParser::RESOLVED_KEYWORDS_PATTERN, $text) === 1;
     }
 
     /**
@@ -1015,7 +1055,7 @@ class ExternalServicesJsonIncidentClassifier
      */
     public function isMajorIncident(array $incident, array $config, string $fullText): bool
     {
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if (preg_match(ExternalServicesFeedParser::MAJOR_INCIDENT_PATTERN, $fullText)) {
             return true;
         }
 
