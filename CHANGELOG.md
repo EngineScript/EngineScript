@@ -4,12 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-21
-
-### 🐛 BOM CHARACTER REMOVAL
-
-- Removed UTF-8 BOM (Byte Order Mark) character from the start of `config/var/www/admin/control-panel/external-services/services-config.js`. BOM characters can cause issues with JavaScript parsers and should be removed.
-
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
