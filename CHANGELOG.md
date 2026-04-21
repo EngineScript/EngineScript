@@ -4,12 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-21
-
-### ♻️ EXTERNAL SERVICES API REFACTORING
-
-- Changed `parseGoogleWorkspaceTitle()` visibility from `private` to `public` in `ExternalServicesFeedParser`. The method is used as a runtime callable (`[$this, 'parseGoogleWorkspaceTitle']`) in `getJsonApiConfigs()`, which static analysis cannot detect as a call site; making it public eliminates the false-positive "unused private method" linter warning and documents the intentional callback contract.
-
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
