@@ -67,7 +67,7 @@ const SETTINGS_INSTRUCTION_MESSAGE = 'Toggle services to show/hide on the dashbo
 const DEFAULT_ICON_SUFFIX = 'question';
 
 const SERVICE_CACHE_TTL_MINUTES = 5;
-const SERVICE_CACHE_TTL_MS = SERVICE_CACHE_TTL_MINUTES * 60 * 1000; // 5 minutes
+const SERVICE_CACHE_TTL_MS = SERVICE_CACHE_TTL_MINUTES * 60 * 1000; // Derived from SERVICE_CACHE_TTL_MINUTES
 const SERVICE_CACHE_MAX_SIZE = 100; // Limit cache size to prevent memory growth
 
 // Keep legacy numeric quota-exceeded codes for compatibility with older/embedded engines
