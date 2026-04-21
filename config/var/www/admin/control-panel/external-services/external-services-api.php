@@ -523,7 +523,14 @@ class ExternalServicesJsonApiParser
             $fetchResult = $this->responseFetcher->fetch($apiUrl);
 
             if ($fetchResult['error'] !== null) {
-                return $fetchResult['error'];
+                $error = $fetchResult['error'];
+                if (is_array($error) && isset($error['indicator']) && isset($error['description'])) {
+                    return $error;
+                }
+                return [
+                    'indicator' => 'major',
+                    'description' => 'Unable to fetch status'
+                ];
             }
 
             $data = $fetchResult['data'];
@@ -571,14 +578,6 @@ class ExternalServicesJsonApiParser
 
         return ['indicator' => 'major', 'description' => 'Unable to fetch status'];
     }
-
-    /**
-     * Route payload to the configured parser strategy.
-     *
-     * @param array $data Parsed JSON payload
-     * @param array $config Parser configuration
-     * @return array Status information
-     */
 }
 
 /**
@@ -738,8 +737,8 @@ class ExternalServicesJsonApiResultDispatcher
         $incidents = $this->resolvePathValue($data, $incidentsPath);
 
         if (is_array($incidents) && !empty($incidents)) {
-            $incident = reset($incidents);
-            return is_array($incident) ? $incident : null;
+            $firstIncident = array_values($incidents)[0] ?? null;
+            return is_array($firstIncident) ? $firstIncident : null;
         }
         
         return null;
@@ -828,7 +827,7 @@ class ExternalServicesJsonIncidentEvaluator
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
 
-        $latestIncident = reset($incidents);
+        $latestIncident = $incidents[0];
         if (!is_array($latestIncident)) {
             return ['indicator' => 'none', 'description' => 'All Systems Operational'];
         }
@@ -917,7 +916,7 @@ class ExternalServicesJsonIncidentsResolver
             return is_array($incident) && $this->incidentMatchesFilter($incident, $config);
         });
 
-        return empty($filtered) ? [] : $filtered;
+        return $filtered;
     }
 
     /**
