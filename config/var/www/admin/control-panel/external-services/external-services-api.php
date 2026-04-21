@@ -414,7 +414,7 @@ class ExternalServicesFeedParser
             // Load JSON API feeds via config map
             $jsonApiConfigs = $this->getJsonApiConfigs();
 
-            // Whitelist allowed RSS/Atom feeds for security
+            // Whitelist allowed RSS/Atom feeds
             $allowedFeeds = [
                 'stripe' => 'https://www.stripestatus.com/history.atom',
                 'letsencrypt' => 'https://letsencrypt.status.io/pages/55957a99e800baa4470002da/rss',
@@ -1083,6 +1083,7 @@ class ExternalServicesJsonIncidentClassifier
 class ExternalServicesServiceCatalog
 {
     private const HOSTING_SERVICES = [
+        'automattic' => true,
         'aws' => true,
         'cloudflare' => true,
         'cloudways' => true,
@@ -1107,6 +1108,7 @@ class ExternalServicesServiceCatalog
         'codacy' => true,
         'github' => true,
         'gitlab' => true,
+        'googlesearch' => true,
         'googleworkspace' => true,
         'notion' => true,
         'pipedream' => true,
