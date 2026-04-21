@@ -1090,6 +1090,7 @@ class ExternalServicesServiceCatalog
         'codacy' => true,
         'github' => true,
         'gitlab' => true,
+        'googleworkspace' => true,
         'notion' => true,
         'pipedream' => true,
         'trello' => true,
@@ -1145,7 +1146,6 @@ class ExternalServicesServiceCatalog
 
     private const ADVERTISING_SERVICES = [
         'googleads' => true,
-        'googleworkspace' => true,
         'metafbs' => true,
         'metalogin' => true,
         'metamarketingapi' => true,
