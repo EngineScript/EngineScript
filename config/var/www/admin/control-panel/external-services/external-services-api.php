@@ -38,12 +38,12 @@ class ExternalServicesFeedParser
     /**
      * Canonical pattern for detecting resolved/completed incidents.
      */
-    private const RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
+    public const RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
 
     /**
      * Regex pattern for detecting major active incidents in status text.
      */
-    private const MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
+    public const MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
 
     /**
      * Dedicated JSON API parser dependency.
@@ -291,7 +291,7 @@ class ExternalServicesFeedParser
 
         // Only show incidents if recent AND active (not resolved/completed)
         // Check for resolved/completed keywords which indicate the incident is over
-        $isResolved = preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $title);
+        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $title);
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
@@ -302,7 +302,7 @@ class ExternalServicesFeedParser
         }
 
         // Check severity of active incident
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if (preg_match(self::MAJOR_INCIDENT_PATTERN, $fullText)) {
             return [
                 'indicator' => 'major',
                 'description' => 'Major Outage'
@@ -778,7 +778,7 @@ class ExternalServicesJsonApiResultDispatcher
         $titleField = isset($config['title_field']) ? (string)$config['title_field'] : '';
         $title = ($titleField !== '' && isset($incident[$titleField])) ? (string)$incident[$titleField] : '';
 
-        if (preg_match('/outage|down|major|critical|offline/i', $title)) {
+        if (preg_match(ExternalServicesFeedParser::MAJOR_INCIDENT_PATTERN, $title)) {
             return ['indicator' => 'major', 'description' => 'Major Outage'];
         }
 
@@ -1042,7 +1042,7 @@ class ExternalServicesJsonIncidentClassifier
      */
     public function isResolvedIncidentText(string $text): bool
     {
-        return preg_match('/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i', $text) === 1;
+        return preg_match(ExternalServicesFeedParser::RESOLVED_KEYWORDS_PATTERN, $text) === 1;
     }
 
     /**
@@ -1053,7 +1053,7 @@ class ExternalServicesJsonIncidentClassifier
      */
     public function isMajorIncident(array $incident, array $config, string $fullText): bool
     {
-        if (preg_match('/outage|down|major|critical|offline/i', $fullText)) {
+        if (preg_match(ExternalServicesFeedParser::MAJOR_INCIDENT_PATTERN, $fullText)) {
             return true;
         }
 
