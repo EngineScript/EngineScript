@@ -622,20 +622,10 @@ class ExternalServicesJsonApiResponseFetcher
      */
     public function fetch(string $apiUrl): array
     {
-        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $apiUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: EngineScript Admin Dashboard'
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_MAXREDIRS => 0
+        // Reuse centralized secure cURL configuration to avoid drift/duplication.
+        $curl = createSecureCurlHandle($apiUrl);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            'User-Agent: EngineScript Admin Dashboard'
         ]);
 
         $response = curl_exec($curl);
