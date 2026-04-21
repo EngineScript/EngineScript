@@ -27,7 +27,28 @@ const ALLOWED_STATUS_API_HOSTS = new Set([
   'www.githubstatus.com',
   'www.cloudflarestatus.com',
   'status.openai.com',
-  'www.atlassianstatus.com'
+  'www.atlassianstatus.com',
+  'status.cloudways.com',
+  'status.digitalocean.com',
+  'statuspage.hostinger.com',
+  'status.kinsta.com',
+  'status.linode.com',
+  'status.scaleway.com',
+  'status.upcloud.com',
+  'www.vercel-status.com',
+  'status.godaddy.com',
+  'www.notion-status.com',
+  'status.twilio.com',
+  'status.coinbase.com',
+  'status.developer.intuit.com',
+  'www.shopifystatus.com',
+  'discordstatus.com',
+  'www.zoomstatus.com',
+  'status.dropbox.com',
+  'www.redditstatus.com',
+  'status.udemy.com',
+  'www.vimeostatus.com',
+  'status.mailgun.com',
 ]);
 
 // FontAwesome 7 icon patterns
@@ -888,13 +909,20 @@ export class ExternalServicesManager {
     }
   }
 
+  get allowedServiceKeys() {
+    if (!this._allowedServiceKeys) {
+      this._allowedServiceKeys = new Set(Object.keys(this.getServiceDefinitions()));
+    }
+    return this._allowedServiceKeys;
+  }
+
   /**
    * Filter arbitrary preference objects to known service keys with boolean values.
    * @param {Object} changes - Source preference map
    * @returns {Object} Sanitized preference map
    */
   getAllowedPreferenceChanges(changes) {
-    const allowedKeys = new Set(Object.keys(this.getServiceDefinitions()));
+    const allowedKeys = this.allowedServiceKeys;
     const safeChanges = {};
 
     Object.entries(changes || {}).forEach(([key, value]) => {
@@ -1609,7 +1637,7 @@ export class ExternalServicesManager {
    * @returns {void}
    */
   saveServiceOrder(orderArray) {
-    writeCookie('serviceOrder', encodeURIComponent(JSON.stringify(orderArray)), 365);
+    writeCookie('serviceOrder', JSON.stringify(orderArray), 365);
   }
 }
 

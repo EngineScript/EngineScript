@@ -18,6 +18,7 @@
 require_once __DIR__ . '/classes/SystemCommand.php';
 require_once __DIR__ . '/classes/ApiResponse.php';
 require_once __DIR__ . '/classes/Router.php';
+require_once __DIR__ . '/classes/SecurityLogger.php';
 
 // Prevent direct access if not from proper context
 if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - Direct $_SERVER access required for standalone API
@@ -63,7 +64,7 @@ if (in_array($origin_host, $allowed_origins, true) ||
     header('Access-Control-Allow-Origin: null'); // codacy:ignore - CORS security header required
 }
 
-header('Access-Control-Allow-Methods: GET, OPTIONS'); // codacy:ignore - CORS header required
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required
 header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
@@ -80,6 +81,11 @@ if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status()
     // codacy:ignore-end
     
     session_start(); // codacy:ignore - session_start() required for rate limiting functionality
+    
+    if (!isset($_SESSION['_initialized'])) { // codacy:ignore - Direct $_SESSION access required for initialization flag
+        session_regenerate_id(true); // codacy:ignore - Security hardening for session fixation
+        $_SESSION['_initialized'] = true; // codacy:ignore - Direct $_SESSION access required
+    }
 }
 
 // Initialize CSRF token if not exists
@@ -100,8 +106,8 @@ if (isset($_SESSION[$rate_limit_key]['reset']) && time() > $_SESSION[$rate_limit
 
 // Check rate limit (100 requests per minute)
 if (isset($_SESSION[$rate_limit_key]['count']) && $_SESSION[$rate_limit_key]['count'] >= 100) { // codacy:ignore - Direct $_SESSION access required
-    http_response_code(429);
-    die(json_encode(['error' => 'Rate limit exceeded'])); // codacy:ignore - die() required for security termination
+    ApiResponse::error('Rate limit exceeded', ApiResponse::HTTP_TOO_MANY_REQUESTS);
+    die();
 }
 
 if (isset($_SESSION[$rate_limit_key]['count'])) { // codacy:ignore - Direct $_SESSION access required
@@ -143,13 +149,13 @@ function validateCsrfToken() {
     
     // Validate token exists
     if (empty($client_token) || empty($_SESSION['csrf_token'])) {
-        logSecurityEvent('CSRF token missing', $method . ' request without token');
+        SecurityLogger::log('CSRF token missing', $method . ' request without token');
         return false;
     }
     
     // Use timing-safe comparison to prevent timing attacks
     if (!hash_equals($_SESSION['csrf_token'], $client_token)) { // codacy:ignore - Direct $_SESSION access required for CSRF validation
-        logSecurityEvent('CSRF token mismatch', 'Invalid token submitted');
+        SecurityLogger::log('CSRF token mismatch', 'Invalid token submitted');
         return false;
     }
     
@@ -158,8 +164,8 @@ function validateCsrfToken() {
 
 // Validate CSRF token for state-changing requests
 if (!validateCsrfToken()) {
-    http_response_code(403);
-    die(json_encode(['error' => 'Invalid or missing CSRF token'])); // codacy:ignore - die() required for security termination
+    ApiResponse::forbidden('Invalid or missing CSRF token');
+    die();
 }
 
 // Get the request URI and method first
@@ -182,62 +188,13 @@ if (!empty($endpoint_param)) {
     }
 }
 
-// Security event logging (used by CSRF validation and path checks above)
-function logSecurityEvent($event, $details = '') { // codacy:ignore - Direct $_SERVER access required for security logging in standalone API
-    // Enhanced log injection protection
-    // Sanitize all log inputs to prevent log injection/forging attacks
-    $safe_event = sanitizeLogInput($event);
-    
-    $log_entry = date('Y-m-d H:i:s') . " [SECURITY] " . $safe_event;
-    
-    if ($details) {
-        // Sanitize details using same function
-        $safe_details = sanitizeLogInput($details);
-        $log_entry .= " - " . $safe_details;
-    }
-    
-    // Sanitize IP address for logging
-    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
-    if ($client_ip !== 'unknown') {
-        // Validate IP format to prevent injection
-        if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
-            $client_ip = 'invalid';
-        }
-    }
-    $log_entry .= " - IP: " . $client_ip . "\n";
-    
-    // Log to a secure location
-    $log_file = '/var/log/EngineScript/enginescript-api-security.log';
-    error_log($log_entry, 3, $log_file);
-}
 
-/**
- * Sanitize input for safe log output
- * Prevents log injection attacks by escaping control characters
- * @param string $input Raw input to sanitize
- * @return string Sanitized string safe for logging
- */
-function sanitizeLogInput($input) {
-    // Remove all control characters (ASCII 0-31 and 127)
-    // This includes \r, \n, \t, and other dangerous characters
-    $sanitized = preg_replace('/[\x00-\x1F\x7F]/', ' ', $input);
-    
-    // Collapse multiple spaces
-    $sanitized = preg_replace('/\s+/', ' ', $sanitized);
-    
-    // Limit length to prevent log flooding
-    $sanitized = substr(trim($sanitized), 0, 255);
-    
-    // Encode any remaining special characters for safe output
-    // This prevents log format string attacks
-    return addcslashes($sanitized, '\\'); // codacy:ignore - addcslashes() required for log injection prevention
-}
 
 // Path was already extracted and validated above, validate again for security
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
-    http_response_code(400);
-    logSecurityEvent('Suspicious path', $path);
-    die(json_encode(['error' => 'Invalid path']));
+    SecurityLogger::log('Suspicious path', $path);
+    ApiResponse::badRequest('Invalid path');
+    die();
 }
 
 // ============ Router-Based Request Dispatch ============

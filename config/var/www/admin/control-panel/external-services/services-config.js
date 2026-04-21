@@ -1,4 +1,4 @@
-/**
+﻿/**
  * External Services Configuration
  * Service definitions for all supported external service providers
  */
@@ -11,7 +11,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://health.aws.amazon.com/health/status',
     icon: 'fa-server',
     color: 'aws-icon',
-    corsEnabled: false,
     statusText: 'Visit status page'
   },
   cloudflare: {
@@ -48,7 +47,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.cloud.google.com/',
     icon: 'fa-google',
     color: 'google-icon',
-    corsEnabled: false,
     useFeed: true
   },
   hostinger: {
@@ -85,7 +83,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://ocistatus.oraclecloud.com/',
     icon: 'fa-database',
     color: 'oracle-icon',
-    corsEnabled: false,
     useFeed: true
   },
   ovh: {
@@ -95,7 +92,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://public-cloud.status-ovhcloud.com/',
     icon: 'fa-cloud',
     color: 'ovh-icon',
-    corsEnabled: false,
     useFeed: true
   },
   scaleway: {
@@ -132,7 +128,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.vultr.com/',
     icon: 'fa-bolt',
     color: 'vultr-icon',
-    corsEnabled: false,
     useFeed: true
   },
   godaddy: {
@@ -152,7 +147,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.codacy.com/',
     icon: 'fa-code-branch',
     color: 'codacy-icon',
-    corsEnabled: false,
     useFeed: true
   },
   github: {
@@ -171,7 +165,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.gitlab.com/',
     icon: 'fa-gitlab',
     color: 'gitlab-icon',
-    corsEnabled: false,
     useFeed: true
   },
   notion: {
@@ -190,7 +183,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.pipedream.com/',
     icon: 'fa-project-diagram',
     color: 'pipedream-icon',
-    corsEnabled: false,
     useFeed: true
   },
   trello: {
@@ -200,7 +192,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://trello.status.atlassian.com/',
     icon: 'fa-trello',
     color: 'trello-icon',
-    corsEnabled: false,
     useFeed: true
   },
   twilio: {
@@ -219,7 +210,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://metastatus.com/',
     icon: 'fa-facebook',
     color: 'facebook-icon',
-    corsEnabled: false,
     useFeed: true
   },
   googleworkspace: {
@@ -229,7 +219,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://www.google.com/appsstatus/dashboard/',
     icon: 'fa-google',
     color: 'google-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // PAYMENT PROCESSING
@@ -249,7 +238,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://www.paypal-status.com/product/production',
     icon: 'fa-paypal',
     color: 'paypal-icon',
-    corsEnabled: false,
     useFeed: true
   },
   recurly: {
@@ -259,7 +247,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.recurly.com/',
     icon: 'fa-repeat',
     color: 'recurly-icon',
-    corsEnabled: false,
     useFeed: true
   },
   square: {
@@ -269,7 +256,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://www.issquareup.com/',
     icon: 'fa-square',
     color: 'square-icon',
-    corsEnabled: false,
     useFeed: true
   },
   stripe: {
@@ -279,7 +265,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.stripe.com/',
     icon: 'fa-credit-card',
     color: 'stripe-icon',
-    corsEnabled: false,
     useFeed: true
   },
   intuit: {
@@ -308,7 +293,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://automatticstatus.com/',
     icon: 'fa-shopping-cart',
     color: 'wordpress-icon',
-    corsEnabled: false,
     useFeed: true
   },
   metafb: {
@@ -318,7 +302,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://metastatus.com/',
     icon: 'fa-facebook',
     color: 'facebook-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // EMAIL SERVICES
@@ -329,7 +312,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.postmarkapp.com/',
     icon: 'fa-paper-plane',
     color: 'postmark-icon',
-    corsEnabled: false,
     useFeed: true
   },
   brevo: {
@@ -339,7 +321,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.brevo.com/',
     icon: 'fa-envelope-open',
     color: 'brevo-icon',
-    corsEnabled: false,
     useFeed: true
   },
   mailgun: {
@@ -358,7 +339,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.sendgrid.com/',
     icon: 'fa-envelope',
     color: 'sendgrid-icon',
-    corsEnabled: false,
     useFeed: true
   },
   sparkpost: {
@@ -368,7 +348,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.sparkpost.com/',
     icon: 'fa-envelope',
     color: 'sparkpost-icon',
-    corsEnabled: false,
     useFeed: true
   },
   zoho: {
@@ -378,7 +357,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.zoho.com/',
     icon: 'fa-envelope',
     color: 'zoho-icon',
-    corsEnabled: false,
     useFeed: true
   },
   mailjet: {
@@ -388,7 +366,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.mailjet.com/',
     icon: 'fa-envelope',
     color: 'mailjet-icon',
-    corsEnabled: false,
     useFeed: true
   },
   mailersend: {
@@ -398,7 +375,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.mailersend.com/',
     icon: 'fa-paper-plane',
     color: 'mailersend-icon',
-    corsEnabled: false,
     useFeed: true
   },
   resend: {
@@ -408,7 +384,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://resend-status.com/',
     icon: 'fa-paper-plane',
     color: 'resend-icon',
-    corsEnabled: false,
     useFeed: true
   },
   smtp2go: {
@@ -418,7 +393,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://smtp2gostatus.com/',
     icon: 'fa-envelope',
     color: 'smtp2go-icon',
-    corsEnabled: false,
     useFeed: true
   },
   sendlayer: {
@@ -428,7 +402,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.sendlayer.com/',
     icon: 'fa-paper-plane',
     color: 'sendlayer-icon',
-    corsEnabled: false,
     useFeed: true
   },
   mailpoet: {
@@ -439,7 +412,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://automatticstatus.com/',
     icon: 'fa-envelope',
     color: 'wordpress-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // COMMUNICATION
@@ -459,7 +431,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://slack-status.com/',
     icon: 'fa-slack',
     color: 'slack-icon',
-    corsEnabled: false,
     useFeed: true
   },
   zoom: {
@@ -480,7 +451,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://automatticstatus.com/',
     icon: 'fa-cloud',
     color: 'wordpress-icon',
-    corsEnabled: false,
     useFeed: true
   },
   jetpackapi: {
@@ -491,7 +461,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://automatticstatus.com/',
     icon: 'fa-rocket',
     color: 'wordpress-icon',
-    corsEnabled: false,
     useFeed: true
   },
   wordpressapi: {
@@ -502,7 +471,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://automatticstatus.com/',
     icon: 'fa-wordpress',
     color: 'wordpress-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // MEDIA & CONTENT
@@ -549,7 +517,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.wistia.com/',
     icon: 'fa-play-circle',
     color: 'wistia-icon',
-    corsEnabled: false,
     useFeed: true
   },
   spotify: {
@@ -559,7 +526,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://spotify.statuspage.io/',
     icon: 'fa-spotify',
     color: 'spotify-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // AI & MACHINE LEARNING
@@ -570,7 +536,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.openai.com/',
     icon: 'fa-brain',
     color: 'openai-icon',
-    corsEnabled: false,
     useFeed: true
   },
   anthropic: {
@@ -580,7 +545,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.claude.com/',
     icon: 'fa-robot',
     color: 'anthropic-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // ADVERTISING
@@ -591,7 +555,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://ads.google.com/status/publisher/',
     icon: 'fa-ad',
     color: 'google-icon',
-    corsEnabled: false,
     useFeed: true
   },
   microsoftads: {
@@ -601,7 +564,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.ads.microsoft.com/',
     icon: 'fa-microsoft',
     color: 'microsoft-icon',
-    corsEnabled: false,
     useFeed: true
   },
   metamarketingapi: {
@@ -611,7 +573,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://metastatus.com/',
     icon: 'fa-facebook',
     color: 'facebook-icon',
-    corsEnabled: false,
     useFeed: true
   },
   metafbs: {
@@ -621,7 +582,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://metastatus.com/',
     icon: 'fa-facebook',
     color: 'facebook-icon',
-    corsEnabled: false,
     useFeed: true
   },
   // SECURITY
@@ -632,7 +592,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://letsencrypt.status.io/',
     icon: 'fa-lock',
     color: 'letsencrypt-icon',
-    corsEnabled: false,
     useFeed: true
   },
   flare: {
@@ -642,7 +601,6 @@ export const SERVICE_DEFINITIONS = {
     url: 'https://status.flare.io/',
     icon: 'fa-shield-alt',
     color: 'flare-icon',
-    corsEnabled: false,
     useFeed: true
   }
 };

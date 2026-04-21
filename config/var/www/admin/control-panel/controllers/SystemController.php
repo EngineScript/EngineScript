@@ -40,7 +40,7 @@ class SystemController extends BaseController
             $cached = $this->getCached(self::ENDPOINT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -56,11 +56,11 @@ class SystemController extends BaseController
             $this->setCached(self::ENDPOINT, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT));
         } catch (Exception $e) {
             $this->logSecurityEvent('System info error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve system info');
+            $this->response->serverError('Unable to retrieve system info');
         }
     }
 

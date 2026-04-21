@@ -55,9 +55,9 @@ class UptimeController extends BaseController
             // codacy:ignore - file_exists() required for config checking in standalone service
             if (file_exists($configPath)) {
                 // codacy:ignore - parse_ini_file() required for config parsing in standalone service
-                $config = parse_ini_file($configPath);
+                $config = @parse_ini_file($configPath);
                 
-                if ($config && isset($config['api_key']) && !empty(trim($config['api_key']))) {
+                if (is_array($config) && isset($config['api_key']) && !empty(trim($config['api_key']))) {
                     $this->uptimeApi = new UptimeRobotAPI(trim($config['api_key']));
                 }
             }
@@ -81,7 +81,7 @@ class UptimeController extends BaseController
             $cached = $this->getCached(self::ENDPOINT_STATUS);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_STATUS));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_STATUS));
                 return;
             }
 
@@ -93,7 +93,7 @@ class UptimeController extends BaseController
                     'reason' => 'UptimeRobot API not configured'
                 ];
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_STATUS));
+                $this->response->success($result, $this->getTtl(self::ENDPOINT_STATUS));
                 return;
             }
 
@@ -105,7 +105,7 @@ class UptimeController extends BaseController
                     'error' => 'Failed to fetch monitors from UptimeRobot API'
                 ];
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_STATUS));
+                $this->response->success($result, $this->getTtl(self::ENDPOINT_STATUS));
                 return;
             }
 
@@ -117,11 +117,11 @@ class UptimeController extends BaseController
             $this->setCached(self::ENDPOINT_STATUS, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_STATUS));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT_STATUS));
         } catch (Exception $e) {
             $this->logSecurityEvent('Uptime status error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve uptime status');
+            $this->response->serverError('Unable to retrieve uptime status');
         }
     }
 
@@ -141,7 +141,7 @@ class UptimeController extends BaseController
             $cached = $this->getCached(self::ENDPOINT_MONITORS);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_MONITORS));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_MONITORS));
                 return;
             }
 
@@ -154,7 +154,7 @@ class UptimeController extends BaseController
                     'monitors' => []
                 ];
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_MONITORS));
+                $this->response->success($result, $this->getTtl(self::ENDPOINT_MONITORS));
                 return;
             }
 
@@ -167,7 +167,7 @@ class UptimeController extends BaseController
                     'monitors' => []
                 ];
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_MONITORS));
+                $this->response->success($result, $this->getTtl(self::ENDPOINT_MONITORS));
                 return;
             }
 
@@ -179,11 +179,11 @@ class UptimeController extends BaseController
             $this->setCached(self::ENDPOINT_MONITORS, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_MONITORS));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT_MONITORS));
         } catch (Exception $e) {
             $this->logSecurityEvent('Uptime monitors error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve uptime monitors');
+            $this->response->serverError('Unable to retrieve uptime monitors');
         }
     }
 

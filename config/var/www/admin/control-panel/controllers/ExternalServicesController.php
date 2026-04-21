@@ -79,20 +79,21 @@ class ExternalServicesController extends BaseController
             $cached = $this->getCached($cacheKey);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl($cacheKey));
+                $this->response->cached($cached, $this->getTtl($cacheKey));
                 return;
             }
 
             $this->loadExternalApi();
 
             $config = $this->feedParser->getServicesConfig();
+            $config = $this->sanitizeOutput($config);
             $this->setCached($cacheKey, $config);
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($config, $this->getTtl($cacheKey));
+            $this->response->success($config, $this->getTtl($cacheKey));
         } catch (Exception $e) {
             $this->logSecurityEvent('External services config error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve external services config');
+            $this->response->serverError('Unable to retrieve external services config');
         }
     }
 
@@ -111,7 +112,7 @@ class ExternalServicesController extends BaseController
             $feedType = $this->getQueryParam('feed') ?? '';
 
             if (empty($feedType)) {
-                ApiResponse::badRequest('Missing feed parameter');
+                $this->response->badRequest('Missing feed parameter');
                 return;
             }
 
@@ -130,7 +131,7 @@ class ExternalServicesController extends BaseController
         } catch (Exception $e) {
             $this->logSecurityEvent('External services feed error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to fetch status feed');
+            $this->response->serverError('Unable to fetch status feed');
         }
     }
 
@@ -150,21 +151,21 @@ class ExternalServicesController extends BaseController
 
             if (empty($slug)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Plugin slug parameter required');
+                $this->response->badRequest('Plugin slug parameter required');
                 return;
             }
 
             // Validate slug format
             if (!$this->validateString($slug, 100)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Invalid plugin slug');
+                $this->response->badRequest('Invalid plugin slug');
                 return;
             }
 
             // Sanitize slug (alphanumeric, hyphens, underscores only)
             if (!preg_match('/^[a-z0-9\-_]+$/i', $slug)) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::badRequest('Invalid plugin slug format');
+                $this->response->badRequest('Invalid plugin slug format');
                 return;
             }
 
@@ -173,7 +174,7 @@ class ExternalServicesController extends BaseController
             $cached = $this->getCached($cacheKey);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -182,38 +183,18 @@ class ExternalServicesController extends BaseController
 
             if ($result === null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::error('Unable to fetch plugin information', ApiResponse::HTTP_BAD_GATEWAY);
+                $this->response->error('Unable to fetch plugin information', ApiResponse::HTTP_BAD_GATEWAY);
                 return;
             }
 
             // Cache and return result
             $this->setCached($cacheKey, $result);
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT));
         } catch (Exception $e) {
             $this->logSecurityEvent('Plugin info error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve plugin information');
+            $this->response->serverError('Unable to retrieve plugin information');
         }
-    }
-
-    /**
-     * Retrieve a GET query value without direct super-global access.
-     *
-     * @param string $key Query parameter name
-     * @return string|null Trimmed value or null when absent/invalid
-     */
-    private function getQueryParam(string $key): ?string
-    {
-        // codacy:ignore - filter_input() safely centralizes query access without exposing $_GET in controller actions
-        $value = filter_input(INPUT_GET, $key, FILTER_UNSAFE_RAW);
-
-        if ($value === null || $value === false || !is_string($value)) {
-            return null;
-        }
-
-        $value = trim($value);
-
-        return $value === '' ? null : $value;
     }
 
     /**
@@ -289,7 +270,7 @@ class ExternalServicesController extends BaseController
             $cached = $this->getCached($cacheKey);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -298,17 +279,17 @@ class ExternalServicesController extends BaseController
 
             if ($result === null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::error('Unable to fetch Cloudflare status', ApiResponse::HTTP_BAD_GATEWAY);
+                $this->response->error('Unable to fetch Cloudflare status', ApiResponse::HTTP_BAD_GATEWAY);
                 return;
             }
 
             // Cache and return result
             $this->setCached($cacheKey, $result);
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT));
         } catch (Exception $e) {
             $this->logSecurityEvent('Cloudflare status error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve Cloudflare status');
+            $this->response->serverError('Unable to retrieve Cloudflare status');
         }
     }
 

@@ -39,4 +39,28 @@ class Session
         // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
         return $_SESSION[$key] ?? $default;
     }
+
+    /**
+     * Store a value in the session.
+     *
+     * This is the single, intentional write-access point for $_SESSION in the
+     * entire dashboard.  All other classes must go through this method.
+     *
+     * @SuppressWarnings(PHPMD.Superglobals)
+     *
+     * @param string $key   Session key to set.
+     * @param mixed  $value Value to store.
+     * @return void
+     */
+    public function set(string $key, mixed $value): void
+    {
+        // If the session has not been started, silently do nothing to avoid
+        // triggering warnings from accessing $_SESSION prematurely.
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
+        $_SESSION[$key] = $value;
+    }
 }

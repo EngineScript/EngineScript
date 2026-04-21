@@ -107,7 +107,7 @@ class BatchController extends BaseController
             }
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success([
+            $this->response->success([
                 'results' => $results,
                 'errors' => $errors,
                 'cached_count' => $cached_count
@@ -115,7 +115,7 @@ class BatchController extends BaseController
         } catch (Exception $e) {
             $this->logSecurityEvent('Batch request error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to process batch request');
+            $this->response->serverError('Unable to process batch request');
         }
     }
 
@@ -129,7 +129,7 @@ class BatchController extends BaseController
         // Only accept POST for batch requests
         if ($this->getRequestMethod() !== 'POST') {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::methodNotAllowed('Method not allowed. Use POST.');
+            $this->response->methodNotAllowed('Method not allowed. Use POST.');
             return null;
         }
 
@@ -139,14 +139,14 @@ class BatchController extends BaseController
 
         if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
+            $this->response->badRequest('Invalid request. Expected JSON with "requests" array.');
             return null;
         }
 
         // Limit batch size to prevent abuse
         if (count($data['requests']) > self::MAX_BATCH_SIZE) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
+            $this->response->badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
             return null;
         }
 

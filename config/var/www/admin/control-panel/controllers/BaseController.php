@@ -37,11 +37,11 @@ require_once __DIR__ . '/../classes/Session.php';
  *   class MyController extends BaseController {
  *       public function getData() {
  *           if ($cached = $this->getCached('/my/endpoint')) {
- *               return ApiResponse::cached($cached, $this->getTtl('/my/endpoint'));
+ *               return $this->response->cached($cached, $this->getTtl('/my/endpoint'));
  *           }
  *           $data = $this->fetchData();
  *           $this->setCached('/my/endpoint', $data);
- *           return ApiResponse::success($data, $this->getTtl('/my/endpoint'));
+ *           return $this->response->success($data, $this->getTtl('/my/endpoint'));
  *       }
  *   }
  */
@@ -166,7 +166,7 @@ abstract class BaseController
         // codacy:ignore - is_dir() required for cache directory check in standalone API
         if (!is_dir(self::CACHE_DIR)) {
             // codacy:ignore - mkdir() required for cache directory creation in standalone API
-            @mkdir(self::CACHE_DIR, 0755, true);
+            @mkdir(self::CACHE_DIR, 0750, true);
         }
         
         $cache_file = $this->getCacheFilePath($endpoint, $params);
@@ -249,10 +249,7 @@ abstract class BaseController
             return false;
         }
         
-        // Remove any potential script tags or dangerous characters
-        $input = preg_replace('/[<>"\']/', '', $input);
-        
-        // Use htmlspecialchars for XSS prevention
+        // Use htmlspecialchars for XSS prevention (handles <, >, ", ' via ENT_QUOTES)
         return htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
@@ -264,13 +261,13 @@ abstract class BaseController
      */
     protected function validatePath($input)
     {
-        // Strict path validation - only allow alphanumeric, dash, underscore, dot
+        // Only allow alphanumeric, dash, underscore, dot — implicitly blocks / and ..
         if (!preg_match('/^[a-zA-Z0-9._-]+$/', $input)) {
             return false;
         }
         
-        // Prevent path traversal
-        if (str_contains($input, '..') || str_contains($input, '/')) {
+        // Belt-and-suspenders: reject path traversal sequences
+        if (str_contains($input, '..')) {
             return false;
         }
         
@@ -361,57 +358,7 @@ abstract class BaseController
      */
     protected function logSecurityEvent($event, $details = '')
     {
-        // codacy:ignore - Direct $_SERVER access required for security logging in standalone API
-        $safe_event = $this->sanitizeLogInput($event);
-        
-        $log_entry = date('Y-m-d H:i:s') . " [SECURITY] " . $safe_event;
-        
-        if ($details) {
-            $safe_details = $this->sanitizeLogInput($details);
-            $log_entry .= " - " . $safe_details;
-        }
-        
-        // Sanitize IP address for logging
-        // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
-        $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        
-        if ($client_ip !== 'unknown') {
-            // Validate IP format to prevent injection
-            if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
-                $client_ip = 'invalid';
-            }
-        }
-        
-        $log_entry .= " - IP: " . $client_ip . "\n";
-        
-        // Log to a secure location
-        $log_file = '/var/log/EngineScript/enginescript-api-security.log';
-        error_log($log_entry, 3, $log_file);
-    }
-
-    /**
-     * Sanitize input for safe log output
-     * 
-     * Prevents log injection attacks by escaping control characters.
-     * 
-     * @param string $input Raw input to sanitize
-     * @return string Sanitized string safe for logging
-     */
-    protected function sanitizeLogInput($input)
-    {
-        // Remove all control characters (ASCII 0-31 and 127)
-        // This includes \r, \n, \t, and other dangerous characters
-        $sanitized = preg_replace('/[\x00-\x1F\x7F]/', ' ', $input);
-        
-        // Collapse multiple spaces
-        $sanitized = preg_replace('/\s+/', ' ', $sanitized);
-        
-        // Limit length to prevent log flooding
-        $sanitized = substr(trim($sanitized), 0, 255);
-        
-        // Encode any remaining special characters for safe output
-        // codacy:ignore - addcslashes() required for log injection prevention
-        return addcslashes($sanitized, '\\');
+        SecurityLogger::log($event, $details);
     }
 
     /**
@@ -431,6 +378,21 @@ abstract class BaseController
     }
 
     /**
+     * Store a value in the session.
+     *
+     * Delegates to the Session instance so that no controller ever accesses
+     * the $_SESSION superglobal directly.
+     *
+     * @param string $key   The session key to set.
+     * @param mixed  $value The value to store.
+     * @return void
+     */
+    protected function setSessionValue(string $key, mixed $value): void
+    {
+        $this->session->set($key, $value);
+    }
+
+    /**
      * Get HTTP request method
      *
      * Centralizes $_SERVER access to avoid super-global access in subclasses.
@@ -441,5 +403,28 @@ abstract class BaseController
     {
         // codacy:ignore - Direct $_SERVER access centralized here to prevent super-global access in subclasses
         return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    }
+
+    /**
+     * Retrieve a GET query parameter without direct super-global access.
+     *
+     * Centralizes $_GET access via filter_input() so that no controller
+     * touches the $_GET superglobal directly.
+     *
+     * @param string $key Query parameter name
+     * @return string|null Trimmed value or null when absent/invalid
+     */
+    protected function getQueryParam(string $key): ?string
+    {
+        // codacy:ignore - filter_input() safely centralizes query access without exposing $_GET in controller actions
+        $value = filter_input(INPUT_GET, $key, FILTER_UNSAFE_RAW);
+
+        if ($value === null || $value === false || !is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 }
