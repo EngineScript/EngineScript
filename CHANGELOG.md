@@ -4,18 +4,7 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-04-21
-
-### ♻️ EXTERNAL SERVICES API REFACTORING
-
-- Extracted duplicated cURL setup in `ExternalServicesFeedParser` into a shared `createSecureCurlHandle()` private method to eliminate duplication between `parseStatusFeed()` and `ExternalServicesJsonApiResponseFetcher::fetch()`, and to ensure consistent secure cURL settings across all outbound HTTP requests.
-- Extracted the magic number `86400` (24 hours in seconds) into a named class constant `RECENT_INCIDENT_THRESHOLD_SECONDS` in `ExternalServicesFeedParser` to improve readability and maintainability.
-- Promoted `RESOLVED_KEYWORDS_PATTERN` and `MAJOR_INCIDENT_PATTERN` from `private` to `public` constants in `ExternalServicesFeedParser` so that `ExternalServicesJsonApiResultDispatcher` and `ExternalServicesJsonIncidentClassifier` can reference them directly (via `ExternalServicesFeedParser::PATTERN`) instead of duplicating the inline regex literals, eliminating all remaining linter warnings about duplicated string literals.
-- Replaced remaining inline regex literals in `ExternalServicesFeedParser::parseRssFeedItems()`, `ExternalServicesJsonApiResultDispatcher::evaluateIncidentSeverity()`, and `ExternalServicesJsonIncidentClassifier::isResolvedIncidentText()` / `isMajorIncident()` with references to the shared public constants.
-- Extracted the major incident detection regex `/outage|down|major|critical|offline/i` into a named class constant `MAJOR_INCIDENT_PATTERN` in `ExternalServicesFeedParser` to ensure consistency and maintainability.
-- Extracted the Google Workspace inline `title_parser` closure into a dedicated `parseGoogleWorkspaceTitle()` private method on `ExternalServicesFeedParser` for better testability and maintainability.
-
-
+## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
 
