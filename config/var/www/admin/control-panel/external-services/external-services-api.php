@@ -156,16 +156,16 @@ class ExternalServicesFeedParser
                 return $status;
             }
         }
-        $latestEntry = $latestEntry ?? $xml->entry[0];
+        if ($latestEntry === null) {
+            if (!isset($xml->entry) || count($xml->entry) === 0) {
+                return $status;
+            }
+            $latestEntry = $xml->entry[0];
+        }
 
         $title = (string)($latestEntry->title ?? '');
         $content = (string)($latestEntry->content ?? '');
         $summary = (string)($latestEntry->summary ?? '');
-
-        // Strip CDATA tags if present (e.g., Brevo feed)
-        $title = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $title);
-        $content = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $content);
-        $summary = preg_replace('/<!\[CDATA\[(.*?)\]\]>/s', '$1', $summary);
 
         // Get entry timestamp
         $entryDate = null;
@@ -236,7 +236,12 @@ class ExternalServicesFeedParser
                 return $status;
             }
         }
-        $latestItem = $latestItem ?? $xml->channel->item[0];
+        if ($latestItem === null) {
+            if (!isset($xml->channel->item[0])) {
+                return $status;
+            }
+            $latestItem = $xml->channel->item[0];
+        }
 
         $title = (string)($latestItem->title ?? '');
         $description = (string)($latestItem->description ?? '');
@@ -389,30 +394,8 @@ class ExternalServicesFeedParser
     public function handleStatusFeed(string $feedType, ?string $filter = null): void
     {
         try {
-            // Whitelist validation for feed types to prevent injection
-            $allowedFeedTypes = [
-                'vultr', 'googleworkspace', 'wistia', 'postmark', 'automattic',
-                'stripe', 'letsencrypt', 'flare', 'slack', 'gitlab',
-                'square', 'recurly', 'googleads', 'googlesearch', 'microsoftads',
-                'paypal', 'googlecloud', 'oracle', 'ovh', 'brevo', 'sendgrid',
-                'anthropic', 'spotify', 'metafb', 'metamarketingapi', 'metafbs', 'metalogin',
-                'trello', 'pipedream', 'codacy', 'openai',
-                'sparkpost', 'zoho', 'mailjet', 'mailersend', 'resend', 'smtp2go', 'sendlayer'
-            ];
-
-            if (!in_array($feedType, $allowedFeedTypes, true)) {
-                ApiResponse::badRequest('Invalid feed type');
-                return;
-            }
-
-            // Handle JSON API feeds via config map
+            // Load JSON API feeds via config map
             $jsonApiConfigs = $this->getJsonApiConfigs();
-            if (isset($jsonApiConfigs[$feedType])) {
-                $entry = $jsonApiConfigs[$feedType];
-                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
-                ApiResponse::success(['status' => $status]);
-                return;
-            }
 
             // Whitelist allowed RSS/Atom feeds for security
             $allowedFeeds = [
@@ -448,8 +431,22 @@ class ExternalServicesFeedParser
                 'sendlayer' => 'https://status.sendlayer.com/history/rss'
             ];
 
-            if (!isset($allowedFeeds[$feedType])) {
+            // Consolidated whitelist validation from actual configured handlers
+            $allowedFeedTypes = array_values(array_unique(array_merge(
+                array_keys($jsonApiConfigs),
+                array_keys($allowedFeeds)
+            )));
+
+            if (!in_array($feedType, $allowedFeedTypes, true)) {
                 ApiResponse::badRequest('Invalid feed type');
+                return;
+            }
+
+            // Handle JSON API feeds via config map
+            if (isset($jsonApiConfigs[$feedType])) {
+                $entry = $jsonApiConfigs[$feedType];
+                $status = $this->parseJsonAPI($entry['url'], $entry['config']);
+                ApiResponse::success(['status' => $status]);
                 return;
             }
 
@@ -579,6 +576,40 @@ class ExternalServicesJsonApiParser
      * @param array $config Parser configuration
      * @return array Status information
      */
+    private function routePayloadToStrategy(array $data, array $config): array
+    {
+        // Default fallback when strategy is missing or payload shape is unknown.
+        $fallback = ['indicator' => 'major', 'description' => 'Unable to fetch status'];
+
+        $strategy = isset($config['strategy']) && is_string($config['strategy'])
+            ? $config['strategy']
+            : 'default';
+
+        // Generic direct-field strategy.
+        if ($strategy === 'direct') {
+            $indicatorField = isset($config['indicator_field']) && is_string($config['indicator_field'])
+                ? $config['indicator_field']
+                : 'indicator';
+            $descriptionField = isset($config['description_field']) && is_string($config['description_field'])
+                ? $config['description_field']
+                : 'description';
+
+            if (isset($data[$indicatorField]) && isset($data[$descriptionField])) {
+                return [
+                    'indicator' => (string) $data[$indicatorField],
+                    'description' => (string) $data[$descriptionField]
+                ];
+            }
+        }
+
+        // Default behavior: if required field checks have already passed but
+        // no explicit status can be derived, treat as operational.
+        if (!empty($config['missing_is_operational'])) {
+            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        }
+
+        return $fallback;
+    }
 }
 
 /**

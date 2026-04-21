@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-21
+
+### 🐛 EXTERNAL SERVICES API BUG FIXES & CODE QUALITY IMPROVEMENTS
+
+- Fixed potential array access error in Atom/XML feed parsing: added a guard to check that `$xml->entry` is set and non-empty before accessing `$xml->entry[0]`, returning an operational status when the feed has no entries.
+- Removed redundant CDATA stripping `preg_replace` calls in `parseAtomFeed()`; CDATA sections are already stripped automatically by the `LIBXML_NOCDATA` flag passed during XML parsing.
+- Fixed potential array access error in RSS feed parsing: added a guard to check that `$xml->channel->item[0]` is set before accessing it, returning an operational status when the channel has no items.
+- Consolidated `allowedFeedTypes` whitelist in `handleStatusFeed()` to be derived at runtime from the union of `getJsonApiConfigs()` keys and `$allowedFeeds` keys, eliminating a separately maintained hardcoded list and reducing maintenance burden.
+- Implemented the previously documented-but-missing `routePayloadToStrategy()` method in `ExternalServicesJsonApiParser`, supporting a `direct` field-mapping strategy and a `missing_is_operational` fallback.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
