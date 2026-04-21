@@ -511,7 +511,7 @@ class ExternalServicesFeedParser
         }
 
         // No title marker, use first line
-        return (string) strtok($description, "\n");
+        return strtok($description, "\n") ?: '';
     }
 }
 
