@@ -75,7 +75,7 @@ class ExternalServicesFeedParser
      * Build a cURL handle with shared secure defaults.
      *
      * @param string $url Request URL
-     * @return resource|\CurlHandle
+     * @return resource|CurlHandle
      */
     private function createSecureCurlHandle(string $url)
     {
