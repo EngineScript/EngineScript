@@ -215,6 +215,25 @@ class ServiceController extends BaseController
     }
 
     /**
+     * Extract and sanitize a version string from command output.
+     *
+     * Applies $pattern to $output and returns the first capture group,
+     * HTML-escaped. Returns 'Unknown' when output is null or the pattern
+     * does not match.
+     *
+     * @param string|null $output Raw command output
+     * @param string $pattern PCRE pattern with one capture group for the version
+     * @return string Sanitized version string or 'Unknown'
+     */
+    private function parseVersionOutput(?string $output, string $pattern): string
+    {
+        if ($output !== null && preg_match($pattern, $output, $matches)) {
+            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+        return 'Unknown';
+    }
+
+    /**
      * Get Nginx version
      * 
      * @return string Version or 'Unknown'
@@ -222,11 +241,7 @@ class ServiceController extends BaseController
     private function getNginxVersion()
     {
         // codacy:ignore - Static utility class pattern
-        $version_output = SystemCommand::getNginxVersion();
-        if ($version_output !== null && preg_match('/nginx\/(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
-        return 'Unknown';
+        return $this->parseVersionOutput(SystemCommand::getNginxVersion(), '/nginx\/(\d+\.\d+\.\d+)/');
     }
 
     /**
@@ -237,11 +252,7 @@ class ServiceController extends BaseController
     private function getPhpVersion()
     {
         // codacy:ignore - Static utility class pattern
-        $version_output = SystemCommand::getPhpVersion();
-        if ($version_output !== null && preg_match('/PHP (\d+\.\d+\.\d+)/', $version_output, $matches)) {
-            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
-        return 'Unknown';
+        return $this->parseVersionOutput(SystemCommand::getPhpVersion(), '/PHP (\d+\.\d+\.\d+)/');
     }
 
     /**
@@ -252,11 +263,7 @@ class ServiceController extends BaseController
     private function getMariadbVersion()
     {
         // codacy:ignore - Static utility class pattern
-        $version_output = SystemCommand::getMariadbVersion();
-        if ($version_output !== null && preg_match('/mariadb.*?(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
-        return 'Unknown';
+        return $this->parseVersionOutput(SystemCommand::getMariadbVersion(), '/mariadb.*?(\d+\.\d+\.\d+)/');
     }
 
     /**
@@ -267,10 +274,6 @@ class ServiceController extends BaseController
     private function getRedisVersion()
     {
         // codacy:ignore - Static utility class pattern
-        $version_output = SystemCommand::getRedisVersion();
-        if ($version_output !== null && preg_match('/v=(\d+\.\d+\.\d+)/', $version_output, $matches)) {
-            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
-        return 'Unknown';
+        return $this->parseVersionOutput(SystemCommand::getRedisVersion(), '/v=(\d+\.\d+\.\d+)/');
     }
 }

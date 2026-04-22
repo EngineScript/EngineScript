@@ -12,6 +12,8 @@ Changes are organized by date, with the most recent changes listed first.
 - Added `NestedPathResolverTrait` with a single `resolveNestedValue(array $data, string $path): mixed` method, replacing two identical dotted-path traversal implementations: `ExternalServicesJsonApiResultDispatcher::resolvePathValue()` and `ExternalServicesJsonIncidentsResolver::resolveIncidentsPath()`. Both classes now use the trait; the duplicate private methods have been removed.
 - Added `StatusResultTrait` with five factory methods (`operationalStatus`, `majorOutageStatus`, `minorOutageStatus`, `fetchErrorStatus`, `parseErrorStatus`) to replace ~20 repeated inline status-result arrays scattered across five classes (`ExternalServicesFeedParser`, `ExternalServicesJsonApiParser`, `ExternalServicesJsonApiResponseFetcher`, `ExternalServicesJsonApiResultDispatcher`, `ExternalServicesJsonIncidentEvaluator`). Status strings now live in exactly one place.
 - Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to no longer call the non-existent global function `createSecureCurlHandle($apiUrl)` — the class now uses `SecureCurlHandleTrait` and calls `$this->createSecureCurlHandle()`.
+- `ExternalServicesController` — extracted a private `createCurlHandle(string $url)` method shared by `fetchPluginInfo` and `fetchCloudflareStatus`, eliminating two identical 14-line cURL init blocks within the same class.
+- `ServiceController` — extracted a private `parseVersionOutput(?string $output, string $pattern): string` helper shared by `getNginxVersion`, `getPhpVersion`, `getMariadbVersion`, and `getRedisVersion`, eliminating four copies of the same get-output → regex → htmlspecialchars → 'Unknown' pattern.
 
 ## 2026-04-12
 
