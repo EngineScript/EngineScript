@@ -77,7 +77,7 @@ class ExternalServicesFeedParser
      * @param string $url Request URL
      * @return resource|CurlHandle
      */
-    private function createSecureCurlHandle(string $url)
+    public static function createSecureCurlHandle(string $url)
     {
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
@@ -109,7 +109,7 @@ class ExternalServicesFeedParser
         try {
             // Fetch feed content via cURL with SSL verification
             // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-            $curl = $this->createSecureCurlHandle($feedUrl);
+            $curl = self::createSecureCurlHandle($feedUrl);
 
             $feedContent = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -623,7 +623,7 @@ class ExternalServicesJsonApiResponseFetcher
     public function fetch(string $apiUrl): array
     {
         // Reuse centralized secure cURL configuration to avoid drift/duplication.
-        $curl = createSecureCurlHandle($apiUrl);
+        $curl = ExternalServicesFeedParser::createSecureCurlHandle($apiUrl);
 
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);

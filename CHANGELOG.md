@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-22
+
+### 🐛 FIX NON-EXISTENT FUNCTION CALL IN ExternalServicesJsonApiResponseFetcher
+
+- Promoted `ExternalServicesFeedParser::createSecureCurlHandle()` from `private` to `public static` so it can be reused across classes without code duplication.
+- Updated internal call in `ExternalServicesFeedParser::parseStatusFeed()` from `$this->createSecureCurlHandle()` to `self::createSecureCurlHandle()`.
+- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to call `ExternalServicesFeedParser::createSecureCurlHandle($apiUrl)` instead of the non-existent global function `createSecureCurlHandle($apiUrl)`.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS
