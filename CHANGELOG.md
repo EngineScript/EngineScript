@@ -6,11 +6,12 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-22
 
-### 🐛 FIX NON-EXISTENT FUNCTION CALL IN ExternalServicesJsonApiResponseFetcher
+### ♻️ REFACTOR: PHP TRAITS TO ELIMINATE DUPLICATE CODE IN EXTERNAL SERVICES API
 
-- Added a private `createSecureCurlHandle()` method to `ExternalServicesJsonApiResponseFetcher` with the same secure cURL defaults as `ExternalServicesFeedParser`, allowing each class to own its cURL setup independently.
-- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to call `$this->createSecureCurlHandle()` instead of the non-existent global function `createSecureCurlHandle($apiUrl)`, eliminating the static cross-class coupling introduced in a prior fix.
-- Reverted `ExternalServicesFeedParser::createSecureCurlHandle()` back to `private` and restored its internal caller to `$this->createSecureCurlHandle()`.
+- Added `SecureCurlHandleTrait` with a shared `createSecureCurlHandle(string $url)` method to centralise secure cURL defaults. Applied to `ExternalServicesFeedParser` and `ExternalServicesJsonApiResponseFetcher`; both classes now use the trait and no longer carry their own copy of the cURL setup.
+- Added `NestedPathResolverTrait` with a single `resolveNestedValue(array $data, string $path): mixed` method, replacing two identical dotted-path traversal implementations: `ExternalServicesJsonApiResultDispatcher::resolvePathValue()` and `ExternalServicesJsonIncidentsResolver::resolveIncidentsPath()`. Both classes now use the trait; the duplicate private methods have been removed.
+- Added `StatusResultTrait` with five factory methods (`operationalStatus`, `majorOutageStatus`, `minorOutageStatus`, `fetchErrorStatus`, `parseErrorStatus`) to replace ~20 repeated inline status-result arrays scattered across five classes (`ExternalServicesFeedParser`, `ExternalServicesJsonApiParser`, `ExternalServicesJsonApiResponseFetcher`, `ExternalServicesJsonApiResultDispatcher`, `ExternalServicesJsonIncidentEvaluator`). Status strings now live in exactly one place.
+- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to no longer call the non-existent global function `createSecureCurlHandle($apiUrl)` — the class now uses `SecureCurlHandleTrait` and calls `$this->createSecureCurlHandle()`.
 
 ## 2026-04-12
 
