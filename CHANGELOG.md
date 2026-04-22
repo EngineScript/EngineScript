@@ -6,14 +6,26 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-22
 
-### ♻️ REFACTOR: PHP TRAITS TO ELIMINATE DUPLICATE CODE IN EXTERNAL SERVICES API
+### ♻️ REFACTOR: PHP 8.2–8.4 MODERNISATION OF EXTERNAL SERVICES API AND CONTROLLERS
 
+**Deduplication (initial pass)**
 - Added `SecureCurlHandleTrait` with a shared `createSecureCurlHandle(string $url)` method to centralise secure cURL defaults. Applied to `ExternalServicesFeedParser` and `ExternalServicesJsonApiResponseFetcher`; both classes now use the trait and no longer carry their own copy of the cURL setup.
-- Added `NestedPathResolverTrait` with a single `resolveNestedValue(array $data, string $path): mixed` method, replacing two identical dotted-path traversal implementations: `ExternalServicesJsonApiResultDispatcher::resolvePathValue()` and `ExternalServicesJsonIncidentsResolver::resolveIncidentsPath()`. Both classes now use the trait; the duplicate private methods have been removed.
-- Added `StatusResultTrait` with five factory methods (`operationalStatus`, `majorOutageStatus`, `minorOutageStatus`, `fetchErrorStatus`, `parseErrorStatus`) to replace ~20 repeated inline status-result arrays scattered across five classes (`ExternalServicesFeedParser`, `ExternalServicesJsonApiParser`, `ExternalServicesJsonApiResponseFetcher`, `ExternalServicesJsonApiResultDispatcher`, `ExternalServicesJsonIncidentEvaluator`). Status strings now live in exactly one place.
-- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to no longer call the non-existent global function `createSecureCurlHandle($apiUrl)` — the class now uses `SecureCurlHandleTrait` and calls `$this->createSecureCurlHandle()`.
-- `ExternalServicesController` — extracted a private `createCurlHandle(string $url)` method shared by `fetchPluginInfo` and `fetchCloudflareStatus`, eliminating two identical 14-line cURL init blocks within the same class.
-- `ServiceController` — extracted a private `parseVersionOutput(?string $output, string $pattern): string` helper shared by `getNginxVersion`, `getPhpVersion`, `getMariadbVersion`, and `getRedisVersion`, eliminating four copies of the same get-output → regex → htmlspecialchars → 'Unknown' pattern.
+- Added `NestedPathResolverTrait` with `resolveNestedValue(array $data, string $path): mixed`, replacing two identical dotted-path traversal implementations (`ExternalServicesJsonApiResultDispatcher::resolvePathValue()` and `ExternalServicesJsonIncidentsResolver::resolveIncidentsPath()`). Both classes now use the trait.
+- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to no longer call the non-existent global function `createSecureCurlHandle($apiUrl)`.
+- `ExternalServicesController` — extracted a private `createCurlHandle(string $url)` method shared by `fetchPluginInfo` and `fetchCloudflareStatus`, eliminating two identical 14-line cURL init blocks.
+- `ServiceController` — extracted a private `parseVersionOutput(?string $output, string $pattern): string` helper shared by all four `getXxxVersion()` methods.
+
+**PHP 8.2–8.4 modernisation (this pass)**
+- `StatusResultTrait` replaced by `enum ServiceStatus` (PHP 8.1 unit enum). All five status cases (`Operational`, `MajorOutage`, `MinorOutage`, `FetchError`, `ParseError`) are now an exhaustive, type-safe set; `toArray()` converts to the array shape via an exhaustive `match`. All ~22 call sites updated from `$this->xStatus()` to `ServiceStatus::X->toArray()`.
+- All four constructors that used the `?Type $param = null … $this->prop = $param ?? new T()` pattern converted to **constructor property promotion** with `private readonly` and a `new T()` default value (PHP 8.1). Separate `@var` property declarations removed.
+- Seven internal/leaf classes marked `final` (`ExternalServicesJsonApiParser`, `ExternalServicesJsonApiResponseFetcher`, `ExternalServicesJsonApiResultDispatcher`, `ExternalServicesJsonIncidentEvaluator`, `ExternalServicesJsonIncidentsResolver`, `ExternalServicesJsonIncidentClassifier`, `ExternalServicesServiceCatalog`).
+- Class constants given explicit types: `const int RECENT_INCIDENT_THRESHOLD_SECONDS` and `const string RESOLVED_KEYWORDS_PATTERN / MAJOR_INCIDENT_PATTERN` (PHP 8.3).
+- `SecureCurlHandleTrait::createSecureCurlHandle` and `ExternalServicesController::createCurlHandle` return type changed from `resource|\CurlHandle` to `\CurlHandle`; both now throw `\RuntimeException` if `curl_init()` returns `false` rather than silently passing a boolean to `curl_setopt_array`.
+- `resolveNestedValue` given explicit `mixed` return type.
+- `ExternalServicesJsonApiResultDispatcher::dispatch()` converted from two `if` guards to a single `match` expression.
+- `filterIncidents` converted to an arrow function (`fn($incident) =>`).
+- `hasRequiredField` collapsed to a single boolean `return` expression.
+- `ExternalServicesServiceCatalog::getServicesConfig()` converted from `array_merge(…)` to the PHP 8.1 string-key spread syntax `[...self::X, …]`.
 
 ## 2026-04-12
 
