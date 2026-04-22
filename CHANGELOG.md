@@ -6,6 +6,10 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-04-22
 
+### 🐛 DEDICATED CURL EXCEPTION CLASS
+
+- Added `classes/CurlInitException.php` — `final class CurlInitException extends \RuntimeException`. Replaces the generic `\RuntimeException` thrown by `SecureCurlHandleTrait::createSecureCurlHandle()` and `ExternalServicesController::createCurlHandle()` when `curl_init()` returns false. Existing `catch (\RuntimeException $e)` blocks are unaffected because `CurlInitException` extends it.
+
 ### ♻️ REFACTOR: PHP 8.2–8.4 MODERNISATION OF EXTERNAL SERVICES API AND CONTROLLERS
 
 **Deduplication (initial pass)**

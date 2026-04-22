@@ -17,6 +17,8 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 // Load centralized API response handler
 // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
 require_once __DIR__ . '/../classes/ApiResponse.php';
+// @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
+require_once __DIR__ . '/../classes/CurlInitException.php';
 
 /**
  * Shared cURL factory used by classes that make outbound HTTP requests.
@@ -31,14 +33,14 @@ trait SecureCurlHandleTrait
      *
      * @param string $url Request URL
      * @return \CurlHandle
-     * @throws \RuntimeException if cURL is unavailable
+     * @throws CurlInitException if cURL is unavailable
      */
     private function createSecureCurlHandle(string $url): \CurlHandle
     {
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
         if ($curl === false) {
-            throw new \RuntimeException('curl_init() failed: cURL extension not available');
+            throw new CurlInitException('curl_init() failed: cURL extension not available');
         }
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,

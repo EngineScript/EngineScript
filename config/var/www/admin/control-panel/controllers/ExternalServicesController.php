@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/BaseController.php';
+require_once __DIR__ . '/../classes/CurlInitException.php'; // codacy:ignore - Secure class loading: path is a private constant resolved from __DIR__, no user input
 
 /**
  * External Services Controller
@@ -202,14 +203,14 @@ class ExternalServicesController extends BaseController
      *
      * @param string $url Request URL
      * @return \CurlHandle
-     * @throws \RuntimeException if cURL is unavailable
+     * @throws CurlInitException if cURL is unavailable
      */
     private function createCurlHandle(string $url): \CurlHandle
     {
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
         if ($curl === false) {
-            throw new \RuntimeException('curl_init() failed: cURL extension not available');
+            throw new CurlInitException('curl_init() failed: cURL extension not available');
         }
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
