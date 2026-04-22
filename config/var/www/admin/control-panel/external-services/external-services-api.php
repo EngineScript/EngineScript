@@ -127,7 +127,7 @@ enum ServiceStatus
  * 
  * Parses RSS/Atom feeds and JSON APIs to determine
  * external service operational status.
- * 
+ *
  * @package EngineScript\Dashboard\ExternalServices
  * @version 2.0.0
  * @security HIGH - Implements strict whitelisting and input validation
@@ -137,19 +137,29 @@ class ExternalServicesFeedParser
     use SecureCurlHandleTrait;
 
     /**
-     * Threshold for considering an incident recent (24 hours in seconds).
+     * Threshold for considering an incident recent.
+     *
+     * @var int 24 hours in seconds
      */
     private const int RECENT_INCIDENT_THRESHOLD_SECONDS = 86400;
 
     /**
-     * Canonical pattern for detecting resolved/completed incidents.
+     * Regex pattern used to classify status text as resolved/restored.
+     *
+     * Matches common resolution keywords as whole words (for example:
+     * "resolved", "completed", "fixed", "restored", and "operational")
+     * using case-insensitive matching.
+     *
+     * Intended usage:
+     * - Reuse in incident parsing/classification logic when determining
+     *   whether an update indicates service recovery rather than an active issue.
      */
     public const string RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
 
     /**
      * Regex pattern for detecting major active incidents in status text.
      */
-    public const string MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
+    public const string MAJOR_INCIDENT_PATTERN = '/\b(outage|down|major|critical|offline)\b/i';
 
     public function __construct(
         private readonly ExternalServicesJsonApiParser $jsonApiParser = new ExternalServicesJsonApiParser(),
@@ -260,8 +270,8 @@ class ExternalServicesFeedParser
         $fullText = $title . ' ' . $content . ' ' . $summary;
 
         // Only show incidents if recent AND active (not resolved/completed)
-        // Check for resolved/completed keywords which indicate the incident is over
-        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $title);
+        // Check for resolved/completed keywords across full incident context
+        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $fullText);
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
@@ -328,7 +338,7 @@ class ExternalServicesFeedParser
 
         // Only show incidents if recent AND active (not resolved/completed)
         // Check for resolved/completed keywords which indicate the incident is over
-        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $title);
+        $isResolved = preg_match(self::RESOLVED_KEYWORDS_PATTERN, $fullText);
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
