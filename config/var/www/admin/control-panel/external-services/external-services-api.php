@@ -77,7 +77,7 @@ class ExternalServicesFeedParser
      * @param string $url Request URL
      * @return resource|CurlHandle
      */
-    public static function createSecureCurlHandle(string $url)
+    private function createSecureCurlHandle(string $url)
     {
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
@@ -109,7 +109,7 @@ class ExternalServicesFeedParser
         try {
             // Fetch feed content via cURL with SSL verification
             // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-            $curl = self::createSecureCurlHandle($feedUrl);
+            $curl = $this->createSecureCurlHandle($feedUrl);
 
             $feedContent = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -617,13 +617,39 @@ class ExternalServicesJsonApiParser
 class ExternalServicesJsonApiResponseFetcher
 {
     /**
+     * Create a secure cURL handle for JSON API requests.
+     *
+     * @param string $apiUrl API endpoint URL
+     * @return resource|\CurlHandle
+     */
+    private function createSecureCurlHandle(string $apiUrl)
+    {
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript-StatusMonitor/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
+        ]);
+
+        return $curl;
+    }
+
+    /**
      * @param string $apiUrl API endpoint URL
      * @return array{data: array, error: ?array}
      */
     public function fetch(string $apiUrl): array
     {
-        // Reuse centralized secure cURL configuration to avoid drift/duplication.
-        $curl = ExternalServicesFeedParser::createSecureCurlHandle($apiUrl);
+        $curl = $this->createSecureCurlHandle($apiUrl);
 
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);

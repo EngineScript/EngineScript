@@ -8,9 +8,9 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🐛 FIX NON-EXISTENT FUNCTION CALL IN ExternalServicesJsonApiResponseFetcher
 
-- Promoted `ExternalServicesFeedParser::createSecureCurlHandle()` from `private` to `public static` so it can be reused across classes without code duplication.
-- Updated internal call in `ExternalServicesFeedParser::parseStatusFeed()` from `$this->createSecureCurlHandle()` to `self::createSecureCurlHandle()`.
-- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to call `ExternalServicesFeedParser::createSecureCurlHandle($apiUrl)` instead of the non-existent global function `createSecureCurlHandle($apiUrl)`.
+- Added a private `createSecureCurlHandle()` method to `ExternalServicesJsonApiResponseFetcher` with the same secure cURL defaults as `ExternalServicesFeedParser`, allowing each class to own its cURL setup independently.
+- Fixed `ExternalServicesJsonApiResponseFetcher::fetch()` to call `$this->createSecureCurlHandle()` instead of the non-existent global function `createSecureCurlHandle($apiUrl)`, eliminating the static cross-class coupling introduced in a prior fix.
+- Reverted `ExternalServicesFeedParser::createSecureCurlHandle()` back to `private` and restored its internal caller to `$this->createSecureCurlHandle()`.
 
 ## 2026-04-12
 
