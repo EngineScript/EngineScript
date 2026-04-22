@@ -40,7 +40,7 @@ trait SecureCurlHandleTrait
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
         if ($curl === false) {
-            throw new CurlInitException('curl_init() failed: cURL extension not available');
+            throw new CurlInitException('cURL initialization failed');
         }
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
@@ -330,7 +330,7 @@ class ExternalServicesFeedParser
             $itemDate = strtotime((string)$latestItem->children('http://purl.org/dc/elements/1.1/')->date);
         }
 
-        // Check if item is within 24 hours (86400 seconds)
+        // Check if item is within 24 hours
         $isRecent = ($itemDate && (time() - $itemDate) <= self::RECENT_INCIDENT_THRESHOLD_SECONDS);
 
         // Combine title and description for better matching
