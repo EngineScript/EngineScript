@@ -17,70 +17,31 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 // Load centralized API response handler
 // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
 require_once __DIR__ . '/../classes/ApiResponse.php';
+// @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
+require_once __DIR__ . '/../classes/CurlInitException.php';
 
 /**
- * External Services Feed Parser
- * 
- * Parses RSS/Atom feeds and JSON APIs to determine
- * external service operational status.
- * 
- * @package EngineScript\Dashboard\ExternalServices
- * @version 2.0.0
- * @security HIGH - Implements strict whitelisting and input validation
+ * Shared cURL factory used by classes that make outbound HTTP requests.
+ *
+ * Centralises secure cURL defaults in one place; add to any class that
+ * needs to open an outbound HTTPS connection.
  */
-class ExternalServicesFeedParser
+trait SecureCurlHandleTrait
 {
-    /**
-     * Threshold for considering an incident recent (24 hours in seconds).
-     */
-    private const RECENT_INCIDENT_THRESHOLD_SECONDS = 86400;
-
-    /**
-     * Canonical pattern for detecting resolved/completed incidents.
-     */
-    public const RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
-
-    /**
-     * Regex pattern for detecting major active incidents in status text.
-     */
-    public const MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
-
-    /**
-     * Dedicated JSON API parser dependency.
-     *
-     * @var ExternalServicesJsonApiParser
-     */
-    private ExternalServicesJsonApiParser $jsonApiParser;
-
-    /**
-     * Service catalog dependency.
-     *
-     * @var ExternalServicesServiceCatalog
-     */
-    private ExternalServicesServiceCatalog $serviceCatalog;
-
-    /**
-     * @param ExternalServicesJsonApiParser|null $jsonApiParser Optional JSON parser dependency
-     * @param ExternalServicesServiceCatalog|null $serviceCatalog Optional service catalog dependency
-     */
-    public function __construct(
-        ?ExternalServicesJsonApiParser $jsonApiParser = null,
-        ?ExternalServicesServiceCatalog $serviceCatalog = null
-    ) {
-        $this->jsonApiParser = $jsonApiParser ?? new ExternalServicesJsonApiParser();
-        $this->serviceCatalog = $serviceCatalog ?? new ExternalServicesServiceCatalog();
-    }
-
     /**
      * Build a cURL handle with shared secure defaults.
      *
      * @param string $url Request URL
-     * @return resource|CurlHandle
+     * @return \CurlHandle
+     * @throws CurlInitException if cURL is unavailable
      */
-    private function createSecureCurlHandle(string $url)
+    private function createSecureCurlHandle(string $url): \CurlHandle
     {
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
+        if ($curl === false) {
+            throw new CurlInitException('curl_init() failed: cURL extension not available');
+        }
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -97,6 +58,103 @@ class ExternalServicesFeedParser
 
         return $curl;
     }
+}
+
+/**
+ * Shared dotted-path resolver for classes that traverse nested JSON payloads.
+ *
+ * Eliminates the duplicate path-traversal logic that existed in both
+ * ExternalServicesJsonApiResultDispatcher (resolvePathValue) and
+ * ExternalServicesJsonIncidentsResolver (resolveIncidentsPath).
+ */
+trait NestedPathResolverTrait
+{
+    /**
+     * Walk a dotted-key path into a nested array and return the value,
+     * or null if any segment is absent.
+     *
+     * @param array  $data Source array
+     * @param string $path Dotted key path (e.g. 'status.indicator'), or empty string for root
+     * @return mixed
+     */
+    private function resolveNestedValue(array $data, string $path): mixed
+    {
+        if ($path === '') {
+            return $data;
+        }
+
+        $resolved = $data;
+        foreach (explode('.', $path) as $segment) {
+            if (!is_array($resolved) || !isset($resolved[$segment])) {
+                return null;
+            }
+            $resolved = $resolved[$segment];
+        }
+
+        return $resolved;
+    }
+}
+
+/**
+ * Exhaustive set of normalised status results returned by all parsers.
+ *
+ * A unit enum makes every possible state explicit and compiler-checkable;
+ * toArray() converts to the array shape the JSON API expects.
+ */
+enum ServiceStatus
+{
+    case Operational;
+    case MajorOutage;
+    case MinorOutage;
+    case FetchError;
+    case ParseError;
+
+    /** @return array{indicator: string, description: string} */
+    public function toArray(): array
+    {
+        return match ($this) {
+            self::Operational => ['indicator' => 'none',  'description' => 'All Systems Operational'],
+            self::MajorOutage => ['indicator' => 'major', 'description' => 'Major Outage'],
+            self::MinorOutage => ['indicator' => 'minor', 'description' => 'Partially Degraded Service'],
+            self::FetchError  => ['indicator' => 'major', 'description' => 'Unable to fetch status'],
+            self::ParseError  => ['indicator' => 'major', 'description' => 'Unable to parse status'],
+        };
+    }
+}
+
+/**
+ * External Services Feed Parser
+ * 
+ * Parses RSS/Atom feeds and JSON APIs to determine
+ * external service operational status.
+ * 
+ * @package EngineScript\Dashboard\ExternalServices
+ * @version 2.0.0
+ * @security HIGH - Implements strict whitelisting and input validation
+ */
+class ExternalServicesFeedParser
+{
+    use SecureCurlHandleTrait;
+
+    /**
+     * Threshold for considering an incident recent (24 hours in seconds).
+     */
+    private const int RECENT_INCIDENT_THRESHOLD_SECONDS = 86400;
+
+    /**
+     * Canonical pattern for detecting resolved/completed incidents.
+     */
+    public const string RESOLVED_KEYWORDS_PATTERN = '/\b(resolved|completed|fixed|closed|ended|restored|operational)\b/i';
+
+    /**
+     * Regex pattern for detecting major active incidents in status text.
+     */
+    public const string MAJOR_INCIDENT_PATTERN = '/outage|down|major|critical|offline/i';
+
+    public function __construct(
+        private readonly ExternalServicesJsonApiParser $jsonApiParser = new ExternalServicesJsonApiParser(),
+        private readonly ExternalServicesServiceCatalog $serviceCatalog = new ExternalServicesServiceCatalog(),
+    ) {}
 
     /**
      * Parse RSS/Atom feed and extract status information
@@ -144,16 +202,10 @@ class ExternalServicesFeedParser
                 return $this->parseRssFeedItems($xml, $filter);
             }
 
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
+            return ServiceStatus::Operational->toArray();
 
         } catch (Exception $e) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
+            return ServiceStatus::FetchError->toArray();
         }
     }
 
@@ -165,10 +217,7 @@ class ExternalServicesFeedParser
      */
     private function parseAtomFeedEntries(SimpleXMLElement $xml, ?string $filter): array
     {
-        $status = [
-            'indicator' => 'none',
-            'description' => 'All Systems Operational'
-        ];
+        $status = ServiceStatus::Operational->toArray();
 
         // If filter provided, find matching entry
         $latestEntry = null;
@@ -216,25 +265,16 @@ class ExternalServicesFeedParser
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
+            return ServiceStatus::Operational->toArray();
         }
 
         // Check severity of active incident
         if (preg_match(self::MAJOR_INCIDENT_PATTERN, $fullText)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
+            return ServiceStatus::MajorOutage->toArray();
         }
 
         // Any other active incident is considered minor
-        return [
-            'indicator' => 'minor',
-            'description' => 'Partially Degraded Service'
-        ];
+        return ServiceStatus::MinorOutage->toArray();
     }
 
     /**
@@ -245,10 +285,7 @@ class ExternalServicesFeedParser
      */
     private function parseRssFeedItems(SimpleXMLElement $xml, ?string $filter): array
     {
-        $status = [
-            'indicator' => 'none',
-            'description' => 'All Systems Operational'
-        ];
+        $status = ServiceStatus::Operational->toArray();
 
         // If filter provided, find matching item
         $latestItem = null;
@@ -295,25 +332,16 @@ class ExternalServicesFeedParser
 
         // If not recent or if resolved, no incident
         if (!$isRecent || $isResolved) {
-            return [
-                'indicator' => 'none',
-                'description' => 'All Systems Operational'
-            ];
+            return ServiceStatus::Operational->toArray();
         }
 
         // Check severity of active incident
         if (preg_match(self::MAJOR_INCIDENT_PATTERN, $fullText)) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Major Outage'
-            ];
+            return ServiceStatus::MajorOutage->toArray();
         }
 
         // Any other active incident is considered minor
-        return [
-            'indicator' => 'minor',
-            'description' => 'Partially Degraded Service'
-        ];
+        return ServiceStatus::MinorOutage->toArray();
     }
 
     /**
@@ -523,29 +551,12 @@ class ExternalServicesFeedParser
  * Splits JSON parsing complexity out of ExternalServicesFeedParser
  * to keep that class focused and easier to maintain.
  */
-class ExternalServicesJsonApiParser
+final class ExternalServicesJsonApiParser
 {
-    /**
-     * @var ExternalServicesJsonApiResponseFetcher
-     */
-    private ExternalServicesJsonApiResponseFetcher $responseFetcher;
-
-    /**
-     * @var ExternalServicesJsonApiResultDispatcher
-     */
-    private ExternalServicesJsonApiResultDispatcher $resultDispatcher;
-
-    /**
-     * @param ExternalServicesJsonApiResponseFetcher|null $responseFetcher Optional response fetcher dependency
-     * @param ExternalServicesJsonApiResultDispatcher|null $resultDispatcher Optional result dispatcher dependency
-     */
     public function __construct(
-        ?ExternalServicesJsonApiResponseFetcher $responseFetcher = null,
-        ?ExternalServicesJsonApiResultDispatcher $resultDispatcher = null
-    ) {
-        $this->responseFetcher = $responseFetcher ?? new ExternalServicesJsonApiResponseFetcher();
-        $this->resultDispatcher = $resultDispatcher ?? new ExternalServicesJsonApiResultDispatcher();
-    }
+        private readonly ExternalServicesJsonApiResponseFetcher $responseFetcher = new ExternalServicesJsonApiResponseFetcher(),
+        private readonly ExternalServicesJsonApiResultDispatcher $resultDispatcher = new ExternalServicesJsonApiResultDispatcher(),
+    ) {}
 
     /**
      * Parse JSON API status payloads with feed-specific configuration.
@@ -571,10 +582,7 @@ class ExternalServicesJsonApiParser
 
             return $this->resultDispatcher->dispatch($data, $config);
         } catch (Exception $e) {
-            return [
-                'indicator' => 'major',
-                'description' => 'Unable to fetch status'
-            ];
+            return ServiceStatus::FetchError->toArray();
         }
     }
 
@@ -587,11 +595,7 @@ class ExternalServicesJsonApiParser
      */
     private function hasRequiredField(array $data, array $config): bool
     {
-        if (!isset($config['required_field'])) {
-            return true;
-        }
-
-        return isset($data[$config['required_field']]);
+        return !isset($config['required_field']) || isset($data[$config['required_field']]);
     }
 
     /**
@@ -603,10 +607,10 @@ class ExternalServicesJsonApiParser
     private function getMissingFieldStatus(array $config): array
     {
         if (!empty($config['missing_is_operational'])) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
-        return ['indicator' => 'major', 'description' => 'Unable to fetch status'];
+        return ServiceStatus::FetchError->toArray();
     }
 
 }
@@ -614,35 +618,30 @@ class ExternalServicesJsonApiParser
 /**
  * Fetches raw JSON payloads from external APIs.
  */
-class ExternalServicesJsonApiResponseFetcher
+final class ExternalServicesJsonApiResponseFetcher
 {
+    use SecureCurlHandleTrait;
+
     /**
      * @param string $apiUrl API endpoint URL
      * @return array{data: array, error: ?array}
      */
     public function fetch(string $apiUrl): array
     {
-        // Reuse centralized secure cURL configuration to avoid drift/duplication.
-        $curl = createSecureCurlHandle($apiUrl);
+        $curl = $this->createSecureCurlHandle($apiUrl);
 
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
         if ($response === false || $httpCode !== 200) {
-            return [
-                'data' => [],
-                'error' => ['indicator' => 'major', 'description' => 'Unable to fetch status']
-            ];
+            return ['data' => [], 'error' => ServiceStatus::FetchError->toArray()];
         }
 
         $data = json_decode($response, true);
 
         if (!is_array($data)) {
-            return [
-                'data' => [],
-                'error' => ['indicator' => 'major', 'description' => 'Unable to parse status']
-            ];
+            return ['data' => [], 'error' => ServiceStatus::ParseError->toArray()];
         }
 
         return ['data' => $data, 'error' => null];
@@ -652,20 +651,13 @@ class ExternalServicesJsonApiResponseFetcher
 /**
  * Dispatches parsed JSON payloads to feed-type-specific interpreters.
  */
-class ExternalServicesJsonApiResultDispatcher
+final class ExternalServicesJsonApiResultDispatcher
 {
-    /**
-     * @var ExternalServicesJsonIncidentEvaluator
-     */
-    private ExternalServicesJsonIncidentEvaluator $incidentEvaluator;
+    use NestedPathResolverTrait;
 
-    /**
-     * @param ExternalServicesJsonIncidentEvaluator|null $incidentEvaluator Optional incident evaluator dependency
-     */
-    public function __construct(?ExternalServicesJsonIncidentEvaluator $incidentEvaluator = null)
-    {
-        $this->incidentEvaluator = $incidentEvaluator ?? new ExternalServicesJsonIncidentEvaluator();
-    }
+    public function __construct(
+        private readonly ExternalServicesJsonIncidentEvaluator $incidentEvaluator = new ExternalServicesJsonIncidentEvaluator(),
+    ) {}
 
     /**
      * @param array $data Parsed API payload
@@ -674,17 +666,11 @@ class ExternalServicesJsonApiResultDispatcher
      */
     public function dispatch(array $data, array $config): array
     {
-        $type = $config['type'] ?? 'incident_list';
-
-        if ($type === 'direct_status') {
-            return $this->parseDirectStatusResult($data, $config);
-        }
-
-        if ($type === 'page_status') {
-            return $this->parsePageStatusResult($data, $config);
-        }
-
-        return $this->incidentEvaluator->evaluate($data, $config);
+        return match ($config['type'] ?? 'incident_list') {
+            'direct_status' => $this->parseDirectStatusResult($data, $config),
+            'page_status'   => $this->parsePageStatusResult($data, $config),
+            default         => $this->incidentEvaluator->evaluate($data, $config),
+        };
     }
 
     /**
@@ -695,23 +681,23 @@ class ExternalServicesJsonApiResultDispatcher
     private function parseDirectStatusResult(array $data, array $config): array
     {
         $statusPath = isset($config['status_path']) ? (string)$config['status_path'] : '';
-        $statusData = $this->resolvePathValue($data, $statusPath);
+        $statusData = $this->resolveNestedValue($data, $statusPath);
 
         if (!is_array($statusData)) {
-            return ['indicator' => 'major', 'description' => 'Unable to parse status'];
+            return ServiceStatus::ParseError->toArray();
         }
 
         $indicator = $statusData['indicator'] ?? 'none';
 
         if ($indicator === 'none' || $indicator === 'operational') {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         if ($indicator === 'major' || $indicator === 'critical') {
-            return ['indicator' => 'major', 'description' => 'Major Outage'];
+            return ServiceStatus::MajorOutage->toArray();
         }
 
-        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+        return ServiceStatus::MinorOutage->toArray();
     }
 
     /**
@@ -724,7 +710,7 @@ class ExternalServicesJsonApiResultDispatcher
         $pageStatus = $this->extractPageStatus($data, $config);
 
         if ($pageStatus === 'OK' || $pageStatus === 'OPERATIONAL') {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         $latestIncident = $this->extractLatestIncident($data, $config);
@@ -733,17 +719,17 @@ class ExternalServicesJsonApiResultDispatcher
         }
 
         if ($pageStatus === 'HASISSUES') {
-            return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+            return ServiceStatus::MinorOutage->toArray();
         }
 
-        return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+        return ServiceStatus::Operational->toArray();
     }
 
     private function extractPageStatus(array $data, array $config): string
     {
         $pagePath = isset($config['page_path']) ? (string)$config['page_path'] : '';
-        $pageData = $this->resolvePathValue($data, $pagePath);
-        
+        $pageData = $this->resolveNestedValue($data, $pagePath);
+
         return (is_array($pageData) && isset($pageData['status']))
             ? strtoupper((string)$pageData['status'])
             : 'UNKNOWN';
@@ -752,13 +738,13 @@ class ExternalServicesJsonApiResultDispatcher
     private function extractLatestIncident(array $data, array $config): ?array
     {
         $incidentsPath = isset($config['incidents_path']) ? (string)$config['incidents_path'] : '';
-        $incidents = $this->resolvePathValue($data, $incidentsPath);
+        $incidents = $this->resolveNestedValue($data, $incidentsPath);
 
         if (is_array($incidents) && !empty($incidents)) {
             $incident = reset($incidents);
             return is_array($incident) ? $incident : null;
         }
-        
+
         return null;
     }
 
@@ -768,69 +754,30 @@ class ExternalServicesJsonApiResultDispatcher
         $title = ($titleField !== '' && isset($incident[$titleField])) ? (string)$incident[$titleField] : '';
 
         if (preg_match(ExternalServicesFeedParser::MAJOR_INCIDENT_PATTERN, $title)) {
-            return ['indicator' => 'major', 'description' => 'Major Outage'];
+            return ServiceStatus::MajorOutage->toArray();
         }
 
         $severityField = isset($config['severity_field']) ? (string)$config['severity_field'] : '';
         if ($severityField !== '' && isset($incident[$severityField])) {
             $severity = strtoupper((string)$incident[$severityField]);
             if (in_array($severity, ['MAJOROUTAGE', 'CRITICAL', 'HIGH'], true)) {
-                return ['indicator' => 'major', 'description' => 'Major Outage'];
+                return ServiceStatus::MajorOutage->toArray();
             }
         }
 
-        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
-    }
-
-    /**
-     * @param array $data Parsed API payload
-     * @param string $path Dotted path expression
-     * @return mixed
-     */
-    private function resolvePathValue(array $data, string $path)
-    {
-        if ($path === '') {
-            return $data;
-        }
-
-        $resolved = $data;
-        foreach (explode('.', $path) as $segment) {
-            if (!is_array($resolved) || !isset($resolved[$segment])) {
-                return null;
-            }
-            $resolved = $resolved[$segment];
-        }
-
-        return $resolved;
+        return ServiceStatus::MinorOutage->toArray();
     }
 }
 
 /**
  * Evaluates incident-based payloads and produces normalized status output.
  */
-class ExternalServicesJsonIncidentEvaluator
+final class ExternalServicesJsonIncidentEvaluator
 {
-    /**
-     * @var ExternalServicesJsonIncidentsResolver
-     */
-    private ExternalServicesJsonIncidentsResolver $incidentResolver;
-
-    /**
-     * @var ExternalServicesJsonIncidentClassifier
-     */
-    private ExternalServicesJsonIncidentClassifier $incidentClassifier;
-
-    /**
-     * @param ExternalServicesJsonIncidentsResolver|null $incidentResolver Optional incident resolver dependency
-     * @param ExternalServicesJsonIncidentClassifier|null $incidentClassifier Optional incident classifier dependency
-     */
     public function __construct(
-        ?ExternalServicesJsonIncidentsResolver $incidentResolver = null,
-        ?ExternalServicesJsonIncidentClassifier $incidentClassifier = null
-    ) {
-        $this->incidentResolver = $incidentResolver ?? new ExternalServicesJsonIncidentsResolver();
-        $this->incidentClassifier = $incidentClassifier ?? new ExternalServicesJsonIncidentClassifier();
-    }
+        private readonly ExternalServicesJsonIncidentsResolver $incidentResolver = new ExternalServicesJsonIncidentsResolver(),
+        private readonly ExternalServicesJsonIncidentClassifier $incidentClassifier = new ExternalServicesJsonIncidentClassifier(),
+    ) {}
 
     /**
      * @param array $data Parsed API payload
@@ -842,43 +789,45 @@ class ExternalServicesJsonIncidentEvaluator
         $incidents = $this->incidentResolver->getConfiguredIncidents($data, $config);
 
         if (empty($incidents)) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         $latestIncident = reset($incidents);
         if (!is_array($latestIncident)) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         $title = $this->incidentClassifier->extractIncidentTitle($latestIncident, $config);
         if ($title === '') {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         if (!$this->incidentClassifier->isIncidentRecent($latestIncident, $config)) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         $description = $this->incidentClassifier->extractIncidentDescription($latestIncident, $config);
         $fullText = $title . ' ' . $description;
 
         if ($this->incidentClassifier->isResolvedIncidentText($fullText)) {
-            return ['indicator' => 'none', 'description' => 'All Systems Operational'];
+            return ServiceStatus::Operational->toArray();
         }
 
         if ($this->incidentClassifier->isMajorIncident($latestIncident, $config, $fullText)) {
-            return ['indicator' => 'major', 'description' => 'Major Outage'];
+            return ServiceStatus::MajorOutage->toArray();
         }
 
-        return ['indicator' => 'minor', 'description' => 'Partially Degraded Service'];
+        return ServiceStatus::MinorOutage->toArray();
     }
 }
 
 /**
  * Resolves and filters incident collections from API payloads.
  */
-class ExternalServicesJsonIncidentsResolver
+final class ExternalServicesJsonIncidentsResolver
 {
+    use NestedPathResolverTrait;
+
     /**
      * @param array $data Parsed API payload
      * @param array $config Parser configuration
@@ -889,7 +838,8 @@ class ExternalServicesJsonIncidentsResolver
         $incidents = $data;
 
         if (isset($config['incidents_path'])) {
-            $incidents = $this->resolveIncidentsPath($data, (string)$config['incidents_path']);
+            $resolved = $this->resolveNestedValue($data, (string)$config['incidents_path']);
+            $incidents = is_array($resolved) ? $resolved : [];
         }
 
         if (empty($incidents) || !is_array($incidents)) {
@@ -897,26 +847,6 @@ class ExternalServicesJsonIncidentsResolver
         }
 
         return $this->filterIncidents($incidents, $config);
-    }
-
-    /**
-     * @param array $data Parsed API payload
-     * @param string $incidentsPath Dotted path to incidents data
-     * @return array Resolved incidents
-     */
-    private function resolveIncidentsPath(array $data, string $incidentsPath): array
-    {
-        $incidents = $data;
-
-        foreach (explode('.', $incidentsPath) as $key) {
-            if (!is_array($incidents) || !isset($incidents[$key])) {
-                return [];
-            }
-
-            $incidents = $incidents[$key];
-        }
-
-        return is_array($incidents) ? $incidents : [];
     }
 
     /**
@@ -930,9 +860,7 @@ class ExternalServicesJsonIncidentsResolver
             return $incidents;
         }
 
-        $filtered = array_filter($incidents, function ($incident) use ($config) {
-            return is_array($incident) && $this->incidentMatchesFilter($incident, $config);
-        });
+        $filtered = array_filter($incidents, fn($incident) => is_array($incident) && $this->incidentMatchesFilter($incident, $config));
 
         return empty($filtered) ? [] : $filtered;
     }
@@ -965,7 +893,7 @@ class ExternalServicesJsonIncidentsResolver
 /**
  * Classifies incidents by recency, severity and textual markers.
  */
-class ExternalServicesJsonIncidentClassifier
+final class ExternalServicesJsonIncidentClassifier
 {
     /**
      * @param array $incident Incident data
@@ -1080,7 +1008,7 @@ class ExternalServicesJsonIncidentClassifier
 /**
  * Catalog of dashboard services enabled in the external services settings UI.
  */
-class ExternalServicesServiceCatalog
+final class ExternalServicesServiceCatalog
 {
     private const HOSTING_SERVICES = [
         'automattic' => true,
@@ -1183,16 +1111,16 @@ class ExternalServicesServiceCatalog
      */
     public function getServicesConfig(): array
     {
-        return array_merge(
-            self::HOSTING_SERVICES,
-            self::DEVELOPER_TOOLS_SERVICES,
-            self::ECOMMERCE_SERVICES,
-            self::EMAIL_SERVICES,
-            self::COMMUNICATION_SERVICES,
-            self::MEDIA_SERVICES,
-            self::AI_SERVICES,
-            self::ADVERTISING_SERVICES,
-            self::SECURITY_SERVICES
-        );
+        return [
+            ...self::HOSTING_SERVICES,
+            ...self::DEVELOPER_TOOLS_SERVICES,
+            ...self::ECOMMERCE_SERVICES,
+            ...self::EMAIL_SERVICES,
+            ...self::COMMUNICATION_SERVICES,
+            ...self::MEDIA_SERVICES,
+            ...self::AI_SERVICES,
+            ...self::ADVERTISING_SERVICES,
+            ...self::SECURITY_SERVICES,
+        ];
     }
 }

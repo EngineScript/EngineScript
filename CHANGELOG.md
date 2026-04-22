@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-22
+
+### ♻️ REFACTOR: PHP 8.2–8.4 MODERNISATION OF EXTERNAL SERVICES API AND CONTROLLERS
+
+- Refactored the admin control panel codebase to modernize it and reduce duplication.
+
 ## 2026-04-12
 
 ### 🔒 VHOST INSTALL DATABASE CREDENTIAL VALIDATION IMPROVEMENTS

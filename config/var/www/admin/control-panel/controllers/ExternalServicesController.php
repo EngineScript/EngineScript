@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/BaseController.php';
+require_once __DIR__ . '/../classes/CurlInitException.php'; // codacy:ignore - Secure class loading: path is a private constant resolved from __DIR__, no user input
 
 /**
  * External Services Controller
@@ -198,17 +199,19 @@ class ExternalServicesController extends BaseController
     }
 
     /**
-     * Fetch plugin info from WordPress.org
-     * 
-     * @param string $slug Plugin slug
-     * @return array|null Plugin data or null on failure
+     * Build a cURL handle with secure defaults for outbound JSON API requests.
+     *
+     * @param string $url Request URL
+     * @return \CurlHandle
+     * @throws CurlInitException if cURL is unavailable
      */
-    private function fetchPluginInfo(string $slug)
+    private function createCurlHandle(string $url): \CurlHandle
     {
-        $url = 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=' . urlencode($slug);
-
         // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
         $curl = curl_init();
+        if ($curl === false) {
+            throw new CurlInitException('curl_init() failed: cURL extension not available');
+        }
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -223,9 +226,23 @@ class ExternalServicesController extends BaseController
             CURLOPT_MAXREDIRS => 0
         ]);
 
-        $response = curl_exec($curl);
+        return $curl;
+    }
+
+    /**
+     * Fetch plugin info from WordPress.org
+     * 
+     * @param string $slug Plugin slug
+     * @return array|null Plugin data or null on failure
+     */
+    private function fetchPluginInfo(string $slug)
+    {
+        $url = 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=' . urlencode($slug);
+
+        $curl = $this->createCurlHandle($url);
+        $response = curl_exec($curl); // codacy:ignore - curl_exec() required for API communication
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
+        curl_close($curl); // codacy:ignore - curl_close() required for cleanup
 
         if ($response === false || $httpCode !== 200) {
             return null;
@@ -302,25 +319,10 @@ class ExternalServicesController extends BaseController
     {
         $url = 'https://www.cloudflarestatus.com/api/v2/status.json';
 
-        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: EngineScript/1.0'
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_MAXREDIRS => 0
-        ]);
-
-        $response = curl_exec($curl);
+        $curl = $this->createCurlHandle($url);
+        $response = curl_exec($curl); // codacy:ignore - curl_exec() required for API communication
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
+        curl_close($curl); // codacy:ignore - curl_close() required for cleanup
 
         if ($response === false || $httpCode !== 200) {
             return null;
