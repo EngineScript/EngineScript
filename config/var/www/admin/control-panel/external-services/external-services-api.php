@@ -19,6 +19,43 @@ if (!defined('ENGINESCRIPT_DASHBOARD')) {
 require_once __DIR__ . '/../classes/ApiResponse.php';
 
 /**
+ * Shared cURL factory used by classes that make outbound HTTP requests.
+ *
+ * Centralises the secure cURL defaults in a single place so that
+ * ExternalServicesFeedParser and ExternalServicesJsonApiResponseFetcher
+ * do not duplicate them.
+ */
+trait SecureCurlHandleTrait
+{
+    /**
+     * Build a cURL handle with shared secure defaults.
+     *
+     * @param string $url Request URL
+     * @return resource|\CurlHandle
+     */
+    private function createSecureCurlHandle(string $url)
+    {
+        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: EngineScript-StatusMonitor/1.0'
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0
+        ]);
+
+        return $curl;
+    }
+}
+
+/**
  * External Services Feed Parser
  * 
  * Parses RSS/Atom feeds and JSON APIs to determine
@@ -63,39 +100,14 @@ class ExternalServicesFeedParser
      * @param ExternalServicesJsonApiParser|null $jsonApiParser Optional JSON parser dependency
      * @param ExternalServicesServiceCatalog|null $serviceCatalog Optional service catalog dependency
      */
+    use SecureCurlHandleTrait;
+
     public function __construct(
         ?ExternalServicesJsonApiParser $jsonApiParser = null,
         ?ExternalServicesServiceCatalog $serviceCatalog = null
     ) {
         $this->jsonApiParser = $jsonApiParser ?? new ExternalServicesJsonApiParser();
         $this->serviceCatalog = $serviceCatalog ?? new ExternalServicesServiceCatalog();
-    }
-
-    /**
-     * Build a cURL handle with shared secure defaults.
-     *
-     * @param string $url Request URL
-     * @return resource|CurlHandle
-     */
-    private function createSecureCurlHandle(string $url)
-    {
-        // codacy:ignore - curl functions required for secure outbound HTTP in standalone API
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: EngineScript-StatusMonitor/1.0'
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_MAXREDIRS => 0
-        ]);
-
-        return $curl;
     }
 
     /**
