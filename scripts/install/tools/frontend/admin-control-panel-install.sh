@@ -52,7 +52,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # If this structure changes, update this command (or switch to an HTML-aware tool) to avoid partial removal.
     # To avoid corrupting the page if the structure has changed, first ensure that the expected
     # single-line opening <div> for the Adminer card is present before applying the sed range.
-    if grep -qE '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
+    if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
         # Extract the block that would be deleted, then perform a simple sanity check
         # to ensure there are no nested <div> elements that would cause a partial removal.
         adminer_block="$(
@@ -66,7 +66,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
             echo "Warning: Adminer tool block appears to contain nested <div> elements; skipping Adminer card removal to avoid corrupting index.html." >&2
         fi
     else
-        echo "Warning: Expected Adminer tool div not found in index.html; skipping Adminer card removal." >&2
+        echo "Warning: Expected <div> with id=\"adminer-tool\" not found in index.html; skipping Adminer card removal." >&2
 
     fi
 fi
