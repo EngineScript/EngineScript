@@ -53,21 +53,55 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # To avoid corrupting the page if the structure has changed, first ensure that the expected
     # single-line opening <div> for the Adminer card is present before applying the sed range.
     if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
-        # Extract the block that would be deleted, then perform a simple sanity check
-        # to ensure there are no nested <div> elements that would cause a partial removal.
+        # Extract the exact Adminer block using depth-aware matching so nested <div> elements
+        # are handled correctly and we only stop at the true matching closing </div>.
         adminer_block="$(
-            sed -n '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/p' "/var/www/admin/control-panel/index.html"
+            awk '
+                BEGIN { in_block=0; depth=0 }
+                {
+                    line=$0
+                    if (!in_block && line ~ /<div[^>]*id="adminer-tool"[^>]*>/) {
+                        in_block=1
+                    }
+                    if (in_block) {
+                        print line
+                        opens=gsub(/<div[^>]*>/, "&", line)
+                        closes=gsub(/<\/div>/, "&", line)
+                        depth += opens - closes
+                        if (depth == 0) {
+                            exit
+                        }
+                    }
+                }
+            ' "/var/www/admin/control-panel/index.html"
         )"
-        open_div_count=$(printf '%s\n' "$adminer_block" | grep -o '<div' | wc -l | tr -d '[:space:]')
-        close_div_count=$(printf '%s\n' "$adminer_block" | grep -o '</div>' | wc -l | tr -d '[:space:]')
-        if [[ "$open_div_count" -eq 1 && "$close_div_count" -eq 1 ]]; then
-            sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
+        open_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '<div([[:space:]>])' | wc -l | tr -d '[:space:]')
+        close_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '</div[[:space:]]*>' | wc -l | tr -d '[:space:]')
+        if [[ -n "$adminer_block" && "$open_div_count" -eq "$close_div_count" ]]; then
+            awk '
+                BEGIN { in_block=0; depth=0 }
+                {
+                    line=$0
+                    if (!in_block && line ~ /<div[^>]*id="adminer-tool"[^>]*>/) {
+                        in_block=1
+                    }
+                    if (in_block) {
+                        opens=gsub(/<div[^>]*>/, "&", line)
+                        closes=gsub(/<\/div>/, "&", line)
+                        depth += opens - closes
+                        if (depth == 0) {
+                            in_block=0
+                        }
+                        next
+                    }
+                    print line
+                }
+            ' "/var/www/admin/control-panel/index.html" > "/var/www/admin/control-panel/index.html.tmp" && mv "/var/www/admin/control-panel/index.html.tmp" "/var/www/admin/control-panel/index.html"
         else
-            echo "Warning: Adminer tool block appears to contain nested <div> elements; skipping Adminer card removal to avoid corrupting index.html." >&2
+            echo "Warning: Adminer tool block appears malformed or unmatched; skipping Adminer card removal to avoid corrupting index.html." >&2
         fi
     else
         echo "Warning: Expected <div> with id=\"adminer-tool\" not found in index.html; skipping Adminer card removal." >&2
-
     fi
 fi
 
