@@ -4,7 +4,6 @@
 
 exclude_paths:
   # Documentation files with intentional long lines
-  - 'config/var/www/admin/control-panel/external-services/README.md'
   - '.codacy-review-notes.md'
   # WordPress core files - not under our control
   - 'config/var/www/wordpress/wp-config.php'
@@ -16,7 +15,6 @@ engines:
     enabled: true
     exclude_patterns:
       # API endpoint files use intentional patterns for HTTP responses
-      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
       - 'config/var/www/admin/control-panel/api.php'
     configuration:
       # Use PSR-12 standard but allow API endpoint patterns
@@ -39,7 +37,6 @@ engines:
     enabled: true
     exclude_patterns:
       # API files have intentional patterns
-      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
       - 'config/var/www/admin/control-panel/api.php'
     configuration:
       rulesets:
@@ -58,7 +55,6 @@ engines:
     enabled: true
     exclude_patterns:
       # API endpoint files require $_GET, header(), echo for functionality
-      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
       - 'config/var/www/admin/control-panel/api.php'
 
 # Pattern-Specific Suppressions
@@ -87,7 +83,6 @@ patterns:
   # Suppress direct superglobal access when properly validated
   - pattern_id: PHP_DirectSuperglobalAccess
     exclude_paths:
-      - 'config/var/www/admin/control-panel/external-services/external-services-api.php'
       - 'config/var/www/admin/control-panel/api.php'
     reason: "Input validated against strict whitelists and sanitized before use"
   

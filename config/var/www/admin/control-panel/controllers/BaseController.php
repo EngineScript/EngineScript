@@ -99,8 +99,6 @@ abstract class BaseController
         '/monitoring/uptime' => 60,     // 1 minute
         '/monitoring/uptime/monitors' => 60, // 1 minute
         '/cache/status' => 30,          // 30 seconds - cache status updates frequently
-        '/external-services/config' => 300,  // 5 minutes - config rarely changes
-        '/external-services/feed' => 180,    // 3 minutes - external feeds
     ];
 
     /**

@@ -39,7 +39,7 @@ if grep -q '{FONTAWESOME_VER}' /var/www/admin/control-panel/index.html; then
     exit 1
 fi
 
-for file in index.html dashboard.js external-services/external-services.js; do
+for file in index.html dashboard.js; do
     sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
 done
 

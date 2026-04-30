@@ -169,7 +169,6 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 - Uptime monitoring and reporting for all WordPress sites
 - Web-based file management with Tiny File Manager
 - Quick access to common server management tasks and tools
-- Remote uptime monitoring for third-party services and APIs
 
 ### Software EngineScript Utilizes
 

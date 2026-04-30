@@ -226,12 +226,6 @@ $router->register('/monitoring/uptime/monitors', 'UptimeController', 'getMonitor
 $router->register('/cache/clear', 'CacheController', 'clear');
 $router->register('/cache/status', 'CacheController', 'getStatus');
 
-// External services endpoints
-$router->register('/external/plugin', 'ExternalServicesController', 'getPluginInfo');
-$router->register('/external/cloudflare/status', 'ExternalServicesController', 'getCloudflareStatus');
-$router->register('/external-services/config', 'ExternalServicesController', 'getConfig');
-$router->register('/external-services/feed', 'ExternalServicesController', 'getFeed');
-
 // Legacy batch endpoint (kept for backward compatibility)
 $router->register('/batch', 'BatchController', 'handle');
 

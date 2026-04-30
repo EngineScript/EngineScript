@@ -4,7 +4,6 @@
 import { DashboardAPI } from './modules/api.js?v={ES_DASHBOARD_VER}';
 import { DashboardState } from './modules/state.js?v={ES_DASHBOARD_VER}';
 import { DashboardUtils } from './modules/utils.js?v={ES_DASHBOARD_VER}';
-// External services loaded dynamically when needed (lazy loading)
 
 class EngineScriptDashboard {
   constructor() {
@@ -12,7 +11,6 @@ class EngineScriptDashboard {
     this.api = new DashboardAPI();
     this.state = new DashboardState();
     this.utils = new DashboardUtils();
-    this.externalServices = null; // Lazy loaded when needed
 
     // Legacy property references for compatibility
     this.currentPage = this.state.currentPage;
@@ -22,11 +20,13 @@ class EngineScriptDashboard {
     this.allowedTools = this.state.allowedTools;
     
     // Cached keyboard navigation pages array
-    this.keyboardNavPages = ["overview", "sites", "system", "external-services", "tools"];
+    this.keyboardNavPages = ["overview", "sites", "system", "tools"];
     
     // Cached DOM element references for performance
     this.cachedNavItems = null;
     this.cachedPages = null;
+    this.liveRegion = null;
+    this.liveRegionAnnouncementTimer = null;
 
     this.init();
   }
@@ -107,12 +107,15 @@ class EngineScriptDashboard {
     const sidebarNav = document.querySelector(".sidebar-nav");
     if (sidebarNav) {
       sidebarNav.addEventListener("click", (e) => {
+        const navTarget = e.target instanceof Element ? e.target : null;
+        if (!navTarget) return;
+
         // Find the nav-item element (could be clicked on link or icon inside)
-        const navItem = e.target.closest(".nav-item");
+        const navItem = navTarget.closest(".nav-item");
         if (!navItem) return;
         
         e.preventDefault();
-        const page = this.sanitizeInput(navItem.dataset.page);
+        const page = this.utils.sanitizeInput(navItem.dataset.page);
         if (this.state.isValidPage(page)) {
           this.navigateToPage(page);
           // Close mobile menu after navigation
@@ -205,40 +208,9 @@ class EngineScriptDashboard {
       case "system":
         this.loadSystemInfo();
         break;
-      case "external-services":
-        this.loadExternalServices();
-        break;
       case "tools":
         this.loadToolsData();
         break;
-    }
-  }
-
-  /**
-   * Lazy load external services module (dynamic import)
-   * Only loads when user navigates to external services page
-   */
-  async loadExternalServices() {
-    try { // codacy:ignore - Try/catch required for dynamic import error handling
-      // If already loaded, just initialize
-      if (this.externalServices) {
-        await this.externalServices.init();
-        return;
-      }
-
-      // Dynamic import - only loads when needed
-            const { ExternalServicesManager } = await import('./external-services/external-services.js?v={ES_DASHBOARD_VER}');
-      
-      // Create instance and initialize
-      this.externalServices = new ExternalServicesManager(
-        '#external-services-grid',
-        '#external-services-settings'
-      );
-      
-      await this.externalServices.init();
-    } catch (error) {
-      console.error('[Dashboard] Failed to load external services:', error);
-      this.showError('Failed to load external services. Please try again.');
     }
   }
     
@@ -432,11 +404,7 @@ class EngineScriptDashboard {
     
   refreshData() {
     const currentPage = this.state.getCurrentPage();
-    
-    // Clear external services cache on manual refresh
-    if (this.externalServices) {
-      this.externalServices.clearCache();
-    }
+
     this.showRefreshAnimation();
     this.loadPageData(currentPage);
     this.updateLastRefresh();
@@ -766,16 +734,16 @@ class EngineScriptDashboard {
   }
 
   showEmptyUptimeMonitors() {
-    const uptimeContainer = document.getElementById("uptime-summary");
-    if (uptimeContainer) {
+    const monitorsContainer = document.getElementById("uptime-monitors");
+    if (monitorsContainer) {
       const emptyState = this.createEmptyState(
         'warning',
-        'radar',
-        'Uptime Monitoring Not Configured',
-        'Set up Uptime Robot monitoring to track site availability'
+        'clock',
+        'No Monitors Configured',
+        'Add websites to monitor in your Uptime Robot dashboard'
       );
-      uptimeContainer.innerHTML = '';
-      uptimeContainer.appendChild(emptyState);
+      monitorsContainer.innerHTML = '';
+      monitorsContainer.appendChild(emptyState);
     }
   }
 
@@ -885,6 +853,10 @@ class EngineScriptDashboard {
     
   // Cleanup method
   destroy() {
+    if (this.liveRegionAnnouncementTimer) {
+      clearTimeout(this.liveRegionAnnouncementTimer);
+      this.liveRegionAnnouncementTimer = null;
+    }
     this.state.clearRefreshTimer();
   }
 
@@ -908,6 +880,16 @@ class EngineScriptDashboard {
   async loadUptimeSummary(prefetchedData) {
     try {
       const summary = prefetchedData ?? await this.api.getApiData("/api/monitoring/uptime", {});
+
+      if (!summary || typeof summary !== 'object') {
+        this.showUptimeError();
+        return;
+      }
+
+      if (summary.error) {
+        this.showUptimeError(summary.error);
+        return;
+      }
       
       if (summary.enabled) {
         const totalCount = this.normalizeMonitorCount(summary.total_monitors);
@@ -934,23 +916,26 @@ class EngineScriptDashboard {
       const monitorsContainer = document.getElementById("uptime-monitors");
       
       if (!monitorsContainer) return;
+
+      if (!response || typeof response !== 'object') {
+        this.showUptimeError();
+        return;
+      }
+
+      if (response.error) {
+        this.showUptimeError(response.error);
+        return;
+      }
       
       if (!response.enabled) {
         this.showUptimeNotConfigured();
         return;
       }
       
-      const monitors = response.monitors || [];
+      const monitors = Array.isArray(response.monitors) ? response.monitors : [];
       
       if (monitors.length === 0) {
-        monitorsContainer.innerHTML = "";
-        const emptyState = this.createEmptyState(
-          'warning',
-          'clock',
-          'No Monitors Configured',
-          'Add websites to monitor in your Uptime Robot dashboard'
-        );
-        monitorsContainer.appendChild(emptyState);
+        this.showEmptyUptimeMonitors();
         return;
       }
       
@@ -997,8 +982,8 @@ class EngineScriptDashboard {
     infoDiv.appendChild(urlP);
     
     // API returns uptime_day, uptime_week, uptime_month (use day for display)
-    const uptimeRatio = monitor.uptime_day || monitor.uptime_week || monitor.uptime_month || 0;
-    const hasStats = uptimeRatio > 0 || monitor.response_time > 0;
+    const uptimeRatio = Number(monitor.uptime_day ?? monitor.uptime_week ?? monitor.uptime_month ?? 0);
+    const hasStats = Number.isFinite(uptimeRatio) && uptimeRatio > 0;
     
     if (hasStats) {
       const statsDiv = document.createElement("div");
@@ -1019,23 +1004,6 @@ class EngineScriptDashboard {
         uptimeStatDiv.appendChild(uptimeValue);
         uptimeStatDiv.appendChild(uptimeLabel);
         statsDiv.appendChild(uptimeStatDiv);
-      }
-      
-      if (monitor.response_time > 0) {
-        const responseStatDiv = document.createElement("div");
-        responseStatDiv.className = "stat";
-        
-        const responseValue = document.createElement("span");
-        responseValue.className = "stat-value";
-        responseValue.textContent = this.utils.sanitizeNumeric(monitor.response_time, "0") + "ms";
-        
-        const responseLabel = document.createElement("span");
-        responseLabel.className = "stat-label";
-        responseLabel.textContent = "Response";
-        
-        responseStatDiv.appendChild(responseValue);
-        responseStatDiv.appendChild(responseLabel);
-        statsDiv.appendChild(responseStatDiv);
       }
       
       monitorDiv.appendChild(statsDiv);
@@ -1134,7 +1102,7 @@ class EngineScriptDashboard {
     this.utils.setTextContent("down-monitors", 0);
   }
 
-  showUptimeError() {
+  showUptimeError(errorMessage = '') {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
       monitorsContainer.innerHTML = "";
@@ -1142,31 +1110,48 @@ class EngineScriptDashboard {
       statusDiv.className = "uptime-status";
       
       const message = document.createElement("p");
-      message.textContent = "Error loading uptime monitoring data. Please check your configuration and try again.";
+      const safeErrorMessage = this.utils.sanitizeInput(errorMessage);
+      message.textContent = safeErrorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
       
       statusDiv.appendChild(message);
       monitorsContainer.appendChild(statusDiv);
     }
-    this.utils.setTextContent("down-monitors", 0);
+    this.utils.setTextContent("total-monitors", "--");
+    this.utils.setTextContent("up-monitors", "--");
+    this.utils.setTextContent("down-monitors", "--");
   }
 
   /**
    * Announce a message to screen readers via a live region
    */
-  // codacy:ignore - Duplicate announceToScreenReader pattern is intentional: separate live-region IDs required
   announceToScreenReader(message) {
-    if (!liveRegion) {
-      liveRegion = document.createElement('div');
-      liveRegion.id = 'es-dashboard-live-region';
-      liveRegion.setAttribute('aria-live', 'polite');
-      liveRegion.setAttribute('aria-atomic', 'true');
-      liveRegion.className = 'sr-only';
-      document.body.appendChild(liveRegion);
+    if (!this.liveRegion) {
+      this.liveRegion = document.getElementById('es-dashboard-live-region');
     }
+
+    if (!this.liveRegion) {
+      this.liveRegion = document.createElement('div');
+      this.liveRegion.id = 'es-dashboard-live-region';
+      this.liveRegion.setAttribute('aria-live', 'polite');
+      this.liveRegion.setAttribute('aria-atomic', 'true');
+      this.liveRegion.className = 'sr-only';
+      document.body.appendChild(this.liveRegion);
+    }
+
+    const safeMessage = this.utils.sanitizeInput(message);
+
+    // Clear pending announcement to avoid racey duplicate reads.
+    if (this.liveRegionAnnouncementTimer) {
+      clearTimeout(this.liveRegionAnnouncementTimer);
+      this.liveRegionAnnouncementTimer = null;
+    }
+
     // Clear and re-set to trigger re-announcement
-    liveRegion.textContent = '';
-    setTimeout(() => {
-      liveRegion.textContent = message;
+    this.liveRegion.textContent = '';
+    this.liveRegionAnnouncementTimer = setTimeout(() => {
+      if (this.liveRegion) {
+        this.liveRegion.textContent = safeMessage;
+      }
     }, 100);
   }
 

@@ -67,11 +67,11 @@ class UptimeController extends BaseController
 
     /**
      * Get overall uptime status
-     * 
+     *
      * Returns aggregated status from UptimeRobot account.
-     * 
-     * Endpoint: GET /uptime/status
-     * 
+     *
+     * Endpoint: GET /monitoring/uptime
+     *
      * @return void Outputs JSON response
      */
     public function getStatus()
@@ -99,7 +99,7 @@ class UptimeController extends BaseController
 
             $monitors = $api->getMonitors();
 
-            if (!$monitors) {
+            if ($monitors === false) {
                 $result = [
                     'enabled' => true,
                     'error' => 'Failed to fetch monitors from UptimeRobot API'
@@ -130,7 +130,7 @@ class UptimeController extends BaseController
      * 
      * Returns all monitors with their current status and uptime ratios.
      * 
-     * Endpoint: GET /uptime/monitors
+     * Endpoint: GET /monitoring/uptime/monitors
      * 
      * @return void Outputs JSON response
      */
@@ -160,7 +160,7 @@ class UptimeController extends BaseController
 
             $monitors = $api->getMonitors();
 
-            if (!$monitors) {
+            if ($monitors === false) {
                 $result = [
                     'enabled' => true,
                     'error' => 'Failed to fetch monitors from UptimeRobot API',

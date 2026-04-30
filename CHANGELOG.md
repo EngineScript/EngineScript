@@ -4,6 +4,25 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-29
+
+### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
+
+- Added an Early Hints eligibility map to `config/etc/nginx/globals/map-cache.conf`:
+  - `map $http_sec_fetch_mode $es_early_hints`
+  - Enables pass-through only for `navigate` requests on HTTP/2 or HTTP/3 (`$http2$http3`).
+- Enabled `early_hints $es_early_hints;` in `config/etc/nginx/globals/php-fpm.conf` so upstream 103 responses can be forwarded for dynamic WordPress/PHP requests.
+- Kept behavior safe-by-default for incompatible clients by leaving the map default empty.
+
+### 🧹 ADMIN CONTROL PANEL: EXTERNAL SERVICES REMOVAL
+
+- External services monitoring was an experimental feature that will be spun off into a separate web application. Removed all related code and UI elements from the admin control panel until the new standalone service is ready for release.
+- Removed the External Services tab from the admin control panel UI.
+- Removed External Services frontend module files and lazy-load wiring.
+- Removed External Services API routes and controller bindings.
+- Kept Uptime monitoring and the rest of the admin control panel behavior unchanged.
+
+
 ## 2026-04-22
 
 ### ♻️ REFACTOR: PHP 8.2–8.4 MODERNISATION OF EXTERNAL SERVICES API AND CONTROLLERS

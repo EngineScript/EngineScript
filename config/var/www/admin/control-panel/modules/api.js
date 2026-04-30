@@ -4,26 +4,43 @@
 export class DashboardAPI {
   constructor() {
     this.csrfToken = null;
+    this.csrfTokenPromise = null;
     
     // Prevents duplicate API calls when multiple components request the same endpoint
     this.pendingRequests = new Map();
   }
 
   async loadCsrfToken() {
-    try { // codacy:ignore - Try/catch required for CSRF token loading
-      const response = await fetch('/api/csrf-token', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        this.csrfToken = data.csrf_token;
-      } else {
-        console.warn('Failed to load CSRF token');
-      }
-    } catch (error) {
-      console.error('Error loading CSRF token:', error);
+    if (this.csrfToken) {
+      return this.csrfToken;
     }
+
+    if (this.csrfTokenPromise) {
+      return this.csrfTokenPromise;
+    }
+
+    this.csrfTokenPromise = (async () => {
+      try { // codacy:ignore - Try/catch required for CSRF token loading
+        const response = await fetch('/api/csrf-token', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          this.csrfToken = data.csrf_token || null;
+        } else {
+          console.warn('Failed to load CSRF token');
+        }
+      } catch (error) {
+        console.error('Error loading CSRF token:', error);
+      } finally {
+        this.csrfTokenPromise = null;
+      }
+
+      return this.csrfToken;
+    })();
+
+    return this.csrfTokenPromise;
   }
 
   getCsrfToken() {
@@ -92,11 +109,7 @@ export class DashboardAPI {
         return response.json();
       });
 
-      // Handle different response formats
-      const usageEndpoints = ['/system/memory', '/system/disk', '/system/cpu'];
-      if (usageEndpoints.some(path => endpoint.includes(path)) && data.usage) {
-        return data.usage;
-      }
+      // Handle endpoint-specific response format differences.
       if (endpoint.includes("/sites/count") && data.count !== undefined) {
         return data.count.toString();
       }
@@ -117,6 +130,10 @@ export class DashboardAPI {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
         return { error: 'Fetch not supported' }; // codacy:ignore - Object literal return
+      }
+
+      if (!this.csrfToken) {
+        await this.loadCsrfToken();
       }
 
       const headers = {
@@ -161,6 +178,10 @@ export class DashboardAPI {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
         return { error: 'Fetch not supported', results: {}, errors: {} }; // codacy:ignore - Object literal return
+      }
+
+      if (!this.csrfToken) {
+        await this.loadCsrfToken();
       }
 
       if (!Array.isArray(endpoints) || endpoints.length === 0) {
