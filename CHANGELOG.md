@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-04-30
+
+### 🔧 ADMIN CONTROL PANEL INSTALL: GREP AND WARNING MESSAGE CLEANUP
+
+- Removed unnecessary `-E` (extended regex) flag from `grep` in `admin-control-panel-install.sh`; the pattern `<div[^>]*id="adminer-tool"[^>]*>` does not require extended regex.
+- Updated warning message to be more specific: now reads `Warning: Expected <div> with id="adminer-tool" not found in index.html; skipping Adminer card removal.` for clarity and easier future maintenance.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
