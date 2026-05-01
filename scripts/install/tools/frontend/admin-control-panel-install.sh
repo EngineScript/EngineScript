@@ -45,6 +45,7 @@ done
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
+    CONTROL_PANEL_INDEX="/var/www/admin/control-panel/index.html"
     # NOTE: This sed range depends on the HTML structure of index.html:
     #   - the Adminer card must be wrapped in a single <div ... id="adminer-tool" ...> ... </div> block
     #   - the opening <div> with id="adminer-tool" and its matching closing </div> must each be on a single line
@@ -52,22 +53,56 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # If this structure changes, update this command (or switch to an HTML-aware tool) to avoid partial removal.
     # To avoid corrupting the page if the structure has changed, first ensure that the expected
     # single-line opening <div> for the Adminer card is present before applying the sed range.
-    if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
-        # Extract the block that would be deleted, then perform a simple sanity check
-        # to ensure there are no nested <div> elements that would cause a partial removal.
+    if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "${CONTROL_PANEL_INDEX}"; then
+        # Extract the exact Adminer block using depth-aware matching so nested <div> elements
+        # are handled correctly and we only stop at the true matching closing </div>.
         adminer_block="$(
-            sed -n '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/p' "/var/www/admin/control-panel/index.html"
+            awk '
+                BEGIN { in_block=0; depth=0 }
+                {
+                    line=$0
+                    if (!in_block && line ~ /<div[^>]*id="adminer-tool"[^>]*>/) {
+                        in_block=1
+                    }
+                    if (in_block) {
+                        print line
+                        opens=gsub(/<div[^>]*>/, "&", line)
+                        closes=gsub(/<\/div>/, "&", line)
+                        depth += opens - closes
+                        if (depth == 0) {
+                            exit
+                        }
+                    }
+                }
+            ' "${CONTROL_PANEL_INDEX}"
         )"
-        open_div_count=$(printf '%s\n' "$adminer_block" | grep -o '<div' | wc -l | tr -d '[:space:]')
-        close_div_count=$(printf '%s\n' "$adminer_block" | grep -o '</div>' | wc -l | tr -d '[:space:]')
-        if [[ "$open_div_count" -eq 1 && "$close_div_count" -eq 1 ]]; then
-            sed -i '/<div[^>]*id="adminer-tool"[^>]*>/,/<\/div>/d' "/var/www/admin/control-panel/index.html"
+        open_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '<div([[:space:]>])' | wc -l | tr -d '[:space:]')
+        close_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '</div[[:space:]]*>' | wc -l | tr -d '[:space:]')
+        if [[ -n "$adminer_block" && "$open_div_count" -eq "$close_div_count" ]]; then
+            awk '
+                BEGIN { in_block=0; depth=0 }
+                {
+                    line=$0
+                    if (!in_block && line ~ /<div[^>]*id="adminer-tool"[^>]*>/) {
+                        in_block=1
+                    }
+                    if (in_block) {
+                        opens=gsub(/<div[^>]*>/, "&", line)
+                        closes=gsub(/<\/div>/, "&", line)
+                        depth += opens - closes
+                        if (depth == 0) {
+                            in_block=0
+                        }
+                        next
+                    }
+                    print line
+                }
+            ' "${CONTROL_PANEL_INDEX}" > "${CONTROL_PANEL_INDEX}.tmp" && mv "${CONTROL_PANEL_INDEX}.tmp" "${CONTROL_PANEL_INDEX}"
         else
-            echo "Warning: Adminer tool block appears to contain nested <div> elements; skipping Adminer card removal to avoid corrupting index.html." >&2
+            echo "Warning: Adminer tool block appears malformed or unmatched; skipping Adminer card removal to avoid corrupting index.html." >&2
         fi
     else
         echo "Warning: Expected <div> with id=\"adminer-tool\" not found in index.html; skipping Adminer card removal." >&2
-
     fi
 fi
 
