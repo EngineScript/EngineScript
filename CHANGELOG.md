@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-01
+
+### 🐛 BUGFIX: ADMIN CONTROL PANEL ADMINER BLOCK REMOVAL ROBUSTNESS
+
+- Fixed inconsistent regex patterns when counting opening and closing `<div>` tags in the Adminer block: the opening tag pattern now also allows optional whitespace before `>` (`<div[^>]*[[:space:]]*>`) to match the closing tag pattern, preventing mismatched counts for tags like `<div >`.
+- Added a non-zero guard to the div-count validation: both opening and closing counts must be greater than zero before removal proceeds, preventing a false-positive match when the Adminer block contains no `<div>` elements at all.
+- Ensured the temporary-file cleanup trap is explicitly cleared (`trap - EXIT INT TERM`) before the error exit when the `awk` removal command fails, following best practice to avoid double-cleanup.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
