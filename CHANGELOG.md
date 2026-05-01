@@ -4,22 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-01
-
-### 🧹 ADMIN CONTROL PANEL INSTALL: DEDUPLICATE INDEX.HTML PATH
-
-- Extracted the repeated literal `/var/www/admin/control-panel/index.html` into a local constant `CONTROL_PANEL_INDEX` to eliminate duplication and make future path changes a single-point update.
-
-## 2026-04-30
-
-### 🐛 ADMIN CONTROL PANEL: ROBUST ADMINER BLOCK REMOVAL
-
-- Replaced `sed` range-based Adminer block extraction with depth-aware `awk` matching to correctly handle nested `<div>` elements and stop only at the true matching closing `</div>`.
-- Replaced `sed -i` deletion with an `awk`-based approach that writes to a temporary file and atomically replaces the original, avoiding in-place sed range issues with nested divs.
-- Updated the sanity check condition to `[[ -n "$adminer_block" && "$open_div_count" -eq "$close_div_count" ]]` so removal is skipped when the block is empty or has mismatched tag counts.
-- Improved `<div>` count grep patterns to `grep -Eo '<div([[:space:]>])'` and `grep -Eo '</div[[:space:]]*>'` to avoid false positives from custom element names or text content containing `<div`.
-- Updated warning message to reflect the more general "malformed or unmatched" condition.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
