@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-01
-
-### 🐛 FIX: ADMIN CONTROL PANEL ADMINER REMOVAL SCRIPT - SHELLCHECK SC2016
-
-- Replaced single-quoted `AWK_ADMINER_BLOCK_SCRIPT='...'` assignment with a quoted heredoc (`read -r -d '' AWK_ADMINER_BLOCK_SCRIPT << 'AWKEOF'`) to resolve shellcheck SC2016 ("Expressions don't expand in single quotes, use double quotes for that").
-- The quoted heredoc delimiter prevents bash from expanding `$0` (an awk record variable) while avoiding the need to backslash-escape every `$` and `"` character in the awk program.
-
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
