@@ -933,3 +933,10 @@ function safe_wget() {
         return 1
     }
 }
+
+
+# ----------------------------------------------------------------
+# Safely return to /usr/src
+function return_to_src() {
+    cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
+}

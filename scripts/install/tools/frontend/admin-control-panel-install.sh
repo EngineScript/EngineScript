@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Create control-panel directory if it doesn't exist
 mkdir -p /var/www/admin/control-panel
@@ -52,4 +52,4 @@ done
 set_enginescript_frontend_permissions
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

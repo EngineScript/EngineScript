@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Always download standard zlib (used as fallback and needed by default)
 clean_directory "/usr/src/zlib-${ZLIB_VER}"
@@ -120,4 +120,4 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
 fi
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

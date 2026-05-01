@@ -32,4 +32,4 @@ echo "<?php phpinfo(); ?>" > /var/www/admin/tools/phpinfo/index.php
 set_enginescript_frontend_permissions
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

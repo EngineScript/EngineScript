@@ -21,7 +21,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Wordfence CLI Malware scanner
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Install
 safe_wget "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb"
@@ -37,4 +37,4 @@ chmod 775 ~/.cache/wordfence
 print_install_banner "Wordfence CLI" 0
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

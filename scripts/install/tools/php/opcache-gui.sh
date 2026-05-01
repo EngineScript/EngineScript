@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Create tools directory if it doesn't exist
 mkdir -p /var/www/admin/tools
@@ -28,4 +28,4 @@ mkdir -p /var/www/admin/tools
 git_clone_fresh "https://github.com/amnuts/opcache-gui.git" "/var/www/admin/tools/opcache-gui" --depth 1
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

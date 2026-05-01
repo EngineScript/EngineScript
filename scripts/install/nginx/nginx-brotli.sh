@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Brotli
 
@@ -35,4 +35,4 @@ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-Ofast
 cmake --build . --config Release --target brotlienc
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

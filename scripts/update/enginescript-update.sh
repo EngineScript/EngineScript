@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # --------------------------------------------------------
 # Update EngineScript

@@ -24,7 +24,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #------------------------------------------------
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # pngout
 /usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh 2>> /tmp/enginescript_install_errors.log
@@ -181,4 +181,4 @@ if [[ "${INSTALL_S3_BACKUP}" == "1" ]];
 fi
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

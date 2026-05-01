@@ -19,11 +19,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Install zImageOptimizer
 git_clone_fresh "https://github.com/zevilz/zImageOptimizer.git" "/usr/local/bin/zimageoptimizer" --depth 1 -b master
 find "/usr/local/bin/zimageoptimizer" -exec chmod 755 {} \;
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

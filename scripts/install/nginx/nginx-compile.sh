@@ -255,4 +255,4 @@ strip -s /usr/sbin/nginx*
 checksec --format=json --file="/usr/sbin/nginx" --extended | jq -r
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Official liburing Download
 download_and_extract "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" "/usr/src/liburing-${LIBURING_VER}.tar.gz"
@@ -40,4 +40,4 @@ make install
 #make install
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

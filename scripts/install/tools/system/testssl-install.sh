@@ -19,7 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Return to /usr/src
-cd /usr/src
+return_to_src
 
 # Install Testssl.sh
 git_clone_fresh "https://github.com/testssl/testssl.sh.git" "/usr/local/bin/testssl.sh"
@@ -30,4 +30,4 @@ chown -R root:root /usr/local/bin/testssl.sh
 find /usr/local/bin/testssl.sh -type f -iname "*.sh" -exec chmod +x {} \;
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

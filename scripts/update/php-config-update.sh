@@ -28,12 +28,8 @@ calculate_php() {
   AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
   # Validate that AVAILABLE_MEMORY is a non-empty numeric value; exit if it cannot be determined.
   if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
-    # Fallback: use MemTotal if available, otherwise exit with an error.
-    AVAILABLE_MEMORY=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo "")
-    if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
-      echo "Error: Unable to determine available memory from /proc/meminfo; cannot continue." >&2
-      exit 1
-    fi
+    echo "Error: Unable to determine available memory from /proc/meminfo; cannot continue." >&2
+    exit 1
   fi
   AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
   # Memory thresholds in MB for tuning PHP-FPM and PHP settings

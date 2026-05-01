@@ -34,4 +34,4 @@ sed -i "s|SEDPHPVER|${PHP_VER}|g" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
 set_enginescript_frontend_permissions
 
 # Return to /usr/src
-cd /usr/src
+return_to_src

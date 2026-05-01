@@ -78,7 +78,7 @@ fi
 apt upgrade -y
 
 # Return to /usr/src
-cd /usr/src
+cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
 
 # Remove existing EngineScript directory if it exists
 if [[ -d "/usr/local/bin/enginescript" ]]; then
@@ -177,7 +177,7 @@ chmod -R 644 "/var/log/EngineScript"/*.log
 # find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
 
 # Return to /usr/src
-cd "/usr/src"
+cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
 
 # Create EngineScript Aliases
 source "/var/log/EngineScript/install-log.log"
