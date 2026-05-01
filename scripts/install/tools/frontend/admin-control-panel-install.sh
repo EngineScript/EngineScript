@@ -46,7 +46,7 @@ done
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     CONTROL_PANEL_INDEX="/var/www/admin/control-panel/index.html"
-    read -r -d '' AWK_ADMINER_BLOCK_SCRIPT << 'AWKEOF' || true
+    AWK_ADMINER_BLOCK_SCRIPT=$(cat << 'AWKEOF'
         BEGIN { in_block=0; depth=0 }
         {
             line=$0
@@ -79,6 +79,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
             }
         }
 AWKEOF
+)
     # NOTE: This sed range depends on the HTML structure of index.html:
     #   - the Adminer card must be wrapped in a single <div ... id="adminer-tool" ...> ... </div> block
     #   - the opening <div> with id="adminer-tool" and its matching closing </div> must each be on a single line
