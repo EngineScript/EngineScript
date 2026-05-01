@@ -46,7 +46,7 @@ debug_pause "EngineScript Git Pull"
 dos2unix /usr/local/bin/enginescript/*
 
 # Set directory and file permissions to 755
-find /usr/local/bin/enginescript -type d,f -exec chmod 755 {} \;
+find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
 
 # Set ownership
 chown -R root:root /usr/local/bin/enginescript

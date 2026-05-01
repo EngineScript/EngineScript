@@ -63,8 +63,8 @@ apt install -qy $core_packages || {
 # Check for required commands
 required_commands=("apt" "boxes" "dos2unix" "git" "nano" "wget")
 for cmd in "${required_commands[@]}"; do
-  if ! command -v $cmd &> /dev/null; then
-    echo "Error: $cmd is not installed. Please install it and try again."
+  if ! command -v ${cmd} &> /dev/null; then
+    echo "Error: ${cmd} is not installed. Please install it and try again."
     exit 1
   fi
 done

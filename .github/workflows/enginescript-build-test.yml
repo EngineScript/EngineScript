@@ -147,7 +147,7 @@ jobs:
           # Check for required commands (excluding dos2unix)
           required_commands=("apt" "boxes" "git" "nano" "wget")
           for cmd in "${required_commands[@]}"; do
-            if ! command -v $cmd &> /dev/null; then
+            if ! command -v ${cmd} &> /dev/null; then
               echo "Error: $cmd is not installed. Please install it and try again." | sudo tee -a /tmp/ci-logs/setup.log
               exit 1
             fi
