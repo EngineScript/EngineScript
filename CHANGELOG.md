@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-01
+
+### 🧹 ADMIN CONTROL PANEL INSTALL: DEDUPLICATE INDEX.HTML PATH
+
+- Extracted the repeated literal `/var/www/admin/control-panel/index.html` into a local constant `CONTROL_PANEL_INDEX` to eliminate duplication and make future path changes a single-point update.
+
 ## 2026-04-30
 
 ### 🐛 ADMIN CONTROL PANEL: ROBUST ADMINER BLOCK REMOVAL

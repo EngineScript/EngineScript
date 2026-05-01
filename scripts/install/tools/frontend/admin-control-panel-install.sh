@@ -45,6 +45,7 @@ done
 
 # Remove Adminer tool card if INSTALL_ADMINER=0
 if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
+    CONTROL_PANEL_INDEX="/var/www/admin/control-panel/index.html"
     # NOTE: This sed range depends on the HTML structure of index.html:
     #   - the Adminer card must be wrapped in a single <div ... id="adminer-tool" ...> ... </div> block
     #   - the opening <div> with id="adminer-tool" and its matching closing </div> must each be on a single line
@@ -52,7 +53,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
     # If this structure changes, update this command (or switch to an HTML-aware tool) to avoid partial removal.
     # To avoid corrupting the page if the structure has changed, first ensure that the expected
     # single-line opening <div> for the Adminer card is present before applying the sed range.
-    if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "/var/www/admin/control-panel/index.html"; then
+    if grep -q '<div[^>]*id="adminer-tool"[^>]*>' "${CONTROL_PANEL_INDEX}"; then
         # Extract the exact Adminer block using depth-aware matching so nested <div> elements
         # are handled correctly and we only stop at the true matching closing </div>.
         adminer_block="$(
@@ -73,7 +74,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
                         }
                     }
                 }
-            ' "/var/www/admin/control-panel/index.html"
+            ' "${CONTROL_PANEL_INDEX}"
         )"
         open_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '<div([[:space:]>])' | wc -l | tr -d '[:space:]')
         close_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '</div[[:space:]]*>' | wc -l | tr -d '[:space:]')
@@ -96,7 +97,7 @@ if [[ "${INSTALL_ADMINER}" -eq 0 ]]; then
                     }
                     print line
                 }
-            ' "/var/www/admin/control-panel/index.html" > "/var/www/admin/control-panel/index.html.tmp" && mv "/var/www/admin/control-panel/index.html.tmp" "/var/www/admin/control-panel/index.html"
+            ' "${CONTROL_PANEL_INDEX}" > "${CONTROL_PANEL_INDEX}.tmp" && mv "${CONTROL_PANEL_INDEX}.tmp" "${CONTROL_PANEL_INDEX}"
         else
             echo "Warning: Adminer tool block appears malformed or unmatched; skipping Adminer card removal to avoid corrupting index.html." >&2
         fi
