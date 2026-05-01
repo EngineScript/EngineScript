@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-01
-
-### 🧹 REFACTOR: REPLACE NON-STANDARD HEREDOC PATTERN IN ADMIN CONTROL PANEL INSTALL
-
-- Replaced `read -r -d '' ... || true` heredoc assignment with standard `$(cat << 'AWKEOF' ... )` pattern in `scripts/install/tools/frontend/admin-control-panel-install.sh`.
-- Improves readability and maintainability by using a conventional shell variable assignment form.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
