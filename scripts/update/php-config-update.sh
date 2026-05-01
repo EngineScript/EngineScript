@@ -117,7 +117,7 @@ if ! cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VE
   echo "Error: Failed to copy php.ini for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
 
 if [ -f "/etc/php/${PHP_VER}/fpm/php-fpm.conf" ]; then
   cp -p "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/php-fpm.conf.bak" 2>> /tmp/enginescript_install_errors.log
@@ -126,7 +126,7 @@ if ! cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${P
   echo "Error: Failed to copy php-fpm.conf for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|\"${PHP_VER}\"|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
 
 if [ -f "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ]; then
   cp -p "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf.bak" 2>> /tmp/enginescript_install_errors.log

@@ -61,9 +61,10 @@ echo "Number of Cores: $CPU_CORES"
 echo "Threads per Core: $CPU_THREADS"
 echo "L3 Cache: $CPU_CACHE"
 
-# Calculate variables_hash_bucket_size
-# variables_hash_bucket_size should be 2x the CPU level 1 cache value
-sed -i "s|SEDHBS|$(lscpu | grep "L1d cache:" | awk '{print $3 * 2}')|g" /etc/nginx/nginx.conf
+# Calculate variables_hash_bucket_size and types_hash_bucket_size
+# These should be aligned to the CPU's cache line size (typically 64 bytes)
+CACHE_LINE_SIZE=$(cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size 2>/dev/null || echo 64)
+sed -i "s|SEDHBS|${CACHE_LINE_SIZE}|g" /etc/nginx/nginx.conf
 
 # Tuning Worker Connections
 # Nginx Worker Connections - scaled by RAM tier

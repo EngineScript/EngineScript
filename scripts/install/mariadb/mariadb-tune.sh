@@ -135,6 +135,12 @@ if [[ -z "$avg_iops" ]] || [[ "$avg_iops" -lt 500 ]]; then
     echo "Failsafe activated: avg IOPS set to 500 and max IOPS set to 1000."
 fi
 
+# Ensure max_iops is always >= avg_iops (MariaDB requires innodb_io_capacity_max >= innodb_io_capacity)
+if [[ -z "$max_iops" ]] || [[ "$max_iops" -lt "$avg_iops" ]]; then
+    max_iops=$((avg_iops * 2))
+    echo "max IOPS adjusted to $max_iops (2x avg) to satisfy innodb_io_capacity_max >= innodb_io_capacity."
+fi
+
 # Modify MariaDB config for avg IOPS
 sed -i "s/$IOPS_AVG_VAR/$avg_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
