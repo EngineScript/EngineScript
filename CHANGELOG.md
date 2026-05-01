@@ -4,12 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-01
-
-### ♻️ REFACTOR: COMBINE DUPLICATE LOOPS IN ADMIN CONTROL PANEL INSTALL
-
-- Combined the duplicate `for file in index.html dashboard.js` loops in `scripts/install/tools/frontend/admin-control-panel-install.sh` into a single loop that performs both the `sed` substitution and the placeholder-presence verification in one pass, reducing code duplication and improving maintainability.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
