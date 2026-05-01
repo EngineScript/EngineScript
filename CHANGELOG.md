@@ -4,15 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-01
-
-### ♻️ REFACTOR: ADMIN CONTROL PANEL ADMINER CARD REMOVAL
-
-- Extracted duplicate awk depth-tracking logic into a shared `AWK_ADMINER_BLOCK_SCRIPT` variable used by both extract and remove operations via a `mode` parameter (`extract`/`remove`).
-- Fixed `open_div_count` grep regex from `'<div([[:space:]>])'` to `'<div[^>]*>'` to correctly count all opening `<div>` tags (including those with multiple attributes), consistent with the awk pattern.
-- Added atomic write protection for the temporary file operation: `mktemp` now creates a uniquely-named temp file, and a `trap` ensures cleanup on `EXIT`, `INT`, or `TERM` signals to prevent corruption if the script is interrupted.
-
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
