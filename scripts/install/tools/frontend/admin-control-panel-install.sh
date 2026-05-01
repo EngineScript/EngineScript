@@ -25,7 +25,7 @@ cd /usr/src
 mkdir -p /var/www/admin/control-panel
 
 # Copy Admin Control Panel
-cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/
+cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/ || { echo "Error: Failed to copy admin control panel files to /var/www/admin/control-panel/" >&2; exit 1; }
 
 # Substitute frontend dependency versions
 # Note: The Font Awesome version placeholder {FONTAWESOME_VER} may also appear in
@@ -41,6 +41,14 @@ fi
 
 for file in index.html dashboard.js; do
     sed -i "s|{ES_DASHBOARD_VER}|${ES_DASHBOARD_VER}|g" "/var/www/admin/control-panel/${file}"
+done
+
+# Verify that the dashboard placeholder was successfully replaced to avoid silent failures
+for file in index.html dashboard.js; do
+    if grep -q '{ES_DASHBOARD_VER}' "/var/www/admin/control-panel/${file}"; then
+        echo "Error: Failed to substitute dashboard version in /var/www/admin/control-panel/${file}; placeholder {ES_DASHBOARD_VER} still present." >&2
+        exit 1
+    fi
 done
 
 # Set permissions for the EngineScript frontend
