@@ -93,8 +93,8 @@ AWKEOF
         adminer_block="$(
             awk -v mode="extract" "$AWK_ADMINER_BLOCK_SCRIPT" "${CONTROL_PANEL_INDEX}"
         )"
-        open_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '<div[^>]*[[:space:]]*>' | wc -l | tr -d '[:space:]')
-        close_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '</div[[:space:]]*>' | wc -l | tr -d '[:space:]')
+        open_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '<div[^>]*>' | wc -l)
+        close_div_count=$(printf '%s\n' "$adminer_block" | grep -Eo '</div>' | wc -l)
         if [[ -n "$adminer_block" && "$open_div_count" -gt 0 && "$open_div_count" -eq "$close_div_count" ]]; then
             tmp_index="$(mktemp "${CONTROL_PANEL_INDEX}.tmp.XXXXXX")" || {
                 echo "Error: Failed to create temporary file for Adminer card removal." >&2

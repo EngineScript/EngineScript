@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-01
+
+### 🧹 ADMIN CONTROL PANEL: DIV COUNTING REGEX AND PIPELINE CLEANUP
+
+- Simplified `open_div_count` regex from `<div[^>]*[[:space:]]*>` to `<div[^>]*>` to correctly match all standard opening `<div>` tags regardless of attribute spacing.
+- Simplified `close_div_count` regex from `</div[[:space:]]*>` to `</div>` to match standard closing `</div>` tags only.
+- Removed unnecessary `tr -d '[:space:]'` pipe from both div-counting lines; `wc -l` already outputs a clean integer with no surrounding whitespace.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
