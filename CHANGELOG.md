@@ -4,17 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-02
-
-### ⚡ PHP-UPDATE: OPTIMIZE DPKG CALLS AND FIX SED BACKREFERENCES
-
-- Captured `dpkg -l` output once into `DPKG_LIST_OUTPUT` before the PHP version detection loop in `scripts/update/php-update.sh`, eliminating repeated subprocess calls for each supported version.
-- Replaced the in-loop `dpkg -l | grep -q` check with `grep -q ... <<< "${DPKG_LIST_OUTPUT}"` for better performance.
-- Replaced the `dpkg -l | grep -q` already-installed check with `dpkg-query -W -f='${Status}'` for a more precise and efficient package status query.
-- Extracted shared `SOCKET_EXPR` and `FASTCGI_EXPR` sed pattern variables to ensure consistency across all nginx configuration updates (`php-fpm.conf` and per-site configs), reducing the risk of regex pattern drift.
-- Fixed incorrect sed backreference in the admin control panel API update: restructured the pattern from `s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g` to `s|(php)${OLD_VER}(-fpm)?|\1${NEW_PHP_VER}\2|g` so `\1` correctly captures `php` and `\2` captures the optional `-fpm` suffix.
-
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
