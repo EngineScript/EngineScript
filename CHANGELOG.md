@@ -4,14 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-02
-
-### 🐛 SETUP.SH: BUG FIXES
-
-- Added `wget` to the `core_packages` array so it is installed before the required-commands validation check runs.
-- Fixed malformed HWE kernel package name by stripping the dot from `UBUNTU_VERSION` (e.g. `24.04` → `2404`) when constructing `linux-generic-hwe-${UBUNTU_VERSION_NO_DOT}`.
-- Changed `shutdown -r now` to `shutdown -r +1` so the system broadcasts a proper one-minute warning before restarting, giving users time to prepare.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
