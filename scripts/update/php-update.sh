@@ -36,9 +36,13 @@ fi
 
 # Auto-detect currently installed PHP-FPM version
 OLD_PHP_VERS=()
+declare -A _SEEN_OLD_PHP_VERS=()
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
-        OLD_PHP_VERS+=("${ver}")
+        if [[ -z "${_SEEN_OLD_PHP_VERS["${ver}"]+x}" ]]; then
+            OLD_PHP_VERS+=("${ver}")
+            _SEEN_OLD_PHP_VERS["${ver}"]=1
+        fi
     fi
 done
 
@@ -53,19 +57,21 @@ if [[ ${#OLD_PHP_VERS[@]} -eq 0 ]]; then
     fi
 fi
 
-# Preserve existing variable name for downstream logic that expects a single source version.
+# Keep backward-compatible single-version variable for legacy downstream logic.
+# Migration logic must use MIGRATION_SOURCE_PHP_VERS to ensure all detected old versions are handled.
 OLD_PHP_VER="${OLD_PHP_VERS[0]}"
+MIGRATION_SOURCE_PHP_VERS=("${OLD_PHP_VERS[@]}")
 
 echo ""
 echo "============================================================="
 echo ""
-echo "PHP Upgrade: Migrating from PHP ${OLD_PHP_VER} to PHP ${NEW_PHP_VER}"
+echo "PHP Upgrade: Migrating to PHP ${NEW_PHP_VER} from detected old version(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
 echo ""
 echo "============================================================="
 echo ""
 
-echo "Detected PHP installation(s): ${OLD_PHP_VERS[*]}"
-echo "Proceeding with upgrade to PHP ${NEW_PHP_VER} (primary source version: ${OLD_PHP_VER})..."
+echo "Detected PHP installation(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
+echo "Proceeding with upgrade to PHP ${NEW_PHP_VER}..."
 
 # Stop old PHP service
 echo "Stopping PHP ${OLD_PHP_VER} service..."
@@ -127,29 +133,34 @@ echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
 
 # Update php-fpm.conf
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
-    sed -i "s|php${OLD_PHP_VER}-fpm|php${NEW_PHP_VER}-fpm|g" "/etc/nginx/globals/php-fpm.conf"
-    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/etc/nginx/globals/php-fpm.conf"
+    for _OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+        sed -E -i "s|php${_OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/etc/nginx/globals/php-fpm.conf"
+    done
 fi
 
 # Update all nginx site configurations
 for config_file in /etc/nginx/sites-available/*; do
     if [[ -f "$config_file" ]]; then
-        sed -i "s|php${OLD_PHP_VER}-fpm|php${NEW_PHP_VER}-fpm|g" "$config_file"
-        sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "$config_file"
+        for _OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+            sed -E -i "s|php${_OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "$config_file"
+        done
     fi
 done
 
 # Update phpSysInfo configuration
 if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
     echo "Updating phpSysInfo configuration..."
-    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
+    for _OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+        sed -E -i "s|php${_OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
+    done
 fi
 
 # Update admin control panel API configuration
 if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
     echo "Updating admin control panel API configuration..."
-    sed -i "s|php${OLD_PHP_VER}-fpm|php${NEW_PHP_VER}-fpm|g" "/var/www/admin/control-panel/api.php"
-    sed -i "s|php${OLD_PHP_VER}|php${NEW_PHP_VER}|g" "/var/www/admin/control-panel/api.php"
+    for _OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+        sed -E -i "s|php${_OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/control-panel/api.php"
+    done
 fi
 
 # Start new PHP service
@@ -177,28 +188,32 @@ else
     exit 1
 fi
 
-# Remove old PHP version
-echo "Removing PHP ${OLD_PHP_VER} installation..."
+# Remove old PHP version(s)
+echo "Removing old PHP installation(s)..."
 
-# Stop and disable old PHP service
-systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
-systemctl disable "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+for OLD_VER in "${OLD_PHP_VERS[@]}"; do
+    echo "Removing PHP ${OLD_VER} installation..."
 
-# Remove old PHP packages
-apt purge -y php${OLD_PHP_VER}* 2>/dev/null || true
+    # Stop and disable old PHP service
+    systemctl stop "php${OLD_VER}-fpm" 2>/dev/null || true
+    systemctl disable "php${OLD_VER}-fpm" 2>/dev/null || true
 
-# Remove old PHP configuration directory
-rm -rf "/etc/php/${OLD_PHP_VER}" 2>/dev/null || true
+    # Remove old PHP packages
+    apt purge -y php${OLD_VER}* 2>/dev/null || true
 
-# Remove old PHP logrotate configuration
-rm -f "/etc/logrotate.d/php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+    # Remove old PHP configuration directory
+    rm -rf "/etc/php/${OLD_VER}" 2>/dev/null || true
 
-# Archive old log
-if [[ -f "/var/log/php/php${OLD_PHP_VER}-fpm.log" ]]; then
-    mv "/var/log/php/php${OLD_PHP_VER}-fpm.log" "/var/log/php/php${OLD_PHP_VER}-fpm.log.old" 2>/dev/null || true
-fi
+    # Remove old PHP logrotate configuration
+    rm -f "/etc/logrotate.d/php${OLD_VER}-fpm" 2>/dev/null || true
 
-echo "PHP ${OLD_PHP_VER} has been removed."
+    # Archive old log
+    if [[ -f "/var/log/php/php${OLD_VER}-fpm.log" ]]; then
+        mv "/var/log/php/php${OLD_VER}-fpm.log" "/var/log/php/php${OLD_VER}-fpm.log.old" 2>/dev/null || true
+    fi
+
+    echo "PHP ${OLD_VER} has been removed."
+done
 
 # Cleanup
 /usr/local/bin/enginescript/scripts/functions/php-clean.sh 2>> /tmp/enginescript_install_errors.log

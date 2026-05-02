@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-02
+
+### 🐛 PHP-UPDATE: MULTI-VERSION DETECTION AND CLEANUP FIXES
+
+- Added deduplication of detected old PHP versions using an associative array (`_SEEN_OLD_PHP_VERS`) to prevent redundant processing when `SUPPORTED_PHP_VERSIONS` contains duplicate entries.
+- Introduced `MIGRATION_SOURCE_PHP_VERS` array to track all detected old PHP versions; updated echo messages to reflect all detected versions rather than only the first.
+- Consolidated all sed replacement sections (php-fpm.conf, nginx sites, phpSysInfo, admin API) to loop over `MIGRATION_SOURCE_PHP_VERS` using `sed -E` with an optional `(-fpm)?` capture group and `\1` backreference, handling both bare version strings and `-fpm`-suffixed variants in a single, non-double-replacing pass.
+- Extended the old-PHP-version cleanup loop to iterate over all entries in `OLD_PHP_VERS`, ensuring complete removal of every detected old PHP installation rather than only the first.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
