@@ -278,8 +278,7 @@ function restart_service() {
 # ----------------------------------------------------------------
 # Function to restart PHP-FPM service
 function restart_php_fpm() {
-    local php_versions=("8.3" "8.4" "8.5")
-    for version in "${php_versions[@]}"; do
+    for version in "${SUPPORTED_PHP_VERSIONS[@]}"; do
         if systemctl is-active --quiet "php${version}-fpm"; then
             restart_service "php${version}-fpm"
             return

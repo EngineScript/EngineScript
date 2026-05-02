@@ -33,33 +33,33 @@ update_file_limits() {
     echo "Updating file limits to ${limit_value}"
 
     # Check and update /etc/security/limits.conf
-    if ! grep -q "* hard nofile ${limit_value}" ${limits_file}; then
-        echo "* hard nofile ${limit_value}" >> ${limits_file} || {
+    if ! grep -qFx -- "* hard nofile ${limit_value}" "${limits_file}"; then
+        echo "* hard nofile ${limit_value}" >> "${limits_file}" || {
             echo "Error: Failed to update ${limits_file}"
         }
     fi
 
-    if ! grep -q "* soft nofile ${limit_value}" ${limits_file}; then
-        echo "* soft nofile ${limit_value}" >> ${limits_file} || {
+    if ! grep -qFx -- "* soft nofile ${limit_value}" "${limits_file}"; then
+        echo "* soft nofile ${limit_value}" >> "${limits_file}" || {
             echo "Error: Failed to update ${limits_file}"
         }
     fi
 
-    if ! grep -q "root hard nofile ${limit_value}" ${limits_file}; then
-        echo "root hard nofile ${limit_value}" >> ${limits_file} || {
+    if ! grep -qFx -- "root hard nofile ${limit_value}" "${limits_file}"; then
+        echo "root hard nofile ${limit_value}" >> "${limits_file}" || {
             echo "Error: Failed to update ${limits_file}"
         }
     fi
 
-    if ! grep -q "root soft nofile ${limit_value}" ${limits_file}; then
-        echo "root soft nofile ${limit_value}" >> ${limits_file} || {
+    if ! grep -qFx -- "root soft nofile ${limit_value}" "${limits_file}"; then
+        echo "root soft nofile ${limit_value}" >> "${limits_file}" || {
             echo "Error: Failed to update ${limits_file}"
         }
     fi
 
     # Check and update /etc/pam.d/common-session
-    if ! grep -q "session required pam_limits.so" ${pam_file}; then
-        echo "session required pam_limits.so" >> ${pam_file} || {
+    if ! grep -qFx -- "session required pam_limits.so" "${pam_file}"; then
+        echo "session required pam_limits.so" >> "${pam_file}" || {
             echo "Error: Failed to update ${pam_file}"
         }
     fi

@@ -31,7 +31,7 @@ debug_pause "System Update"
 
 # Install PHP
 # Define the PHP packages to install
-php_packages=( $(get_php_packages_array "${PHP_VER}") )
+mapfile -t php_packages < <(get_php_packages_array "${PHP_VER}")
 
 # Install the packages with error checking
 apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
@@ -40,7 +40,7 @@ apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log ||
 }
 
 if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
-    expanded_php_packages=( $(get_expanded_php_packages_array "${PHP_VER}") )
+    mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${PHP_VER}")
 
     # Install the packages with error checking
     apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {

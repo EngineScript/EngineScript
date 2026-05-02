@@ -39,6 +39,7 @@ OLD_PHP_VER=""
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
         OLD_PHP_VER="${ver}"
+        break
     fi
 done
 
@@ -71,7 +72,7 @@ systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
 echo "Installing PHP ${NEW_PHP_VER}..."
 
 # Define the PHP packages to install
-php_packages=( $(get_php_packages_array "${NEW_PHP_VER}") )
+mapfile -t php_packages < <(get_php_packages_array "${NEW_PHP_VER}")
 
 # Install the packages with error checking
 apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
@@ -82,7 +83,7 @@ apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log ||
 # Install expanded PHP packages if enabled
 if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
     echo "Installing expanded PHP ${NEW_PHP_VER} packages..."
-    expanded_php_packages=( $(get_expanded_php_packages_array "${NEW_PHP_VER}") )
+    mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
 
     apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
         echo "Error: Unable to install expanded PHP ${NEW_PHP_VER} packages. Exiting..."
