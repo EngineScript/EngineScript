@@ -35,16 +35,17 @@ else
 fi
 
 # Auto-detect currently installed PHP-FPM version
+DPKG_LIST_OUTPUT="$(dpkg -l)"
 OLD_PHP_VERS=()
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-    if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
+    if [[ "${ver}" != "${NEW_PHP_VER}" ]] && grep -q "php${ver}-fpm" <<< "${DPKG_LIST_OUTPUT}"; then
         OLD_PHP_VERS+=("${ver}")
     fi
 done
 
 if [[ ${#OLD_PHP_VERS[@]} -eq 0 ]]; then
     # Check if target version is already installed
-    if dpkg -l | grep -q "php${NEW_PHP_VER}-fpm"; then
+    if dpkg-query -W -f='${Status}' "php${NEW_PHP_VER}-fpm" 2>/dev/null | grep -q 'install ok installed'; then
         echo "PHP ${NEW_PHP_VER} is already installed. Nothing to upgrade."
         exit 0
     else
@@ -129,12 +130,17 @@ set_php_permissions
 # Update Nginx configuration to use new PHP version
 echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
 
+# Shared sed expressions for PHP version migrations in nginx configs.
+# These are printf-style templates: first %s = OLD_VER, second %s = NEW_PHP_VER.
+SOCKET_EXPR='s|(unix:/run/php/)php%s-fpm(\.sock)|\1php%s-fpm\2|g'
+FASTCGI_EXPR='s|(fastcgi_pass[[:space:]]+[^;]*php)%s(-fpm)|\1%s\2|g'
+
 # Update php-fpm.conf
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
         sed -E -i \
-            -e "s|(unix:/run/php/)php${OLD_VER}-fpm(\.sock)|\1php${NEW_PHP_VER}-fpm\2|g" \
-            -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER}(-fpm)|\1${NEW_PHP_VER}\2|g" \
+            -e "$(printf "$SOCKET_EXPR" "$OLD_VER" "$NEW_PHP_VER")" \
+            -e "$(printf "$FASTCGI_EXPR" "$OLD_VER" "$NEW_PHP_VER")" \
             "/etc/nginx/globals/php-fpm.conf"
     done
 fi
@@ -143,7 +149,7 @@ fi
 for config_file in /etc/nginx/sites-available/*; do
     if [[ -f "$config_file" ]]; then
         for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-            sed -E -i "/^[[:space:]]*fastcgi_pass[[:space:]]+/ s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "$config_file"
+            sed -E -i -e "/^[[:space:]]*fastcgi_pass[[:space:]]+/ $(printf "$FASTCGI_EXPR" "$OLD_VER" "$NEW_PHP_VER")" "$config_file"
         done
     fi
 done
@@ -160,7 +166,7 @@ fi
 if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
     echo "Updating admin control panel API configuration..."
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/control-panel/api.php"
+        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER}(-fpm)?|\1${NEW_PHP_VER}\2|g" "/var/www/admin/control-panel/api.php"
     done
 fi
 
