@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-02
-
-### 🐛 PHP UPDATE: FIX MULTI-VERSION SERVICE STOP AND DEAD CODE REMOVAL
-
-- Fixed `php-update.sh` to stop **all** detected old PHP-FPM services before proceeding with the upgrade, instead of only stopping the first detected version. The script now iterates over `MIGRATION_SOURCE_PHP_VERS` consistently with the existing cleanup logic.
-- Removed unreachable else branch from the final summary section. Because the script exits early when no old PHP versions are detected, the `else` path (referencing `OLD_PHP_VER`) was dead code and has been eliminated.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
