@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-02
+
+### 🧹 PHP-UPDATE: NAMING CONSISTENCY AND MESSAGE ACCURACY FIXES
+
+- Renamed `_SEEN_OLD_PHP_VERS` to `SEEN_OLD_PHP_VERS` in `scripts/update/php-update.sh` to remove the inconsistent leading-underscore prefix and align with the `OLD_PHP_VERS` / `NEW_PHP_VER` naming convention.
+- Renamed loop variable `_OLD_VER` to `OLD_VER` in all config-update loops (Nginx `php-fpm.conf`, per-site configs, phpSysInfo, and admin control panel API) for consistency with the removal loop that already used `OLD_VER`.
+- Fixed the final summary message to reference `${MIGRATION_SOURCE_PHP_VERS[*]}` instead of the single `${OLD_PHP_VER}`, accurately reflecting all versions migrated from when multiple old PHP versions are detected.
+- Fixed the "Removed PHP" bullet in the summary to conditionally list all removed versions via `${MIGRATION_SOURCE_PHP_VERS[*]}` when the array is populated, rather than always printing only the first detected version.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
