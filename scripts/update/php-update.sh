@@ -167,7 +167,7 @@ for config_file in /etc/nginx/sites-available/*; do
         for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
             OLD_VER_ERE="$(sed_escape_ere "$OLD_VER")"
             NEW_PHP_VER_REPL="$(sed_escape_replacement "$NEW_PHP_VER")"
-            sed -E -i -e "/^[[:space:]]*fastcgi_pass[[:space:]]+/$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" "$config_file"
+            sed -E -i -e "/^[[:space:]]*fastcgi_pass[[:space:]]+/;$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" "$config_file"
         done
     fi
 done
