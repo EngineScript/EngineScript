@@ -76,5 +76,5 @@ fi
 echo "Now attempting to send a test upload to S3."
 echo "Check your S3 bucket for an empty file titled test.txt. If it didn't work, then you did something wrong during setup."
 touch /usr/src/test.txt
-aws s3 cp /usr/src/test.txt "s3://${S3_BUCKET_NAME}" --storage-class STANDARD # Added quotes
+aws s3 cp /usr/src/test.txt "s3://${S3_BUCKET_NAME}" --storage-class STANDARD
 echo "Check your S3 bucket"

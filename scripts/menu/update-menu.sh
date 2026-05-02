@@ -64,7 +64,7 @@ while true
           echo ""
           # Detect currently installed PHP-FPM version
           CURRENT_PHP=""
-          for ver in 8.3 8.4 8.5; do
+          for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
               if dpkg -l 2>/dev/null | grep -q "php${ver}-fpm"; then
                   CURRENT_PHP="${ver}"
               fi
@@ -77,26 +77,24 @@ while true
           echo ""
           echo "Select the PHP version to switch to:"
           PS3='Choose a version: '
-          select php_choice in "PHP 8.5" "PHP 8.4" "PHP 8.3" "Cancel"; do
-              case $php_choice in
-                  "PHP 8.5")
-                      TARGET_VER="8.5"
-                      break
-                      ;;
-                  "PHP 8.4")
-                      TARGET_VER="8.4"
-                      break
-                      ;;
-                  "PHP 8.3")
-                      TARGET_VER="8.3"
-                      break
-                      ;;
-                  "Cancel")
-                      TARGET_VER=""
-                      break
-                      ;;
-                  *) echo "Invalid option";;
-              esac
+          
+          # Build dynamic options in reverse order (newest first)
+          php_options=()
+          for (( idx=${#SUPPORTED_PHP_VERSIONS[@]}-1 ; idx>=0 ; idx-- )) ; do
+              php_options+=("PHP ${SUPPORTED_PHP_VERSIONS[idx]}")
+          done
+          php_options+=("Cancel")
+          
+          select php_choice in "${php_options[@]}"; do
+              if [[ "$php_choice" == "Cancel" ]]; then
+                  TARGET_VER=""
+                  break
+              elif [[ "$php_choice" == PHP\ * ]]; then
+                  TARGET_VER="${php_choice#PHP }"
+                  break
+              else
+                  echo "Invalid option"
+              fi
           done
           if [[ -n "${TARGET_VER}" ]]; then
               if [[ "${TARGET_VER}" == "${CURRENT_PHP}" ]]; then

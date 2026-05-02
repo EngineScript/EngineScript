@@ -141,7 +141,6 @@ function purge_nginx_helper_cache() {
 }
 
 
-
 # ----------------------------------------------------------------
 # Clear EngineScript API cache directory (/var/cache/enginescript/api)
 function clear_api_cache() {
@@ -244,13 +243,11 @@ function clear_all_system_caches() {
 # ----------------------------------------------------------------
 # Resolve PHP version from override or default
 # If PHP_VERSION_OVERRIDE is set in install options, use it instead of the default PHP_VER
-# Validates that the override is a supported version (8.3, 8.4, 8.5)
+# Validates that the override is a supported version
 function resolve_php_version() {
-    local supported_versions=("8.3" "8.4" "8.5")
-
     if [[ -n "${PHP_VERSION_OVERRIDE}" ]]; then
         local valid=false
-        for ver in "${supported_versions[@]}"; do
+        for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
             if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
                 valid=true
                 break
@@ -259,10 +256,6 @@ function resolve_php_version() {
 
         if [[ "${valid}" == true ]]; then
             PHP_VER="${PHP_VERSION_OVERRIDE}"
-            echo "PHP version override active: using PHP ${PHP_VER}"
-        else
-            echo "Warning: Invalid PHP_VERSION_OVERRIDE '${PHP_VERSION_OVERRIDE}'. Supported: ${supported_versions[*]}"
-            echo "Falling back to default PHP ${PHP_VER}"
         fi
     fi
 }
@@ -934,4 +927,51 @@ function safe_wget() {
 # Safely return to /usr/src
 function return_to_src() {
     cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
+}
+
+
+# ----------------------------------------------------------------
+# Get the array of base PHP packages to install for a given PHP version
+# Usage: php_packages=( $(get_php_packages_array "8.4") )
+function get_php_packages_array() {
+    local target_ver="$1"
+    local packages=(
+        "php${target_ver}"
+        "php${target_ver}-bcmath"
+        "php${target_ver}-common"
+        "php${target_ver}-curl"
+        "php${target_ver}-fpm"
+        "php${target_ver}-gd"
+        "php${target_ver}-imagick"
+        "php${target_ver}-intl"
+        "php${target_ver}-mbstring"
+        "php${target_ver}-mysql"
+        "php${target_ver}-redis"
+        "php${target_ver}-ssh2"
+        "php${target_ver}-xml"
+        "php${target_ver}-zip"
+    )
+
+    # PHP 8.5+ has opcache built-in; older versions need the separate package
+    local php_major="${target_ver%%.*}"
+    local php_minor="${target_ver#*.}"
+    local php_ver_int=$((php_major * 10 + php_minor))
+    if (( php_ver_int < 85 )); then
+        packages+=("php${target_ver}-opcache")
+    fi
+
+    echo "${packages[@]}"
+}
+
+
+# ----------------------------------------------------------------
+# Get the array of expanded PHP packages to install for a given PHP version
+# Usage: expanded_php_packages=( $(get_expanded_php_packages_array "8.4") )
+function get_expanded_php_packages_array() {
+    local target_ver="$1"
+    local packages=(
+        "php${target_ver}-soap"
+        "php${target_ver}-sqlite3"
+    )
+    echo "${packages[@]}"
 }

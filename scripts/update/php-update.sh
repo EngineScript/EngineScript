@@ -36,7 +36,7 @@ fi
 
 # Auto-detect currently installed PHP-FPM version
 OLD_PHP_VER=""
-for ver in 8.1 8.2 8.3 8.4 8.5; do
+for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
         OLD_PHP_VER="${ver}"
     fi
@@ -71,31 +71,10 @@ systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
 echo "Installing PHP ${NEW_PHP_VER}..."
 
 # Define the PHP packages to install
-php_packages="php${NEW_PHP_VER}
-php${NEW_PHP_VER}-bcmath
-php${NEW_PHP_VER}-common
-php${NEW_PHP_VER}-curl
-php${NEW_PHP_VER}-fpm
-php${NEW_PHP_VER}-gd
-php${NEW_PHP_VER}-imagick
-php${NEW_PHP_VER}-intl
-php${NEW_PHP_VER}-mbstring
-php${NEW_PHP_VER}-mysql
-php${NEW_PHP_VER}-redis
-php${NEW_PHP_VER}-ssh2
-php${NEW_PHP_VER}-xml
-php${NEW_PHP_VER}-zip"
-
-# PHP 8.5+ has opcache built-in; older versions need the separate package
-php_major="${NEW_PHP_VER%%.*}"
-php_minor="${NEW_PHP_VER#*.}"
-if (( php_major < 8 || (php_major == 8 && php_minor < 5) )); then
-    php_packages="${php_packages}
-php${NEW_PHP_VER}-opcache"
-fi
+php_packages=( $(get_php_packages_array "${NEW_PHP_VER}") )
 
 # Install the packages with error checking
-apt install -qy $php_packages 2>> /tmp/enginescript_install_errors.log || {
+apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
     echo "Error: Unable to install PHP ${NEW_PHP_VER} packages. Exiting..."
     exit 1
 }
@@ -103,10 +82,9 @@ apt install -qy $php_packages 2>> /tmp/enginescript_install_errors.log || {
 # Install expanded PHP packages if enabled
 if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
     echo "Installing expanded PHP ${NEW_PHP_VER} packages..."
-    expanded_php_packages="php${NEW_PHP_VER}-soap
-php${NEW_PHP_VER}-sqlite3"
+    expanded_php_packages=( $(get_expanded_php_packages_array "${NEW_PHP_VER}") )
 
-    apt install -qy $expanded_php_packages 2>> /tmp/enginescript_install_errors.log || {
+    apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
         echo "Error: Unable to install expanded PHP ${NEW_PHP_VER} packages. Exiting..."
         exit 1
     }

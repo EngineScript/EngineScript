@@ -31,46 +31,19 @@ debug_pause "System Update"
 
 # Install PHP
 # Define the PHP packages to install
-php_packages="php${PHP_VER}
-php${PHP_VER}-bcmath
-php${PHP_VER}-common
-php${PHP_VER}-curl
-php${PHP_VER}-fpm
-php${PHP_VER}-gd
-php${PHP_VER}-imagick
-php${PHP_VER}-intl
-php${PHP_VER}-mbstring
-php${PHP_VER}-mysql
-php${PHP_VER}-redis
-php${PHP_VER}-ssh2
-php${PHP_VER}-xml
-php${PHP_VER}-zip"
-
-# PHP 8.5+ has opcache built-in; older versions need the separate package
-# Convert PHP_VER (e.g. "8.4") into an integer (e.g. 84) for numeric comparison
-php_major=${PHP_VER%%.*}
-php_minor=${PHP_VER#*.}
-php_ver_int=$((php_major * 10 + php_minor))
-if (( php_ver_int < 85 )); then
-    php_packages="${php_packages}
-php${PHP_VER}-opcache"
-fi
+php_packages=( $(get_php_packages_array "${PHP_VER}") )
 
 # Install the packages with error checking
-# Unquoted expansion relies on word splitting (spaces and newlines)
-apt install -qy $php_packages 2>> /tmp/enginescript_install_errors.log || {
+apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
 
-if [[ "$INSTALL_EXPANDED_PHP" == "1" ]];
-    then
-    expanded_php_packages="php${PHP_VER}-soap
-php${PHP_VER}-sqlite3"
+if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
+    expanded_php_packages=( $(get_expanded_php_packages_array "${PHP_VER}") )
 
     # Install the packages with error checking
-    # Unquoted expansion relies on word splitting (spaces and newlines)
-    apt install -qy $expanded_php_packages 2>> /tmp/enginescript_install_errors.log || {
+    apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
       echo "Error: Unable to install one or more packages. Exiting..."
       exit 1
     }
