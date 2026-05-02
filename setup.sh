@@ -57,7 +57,7 @@ apt update --allow-releaseinfo-change -y
 core_packages=(
   "apt" "bash" "boxes" "cron" "coreutils" "curl" "dos2unix" "git" "gzip" "nano" 
   "needrestart" "openssl" "pwgen" "sed" "software-properties-common" "tar" 
-  "tzdata" "unattended-upgrades" "unzip" "zip"
+  "tzdata" "unattended-upgrades" "unzip" "wget" "zip"
 )
 
 apt install -qy "${core_packages[@]}" || {
@@ -221,7 +221,8 @@ run-parts --test /etc/update-motd.d/
 run-parts /etc/update-motd.d/
 
 # HWE
-apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION}" -y
+UBUNTU_VERSION_NO_DOT="${UBUNTU_VERSION//./}"
+apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION_NO_DOT}" -y
 
 # Update & Upgrade
 apt update --allow-releaseinfo-change -y
@@ -245,7 +246,7 @@ else
 fi
 
 echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2
-echo "Server will restart in 10 seconds"
+echo "Server will restart in approximately 1 minute"
 sleep 10
 echo "Restarting..."
-shutdown -r now
+shutdown -r +1
