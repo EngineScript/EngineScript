@@ -135,12 +135,24 @@ echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
 SOCKET_EXPR='s|(unix:/run/php/)php%s-fpm(\.sock)|\1php%s-fpm\2|g'
 FASTCGI_EXPR='s|(fastcgi_pass[[:space:]]+[^;]*php)%s(-fpm)|\1%s\2|g'
 
+# Escape text for use in sed extended regex pattern fragments.
+sed_escape_ere() {
+    printf '%s' "$1" | sed -e 's/[][(){}.^$*+?|\\]/\\&/g'
+}
+
+# Escape text for use in sed replacement fragments.
+sed_escape_replacement() {
+    printf '%s' "$1" | sed -e 's/[&\\]/\\&/g'
+}
+
 # Update php-fpm.conf
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+        OLD_VER_ERE="$(sed_escape_ere "$OLD_VER")"
+        NEW_PHP_VER_REPL="$(sed_escape_replacement "$NEW_PHP_VER")"
         sed -E -i \
-            -e "$(printf "$SOCKET_EXPR" "$OLD_VER" "$NEW_PHP_VER")" \
-            -e "$(printf "$FASTCGI_EXPR" "$OLD_VER" "$NEW_PHP_VER")" \
+            -e "$(printf "$SOCKET_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" \
+            -e "$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" \
             "/etc/nginx/globals/php-fpm.conf"
     done
 fi
@@ -149,7 +161,9 @@ fi
 for config_file in /etc/nginx/sites-available/*; do
     if [[ -f "$config_file" ]]; then
         for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-            sed -E -i -e "/^[[:space:]]*fastcgi_pass[[:space:]]+/ $(printf "$FASTCGI_EXPR" "$OLD_VER" "$NEW_PHP_VER")" "$config_file"
+            OLD_VER_ERE="$(sed_escape_ere "$OLD_VER")"
+            NEW_PHP_VER_REPL="$(sed_escape_replacement "$NEW_PHP_VER")"
+            sed -E -i -e "/^[[:space:]]*fastcgi_pass[[:space:]]+/$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" "$config_file"
         done
     fi
 done
@@ -185,6 +199,8 @@ debug_pause "PHP Service Start"
 STATUS="$(systemctl is-active "php${NEW_PHP_VER}-fpm")"
 if [[ "${STATUS}" == "active" ]]; then
     echo "PASSED: PHP ${NEW_PHP_VER} is running."
+    mkdir -p /etc/enginescript
+    touch /etc/enginescript/install-state.conf
     if grep -q '^PHP=' /etc/enginescript/install-state.conf; then
         sed -i 's/^PHP=.*/PHP=1/' /etc/enginescript/install-state.conf
     else
