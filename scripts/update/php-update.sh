@@ -35,15 +35,14 @@ else
 fi
 
 # Auto-detect currently installed PHP-FPM version
-OLD_PHP_VER=""
+OLD_PHP_VERS=()
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
-        OLD_PHP_VER="${ver}"
-        break
+        OLD_PHP_VERS+=("${ver}")
     fi
 done
 
-if [[ -z "${OLD_PHP_VER}" ]]; then
+if [[ ${#OLD_PHP_VERS[@]} -eq 0 ]]; then
     # Check if target version is already installed
     if dpkg -l | grep -q "php${NEW_PHP_VER}-fpm"; then
         echo "PHP ${NEW_PHP_VER} is already installed. Nothing to upgrade."
@@ -54,6 +53,9 @@ if [[ -z "${OLD_PHP_VER}" ]]; then
     fi
 fi
 
+# Preserve existing variable name for downstream logic that expects a single source version.
+OLD_PHP_VER="${OLD_PHP_VERS[0]}"
+
 echo ""
 echo "============================================================="
 echo ""
@@ -62,7 +64,8 @@ echo ""
 echo "============================================================="
 echo ""
 
-echo "Detected PHP ${OLD_PHP_VER} installation. Proceeding with upgrade..."
+echo "Detected PHP installation(s): ${OLD_PHP_VERS[*]}"
+echo "Proceeding with upgrade to PHP ${NEW_PHP_VER} (primary source version: ${OLD_PHP_VER})..."
 
 # Stop old PHP service
 echo "Stopping PHP ${OLD_PHP_VER} service..."
@@ -164,7 +167,11 @@ debug_pause "PHP Service Start"
 STATUS="$(systemctl is-active "php${NEW_PHP_VER}-fpm")"
 if [[ "${STATUS}" == "active" ]]; then
     echo "PASSED: PHP ${NEW_PHP_VER} is running."
-    echo "PHP=1" >> /etc/enginescript/install-state.conf
+    if grep -q '^PHP=' /etc/enginescript/install-state.conf; then
+        sed -i 's/^PHP=.*/PHP=1/' /etc/enginescript/install-state.conf
+    else
+        echo "PHP=1" >> /etc/enginescript/install-state.conf
+    fi
 else
     echo "FAILED: PHP ${NEW_PHP_VER} not running. Please diagnose this issue before proceeding."
     exit 1
@@ -201,7 +208,7 @@ debug_pause "Cleanup"
 
 # Display PHP version and modules
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nPHP Info\n=-=-=-=-=-=-=-=-=-\n"
-php -version
+php --version
 echo ""
 php -m
 
