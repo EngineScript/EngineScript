@@ -4,16 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-02
-
-### 🐛 PHP-UPDATE: TARGETED REGEX REPLACEMENTS AND DUPLICATE TRACKING CLEANUP
-
-- Removed the redundant `SEEN_OLD_PHP_VERS` associative array used to deduplicate old PHP version detection; `SUPPORTED_PHP_VERSIONS` already contains unique values, so the extra tracking added unnecessary complexity without benefit.
-- Replaced the overly broad `s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g` regex in the `php-fpm.conf` update block with two targeted patterns: one for UNIX socket paths (`unix:/run/php/...`) and one for `fastcgi_pass` directives, preventing accidental replacement of version strings in comments or unrelated contexts.
-- Scoped the nginx site-configuration replacement to only lines beginning with `fastcgi_pass` using a sed address filter, avoiding unintended changes to commented-out lines or documentation within vhost configs.
-- Restricted the `phpsysinfo.ini` replacement to lines matching a `key = value` pattern, ensuring only actual configuration values are updated rather than any line containing the old version string.
-- Limited the `api.php` replacement to lines referencing `php-fpm`, `fastcgi_pass`, `sock`/`socket`, or `service` keywords, protecting unrelated PHP version strings in comments or string literals from being rewritten.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
