@@ -73,9 +73,11 @@ echo ""
 echo "Detected PHP installation(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
 echo "Proceeding with upgrade to PHP ${NEW_PHP_VER}..."
 
-# Stop old PHP service
-echo "Stopping PHP ${OLD_PHP_VER} service..."
-systemctl stop "php${OLD_PHP_VER}-fpm" 2>/dev/null || true
+# Stop old PHP service(s)
+for old_ver in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
+    echo "Stopping PHP ${old_ver} service..."
+    systemctl stop "php${old_ver}-fpm" 2>/dev/null || true
+done
 
 # Install new PHP version
 echo "Installing PHP ${NEW_PHP_VER}..."
@@ -238,11 +240,7 @@ echo "Changes made:"
 echo "  - Installed PHP ${NEW_PHP_VER} and extensions"
 echo "  - Applied EngineScript configuration for PHP ${NEW_PHP_VER}"
 echo "  - Updated Nginx configuration"
-if [[ ${#MIGRATION_SOURCE_PHP_VERS[@]} -gt 0 ]]; then
-    echo "  - Removed PHP version(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
-else
-    echo "  - Removed PHP ${OLD_PHP_VER} installation"
-fi
+echo "  - Removed PHP version(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
 echo ""
 echo "============================================================="
 echo ""
