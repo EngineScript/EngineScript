@@ -11,6 +11,7 @@ Changes are organized by date, with the most recent changes listed first.
 - Added `sed_escape_ere()` and `sed_escape_replacement()` helper functions to `scripts/update/php-update.sh` to properly escape PHP version strings before interpolating them into sed ERE pattern and replacement fragments, preventing breakage if version strings contain regex-special characters.
 - Fixed incorrect sed syntax in the nginx sites-available update loop: removed the stray space between the address (`/^[[:space:]]*fastcgi_pass[[:space:]]+/`) and the substitution command so that sed correctly treats them as a single expression.
 - Added `mkdir -p /etc/enginescript` and `touch /etc/enginescript/install-state.conf` before the `grep` check in the PHP service status block so that the directory and file are guaranteed to exist before any read or append operations are attempted.
+- Assigned positional parameter `$1` to a `local` variable and added explicit `return $?` statements in `sed_escape_ere()` and `sed_escape_replacement()` to satisfy shell best-practice linting rules.
 
 ## 2026-04-29
 

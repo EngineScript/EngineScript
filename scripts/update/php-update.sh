@@ -137,12 +137,16 @@ FASTCGI_EXPR='s|(fastcgi_pass[[:space:]]+[^;]*php)%s(-fpm)|\1%s\2|g'
 
 # Escape text for use in sed extended regex pattern fragments.
 sed_escape_ere() {
-    printf '%s' "$1" | sed -e 's/[][(){}.^$*+?|\\]/\\&/g'
+    local text="$1"
+    printf '%s' "$text" | sed -e 's/[][(){}.^$*+?|\\]/\\&/g'
+    return $?
 }
 
 # Escape text for use in sed replacement fragments.
 sed_escape_replacement() {
-    printf '%s' "$1" | sed -e 's/[&\\]/\\&/g'
+    local text="$1"
+    printf '%s' "$text" | sed -e 's/[&\\]/\\&/g'
+    return $?
 }
 
 # Update php-fpm.conf
