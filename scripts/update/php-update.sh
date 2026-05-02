@@ -199,7 +199,7 @@ for OLD_VER in "${OLD_PHP_VERS[@]}"; do
     systemctl disable "php${OLD_VER}-fpm" 2>/dev/null || true
 
     # Remove old PHP packages
-    apt purge -y php${OLD_VER}* 2>/dev/null || true
+    apt purge -y "php${OLD_VER}*" 2>/dev/null || true
 
     # Remove old PHP configuration directory
     rm -rf "/etc/php/${OLD_VER}" 2>/dev/null || true
