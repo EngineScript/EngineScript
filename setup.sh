@@ -94,7 +94,7 @@ fi
 git clone https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
 
 # Convert line endings
-dos2unix /usr/local/bin/enginescript/*
+find /usr/local/bin/enginescript -type f -print0 | xargs -0 dos2unix
 
 # Set directory and file permissions to 755
 find /usr/local/bin/enginescript -exec chmod 755 {} \;
@@ -247,6 +247,5 @@ fi
 
 echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2
 echo "Server will restart in approximately 1 minute"
-sleep 10
 echo "Restarting..."
 shutdown -r +1
