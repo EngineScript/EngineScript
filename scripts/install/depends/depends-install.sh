@@ -157,7 +157,6 @@ packages=(
     "uuid-dev"
     "vnstat"
     "webp"
-    "wget"
     "whois"
     "yara"
     "zlib1g"
