@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-02
+
+### ♻️ REFACTOR: REDIS I/O THREADS CONFIGURATION
+
+- Extracted redundant `sed` commands across the Redis I/O threads CPU-count conditions into a single `configure_redis_io_threads` function in `scripts/install/redis/redis-install.sh`.
+- The function accepts a thread count parameter and applies both `io-threads` and `io-threads-do-reads` settings, eliminating duplicated lines and improving maintainability.
+- Corrected `elif` indentation to align with standard Bash `if/elif/fi` style.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT

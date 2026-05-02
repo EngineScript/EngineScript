@@ -45,19 +45,21 @@ cp -rf /usr/local/bin/enginescript/config/etc/redis/redis.conf /etc/redis/redis.
 # Redis Tuning
 sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
 
-if [[ "${CPU_COUNT}" -ge '16' ]]; then
-  sed -i "s|^# io-threads 4|io-threads 8|" /etc/redis/redis.conf
+configure_redis_io_threads() {
+  local thread_count="$1"
+  sed -i "s|^# io-threads 4|io-threads ${thread_count}|" /etc/redis/redis.conf
   sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
-  elif [[ "${CPU_COUNT}" -ge '12' && "${CPU_COUNT}" -le '15' ]]; then
-    sed -i "s|^# io-threads 4|io-threads 6|" /etc/redis/redis.conf
-    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
-  elif [[ "${CPU_COUNT}" -ge '7' && "${CPU_COUNT}" -le '11' ]]; then
-    sed -i "s|^# io-threads 4|io-threads 4|" /etc/redis/redis.conf
-    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
-  elif [[ "${CPU_COUNT}" -ge '4' && "${CPU_COUNT}" -le '6' ]]; then
-    sed -i "s|^# io-threads 4|io-threads 2|" /etc/redis/redis.conf
-    sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
-  fi
+}
+
+if [[ "${CPU_COUNT}" -ge '16' ]]; then
+  configure_redis_io_threads 8
+elif [[ "${CPU_COUNT}" -ge '12' && "${CPU_COUNT}" -le '15' ]]; then
+  configure_redis_io_threads 6
+elif [[ "${CPU_COUNT}" -ge '7' && "${CPU_COUNT}" -le '11' ]]; then
+  configure_redis_io_threads 4
+elif [[ "${CPU_COUNT}" -ge '4' && "${CPU_COUNT}" -le '6' ]]; then
+  configure_redis_io_threads 2
+fi
 
 # Redis Service
 #sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
