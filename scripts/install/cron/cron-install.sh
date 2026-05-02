@@ -74,3 +74,6 @@ add_cron_job "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; 
     add_cron_job "56 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash uploads-php-scan.sh >/dev/null 2>&1"
     add_cron_job "57 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash checksums.sh >/dev/null 2>&1"
 }
+
+# Mark the installation as complete
+echo "CRON=1" >> /etc/enginescript/install-state.conf

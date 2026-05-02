@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${LIBURING}" = 1 ]]; then
+    echo "LIBURING script has already run"
+    exit 0
+fi
+
 # Return to /usr/src
 return_to_src
 
@@ -41,3 +47,6 @@ make install
 
 # Return to /usr/src
 return_to_src
+
+# Mark the installation as complete
+echo "LIBURING=1" >> /etc/enginescript/install-state.conf

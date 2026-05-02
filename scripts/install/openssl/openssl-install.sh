@@ -18,8 +18,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${OPENSSL}" = 1 ]]; then
+    echo "OPENSSL script has already run"
+    exit 0
+fi
+
 # Return to /usr/src
 return_to_src
 
 # Download and extract OpenSSL
 download_and_extract "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to download/extract OpenSSL."; exit 1; }
+
+# Mark the installation as complete
+echo "OPENSSL=1" >> /etc/enginescript/install-state.conf

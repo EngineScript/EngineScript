@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${MARIADB}" = 1 ]]; then
+    echo "MARIADB script has already run"
+    exit 0
+fi
+
 # Add MariaDB repository
 curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
 print_last_errors
@@ -99,8 +105,11 @@ systemctl daemon-reload
 systemctl start mariadb.service
 
 # Check if services are running
-verify_service_running "mariadb" "" "MariaDB"
-verify_service_running "mysql" "MARIADB" "MySQL"
+verify_service_running "mariadb" "MariaDB"
+verify_service_running "mysql" "MySQL"
 mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'
 
 print_install_banner "MariaDB" 2
+
+# Mark the installation as complete
+echo "MARIADB=1" >> /etc/enginescript/install-state.conf

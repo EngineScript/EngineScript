@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${REDIS}" = 1 ]]; then
+    echo "REDIS script has already run"
+    exit 0
+fi
+
 # Install Redis
 apt install -qy redis redis-server redis-tools
 
@@ -80,4 +86,7 @@ chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
 chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 
 # Redis Service Check
-verify_service_running "redis" "REDIS" "Redis"
+verify_service_running "redis" "Redis"
+
+# Mark the installation as complete
+echo "REDIS=1" >> /etc/enginescript/install-state.conf

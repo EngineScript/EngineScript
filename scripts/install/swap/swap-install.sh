@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${SWAP}" = 1 ]]; then
+    echo "SWAP script has already run"
+    exit 0
+fi
+
 # Function to create swap file
 create_swap_file() {
     local swap_size=$1
@@ -64,3 +70,6 @@ enable_swap_on_boot
 
 echo "Ignore any swap errors listed above."
 echo "Swap file will be enabled once the server has restarted."
+
+# Mark the installation as complete
+echo "SWAP=1" >> /etc/enginescript/install-state.conf

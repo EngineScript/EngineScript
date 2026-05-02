@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${NTP}" = 1 ]]; then
+    echo "NTP script has already run"
+    exit 0
+fi
+
 # Network Time Protocol (NTP)
 cp -rf /usr/local/bin/enginescript/config/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
 chmod 644 /etc/systemd/timesyncd.conf
@@ -25,3 +31,6 @@ timedatectl set-ntp true
 systemctl restart systemd-timedated
 systemctl restart systemd-timesyncd
 #systemctl status systemd-timesyncd
+
+# Mark the installation as complete
+echo "NTP=1" >> /etc/enginescript/install-state.conf

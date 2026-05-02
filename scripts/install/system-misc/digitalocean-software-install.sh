@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${DO_CONSOLE}" = 1 ]]; then
+    echo "DO_CONSOLE script has already run"
+    exit 0
+fi
+
 # Check if DigitalOcean Remote Console installation is enabled
 if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" != "1" ]]; then
     echo "DigitalOcean Remote Console installation is disabled in configuration."
@@ -78,3 +84,6 @@ else
     echo "Skipping metrics agent installation..."
     echo ""
 fi
+
+# Mark the installation as complete
+echo "DO_CONSOLE=1" >> /etc/enginescript/install-state.conf

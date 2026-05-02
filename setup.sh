@@ -53,9 +53,13 @@ fi
 # Install Required Packages for Script
 apt update --allow-releaseinfo-change -y
 
-core_packages="apt bash boxes cron coreutils curl dos2unix git gzip nano needrestart openssl pwgen sed software-properties-common tar tzdata unattended-upgrades unzip zip"
+core_packages=(
+  "apt" "bash" "boxes" "cron" "coreutils" "curl" "dos2unix" "git" "gzip" "nano" 
+  "needrestart" "openssl" "pwgen" "sed" "software-properties-common" "tar" 
+  "tzdata" "unattended-upgrades" "unzip" "zip"
+)
 
-apt install -qy $core_packages || {
+apt install -qy "${core_packages[@]}" || {
   echo "Error: Unable to install one or more packages. Exiting..."
   exit 1
 }
@@ -63,7 +67,7 @@ apt install -qy $core_packages || {
 # Check for required commands
 required_commands=("apt" "boxes" "dos2unix" "git" "nano" "wget")
 for cmd in "${required_commands[@]}"; do
-  if ! command -v ${cmd} &> /dev/null; then
+  if ! command -v "${cmd}" &> /dev/null; then
     echo "Error: ${cmd} is not installed. Please install it and try again."
     exit 1
   fi
@@ -130,6 +134,10 @@ if [[ ! -d "/etc/enginescript" ]]; then
     echo "✓ EngineScript configuration directory created"
 fi
 
+# Ensure install state file exists
+touch "/etc/enginescript/install-state.conf"
+chmod 644 "/etc/enginescript/install-state.conf"
+
 # Create /var/www/admin/control-panel/ if it doesn't exist
 if [[ ! -d "/var/www/admin/control-panel/" ]]; then
     echo "Creating EngineScript admin control panel directory..."
@@ -160,7 +168,6 @@ fi
 # Create EngineScript logs
 mkdir -p "/var/log/EngineScript"
 touch "/var/log/EngineScript/install-error-log.log"
-touch "/var/log/EngineScript/install-log.log"
 touch "/var/log/EngineScript/vhost-export.log"
 touch "/var/log/EngineScript/vhost-import.log"
 touch "/var/log/EngineScript/vhost-install.log"
@@ -180,13 +187,13 @@ chmod -R 644 "/var/log/EngineScript"/*.log
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
 
 # Create EngineScript Aliases
-source "/var/log/EngineScript/install-log.log"
+source "/etc/enginescript/install-state.conf"
 if [[ "${ALIAS}" = 1 ]];
   then
     echo "ALIAS script has already run"
   else
     /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
-    echo "ALIAS=1" >> /var/log/EngineScript/install-log.log
+    echo "ALIAS=1" >> /etc/enginescript/install-state.conf
 fi
 
 # Cleanup
@@ -213,7 +220,7 @@ run-parts --test /etc/update-motd.d/
 run-parts /etc/update-motd.d/
 
 # HWE
-apt install --install-recommends linux-generic-hwe-${UBUNTU_VERSION} -y
+apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION}" -y
 
 # Update & Upgrade
 apt update --allow-releaseinfo-change -y

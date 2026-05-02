@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${GCC}" = 1 ]]; then
+    echo "GCC script has already run"
+    exit 0
+fi
+
 # GCC
 
 # Remove previous GCC alternatives
@@ -34,3 +40,6 @@ if [[ "${UBUNTU_VERSION}" == "24.04" ]];
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100 --slave /usr/bin/g++ g++ /usr/bin/g++-14 --slave /usr/bin/gcov gcov /usr/bin/gcov-14
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 90 --slave /usr/bin/g++ g++ /usr/bin/g++-13 --slave /usr/bin/gcov gcov /usr/bin/gcov-13
 fi
+
+# Mark the installation as complete
+echo "GCC=1" >> /etc/enginescript/install-state.conf

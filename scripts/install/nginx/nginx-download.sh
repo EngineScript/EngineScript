@@ -18,7 +18,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-cd /usr/src
+# Return to /usr/src
+return_to_src
 
 # Remove existing Nginx source directory if it exists
 clean_directory "/usr/src/nginx-${NGINX_VER}"

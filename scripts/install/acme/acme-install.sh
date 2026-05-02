@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${ACME}" = 1 ]]; then
+    echo "ACME script has already run"
+    exit 0
+fi
+
 # ACME.sh Install
 curl https://get.acme.sh | sh
 
@@ -30,3 +36,6 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 /root/.acme.sh/acme.sh --register-account -m "${CF_ACCOUNT_EMAIL}"
 
 /root/.acme.sh/acme.sh --upgrade --auto-upgrade
+
+# Mark the installation as complete
+echo "ACME=1" >> /etc/enginescript/install-state.conf

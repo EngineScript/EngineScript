@@ -18,6 +18,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${PCRE}" = 1 ]]; then
+    echo "PCRE script has already run"
+    exit 0
+fi
+
+# Return to /usr/src
+return_to_src
+
 # PCRE
-cd /usr/src
 download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz"
+
+# Mark the installation as complete
+echo "PCRE=1" >> /etc/enginescript/install-state.conf

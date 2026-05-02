@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${NGINX}" = 1 ]]; then
+    echo "NGINX script has already run"
+    exit 0
+fi
+
 # Nginx Source Downloads
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
@@ -100,7 +106,10 @@ if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
 fi
 
 # Nginx Service Check
-verify_service_running "nginx" "NGINX" "Nginx"
+verify_service_running "nginx" "Nginx"
 
 # Nginx Installation Completed
 print_install_banner "Nginx"
+
+# Mark the installation as complete
+echo "NGINX=1" >> /etc/enginescript/install-state.conf

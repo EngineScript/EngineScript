@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${KERNEL_TWEAKS}" = 1 ]]; then
+    echo "KERNEL_TWEAKS script has already run"
+    exit 0
+fi
+
 # Kernel Tweaks
 cp -rf /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf /etc/sysctl.d/60-enginescript.conf
 chown -R root:root /etc/sysctl.d/60-enginescript.conf
@@ -29,3 +35,6 @@ echo tls >/etc/modules-load.d/tls.conf
 # Enable Kernel Tweaks
 sysctl -e -p /etc/sysctl.d/60-enginescript.conf
 sysctl --system
+
+# Mark the installation as complete
+echo "KERNEL_TWEAKS=1" >> /etc/enginescript/install-state.conf

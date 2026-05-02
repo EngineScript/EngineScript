@@ -34,6 +34,12 @@ retry_add_ppa() {
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${REPOS}" = 1 ]]; then
+    echo "REPOS script has already run"
+    exit 0
+fi
+
 # Canonical Server Team Backports
 retry_add_ppa ppa:canonical-server/server-backports
 
@@ -111,3 +117,6 @@ UBUNTU_VERSION="$(lsb_release -sr)"
 if [[ "${UBUNTU_VERSION}" == "24.04" ]]; then
   echo "Skipping repos that don't support Ubuntu Noble 24.04"
 fi
+
+# Mark the installation as complete
+echo "REPOS=1" >> /etc/enginescript/install-state.conf

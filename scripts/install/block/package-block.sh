@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${BLOCK}" = 1 ]]; then
+    echo "BLOCK script has already run"
+    exit 0
+fi
+
 cd /etc/apt/preferences.d/
 
 # Block Apache2 from APT
@@ -42,3 +48,6 @@ for ver in "${block_versions[@]}"; do
     sanitized="${ver//.}"
     echo -e "Package: php${ver}*\nPin: release *\nPin-Priority: -1" > "php${sanitized}-block"
 done
+
+# Mark the installation as complete
+echo "BLOCK=1" >> /etc/enginescript/install-state.conf

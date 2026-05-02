@@ -19,8 +19,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 clear
+
+# Return to /usr/src
+return_to_src
+
 # Install Amazon AWS Client
-cd /usr/src
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo /usr/src/aws/install

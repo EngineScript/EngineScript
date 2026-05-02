@@ -185,7 +185,7 @@ debug_pause "PHP Service Start"
 STATUS="$(systemctl is-active "php${NEW_PHP_VER}-fpm")"
 if [[ "${STATUS}" == "active" ]]; then
     echo "PASSED: PHP ${NEW_PHP_VER} is running."
-    echo "PHP=1" >> /var/log/EngineScript/install-log.log
+    echo "PHP=1" >> /etc/enginescript/install-state.conf
 else
     echo "FAILED: PHP ${NEW_PHP_VER} not running. Please diagnose this issue before proceeding."
     exit 1

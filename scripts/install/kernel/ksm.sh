@@ -18,8 +18,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${KSM}" = 1 ]]; then
+    echo "KSM script has already run"
+    exit 0
+fi
+
 # Install
 apt install -qy ksmtuned
 sudo systemctl enable --now ksmtuned.service
 sudo systemctl enable --now ksm.service
 systemctl daemon-reload
+
+# Mark the installation as complete
+echo "KSM=1" >> /etc/enginescript/install-state.conf

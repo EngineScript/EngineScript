@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${PHP}" = 1 ]]; then
+    echo "PHP script has already run"
+    exit 0
+fi
+
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
@@ -103,7 +109,7 @@ set_php_permissions
 restart_service "php${PHP_VER}-fpm"
 
 # PHP Service Check
-verify_service_running "php${PHP_VER}-fpm" "PHP" "PHP ${PHP_VER}"
+verify_service_running "php${PHP_VER}-fpm" "PHP ${PHP_VER}"
 
 print_install_banner "PHP ${PHP_VER}"
 
@@ -126,3 +132,6 @@ debug_pause "Cleanup"
 # https://github.com/littlebizzy/slickstack
 # https://flywp.com/blog/9281/optimize-php-fpm-settings-flywp/
 # https://www.managedserver.eu/introduction-to-php-fpm-tuning/
+
+# Mark the installation as complete
+echo "PHP=1" >> /etc/enginescript/install-state.conf

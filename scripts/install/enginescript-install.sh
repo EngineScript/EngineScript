@@ -167,7 +167,7 @@ validate_not_placeholder "WP_ADMIN_USERNAME" "$WP_ADMIN_USERNAME"
 validate_not_placeholder "WP_ADMIN_PASSWORD" "$WP_ADMIN_PASSWORD"
 
 # Install Check
-source /var/log/EngineScript/install-log.log
+source /etc/enginescript/install-state.conf
 
 # Repositories
 run_install_step "REPOS" "/usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh" "Install Repositories"

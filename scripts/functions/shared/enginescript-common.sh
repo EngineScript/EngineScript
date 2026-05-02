@@ -558,7 +558,7 @@ function set_php_permissions() {
 # Check if all required EngineScript installation components are completed
 # Returns 0 if all components are installed, exits with error if incomplete
 function check_installation_completion() {
-    local install_log="/var/log/EngineScript/install-log.log"
+    local install_log="/etc/enginescript/install-state.conf"
     local missing_components=()
     local quiet_mode="${1:-false}"  # Optional parameter for quiet mode
     
@@ -812,7 +812,7 @@ function validate_not_placeholder() {
 
 
 # ----------------------------------------------------------------
-# Run an idempotent install step: skip if already completed, otherwise execute and mark done
+# Run an idempotent install step: skip if already completed, otherwise execute
 # Usage: run_install_step "FLAG_NAME" "/path/to/script.sh" "Step Description"
 function run_install_step() {
     local flag_name="$1"
@@ -824,7 +824,6 @@ function run_install_step() {
         echo "${flag_name} script has already run."
     else
         "${script_path}" 2>> /tmp/enginescript_install_errors.log
-        echo "${flag_name}=1" >> /var/log/EngineScript/install-log.log
     fi
     print_last_errors
     debug_pause "${step_desc}"
@@ -833,20 +832,16 @@ function run_install_step() {
 
 # ----------------------------------------------------------------
 # Verify a systemd service is running after installation
-# Logs completion flag and exits on failure
-# Usage: verify_service_running "service_name" "LOG_FLAG" "Display Name"
+# Exits on failure
+# Usage: verify_service_running "service_name" "Display Name"
 function verify_service_running() {
     local service_name="$1"
-    local log_flag="${2:-""}"
-    local display_name="${3:-${service_name}}"
+    local display_name="${2:-${service_name}}"
     local status
 
     status="$(systemctl is-active "${service_name}")"
     if [[ "${status}" == "active" ]]; then
         echo "PASSED: ${display_name} is running."
-        if [[ -n "${log_flag}" ]]; then
-            echo "${log_flag}=1" >> /var/log/EngineScript/install-log.log
-        fi
     else
         echo "FAILED: ${display_name} not running. Please diagnose this issue before proceeding."
         exit 1

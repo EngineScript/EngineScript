@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${TOOLS}" = 1 ]]; then
+    echo "TOOLS script has already run"
+    exit 0
+fi
+
 
 #------------------------------------------------
 # Media Tools
@@ -182,3 +188,6 @@ fi
 
 # Return to /usr/src
 return_to_src
+
+# Mark the installation as complete
+echo "TOOLS=1" >> /etc/enginescript/install-state.conf

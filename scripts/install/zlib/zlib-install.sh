@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${ZLIB}" = 1 ]]; then
+    echo "ZLIB script has already run"
+    exit 0
+fi
+
 # Return to /usr/src
 return_to_src
 
@@ -37,7 +43,8 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-ng" ]]; then
   echo "  Preparing zlib-ng ${ZLIB_NG_VER} (experimental)"
   echo "============================================================="
 
-  cd /usr/src
+  # Return to /usr/src
+  return_to_src
 
   clean_directory "/usr/src/zlib-ng-${ZLIB_NG_VER}"
   if [[ -f "/usr/src/zlib-ng-${ZLIB_NG_VER}.tar.gz" ]]; then
@@ -95,7 +102,8 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   echo "Rust version: $(rustc --version)"
   echo "Cargo version: $(cargo --version)"
 
-  cd /usr/src
+  # Return to /usr/src
+  return_to_src
 
   clean_directory "/usr/src/zlib-rs"
   git clone --branch "${ZLIB_RS_VER}" --depth 1 https://github.com/trifectatechfoundation/zlib-rs.git /usr/src/zlib-rs
@@ -121,3 +129,6 @@ fi
 
 # Return to /usr/src
 return_to_src
+
+# Mark the installation as complete
+echo "ZLIB=1" >> /etc/enginescript/install-state.conf
