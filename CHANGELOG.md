@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-05-02
+
+### 🐛 PHP UPDATE: MULTI-VERSION DETECTION, DUPLICATE STATE ENTRY, AND CLI FLAG FIXES
+
+- **Multi-version detection**: Changed `OLD_PHP_VER` single-string detection in `scripts/update/php-update.sh` to an `OLD_PHP_VERS` array so all installed PHP-FPM versions (not just the first encountered) are identified. `OLD_PHP_VER` is preserved as the primary source version (`OLD_PHP_VERS[0]`) for downstream logic.
+- **Duplicate install-state entry**: Replaced unconditional `echo "PHP=1" >>` with a `grep`/`sed` guard in the PHP service check block to update an existing `PHP=` entry rather than appending a duplicate line on repeated runs of `php-update.sh`.
+- **Correct PHP CLI flag**: Fixed `php -version` (invalid lowercase flag) to `php --version` (correct double-dash flag) in the post-upgrade info display.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
