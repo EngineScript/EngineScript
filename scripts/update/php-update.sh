@@ -36,13 +36,9 @@ fi
 
 # Auto-detect currently installed PHP-FPM version
 OLD_PHP_VERS=()
-declare -A SEEN_OLD_PHP_VERS=()
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && dpkg -l | grep -q "php${ver}-fpm"; then
-        if [[ -z "${SEEN_OLD_PHP_VERS["${ver}"]+x}" ]]; then
-            OLD_PHP_VERS+=("${ver}")
-            SEEN_OLD_PHP_VERS["${ver}"]=1
-        fi
+        OLD_PHP_VERS+=("${ver}")
     fi
 done
 
@@ -136,7 +132,10 @@ echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
 # Update php-fpm.conf
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/etc/nginx/globals/php-fpm.conf"
+        sed -E -i \
+            -e "s|(unix:/run/php/)php${OLD_VER}-fpm(\.sock)|\1php${NEW_PHP_VER}-fpm\2|g" \
+            -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER}(-fpm)|\1${NEW_PHP_VER}\2|g" \
+            "/etc/nginx/globals/php-fpm.conf"
     done
 fi
 
@@ -144,7 +143,7 @@ fi
 for config_file in /etc/nginx/sites-available/*; do
     if [[ -f "$config_file" ]]; then
         for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-            sed -E -i "s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "$config_file"
+            sed -E -i "/^[[:space:]]*fastcgi_pass[[:space:]]+/ s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "$config_file"
         done
     fi
 done
@@ -153,7 +152,7 @@ done
 if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
     echo "Updating phpSysInfo configuration..."
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
+        sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER}(-fpm)?|\1php${NEW_PHP_VER}\2|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
     done
 fi
 
@@ -161,7 +160,7 @@ fi
 if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
     echo "Updating admin control panel API configuration..."
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/control-panel/api.php"
+        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|php${OLD_VER}(-fpm)?|php${NEW_PHP_VER}\1|g" "/var/www/admin/control-panel/api.php"
     done
 fi
 
