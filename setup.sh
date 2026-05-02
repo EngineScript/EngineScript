@@ -37,9 +37,10 @@ fi
 
 # Check if Ubuntu is 24.04 LTS Release. If not, exit.
 UBUNTU_VERSION="$(lsb_release -sr)"
-Noble=24.04
+UBUNTU_VERSION_INT="$(tr -d '.' <<<"$UBUNTU_VERSION")"
+NOBLE_INT=2404
 
-if (( $(bc <<<"$UBUNTU_VERSION != $Noble") )); then
+if (( UBUNTU_VERSION_INT != NOBLE_INT )); then
   echo "ALERT:"
   echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using Ubuntu 24.04 LTS"
   exit 1
@@ -197,7 +198,7 @@ if [[ "${ALIAS}" = 1 ]];
 fi
 
 # Cleanup
-apt-get remove apache2* php7* php8* -y
+apt-get remove --purge 'apache2*' 'php7*' 'php8*' -y
 
 # Update & Upgrade
 apt update --allow-releaseinfo-change -y
