@@ -4,13 +4,6 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-05-02
-
-### 🐛 SETUP: UBUNTU VERSION CHECK AND APT CLEANUP FIXES
-
-- Fixed Ubuntu version comparison in `setup.sh` to use integer arithmetic instead of `bc`-based floating-point comparison. Converts `24.04` to `2404` via `tr -d '.'` and compares with `(( UBUNTU_VERSION_INT != Noble_INT ))` for reliable results.
-- Fixed `apt-get remove` command in `setup.sh` to use `--purge` and properly quoted glob patterns (`'apache2*'`, `'php7*'`, `'php8*'`) to ensure safe and expected shell expansion behaviour.
-
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT
