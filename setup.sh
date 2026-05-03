@@ -246,6 +246,6 @@ else
 fi
 
 echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2
-echo "Server will restart in approximately 1 minute"
+echo "Server will restart in 1 minute"
 echo "Restarting..."
 shutdown -r +1
