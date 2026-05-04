@@ -79,7 +79,7 @@ echo ""
 #   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
 #   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
 #
-# This is intentional behaviour. Do not "fix" it to require at least two characters.
+# This is intentional behavior. Do not "fix" it to require at least two characters.
 while true; do
   read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
   if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then

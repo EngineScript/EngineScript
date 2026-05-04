@@ -73,7 +73,7 @@ abstract class BaseController
     protected ApiResponse $response;
 
     /**
-     * Initialise shared dependencies.
+     * Initialize shared dependencies.
      *
      * Child controllers that define their own constructor must call
      * parent::__construct() to ensure these properties are available.

@@ -130,31 +130,12 @@ set_php_permissions
 # Update Nginx configuration to use new PHP version
 echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
 
-# Shared sed expressions for PHP version migrations in nginx configs.
-# These are printf-style templates: first %s = OLD_VER, second %s = NEW_PHP_VER.
-SOCKET_EXPR='s|(unix:/run/php/)php%s-fpm(\.sock)|\1php%s-fpm\2|g'
-FASTCGI_EXPR='s|(fastcgi_pass[[:space:]]+[^;]*php)%s(-fpm)|\1%s\2|g'
-
-# Escape text for use in sed extended regex pattern fragments.
-sed_escape_ere() {
-    local text="$1"
-    printf '%s' "$text" | sed -e 's/[][(){}.^$*+?|\\]/\\&/g'
-}
-
-# Escape text for use in sed replacement fragments.
-sed_escape_replacement() {
-    local text="$1"
-    printf '%s' "$text" | sed -e 's/[&\\]/\\&/g'
-}
-
 # Update php-fpm.conf
 if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        OLD_VER_ERE="$(sed_escape_ere "$OLD_VER")"
-        NEW_PHP_VER_REPL="$(sed_escape_replacement "$NEW_PHP_VER")"
         sed -E -i \
-            -e "$(printf "$SOCKET_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" \
-            -e "$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" \
+            -e "s|(unix:/run/php/)php${OLD_VER//./\.}-fpm(\.sock)|\1php${NEW_PHP_VER}-fpm\2|g" \
+            -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER//./\.}(-fpm)|\1${NEW_PHP_VER}\2|g" \
             "/etc/nginx/globals/php-fpm.conf"
     done
 fi
@@ -163,9 +144,7 @@ fi
 for config_file in /etc/nginx/sites-available/*; do
     if [[ -f "$config_file" ]]; then
         for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-            OLD_VER_ERE="$(sed_escape_ere "$OLD_VER")"
-            NEW_PHP_VER_REPL="$(sed_escape_replacement "$NEW_PHP_VER")"
-            sed -E -i -e "$(printf "$FASTCGI_EXPR" "$OLD_VER_ERE" "$NEW_PHP_VER_REPL")" "$config_file"
+            sed -E -i -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER//./\.}(-fpm)|\1${NEW_PHP_VER}\2|g" "$config_file"
         done
     fi
 done
@@ -174,7 +153,7 @@ done
 if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
     echo "Updating phpSysInfo configuration..."
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER}(-fpm)?|\1php${NEW_PHP_VER}\2|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
+        sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER//./\.}(-fpm)?|\1php${NEW_PHP_VER}\2|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
     done
 fi
 
@@ -182,7 +161,7 @@ fi
 if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
     echo "Updating admin control panel API configuration..."
     for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER}(-fpm)?|\1${NEW_PHP_VER}\2|g" "/var/www/admin/control-panel/api.php"
+        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER//./\.}(-fpm)?|\1${NEW_PHP_VER}\2|g" "/var/www/admin/control-panel/api.php"
     done
 fi
 

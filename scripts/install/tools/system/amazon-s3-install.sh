@@ -56,7 +56,7 @@ if prompt_yes_no "Are you ready to continue with AWS configuration?" "y" 300; th
     
     if ! aws configure; then
         echo ""
-        echo "AWS configuration failed or was cancelled."
+        echo "AWS configuration failed or was canceled."
         echo "You can run 'aws configure' manually later if needed."
         echo "Exiting installation script."
         exit 1
@@ -66,7 +66,7 @@ if prompt_yes_no "Are you ready to continue with AWS configuration?" "y" 300; th
     echo "AWS configuration completed successfully."
 else
     echo ""
-    echo "AWS configuration cancelled by user."
+    echo "AWS configuration canceled by user."
     echo "You can run this script again later or configure AWS manually with 'aws configure'."
     echo "Exiting installation script."
     exit 0

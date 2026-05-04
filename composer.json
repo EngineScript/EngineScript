@@ -61,7 +61,7 @@
     "scripts": {
         "test": "phpunit",
         "test:coverage": "phpunit --coverage-html coverage",
-        "phpstan": "phpstan analyse",
+        "phpstan": "phpstan analyze",
         "cs:check": "php-cs-fixer fix --dry-run --diff",
         "cs:fix": "php-cs-fixer fix",
         "phpcs": "phpcs --standard=PSR12 config/var/www/admin/",
