@@ -98,11 +98,8 @@ create_nginx_vhost() {
       echo ""
   fi
 
-  # Enable HTTP/3 if configured
-  if [[ "${INSTALL_HTTP3}" == "1" ]]; then
-    sed -i "s|#listen 443 quic|listen 443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
-    sed -i "s|#listen [::]:443 quic|listen [::]:443 quic|g" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
-  fi
+  # Keep template-derived HTTP/3 listeners aligned with the current setting.
+  sync_nginx_http3_config
 }
 
 

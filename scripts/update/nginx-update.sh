@@ -72,6 +72,10 @@ debug_pause "Misc Nginx Stuff"
 
 # Tune Nginx
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh 2>> /tmp/enginescript_install_errors.log
+
+# Re-sync HTTP/3 directives after rebuild so existing vhosts match INSTALL_HTTP3.
+sync_nginx_http3_config 2>> /tmp/enginescript_install_errors.log
+
 print_last_errors
 debug_pause "Tune Nginx"
 

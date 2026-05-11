@@ -32,10 +32,20 @@ cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/
 # inline JS comments/strings in index.html, so we scope the substitution to only
 # the specific Font Awesome CDN URL that contains the version segment. If the
 # Font Awesome CDN path changes, update the pattern below accordingly.
-sed -i "s|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${FONTAWESOME_VER}/css/all.min.css|g" /var/www/admin/control-panel/index.html
-# Verify that the Font Awesome placeholder was successfully replaced to avoid silent failures
-if grep -q '{FONTAWESOME_VER}' /var/www/admin/control-panel/index.html; then
-    echo "Error: Failed to substitute Font Awesome version in index.html; placeholder {FONTAWESOME_VER} still present." >&2
+CONTROL_PANEL_INDEX="/var/www/admin/control-panel/index.html"
+FONTAWESOME_CDN_PLACEHOLDER='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css'
+FONTAWESOME_CDN_URL="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${FONTAWESOME_VER}/css/all.min.css"
+
+sed -i "s|${FONTAWESOME_CDN_PLACEHOLDER}|${FONTAWESOME_CDN_URL}|g" "$CONTROL_PANEL_INDEX"
+
+# Verify the CDN URL was replaced without treating explanatory comments/strings as failures.
+if grep -Fq "$FONTAWESOME_CDN_PLACEHOLDER" "$CONTROL_PANEL_INDEX"; then
+    echo "Error: Failed to substitute Font Awesome version in index.html CDN URL; placeholder path still present." >&2
+    exit 1
+fi
+
+if ! grep -Fq "$FONTAWESOME_CDN_URL" "$CONTROL_PANEL_INDEX"; then
+    echo "Error: Failed to configure Font Awesome CDN URL in index.html." >&2
     exit 1
 fi
 

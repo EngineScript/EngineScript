@@ -529,6 +529,74 @@ function set_nginx_permissions() {
 
 
 # ----------------------------------------------------------------
+# Toggle a commented configuration directive on or off while preserving indentation
+function set_commented_directive_state() {
+    local file_path="$1"
+    local directive_pattern="$2"
+    local enable_state="${3:-0}"
+
+    if [[ ! -f "${file_path}" ]]; then
+        return 0
+    fi
+
+    if [[ "${enable_state}" == "1" ]]; then
+        sed -Ei "s|^([[:space:]]*)#(${directive_pattern})(.*)$|\\1\\2\\3|" "${file_path}"
+    else
+        sed -Ei "s|^([[:space:]]*)(${directive_pattern})(.*)$|\\1#\\2\\3|" "${file_path}"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Keep Nginx HTTP/3 directives aligned with INSTALL_HTTP3 across all managed configs
+function sync_nginx_http3_config() {
+    local http3_enabled="${INSTALL_HTTP3:-0}"
+    local quic_gso_enabled=0
+    local nullglob_was_set=0
+    local file_path
+    local site_config_files=()
+
+    if [[ "${http3_enabled}" != "1" ]]; then
+        http3_enabled=0
+    fi
+
+    set_commented_directive_state "/etc/nginx/nginx.conf" "http3 on;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_max_concurrent_streams" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_stream_buffer_size" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/nginx.conf" "quic_bpf on;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/nginx.conf" "quic_retry on;" "${http3_enabled}"
+
+    if [[ "${http3_enabled}" == "1" ]] && command -v ethtool >/dev/null 2>&1 && ethtool -k eth0 2>/dev/null | grep -q "tx-gso-robust: on"; then
+        quic_gso_enabled=1
+    fi
+    set_commented_directive_state "/etc/nginx/nginx.conf" "quic_gso on;" "${quic_gso_enabled}"
+
+    set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header Alt-Svc" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header x-quic" "${http3_enabled}"
+
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server multipath quic reuseport;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server multipath quic reuseport;" "${http3_enabled}"
+
+    if shopt -q nullglob; then
+        nullglob_was_set=1
+    else
+        shopt -s nullglob
+    fi
+
+    site_config_files=(/etc/nginx/sites-available/your-domain.conf /etc/nginx/sites-enabled/*.conf /etc/nginx/admin/admin.*.conf)
+
+    if [[ "${nullglob_was_set}" == "0" ]]; then
+        shopt -u nullglob
+    fi
+
+    for file_path in "${site_config_files[@]}"; do
+        set_commented_directive_state "${file_path}" "listen 443 multipath quic reuseport;" "${http3_enabled}"
+        set_commented_directive_state "${file_path}" "listen \[::\]:443 multipath quic reuseport;" "${http3_enabled}"
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Set permissions for PHP directories and files
 function set_php_permissions() {
     find "/var/log/php" -exec chmod 775 {} \;
