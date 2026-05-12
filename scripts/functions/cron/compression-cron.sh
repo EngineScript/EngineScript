@@ -20,9 +20,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 #----------------------------------------------------------------------------
 
-# Scan the entire /var/www/sites directory, which will include all WordPress sites installed on your server.
-# When the filetypes match (html,css,js,json,xml,svg), brotli and gzip will compress using the strongest compression.
-# This pre-compression allows the broli and gzip static functions to work within Nginx
+# Scan the entire /var/www/sites directory, which includes all WordPress sites installed on your server.
+# When file types match (html, css, js, json, xml, svg), Brotli and gzip will use the strongest compression.
+# This pre-compression allows the Brotli and gzip static functions to work within Nginx.
 
 # Brotli Compression
 #find /var/www/sites -type f -a \( -name '*.html' -o -name '*.css' -o -name '*.js' \

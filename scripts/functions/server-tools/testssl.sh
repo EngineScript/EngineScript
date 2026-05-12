@@ -21,10 +21,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Retrieve Domains
 cd /var/www/sites
 printf "Please select the site you want to run an SSL capabilities check on:\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
+select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
 
-# Run command
-echo "testssl.sh is running. Scan may take a bit, standby for results."
+# Run the command
+echo "testssl.sh is running. The scan may take a bit; stand by for results."
 echo "Scanning: $d"
 /usr/local/bin/testssl.sh/testssl.sh -S -h -e -E -s -f -p -g -U "${d}"
 

@@ -19,7 +19,7 @@ function debug_pause() {
         while true; do
             echo -e "\n[DEBUG] Completed step: ${last_step}"
             echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
-            echo -e "Some text be displayed that just contains general information. Logged output does not always indicate an error."
+            echo -e "Some displayed text may contain only general information. Logged output does not always indicate an error."
             echo -e "\nIf you encountered errors above, you can copy the error text for a GitHub bug report."
             echo -e "For more server details, run: es.debug"
             read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
@@ -548,6 +548,24 @@ function set_commented_directive_state() {
 
 
 # ----------------------------------------------------------------
+# Normalize legacy HTTP/3 listen directives to the current MPTCP-aware form
+function normalize_nginx_http3_listen_directives() {
+    local file_path="$1"
+
+    if [[ ! -f "${file_path}" ]]; then
+        return 0
+    fi
+
+    sed -Ei \
+        -e 's|^([[:space:]]*#?listen 443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen 443 )quic reuseport;|\1multipath quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 )quic reuseport;|\1multipath quic reuseport;|' \
+        "${file_path}"
+}
+
+
+# ----------------------------------------------------------------
 # Keep Nginx HTTP/3 directives aligned with INSTALL_HTTP3 across all managed configs
 function sync_nginx_http3_config() {
     local http3_enabled="${INSTALL_HTTP3:-0}"
@@ -574,6 +592,7 @@ function sync_nginx_http3_config() {
     set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header Alt-Svc" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header x-quic" "${http3_enabled}"
 
+    normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
     set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server multipath quic reuseport;" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server multipath quic reuseport;" "${http3_enabled}"
 
@@ -590,6 +609,7 @@ function sync_nginx_http3_config() {
     fi
 
     for file_path in "${site_config_files[@]}"; do
+        normalize_nginx_http3_listen_directives "${file_path}"
         set_commented_directive_state "${file_path}" "listen 443 multipath quic reuseport;" "${http3_enabled}"
         set_commented_directive_state "${file_path}" "listen \[::\]:443 multipath quic reuseport;" "${http3_enabled}"
     done
@@ -864,7 +884,7 @@ function validate_not_placeholder() {
         if [[ -n "$custom_msg" ]]; then
             echo -e "\nWARNING:\n\n${custom_msg}\n"
         else
-            echo -e "\nWARNING:\n\n${var_name} is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change ${var_name} to the correct value.\n"
+            echo -e "\nWARNING:\n\n${var_name} is set to PLACEHOLDER. EngineScript requires this to be set to a unique value.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change ${var_name} to the correct value.\n"
         fi
         exit 1
     fi

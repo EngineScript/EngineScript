@@ -47,13 +47,13 @@ create_swap_file() {
     }
 }
 
-# Function to backup fstab and enable swap on boot
+# Function to back up fstab and enable swap on boot
 enable_swap_on_boot() {
-    echo "Backing up /etc/fstab"
+    echo "Backing up /etc/fstab."
     cp -rf /etc/fstab /etc/fstab.bak || {
-        echo "Error: Failed to backup /etc/fstab."
+        echo "Error: Failed to back up /etc/fstab."
     }
-    echo "Enabling swap file on boot"
+    echo "Enabling swap file on boot."
     echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab || {
         echo "Error: Failed to update /etc/fstab."
     }

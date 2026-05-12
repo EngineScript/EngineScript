@@ -92,7 +92,7 @@ define( 'EMPTY_TRASH_DAYS', 14 ); // Setting to 0 makes all deletions skip the t
 define( 'IMAGE_EDIT_OVERWRITE', true );
 define( 'MEDIA_TRASH', true );
 define( 'WP_POST_REVISIONS', 2 ); // Can also be set to false
-define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files that would WordPress would normally filter by default such as .CSV and .TXT.
+define( 'ALLOW_UNFILTERED_UPLOADS', false ); // Allows admins to upload files that WordPress would normally filter by default, such as .CSV and .TXT.
 
 /* Jetpack Brute Force Attack Protection */
 // https://jetpack.com/support/protect/
@@ -127,7 +127,7 @@ define( 'DISABLE_NAG_NOTICES', true );
 //define( 'WP_SENTRY_ENV', 'production' );
 
 /* Compression */
-// Leave these disabled unless you absolutely need them for whatever reason. This is done with Nginx and Cloudflare.
+// Leave these disabled unless you absolutely need them. This is handled by Nginx and Cloudflare.
 //define( 'COMPRESS_CSS', true );
 //define( 'COMPRESS_SCRIPTS', true );
 //define( 'ENFORCE_GZIP', true );
@@ -156,7 +156,7 @@ define( 'CONCATENATE_SCRIPTS', true ); // Setting to false may fix java issues i
 define( 'RECOVERY_MODE_EMAIL', 'SEDWPRECOVERYEMAIL' ); // When any site visitor attempts loading your site and encounters a fatal error, WordPress will send an email outlining the error details.
 define( 'SAVEQUERIES', false ); // https://codex.wordpress.org/Editing_wp-config.php#Save_queries_for_analysis
 define( 'SCRIPT_DEBUG', false ); // Use dev versions of core JS and CSS files (only needed if you are modifying these core files)
-define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable once you're done. Anyone can trigger this.
+define( 'WP_ALLOW_REPAIR', false ); // https://SEDURL/wp-admin/maint/repair.php - Disable this when you're done. Anyone can trigger this.
 define( 'WP_DEBUG_DISPLAY', false ); // Displays logs within browser on site. Not for production environments.
 define( 'WP_DEBUG_LOG', '/var/log/domains/SEDURL/SEDURL-wp-error.log' ); // Only writes log if WP_DEBUG is set to true.
 //define( 'WP_DISABLE_FATAL_ERROR_HANDLER', false ); // Disable the fatal error handler

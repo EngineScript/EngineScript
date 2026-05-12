@@ -20,8 +20,8 @@
 ## EngineScript Install Debug Mode ##
 # Prompts the user to continue or exit after each portion of the install script has run.
 # Debug mode will print any errors that each install script encounters.
-# Regardless of whether debug mode is enabled, EngineScript will generate a complete log of the script errors will be located at touch /var/log/EngineScript/install-error-log.log
-# Run command es.debug to generate a complete server and error log. This is useful when submitting a GitHub issue.
+# Regardless of whether debug mode is enabled, EngineScript will generate a complete error log at /var/log/EngineScript/install-error-log.log
+# Run the es.debug command to generate a complete server and error log. This is useful when submitting a GitHub issue.
 DEBUG_INSTALL=0
 
 ## Admin Subdomain (Recommended) ##
@@ -57,13 +57,13 @@ INSTALL_EXPANDED_PHP=0
 ## PHP Version Override ##
 # Leave empty to use the default PHP version (currently 8.5)
 # Set to "8.4" or "8.3" to install an older version instead
-# This affects all PHP installation, configuration, and service management
+# This affects all PHP installation, configuration, and service management.
 # You can also switch versions at any time via: es.menu > Update Software > Switch PHP Version
 PHP_VERSION_OVERRIDE=""
 
 ## Automatic Lossless Image Optimization ##
 # Automatically perform lossless compression on all images on each domain.
-# This script will remember which files have previously been compressed on the server, but will not be able to know if this was performed on a site from another server.
+# This script remembers which files have previously been compressed on the server, but it cannot know if compression was performed on another server.
 # Do not enable this feature if you have an image compression plugin or do lossless compression on images prior to uploading them to your site.
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 
@@ -77,7 +77,7 @@ INSTALL_ENGINESCRIPT_PLUGINS=1
 ## Install Extra WordPress Plugins ##
 # When enabled, EngineScript will install additional recommended WordPress plugins during site creation:
 # action-scheduler, autodescription, performance-lab, php-compatibility-checker, theme-check, wp-crontrol, wp-mail-smtp
-# These are optional but recommended for enhanced functionality, debugging, and development
+# These are optional but recommended for enhanced functionality, debugging, and development.
 # Note: Core plugins (flush-opcache, mariadb-health-checks, nginx-helper, redis-cache) are always installed
 INSTALL_EXTRA_WP_PLUGINS=1
 
@@ -87,9 +87,9 @@ INSTALL_EXTRA_WP_PLUGINS=1
 SHOW_ENGINESCRIPT_HEADER=0
 
 ## Nginx Unsafe File Blocking ##
-# Blocks access to potentially unsafe file types and locations in FastCGI cache
+# Blocks access to potentially unsafe file types and locations in FastCGI cache.
 # When enabled, blocks: .env, .log, .ini, wp-config.php, composer.json, backup files, etc.
-# Disable if you need to access these files through the web (not recommended for security)
+# Disable if you need to access these files through the web (not recommended for security).
 NGINX_BLOCK_UNSAFE_FILES=0
 
 ## Experimental: zlib Alternative for Nginx (Optional) ##
@@ -102,7 +102,7 @@ NGINX_BLOCK_UNSAFE_FILES=0
 #   "zlib-ng"  = zlib-ng (C, high-performance drop-in with --zlib-compat mode)
 #   "zlib-rs"  = zlib-rs (Rust-based, requires cargo/rustc toolchain on the server)
 #
-# WARNING: These are experimental options. If Nginx fails to compile, set back to "".
+# WARNING: These are experimental options. If Nginx fails to compile, set this back to "".
 ZLIB_IMPLEMENTATION=""
 
 ## DigitalOcean Remote Console ##
@@ -131,8 +131,8 @@ INSTALL_DIGITALOCEAN_METRICS_AGENT=0
 ENGINESCRIPT_AUTO_UPDATE=1
 
 # EngineScript Emergency Updates (Recommended)
-# Recommended if you allow EngineScript to auto-update. In the event that a change is pushed live that breaks servers, this emergency-only script will run to attempt a self-heal.
-# This script runs hourly, but will not contain any code unless there is a code issue that warrants emergency measures be taken.
+# Recommended if you allow EngineScript to auto-update. If a live change breaks servers, this emergency-only script will attempt a self-heal.
+# This script runs hourly, but will not contain any code unless there is a code issue that requires emergency measures.
 ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
 
 # EngineScript Test Mode

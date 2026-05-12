@@ -24,7 +24,7 @@ echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo "|   Domain Removal                                    |"
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo ""
-echo -e "WARNING: This script will remove a site from your installation.\n\n${BOLD}This removal is non-reversible and everything will be destroyed, including backups.${NORMAL}\nPlease be 100% sure of your choice before continuing on with this process.\n\n"
+echo -e "WARNING: This script will remove a site from your installation.\n\n${BOLD}This removal is irreversible and everything will be destroyed, including backups.${NORMAL}\nPlease be 100% sure of your choice before continuing with this process.\n\n"
 sleep 1
 
 # Enhanced confirmation with timeout and exit option

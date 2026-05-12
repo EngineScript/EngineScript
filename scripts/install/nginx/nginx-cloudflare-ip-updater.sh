@@ -17,7 +17,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# A bash script to download the latest list of CloudFlare IP address
+# A bash script to download the latest list of Cloudflare IP addresses
 # ranges to be used with Nginx for the purpose of displaying a
 # visitor's real IP address
 #
@@ -25,11 +25,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Modified: EngineScript - https://enginescript.com
 #
 
-# CloudFlare URLs where IP ranges are located at
+# Cloudflare URLs for IP ranges
 CLOUDFLARE_IPSV4="https://www.cloudflare.com/ips-v4"
 CLOUDFLARE_IPSV6="https://www.cloudflare.com/ips-v6"
 
-# Nginx config file which contains CloudFlare's IP ranges
+# Nginx config file that contains Cloudflare's IP ranges
 CLOUDFLARE_NGINX_CONFIG="/etc/nginx/globals/cloudflare.conf"
 
 # Temporary file location
@@ -64,7 +64,7 @@ validateIPv6() {
 	done < "$TEMP_FILE_IPV6"
 }
 
-# Download the files from CloudFlare
+# Download the files from Cloudflare
 if [[ -f /usr/bin/curl ]];
 then
 	# IPv4
@@ -102,7 +102,7 @@ echo "Debug: IPv6 ranges downloaded:"
 cat "$TEMP_FILE_IPV6"
 
 # Generate the new config file with the latest IPs
-echo "# CloudFlare IP addresses" > $CLOUDFLARE_NGINX_CONFIG
+echo "# Cloudflare IP addresses" > $CLOUDFLARE_NGINX_CONFIG
 echo "# > IPv4" >> $CLOUDFLARE_NGINX_CONFIG
 
 IPV4_PROCESSED=0

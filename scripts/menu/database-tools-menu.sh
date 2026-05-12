@@ -61,7 +61,7 @@ while true
         "Exit Server Tools")
           exit
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

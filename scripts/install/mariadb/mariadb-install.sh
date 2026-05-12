@@ -47,7 +47,7 @@ debug_pause "System Update and Cleanup"
 # New MariaDB Secure Method
 # Probably safer to do the secure installation manually, as the previous method would break if MariaDB changed anything in the order that they ask questions.
 
-# Set password with `debconf-set-selections` You don't have to enter it in prompt
+# Set the password with `debconf-set-selections` so the user is not prompted.
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${MARIADB_ADMIN_PASSWORD}" # new password for the MySQL root user
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MARIADB_ADMIN_PASSWORD}" # repeat password for the MySQL root user
 

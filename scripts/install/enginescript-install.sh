@@ -43,7 +43,7 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
 # Reboot Warning
-echo -e "\nATTENTION:\n\nServer needs to reboot at the end of this script.\nEnter command es.menu after reboot to continue.\n\nScript will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
+echo -e "\nATTENTION:\n\nThe server needs to reboot at the end of this script.\nEnter the es.menu command after rebooting to continue.\n\nThe script will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 1000 ]];
@@ -143,12 +143,12 @@ fi
 
 # Check S3 Install
 if [[ "$INSTALL_S3_BACKUP" = 1 ]]; then
-    validate_not_placeholder "S3_BUCKET_NAME" "$S3_BUCKET_NAME" "You have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER\nYou can also disabled S3 cloud backup by setting INSTALL_S3_BACKUP=0"
+    validate_not_placeholder "S3_BUCKET_NAME" "$S3_BUCKET_NAME" "You have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER.\nYou can also disable S3 cloud backup by setting INSTALL_S3_BACKUP=0."
 fi
 
 # Check Cloudflare Credentials
-validate_not_placeholder "CF_GLOBAL_API_KEY" "$CF_GLOBAL_API_KEY" "CF_GLOBAL_API_KEY is set to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_GLOBAL_API_KEY to the correct value."
-validate_not_placeholder "CF_ACCOUNT_EMAIL" "$CF_ACCOUNT_EMAIL" "CF_ACCOUNT_EMAIL is set to PLACEHOLDER. EngineScript requires this be set prior to installation.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change CF_ACCOUNT_EMAIL to the correct value."
+validate_not_placeholder "CF_GLOBAL_API_KEY" "$CF_GLOBAL_API_KEY" "CF_GLOBAL_API_KEY is set to PLACEHOLDER. EngineScript requires this to be set before installation.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change CF_GLOBAL_API_KEY to the correct value."
+validate_not_placeholder "CF_ACCOUNT_EMAIL" "$CF_ACCOUNT_EMAIL" "CF_ACCOUNT_EMAIL is set to PLACEHOLDER. EngineScript requires this to be set before installation.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change CF_ACCOUNT_EMAIL to the correct value."
 
 # Check Credentials
 validate_not_placeholder "MARIADB_ADMIN_PASSWORD" "$MARIADB_ADMIN_PASSWORD"
@@ -156,7 +156,7 @@ validate_not_placeholder "PHPMYADMIN_USERNAME" "$PHPMYADMIN_USERNAME"
 validate_not_placeholder "PHPMYADMIN_PASSWORD" "$PHPMYADMIN_PASSWORD"
 validate_not_placeholder "FILEMANAGER_USERNAME" "$FILEMANAGER_USERNAME"
 validate_not_placeholder "FILEMANAGER_PASSWORD" "$FILEMANAGER_PASSWORD"
-validate_not_placeholder "WP_ADMIN_EMAIL" "$WP_ADMIN_EMAIL" "WP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this be set to a unique value.\nPlease return to the config file with command ${BOLD}es.config${NORMAL} and change WP_ADMIN_EMAIL to a real email address."
+validate_not_placeholder "WP_ADMIN_EMAIL" "$WP_ADMIN_EMAIL" "WP_ADMIN_EMAIL is set to PLACEHOLDER. EngineScript requires this to be set to a unique value.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change WP_ADMIN_EMAIL to a real email address."
 
 # Check/fix WordPress Recovery Email
 if [[ "$WP_RECOVERY_EMAIL" = PLACEHOLDER ]]; then
@@ -293,9 +293,9 @@ clear
 /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
 
 # Reboot Notice
-echo -e "${BOLD}Server needs to reboot.${NORMAL}\n\nEnter command ${BOLD}es.menu${NORMAL} after reboot to continue.\n" | boxes -a c -d shell -p a1l2
+echo -e "${BOLD}The server needs to reboot.${NORMAL}\n\nEnter the ${BOLD}es.menu${NORMAL} command after rebooting to continue.\n" | boxes -a c -d shell -p a1l2
 sleep 10
 clear
 
-echo -e "Server rebooting now...\n\n${NORMAL}When reconnected, use command ${BOLD}es.menu${NORMAL} to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2
+echo -e "The server is rebooting now...\n\n${NORMAL}After reconnecting, use the ${BOLD}es.menu${NORMAL} command to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2
 shutdown -r now

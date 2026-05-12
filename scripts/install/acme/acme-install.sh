@@ -32,7 +32,7 @@ export CF_Key="${CF_GLOBAL_API_KEY}"
 export CF_Email="${CF_ACCOUNT_EMAIL}"
 
 # Register ZeroSSL
-# Using the user's Cloudflare email address since it's less fields they are required to fill out in the option file and would more than likely be the same address.
+# Use the user's Cloudflare email address so they have fewer fields to fill out in the options file.
 /root/.acme.sh/acme.sh --register-account -m "${CF_ACCOUNT_EMAIL}"
 
 /root/.acme.sh/acme.sh --upgrade --auto-upgrade

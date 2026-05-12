@@ -80,7 +80,7 @@ while true
         "Exit Server Logs")
           exit
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

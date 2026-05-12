@@ -93,7 +93,7 @@ while true
                   TARGET_VER="${php_choice#PHP }"
                   break
               else
-                  echo "Invalid option"
+                  echo "Invalid option."
               fi
           done
           if [[ -n "${TARGET_VER}" ]]; then
@@ -122,7 +122,7 @@ while true
         "Exit Update Software Menu")
           exit
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

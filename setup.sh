@@ -245,7 +245,7 @@ else
   echo -e "\n\nInitial setup is complete.\n\nProceed to: Step 2 - Edit Options File\n\nhttps://github.com/EngineScript/EngineScript#step-2---edit-options-file\n\n"
 fi
 
-echo -e "Server needs to restart" | boxes -a c -d shell -p a1l2
-echo "Server will restart in 1 minute"
+echo -e "The server needs to restart." | boxes -a c -d shell -p a1l2
+echo "The server will restart in 1 minute."
 echo "Restarting..."
 shutdown -r +1

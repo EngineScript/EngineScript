@@ -49,7 +49,7 @@ while true
         "Exit Domain Configuration Tools")
           exit 0
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

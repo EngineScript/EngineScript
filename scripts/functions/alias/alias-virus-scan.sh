@@ -19,15 +19,15 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # ClamAV Scan Message
-echo "Virus Scan started"
-echo "ClamAV will scan your /var/www/sites directory. This include all WordPress installations, themes, uploads, etc."
+echo "Virus scan started."
+echo "ClamAV will scan your /var/www/sites directory. This includes all WordPress installations, themes, uploads, etc."
 echo ""
 echo "ClamAV automatically checks for the latest version daily."
 echo ""
-echo "To scan a different directory on your server, using command ${BOLD}clamscan -ir /DIRECTORY${NORMAL}."
+echo "To scan a different directory on your server, use the command ${BOLD}clamscan -ir /DIRECTORY${NORMAL}."
 echo ""
 echo "Scan logs can be found at ${BOLD}/var/log/clamav/virus-scan.log${NORMAL}."
-echo "Depending on the size of your web directories, virus scan may take a while."
+echo "Depending on the size of your web directories, the virus scan may take a while."
 
 # ClamAV Scan
 clamscan -ir /var/www/sites

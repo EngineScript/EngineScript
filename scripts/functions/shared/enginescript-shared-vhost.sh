@@ -133,7 +133,7 @@ create_ssl_certificate() {
 create_backup_directories() {
   local SITE_URL="$1"
   
-  # Backup Dir Creation
+  # Create backup directories
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database"
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/daily"
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/hourly"

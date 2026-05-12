@@ -20,8 +20,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
-cd "$d" && echo "Wordfence CLI vulnerability scan is running. This scan may take a bit, standby for results."
+select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
+cd "$d" && echo "Wordfence CLI vulnerability scan is running. This scan may take a bit; stand by for results."
 echo "When completed, the scan results will be located at:"
 echo "/home/EngineScript/wordfence-scan-results/wordfence-cli-vulnerability-scan-results.csv"
 

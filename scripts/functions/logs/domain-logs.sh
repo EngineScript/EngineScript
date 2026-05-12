@@ -20,7 +20,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 cd /var/www/sites
 printf "Please select the site you want to view logs for:\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
+select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
 
 # Domain Nginx error log
 echo "${BOLD}Showing last 20 lines of Nginx error log for ${d}.${NORMAL}" | boxes -a c -d shell -p a1l2

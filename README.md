@@ -68,7 +68,7 @@ es.install
 
 ### EngineScript Menu
 
-After EngineScript is fully installed, type `es.menu` in console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to get started adding your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function is fairly robust and should help simplify the process quite a bit.
+After EngineScript is fully installed, type `es.menu` at the console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to get started adding your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function is fairly robust and should help simplify the process quite a bit.
 
 ### Cloudflare
 
@@ -103,7 +103,7 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 
 1. In WordPress, go to Settings >> Nginx Helper
 2. Check Enable Purge.
-3. Select "nginx Fastcgi cache" for Caching Method
+3. Select "nginx FastCGI cache" for Caching Method
 4. Select "Using a GET request to PURGE/url (Default option)" for Purging Method.
 5. Check all of the boxes under Purging Conditions.
 6. Save Changes.
@@ -146,8 +146,8 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 |Command|Function|
 |-|-|
-|**`es.backup`**     |Runs the backup script to backup all domains locally and *optionally* in the cloud|
-|**`es.cache`**      |Clear FastCGI Cache, OpCache, and Redis *(server-wide)*|
+|**`es.backup`**     |Runs the backup script to back up all domains locally and *optionally* in the cloud|
+|**`es.cache`**      |Clears FastCGI Cache, OpCache, and Redis *(server-wide)*|
 |**`es.config`**     |Opens the configuration file in Nano|
 |**`es.debug`**      |Displays debug information for EngineScript|
 |**`es.help`**       |Displays EngineScript commands and locations|

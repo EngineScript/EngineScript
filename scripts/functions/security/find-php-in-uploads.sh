@@ -20,8 +20,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 cd /var/www/sites
 printf "Please select the site you want to scan for issues\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
-cd "$d"/html && echo "Locating .php files in the uploads directory. Scan may take a bit, standby for results."
+select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
+cd "$d"/html && echo "Locating .php files in the uploads directory. The scan may take a bit; stand by for results."
 echo -e "\n\nThis could indicate a security issue and/or risk on your server.\nNot everything is dangerous, so research thoroughly before taking any action.\n\nFound the following .php files:"
 find ./wp-content/uploads -name "*.php"
 

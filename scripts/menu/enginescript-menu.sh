@@ -88,7 +88,7 @@ while true
         "Exit EngineScript")
           exit
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

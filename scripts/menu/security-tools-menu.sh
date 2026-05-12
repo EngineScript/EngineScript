@@ -65,7 +65,7 @@ while true
         "Exit Security Tools")
           exit
           ;;
-        *) echo invalid option;;
+        *) echo "Invalid option.";;
       esac
     done
   done

@@ -35,10 +35,10 @@ WPCONTENT_FILE="${NOW}-wp-content.gz";
 # Select site
 cd /var/www/sites
 printf "Please select the site you want to remove infected files on:\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid Selection"; done
+select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
 cd "$d" && echo "Wordfence CLI will attempt to remediate infections of known files by reverting them back to their original version."
 echo -e "\nEngineScript will now create a new database and full file backup for your site.
-\n\nIf something goes wrong, the backup files can be found in in:
+\n\nIf something goes wrong, the backup files can be found in:
 \n/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}\n\n"
 
 # Make backup directory
@@ -51,7 +51,7 @@ wp db export --path="/var/www/sites/${d}/html" "/home/EngineScript/site-backups/
 tar -zcf "/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}/${FULLWPFILES}" html
 
 echo -e "\nBackup completed.
-\n\nIf something goes wrong, the backup files can be found in in:
+\n\nIf something goes wrong, the backup files can be found in:
 \n/home/EngineScript/site-backups/${d}/wordfence-cli-remediate-backup/${NOW}\n\n"
 
 # Remediate

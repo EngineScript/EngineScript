@@ -47,7 +47,7 @@ echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $UBUNTU_TYPE $UBUNTU_VERSION $UBUNTU_CODENAME"
 
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nNginx Info\n=-=-=-=-=-=-=-=-=-\n"
-nginx -Vv
+nginx -V
 echo ""
 echo "Nginx Executable Properties:"
 checksec --format=json --file=/usr/sbin/nginx --extended | jq -r

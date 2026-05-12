@@ -119,7 +119,7 @@ fi
 systemctl start nginx
 
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nNginx Info\n=-=-=-=-=-=-=-=-=-\n"
-nginx -Vv
+nginx -V
 echo ""
 echo "Nginx Executable Properties:"
 checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
