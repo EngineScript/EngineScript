@@ -26,9 +26,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-cred
 
 # --- Define Fixed Import Paths ---
 IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
-WP_ARCHIVE_DIR="${IMPORT_BASE_DIR}/root-directory" # Directory containing the archive
-DB_IMPORT_DIR="${IMPORT_BASE_DIR}/database-file"
 WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
+WP_FILES_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-files" # Temporary path for nested files archives
+
+# EngineScript combined site archive format (v1)
+# Keep this contract aligned with the EngineScript Site Exporter WordPress plugin:
+#   - The user places exactly one outer .zip file in IMPORT_BASE_DIR.
+#   - The ZIP must contain manifest.txt, database/<dump>.sql.gz, and files/<wordpress-files>.tar.gz.
+#   - This is the only supported import format. Keep the WordPress plugin exporter identical.
 
 # Note: ALLOWED_DB_CHARSETS is now defined in enginescript-db-credentials.sh
 
@@ -56,6 +61,12 @@ URL_VALIDATION_REGEX="${URL_VALIDATION_REGEX:-$DEFAULT_URL_VALIDATION_REGEX}"
 validate_zip_archive_paths() {
     local archive_file="$1"
     local entry=""
+    local archive_entries=""
+
+    if ! archive_entries="$(unzip -Z -1 "$archive_file")"; then
+        echo "FAILED: Could not read ZIP archive ${archive_file}"
+        return 1
+    fi
 
     while IFS= read -r entry; do
         # Reject absolute paths and parent-directory traversal segments
@@ -63,27 +74,67 @@ validate_zip_archive_paths() {
             echo "FAILED: Unsafe path detected in archive ${archive_file}: ${entry}"
             return 1
         fi
-    done < <(unzip -Z -1 "$archive_file")
+    done <<< "$archive_entries"
 
     return 0
 }
 
-# Returns true (0) when a directory is absent or contains no files/subdirs
-is_directory_absent_or_empty() {
-    local dir="$1"
-    [[ ! -d "$dir" ]] || [[ -z "$(find "$dir" -mindepth 1 -print -quit)" ]]
-    return $?
+# Validate tar archive entries before extraction. The exporter stores WordPress files in
+# files/<site>_files_<timestamp>.tar.gz inside the outer combined ZIP.
+validate_tar_archive_paths() {
+    local archive_file="$1"
+    local entry=""
+    local archive_entries=""
+
+    if ! archive_entries="$(tar -tzf "$archive_file")"; then
+        echo "FAILED: Could not read tar archive ${archive_file}"
+        return 1
+    fi
+
+    while IFS= read -r entry; do
+        # Reject absolute paths and parent-directory traversal segments
+        if [[ "$entry" == /* ]] || [[ "$entry" =~ (^|/)\.\.(\/|$) ]]; then
+            echo "FAILED: Unsafe path detected in archive ${archive_file}: ${entry}"
+            return 1
+        fi
+    done <<< "$archive_entries"
+
+    return 0
+}
+
+# Print the directory containing wp-config.php for a WordPress file tree.
+find_wordpress_files_source_path() {
+    local search_root="$1"
+    local wp_config_rel_path=""
+    local wp_config_dir=""
+
+    wp_config_rel_path=$(find "${search_root}" -name "wp-config.php" -printf "%P\n" | sort | head -n 1)
+    if [[ -z "${wp_config_rel_path}" ]]; then
+        return 1
+    fi
+
+    wp_config_dir="$(dirname "${wp_config_rel_path}")"
+    if [[ "${wp_config_dir}" == "." ]]; then
+        echo "${search_root}"
+    else
+        echo "${search_root}/${wp_config_dir}"
+    fi
+
+    return 0
 }
 
 # --- Instructions for Preparing Files ---
 echo ""
 echo "${BOLD}Preparing Files for Import:${NORMAL}"
 echo "---------------------------------------------------------------------"
-echo "You can use one of the following methods:"
+echo "This import process accepts one combined EngineScript site archive:"
 echo ""
-echo "${BOLD}Method 1: Single Export File (Recommended - using EngineScript Site Exporter plugin)${NORMAL}"
-echo "   - This method uses the 'EngineScript Site Exporter' plugin to create a single .zip file"
-echo "     containing both WordPress files and the database (.sql)."
+echo "${BOLD}Single Combined Export File (EngineScript Site Exporter format)${NORMAL}"
+echo "   - Use a single .zip file containing both WordPress files and one database dump."
+echo "   - The current EngineScript shell exporter writes:"
+echo "       manifest.txt"
+echo "       database/<site>_db_<timestamp>.sql.gz"
+echo "       files/<site>_files_<timestamp>.tar.gz"
 echo "   - ${YELLOW}If you don't have the plugin on your source site:${NORMAL}"
 echo "     1. Download the plugin zip from: ${UNDERLINE}https://github.com/EngineScript/enginescript-site-exporter/releases/latest${NORMAL}"
 echo "     2. In your source WordPress admin area, go to 'Plugins' -> 'Add New' -> 'Upload Plugin'."
@@ -95,16 +146,7 @@ echo "     3. Download the generated .zip file (e.g., site_export_es_se_... .zip
 echo "   - Place this single downloaded .zip file directly inside the following directory on the EngineScript server:"
 echo "     \`${IMPORT_BASE_DIR}\`"
 echo "     (Ensure only this one .zip file is present in ${IMPORT_BASE_DIR})"
-echo ""
-echo "${BOLD}Method 2: Separate Files (Manual Export)${NORMAL}"
-echo "   1. ${BOLD}WordPress Root Directory Archive:${NORMAL}"
-echo "      - Compress your WordPress root directory content (.tar.gz or .zip)."
-echo "      - Place the archive file inside:"
-echo "        \`${WP_ARCHIVE_DIR}\`"
-echo "   2. ${BOLD}WordPress Database Dump:${NORMAL}"
-echo "      - Export your database (.sql or .sql.gz)."
-echo "      - Place the database file inside:"
-echo "        \`${DB_IMPORT_DIR}\`"
+echo "   - The old separate root-directory/database-file import folders are no longer supported."
 echo "---------------------------------------------------------------------"
 prompt_continue "Press [Enter] when your files are prepared and ready" 600
 # --- End Instructions ---
@@ -120,10 +162,9 @@ echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo ""
 echo "This script will import an existing WordPress site."
 echo "Please ensure the following:"
-echo "  1. The compressed WordPress site root directory (.zip or .tar.gz) is placed in:"
-echo "     ${WP_ARCHIVE_DIR}"
-echo "  2. The database dump file (.sql or .sql.gz) is placed in:"
-echo "     ${DB_IMPORT_DIR}"
+echo "  1. Exactly one combined EngineScript site export .zip is placed in:"
+echo "     ${IMPORT_BASE_DIR}"
+echo "  2. The combined .zip contains manifest.txt, database/*.sql.gz, and files/*.tar.gz."
 echo ""
 sleep 1
 
@@ -199,128 +240,124 @@ extract_prefix_from_db() {
 # --- Validate Import Paths and Files ---
 echo "Validating import directories and files..."
 
-IMPORT_FORMAT="" # "single_zip" or "two_file"
-SINGLE_ZIP_FILE=""
-WP_ARCHIVE_FILE="" # Path to WP files archive (for two_file method)
-DB_SOURCE_PATH=""  # Path to the DB file (set differently for each method)
+COMBINED_ARCHIVE_FILE=""
+DB_SOURCE_PATH=""
+WP_FILES_SOURCE_PATH=""
+WP_FILES_ARCHIVE_PATH=""
+MANIFEST_PATH=""
 
-# Try detecting Single Zip format first
-mapfile -d '' -t SINGLE_ZIP_CANDIDATES < <(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip" -print0)
-SINGLE_ZIP_COUNT=${#SINGLE_ZIP_CANDIDATES[@]}
+mapfile -d '' -t COMBINED_ARCHIVE_CANDIDATES < <(find "${IMPORT_BASE_DIR}" -maxdepth 1 -type f -name "*.zip" -print0 | sort -z)
+COMBINED_ARCHIVE_COUNT=${#COMBINED_ARCHIVE_CANDIDATES[@]}
 
-if [[ "$SINGLE_ZIP_COUNT" -eq 1 ]] && is_directory_absent_or_empty "${WP_ARCHIVE_DIR}" && is_directory_absent_or_empty "${DB_IMPORT_DIR}"; then
-    # Found exactly one zip file in the base dir, and the two-file dirs are absent or empty
-    IMPORT_FORMAT="single_zip"
-    SINGLE_ZIP_FILE="${SINGLE_ZIP_CANDIDATES[0]}"
-    echo "PASSED: Detected Single Export Zip format: ${SINGLE_ZIP_FILE}"
-elif [[ -d "${WP_ARCHIVE_DIR}" && -d "${DB_IMPORT_DIR}" ]]; then
-    # Check the original two-file method
-    # Find WP archive file
-    mapfile -d '' -t WP_ARCHIVE_FILE_CANDIDATES < <(find "${WP_ARCHIVE_DIR}" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tgz" \) -print0)
-    WP_ARCHIVE_COUNT=${#WP_ARCHIVE_FILE_CANDIDATES[@]}
-
-    # Find DB file
-    mapfile -d '' -t DB_SOURCE_FILE_CANDIDATES < <(find "${DB_IMPORT_DIR}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0)
-    DB_SOURCE_COUNT=${#DB_SOURCE_FILE_CANDIDATES[@]}
-
-    if [[ "$WP_ARCHIVE_COUNT" -eq 1 && "$DB_SOURCE_COUNT" -eq 1 ]]; then
-        IMPORT_FORMAT="two_file"
-        WP_ARCHIVE_FILE="${WP_ARCHIVE_FILE_CANDIDATES[0]}"
-        DB_SOURCE_PATH="${DB_SOURCE_FILE_CANDIDATES[0]}" # Set DB path directly for this format
-        echo "PASSED: Detected Two-File format."
-        echo "  WordPress archive: ${WP_ARCHIVE_FILE}"
-        echo "  Database file: ${DB_SOURCE_PATH}"
-    fi
-fi
-
-# Validation Failure
-if [[ -z "$IMPORT_FORMAT" ]]; then
-    echo "FAILED: Could not detect a valid import format."
-    echo "Please ensure you have either:"
-    echo "  - Exactly one .zip file in ${IMPORT_BASE_DIR} (and no subdirectories like 'root-directory' or 'database-file')."
-    echo "  - OR Exactly one archive (.zip, .tar.gz, .tgz) in ${WP_ARCHIVE_DIR} AND exactly one database file (.sql, .sql.gz) in ${DB_IMPORT_DIR}."
+if [[ "${COMBINED_ARCHIVE_COUNT}" -ne 1 ]]; then
+    echo "FAILED: Could not detect a valid combined import archive."
+    echo "Please place exactly one EngineScript site export .zip directly in:"
+    echo "  ${IMPORT_BASE_DIR}"
+    echo ""
+    echo "Legacy separate-file imports using root-directory/ and database-file/ are no longer supported."
     exit 1
 fi
 
-# --- Extraction Step (Conditional) ---
-echo "Extracting content..."
+COMBINED_ARCHIVE_FILE="${COMBINED_ARCHIVE_CANDIDATES[0]}"
+echo "PASSED: Detected combined EngineScript site archive: ${COMBINED_ARCHIVE_FILE}"
+
+# --- Extraction Step ---
+echo "Extracting combined archive content..."
 # Clean up any previous extraction attempt
-rm -rf "${WP_EXTRACTED_PATH}"
+rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
 mkdir -p "${WP_EXTRACTED_PATH}"
 
 EXTRACT_STATUS=1 # Default to failure
 
-if [[ "$IMPORT_FORMAT" == "single_zip" ]]; then
-    echo "Extracting single zip file: ${SINGLE_ZIP_FILE}"
-    if validate_zip_archive_paths "${SINGLE_ZIP_FILE}"; then
-        unzip -q "${SINGLE_ZIP_FILE}" -d "${WP_EXTRACTED_PATH}"
-        EXTRACT_STATUS=$?
-    else
-        EXTRACT_STATUS=1
-    fi
-    if [[ $EXTRACT_STATUS -eq 0 ]]; then
-        # Find exactly one database dump file (.sql or .sql.gz) within the extracted content (deterministic order)
-        mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}" -maxdepth 1 -type f \( -name "*.sql" -o -name "*.sql.gz" \) -print0 | sort -z)
-        if [[ ${#DB_SOURCE_CANDIDATES[@]} -ne 1 ]]; then
-            echo "FAILED: Could not find exactly one database file (.sql or .sql.gz) within the extracted single zip content in ${WP_EXTRACTED_PATH}"
-            EXTRACT_STATUS=1 # Mark as failure
-        else
-            DB_SOURCE_PATH="${DB_SOURCE_CANDIDATES[0]}" # Set DB path for single_zip format
-            echo "PASSED: Found database file within extracted content: ${DB_SOURCE_PATH}"
-        fi
-    fi
-elif [[ "$IMPORT_FORMAT" == "two_file" ]]; then
-    echo "Extracting WordPress archive file: ${WP_ARCHIVE_FILE}"
-    if [[ "${WP_ARCHIVE_FILE}" == *.zip ]]; then
-        if validate_zip_archive_paths "${WP_ARCHIVE_FILE}"; then
-            unzip -q "${WP_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
-            EXTRACT_STATUS=$?
-        else
-            EXTRACT_STATUS=1
-        fi
-    elif [[ "${WP_ARCHIVE_FILE}" == *.tar.gz || "${WP_ARCHIVE_FILE}" == *.tgz ]]; then
-        tar -zxf "${WP_ARCHIVE_FILE}" -C "${WP_EXTRACTED_PATH}"
-        EXTRACT_STATUS=$?
-    else
-        echo "FAILED: Unrecognized archive format for ${WP_ARCHIVE_FILE}"
-        EXTRACT_STATUS=1
-    fi
-    # DB_SOURCE_PATH is already set for two_file format
+echo "Extracting combined zip file: ${COMBINED_ARCHIVE_FILE}"
+if validate_zip_archive_paths "${COMBINED_ARCHIVE_FILE}"; then
+    unzip -q "${COMBINED_ARCHIVE_FILE}" -d "${WP_EXTRACTED_PATH}"
+    EXTRACT_STATUS=$?
+else
+    EXTRACT_STATUS=1
 fi
 
 # Check Extraction Status
 if [[ $EXTRACT_STATUS -ne 0 ]]; then
     echo "FAILED: Extraction process failed."
-    rm -rf "${WP_EXTRACTED_PATH}" # Clean up failed extraction
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Clean up failed extraction
     exit 1
 fi
 
-# --- Locate wp-config.php and Determine Source Path (Common Logic) ---
-# This logic should work for both formats as wp-config.php will be inside WP_EXTRACTED_PATH
-WP_CONFIG_REL_PATH=$(find "${WP_EXTRACTED_PATH}" -name "wp-config.php" -printf "%P\n" | head -n 1)
-if [[ -z "$WP_CONFIG_REL_PATH" ]]; then
-    echo "FAILED: wp-config.php not found within the extracted content in ${WP_EXTRACTED_PATH}"
-    rm -rf "${WP_EXTRACTED_PATH}" # Clean up
+# Validate the canonical bundle layout. The WordPress plugin should write the same
+# structure as vhost-export.sh so the import path stays intentionally narrow.
+MANIFEST_PATH="${WP_EXTRACTED_PATH}/manifest.txt"
+if [[ ! -f "${MANIFEST_PATH}" ]]; then
+    echo "FAILED: manifest.txt not found at the root of the combined archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
     exit 1
 fi
 
-# Determine the actual source path for WP files
-if [[ "$WP_CONFIG_REL_PATH" == "wp-config.php" ]]; then
-    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}"
-else
-    SUBDIR=$(dirname "$WP_CONFIG_REL_PATH")
-    WP_FILES_SOURCE_PATH="${WP_EXTRACTED_PATH}/${SUBDIR}"
+if ! grep -Fxq "format=enginescript-site-archive" "${MANIFEST_PATH}"; then
+    echo "FAILED: manifest.txt does not identify an EngineScript site archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+if ! grep -Fxq "version=1" "${MANIFEST_PATH}"; then
+    echo "FAILED: Unsupported EngineScript site archive manifest version."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+if [[ ! -d "${WP_EXTRACTED_PATH}/database" ]]; then
+    echo "FAILED: database/ directory not found in the combined archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+if [[ ! -d "${WP_EXTRACTED_PATH}/files" ]]; then
+    echo "FAILED: files/ directory not found in the combined archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/database" -maxdepth 1 -type f -name "*.sql.gz" -print0 | sort -z)
+if [[ ${#DB_SOURCE_CANDIDATES[@]} -ne 1 ]]; then
+    echo "FAILED: Could not find exactly one compressed database file inside the combined archive."
+    echo "Expected canonical path: database/<dump>.sql.gz"
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+DB_SOURCE_PATH="${DB_SOURCE_CANDIDATES[0]}"
+echo "PASSED: Found database file within combined archive: ${DB_SOURCE_PATH}"
+
+mapfile -d '' -t WP_FILES_ARCHIVE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/files" -maxdepth 1 -type f -name "*.tar.gz" -print0 | sort -z)
+if [[ ${#WP_FILES_ARCHIVE_CANDIDATES[@]} -ne 1 ]]; then
+    echo "FAILED: Could not find exactly one WordPress files archive inside the combined archive."
+    echo "Expected canonical path: files/<wordpress-files>.tar.gz"
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+WP_FILES_ARCHIVE_PATH="${WP_FILES_ARCHIVE_CANDIDATES[0]}"
+echo "Extracting WordPress files archive: ${WP_FILES_ARCHIVE_PATH}"
+mkdir -p "${WP_FILES_EXTRACTED_PATH}"
+if ! validate_tar_archive_paths "${WP_FILES_ARCHIVE_PATH}" || ! tar -zxf "${WP_FILES_ARCHIVE_PATH}" -C "${WP_FILES_EXTRACTED_PATH}"; then
+    echo "FAILED: Could not extract WordPress files archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+if ! WP_FILES_SOURCE_PATH="$(find_wordpress_files_source_path "${WP_FILES_EXTRACTED_PATH}")"; then
+    echo "FAILED: wp-config.php not found within the extracted WordPress files archive."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
 fi
 echo "PASSED: Archive extracted. WordPress source path set to: ${WP_FILES_SOURCE_PATH}"
 
 # --- Extract Table Prefix from Database File ---
-# DB_SOURCE_PATH is now set correctly for both formats
 echo "Extracting table prefix from database file: ${DB_SOURCE_PATH}"
 PREFIX=$(extract_prefix_from_db "$DB_SOURCE_PATH")
 if [[ -z "$PREFIX" ]]; then
     echo "FAILED: Could not automatically determine table prefix from database file: ${DB_SOURCE_PATH}"
     echo "Please ensure the database dump contains standard WordPress tables like 'wp_options'/'yourprefix_options' or 'wp_users'/'yourprefix_users'."
-    rm -rf "${WP_EXTRACTED_PATH}" # Clean up
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Clean up
     exit 1 # Exit if DB extraction fails
 fi
 echo "PASSED: Determined table prefix from database: ${PREFIX}"
@@ -417,7 +454,7 @@ while true; do
     [Ee]* )
       echo "Exiting script as requested."
       # Clean up extracted files before exiting
-      rm -rf "${WP_EXTRACTED_PATH}"
+      rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
       exit 0
       ;;
     * )
@@ -438,6 +475,7 @@ configure_cloudflare_settings "${DOMAIN}"
 # Verify if the extracted domain is already configured
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
   echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} (extracted from wp-config.php) is already configured in EngineScript.\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
+  rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
   exit 1
 else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
@@ -450,13 +488,7 @@ NEW_URL="https://${SITE_URL}" # Assume https for consistency
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-import.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
-if [ "${IMPORT_FORMAT}" = "single_zip" ]; then
-  echo "Starting domain import for ${DOMAIN} from single ZIP ${SINGLE_ZIP_FILE} at $(date)"
-elif [ "${IMPORT_FORMAT}" = "two_file" ]; then
-  echo "Starting domain import for ${DOMAIN} from archive ${WP_ARCHIVE_FILE} and DB ${DB_SOURCE_PATH} at $(date)"
-else
-  echo "Starting domain import for ${DOMAIN} (format: ${IMPORT_FORMAT}) with inputs ZIP=${SINGLE_ZIP_FILE}, archive=${WP_ARCHIVE_FILE}, DB=${DB_SOURCE_PATH} at $(date)"
-fi
+echo "Starting domain import for ${DOMAIN} from combined ZIP ${COMBINED_ARCHIVE_FILE} at $(date)"
 
 # Continue the installation
 # Create nginx vhost configuration files
@@ -679,30 +711,18 @@ if prompt_yes_no "Is the imported site at https://${SITE_URL} working correctly?
     # Move import files to completed-backups directory
     BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"
     mkdir -p "${BACKUP_DIR}"
-    if [[ "${IMPORT_FORMAT}" == "two_file" ]] && [[ -n "${WP_ARCHIVE_FILE}" ]] && [[ -f "${WP_ARCHIVE_FILE}" ]]; then
-        mv "${WP_ARCHIVE_FILE}" "${BACKUP_DIR}/"
-        echo "Moved ${WP_ARCHIVE_FILE} to ${BACKUP_DIR}/"
+    if [[ -n "${COMBINED_ARCHIVE_FILE}" ]] && [[ -f "${COMBINED_ARCHIVE_FILE}" ]]; then
+        mv "${COMBINED_ARCHIVE_FILE}" "${BACKUP_DIR}/"
+        echo "Moved ${COMBINED_ARCHIVE_FILE} to ${BACKUP_DIR}/"
     fi
-    if [[ "${IMPORT_FORMAT}" == "single_zip" ]] && [[ -n "${SINGLE_ZIP_FILE}" ]] && [[ -f "${SINGLE_ZIP_FILE}" ]]; then
-        mv "${SINGLE_ZIP_FILE}" "${BACKUP_DIR}/"
-        echo "Moved ${SINGLE_ZIP_FILE} to ${BACKUP_DIR}/"
-    fi
-    if [[ -n "${DB_SOURCE_PATH}" ]] && [[ -f "${DB_SOURCE_PATH}" ]]; then
-        mv "${DB_SOURCE_PATH}" "${BACKUP_DIR}/"
-        echo "Moved ${DB_SOURCE_PATH} to ${BACKUP_DIR}/"
-    fi
-    rm -rf "${WP_EXTRACTED_PATH}" # Remove the temporary extracted directory
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Remove temporary extracted directories
     echo "Cleanup complete. Import files moved to ${BACKUP_DIR}."
     sleep 2 # Short pause after cleanup message
 else
     echo "Site verification failed by user."
-    echo "Removing temporary extracted files directory: ${WP_EXTRACTED_PATH}"
-    rm -rf "${WP_EXTRACTED_PATH}" # Remove only the extracted directory
-    if [[ "${IMPORT_FORMAT}" == "two_file" ]]; then
-        echo "Original archive file (${WP_ARCHIVE_FILE}) in ${WP_ARCHIVE_DIR} and database file (${DB_SOURCE_PATH}) in ${DB_IMPORT_DIR} will NOT be removed."
-    else
-        echo "Original import file (${SINGLE_ZIP_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
-    fi
+    echo "Removing temporary extracted file directories: ${WP_EXTRACTED_PATH}, ${WP_FILES_EXTRACTED_PATH}"
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Remove only extracted directories
+    echo "Original combined import file (${COMBINED_ARCHIVE_FILE}) in ${IMPORT_BASE_DIR} will NOT be removed."
     echo "Please investigate the issue and use 'es.menu' to remove the domain '${SITE_URL}' when ready."
     echo "Exiting script now."
     exit 1 # Exit without full cleanup
