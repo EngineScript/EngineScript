@@ -8,11 +8,14 @@
 #----------------------------------------------------------------------------------
 # CI Test: SQL Credential Creation
 # Tests the database credential generation, validation, and SQL execution
-# functions used by vhost-install.sh and vhost-import.sh.
+# functions used by vhost-install.sh and vhost-import.sh. It also checks the
+# vhost import/export source for the canonical single-archive format contract.
 #
 # This script sources the shared enginescript-db-credentials.sh library and
 # calls the exact same functions that production uses, so any change to
-# the credential logic is automatically tested.
+# the credential logic is automatically tested. Archive contract checks are
+# intentionally source-level because vhost-import.sh and vhost-export.sh are
+# interactive production scripts that require a real WordPress site.
 #----------------------------------------------------------------------------------
 
 set -euo pipefail
@@ -44,6 +47,18 @@ pass() {
 fail() {
   echo "  FAILED: $1" >&2
   TESTS_FAILED=$((TESTS_FAILED + 1))
+}
+
+assert_file_contains() {
+  local file_path="$1"
+  local pattern="$2"
+  local description="$3"
+
+  if grep -Eq -- "${pattern}" "${file_path}"; then
+    pass "${description}"
+  else
+    fail "${description}"
+  fi
 }
 
 
@@ -196,21 +211,30 @@ IMPORT_DOMAIN="importtest.com"
 DB_CHARSET="utf8mb4"
 
 generate_import_db_name "${IMPORT_DOMAIN}" || { fail "generate_import_db_name returned non-zero"; }
-SDB="${ES_DB_NAME}"
-SUSR="${RAND_CHAR16}"
-SPS="${RAND_CHAR32}"
+DB="${ES_DB_NAME}"
+USR="${RAND_CHAR16}"
+PSWD="${RAND_CHAR32}"
+GENERATED_IMPORT_DB="${DB}"
+GENERATED_IMPORT_USR="${USR}"
+GENERATED_IMPORT_PSWD="${PSWD}"
 
-if [[ -n "${SDB}" && "${SDB}" == "importtest_${RAND_CHAR4}" ]]; then
-  pass "Import ES_DB_NAME constructed: '${SDB}'"
+if [[ -n "${DB}" && "${DB}" == "importtest_${RAND_CHAR4}" ]]; then
+  pass "Import DB constructed and assigned like vhost-import.sh: '${DB}'"
 else
-  fail "Import ES_DB_NAME construction unexpected: '${SDB}'"
+  fail "Import DB construction unexpected: '${DB}'"
+fi
+
+if [[ -n "${USR}" && -n "${PSWD}" ]]; then
+  pass "Import USR and PSWD assigned like vhost-import.sh"
+else
+  fail "Import USR or PSWD was not assigned"
 fi
 
 # --- Step 3: Write credentials file ---
 echo ""
 echo "Step 3: write_credentials_file"
 IMPORT_CREDS_DIR="$(mktemp -d)"
-write_credentials_file "${IMPORT_CREDS_DIR}" "${IMPORT_DOMAIN}" "${SDB}" "${SUSR}" "${SPS}"
+write_credentials_file "${IMPORT_CREDS_DIR}" "${IMPORT_DOMAIN}" "${DB}" "${USR}" "${PSWD}"
 
 if [[ -f "${IMPORT_CREDS_DIR}/${IMPORT_DOMAIN}.txt" ]]; then
   pass "Credentials file created"
@@ -218,10 +242,10 @@ else
   fail "Credentials file not found"
 fi
 
-if [[ "${DB}" == "${SDB}" && "${USR}" == "${SUSR}" && "${PSWD}" == "${SPS}" ]]; then
-  pass "Sourced values match written values"
+if [[ "${DB}" == "${GENERATED_IMPORT_DB}" && "${USR}" == "${GENERATED_IMPORT_USR}" && "${PSWD}" == "${GENERATED_IMPORT_PSWD}" ]]; then
+  pass "Sourced values preserve generated import credentials"
 else
-  fail "Sourced values do not match written values"
+  fail "Sourced values do not preserve generated import credentials"
 fi
 
 # --- Step 4: Validate import credentials ---
@@ -274,6 +298,43 @@ rm -rf "${IMPORT_CREDS_DIR}"
 
 echo ""
 echo "  vhost-import test complete."
+
+
+#----------------------------------------------------------------------------------
+# Test 3: vhost import/export single-archive contract
+#----------------------------------------------------------------------------------
+echo ""
+echo "======================================================="
+echo "  Test 3: vhost import/export archive contract"
+echo "======================================================="
+echo ""
+
+IMPORT_SCRIPT="${REPO_ROOT}/scripts/functions/vhost/vhost-import.sh"
+EXPORT_SCRIPT="${REPO_ROOT}/scripts/functions/vhost/vhost-export.sh"
+
+assert_file_contains "${EXPORT_SCRIPT}" 'manifest\.txt' "vhost-export documents manifest.txt in the bundle"
+assert_file_contains "${EXPORT_SCRIPT}" 'database/<site>_db_<timestamp>\.sql\.gz' "vhost-export documents database/<site>_db_<timestamp>.sql.gz"
+assert_file_contains "${EXPORT_SCRIPT}" 'files/<site>_files_<timestamp>\.tar\.gz' "vhost-export documents files/<site>_files_<timestamp>.tar.gz"
+assert_file_contains "${EXPORT_SCRIPT}" 'zip -0 -r -q "\$\{COMBINED_EXPORT_PATH\}" \.' "vhost-export stores the already-compressed payloads in the outer ZIP"
+assert_file_contains "${EXPORT_SCRIPT}" 'format=enginescript-site-archive' "vhost-export writes the EngineScript archive format marker"
+assert_file_contains "${EXPORT_SCRIPT}" 'version=1' "vhost-export writes archive version 1"
+assert_file_contains "${EXPORT_SCRIPT}" 'database_path=database/\$\{DB_EXPORT_FILENAME\}\.gz' "vhost-export writes the canonical database manifest path"
+assert_file_contains "${EXPORT_SCRIPT}" 'files_archive_path=files/\$\{FILES_EXPORT_FILENAME\}' "vhost-export writes the canonical files manifest path"
+
+assert_file_contains "${IMPORT_SCRIPT}" 'MANIFEST_PATH="\$\{WP_EXTRACTED_PATH\}/manifest\.txt"' "vhost-import requires manifest.txt at the archive root"
+assert_file_contains "${IMPORT_SCRIPT}" 'format=enginescript-site-archive' "vhost-import validates the EngineScript archive format marker"
+assert_file_contains "${IMPORT_SCRIPT}" 'version=1' "vhost-import validates archive version 1"
+assert_file_contains "${IMPORT_SCRIPT}" 'find "\$\{WP_EXTRACTED_PATH\}/database" -maxdepth 1 -type f -name "\*\.sql\.gz"' "vhost-import requires exactly one database/*.sql.gz file"
+assert_file_contains "${IMPORT_SCRIPT}" 'find "\$\{WP_EXTRACTED_PATH\}/files" -maxdepth 1 -type f -name "\*\.tar\.gz"' "vhost-import requires exactly one files/*.tar.gz archive"
+
+if grep -Eq 'two_file|SINGLE_ZIP_FILE|WP_ARCHIVE_DIR|DB_IMPORT_DIR|root-directory|database-file' "${IMPORT_SCRIPT}"; then
+  fail "vhost-import still contains legacy separate-file import markers"
+else
+  pass "vhost-import no longer contains legacy separate-file import markers"
+fi
+
+echo ""
+echo "  vhost import/export archive contract test complete."
 
 
 #----------------------------------------------------------------------------------

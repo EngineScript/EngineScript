@@ -146,7 +146,7 @@ echo "     3. Download the generated .zip file (e.g., site_export_es_se_... .zip
 echo "   - Place this single downloaded .zip file directly inside the following directory on the EngineScript server:"
 echo "     \`${IMPORT_BASE_DIR}\`"
 echo "     (Ensure only this one .zip file is present in ${IMPORT_BASE_DIR})"
-echo "   - The old separate root-directory/database-file import folders are no longer supported."
+echo "   - Only this canonical single-archive format is supported."
 echo "---------------------------------------------------------------------"
 prompt_continue "Press [Enter] when your files are prepared and ready" 600
 # --- End Instructions ---
@@ -254,7 +254,7 @@ if [[ "${COMBINED_ARCHIVE_COUNT}" -ne 1 ]]; then
     echo "Please place exactly one EngineScript site export .zip directly in:"
     echo "  ${IMPORT_BASE_DIR}"
     echo ""
-    echo "Legacy separate-file imports using root-directory/ and database-file/ are no longer supported."
+    echo "The archive must contain manifest.txt, database/*.sql.gz, and files/*.tar.gz."
     exit 1
 fi
 
@@ -507,12 +507,12 @@ echo "System Date: $(date)"
 # Domain Creation Variables (Generate *new* secure credentials for this server)
 source /usr/local/bin/enginescript/enginescript-variables.txt
 generate_import_db_name "${DOMAIN}" || exit 1
-SDB="${ES_DB_NAME}"
-SUSR="${RAND_CHAR16}"
-SPS="${RAND_CHAR32}"
+DB="${ES_DB_NAME}"
+USR="${RAND_CHAR16}"
+PSWD="${RAND_CHAR32}"
 
 # Domain Database Credentials (Store the *new* credentials)
-write_credentials_file "/home/EngineScript/mysql-credentials" "${DOMAIN}" "${SDB}" "${SUSR}" "${SPS}"
+write_credentials_file "/home/EngineScript/mysql-credentials" "${DOMAIN}" "${DB}" "${USR}" "${PSWD}"
 
 echo "Generated new MySQL database credentials for ${SITE_URL}."
 
