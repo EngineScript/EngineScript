@@ -127,10 +127,10 @@ sleep 2
 
 # Verify if the domain is already configured
 if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh; then
-  echo -e "\n\n${BOLD}Preinstallation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
+  echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
 else
-  echo "${BOLD}Preinstallation Check: Passed${NORMAL}"
+  echo "${BOLD}Pre-installation Check: Passed${NORMAL}"
 fi
 
 # Logging
@@ -324,7 +324,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
     echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
   fi
 
-  # WP-CLI set permalink structure for FastCGI Cache
+  # WP-CLI set permalink structure for FastCGI cache
   wp option get permalink_structure --allow-root
   wp option update permalink_structure '/%category%/%postname%/' --allow-root
   flush_wordpress_rewrites

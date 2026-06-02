@@ -45,7 +45,7 @@ class SiteController extends BaseController
             $cached = $this->getCached(self::ENDPOINT_LIST);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_LIST));
+                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_LIST));
                 return;
             }
 
@@ -56,11 +56,11 @@ class SiteController extends BaseController
             $this->setCached(self::ENDPOINT_LIST, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl(self::ENDPOINT_LIST));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_LIST));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Sites error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve sites');
+            ApiResponse::serverError('Unable to retrieve sites');
         }
     }
 
@@ -80,7 +80,7 @@ class SiteController extends BaseController
             $cached = $this->getCached(self::ENDPOINT_COUNT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
+                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
 
@@ -90,7 +90,7 @@ class SiteController extends BaseController
                 $result = ['count' => count($sitesCached)];
                 $this->setCached(self::ENDPOINT_COUNT, $result);
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
+                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
 
@@ -101,11 +101,11 @@ class SiteController extends BaseController
             $this->setCached(self::ENDPOINT_COUNT, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Sites count error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve sites count');
+            ApiResponse::serverError('Unable to retrieve sites count');
         }
     }
 
@@ -135,7 +135,7 @@ class SiteController extends BaseController
                     $sites[] = $site_info;
                 }
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('WordPress sites enumeration error', $e->getMessage());
         }
 
@@ -194,6 +194,10 @@ class SiteController extends BaseController
             }
 
             $config_path = $real_path . '/' . $file;
+            if (!is_file($config_path) || !is_readable($config_path)) { // codacy:ignore - file validation required for config scanning
+                continue;
+            }
+
             // codacy:ignore - realpath() required for path validation in standalone API
             $config_real_path = realpath($config_path);
 
@@ -289,7 +293,7 @@ class SiteController extends BaseController
             }
 
             return $this->parseWordPressVersion($real_version_file);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('WordPress version detection error', $e->getMessage());
             return 'Unknown';
         }

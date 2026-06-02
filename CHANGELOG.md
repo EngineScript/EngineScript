@@ -22,10 +22,9 @@ Changes are organized by date, with the most recent changes listed first.
 - Removed External Services API routes and controller bindings.
 - Kept Uptime monitoring and the rest of the admin control panel behavior unchanged.
 
-
 ## 2026-04-22
 
-### ♻️ REFACTOR: PHP 8.2–8.4 MODERNISATION OF EXTERNAL SERVICES API AND CONTROLLERS
+### ♻️ REFACTOR: PHP 8.2–8.4 MODERNIZATION OF EXTERNAL SERVICES API AND CONTROLLERS
 
 - Refactored the admin control panel codebase to modernize it and reduce duplication.
 
@@ -156,14 +155,14 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ## 2026-02-25
 
-### �️ CLOUDFLARE ZLIB REMOVAL
+### CLOUDFLARE ZLIB REMOVAL
 
 - **Removed Cloudflare zlib fork**: Cloudflare zlib is officially deprecated. Removed all references from the codebase.
   - Removed commented-out Cloudflare zlib clone/configure block and zlib-ng block from `zlib-install.sh`.
   - Removed `ZLIB-Cloudflare` entry from `README.md` software table.
   - Official zlib (madler/zlib) remains in use for Nginx compilation.
 
-### �🔧 SHARED FUNCTIONS LIBRARY EXPANSION (DRY REFACTOR)
+### SHARED FUNCTIONS LIBRARY EXPANSION (DRY REFACTOR)
 
 - **Added 8 new shared functions** to `scripts/functions/shared/enginescript-common.sh`:
   - `validate_not_placeholder()` — Validates config variables are not still set to PLACEHOLDER; exits with warning directing user to `es.config`.
@@ -369,7 +368,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ### 🔄 CACHE MANAGEMENT IMPROVEMENTS
 
-- **Enhanced FastCGI Cache Clearing**: Improved `clear_nginx_cache()` function with proper worker signaling
+- **Enhanced FastCGI cache clearing**: Improved `clear_nginx_cache()` function with proper worker signaling
   - **Reliable Deletion**: Uses find command to delete cached files while preserving directory structure
   - **Worker Notification**: Added nginx reload signal to notify worker processes of cache changes
   - **Robust Error Handling**: Enhanced validation and directory existence checking
@@ -404,7 +403,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ## 2025-10-12
 
-### � ADMIN CONSOLE SECURITY ENHANCEMENT
+### ADMIN CONSOLE SECURITY ENHANCEMENT
 
 - **IP Address Access Restriction**: Removed admin console locations from localhost configuration
   - **Security Improvement**: Direct IP address access now returns 204 No Content instead of serving admin control panel
@@ -536,7 +535,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ## 2025-08-29
 
-### � INSTALLATION COMPLETION VERIFICATION SYSTEM
+### INSTALLATION COMPLETION VERIFICATION SYSTEM
 
 - **Comprehensive Installation Validation**: Implemented robust system to verify EngineScript installation completion
   - **Common Functions Library**: Added `check_installation_completion()` and `verify_installation_completion()` to shared functions
@@ -567,7 +566,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
   - **Development Support**: Enhances developer workflow by providing immediate feedback on branch creation
   - **CI/CD Integration**: Ensures code quality checks run consistently across all development branches
 
-### �🔧 UBUNTU PRO INSTALLATION SYSTEM REFACTORING
+### UBUNTU PRO INSTALLATION SYSTEM REFACTORING
 
 - **Modular Installation Structure**: Refactored Ubuntu Pro setup to follow EngineScript's standardized component pattern
   - **New Install Script**: Created dedicated `ubuntu-pro-install.sh` script in `/scripts/install/ubuntu-pro/` directory
@@ -661,9 +660,9 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 - **Compiler Flags Refactoring**: Improved nginx compile script maintainability
   - **Variable Consolidation**: Consolidated `--with-cc-opt`, `--with-ld-opt`, and `--with-openssl-opt` flags into reusable variables
-  - **Code Deduplication**: Eliminated duplicate flag definitions between HTTP2 and HTTP3 build configurations
+  - **Code Deduplication**: Eliminated duplicate flag definitions between HTTP/2 and HTTP/3 build configurations
   - **Maintenance Simplification**: Changes to compiler flags now only need to be made in one location
-  - **Build Consistency**: Ensures identical optimization flags are used for both HTTP2 and HTTP3 builds
+  - **Build Consistency**: Ensures identical optimization flags are used for both HTTP/2 and HTTP/3 builds
   - **Debug Mode Integration**: Made OpenSSL `no-tests` flag conditional based on debug mode setting
 - **OpenSSL Version Management**: Maintains OpenSSL 3.5.x series for latest features
   - **Version Consistency**: Ensured all configuration files use OpenSSL 3.5.x series
@@ -711,7 +710,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
   - **API Routing**: Fixed API endpoint routing that was preventing JavaScript from communicating with PHP backend
   - **File Location**: Resolved mismatch between nginx configuration and actual control panel file locations
 
-### �🔧 ADMIN CONTROL PANEL IMPROVEMENTS
+### ADMIN CONTROL PANEL IMPROVEMENTS
 
 - **Mobile Navigation**: Added hamburger menu for mobile access to admin control panel navigation
   - **Responsive Design**: Fixed left navigation column visibility on mobile devices
@@ -900,7 +899,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - Confirmed all exception messages properly escaped before concatenation
     - Enhanced security documentation for standalone API error handling
 
-### �🔐 DYNAMIC AUTHENTICATION SYSTEM
+### DYNAMIC AUTHENTICATION SYSTEM
 
 - **TinyFileManager Credential Integration**: Implemented dynamic authentication using main EngineScript credentials
   - **Automatic Credential Loading**: TinyFileManager now reads username/password from `/home/EngineScript/enginescript-install-options.txt`
@@ -947,7 +946,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - Installation script displays correct access URL
     - Password reset script shows correct location path
 
-### �🐛 CONFIGURATION PARSING FIX
+### CONFIGURATION PARSING FIX
 
 - **Uptime Robot Configuration**: Fixed PHP syntax error in configuration file parsing
   - **Parse Error Resolution**: Replaced `parse_ini_file()` with robust manual parsing in `uptimerobot.php`
@@ -982,7 +981,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ## 2025-07-06
 
-### �🔧 DASHBOARD UX IMPROVEMENTS
+### DASHBOARD UX IMPROVEMENTS
 
 - **Tool Card Status Simplification**: Removed "checking..." status indicators from admin dashboard tool cards
   - **File Manager Card**: Removed dynamic status checking and "Checking..." text from file manager tool card
@@ -1001,7 +1000,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - Improved dashboard loading performance by eliminating redundant API calls
     - Enhanced user experience with immediate access to tool cards
 
-### � AUTO-UPGRADE CREDENTIAL MANAGEMENT
+### AUTO-UPGRADE CREDENTIAL MANAGEMENT
 
 - **Missing Credential Detection**: Enhanced auto-upgrade script to add missing credential placeholders to existing installations
   - **File Manager Credentials**: Automatically adds `FILEMANAGER_USERNAME` and `FILEMANAGER_PASSWORD` placeholders if missing
@@ -1021,7 +1020,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - Provides clear status messages about credential checking and addition
     - Graceful handling of missing credentials file with appropriate warnings
 
-### � CREDENTIALS SYSTEM INTEGRATION
+### CREDENTIALS SYSTEM INTEGRATION
 
 - **Unified Credentials Management**: Integrated file manager and uptime monitor into main EngineScript credentials system
   - **Main Credentials File**: Added `FILEMANAGER_USERNAME`, `FILEMANAGER_PASSWORD`, and `UPTIMEROBOT_API_KEY` to `/home/EngineScript/enginescript-install-options.txt`
@@ -1032,7 +1031,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
   - **Installation Integration**: Configuration files automatically populated during EngineScript installation
   - **Consistency**: Follows existing EngineScript pattern for credential management across all services
 
-### �📁 TINY FILE MANAGER FIXES
+### TINY FILE MANAGER FIXES
 
 - **File Manager Integration Improvements**: Fixed clicking and installation issues with Tiny File Manager
   - **HTML Link Conversion**: Converted file manager card from JavaScript click handler to direct HTML link
@@ -1058,7 +1057,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - **Dashboard Integration**: Authentication status displayed in admin dashboard
     - **Default Fallback**: Graceful fallback to default credentials if config is missing
 
-### � UPTIME ROBOT INTEGRATION
+### UPTIME ROBOT INTEGRATION
 
 - **Complete Uptime Robot Monitoring Integration**: Added comprehensive website uptime monitoring to the admin control panel
   - **Backend API Implementation**: Full Uptime Robot API integration in `uptimerobot.php`
@@ -1095,7 +1094,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - **Monitor Count Display**: Real-time count of active monitors
     - **Quick Access**: Direct link to Uptime Robot dashboard for management
 
-### �🗑️ LOG VIEWER REMOVAL
+### LOG VIEWER REMOVAL
 
 - **Complete Log Viewer Functionality Removal**: Removed all log viewer components from the admin control panel
   - **Backend API Cleanup**: Removed all log-related API endpoints and functions from `api.php`
@@ -1128,7 +1127,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
 
 ## 2025-07-06 (Previous Updates)
 
-### � FINAL LOG VIEWER VERIFICATION & ENHANCEMENTS
+### FINAL LOG VIEWER VERIFICATION & ENHANCEMENTS
 
 - **Log Viewer Functionality Verification**: Completed comprehensive verification of log file access and display
   - **Improved Log Content Sanitization**: Enhanced sanitization to preserve log formatting while maintaining security
@@ -1157,7 +1156,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
     - Enhanced path traversal protection with comprehensive expected path validation
     - Added specific handling for different log types (system, service, EngineScript logs)
 
-### �🔧 CODE QUALITY IMPROVEMENTS
+### CODE QUALITY IMPROVEMENTS
 
 - **Performance Chart Enhancements**: Implemented real system performance data and fixed chart sizing issues
   - **Real Data Integration**: Added `/api/system/performance` endpoint to provide actual CPU, memory, and disk usage data
@@ -1563,7 +1562,7 @@ Rolled out the `DEBUG_INSTALL=1` debug feature uniformly across every install an
   - **User Experience**: Eliminated hanging prompts and provided clear feedback for invalid inputs
   - **Backward Compatibility**: All changes maintain existing script functionality while adding robust validation
 - **Final Legacy Conditional Expression Modernization**: Completed the final phase of modernizing all remaining conditional expressions in the codebase
-  - Fixed `scripts/install/nginx/nginx-tune.sh` - converted 13 legacy `[ ]` conditionals to `[[ ]]` syntax for memory and HTTP3 configurations
+  - Fixed `scripts/install/nginx/nginx-tune.sh` - converted 13 legacy `[ ]` conditionals to `[[ ]]` syntax for memory and HTTP/3 configurations
   - Fixed `scripts/functions/vhost/vhost-import.sh` - converted 5 additional legacy `[ ]` conditionals to `[[ ]]` syntax for database handling and file operations
   - **Comprehensive Achievement**: Successfully modernized 100% of all conditional expressions across the entire EngineScript codebase
   - All 150+ shell scripts now consistently use modern `[[ ]]` syntax instead of legacy `[ ]` test operators

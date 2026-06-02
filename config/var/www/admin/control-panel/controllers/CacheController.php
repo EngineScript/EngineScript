@@ -50,7 +50,7 @@ class CacheController extends BaseController
             // Require POST method for cache clearing
             if ($this->getRequestMethod() !== 'POST') {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->methodNotAllowed('Cache clear requires POST method');
+                ApiResponse::methodNotAllowed('POST');
                 return;
             }
 
@@ -92,11 +92,11 @@ class CacheController extends BaseController
             $this->clearCacheFor('/services/status');
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($this->sanitizeOutput($response));
-        } catch (Exception $e) {
+            ApiResponse::success($this->sanitizeOutput($response));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Cache clear error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to clear cache');
+            ApiResponse::serverError('Unable to clear cache');
         }
     }
 
@@ -109,9 +109,20 @@ class CacheController extends BaseController
     {
         $typeParam = $this->getQueryParam('type') ?? '';
 
+        if ($typeParam === '') {
+            $body = $this->getJsonBody();
+            $bodyTypes = $body['types'] ?? $body['type'] ?? '';
+
+            if (is_array($bodyTypes)) {
+                $typeParam = implode(',', array_filter($bodyTypes, 'is_string'));
+            } elseif (is_string($bodyTypes)) {
+                $typeParam = $bodyTypes;
+            }
+        }
+
         if (empty($typeParam)) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->badRequest('Cache type parameter required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            ApiResponse::badRequest('Cache type required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
             return null;
         }
 
@@ -128,9 +139,12 @@ class CacheController extends BaseController
             }
         }
 
+        $validTypes = array_values(array_unique($validTypes));
+        $invalidTypes = array_values(array_unique($invalidTypes));
+
         if (empty($validTypes)) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            ApiResponse::badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
             return null;
         }
 
@@ -278,7 +292,7 @@ class CacheController extends BaseController
             $cached = $this->getCached('/cache/status');
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl('/cache/status'));
+                ApiResponse::cached($cached, $this->getTtl('/cache/status'));
                 return;
             }
 
@@ -294,11 +308,11 @@ class CacheController extends BaseController
             $this->setCached('/cache/status', $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl('/cache/status'));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl('/cache/status'));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Cache status error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve cache status');
+            ApiResponse::serverError('Unable to retrieve cache status');
         }
     }
 

@@ -29,6 +29,7 @@ class BatchController extends BaseController
         '/tools/filemanager/status',
         '/monitoring/uptime',
         '/monitoring/uptime/monitors',
+        '/cache/status',
     ];
 
     /**
@@ -47,6 +48,7 @@ class BatchController extends BaseController
         '/tools/filemanager/status' => ['FileManagerController', 'getStatus'],
         '/monitoring/uptime' => ['UptimeController', 'getStatus'],
         '/monitoring/uptime/monitors' => ['UptimeController', 'getMonitors'],
+        '/cache/status' => ['CacheController', 'getStatus'],
     ];
 
     /**
@@ -107,15 +109,15 @@ class BatchController extends BaseController
             }
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success([
+            ApiResponse::success([
                 'results' => $results,
                 'errors' => $errors,
                 'cached_count' => $cached_count
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Batch request error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to process batch request');
+            ApiResponse::serverError('Unable to process batch request');
         }
     }
 
@@ -129,24 +131,34 @@ class BatchController extends BaseController
         // Only accept POST for batch requests
         if ($this->getRequestMethod() !== 'POST') {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->methodNotAllowed('Method not allowed. Use POST.');
+            ApiResponse::methodNotAllowed('POST');
             return null;
         }
 
         // Parse JSON body
         $input = file_get_contents('php://input'); // codacy:ignore - file_get_contents() required for reading POST body
-        $data = json_decode($input, true);
+        if ($input === false || trim($input) === '') {
+            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
+            return null;
+        }
 
-        if (!$data || !isset($data['requests']) || !is_array($data['requests'])) {
+        try {
+            $data = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            ApiResponse::badRequest('Invalid JSON request body.');
+            return null;
+        }
+
+        if (!is_array($data) || !isset($data['requests']) || !is_array($data['requests'])) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->badRequest('Invalid request. Expected JSON with "requests" array.');
+            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
             return null;
         }
 
         // Limit batch size to prevent abuse
         if (count($data['requests']) > self::MAX_BATCH_SIZE) {
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
+            ApiResponse::badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
             return null;
         }
 
@@ -165,7 +177,8 @@ class BatchController extends BaseController
             return null;
         }
 
-        list($controllerClass, $method) = self::ENDPOINT_CONTROLLERS[$endpoint];
+        [$controllerClass, $method] = self::ENDPOINT_CONTROLLERS[$endpoint];
+        $bufferStarted = false;
 
         try {
             // Load controller file
@@ -183,15 +196,23 @@ class BatchController extends BaseController
 
             // Capture output
             ob_start();
+            $bufferStarted = true;
             $controller = new $controllerClass();
             $controller->$method();
             $output = ob_get_clean();
+            $bufferStarted = false;
 
             // Parse JSON output
-            $result = json_decode($output, true);
-            return $result;
-        } catch (Exception $e) {
-            ob_end_clean();
+            if (!is_string($output) || $output === '') {
+                return null;
+            }
+
+            $result = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+            return is_array($result) ? $result : null;
+        } catch (Throwable $e) {
+            if ($bufferStarted && ob_get_level() > 0) {
+                ob_end_clean();
+            }
             $this->logSecurityEvent('Batch endpoint error', $endpoint . ': ' . $e->getMessage());
             return null;
         }

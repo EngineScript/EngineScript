@@ -40,7 +40,7 @@ class ServiceController extends BaseController
             $cached = $this->getCached(self::ENDPOINT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
+                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -57,11 +57,11 @@ class ServiceController extends BaseController
             $this->setCached(self::ENDPOINT, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl(self::ENDPOINT));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Services status error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve services status');
+            ApiResponse::serverError('Unable to retrieve services status');
         }
     }
 
@@ -90,7 +90,7 @@ class ServiceController extends BaseController
                 'version' => $version,
                 'online' => $status === 'active'
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Service status error', $e->getMessage());
             return $this->createErrorServiceStatus();
         }
@@ -134,8 +134,11 @@ class ServiceController extends BaseController
             return null;
         }
 
-        // Parse services in PHP for better security control
+        // Parse services in PHP for better security control. Prefer active
+        // units, but keep an inactive match as a fallback for clearer status.
         $lines = explode("\n", trim($services_output));
+        $fallback_service = null;
+
         foreach ($lines as $line) {
             if (empty(trim($line))) {
                 continue;
@@ -156,11 +159,15 @@ class ServiceController extends BaseController
 
             // Check if it's a PHP-FPM service
             if (preg_match('/php[0-9.]*-?fpm/', $service_name)) {
-                return $service_name;
+                if (($parts[2] ?? '') === 'active') {
+                    return $service_name;
+                }
+
+                $fallback_service ??= $service_name;
             }
         }
 
-        return null;
+        return $fallback_service;
     }
 
     /**

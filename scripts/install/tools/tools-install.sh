@@ -84,7 +84,7 @@ fi
 # PHP Tools
 #------------------------------------------------
 
-# OpCache-GUI
+# OPcache GUI
 #/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
 
 

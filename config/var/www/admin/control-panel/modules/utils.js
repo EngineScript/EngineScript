@@ -6,7 +6,7 @@ export class DashboardUtils {
 
   static sanitizeInput(input) {
     if (typeof input !== "string") {
-      return String(input || "");
+      return String(input ?? "");
     }
 
     // Control character removal and length limiting
@@ -51,21 +51,6 @@ export class DashboardUtils {
     }
 
     return String(parsed);
-  }
-
-  static sanitizePercentage(input, fallback = "0%") {
-    const cleaned = String(input || "").replace(/[^\d.%]/g, "");
-
-    // Ensure the cleaned value is a syntactically valid percentage:
-    // one or more digits, optional single decimal part, optional trailing '%'.
-    const percentagePattern = /^\d+(\.\d+)?%?$/;
-    if (!cleaned || !percentagePattern.test(cleaned)) {
-      return fallback;
-    }
-
-    // Normalize output so that it always includes a '%' symbol.
-    const normalized = cleaned.endsWith("%") ? cleaned : cleaned + "%";
-    return normalized;
   }
 
   static sanitizeUrl(input, fallback = "") {
@@ -115,12 +100,15 @@ export class DashboardUtils {
   }
 
   showError(message) {
-    // Sanitize error message
-    const sanitizedMessage = DashboardUtils.sanitizeInput(message) || "An unknown error occurred";
+    this.showNotification(message || "An unknown error occurred", "error");
+  }
 
-    // Create a simple error notification
+  showNotification(message, type = "info") {
+    const allowedTypes = new Set(["success", "error", "info", "warning"]);
+    const notificationType = allowedTypes.has(type) ? type : "info";
+    const sanitizedMessage = DashboardUtils.sanitizeInput(message) || "Dashboard notification";
     const notification = document.createElement("div");
-    notification.className = "notification-toast notification-error";
+    notification.className = `notification-toast notification-${notificationType}`;
     notification.textContent = sanitizedMessage;
 
     document.body.appendChild(notification);
@@ -128,65 +116,5 @@ export class DashboardUtils {
     setTimeout(() => {
       notification.remove();
     }, 5000);
-  }
-
-  // Helper method for creating content elements with icon, message, and time
-  createContentElement(config) {
-    // Basic validation to avoid undefined class names and malformed DOM
-    if (!config || typeof config !== "object") {
-      return null;
-    }
-
-    const {
-      containerClass,
-      iconClass,
-      contentClass,
-      messageText,
-      timeText,
-      timeClass,
-      iconType = "fa-info-circle", // default icon when not specified
-    } = config;
-
-    // Ensure required class names are non-empty strings
-    if (
-      typeof containerClass !== "string" ||
-      containerClass.length === 0 ||
-      typeof iconClass !== "string" ||
-      iconClass.length === 0 ||
-      typeof contentClass !== "string" ||
-      contentClass.length === 0 ||
-      typeof timeClass !== "string" ||
-      timeClass.length === 0
-    ) {
-      return null;
-    }
-
-    const containerDiv = document.createElement("div");
-    containerDiv.className = containerClass;
-
-    const iconDiv = document.createElement("div");
-    iconDiv.className = iconClass;
-
-    const icon = document.createElement("i");
-    icon.className = `fas ${iconType}`;
-    iconDiv.appendChild(icon);
-
-    const contentDiv = document.createElement("div");
-    contentDiv.className = contentClass;
-
-    const message = document.createElement("p");
-    message.textContent = DashboardUtils.sanitizeInput(messageText ?? "");
-
-    const time = document.createElement("span");
-    time.className = timeClass;
-    time.textContent = DashboardUtils.sanitizeInput(timeText ?? "");
-
-    contentDiv.appendChild(message);
-    contentDiv.appendChild(time);
-
-    containerDiv.appendChild(iconDiv);
-    containerDiv.appendChild(contentDiv);
-
-    return containerDiv;
   }
 }

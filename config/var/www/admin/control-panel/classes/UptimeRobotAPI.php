@@ -10,6 +10,8 @@
  * @security HIGH - Handles API credentials
  */
 
+require_once __DIR__ . '/CurlInitException.php';
+
 /**
  * UptimeRobot API Client
  * 
@@ -48,7 +50,7 @@ class UptimeRobotAPI
      * 
      * @return array|false Array of monitors or false on error
      */
-    public function getMonitors()
+    public function getMonitors(): array|false
     {
         $params = [
             'format' => 'json',
@@ -81,7 +83,7 @@ class UptimeRobotAPI
      * 
      * @return array|false Account details or false on error
      */
-    public function getAccountDetails()
+    public function getAccountDetails(): array|false
     {
         $params = [
             'format' => 'json'
@@ -109,7 +111,7 @@ class UptimeRobotAPI
      * @param array $params Additional parameters to send
      * @return array|false Decoded response or false on error
      */
-    private function makeRequest($endpoint, array $params = [])
+    private function makeRequest(string $endpoint, array $params = []): array|false
     {
         // Validate endpoint to prevent injection
         if (!preg_match('/^[a-zA-Z]+$/', $endpoint)) {
@@ -131,10 +133,13 @@ class UptimeRobotAPI
         // Initialize cURL
         // codacy:ignore - curl_init() required for API communication in standalone service
         $curlHandle = curl_init();
+        if ($curlHandle === false) {
+            throw new CurlInitException('Unable to initialize cURL handle');
+        }
 
         // Set cURL options
         // codacy:ignore - curl functions required for secure API communication
-        curl_setopt_array($curlHandle, [
+        $optionsSet = curl_setopt_array($curlHandle, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
@@ -151,6 +156,12 @@ class UptimeRobotAPI
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_MAXREDIRS => 0
         ]);
+
+        if ($optionsSet === false) {
+            $this->logError('Unable to configure cURL request', []);
+            curl_close($curlHandle);
+            return false;
+        }
 
         // Execute request
         // codacy:ignore - curl_exec() required for API communication
@@ -174,14 +185,14 @@ class UptimeRobotAPI
         }
 
         // Decode JSON response
-        $decoded = json_decode($response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->logError('Invalid JSON response', ['error' => json_last_error_msg()]);
+        try {
+            $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->logError('Invalid JSON response', ['error' => $e->getMessage()]);
             return false;
         }
 
-        return $decoded;
+        return is_array($decoded) ? $decoded : false;
     }
 
     /**
@@ -191,7 +202,7 @@ class UptimeRobotAPI
      * @param array $context Additional context
      * @return void
      */
-    private function logError($message, $context)
+    private function logError(string $message, array $context): void
     {
         // Sanitize message for logging
         $safe_message = preg_replace('/[\x00-\x1F\x7F]/', ' ', $message);

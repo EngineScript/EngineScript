@@ -52,12 +52,12 @@ define( 'WP_REDIS_TIMEOUT', 1 );
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
 //define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported / SLOW
 
-/* Nginx Helper FastCGI Cache Plugin */
+/* Nginx Helper FastCGI cache plugin */
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );
 define( 'NGINX_HELPER_LOG','true' );
 
 /* WordPress Cache */
-define( 'WP_CACHE', false ); // Leave this disabled since we use Nginx FastCGI Cache
+define( 'WP_CACHE', false ); // Leave this disabled since we use Nginx FastCGI cache
 
 /* Multisite */
 define( 'WP_ALLOW_MULTISITE', false );

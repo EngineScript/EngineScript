@@ -6,7 +6,7 @@
  * Maps URL paths to controller methods.
  * 
  * Features:
- * - Route registration with controller/method binding
+ * - Route registration with controller/method binding and HTTP method policy
  * - Route aliases (multiple paths to same handler)
  * - 404 handling for unmatched routes
  * - Route debugging and listing
@@ -29,6 +29,7 @@ require_once __DIR__ . '/ApiResponse.php';
  *   $router = new Router();
  *   $router->register('/system/info', 'SystemController', 'getInfo');
  *   $router->register('/sites', 'SiteController', 'listSites');
+ *   $router->register('/cache/clear', 'CacheController', 'clear', ['POST']);
  *   $router->dispatch($path);
  * 
  * Route aliases:
@@ -38,9 +39,9 @@ require_once __DIR__ . '/ApiResponse.php';
 class Router
 {
     /**
-     * Registered routes mapping path => [controller, method]
+     * Registered routes mapping path => [controller, method, methods]
      * 
-     * @var array<string, array{controller: string, method: string}>
+     * @var array<string, array{controller: string, method: string, methods: list<string>}>
      */
     private array $routes = [];
 
@@ -70,7 +71,7 @@ class Router
      * 
      * @param string|null $controllerPath Path to controller files (default: __DIR__/../controllers/)
      */
-    public function __construct($controllerPath = null)
+    public function __construct(?string $controllerPath = null)
     {
         $this->controllerPath = $controllerPath ?? dirname(__DIR__) . '/controllers/';
     }
@@ -84,13 +85,22 @@ class Router
      * @param string $path The URL path (e.g., '/system/info')
      * @param string $controller The controller class name (e.g., 'SystemController')
      * @param string $method The controller method to call (e.g., 'getInfo')
+     * @param array<int, string> $allowedMethods Allowed HTTP methods for this route
      * @return self For method chaining
      */
-    public function register($path, $controller, $method)
+    public function register(string $path, string $controller, string $method, array $allowedMethods = ['GET']): self
     {
+        $methods = array_values(array_unique(array_map('strtoupper', $allowedMethods)));
+        $methods = array_values(array_filter($methods, static fn (string $candidate): bool => preg_match('/^[A-Z]+$/', $candidate) === 1));
+
+        if ($methods === []) {
+            $methods = ['GET'];
+        }
+
         $this->routes[$path] = [
             'controller' => $controller,
-            'method' => $method
+            'method' => $method,
+            'methods' => $methods
         ];
         
         return $this;
@@ -106,7 +116,7 @@ class Router
      * @param string $canonicalPath The canonical path (e.g., '/sites')
      * @return self For method chaining
      */
-    public function alias($aliasPath, $canonicalPath)
+    public function alias(string $aliasPath, string $canonicalPath): self
     {
         $this->aliases[$aliasPath] = $canonicalPath;
         
@@ -121,7 +131,7 @@ class Router
      * 
      * @return void
      */
-    private function loadControllers()
+    private function loadControllers(): void
     {
         if ($this->controllersLoaded) {
             return;
@@ -138,6 +148,11 @@ class Router
         // Load all other controllers
         // codacy:ignore - glob() required for controller enumeration on hardcoded path
         $controllerFiles = glob($this->controllerPath . '*Controller.php');
+        if ($controllerFiles === false) {
+            $this->controllersLoaded = true;
+            return;
+        }
+
         foreach ($controllerFiles as $file) {
             // Skip base controller (already loaded)
             if (basename($file) === 'BaseController.php') {
@@ -158,7 +173,7 @@ class Router
      * @param string $path The request path
      * @return string The canonical path
      */
-    private function resolvePath($path)
+    private function resolvePath(string $path): string
     {
         // Check if path is an alias
         if (isset($this->aliases[$path])) {
@@ -175,9 +190,10 @@ class Router
      * Returns 404 error if no route matches.
      * 
      * @param string $path The URL path to dispatch
+     * @param string|null $requestMethod HTTP method, defaults to current request method
      * @return void
      */
-    public function dispatch($path)
+    public function dispatch(string $path, ?string $requestMethod = null): void
     {
         // Resolve any aliases
         $canonicalPath = $this->resolvePath($path);
@@ -195,6 +211,14 @@ class Router
         $route = $this->routes[$canonicalPath];
         $controllerName = $route['controller'];
         $methodName = $route['method'];
+        $allowedMethods = $route['methods'];
+        $actualMethod = strtoupper($requestMethod ?? ($_SERVER['REQUEST_METHOD'] ?? 'GET')); // codacy:ignore - Direct $_SERVER access centralized in router dispatch
+
+        if (!in_array($actualMethod, $allowedMethods, true)) {
+            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
+            ApiResponse::methodNotAllowed($allowedMethods);
+            return;
+        }
         
         // Verify controller class exists
         if (!class_exists($controllerName)) {
@@ -224,7 +248,7 @@ class Router
      * @param string $path The unmatched path
      * @return void
      */
-    private function notFound($path)
+    private function notFound(string $path): void
     {
         // Sanitize path for logging to prevent injection attacks
         $sanitized_path = preg_replace('/[^a-zA-Z0-9\/\-_.]/', '', $path);
@@ -242,7 +266,7 @@ class Router
      * @param string $message Error message for logging (not shown to client)
      * @return void
      */
-    private function serverError($message)
+    private function serverError(string $message): void
     {
         // Log internal error details
         error_log("API Router Error: " . $message);
@@ -257,9 +281,9 @@ class Router
      * 
      * Useful for debugging and documentation.
      * 
-     * @return array<string, array{controller: string, method: string}>
+     * @return array<string, array{controller: string, method: string, methods: list<string>}>
      */
-    public function getRoutes()
+    public function getRoutes(): array
     {
         return $this->routes;
     }
@@ -269,7 +293,7 @@ class Router
      * 
      * @return array<string, string>
      */
-    public function getAliases()
+    public function getAliases(): array
     {
         return $this->aliases;
     }
@@ -280,7 +304,7 @@ class Router
      * @param string $path The path to check
      * @return bool True if route exists
      */
-    public function hasRoute($path)
+    public function hasRoute(string $path): bool
     {
         $canonicalPath = $this->resolvePath($path);
         return isset($this->routes[$canonicalPath]);
@@ -292,7 +316,7 @@ class Router
      * @param string $path The path to look up
      * @return array|null Route info or null if not found
      */
-    public function getRoute($path)
+    public function getRoute(string $path): ?array
     {
         $canonicalPath = $this->resolvePath($path);
         return $this->routes[$canonicalPath] ?? null;

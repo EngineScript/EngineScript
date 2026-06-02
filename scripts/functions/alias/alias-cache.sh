@@ -23,7 +23,7 @@ echo -e "\nClearing Caches\n\n"
 # Clear all caches, transients, and rewrites for all sites
 clear_all_wordpress_caches
 
-# Clear system caches (Nginx, OpCache, Redis)
+# Clear system caches (Nginx, OPcache, Redis)
 clear_all_system_caches
 
 # Restart services

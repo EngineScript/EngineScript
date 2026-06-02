@@ -45,7 +45,18 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Domain Configuration Tools" "Backup Tools" "Site Maintenance Tools" "Database Tools" "Security Tools" "Server Tools" "EngineScript Tools" "View Server Logs" "Update Software" "Exit EngineScript")
+    options=(
+      "Domain Configuration Tools"
+      "Backup Tools"
+      "Site Maintenance Tools"
+      "Database Tools"
+      "Security Tools"
+      "Server Tools"
+      "EngineScript Tools"
+      "View Server Logs"
+      "Update Software"
+      "Exit EngineScript"
+    )
     select opt in "${options[@]}"
     do
       case $opt in

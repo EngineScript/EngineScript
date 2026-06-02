@@ -33,18 +33,18 @@ fi
 printf "${BOLD}EngineScript Commands:${NORMAL}
 --------------------------------
 es.backup       - Runs the backup script to back up all domains locally and optionally in the cloud
-es.cache        - Clears FastCGI Cache, OpCache, and Redis (server-wide)
+es.cache        - Clears FastCGI cache, OPcache, and Redis (server-wide)
 es.config       - Opens the configuration file in Nano
 es.debug        - Displays debug information for EngineScript
 es.help         - Displays EngineScript commands and locations
 es.images       - Losslessly compress all images in the WordPress /uploads directory (server-wide)
 es.info         - Displays server information
-es.install      - Runs the main EngineScript installation script
+es.install      - Runs the main EngineScript install script
 es.menu         - EngineScript menu
 es.permissions  - Resets the permissions of all files in the WordPress directory (server-wide)
-es.restart      - Restart Nginx and PHP
+es.restart      - Restarts Nginx and PHP
 es.sites        - Lists all WordPress sites installed on the server
-es.update       - Update EngineScript
+es.update       - Updates EngineScript
 es.variables    - Opens the variable file in Nano. This file resets when EngineScript is updated
 
 ${BOLD}EngineScript Locations:${NORMAL}

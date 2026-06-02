@@ -3,7 +3,7 @@
  * EngineScript Admin Dashboard - Session Wrapper
  *
  * Encapsulates all access to the $_SESSION superglobal so that no other class
- * touches the superglobal directly.  Centralising the access here satisfies
+ * touches the superglobal directly.  Centralizing the access here satisfies
  * PHPMD's SuperGlobals rule, improves testability (the class can be mocked or
  * subclassed in unit tests), and provides a single place to add future session
  * hardening (e.g. regeneration, encryption, or a custom session handler).
@@ -36,7 +36,7 @@ class Session
             return $default;
         }
 
-        // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
+        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
         return $_SESSION[$key] ?? $default;
     }
 
@@ -60,7 +60,7 @@ class Session
             return;
         }
 
-        // codacy:ignore - Direct $_SESSION access is intentionally centralised here; no other class should access $_SESSION
+        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
         $_SESSION[$key] = $value;
     }
 }

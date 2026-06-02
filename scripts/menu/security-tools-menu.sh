@@ -26,7 +26,16 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Find PHP Files in Uploads Directory" "PHP Malware Finder" "Wordfence CLI Malware Scan" "Wordfence CLI Remediate Infected Files (After Malware Scan)" "Wordfence CLI Vulnerability Scan" "WP-CLI Doctor" "WPScan Vulnerability Scan" "Exit Security Tools")
+    secoptions=(
+      "Find PHP Files in Uploads Directory"
+      "PHP Malware Finder"
+      "Wordfence CLI Malware Scan"
+      "Wordfence CLI Remediate Infected Files (After Malware Scan)"
+      "Wordfence CLI Vulnerability Scan"
+      "WP-CLI Doctor"
+      "WPScan Vulnerability Scan"
+      "Exit Security Tools"
+    )
     select secopt in "${secoptions[@]}"
     do
       case $secopt in

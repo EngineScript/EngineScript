@@ -37,11 +37,11 @@ require_once __DIR__ . '/../classes/Session.php';
  *   class MyController extends BaseController {
  *       public function getData() {
  *           if ($cached = $this->getCached('/my/endpoint')) {
- *               return $this->response->cached($cached, $this->getTtl('/my/endpoint'));
+ *               return ApiResponse::cached($cached, $this->getTtl('/my/endpoint'));
  *           }
  *           $data = $this->fetchData();
  *           $this->setCached('/my/endpoint', $data);
- *           return $this->response->success($data, $this->getTtl('/my/endpoint'));
+ *           return ApiResponse::success($data, $this->getTtl('/my/endpoint'));
  *       }
  *   }
  */
@@ -58,19 +58,16 @@ abstract class BaseController
     protected const CACHE_DEFAULT_TTL = 30;
 
     /**
-     * Cache sweep interval in seconds
-     */
-    protected const CACHE_SWEEP_INTERVAL = 60;
-
-    /**
      * Session wrapper instance — single point of $_SESSION access.
      */
     protected Session $session;
 
     /**
-     * API response helper instance — avoids static calls in subclasses.
+     * Cached decoded JSON request body for state-changing endpoints.
+     *
+     * @var array<string, mixed>|null
      */
-    protected ApiResponse $response;
+    private ?array $jsonBody = null;
 
     /**
      * Initialize shared dependencies.
@@ -80,8 +77,7 @@ abstract class BaseController
      */
     public function __construct()
     {
-        $this->session  = new Session();
-        $this->response = new ApiResponse();
+        $this->session = new Session();
     }
 
     /**
@@ -90,7 +86,7 @@ abstract class BaseController
      * 
      * @var array<string, int>
      */
-    protected static $cacheTtlConfig = [
+    protected const CACHE_TTL_CONFIG = [
         '/system/info' => 60,           // 1 minute - system info rarely changes
         '/services/status' => 15,       // 15 seconds - service status should be fresh
         '/sites' => 120,                // 2 minutes - site list rarely changes
@@ -109,8 +105,8 @@ abstract class BaseController
      */
     protected function getTtl($endpoint)
     {
-        return isset(self::$cacheTtlConfig[$endpoint]) 
-            ? self::$cacheTtlConfig[$endpoint] 
+        return isset(self::CACHE_TTL_CONFIG[$endpoint])
+            ? self::CACHE_TTL_CONFIG[$endpoint]
             : self::CACHE_DEFAULT_TTL;
     }
 
@@ -131,7 +127,17 @@ abstract class BaseController
         }
         
         // codacy:ignore - file_get_contents() required for cache reading in standalone API
-        $cache_data = json_decode(file_get_contents($cache_file), true);
+        $cache_content = file_get_contents($cache_file);
+        if ($cache_content === false) {
+            return null;
+        }
+
+        try {
+            $cache_data = json_decode($cache_content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            // Corrupt cache entries are ignored and replaced by fresh responses.
+            return null;
+        }
         
         if (!$cache_data || !isset($cache_data['timestamp']) || !isset($cache_data['data'])) {
             return null;
@@ -174,8 +180,14 @@ abstract class BaseController
             'data' => $data
         ];
         
+        try {
+            $encoded = json_encode($cache_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return false;
+        }
+
         // codacy:ignore - file_put_contents() required for cache writing in standalone API
-        return @file_put_contents($cache_file, json_encode($cache_data), LOCK_EX) !== false;
+        return @file_put_contents($cache_file, $encoded, LOCK_EX) !== false;
     }
 
     /**
@@ -195,6 +207,10 @@ abstract class BaseController
             // Clear all cache files
             // codacy:ignore - glob() required for cache enumeration on hardcoded path
             $files = glob(self::CACHE_DIR . '*.json');
+            if ($files === false) {
+                return;
+            }
+
             foreach ($files as $file) {
                 // codacy:ignore - unlink() required for cache deletion in standalone API
                 @unlink($file);
@@ -206,6 +222,10 @@ abstract class BaseController
         $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $endpoint);
         // codacy:ignore - glob() required for cache enumeration on hardcoded path
         $files = glob(self::CACHE_DIR . $safe_key . '*.json');
+        if ($files === false) {
+            return;
+        }
+
         foreach ($files as $file) {
             // codacy:ignore - unlink() required for cache deletion in standalone API
             @unlink($file);
@@ -417,6 +437,10 @@ abstract class BaseController
         // codacy:ignore - filter_input() safely centralizes query access without exposing $_GET in controller actions
         $value = filter_input(INPUT_GET, $key, FILTER_UNSAFE_RAW);
 
+        if ($value === null && isset($_GET[$key]) && is_scalar($_GET[$key])) { // codacy:ignore - CLI/tests and rewritten requests may require direct $_GET fallback
+            $value = (string) $_GET[$key]; // codacy:ignore - Direct $_GET access centralized here
+        }
+
         if ($value === null || $value === false || !is_string($value)) {
             return null;
         }
@@ -424,5 +448,34 @@ abstract class BaseController
         $value = trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * Decode and cache a JSON request body.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getJsonBody(): array
+    {
+        if ($this->jsonBody !== null) {
+            return $this->jsonBody;
+        }
+
+        // codacy:ignore - file_get_contents() required for reading JSON request bodies in standalone API
+        $input = file_get_contents('php://input');
+        if ($input === false || trim($input) === '') {
+            $this->jsonBody = [];
+            return $this->jsonBody;
+        }
+
+        try {
+            $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            $this->jsonBody = [];
+            return $this->jsonBody;
+        }
+
+        $this->jsonBody = is_array($decoded) ? $decoded : [];
+        return $this->jsonBody;
     }
 }

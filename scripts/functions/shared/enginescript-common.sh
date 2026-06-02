@@ -59,7 +59,7 @@ function print_last_errors() {
 # ----------------------------------------------------------------
 # Clear Nginx cache directory
 function clear_nginx_cache() {
-    echo "Clearing Nginx FastCGI Cache"
+    echo "Clearing Nginx FastCGI cache"
     
     if [ -d "/var/cache/nginx" ]; then
         # Delete cache files while preserving directory structure
@@ -73,20 +73,20 @@ function clear_nginx_cache() {
             nginx -s reload 2>/dev/null || true
         fi
         
-        echo "Nginx cache cleared successfully"
+        echo "Nginx cache cleared successfully."
     else
-        echo "Warning: Nginx cache directory not found at /var/cache/nginx"
+        echo "Warning: Nginx cache directory not found at /var/cache/nginx."
         return 1
     fi
 }
 
 
 # ----------------------------------------------------------------
-# Clear PHP OpCache directory
+# Clear PHP OPcache directory
 function clear_opcache() {
-    echo "Clearing PHP OpCache"
+    echo "Clearing PHP OPcache"
     rm -rf /var/cache/opcache/* || {
-        echo "Error: Failed to clear PHP OpCache."
+        echo "Error: Failed to clear PHP OPcache."
     }
 }
 
@@ -94,7 +94,7 @@ function clear_opcache() {
 # ----------------------------------------------------------------
 # Clear Redis object cache
 function clear_redis_cache() {
-    echo "Clearing Redis Object Cache"
+    echo "Clearing Redis object cache"
     redis-cli FLUSHALL ASYNC || {
         echo "Error: Failed to clear Redis cache."
     }
@@ -104,7 +104,7 @@ function clear_redis_cache() {
 # ----------------------------------------------------------------
 # Flush WordPress cache (single site)
 function flush_wordpress_cache() {
-    echo "Flushing WordPress Cache"
+    echo "Flushing WordPress cache"
     wp cache flush --allow-root || {
         echo "Error: Failed to flush WordPress cache."
     }
@@ -114,7 +114,7 @@ function flush_wordpress_cache() {
 # ----------------------------------------------------------------
 # Flush WordPress rewrite rules (single site)
 function flush_wordpress_rewrites() {
-    echo "Flushing WordPress Rewrite Rules"
+    echo "Flushing WordPress rewrite rules"
     wp rewrite flush --hard --allow-root || {
         echo "Error: Failed to flush WordPress rewrite rules."
     }
@@ -231,7 +231,7 @@ function clear_all_wordpress_caches() {
 
 
 # ----------------------------------------------------------------
-# Clear all system caches (Nginx, OpCache, Redis)
+# Clear all system caches (Nginx, OPcache, Redis)
 function clear_all_system_caches() {
     clear_api_cache
     clear_nginx_cache
@@ -602,7 +602,11 @@ function sync_nginx_http3_config() {
         shopt -s nullglob
     fi
 
-    site_config_files=(/etc/nginx/sites-available/your-domain.conf /etc/nginx/sites-enabled/*.conf /etc/nginx/admin/admin.*.conf)
+    site_config_files=(
+        /etc/nginx/sites-available/your-domain.conf
+        /etc/nginx/sites-enabled/*.conf
+        /etc/nginx/admin/admin.*.conf
+    )
 
     if [[ "${nullglob_was_set}" == "0" ]]; then
         shopt -u nullglob
@@ -656,9 +660,30 @@ function check_installation_completion() {
     
     # Define all required installation components
     local required_components=(
-        "REPOS" "REMOVES" "BLOCK" "UBUNTU_PRO" "DEPENDS" "CRON" "ACME" 
-        "GCC" "OPENSSL" "SWAP" "KERNEL_TWEAKS" "KSM" "SFL" "NTP" 
-        "PCRE" "ZLIB" "LIBURING" "UFW" "MARIADB" "PHP" "REDIS" "NGINX" "TOOLS"
+        "REPOS"
+        "REMOVES"
+        "BLOCK"
+        "UBUNTU_PRO"
+        "DEPENDS"
+        "CRON"
+        "ACME"
+        "GCC"
+        "OPENSSL"
+        "SWAP"
+        "KERNEL_TWEAKS"
+        "THP"
+        "KSM"
+        "SFL"
+        "NTP"
+        "PCRE"
+        "ZLIB"
+        "LIBURING"
+        "UFW"
+        "MARIADB"
+        "PHP"
+        "REDIS"
+        "NGINX"
+        "TOOLS"
     )
     
     # Check each required component
@@ -667,7 +692,9 @@ function check_installation_completion() {
         local var_value="${!var_name:-0}"
         
         if [[ "$var_value" != "1" ]]; then
-            missing_components+=("$component")
+            missing_components+=(
+                "$component"
+            )
         fi
     done
     
@@ -725,7 +752,13 @@ function verify_installation_completion() {
 # Always uses IPv4 with 5-second timeouts
 function detect_server_location() {
     local log_file="/var/log/EngineScript/server-location.log"
-    local -a curl_opts=(-4s --max-time 5 --connect-timeout 5)
+    local -a curl_opts=(
+        -4s
+        --max-time
+        5
+        --connect-timeout
+        5
+    )
 
     echo -e "${BOLD}Server Location Info:${NORMAL}"
 
@@ -1019,7 +1052,10 @@ function return_to_src() {
 
 # ----------------------------------------------------------------
 # Get the array of base PHP packages to install for a given PHP version
-# Usage: php_packages=( $(get_php_packages_array "8.4") )
+# Usage:
+# php_packages=(
+#     $(get_php_packages_array "8.4")
+# )
 function get_php_packages_array() {
     local target_ver="$1"
     local packages=(
@@ -1044,7 +1080,9 @@ function get_php_packages_array() {
     local php_minor="${target_ver#*.}"
     local php_ver_int=$((php_major * 10 + php_minor))
     if (( php_ver_int < 85 )); then
-        packages+=("php${target_ver}-opcache")
+        packages+=(
+            "php${target_ver}-opcache"
+        )
     fi
 
     echo "${packages[@]}"
@@ -1053,7 +1091,10 @@ function get_php_packages_array() {
 
 # ----------------------------------------------------------------
 # Get the array of expanded PHP packages to install for a given PHP version
-# Usage: expanded_php_packages=( $(get_expanded_php_packages_array "8.4") )
+# Usage:
+# expanded_php_packages=(
+#     $(get_expanded_php_packages_array "8.4")
+# )
 function get_expanded_php_packages_array() {
     local target_ver="$1"
     local packages=(

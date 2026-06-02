@@ -1,0 +1,32 @@
+.private/
+.vscode/
+
+# JetBrains IDE project files
+.idea/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Dependencies
+vendor/
+node_modules/
+
+# Tool caches
+.cspellcache
+.phpunit.result.cache
+.php-cs-fixer.cache
+.eslintcache
+.stylelintcache
+.cache/
+coverage/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig

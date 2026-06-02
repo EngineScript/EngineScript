@@ -144,7 +144,7 @@ fi
 
 if [[ "${INSTALL_HTTP3}" == "1" ]];
   then
-    # HTTP3
+    # HTTP/3
     ./configure \
       --prefix=/etc/nginx \
       --conf-path=/etc/nginx/nginx.conf \
@@ -190,7 +190,7 @@ if [[ "${INSTALL_HTTP3}" == "1" ]];
       --without-mail_smtp_module
 
   else
-    # HTTP2
+    # HTTP/2
     ./configure \
       --prefix=/etc/nginx \
       --conf-path=/etc/nginx/nginx.conf \

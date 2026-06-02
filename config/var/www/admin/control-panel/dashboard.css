@@ -203,6 +203,14 @@ body {
     color: var(--text-secondary);
 }
 
+.dependency-warning {
+    background: var(--error-color);
+    color: white;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
 /* Dashboard Layout */
 .dashboard {
     display: flex;
@@ -629,6 +637,10 @@ body {
     text-decoration: none;
 }
 
+.tool-card.tool-unavailable {
+    opacity: 0.72;
+}
+
 .tool-icon {
     width: 60px;
     height: 60px;
@@ -689,6 +701,49 @@ body {
 .tool-status .status-text {
     color: var(--text-secondary);
     font-size: 0.8rem;
+}
+
+/* Cache Management */
+.cache-management {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.cache-status-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.cache-status-item {
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.cache-name {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.cache-detail {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.cache-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.cache-actions .btn[disabled] {
+    cursor: wait;
+    opacity: 0.7;
+    transform: none;
 }
 
 /* Commands Grid */
@@ -1297,4 +1352,3 @@ button:focus, select:focus, input:focus {
 .notification-toast.notification-warning {
     background: var(--warning-color);
 }
-

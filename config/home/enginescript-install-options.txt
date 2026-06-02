@@ -7,8 +7,8 @@
 #| How to edit your configuration file:
 #| Choose one of the methods below:
 #|
-#| At console, type: es.config
-#| At console, type /home/EngineScript/enginescript-install-options.txt
+#| At the console, type: es.config
+#| Or edit: /home/EngineScript/enginescript-install-options.txt
 
 
 ###################
@@ -37,7 +37,7 @@ INSTALL_PHPMYADMIN=1
 INSTALL_ADMINER=0
 
 ## High Security SSL ##
-# Controls the SSL certificate keylength for all new domains.
+# Controls the SSL certificate key length for all new domains.
 # 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
 # 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
 #     Also disables TLS 1.1 in nginx (only TLS 1.2 and TLS 1.3 allowed)
@@ -45,8 +45,8 @@ INSTALL_ADMINER=0
 # If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
 HIGH_SECURITY_SSL=0
 
-## NGINX HTTP3 Support ##
-# Cloudflare does NOT currently support HTTP3 for origin fetches. HTTP3 is useless until they do.
+## NGINX HTTP/3 Support ##
+# Cloudflare does not currently support HTTP/3 for origin fetches. HTTP/3 is not useful until they do.
 INSTALL_HTTP3=0
 
 ## Expanded PHP Extensions Support ##
@@ -57,7 +57,7 @@ INSTALL_EXPANDED_PHP=0
 ## PHP Version Override ##
 # Leave empty to use the default PHP version (currently 8.5)
 # Set to "8.4" or "8.3" to install an older version instead
-# This affects all PHP installation, configuration, and service management.
+# This affects PHP installation, configuration, and service management.
 # You can also switch versions at any time via: es.menu > Update Software > Switch PHP Version
 PHP_VERSION_OVERRIDE=""
 
@@ -71,7 +71,7 @@ AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 # When enabled, EngineScript will install its two custom plugins during site creation:
 # 1. EngineScript Site Optimizer - Basic WordPress performance optimizations (header cleanup, etc.)
 # 2. EngineScript Site Exporter - Makes it easy to export sites to new EngineScript servers
-# Note: This does NOT affect other recommended plugins (Nginx Helper, Redis, etc.)
+# Note: This does not affect other recommended plugins (Nginx Helper, Redis, etc.)
 INSTALL_ENGINESCRIPT_PLUGINS=1
 
 ## Install Extra WordPress Plugins ##
@@ -127,7 +127,7 @@ INSTALL_DIGITALOCEAN_METRICS_AGENT=0
 # 1 = enabled
 
 # EngineScript Daily Updates (Recommended)
-# Adds a cronjob that pulls the latest EngineScript release and updates your installation to that version.
+# Adds a cron job that pulls the latest EngineScript release and updates your installation to that version.
 ENGINESCRIPT_AUTO_UPDATE=1
 
 # EngineScript Emergency Updates (Recommended)
@@ -189,14 +189,14 @@ CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
 ## Pushbullet (Optional) ##
-# This is used for the checksums and .php files in the uploads directory crons.
+# This is used by the checksum and uploads-directory PHP file scan cron jobs.
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"
 
 ## Ubuntu Pro (Optional) ##
 # Enables extra application security updates.
 #
-# Sign up for a free account personal use account at:
+# Sign up for a free personal-use account at:
 # https://ubuntu.com/pro
 UBUNTU_PRO_TOKEN="PLACEHOLDER"
 
@@ -216,14 +216,14 @@ WPSCANAPI="PLACEHOLDER"
 ####################
 
 ## WordPress Admin (Required) ##
-# Admin and Recovery email do not need to match. Recovery mode will email with details any time a visitor encounters a fatal error.
+# Admin and recovery email addresses do not need to match. Recovery mode sends details any time a visitor encounters a fatal error.
 WP_ADMIN_EMAIL="PLACEHOLDER"
 WP_ADMIN_USERNAME="PLACEHOLDER"
 WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER"
 
 ## Admin Control Panel Login (Required) ##
-# These credentials secure access to the Admin Control Panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
+# These credentials secure access to the admin control panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
 # All admin tools including phpMyAdmin, file manager, and server management require these credentials.
 ADMIN_CONTROL_PANEL_USERNAME="PLACEHOLDER"
 ADMIN_CONTROL_PANEL_PASSWORD="PLACEHOLDER"
@@ -240,7 +240,7 @@ PHPMYADMIN_PASSWORD="PLACEHOLDER"
 
 ## File Manager (Recommended) ##
 # Credentials for the Tiny File Manager web interface
-# Allows secure file browsing and management through the admin control panel
+# Allows secure file browsing and management through the admin control panel.
 FILEMANAGER_USERNAME="PLACEHOLDER"
 FILEMANAGER_PASSWORD="PLACEHOLDER"
 

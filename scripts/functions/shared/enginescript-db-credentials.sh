@@ -21,7 +21,11 @@ DB_USER_MIN_LENGTH=8
 DB_USER_MAX_LENGTH=80
 
 # Allowed charsets for import credential validation
-ALLOWED_DB_CHARSETS=("utf8mb4" "utf8" "latin1")
+ALLOWED_DB_CHARSETS=(
+  "utf8mb4"
+  "utf8"
+  "latin1"
+)
 
 # Shared multi-part public suffixes for domain parsing logic.
 # Keep this aligned with supported multi-part entries in VALID_TLDS.

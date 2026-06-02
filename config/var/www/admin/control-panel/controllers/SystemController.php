@@ -40,7 +40,7 @@ class SystemController extends BaseController
             $cached = $this->getCached(self::ENDPOINT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
+                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -56,11 +56,11 @@ class SystemController extends BaseController
             $this->setCached(self::ENDPOINT, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl(self::ENDPOINT));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('System info error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve system info');
+            ApiResponse::serverError('Unable to retrieve system info');
         }
     }
 
@@ -73,11 +73,12 @@ class SystemController extends BaseController
      */
     private function getOsInfo()
     {
-        // codacy:ignore - file_get_contents() required for OS info reading in standalone API
-        $os_release = @file_get_contents('/etc/os-release');
-        if ($os_release && preg_match('/PRETTY_NAME="([^"]+)"/', $os_release, $matches)) {
-            return $matches[1];
+        // codacy:ignore - parse_ini_file() required for OS info reading in standalone API
+        $os_release = @parse_ini_file('/etc/os-release');
+        if (is_array($os_release) && !empty($os_release['PRETTY_NAME']) && is_string($os_release['PRETTY_NAME'])) {
+            return $os_release['PRETTY_NAME'];
         }
+
         return 'Unknown Linux Distribution';
     }
 
@@ -93,14 +94,14 @@ class SystemController extends BaseController
         try {
             // codacy:ignore - Static utility class pattern
             $version = SystemCommand::getKernelVersion();
-            if ($version !== null) {
+            if ($version !== false) {
                 $version = trim($version);
                 // Validate kernel version format
                 if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $version)) {
                     return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 }
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Kernel version error', $e->getMessage());
         }
         return 'Unknown';
@@ -132,7 +133,7 @@ class SystemController extends BaseController
             if (file_exists('/proc/net/route')) {
                 // codacy:ignore - Static utility class pattern
                 $ip_output = SystemCommand::getNetworkIP();
-                if ($ip_output !== null) {
+                if ($ip_output !== false) {
                     $client_ip = trim($ip_output);
                     // Validate the IP
                     if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
@@ -146,7 +147,7 @@ class SystemController extends BaseController
             }
 
             return $hostname . ' (' . $client_ip . ')';
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logSecurityEvent('Network info error', $e->getMessage());
             return 'Unknown (Unknown)';
         }

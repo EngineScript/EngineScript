@@ -4,21 +4,23 @@ This directory contains the modern admin dashboard for EngineScript server manag
 
 ## Files
 
-- `index.html` - Main dashboard HTML file with modern, responsive design
+- `index.html` - Main dashboard HTML shell with modern, responsive design
 - `dashboard.css` - Modern CSS styling with dark theme and smooth animations
 - `dashboard.js` - Interactive JavaScript for real-time dashboard functionality
-- `favicon.png` - Dashboard favicon (simple placeholder)
+- `fontawesome-check.js` - Frontend dependency health check
+- `modules/` - API, state, and utility JavaScript modules
+- `api.php`, `classes/`, `controllers/` - Standalone PHP API
+- `favicon.png` - Dashboard favicon
 
 ## Features
 
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Real-time Monitoring**: Live server statistics and service status
-- **Interactive Charts**: Performance monitoring with Chart.js
-- **Multi-page Dashboard**: Overview, Sites, System, Logs, and Tools
+- **Multi-page Dashboard**: Overview, Sites, System, and Tools
 - **Service Management**: Monitor Nginx, PHP, MariaDB, and Redis
 - **WordPress Site Management**: View and manage WordPress installations
-- **Log Viewer**: Real-time log viewing with filtering
 - **Admin Tools**: Quick access to phpMyAdmin, PHPinfo, and other tools
+- **Cache Management**: View and clear Redis, FastCGI, and OPcache caches
 
 ## API Integration
 
@@ -26,16 +28,8 @@ The dashboard is designed to work with RESTful API endpoints for real-time data:
 
 - `/api/system/*` - System information and statistics
 - `/api/sites/*` - WordPress site management
-- `/api/logs/*` - Log file access
 - `/api/services/*` - Service status monitoring
-
-## Future Enhancements
-
-- Real backend API implementation
-- User authentication and role-based access
-- WebSocket connections for real-time updates
-- Advanced monitoring and alerting
-- Site deployment and management tools
+- `/api/cache/*` - Cache status and clear actions
 
 ## Installation
 

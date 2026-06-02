@@ -207,6 +207,9 @@ run_install_step "SWAP" "/usr/local/bin/enginescript/scripts/install/swap/swap-i
 # Kernel Tweaks
 run_install_step "KERNEL_TWEAKS" "/usr/local/bin/enginescript/scripts/install/kernel/kernel-tweaks-install.sh" "Kernel Tweaks"
 
+# Transparent Huge Pages
+run_install_step "THP" "/usr/local/bin/enginescript/scripts/install/systemd/thp.sh" "Transparent Huge Pages"
+
 # Kernel Samepage Merging
 run_install_step "KSM" "/usr/local/bin/enginescript/scripts/install/kernel/ksm.sh" "Kernel Samepage Merging"
 

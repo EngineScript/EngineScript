@@ -61,12 +61,12 @@ Responses are cached using a file-based cache at `/var/cache/enginescript/api/`.
 Retrieve a CSRF token for use with state-changing requests.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/csrf-token` |
 | **Cache TTL** | 30s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -82,12 +82,12 @@ Retrieve a CSRF token for use with state-changing requests.
 Get server operating system, kernel, and network information.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/system/info` |
 | **Cache TTL** | 60s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -104,12 +104,12 @@ Get server operating system, kernel, and network information.
 Get status of core LEMP stack services (Nginx, PHP-FPM, MariaDB, Redis).
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/services/status` |
 | **Cache TTL** | 15s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -129,12 +129,12 @@ Get status of core LEMP stack services (Nginx, PHP-FPM, MariaDB, Redis).
 List all WordPress sites managed by EngineScript.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/sites` |
 | **Cache TTL** | 120s |
 
-**Response**
+#### Response
 
 ```json
 [
@@ -154,12 +154,12 @@ List all WordPress sites managed by EngineScript.
 Get the total number of managed WordPress sites.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/sites/count` |
 | **Cache TTL** | 120s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -176,12 +176,12 @@ Get the total number of managed WordPress sites.
 Check availability and configuration of the Tiny File Manager integration.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/tools/filemanager/status` |
 | **Cache TTL** | 300s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -200,15 +200,15 @@ Check availability and configuration of the Tiny File Manager integration.
 
 ### Uptime Status
 
-Get an aggregate overview of UptimeRobot monitor status.
+Get a summary of UptimeRobot monitor status.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/monitoring/uptime` |
 | **Cache TTL** | 60s |
 
-**Response** (configured)
+#### Response: Configured
 
 ```json
 {
@@ -223,7 +223,7 @@ Get an aggregate overview of UptimeRobot monitor status.
 
 `overall_status` values: `healthy`, `critical`, `partial`, `unknown`
 
-**Response** (not configured)
+#### Response: Not Configured
 
 ```json
 {
@@ -239,12 +239,12 @@ Get an aggregate overview of UptimeRobot monitor status.
 Get detailed information for each individual UptimeRobot monitor.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/monitoring/uptime/monitors` |
 | **Cache TTL** | 60s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -275,18 +275,21 @@ Monitor `status` codes: `0` Paused, `1` Not checked yet, `2` Up, `8` Seems down,
 Clear one or more server-side caches. Requires CSRF token.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `POST` |
 | **Path** | `/cache/clear` |
 | **Cache TTL** | None |
 
-**Query Parameters**
+#### Request Data
 
 | Parameter | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | Yes | Comma-separated cache types: `redis`, `fastcgi`, `opcache` |
+| --- | --- | --- | --- |
+| `type` | string | Yes* | Comma-separated cache types: `redis`, `fastcgi`, `opcache` |
+| `types` | array | Yes* | JSON array of cache types: `["redis", "fastcgi"]` |
 
-**Response**
+`type` may be sent as a query parameter or JSON body field. `types` is accepted for JSON clients. One of `type` or `types` is required.
+
+#### Response
 
 ```json
 {
@@ -319,12 +322,12 @@ If invalid types are included, a `warnings` field is added:
 Get the current status of all cache systems (Redis, FastCGI, OPcache).
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `GET` |
 | **Path** | `/cache/status` |
 | **Cache TTL** | 30s |
 
-**Response**
+#### Response
 
 ```json
 {
@@ -341,12 +344,12 @@ Get the current status of all cache systems (Redis, FastCGI, OPcache).
 Execute multiple API calls in a single request. Requires CSRF token.
 
 | | |
-|---|---|
+| --- | --- |
 | **Method** | `POST` |
 | **Path** | `/batch` |
 | **Cache TTL** | None |
 
-**Request Body** (JSON)
+#### Request Body JSON
 
 ```json
 {
@@ -355,9 +358,9 @@ Execute multiple API calls in a single request. Requires CSRF token.
 ```
 
 - Maximum 10 requests per batch
-- **Allowed endpoints**: `/system/info`, `/services/status`, `/sites`, `/sites/count`, `/tools/filemanager/status`, `/monitoring/uptime`, `/monitoring/uptime/monitors`
+- **Allowed endpoints**: `/system/info`, `/services/status`, `/sites`, `/sites/count`, `/tools/filemanager/status`, `/monitoring/uptime`, `/monitoring/uptime/monitors`, `/cache/status`
 
-**Response**
+#### Response
 
 ```json
 {
@@ -387,7 +390,7 @@ All errors follow a consistent JSON structure:
 ```
 
 | Status Code | Description |
-|---|---|
+| --- | --- |
 | `400` | Bad Request — missing or invalid parameters |
 | `403` | Forbidden — invalid session or CSRF token |
 | `404` | Not Found — unknown endpoint |

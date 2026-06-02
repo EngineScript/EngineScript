@@ -28,7 +28,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 echo ""
 echo ""
 echo "Please note, Cloudflare's Origin Pull Certificate has an expiration date."
-#echo "We've set a monthly cronjob to retrieve  the latest certificate."
+#echo "We've set a monthly cron job to retrieve the latest certificate."
 echo ""
 echo "Current Certificate expiration:"
 echo "$(openssl x509 -startdate -enddate -noout -in /etc/nginx/ssl/cloudflare/origin-pull-ca.pem)"

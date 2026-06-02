@@ -45,7 +45,7 @@ class FileManagerController extends BaseController
             $cached = $this->getCached(self::ENDPOINT);
             if ($cached !== null) {
                 // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
+                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT));
                 return;
             }
 
@@ -69,11 +69,11 @@ class FileManagerController extends BaseController
             $this->setCached(self::ENDPOINT, $result);
 
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->success($result, $this->getTtl(self::ENDPOINT));
-        } catch (Exception $e) {
+            ApiResponse::success($result, $this->getTtl(self::ENDPOINT));
+        } catch (Throwable $e) {
             $this->logSecurityEvent('File manager status error', $e->getMessage());
             // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            $this->response->serverError('Unable to retrieve file manager status');
+            ApiResponse::serverError('Unable to retrieve file manager status');
         }
     }
 

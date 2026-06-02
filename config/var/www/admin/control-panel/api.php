@@ -44,29 +44,58 @@ if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
     }
 }
 
-// Secure CORS - Only allow same origin by default
-$allowed_origins = [
-    $_SERVER['HTTP_HOST'] ?? '', // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
-    'localhost',
-    '127.0.0.1'
-];
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
-$origin_host = parse_url($origin, PHP_URL_HOST); // codacy:ignore - parse_url() required for URL validation in standalone API
-if ($origin_host === false) {
-    $origin_host = $origin;
-}
-
-if (in_array($origin_host, $allowed_origins, true) || 
-    preg_match('/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/', $origin_host)) {
-    header('Access-Control-Allow-Origin: ' . $origin); // codacy:ignore - CORS header required for API
+// Secure CORS - only echo a validated same-origin Origin header.
+$request_host_header = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? ''))); // codacy:ignore - Direct $_SERVER access required
+$request_host = '';
+$request_port = null;
+if (preg_match('/^\[([^\]]+)\](?::(\d+))?$/', $request_host_header, $host_matches)) {
+    $request_host = $host_matches[1];
+    $request_port = isset($host_matches[2]) ? (int) $host_matches[2] : null;
+} elseif (preg_match('/^([^:]+)(?::(\d+))?$/', $request_host_header, $host_matches)) {
+    $request_host = $host_matches[1];
+    $request_port = isset($host_matches[2]) ? (int) $host_matches[2] : null;
 } else {
-    header('Access-Control-Allow-Origin: null'); // codacy:ignore - CORS security header required
+    $request_host = trim($request_host_header, '[]');
+}
+$request_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http'; // codacy:ignore - Direct $_SERVER access required
+$request_effective_port = $request_port ?? ($request_scheme === 'https' ? 443 : 80);
+$is_local_request_host = in_array($request_host, ['localhost', '127.0.0.1', '::1'], true);
+$cors_origin_allowed = false;
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? null; // codacy:ignore - Direct $_SERVER access required
+if (is_string($origin) && $origin !== '') {
+    $origin_parts = parse_url($origin); // codacy:ignore - parse_url() required for URL validation
+    if (!is_array($origin_parts)) {
+        $origin_parts = [];
+    }
+
+    $origin_scheme = strtolower($origin_parts['scheme'] ?? '');
+    $origin_host = strtolower($origin_parts['host'] ?? '');
+    $origin_host_for_compare = trim($origin_host, '[]');
+    $origin_port = isset($origin_parts['port']) ? ':' . (int) $origin_parts['port'] : '';
+    $origin_effective_port = isset($origin_parts['port'])
+        ? (int) $origin_parts['port']
+        : ($origin_scheme === 'https' ? 443 : 80);
+    $scheme_matches = hash_equals($request_scheme, $origin_scheme)
+        || ($is_local_request_host && in_array($origin_scheme, ['http', 'https'], true));
+    $port_matches = $request_effective_port === $origin_effective_port || $is_local_request_host;
+
+    $is_allowed_origin = $scheme_matches && $port_matches && hash_equals($request_host, $origin_host_for_compare);
+
+    if ($is_allowed_origin) {
+        $origin_host_header = str_contains($origin_host, ':') && !str_starts_with($origin_host, '[')
+            ? '[' . $origin_host . ']'
+            : $origin_host;
+        header('Access-Control-Allow-Origin: ' . $origin_scheme . '://' . $origin_host_header . $origin_port); // codacy:ignore - CORS header required for API
+        $cors_origin_allowed = true;
+    }
 }
 
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // codacy:ignore - CORS header required
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
-header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required
+if ($cors_origin_allowed) {
+    header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required for same-origin API credentials
+}
 header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
 
 // Rate limiting (basic implementation) - session functions required for API rate limiting
@@ -90,7 +119,13 @@ if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status()
 
 // Initialize CSRF token if not exists
 if (!isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF protection
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // codacy:ignore - random_bytes() required for cryptographic token generation
+    try {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // codacy:ignore - random_bytes() required for cryptographic token generation
+    } catch (Throwable $e) {
+        SecurityLogger::log('CSRF token generation failed', $e->getMessage());
+        ApiResponse::serverError('Unable to initialize request security');
+        die();
+    }
 }
 $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
@@ -126,7 +161,8 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
  * 
  * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
  */
-function validateCsrfToken() {
+function validateCsrfToken(): bool
+{
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET'; // codacy:ignore - Direct $_SERVER access required
     
     // CSRF validation only required for state-changing methods
@@ -145,6 +181,22 @@ function validateCsrfToken() {
     // Fallback to body parameter
     elseif (isset($_POST['_csrf_token'])) { // codacy:ignore - Direct $_POST access required for CSRF token
         $client_token = $_POST['_csrf_token'];
+    }
+    // Fallback for JSON clients that submit the token in the body.
+    elseif (str_contains(strtolower($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) { // codacy:ignore - Direct $_SERVER access required
+        // codacy:ignore - file_get_contents() required for standalone API request body parsing
+        $input = file_get_contents('php://input');
+        if (is_string($input) && trim($input) !== '') {
+            try {
+                $body = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($body) && isset($body['_csrf_token']) && is_string($body['_csrf_token'])) {
+                    $client_token = $body['_csrf_token'];
+                }
+            } catch (JsonException) {
+                SecurityLogger::log('CSRF token JSON parse failed', 'Invalid JSON body');
+                return false;
+            }
+        }
     }
     
     // Validate token exists
@@ -168,14 +220,14 @@ if (!validateCsrfToken()) {
     die();
 }
 
-// Get the request URI and method first
+// Get the request URI first
 $request_uri = $_SERVER['REQUEST_URI'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
-$request_method = $_SERVER['REQUEST_METHOD'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
 
 // Check if endpoint is passed as a query parameter
-$endpoint_param = trim($_GET['endpoint'] ?? ''); // codacy:ignore - Direct $_GET access required
+$endpoint_param = trim((string) ($_GET['endpoint'] ?? '')); // codacy:ignore - Direct $_GET access required
 // Sanitize endpoint parameter to prevent injection attacks
 $endpoint_param = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $endpoint_param);
+$endpoint_param = is_string($endpoint_param) ? $endpoint_param : '';
 $path = '';
 if (!empty($endpoint_param)) {
     $path = '/' . ltrim($endpoint_param, '/');
@@ -183,12 +235,16 @@ if (!empty($endpoint_param)) {
 } else {
     $path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
     if ($path !== false) {
-        $path = str_replace('/api', '', $path);
+        if (str_starts_with($path, '/api/')) {
+            $path = substr($path, 4);
+        } elseif ($path === '/api') {
+            $path = '/';
+        }
         $path = rtrim($path, '/'); // Remove trailing slashes
     }
 }
 
-
+$path = $path === '' ? '/' : $path;
 
 // Path was already extracted and validated above, validate again for security
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
@@ -223,11 +279,16 @@ $router->register('/monitoring/uptime', 'UptimeController', 'getStatus');
 $router->register('/monitoring/uptime/monitors', 'UptimeController', 'getMonitors');
 
 // Cache management endpoint
-$router->register('/cache/clear', 'CacheController', 'clear');
+$router->register('/cache/clear', 'CacheController', 'clear', ['POST']);
 $router->register('/cache/status', 'CacheController', 'getStatus');
 
 // Legacy batch endpoint (kept for backward compatibility)
-$router->register('/batch', 'BatchController', 'handle');
+$router->register('/batch', 'BatchController', 'handle', ['POST']);
 
 // Dispatch request through router
-$router->dispatch($path);
+try {
+    $router->dispatch($path, $_SERVER['REQUEST_METHOD'] ?? 'GET'); // codacy:ignore - Direct $_SERVER access required for router method policy
+} catch (Throwable $e) {
+    SecurityLogger::log('Unhandled API error', $e->getMessage());
+    ApiResponse::serverError('Internal server error');
+}

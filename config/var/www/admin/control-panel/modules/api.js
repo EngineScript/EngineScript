@@ -2,6 +2,9 @@
 // Handles all API communication with the backend
 
 export class DashboardAPI {
+  static API_PREFIX = "/api/";
+  static MAX_BATCH_SIZE = 10;
+
   constructor() {
     this.csrfToken = null;
     this.csrfTokenPromise = null;
@@ -47,6 +50,10 @@ export class DashboardAPI {
     return this.csrfToken;
   }
 
+  isValidEndpoint(endpoint) {
+    return typeof endpoint === "string" && endpoint.startsWith(DashboardAPI.API_PREFIX);
+  }
+
   isOperaMini() {
     return (
       Object.prototype.toString.call(window.operamini) === "[object OperaMini]"
@@ -79,7 +86,7 @@ export class DashboardAPI {
 
   async getApiData(endpoint, fallback) {
     // Validate endpoint is a relative API path to prevent SSRF
-    if (typeof endpoint !== 'string' || !endpoint.startsWith('/api/')) {
+    if (!this.isValidEndpoint(endpoint)) {
       console.error('Invalid API endpoint:', endpoint);
       return fallback;
     }
@@ -106,7 +113,7 @@ export class DashboardAPI {
           throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
         }
 
-        return response.json();
+        return this.parseJsonResponse(response);
       });
 
       // Handle endpoint-specific response format differences.
@@ -123,7 +130,7 @@ export class DashboardAPI {
 
   async postApiData(endpoint, data = {}) {
     // Validate endpoint is a relative API path to prevent SSRF
-    if (typeof endpoint !== 'string' || !endpoint.startsWith('/api/')) {
+    if (!this.isValidEndpoint(endpoint)) {
       console.error('Invalid API endpoint:', endpoint);
       return { error: 'Invalid endpoint' }; // codacy:ignore - Object literal return
     }
@@ -150,11 +157,12 @@ export class DashboardAPI {
         body: JSON.stringify(data)
       });
 
+      const payload = await this.parseJsonResponse(response);
       if (!response.ok) {
-        throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
+        throw new Error(payload?.error || `API ${endpoint} returned ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      return payload;
     } catch (error) {
       console.error(`Error posting to ${endpoint}:`, error);
       return { error: error.message }; // codacy:ignore - Object literal return
@@ -189,11 +197,10 @@ export class DashboardAPI {
       }
 
       // Limit batch size client-side to match server limit
-      const maxBatchSize = 10;
       let limitedEndpoints = endpoints;
-      if (endpoints.length > maxBatchSize) {
-        console.warn(`Batch size ${endpoints.length} exceeds max ${maxBatchSize}, truncating`);
-        limitedEndpoints = endpoints.slice(0, maxBatchSize);
+      if (endpoints.length > DashboardAPI.MAX_BATCH_SIZE) {
+        console.warn(`Batch size ${endpoints.length} exceeds max ${DashboardAPI.MAX_BATCH_SIZE}, truncating`);
+        limitedEndpoints = endpoints.slice(0, DashboardAPI.MAX_BATCH_SIZE);
       }
 
       const headers = {
@@ -210,14 +217,23 @@ export class DashboardAPI {
         body: JSON.stringify({ requests: limitedEndpoints })
       });
 
+      const payload = await this.parseJsonResponse(response);
       if (!response.ok) {
-        throw new Error(`Batch API returned ${response.status}: ${response.statusText}`);
+        throw new Error(payload?.error || `Batch API returned ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      return payload;
     } catch (error) {
       console.error('Batch API request failed:', error);
       return { error: error.message, results: {}, errors: {} }; // codacy:ignore - Object literal return
+    }
+  }
+
+  async parseJsonResponse(response) {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(`Invalid JSON response: ${error.message}`);
     }
   }
 

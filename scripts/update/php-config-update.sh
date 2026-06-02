@@ -14,6 +14,25 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
+# Allow callers such as php-update.sh to configure a newly selected target
+# version without changing the persisted default/override setting.
+if [[ -n "${1:-}" ]]; then
+  php_target_valid=false
+  for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+    if [[ "${1}" == "${ver}" ]]; then
+      php_target_valid=true
+      break
+    fi
+  done
+
+  if [[ "${php_target_valid}" == true ]]; then
+    PHP_VER="${1}"
+  else
+    echo "Error: Unsupported PHP version '${1}'." >&2
+    exit 1
+  fi
+fi
+
 # Validate required capacity signals before tuning.
 require_basic_system_resources "MEMORY_TOTAL_MB" "CPU_COUNT"
 
@@ -98,7 +117,7 @@ calculate_php() {
   sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = ${PHP_FPM_MAX_SPARE_SERVERS}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
   sed -i "s|pm.max_children = .*|pm.max_children = ${PHP_FPM_MAX_CHILDREN}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
-  # Apply memory and OpCache settings to php.ini
+  # Apply memory and OPcache settings to php.ini
   sed -i "s|SEDPHPMEMLIMIT|${PHP_MEMORY_LIMIT}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
   sed -i "s|SEDOPCACHEINTBUF|${OPCACHE_INT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
   # Arithmetic expansion result is unlikely to need quoting; template controls any surrounding quotes

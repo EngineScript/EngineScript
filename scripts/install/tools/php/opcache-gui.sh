@@ -24,7 +24,7 @@ return_to_src
 # Create tools directory if it doesn't exist
 mkdir -p /var/www/admin/tools
 
-# OpCache-GUI
+# OPcache GUI
 git_clone_fresh "https://github.com/amnuts/opcache-gui.git" "/var/www/admin/tools/opcache-gui" --depth 1
 
 # Return to /usr/src

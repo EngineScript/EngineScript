@@ -29,10 +29,10 @@ fi
 LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
 
 if [[ "$LINUX_TYPE" != "Ubuntu" ]]; then
-  echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04"
+  echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04."
   exit 1
 else
-  echo "Detected Linux Type: $LINUX_TYPE"
+  echo "Detected Linux type: $LINUX_TYPE"
 fi
 
 # Check if Ubuntu is 24.04 LTS Release. If not, exit.
@@ -42,22 +42,40 @@ NOBLE_INT=2404
 
 if (( UBUNTU_VERSION_INT != NOBLE_INT )); then
   echo "ALERT:"
-  echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using Ubuntu 24.04 LTS"
+  echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using Ubuntu 24.04 LTS."
   exit 1
 else
-  echo "Current Ubuntu Version: $UBUNTU_VERSION"
+  echo "Current Ubuntu version: $UBUNTU_VERSION"
 fi
 
 #----------------------------------------------------------------------------
 # Start Main Script
 
-# Install Required Packages for Script
+# Install required packages for the script
 apt update --allow-releaseinfo-change -y
 
 core_packages=(
-  "apt" "bash" "boxes" "cron" "coreutils" "curl" "dos2unix" "git" "gzip" "nano" 
-  "needrestart" "openssl" "pwgen" "sed" "software-properties-common" "tar" 
-  "tzdata" "unattended-upgrades" "unzip" "wget" "zip"
+  "apt"
+  "bash"
+  "boxes"
+  "cron"
+  "coreutils"
+  "curl"
+  "dos2unix"
+  "git"
+  "gzip"
+  "nano"
+  "needrestart"
+  "openssl"
+  "pwgen"
+  "sed"
+  "software-properties-common"
+  "tar"
+  "tzdata"
+  "unattended-upgrades"
+  "unzip"
+  "wget"
+  "zip"
 )
 
 apt install -qy "${core_packages[@]}" || {
@@ -66,7 +84,14 @@ apt install -qy "${core_packages[@]}" || {
 }
 
 # Check for required commands
-required_commands=("apt" "boxes" "dos2unix" "git" "nano" "wget")
+required_commands=(
+  "apt"
+  "boxes"
+  "dos2unix"
+  "git"
+  "nano"
+  "wget"
+)
 for cmd in "${required_commands[@]}"; do
   if ! command -v "${cmd}" &> /dev/null; then
     echo "Error: ${cmd} is not installed. Please install it and try again."
@@ -79,7 +104,7 @@ if [[ -f "/etc/needrestart/needrestart.conf" ]]; then
   sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
 fi
 
-# Upgrade Software
+# Upgrade software
 apt upgrade -y
 
 # Return to /usr/src
@@ -204,10 +229,10 @@ apt-get remove --purge 'apache2*' 'php7*' 'php8*' -y
 apt update --allow-releaseinfo-change -y
 apt upgrade -y
 
-# Set Time Zone
+# Set time zone
 dpkg-reconfigure tzdata
 
-# Set Unattended Upgrades
+# Set unattended upgrades
 dpkg-reconfigure unattended-upgrades
 
 # Set MOTD
@@ -224,7 +249,7 @@ run-parts /etc/update-motd.d/
 UBUNTU_VERSION_NO_DOT="${UBUNTU_VERSION//./}"
 apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION_NO_DOT}" -y
 
-# Update & Upgrade
+# Update and upgrade
 apt update --allow-releaseinfo-change -y
 apt upgrade -y
 

@@ -26,7 +26,14 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Display Server Info" "Run EngineScript Debug Report" "Update EngineScript" "View/Edit EngineScript Install Configuration File" "View/Edit EngineScript Variables File" "Exit EngineScript Tools")
+    secoptions=(
+      "Display Server Info"
+      "Run EngineScript Debug Report"
+      "Update EngineScript"
+      "View/Edit EngineScript Install Configuration File"
+      "View/Edit EngineScript Variables File"
+      "Exit EngineScript Tools"
+    )
     select secopt in "${secoptions[@]}"
     do
       case $secopt in

@@ -21,3 +21,9 @@ verify_installation_completion
 # Start Main Script
 
 # Upgrade Scripts will be found below:
+
+# Install THP disable service for existing servers before completion checks require it.
+source /etc/enginescript/install-state.conf
+if [[ "${THP:-0}" != 1 ]]; then
+    /usr/local/bin/enginescript/scripts/install/systemd/thp.sh
+fi

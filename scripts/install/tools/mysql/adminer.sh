@@ -25,7 +25,7 @@ mkdir -p /var/www/admin/tools
 mkdir -p /var/www/admin/tools/adminer
 safe_wget "https://www.adminer.org/latest.php" "/var/www/admin/tools/adminer/index.php"
 
-# Set Permissons
+# Set permissions
 chown -R www-data:www-data /var/www/admin/tools/adminer
 find /var/www/admin/tools/adminer -type d -exec chmod 755 {} \;
 find /var/www/admin/tools/adminer -type f -exec chmod 644 {} \;

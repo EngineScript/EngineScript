@@ -10,19 +10,7 @@
     <!-- External Dependencies -->
     <!-- NOTE: {FONTAWESOME_VER} is a placeholder replaced during installation with the desired Font Awesome version (e.g. 6.5.1). -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous" id="fontawesome-css">
-    <script>
-    // Detect if Font Awesome failed to load (e.g. {FONTAWESOME_VER} placeholder not replaced)
-    document.addEventListener('DOMContentLoaded', () => {
-      const fa = document.getElementById('fontawesome-css');
-      if (!fa || !fa.sheet || fa.sheet.cssRules.length === 0) {
-        console.warn('Font Awesome failed to load. Icons will be missing. Ensure {FONTAWESOME_VER} is replaced during installation.');
-        const banner = document.createElement('div');
-        banner.style.cssText = 'background:#d32f2f;color:#fff;padding:8px 16px;text-align:center;font-size:14px;';
-        banner.textContent = 'Warning: Font Awesome icons failed to load. Run the EngineScript installer to configure the Font Awesome version.';
-        document.body.prepend(banner);
-      }
-    });
-    </script>
+    <script defer src="fontawesome-check.js?v={ES_DASHBOARD_VER}" data-cfasync="false"></script>
     
     <!-- Custom Styles -->
     <link rel="stylesheet" href="dashboard.css?v={ES_DASHBOARD_VER}">
@@ -30,6 +18,8 @@
     <!-- Preload Critical Resources -->
     <link rel="modulepreload" href="dashboard.js?v={ES_DASHBOARD_VER}">
     <link rel="modulepreload" href="modules/api.js?v={ES_DASHBOARD_VER}">
+    <link rel="modulepreload" href="modules/state.js?v={ES_DASHBOARD_VER}">
+    <link rel="modulepreload" href="modules/utils.js?v={ES_DASHBOARD_VER}">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -37,7 +27,7 @@
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <h2>EngineScript</h2>
-            <p>Loading Dashboard...</p>
+            <p>Loading dashboard...</p>
         </div>
     </div>
 
@@ -205,7 +195,7 @@
                                 </div>
                                 <div class="command-item">
                                     <code>es.cache</code>
-                                    <p>Clear FastCGI cache, OpCache, and Redis (server-wide)</p>
+                                    <p>Clear FastCGI cache, OPcache, and Redis (server-wide)</p>
                                 </div>
                                 <div class="command-item">
                                     <code>es.config</code>
@@ -229,7 +219,7 @@
                                 </div>
                                 <div class="command-item">
                                     <code>es.install</code>
-                                    <p>Run main EngineScript installation script</p>
+                                    <p>Run the main EngineScript install script</p>
                                 </div>
                                 <div class="command-item">
                                     <code>es.menu</code>
@@ -333,7 +323,7 @@
                         </div>
                         <div class="tool-content">
                             <h3>Adminer</h3>
-                            <p>Lightweight database management interface alternative</p>
+                            <p>Lightweight alternative database management interface</p>
                         </div>
                     </a>
                     
@@ -344,6 +334,10 @@
                         <div class="tool-content">
                             <h3>File Manager</h3>
                             <p>Web-based file browser and management interface</p>
+                            <div class="tool-status" id="filemanager-status" aria-live="polite">
+                                <span class="status-indicator"></span>
+                                <span class="status-text">Checking status...</span>
+                            </div>
                         </div>
                     </a>
                     
@@ -356,6 +350,38 @@
                             <p>Website monitoring and uptime tracking service</p>
                         </div>
                     </a>
+                </div>
+
+                <div class="content-row">
+                    <div class="card col-12">
+                        <div class="card-header">
+                            <h3><i class="fas fa-broom"></i> Cache Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="cache-management">
+                                <div class="cache-status-list" id="cache-status-list" aria-live="polite">
+                                    <div class="cache-status-item">
+                                        <span class="cache-name">Cache status</span>
+                                        <span class="cache-detail">Loading...</span>
+                                    </div>
+                                </div>
+                                <div class="cache-actions" aria-label="Cache actions">
+                                    <button class="btn btn-secondary" type="button" data-cache-type="redis">
+                                        <i class="fas fa-memory" aria-hidden="true"></i> Redis
+                                    </button>
+                                    <button class="btn btn-secondary" type="button" data-cache-type="fastcgi">
+                                        <i class="fas fa-server" aria-hidden="true"></i> FastCGI
+                                    </button>
+                                    <button class="btn btn-secondary" type="button" data-cache-type="opcache">
+                                        <i class="fab fa-php" aria-hidden="true"></i> OPcache
+                                    </button>
+                                    <button class="btn btn-primary" type="button" data-cache-type="all">
+                                        <i class="fas fa-bolt" aria-hidden="true"></i> All Caches
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

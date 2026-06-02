@@ -27,7 +27,17 @@ while true
     echo "Select an option to view the last 30 lines of logs."
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Domains" "MariaDB" "Nginx" "PHP" "Redis" "Syslog" "EngineScript Install Error Log" "API Error Log" "Exit Server Logs")
+    secoptions=(
+      "Domains"
+      "MariaDB"
+      "Nginx"
+      "PHP"
+      "Redis"
+      "Syslog"
+      "EngineScript Install Error Log"
+      "API Error Log"
+      "Exit Server Logs"
+    )
     select secopt in "${secoptions[@]}"
     do
       case "$secopt" in

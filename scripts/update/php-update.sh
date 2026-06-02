@@ -34,12 +34,27 @@ else
     NEW_PHP_VER="${PHP_VER}"
 fi
 
+new_php_valid=false
+for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+    if [[ "${NEW_PHP_VER}" == "${ver}" ]]; then
+        new_php_valid=true
+        break
+    fi
+done
+
+if [[ "${new_php_valid}" != true ]]; then
+    echo "Unsupported PHP version: ${NEW_PHP_VER}"
+    exit 1
+fi
+
 # Auto-detect currently installed PHP-FPM version
 DPKG_LIST_OUTPUT="$(dpkg -l)"
 OLD_PHP_VERS=()
 for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
     if [[ "${ver}" != "${NEW_PHP_VER}" ]] && grep -q "php${ver}-fpm" <<< "${DPKG_LIST_OUTPUT}"; then
-        OLD_PHP_VERS+=("${ver}")
+        OLD_PHP_VERS+=(
+            "${ver}"
+        )
     fi
 done
 
@@ -57,7 +72,9 @@ fi
 # Keep backward-compatible single-version variable for legacy downstream logic.
 # Migration logic must use MIGRATION_SOURCE_PHP_VERS to ensure all detected old versions are handled.
 OLD_PHP_VER="${OLD_PHP_VERS[0]}"
-MIGRATION_SOURCE_PHP_VERS=("${OLD_PHP_VERS[@]}")
+MIGRATION_SOURCE_PHP_VERS=(
+    "${OLD_PHP_VERS[@]}"
+)
 
 echo ""
 echo "============================================================="
@@ -78,6 +95,10 @@ done
 
 # Install new PHP version
 echo "Installing PHP ${NEW_PHP_VER}..."
+
+# Package blocking pins every non-selected PHP version during install. Remove
+# the target pin before switching so apt can install the requested PHP version.
+rm -f "/etc/apt/preferences.d/php${NEW_PHP_VER//./}-block"
 
 # Define the PHP packages to install
 mapfile -t php_packages < <(get_php_packages_array "${NEW_PHP_VER}")
@@ -110,7 +131,7 @@ fi
 /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
 
 # Update PHP config with the latest EngineScript settings
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/update/php-config-update.sh "${NEW_PHP_VER}" 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "PHP Configuration"
 
@@ -217,6 +238,17 @@ for OLD_VER in "${OLD_PHP_VERS[@]}"; do
     fi
 
     echo "PHP ${OLD_VER} has been removed."
+done
+
+# Keep PHP apt pins aligned with the selected version after the switch.
+for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+    sanitized="${ver//.}"
+    pin_file="/etc/apt/preferences.d/php${sanitized}-block"
+    if [[ "${ver}" == "${NEW_PHP_VER}" ]]; then
+        rm -f "${pin_file}"
+    else
+        echo -e "Package: php${ver}*\nPin: release *\nPin-Priority: -1" > "${pin_file}"
+    fi
 done
 
 # Cleanup

@@ -136,9 +136,27 @@ jobs:
           
           # Core packages without dos2unix and tzdata (problematic in CI)
           # Also install pwgen which is used by scripts (but not in CI variables file)
-          core_packages="apt bash boxes cron coreutils curl git gzip nano openssl pwgen sed software-properties-common tar unattended-upgrades unzip zip"
-          
-          sudo apt install -qy $core_packages 2>&1 | sudo tee -a /tmp/ci-logs/setup.log || {
+          core_packages=(
+            "apt"
+            "bash"
+            "boxes"
+            "cron"
+            "coreutils"
+            "curl"
+            "git"
+            "gzip"
+            "nano"
+            "openssl"
+            "pwgen"
+            "sed"
+            "software-properties-common"
+            "tar"
+            "unattended-upgrades"
+            "unzip"
+            "zip"
+          )
+
+          sudo apt install -qy "${core_packages[@]}" 2>&1 | sudo tee -a /tmp/ci-logs/setup.log || {
             echo "Error: Unable to install one or more packages. Exiting..." | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           }

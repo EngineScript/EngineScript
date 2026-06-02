@@ -43,7 +43,10 @@ echo ""
 echo "Select the site you wish to export:"
 echo ""
 PS3='Please enter the number corresponding to the site (or type the number for Exit): '
-options=("${SITES[@]}" "Exit Script") # Add "Exit Script" to the options
+options=(
+  "${SITES[@]}"
+  "Exit Script"
+)
 select SELECTED_ITEM in "${options[@]}"; do
     if [[ "$SELECTED_ITEM" == "Exit Script" ]]; then
         echo "Exiting script as requested."

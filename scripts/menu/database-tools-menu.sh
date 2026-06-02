@@ -26,7 +26,14 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Analyze All Tables & Databases" "MariaDB Diagnostic & Recovery" "MariaDB-Check Database Optimizer" "MySQLreport" "MySQLtuner" "Exit Server Tools")
+    secoptions=(
+      "Analyze All Tables & Databases"
+      "MariaDB Diagnostic & Recovery"
+      "MariaDB-Check Database Optimizer"
+      "MySQLreport"
+      "MySQLtuner"
+      "Exit Server Tools"
+    )
     select secopt in "${secoptions[@]}"
     do
       case $secopt in

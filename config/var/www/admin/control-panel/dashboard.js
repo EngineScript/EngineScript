@@ -11,13 +11,6 @@ class EngineScriptDashboard {
     this.api = new DashboardAPI();
     this.state = new DashboardState();
     this.utils = new DashboardUtils();
-
-    // Legacy property references for compatibility
-    this.currentPage = this.state.currentPage;
-    this.refreshInterval = this.state.refreshInterval;
-    this.allowedTimeRanges = this.state.allowedTimeRanges;
-    this.allowedPages = this.state.allowedPages;
-    this.allowedTools = this.state.allowedTools;
     
     // Cached keyboard navigation pages array
     this.keyboardNavPages = ["overview", "sites", "system", "tools"];
@@ -130,6 +123,10 @@ class EngineScriptDashboard {
       refreshBtn.addEventListener("click", () => this.refreshData());
     }
 
+    document.querySelectorAll("[data-cache-type]").forEach((button) => {
+      button.addEventListener("click", () => this.clearCache(button.dataset.cacheType, button));
+    });
+
     // Keyboard shortcuts
     this.setupKeyboardShortcuts();
 
@@ -185,7 +182,6 @@ class EngineScriptDashboard {
     // Load page-specific data
     this.loadPageData(pageName);
     this.state.setCurrentPage(pageName);
-    this.currentPage = this.state.getCurrentPage();
   }
 
   getPageTitle(pageName) {
@@ -337,8 +333,8 @@ class EngineScriptDashboard {
         return;
       }
 
-      // Number keys 1-5 - Quick page navigation (using cached pages array)
-      if (event.key >= "1" && event.key <= "5" && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+      // Number keys - Quick page navigation using the cached pages array
+      if (event.key >= "1" && event.key <= String(this.keyboardNavPages.length) && !event.ctrlKey && !event.altKey && !event.shiftKey) {
         const pageIndex = parseInt(event.key, 10) - 1;
         if (pageIndex < this.keyboardNavPages.length) {
           this.navigateToPage(this.keyboardNavPages[pageIndex]);
@@ -513,7 +509,7 @@ class EngineScriptDashboard {
 
       if (sitesGrid) {
         // Clear existing content
-        sitesGrid.innerHTML = "";
+        sitesGrid.replaceChildren();
 
         if (Array.isArray(sites) && sites.length > 0) {
           sites.forEach((site) => {
@@ -535,7 +531,7 @@ class EngineScriptDashboard {
       // Show error message to user
       const sitesGrid = document.getElementById("sites-grid");
       if (sitesGrid) {
-        sitesGrid.innerHTML = "";
+        sitesGrid.replaceChildren();
         const errorDiv = document.createElement("div");
         errorDiv.className = "site-card";
         
@@ -570,7 +566,7 @@ class EngineScriptDashboard {
 
       if (systemInfo && typeof sysInfo === "object") {
         // Clear existing content
-        systemInfo.innerHTML = "";
+        systemInfo.replaceChildren();
 
         const infoItems = [
           {
@@ -636,18 +632,11 @@ class EngineScriptDashboard {
 
   showSkeletonServiceStatus() {
     this.setAllServiceStatusElements("fas fa-circle", "v--");
-    ["nginx", "php", "mysql", "redis"].forEach(service => {
-      const element = document.getElementById(`${service}-status`);
-      if (element) {
-        // Remove any error styling
-        element.style.opacity = "1";
-      }
-    });
   }
 
   /**
    * Show skeleton loading state for sites using DocumentFragment
-   * Avoids forced DOM reparse from innerHTML
+   * Uses direct DOM nodes to avoid reparsing markup.
    */
   showSkeletonSites() {
     const sitesGrid = document.getElementById("sites-grid");
@@ -680,7 +669,7 @@ class EngineScriptDashboard {
 
   /**
    * Show skeleton loading state for system info using DocumentFragment
-   * Avoids forced DOM reparse from innerHTML
+   * Uses direct DOM nodes to avoid reparsing markup.
    */
   showSkeletonSystemInfo() {
     const systemInfo = document.getElementById("system-info");
@@ -742,7 +731,7 @@ class EngineScriptDashboard {
         'No Monitors Configured',
         'Add websites to monitor in your Uptime Robot dashboard'
       );
-      monitorsContainer.innerHTML = '';
+      monitorsContainer.replaceChildren();
       monitorsContainer.appendChild(emptyState);
     }
   }
@@ -758,7 +747,7 @@ class EngineScriptDashboard {
         'Retry',
         () => this.loadSystemInfo()
       );
-      systemInfo.innerHTML = '';
+      systemInfo.replaceChildren();
       systemInfo.appendChild(emptyState);
     }
   }
@@ -862,7 +851,158 @@ class EngineScriptDashboard {
 
   // Tools management methods
   async loadToolsData() {
-    // Tools are now static links - no status checking needed
+    await Promise.allSettled([
+      this.loadFileManagerStatus(),
+      this.loadCacheStatus()
+    ]);
+  }
+
+  async loadFileManagerStatus() {
+    const status = await this.api.getApiData("/api/tools/filemanager/status", null);
+    const toolCard = document.getElementById("filemanager-tool");
+    const statusElement = document.getElementById("filemanager-status");
+
+    if (!toolCard || !statusElement || !status || typeof status !== "object") {
+      this.renderToolStatus(statusElement, false, "Unavailable");
+      toolCard?.classList.add("tool-unavailable");
+      return;
+    }
+
+    const available = Boolean(status.available && status.config_exists);
+    const version = this.utils.sanitizeInput(status.version || "Unknown");
+    const label = available ? `Available${version !== "Unknown" ? `, v${version}` : ""}` : "Unavailable";
+
+    if (available && typeof status.url === "string") {
+      try {
+        toolCard.href = this.utils.sanitizeUrl(new URL(status.url, window.location.origin).href, toolCard.href);
+      } catch {
+        // Keep the static fallback href already present in the template.
+      }
+    }
+
+    toolCard.classList.toggle("tool-unavailable", !available);
+    this.renderToolStatus(statusElement, available, label);
+  }
+
+  renderToolStatus(statusElement, isOnline, text) {
+    if (!statusElement) {
+      return;
+    }
+
+    const indicator = document.createElement("span");
+    indicator.className = `status-indicator ${isOnline ? "online" : "offline"}`;
+
+    const statusText = document.createElement("span");
+    statusText.className = "status-text";
+    statusText.textContent = this.utils.sanitizeInput(text);
+
+    statusElement.replaceChildren(indicator, statusText);
+  }
+
+  async loadCacheStatus() {
+    const cacheStatus = await this.api.getApiData("/api/cache/status", null);
+    const container = document.getElementById("cache-status-list");
+
+    if (!container) {
+      return;
+    }
+
+    if (!cacheStatus || typeof cacheStatus !== "object") {
+      container.replaceChildren(this.createCacheStatusItem("Cache status", "Unavailable"));
+      return;
+    }
+
+    const items = [
+      this.createCacheStatusItem("Redis", this.describeRedisCache(cacheStatus.redis)),
+      this.createCacheStatusItem("FastCGI", this.describeFastCgiCache(cacheStatus.fastcgi)),
+      this.createCacheStatusItem("OPcache", this.describeOpcache(cacheStatus.opcache))
+    ];
+
+    container.replaceChildren(...items);
+  }
+
+  createCacheStatusItem(name, detail) {
+    const item = document.createElement("div");
+    item.className = "cache-status-item";
+
+    const nameElement = document.createElement("span");
+    nameElement.className = "cache-name";
+    nameElement.textContent = name;
+
+    const detailElement = document.createElement("span");
+    detailElement.className = "cache-detail";
+    detailElement.textContent = this.utils.sanitizeInput(detail);
+
+    item.appendChild(nameElement);
+    item.appendChild(detailElement);
+
+    return item;
+  }
+
+  describeRedisCache(status) {
+    if (!status?.available) {
+      return status?.reason || "Unavailable";
+    }
+
+    return status.used_memory_human ? `Memory used: ${status.used_memory_human}` : "Available";
+  }
+
+  describeFastCgiCache(status) {
+    if (!status?.available) {
+      return status?.reason || "Unavailable";
+    }
+
+    return status.size ? `Size: ${status.size}` : "Available";
+  }
+
+  describeOpcache(status) {
+    if (!status?.available) {
+      return status?.reason || "Unavailable";
+    }
+
+    const scripts = status.statistics?.num_cached_scripts;
+    return Number.isFinite(Number(scripts)) ? `${scripts} scripts cached` : "Available";
+  }
+
+  async clearCache(cacheType, button) {
+    const cacheTypes = {
+      redis: ["redis"],
+      fastcgi: ["fastcgi"],
+      opcache: ["opcache"],
+      all: ["redis", "fastcgi", "opcache"]
+    };
+    const types = cacheTypes[cacheType];
+
+    if (!types) {
+      this.utils.showNotification("Unknown cache type", "error");
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.dataset.loading = "true";
+    }
+
+    try {
+      const result = await this.api.postApiData("/api/cache/clear", { types });
+
+      if (result.error || result.success === false) {
+        throw new Error(result.error || "Unable to clear cache");
+      }
+
+      this.utils.showNotification("Cache cleared successfully", "success");
+      await this.loadCacheStatus();
+    } catch (error) {
+      this.utils.showNotification(error.message || "Unable to clear cache", "error");
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        delete button.dataset.loading;
+        button.blur();
+      }
+    }
   }
 
   // Uptime monitoring methods
@@ -940,7 +1080,7 @@ class EngineScriptDashboard {
       }
       
       // Clear existing content
-      monitorsContainer.innerHTML = '';
+      monitorsContainer.replaceChildren();
       
       monitors.forEach(monitor => {
         const monitorElement = this.createUptimeMonitorElement(monitor);
@@ -1040,7 +1180,7 @@ class EngineScriptDashboard {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
       // Clear existing content
-      monitorsContainer.innerHTML = '';
+      monitorsContainer.replaceChildren();
       
       // Create status div
       const statusDiv = document.createElement("div");
@@ -1105,7 +1245,7 @@ class EngineScriptDashboard {
   showUptimeError(errorMessage = '') {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
-      monitorsContainer.innerHTML = "";
+      monitorsContainer.replaceChildren();
       const statusDiv = document.createElement("div");
       statusDiv.className = "uptime-status";
       
@@ -1140,7 +1280,7 @@ class EngineScriptDashboard {
 
     const safeMessage = this.utils.sanitizeInput(message);
 
-    // Clear pending announcement to avoid racey duplicate reads.
+    // Clear pending announcement to avoid duplicate reads from rapid updates.
     if (this.liveRegionAnnouncementTimer) {
       clearTimeout(this.liveRegionAnnouncementTimer);
       this.liveRegionAnnouncementTimer = null;

@@ -27,7 +27,7 @@
  *   ApiResponse::methodNotAllowed('POST');
  *   ApiResponse::badRequest('Invalid input');
  */
-class ApiResponse
+final class ApiResponse
 {
     /**
      * Standard HTTP status codes used by API
@@ -41,6 +41,15 @@ class ApiResponse
     public const HTTP_INTERNAL_ERROR = 500;
 
     /**
+     * Common JSON encoding flags for all API responses.
+     */
+    private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
+
+    private function __construct()
+    {
+    }
+
+    /**
      * Send a successful JSON response
      * 
      * Used when returning fresh data (cache MISS).
@@ -50,7 +59,7 @@ class ApiResponse
      * @param int|null $ttl Optional cache TTL in seconds for Cache-Control header
      * @return void
      */
-    public static function success($data, $ttl = null)
+    public static function success(mixed $data, ?int $ttl = null): void
     {
         if ($ttl !== null && $ttl > 0) {
             // codacy:ignore - header() required for cache control in standalone API
@@ -58,8 +67,7 @@ class ApiResponse
             header('Cache-Control: private, max-age=' . (int)$ttl);
         }
         
-        // codacy:ignore - echo required for JSON API response in standalone API
-        echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::sendJson($data);
     }
 
     /**
@@ -72,14 +80,13 @@ class ApiResponse
      * @param int $ttl Cache TTL in seconds for Cache-Control header
      * @return void
      */
-    public static function cached($data, $ttl)
+    public static function cached(mixed $data, int $ttl): void
     {
         // codacy:ignore - header() required for cache headers in standalone API
         header('X-Cache: HIT');
         header('Cache-Control: private, max-age=' . (int)$ttl);
         
-        // codacy:ignore - echo required for JSON API response in standalone API
-        echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::sendJson($data);
     }
 
     /**
@@ -92,12 +99,12 @@ class ApiResponse
      * @param int $code HTTP status code (default 500)
      * @return void
      */
-    public static function error($message, $code = self::HTTP_INTERNAL_ERROR)
+    public static function error(string $message, int $code = self::HTTP_INTERNAL_ERROR): void
     {
         http_response_code($code);
-        
-        // codacy:ignore - echo required for JSON API response in standalone API
-        echo json_encode(['error' => $message], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        header('Cache-Control: no-store');
+
+        self::sendJson(['error' => $message]);
     }
 
     /**
@@ -108,7 +115,7 @@ class ApiResponse
      * @param string $message Error message describing the bad request
      * @return void
      */
-    public static function badRequest($message)
+    public static function badRequest(string $message): void
     {
         self::error($message, self::HTTP_BAD_REQUEST);
     }
@@ -121,7 +128,7 @@ class ApiResponse
      * @param string $message Error message (default: 'Forbidden')
      * @return void
      */
-    public static function forbidden($message = 'Forbidden')
+    public static function forbidden(string $message = 'Forbidden'): void
     {
         self::error($message, self::HTTP_FORBIDDEN);
     }
@@ -134,7 +141,7 @@ class ApiResponse
      * @param string $message Error message (default: 'Not found')
      * @return void
      */
-    public static function notFound($message = 'Not found')
+    public static function notFound(string $message = 'Not found'): void
     {
         self::error($message, self::HTTP_NOT_FOUND);
     }
@@ -145,12 +152,18 @@ class ApiResponse
      * Convenience method for wrong HTTP method errors.
      * Includes the expected method in the error message.
      * 
-     * @param string $expectedMethod The HTTP method that should be used
+     * @param string|array<int, string> $allowedMethod The HTTP method(s) that should be used
      * @return void
      */
-    public static function methodNotAllowed($expectedMethod)
+    public static function methodNotAllowed(string|array $allowedMethod): void
     {
-        self::error("Method not allowed. Use {$expectedMethod}.", self::HTTP_METHOD_NOT_ALLOWED);
+        $allowedMethods = is_array($allowedMethod) ? $allowedMethod : [$allowedMethod];
+        $allowedMethods = array_values(array_unique(array_map('strtoupper', $allowedMethods)));
+        $allowedMethods = array_values(array_filter($allowedMethods, static fn (string $method): bool => preg_match('/^[A-Z]+$/', $method) === 1));
+        $allowHeader = implode(', ', $allowedMethods ?: ['GET']);
+
+        header('Allow: ' . $allowHeader);
+        self::error('Method not allowed. Use ' . $allowHeader . '.', self::HTTP_METHOD_NOT_ALLOWED);
     }
 
     /**
@@ -161,7 +174,7 @@ class ApiResponse
      * @param string $message Error message (default: 'Rate limit exceeded')
      * @return void
      */
-    public static function rateLimited($message = 'Rate limit exceeded')
+    public static function rateLimited(string $message = 'Rate limit exceeded'): void
     {
         self::error($message, self::HTTP_TOO_MANY_REQUESTS);
     }
@@ -175,7 +188,7 @@ class ApiResponse
      * @param string $message Generic error message (default: 'Internal server error')
      * @return void
      */
-    public static function serverError($message = 'Internal server error')
+    public static function serverError(string $message = 'Internal server error'): void
     {
         self::error($message, self::HTTP_INTERNAL_ERROR);
     }
@@ -188,10 +201,10 @@ class ApiResponse
      * 
      * @param mixed $data The data to encode as JSON
      * @param int $code HTTP status code
-     * @param array $headers Optional additional headers as key => value pairs
+     * @param array<string, string> $headers Optional additional headers as key => value pairs
      * @return void
      */
-    public static function json($data, $code = self::HTTP_OK, array $headers = [])
+    public static function json(mixed $data, int $code = self::HTTP_OK, array $headers = []): void
     {
         http_response_code($code);
         
@@ -201,8 +214,7 @@ class ApiResponse
             header("{$name}: {$value}");
         }
         
-        // codacy:ignore - echo required for JSON API response in standalone API
-        echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::sendJson($data);
     }
 
     /**
@@ -213,8 +225,26 @@ class ApiResponse
      * @param int $code HTTP status code (default 200)
      * @return void
      */
-    public static function noContent($code = self::HTTP_OK)
+    public static function noContent(int $code = self::HTTP_OK): void
     {
         http_response_code($code);
+    }
+
+    /**
+     * Encode and send JSON while keeping failures deterministic.
+     *
+     * @param mixed $data The data to encode
+     * @return void
+     */
+    private static function sendJson(mixed $data): void
+    {
+        try {
+            // codacy:ignore - echo required for JSON API response in standalone API
+            echo json_encode($data, self::JSON_FLAGS);
+        } catch (JsonException) {
+            http_response_code(self::HTTP_INTERNAL_ERROR);
+            // codacy:ignore - echo required for JSON API response in standalone API
+            echo '{"error":"Failed to encode JSON response"}';
+        }
     }
 }

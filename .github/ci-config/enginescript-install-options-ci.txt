@@ -48,8 +48,8 @@ ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0
 # 0 = disabled
 # 1 = enabled
 
-## NGINX HTTP3 Support ##
-# Disable HTTP3 for CI testing to reduce complexity
+## NGINX HTTP/3 Support ##
+# Disable HTTP/3 for CI testing to reduce complexity
 INSTALL_HTTP3=0
 
 ## Expanded PHP Extensions Support ##

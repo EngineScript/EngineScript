@@ -13,6 +13,16 @@
 class SystemCommand
 {
     /**
+     * Maximum time a dashboard command may run before it is terminated.
+     */
+    private const DEFAULT_TIMEOUT_SECONDS = 8;
+
+    /**
+     * Maximum command output captured into memory.
+     */
+    private const MAX_OUTPUT_BYTES = 1048576;
+
+    /**
      * Central allowlist — single source of truth for every executable we may invoke.
      *
      * @var array<int,string>
@@ -28,6 +38,27 @@ class SystemCommand
         'redis-server',
         'systemctl',
         'uname',
+    ];
+
+    /**
+     * Absolute executable paths for Ubuntu-based EngineScript servers.
+     *
+     * The public API still accepts short binary names, but proc_open receives
+     * absolute paths so PATH cannot influence which executable is launched.
+     *
+     * @var array<string,string>
+     */
+    private const BINARY_PATHS = [
+        'du' => '/usr/bin/du',
+        'find' => '/usr/bin/find',
+        'ip' => '/usr/sbin/ip',
+        'mariadb' => '/usr/bin/mariadb',
+        'nginx' => '/usr/sbin/nginx',
+        'php' => '/usr/bin/php',
+        'redis-cli' => '/usr/bin/redis-cli',
+        'redis-server' => '/usr/bin/redis-server',
+        'systemctl' => '/usr/bin/systemctl',
+        'uname' => '/usr/bin/uname',
     ];
 
     /**
@@ -157,7 +188,11 @@ class SystemCommand
      * @param bool $captureStderr Read stderr instead of stdout (e.g. nginx -v)
      * @return string|false Trimmed output or false on failure
      */
-    private static function execProc(array $argv, bool $captureStderr = false): string|false
+    private static function execProc(
+        array $argv,
+        bool $captureStderr = false,
+        int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS
+    ): string|false
     {
         if ($argv === []) {
             return false;
@@ -168,8 +203,9 @@ class SystemCommand
         // shell metacharacters in arguments are inert by design.
         $allowed = self::ALLOWED_BINARIES;
 
-        if (!in_array($argv[0], $allowed, true)) {
-            error_log('[EngineScript] SystemCommand blocked non-allowlisted command: ' . $argv[0]);
+        $binary = $argv[0];
+        if (!in_array($binary, $allowed, true) || !isset(self::BINARY_PATHS[$binary])) {
+            error_log('[EngineScript] SystemCommand blocked non-allowlisted command: ' . $binary);
             return false;
         }
 
@@ -177,14 +213,72 @@ class SystemCommand
             return self::mockCommand($argv);
         }
 
+        if (!is_executable(self::BINARY_PATHS[$binary])) {
+            error_log('[EngineScript] SystemCommand executable not found or not executable: ' . self::BINARY_PATHS[$binary]);
+            return false;
+        }
+
+        $command = $argv;
+        $command[0] = self::BINARY_PATHS[$binary];
+
         [$descriptors, $pipeIndex] = self::buildPipeSpec($captureStderr);
-        $proc = proc_open($argv, $descriptors, $pipes);
+        $proc = proc_open($command, $descriptors, $pipes);
 
         if (!is_resource($proc)) {
             return false;
         }
 
-        $output = trim((string) stream_get_contents($pipes[$pipeIndex]));
+        stream_set_blocking($pipes[$pipeIndex], false);
+        $output = '';
+        $timedOut = false;
+        $startedAt = microtime(true);
+
+        while (true) {
+            $chunk = stream_get_contents($pipes[$pipeIndex]);
+            if (is_string($chunk) && $chunk !== '') {
+                $output .= $chunk;
+
+                if (strlen($output) > self::MAX_OUTPUT_BYTES) {
+                    proc_terminate($proc);
+                    usleep(100000);
+
+                    $status = proc_get_status($proc);
+                    if ($status['running']) {
+                        proc_terminate($proc, 9);
+                    }
+
+                    $timedOut = true;
+                    break;
+                }
+            }
+
+            $status = proc_get_status($proc);
+            if (!$status['running']) {
+                break;
+            }
+
+            if ((microtime(true) - $startedAt) >= $timeoutSeconds) {
+                proc_terminate($proc);
+                usleep(100000);
+
+                $status = proc_get_status($proc);
+                if ($status['running']) {
+                    proc_terminate($proc, 9);
+                }
+
+                $timedOut = true;
+                break;
+            }
+
+            usleep(50000);
+        }
+
+        $chunk = stream_get_contents($pipes[$pipeIndex]);
+        if (is_string($chunk) && $chunk !== '') {
+            $output .= $chunk;
+        }
+
+        $output = trim($output);
 
         foreach ($pipes as $pipe) {
             if (is_resource($pipe)) {
@@ -192,9 +286,18 @@ class SystemCommand
             }
         }
 
-        proc_close($proc);
+        $exitCode = proc_close($proc);
 
-        return $output !== '' ? $output : false;
+        if ($timedOut) {
+            error_log('[EngineScript] SystemCommand terminated timed-out command: ' . implode(' ', $argv));
+            return false;
+        }
+
+        if ($output !== '') {
+            return $output;
+        }
+
+        return $exitCode === 0 ? '' : false;
     }
 
     /**

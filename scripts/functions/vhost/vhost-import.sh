@@ -406,7 +406,7 @@ while true; do
   echo "  DB Charset: ${DB_CHARSET}"
   echo "-------------------------------------------------------"
   echo ""
-  read -p "Are these details correct? ([Y]es/[C]hange/[E]xit): " confirm_details
+  read -p "Are these details correct? ([Y] Yes / [C] Change / [E] Exit): " confirm_details
   case $confirm_details in
     [Yy]* )
       echo "Details confirmed."
@@ -651,7 +651,7 @@ else
   echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
 fi
 
-# Set permalink structure for FastCGI Cache (Good practice)
+# Set permalink structure for FastCGI cache (good practice)
 # Changing the permalink structure would probably catastrophically break existing sites and their SEO if they use a different structure, so this is commented out by default.
 #echo "Setting permalink structure to /%category%/%postname%/..."
 #wp option update permalink_structure '/%category%/%postname%/' --allow-root

@@ -25,7 +25,9 @@ MALDET_URL="https://www.rfxn.com/downloads/maldetect-current.tar.gz"
 cd /usr/local/src || { echo "Error: Failed to change to /usr/local/src" >&2; exit 1; }
 download_and_extract "$MALDET_URL" "/usr/local/src/maldetect-current.tar.gz" "/usr/local/src" || { echo "Error: Failed to download and extract Maldet from $MALDET_URL" >&2; exit 1; }
 shopt -s nullglob
-maldet_dirs=(/usr/local/src/maldetect-*/)
+maldet_dirs=(
+  /usr/local/src/maldetect-*/
+)
 shopt -u nullglob
 if [ "${#maldet_dirs[@]}" -ne 1 ]; then
     echo "Error: Expected exactly one extracted maldetect directory in /usr/local/src, found ${#maldet_dirs[@]}" >&2

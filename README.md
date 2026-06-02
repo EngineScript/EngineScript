@@ -17,17 +17,17 @@
 
 ## A High-Performance WordPress Server Built on Ubuntu and Cloudflare
 
-EngineScript automates the process of building a high-performance LEMP server. We've specifically built EngineScript with WordPress users in mind, so the install process will take you from a bare server all the way to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
+EngineScript automates the process of building a high-performance LEMP server. We built EngineScript with WordPress users in mind, so the install process takes you from a bare server to a working WordPress installation with Nginx FastCGI cache enabled in about 30 minutes.
 
 EngineScript Release Stage: **Beta**
 
 ## Minimum Requirements
 
-EngineScript is meant to be run as the root user on a fresh VPS. Setup will remove existing Apache, Nginx, PHP, and MySQL installations. Things **will** break if you run this script on a VPS that has already been configured.
+Run EngineScript as the root user on a fresh VPS. Setup removes existing Apache, Nginx, PHP, and MySQL installations. Existing services **will** break if you run this script on a VPS that already has software configured.
 
-- **A Newly Created VPS** *([Digital Ocean](https://m.do.co/c/e57cc8492285) droplet recommended)*
-- **Ubuntu 24.04 (64-Bit)**
-- **2GB RAM**
+- **A Newly Created VPS** *([DigitalOcean](https://m.do.co/c/e57cc8492285) droplet recommended)*
+- **Ubuntu 24.04 (64-bit)**
+- **2 GB RAM**
 - **Cloudflare** *(Free or Paid)*
 
 ----------
@@ -44,7 +44,7 @@ bash <(curl -s https://raw.githubusercontent.com/EngineScript/EngineScript/maste
 
 ### Step 2 - Edit Options File
 
-After the initial setup script has run, you'll need to alter the install options file. Fill this out completely, making sure to change all variables that say `PLACEHOLDER`.
+After the initial setup script runs, update the install options file. Replace every `PLACEHOLDER` value before continuing.
 
 Run the following command:
 
@@ -68,17 +68,17 @@ es.install
 
 ### EngineScript Menu
 
-After EngineScript is fully installed, type `es.menu` at the console to bring up the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to get started adding your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function is fairly robust and should help simplify the process quite a bit.
+After EngineScript is fully installed, type `es.menu` at the console to open the EngineScript menu. Choose **1) Domain Configuration Tools**, then select **1) Create New Domain** or **2) Import Domain** to add your first site to the server. If you're moving an existing site into EngineScript, the Import Domain function helps simplify the process.
 
 ### Cloudflare
 
-Before your site is ready to use, you'll need to make sure it has been added to Cloudflare. The scripts that add or import a domain will automatically add or update the DNS records in Cloudflare to point to your server, issue SSL certificates, and apply numerous performance-related settings in Cloudflare.
+Before your site is ready to use, add it to Cloudflare. The scripts that add or import a domain automatically add or update Cloudflare DNS records to point to your server, issue SSL certificates, and apply several performance-related Cloudflare settings.
 
-For your reference, the settings EngineScript automatically applies can be viewed on our wiki at: [Cloudflare Settings Guide](https://github.com/EngineScript/EngineScript/wiki/Cloudflare-Settings).
+For reference, see the settings EngineScript automatically applies in the [Cloudflare Settings Guide](https://github.com/EngineScript/EngineScript/wiki/Cloudflare-Settings).
 
 ### Manual Cloudflare Settings
 
-Although we do our best to automate this process, there are a few settings that we don't or can't currently change via the Cloudflare API. We recommend you enable the following settings manually in Cloudflare:
+Although we do our best to automate this process, there are a few settings that we do not currently change through the Cloudflare API. We recommend enabling the following settings manually in Cloudflare:
 
 1. Speed Tab: **Cloudflare Fonts**: **On**
 2. Caching Tab: **Crawler Hints**: **On**
@@ -90,7 +90,7 @@ For Cloudflare to support compression from origin, the following features must b
 
 - Email Obfuscation
 - Rocket Loader
-- Server Side Excludes (SSE)
+- Server-Side Excludes (SSE)
 - Mirage
 - HTML Minification (JavaScript and CSS can remain enabled)
 - Automatic HTTPS Rewrites
@@ -105,14 +105,14 @@ For more information, see [This is Brotli from Origin](https://blog.cloudflare.c
 2. Check Enable Purge.
 3. Select "nginx FastCGI cache" for Caching Method
 4. Select "Using a GET request to PURGE/url (Default option)" for Purging Method.
-5. Check all of the boxes under Purging Conditions.
+5. Check every box under Purging Conditions.
 6. Save Changes.
 
 #### Other Plugins
 
-EngineScript installs a number of additional plugins when a domain is added to the server. These plugins are purely optional, but may add some valuable functionality to your site. We only enable plugins that are required, so please take a moment to review all of the plugins to see if there is anything else you'd like to enable.
+EngineScript installs plugins when a domain is added to the server. These plugins are optional, but they may add useful functionality to your site. Required plugins are enabled automatically, so review the installed plugins to see if there is anything else you'd like to enable.
 
-We've also developed a basic plugin that disables some bloat from the default WordPress experience such as TinyMCE emojis, Jetpack advertisements, and some legacy CSS from widgets and classic themes. There could be some edge-case scenarios where this breaks something specific you're using, but these tweaks are pretty safe for most users.
+We also developed a basic plugin that disables some bloat from the default WordPress experience, such as TinyMCE emojis, Jetpack advertisements, and legacy CSS from widgets and classic themes. These tweaks are safe for most users, but there may be edge cases where they affect something specific to your site.
 
 ----------
 
@@ -130,36 +130,36 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 |Location|Usage|
 |-|-|
-|**/etc/mysql**                  |MySQL (MariaDB) config|
-|**/etc/nginx**                  |Nginx config|
-|**/etc/php**                    |PHP config|
-|**/etc/redis**                  |Redis config|
-|**/home/EngineScript**          |EngineScript user directories|
-|**/usr/local/bin/enginescript** |EngineScript source|
-|**/var/lib/mysql**              |MySQL database|
-|**/var/log**                    |Server logs|
+|**/etc/mysql**|MySQL (MariaDB) config|
+|**/etc/nginx**|Nginx config|
+|**/etc/php**|PHP config|
+|**/etc/redis**|Redis config|
+|**/home/EngineScript**|EngineScript user directories|
+|**/usr/local/bin/enginescript**|EngineScript source|
+|**/var/lib/mysql**|MySQL database|
+|**/var/log**|Server logs|
 |**/var/www/admin/control-panel**|EngineScript Admin Dashboard|
-|**/var/www/admin/tools**        |Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer)|
+|**/var/www/admin/tools**|Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer)|
 |**/var/www/sites/*YOURDOMAIN*/html**|Root directory for your WordPress installation|
 
 ### EngineScript Commands
 
 |Command|Function|
 |-|-|
-|**`es.backup`**     |Runs the backup script to back up all domains locally and *optionally* in the cloud|
-|**`es.cache`**      |Clears FastCGI Cache, OpCache, and Redis *(server-wide)*|
-|**`es.config`**     |Opens the configuration file in Nano|
-|**`es.debug`**      |Displays debug information for EngineScript|
-|**`es.help`**       |Displays EngineScript commands and locations|
-|**`es.images`**     |Losslessly compress all images in the WordPress /uploads directory *(server-wide)*|
-|**`es.info`**       |Displays server information|
-|**`es.install`**    |Runs the main EngineScript installation script|
-|**`es.menu`**       |EngineScript menu|
+|**`es.backup`**|Runs the backup script to back up all domains locally and *optionally* in the cloud|
+|**`es.cache`**|Clears FastCGI cache, OPcache, and Redis *(server-wide)*|
+|**`es.config`**|Opens the configuration file in Nano|
+|**`es.debug`**|Displays debug information for EngineScript|
+|**`es.help`**|Displays EngineScript commands and locations|
+|**`es.images`**|Losslessly compress all images in the WordPress /uploads directory *(server-wide)*|
+|**`es.info`**|Displays server information|
+|**`es.install`**|Runs the main EngineScript install script|
+|**`es.menu`**|EngineScript menu|
 |**`es.permissions`**|Resets the permissions of all files in the WordPress directory *(server-wide)*|
-|**`es.restart`**    |Restart Nginx and PHP|
-|**`es.sites`**      |Lists all WordPress sites installed on the server with status information|
-|**`es.update`**     |Update EngineScript|
-|**`es.variables`**  |Opens the variable file in Nano. This file resets when EngineScript is updated|
+|**`es.restart`**|Restarts Nginx and PHP|
+|**`es.sites`**|Lists all WordPress sites installed on the server with status information|
+|**`es.update`**|Updates EngineScript|
+|**`es.variables`**|Opens the variable file in Nano. This file resets when EngineScript is updated|
 
 ### Admin Control Panel Features
 

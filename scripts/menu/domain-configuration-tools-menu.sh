@@ -26,7 +26,13 @@ while true
     echo ""
     echo ""
     PS3='Please enter your choice: '
-    secoptions=("Create New Domain" "Import Domain" "Export Domain" "Remove Domain (DANGER)" "Exit Domain Configuration Tools")
+    secoptions=(
+      "Create New Domain"
+      "Import Domain"
+      "Export Domain"
+      "Remove Domain (DANGER)"
+      "Exit Domain Configuration Tools"
+    )
     select secopt in "${secoptions[@]}"
     do
       case $secopt in

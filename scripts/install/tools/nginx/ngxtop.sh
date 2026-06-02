@@ -18,7 +18,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# nxgtop
+# ngxtop
 pip3 install ngxtop
 
 echo ""

@@ -27,7 +27,19 @@ while true
     echo ""
 
     PS3='Please enter your choice: '
-    options=("Update EngineScript" "Update Kernel (experimental)" "Update MariaDB" "Update Nginx" "Update OpenSSL" "Update PHP" "Switch PHP Version" "Update Server Tools" "Update Ubuntu Distribution (apt full-upgrade)" "Update Ubuntu Software (apt upgrade)" "Exit Update Software Menu")
+    options=(
+      "Update EngineScript"
+      "Update Kernel (experimental)"
+      "Update MariaDB"
+      "Update Nginx"
+      "Update OpenSSL"
+      "Update PHP"
+      "Switch PHP Version"
+      "Update Server Tools"
+      "Update Ubuntu Distribution (apt full-upgrade)"
+      "Update Ubuntu Software (apt upgrade)"
+      "Exit Update Software Menu"
+    )
     select opt in "${options[@]}"
     do
       case $opt in
@@ -81,9 +93,13 @@ while true
           # Build dynamic options in reverse order (newest first)
           php_options=()
           for (( idx=${#SUPPORTED_PHP_VERSIONS[@]}-1 ; idx>=0 ; idx-- )) ; do
-              php_options+=("PHP ${SUPPORTED_PHP_VERSIONS[idx]}")
+              php_options+=(
+                "PHP ${SUPPORTED_PHP_VERSIONS[idx]}"
+              )
           done
-          php_options+=("Cancel")
+          php_options+=(
+            "Cancel"
+          )
           
           select php_choice in "${php_options[@]}"; do
               if [[ "$php_choice" == "Cancel" ]]; then
