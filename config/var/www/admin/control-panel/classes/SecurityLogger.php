@@ -9,8 +9,17 @@
  * @version 1.0.0
  * @security HIGH - Core logging infrastructure
  */
+require_once __DIR__ . '/Request.php';
+
 class SecurityLogger
 {
+    private Request $request;
+
+    public function __construct(?Request $request = null)
+    {
+        $this->request = $request ?? new Request();
+    }
+
     /**
      * Log a security event to the designated secure log file.
      * 
@@ -19,6 +28,18 @@ class SecurityLogger
      * @return void
      */
     public static function log(string $event, string $details = ''): void
+    {
+        (new self())->write($event, $details);
+    }
+
+    /**
+     * Log a security event using this logger's request context.
+     *
+     * @param string $event   The primary event description
+     * @param string $details Additional details about the event
+     * @return void
+     */
+    public function write(string $event, string $details = ''): void
     {
         $safe_event = self::sanitize($event);
         
@@ -29,16 +50,7 @@ class SecurityLogger
             $log_entry .= " - " . $safe_details;
         }
         
-        // Sanitize IP address for logging
-        // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available in standalone API
-        $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        
-        if ($client_ip !== 'unknown') {
-            // Validate IP format to prevent injection
-            if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
-                $client_ip = 'invalid';
-            }
-        }
+        $client_ip = $this->request->remoteAddress();
         
         $log_entry .= " - IP: " . $client_ip . "\n";
         

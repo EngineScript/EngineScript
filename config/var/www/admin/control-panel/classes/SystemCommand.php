@@ -74,6 +74,27 @@ class SystemCommand
     ];
 
     /**
+     * Exact public run() invocations currently needed by the dashboard.
+     *
+     * Keeping this narrower than the binary allowlist prevents future callers
+     * from passing semantically dangerous flags such as find -exec.
+     *
+     * @var array<string, list<list<string>>>
+     */
+    private const RUN_ALLOWED_ARGUMENTS = [
+        'du' => [
+            ['-sh', '/var/cache/enginescript/fcgi'],
+        ],
+        'find' => [
+            ['/var/cache/enginescript/fcgi', '-type', 'f', '-delete'],
+        ],
+        'redis-cli' => [
+            ['FLUSHALL'],
+            ['INFO', 'memory'],
+        ],
+    ];
+
+    /**
      * Default mock result when mocking is enabled but no specific configuration
      * has been provided. Use `false` to simulate a command failure, or a non-empty
      * string to simulate successful output.
@@ -198,6 +219,13 @@ class SystemCommand
             return false;
         }
 
+        foreach ($argv as $part) {
+            if (!is_string($part) || str_contains($part, "\0")) {
+                error_log('[EngineScript] SystemCommand blocked invalid command argument');
+                return false;
+            }
+        }
+
         // Central allowlist — single source of truth for every executable we may
         // invoke. proc_open with an array calls execve(2) directly (no shell), so
         // shell metacharacters in arguments are inert by design.
@@ -222,7 +250,7 @@ class SystemCommand
         $command[0] = self::BINARY_PATHS[$binary];
 
         [$descriptors, $pipeIndex] = self::buildPipeSpec($captureStderr);
-        $proc = proc_open($command, $descriptors, $pipes);
+        $proc = proc_open($command, $descriptors, $pipes, null, null, ['bypass_shell' => true]); // codacy:ignore - command is an argv array assembled from strict binary and argument allowlists
 
         if (!is_resource($proc)) {
             return false;
@@ -331,7 +359,40 @@ class SystemCommand
             return false;
         }
 
+        $normalizedArgs = [];
+        foreach ($args as $arg) {
+            if (!is_string($arg)) {
+                error_log('[EngineScript] SystemCommand::run() blocked non-string argument for binary: ' . $binary);
+                return false;
+            }
+
+            $normalizedArgs[] = $arg;
+        }
+        $args = $normalizedArgs;
+
+        if (!self::isAllowedRunInvocation($binary, $args)) {
+            error_log('[EngineScript] SystemCommand::run() blocked non-allowlisted invocation: ' . $binary);
+            return false;
+        }
+
         return self::execProc([$binary, ...$args]);
+    }
+
+    /**
+     * Verify public run() calls use one of the exact command shapes required by
+     * the dashboard.
+     *
+     * @param array<int,string> $args
+     */
+    private static function isAllowedRunInvocation(string $binary, array $args): bool
+    {
+        foreach (self::RUN_ALLOWED_ARGUMENTS[$binary] ?? [] as $allowedArgs) {
+            if ($args === $allowedArgs) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

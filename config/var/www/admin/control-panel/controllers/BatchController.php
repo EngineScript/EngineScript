@@ -107,17 +107,14 @@ class BatchController extends BaseController
                 // Cache the result
                 $this->setCached($clean_endpoint, $result);
             }
-
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success([
+            $this->response->success([
                 'results' => $results,
                 'errors' => $errors,
                 'cached_count' => $cached_count
             ]);
         } catch (Throwable $e) {
             $this->logSecurityEvent('Batch request error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to process batch request');
+            $this->response->serverError('Unable to process batch request');
         }
     }
 
@@ -130,35 +127,32 @@ class BatchController extends BaseController
     {
         // Only accept POST for batch requests
         if ($this->getRequestMethod() !== 'POST') {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::methodNotAllowed('POST');
+            $this->response->methodNotAllowed('POST');
             return null;
         }
 
         // Parse JSON body
-        $input = file_get_contents('php://input'); // codacy:ignore - file_get_contents() required for reading POST body
-        if ($input === false || trim($input) === '') {
-            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
+        $input = $this->request->body();
+        if (trim($input) === '') {
+            $this->response->badRequest('Invalid request. Expected JSON with "requests" array.');
             return null;
         }
 
         try {
             $data = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            ApiResponse::badRequest('Invalid JSON request body.');
+            $this->response->badRequest('Invalid JSON request body.');
             return null;
         }
 
         if (!is_array($data) || !isset($data['requests']) || !is_array($data['requests'])) {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('Invalid request. Expected JSON with "requests" array.');
+            $this->response->badRequest('Invalid request. Expected JSON with "requests" array.');
             return null;
         }
 
         // Limit batch size to prevent abuse
         if (count($data['requests']) > self::MAX_BATCH_SIZE) {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
+            $this->response->badRequest('Batch size exceeds maximum of ' . self::MAX_BATCH_SIZE . ' requests.');
             return null;
         }
 
@@ -197,7 +191,7 @@ class BatchController extends BaseController
             // Capture output
             ob_start();
             $bufferStarted = true;
-            $controller = new $controllerClass();
+            $controller = new $controllerClass($this->session, $this->response, $this->securityLogger, $this->request);
             $controller->$method();
             $output = ob_get_clean();
             $bufferStarted = false;

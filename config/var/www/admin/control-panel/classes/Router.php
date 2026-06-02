@@ -16,9 +16,13 @@
  * @security HIGH - Controls all API routing
  */
 
-// Ensure ApiResponse is loaded for error responses
+// Ensure response and request helpers are loaded for dispatching
 // codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
 require_once __DIR__ . '/ApiResponse.php';
+require_once __DIR__ . '/ApiResponder.php';
+require_once __DIR__ . '/Request.php';
+require_once __DIR__ . '/SecurityLogger.php';
+require_once __DIR__ . '/Session.php';
 
 /**
  * API Router
@@ -60,6 +64,26 @@ class Router
     private string $controllerPath;
 
     /**
+     * Instance response handler for router errors.
+     */
+    private ApiResponder $response;
+
+    /**
+     * Request wrapper for method resolution.
+     */
+    private Request $request;
+
+    /**
+     * Shared security logger for controllers.
+     */
+    private SecurityLogger $securityLogger;
+
+    /**
+     * Shared session wrapper for controllers.
+     */
+    private Session $session;
+
+    /**
      * Whether controllers have been loaded
      * 
      * @var bool
@@ -71,9 +95,19 @@ class Router
      * 
      * @param string|null $controllerPath Path to controller files (default: __DIR__/../controllers/)
      */
-    public function __construct(?string $controllerPath = null)
+    public function __construct(
+        ?string $controllerPath = null,
+        ?ApiResponder $response = null,
+        ?Request $request = null,
+        ?SecurityLogger $securityLogger = null,
+        ?Session $session = null
+    )
     {
         $this->controllerPath = $controllerPath ?? dirname(__DIR__) . '/controllers/';
+        $this->request = $request ?? new Request();
+        $this->response = $response ?? new ApiResponder();
+        $this->securityLogger = $securityLogger ?? new SecurityLogger($this->request);
+        $this->session = $session ?? new Session();
     }
 
     /**
@@ -212,11 +246,10 @@ class Router
         $controllerName = $route['controller'];
         $methodName = $route['method'];
         $allowedMethods = $route['methods'];
-        $actualMethod = strtoupper($requestMethod ?? ($_SERVER['REQUEST_METHOD'] ?? 'GET')); // codacy:ignore - Direct $_SERVER access centralized in router dispatch
+        $actualMethod = strtoupper($requestMethod ?? $this->request->method());
 
         if (!in_array($actualMethod, $allowedMethods, true)) {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::methodNotAllowed($allowedMethods);
+            $this->response->methodNotAllowed($allowedMethods);
             return;
         }
         
@@ -227,7 +260,7 @@ class Router
         }
         
         // Instantiate controller
-        $controller = new $controllerName();
+        $controller = new $controllerName($this->session, $this->response, $this->securityLogger, $this->request);
         
         // Verify method exists
         if (!method_exists($controller, $methodName)) {
@@ -254,8 +287,7 @@ class Router
         $sanitized_path = preg_replace('/[^a-zA-Z0-9\/\-_.]/', '', $path);
         error_log("API 404 - Path not matched: " . $sanitized_path);
         
-        // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-        ApiResponse::notFound('Endpoint not found');
+        $this->response->notFound('Endpoint not found');
     }
 
     /**
@@ -272,8 +304,7 @@ class Router
         error_log("API Router Error: " . $message);
         
         // Return generic error to client
-        // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-        ApiResponse::serverError('Internal server error');
+        $this->response->serverError('Internal server error');
     }
 
     /**

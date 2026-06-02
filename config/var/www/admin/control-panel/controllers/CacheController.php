@@ -49,8 +49,7 @@ class CacheController extends BaseController
         try {
             // Require POST method for cache clearing
             if ($this->getRequestMethod() !== 'POST') {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::methodNotAllowed('POST');
+                $this->response->methodNotAllowed('POST');
                 return;
             }
 
@@ -90,13 +89,10 @@ class CacheController extends BaseController
 
             // Clear API cache for relevant endpoints after cache operations
             $this->clearCacheFor('/services/status');
-
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($this->sanitizeOutput($response));
+            $this->response->success($this->sanitizeOutput($response));
         } catch (Throwable $e) {
             $this->logSecurityEvent('Cache clear error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to clear cache');
+            $this->response->serverError('Unable to clear cache');
         }
     }
 
@@ -121,8 +117,7 @@ class CacheController extends BaseController
         }
 
         if (empty($typeParam)) {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('Cache type required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            $this->response->badRequest('Cache type required. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
             return null;
         }
 
@@ -143,8 +138,7 @@ class CacheController extends BaseController
         $invalidTypes = array_values(array_unique($invalidTypes));
 
         if (empty($validTypes)) {
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            $this->response->badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
             return null;
         }
 
@@ -291,8 +285,7 @@ class CacheController extends BaseController
             // Check cache first
             $cached = $this->getCached('/cache/status');
             if ($cached !== null) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl('/cache/status'));
+                $this->response->cached($cached, $this->getTtl('/cache/status'));
                 return;
             }
 
@@ -306,13 +299,10 @@ class CacheController extends BaseController
 
             // Cache the result
             $this->setCached('/cache/status', $result);
-
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl('/cache/status'));
+            $this->response->success($result, $this->getTtl('/cache/status'));
         } catch (Throwable $e) {
             $this->logSecurityEvent('Cache status error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve cache status');
+            $this->response->serverError('Unable to retrieve cache status');
         }
     }
 

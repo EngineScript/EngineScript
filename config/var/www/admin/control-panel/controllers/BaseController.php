@@ -16,9 +16,12 @@
  * @security HIGH - Handles caching and validation for all controllers
  */
 
-// Ensure ApiResponse class is loaded
+// Ensure response/request helper classes are loaded
 // codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
 require_once __DIR__ . '/../classes/ApiResponse.php';
+require_once __DIR__ . '/../classes/ApiResponder.php';
+require_once __DIR__ . '/../classes/Request.php';
+require_once __DIR__ . '/../classes/SecurityLogger.php';
 
 // Ensure Session wrapper is loaded
 // codacy:ignore - require_once with __DIR__ constant is safe; no user input in path
@@ -37,11 +40,11 @@ require_once __DIR__ . '/../classes/Session.php';
  *   class MyController extends BaseController {
  *       public function getData() {
  *           if ($cached = $this->getCached('/my/endpoint')) {
- *               return ApiResponse::cached($cached, $this->getTtl('/my/endpoint'));
+ *               return $this->response->cached($cached, $this->getTtl('/my/endpoint'));
  *           }
  *           $data = $this->fetchData();
  *           $this->setCached('/my/endpoint', $data);
- *           return ApiResponse::success($data, $this->getTtl('/my/endpoint'));
+ *           return $this->response->success($data, $this->getTtl('/my/endpoint'));
  *       }
  *   }
  */
@@ -63,6 +66,21 @@ abstract class BaseController
     protected Session $session;
 
     /**
+     * Instance response handler for controllers.
+     */
+    protected ApiResponder $response;
+
+    /**
+     * Security logger with request context.
+     */
+    protected SecurityLogger $securityLogger;
+
+    /**
+     * Request wrapper instance — single point of request input access.
+     */
+    protected Request $request;
+
+    /**
      * Cached decoded JSON request body for state-changing endpoints.
      *
      * @var array<string, mixed>|null
@@ -75,9 +93,17 @@ abstract class BaseController
      * Child controllers that define their own constructor must call
      * parent::__construct() to ensure these properties are available.
      */
-    public function __construct()
+    public function __construct(
+        ?Session $session = null,
+        ?ApiResponder $response = null,
+        ?SecurityLogger $securityLogger = null,
+        ?Request $request = null
+    )
     {
-        $this->session = new Session();
+        $this->request = $request ?? new Request();
+        $this->session = $session ?? new Session();
+        $this->response = $response ?? new ApiResponder();
+        $this->securityLogger = $securityLogger ?? new SecurityLogger($this->request);
     }
 
     /**
@@ -376,7 +402,7 @@ abstract class BaseController
      */
     protected function logSecurityEvent($event, $details = '')
     {
-        SecurityLogger::log($event, $details);
+        $this->securityLogger->write($event, $details);
     }
 
     /**
@@ -413,41 +439,27 @@ abstract class BaseController
     /**
      * Get HTTP request method
      *
-     * Centralizes $_SERVER access to avoid super-global access in subclasses.
+     * Delegates to the Request wrapper to avoid super-global access in subclasses.
      *
      * @return string HTTP method (uppercase), defaults to 'GET'
      */
     protected function getRequestMethod(): string
     {
-        // codacy:ignore - Direct $_SERVER access centralized here to prevent super-global access in subclasses
-        return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        return $this->request->method();
     }
 
     /**
      * Retrieve a GET query parameter without direct super-global access.
      *
-     * Centralizes $_GET access via filter_input() so that no controller
-     * touches the $_GET superglobal directly.
+     * Delegates to the Request wrapper so that no controller touches the $_GET
+     * superglobal directly.
      *
      * @param string $key Query parameter name
      * @return string|null Trimmed value or null when absent/invalid
      */
     protected function getQueryParam(string $key): ?string
     {
-        // codacy:ignore - filter_input() safely centralizes query access without exposing $_GET in controller actions
-        $value = filter_input(INPUT_GET, $key, FILTER_UNSAFE_RAW);
-
-        if ($value === null && isset($_GET[$key]) && is_scalar($_GET[$key])) { // codacy:ignore - CLI/tests and rewritten requests may require direct $_GET fallback
-            $value = (string) $_GET[$key]; // codacy:ignore - Direct $_GET access centralized here
-        }
-
-        if ($value === null || $value === false || !is_string($value)) {
-            return null;
-        }
-
-        $value = trim($value);
-
-        return $value === '' ? null : $value;
+        return $this->request->query($key);
     }
 
     /**
@@ -461,9 +473,8 @@ abstract class BaseController
             return $this->jsonBody;
         }
 
-        // codacy:ignore - file_get_contents() required for reading JSON request bodies in standalone API
-        $input = file_get_contents('php://input');
-        if ($input === false || trim($input) === '') {
+        $input = $this->request->body();
+        if (trim($input) === '') {
             $this->jsonBody = [];
             return $this->jsonBody;
         }

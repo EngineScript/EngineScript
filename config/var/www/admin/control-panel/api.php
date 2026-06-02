@@ -7,21 +7,25 @@
  * 
  * @version 2.0.0
  * @security HIGH - Contains sensitive system information
- * 
- * NOTE: Codacy security warnings about $_SERVER, session_start(), header(), etc. are false positives.
- * This is a standalone API that does not use WordPress and requires direct PHP functionality.
- * wp_unslash() and WordPress functions are not available in this context.
  */
 
 // Load core classes
 // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
 require_once __DIR__ . '/classes/SystemCommand.php';
 require_once __DIR__ . '/classes/ApiResponse.php';
+require_once __DIR__ . '/classes/ApiResponder.php';
+require_once __DIR__ . '/classes/Request.php';
 require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/classes/SecurityLogger.php';
+require_once __DIR__ . '/classes/Session.php';
+
+$request = new Request();
+$response = new ApiResponder();
+$session = new Session();
+$securityLogger = new SecurityLogger($request);
 
 // Prevent direct access if not from proper context
-if (!isset($_SERVER['REQUEST_URI']) || !isset($_SERVER['HTTP_HOST'])) { // codacy:ignore - Direct $_SERVER access required for standalone API
+if (!$request->hasServer('REQUEST_URI') || !$request->hasServer('HTTP_HOST')) {
     http_response_code(403);
     die('Direct access forbidden'); // codacy:ignore - die() required for security termination
 }
@@ -36,7 +40,7 @@ header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';
 // Check if client accepts gzip and zlib extension is available
 if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
     // Check Accept-Encoding header for gzip support
-    $accept_encoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''; // codacy:ignore - Direct $_SERVER access required
+    $accept_encoding = $request->header('Accept-Encoding') ?? '';
     if (str_contains($accept_encoding, 'gzip')) {
         // Enable gzip compression with level 6 (good balance of speed/compression)
         ini_set('zlib.output_compression', 'On'); // codacy:ignore - ini_set() required for compression
@@ -45,7 +49,7 @@ if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
 }
 
 // Secure CORS - only echo a validated same-origin Origin header.
-$request_host_header = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? ''))); // codacy:ignore - Direct $_SERVER access required
+$request_host_header = $request->hostHeader();
 $request_host = '';
 $request_port = null;
 if (preg_match('/^\[([^\]]+)\](?::(\d+))?$/', $request_host_header, $host_matches)) {
@@ -57,12 +61,12 @@ if (preg_match('/^\[([^\]]+)\](?::(\d+))?$/', $request_host_header, $host_matche
 } else {
     $request_host = trim($request_host_header, '[]');
 }
-$request_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http'; // codacy:ignore - Direct $_SERVER access required
+$request_scheme = $request->scheme();
 $request_effective_port = $request_port ?? ($request_scheme === 'https' ? 443 : 80);
 $is_local_request_host = in_array($request_host, ['localhost', '127.0.0.1', '::1'], true);
 $cors_origin_allowed = false;
 
-$origin = $_SERVER['HTTP_ORIGIN'] ?? null; // codacy:ignore - Direct $_SERVER access required
+$origin = $request->header('Origin');
 if (is_string($origin) && $origin !== '') {
     $origin_parts = parse_url($origin); // codacy:ignore - parse_url() required for URL validation
     if (!is_array($origin_parts)) {
@@ -111,46 +115,49 @@ if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status()
     
     session_start(); // codacy:ignore - session_start() required for rate limiting functionality
     
-    if (!isset($_SESSION['_initialized'])) { // codacy:ignore - Direct $_SESSION access required for initialization flag
+    if (!$session->has('_initialized')) {
         session_regenerate_id(true); // codacy:ignore - Security hardening for session fixation
-        $_SESSION['_initialized'] = true; // codacy:ignore - Direct $_SESSION access required
+        $session->set('_initialized', true);
     }
 }
 
 // Initialize CSRF token if not exists
-if (!isset($_SESSION['csrf_token'])) { // codacy:ignore - Direct $_SESSION access required for CSRF protection
+if (!$session->has('csrf_token')) {
     try {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // codacy:ignore - random_bytes() required for cryptographic token generation
+        $session->set('csrf_token', bin2hex(random_bytes(32))); // codacy:ignore - random_bytes() required for cryptographic token generation
     } catch (Throwable $e) {
-        SecurityLogger::log('CSRF token generation failed', $e->getMessage());
-        ApiResponse::serverError('Unable to initialize request security');
+        $securityLogger->write('CSRF token generation failed', $e->getMessage());
+        $response->serverError('Unable to initialize request security');
         die();
     }
 }
-$client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$client_ip = $request->remoteAddress();
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
+$rate_limit = $session->get($rate_limit_key);
 
-if (!isset($_SESSION[$rate_limit_key])) { // codacy:ignore - Direct $_SESSION access required for rate limiting
-    $_SESSION[$rate_limit_key] = ['count' => 0, 'reset' => time() + 60]; // codacy:ignore - Direct $_SESSION access required
+if (!is_array($rate_limit)) {
+    $rate_limit = ['count' => 0, 'reset' => time() + 60];
 }
 
 // Reset rate limit counter every minute
-if (isset($_SESSION[$rate_limit_key]['reset']) && time() > $_SESSION[$rate_limit_key]['reset']) { // codacy:ignore - Direct $_SESSION access required
-    $_SESSION[$rate_limit_key] = ['count' => 0, 'reset' => time() + 60]; // codacy:ignore - Direct $_SESSION access required
+if (isset($rate_limit['reset']) && is_int($rate_limit['reset']) && time() > $rate_limit['reset']) {
+    $rate_limit = ['count' => 0, 'reset' => time() + 60];
 }
 
 // Check rate limit (100 requests per minute)
-if (isset($_SESSION[$rate_limit_key]['count']) && $_SESSION[$rate_limit_key]['count'] >= 100) { // codacy:ignore - Direct $_SESSION access required
-    ApiResponse::error('Rate limit exceeded', ApiResponse::HTTP_TOO_MANY_REQUESTS);
+if (isset($rate_limit['count']) && is_int($rate_limit['count']) && $rate_limit['count'] >= 100) {
+    $session->set($rate_limit_key, $rate_limit);
+    $response->rateLimited();
     die();
 }
 
-if (isset($_SESSION[$rate_limit_key]['count'])) { // codacy:ignore - Direct $_SESSION access required
-    $_SESSION[$rate_limit_key]['count']++; // codacy:ignore - Direct $_SESSION access required
-}
+$rate_limit['count'] = isset($rate_limit['count']) && is_int($rate_limit['count'])
+    ? $rate_limit['count'] + 1
+    : 1;
+$session->set($rate_limit_key, $rate_limit);
 
 // Handle preflight requests
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') { // codacy:ignore - Direct $_SERVER access required for CORS handling
+if ($request->method() === 'OPTIONS') {
     http_response_code(200);
     die(); // codacy:ignore - die() required for CORS termination
 }
@@ -161,9 +168,9 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
  * 
  * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
  */
-function validateCsrfToken(): bool
+function validateCsrfToken(Request $request, Session $session, SecurityLogger $securityLogger): bool
 {
-    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET'; // codacy:ignore - Direct $_SERVER access required
+    $method = $request->method();
     
     // CSRF validation only required for state-changing methods
     $safe_methods = ['GET', 'HEAD', 'OPTIONS'];
@@ -175,39 +182,41 @@ function validateCsrfToken(): bool
     $client_token = null;
     
     // Check header first (X-CSRF-Token)
-    if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) { // codacy:ignore - Direct $_SERVER access required for CSRF header
-        $client_token = $_SERVER['HTTP_X_CSRF_TOKEN'];
+    $headerToken = $request->header('X-CSRF-Token');
+    if ($headerToken !== null) {
+        $client_token = $headerToken;
     }
     // Fallback to body parameter
-    elseif (isset($_POST['_csrf_token'])) { // codacy:ignore - Direct $_POST access required for CSRF token
-        $client_token = $_POST['_csrf_token'];
+    elseif ($request->post('_csrf_token') !== null) {
+        $client_token = $request->post('_csrf_token');
     }
     // Fallback for JSON clients that submit the token in the body.
-    elseif (str_contains(strtolower($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) { // codacy:ignore - Direct $_SERVER access required
-        // codacy:ignore - file_get_contents() required for standalone API request body parsing
-        $input = file_get_contents('php://input');
-        if (is_string($input) && trim($input) !== '') {
+    elseif (str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
+        $input = $request->body();
+        if (trim($input) !== '') {
             try {
                 $body = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
                 if (is_array($body) && isset($body['_csrf_token']) && is_string($body['_csrf_token'])) {
                     $client_token = $body['_csrf_token'];
                 }
             } catch (JsonException) {
-                SecurityLogger::log('CSRF token JSON parse failed', 'Invalid JSON body');
+                $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
                 return false;
             }
         }
     }
     
+    $session_token = $session->get('csrf_token');
+
     // Validate token exists
-    if (empty($client_token) || empty($_SESSION['csrf_token'])) {
-        SecurityLogger::log('CSRF token missing', $method . ' request without token');
+    if (empty($client_token) || !is_string($session_token) || $session_token === '') {
+        $securityLogger->write('CSRF token missing', $method . ' request without token');
         return false;
     }
     
     // Use timing-safe comparison to prevent timing attacks
-    if (!hash_equals($_SESSION['csrf_token'], $client_token)) { // codacy:ignore - Direct $_SESSION access required for CSRF validation
-        SecurityLogger::log('CSRF token mismatch', 'Invalid token submitted');
+    if (!hash_equals($session_token, $client_token)) {
+        $securityLogger->write('CSRF token mismatch', 'Invalid token submitted');
         return false;
     }
     
@@ -215,16 +224,16 @@ function validateCsrfToken(): bool
 }
 
 // Validate CSRF token for state-changing requests
-if (!validateCsrfToken()) {
-    ApiResponse::forbidden('Invalid or missing CSRF token');
+if (!validateCsrfToken($request, $session, $securityLogger)) {
+    $response->forbidden('Invalid or missing CSRF token');
     die();
 }
 
 // Get the request URI first
-$request_uri = $_SERVER['REQUEST_URI'] ?? ''; // codacy:ignore - Direct $_SERVER access required, wp_unslash() not available
+$request_uri = $request->uri();
 
 // Check if endpoint is passed as a query parameter
-$endpoint_param = trim((string) ($_GET['endpoint'] ?? '')); // codacy:ignore - Direct $_GET access required
+$endpoint_param = $request->query('endpoint') ?? '';
 // Sanitize endpoint parameter to prevent injection attacks
 $endpoint_param = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $endpoint_param);
 $endpoint_param = is_string($endpoint_param) ? $endpoint_param : '';
@@ -248,14 +257,14 @@ $path = $path === '' ? '/' : $path;
 
 // Path was already extracted and validated above, validate again for security
 if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
-    SecurityLogger::log('Suspicious path', $path);
-    ApiResponse::badRequest('Invalid path');
+    $securityLogger->write('Suspicious path', $path);
+    $response->badRequest('Invalid path');
     die();
 }
 
 // ============ Router-Based Request Dispatch ============
 // Initialize router and register all routes
-$router = new Router();
+$router = new Router(null, $response, $request, $securityLogger, $session);
 
 // CSRF Token endpoint
 $router->register('/csrf-token', 'CsrfController', 'getToken');
@@ -287,8 +296,8 @@ $router->register('/batch', 'BatchController', 'handle', ['POST']);
 
 // Dispatch request through router
 try {
-    $router->dispatch($path, $_SERVER['REQUEST_METHOD'] ?? 'GET'); // codacy:ignore - Direct $_SERVER access required for router method policy
+    $router->dispatch($path, $request->method());
 } catch (Throwable $e) {
-    SecurityLogger::log('Unhandled API error', $e->getMessage());
-    ApiResponse::serverError('Internal server error');
+    $securityLogger->write('Unhandled API error', $e->getMessage());
+    $response->serverError('Internal server error');
 }

@@ -41,6 +41,21 @@ class Session
     }
 
     /**
+     * Determine whether a key exists in the active session.
+     *
+     * @SuppressWarnings(PHPMD.Superglobals)
+     */
+    public function has(string $key): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+
+        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
+        return array_key_exists($key, $_SESSION);
+    }
+
+    /**
      * Store a value in the session.
      *
      * This is the single, intentional write-access point for $_SESSION in the

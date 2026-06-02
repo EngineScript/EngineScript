@@ -44,8 +44,7 @@ class SiteController extends BaseController
             // Check cache first
             $cached = $this->getCached(self::ENDPOINT_LIST);
             if ($cached !== null) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_LIST));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_LIST));
                 return;
             }
 
@@ -54,13 +53,10 @@ class SiteController extends BaseController
 
             // Cache the result
             $this->setCached(self::ENDPOINT_LIST, $result);
-
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_LIST));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT_LIST));
         } catch (Throwable $e) {
             $this->logSecurityEvent('Sites error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve sites');
+            $this->response->serverError('Unable to retrieve sites');
         }
     }
 
@@ -79,8 +75,7 @@ class SiteController extends BaseController
             // Check count cache first
             $cached = $this->getCached(self::ENDPOINT_COUNT);
             if ($cached !== null) {
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
+                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
 
@@ -89,8 +84,7 @@ class SiteController extends BaseController
             if ($sitesCached !== null && is_array($sitesCached)) {
                 $result = ['count' => count($sitesCached)];
                 $this->setCached(self::ENDPOINT_COUNT, $result);
-                // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-                ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
+                $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
                 return;
             }
 
@@ -99,13 +93,10 @@ class SiteController extends BaseController
 
             // Cache the result
             $this->setCached(self::ENDPOINT_COUNT, $result);
-
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::success($result, $this->getTtl(self::ENDPOINT_COUNT));
+            $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
         } catch (Throwable $e) {
             $this->logSecurityEvent('Sites count error', $e->getMessage());
-            // codacy:ignore - Static ApiResponse method used; dependency injection would require service container
-            ApiResponse::serverError('Unable to retrieve sites count');
+            $this->response->serverError('Unable to retrieve sites count');
         }
     }
 
