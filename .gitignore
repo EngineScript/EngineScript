@@ -1,3 +1,5 @@
+# Local private files
+AGENTS.md
 .private/
 .vscode/
 
@@ -5,28 +7,43 @@
 .idea/
 
 # OS/editor noise
+*.swo
+*.swp
+*~
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
-*~
-
-# Dependencies
-vendor/
-node_modules/
 
 # Tool caches
-.cspellcache
-.phpunit.result.cache
-.php-cs-fixer.cache
-.eslintcache
-.stylelintcache
+*.py[cod]
 .cache/
-coverage/
+.cspellcache
+.eslintcache
+.php-cs-fixer.cache
+.phpcs-cache
+.phpstan.cache
+.phpunit.cache
+.phpunit.result.cache
+.psalm/cache
+.stylelintcache
+__pycache__/
 
 # Logs and temporary files
-*.log
-*.tmp
-*.temp
+*.backup
 *.bak
+*.log
+*.log.*
+*.old
 *.orig
+*.temp
+*.tmp
+logs/
+temp/
+tmp/
+
+# Dependencies, tests, and build artifacts
+build/
+coverage/
+dist/
+node_modules/
+plugin-check-build/
+vendor/
