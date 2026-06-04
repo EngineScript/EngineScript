@@ -8,6 +8,13 @@
  * @package EngineScript\Dashboard\API
  * @version 1.0.0
  * @security HIGH - Handles all API output
+ *
+ * @method void badRequest(string $message)
+ * @method void forbidden(string $message = 'Forbidden')
+ * @method void notFound(string $message = 'Not found')
+ * @method void rateLimited(string $message = 'Rate limit exceeded')
+ * @method void serverError(string $message = 'Internal server error')
+ * @method void noContent(int $code = 200)
  */
 final class ApiResponder
 {
@@ -20,6 +27,40 @@ final class ApiResponder
     public const HTTP_INTERNAL_ERROR = 500;
 
     private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
+
+    private const ERROR_STATUS_CODES = [
+        'badRequest' => self::HTTP_BAD_REQUEST,
+        'forbidden' => self::HTTP_FORBIDDEN,
+        'notFound' => self::HTTP_NOT_FOUND,
+        'rateLimited' => self::HTTP_TOO_MANY_REQUESTS,
+        'serverError' => self::HTTP_INTERNAL_ERROR,
+    ];
+
+    private const DEFAULT_ERROR_MESSAGES = [
+        'badRequest' => 'Bad request',
+        'forbidden' => 'Forbidden',
+        'notFound' => 'Not found',
+        'rateLimited' => 'Rate limit exceeded',
+        'serverError' => 'Internal server error',
+    ];
+
+    public function __call(string $name, array $arguments): void
+    {
+        if ($name === 'noContent') {
+            $code = $arguments[0] ?? self::HTTP_OK;
+            http_response_code(is_int($code) ? $code : self::HTTP_OK);
+            return;
+        }
+
+        if (!isset(self::ERROR_STATUS_CODES[$name])) {
+            throw new BadMethodCallException('Unknown API response method: ' . $name);
+        }
+
+        $message = $arguments[0] ?? self::DEFAULT_ERROR_MESSAGES[$name];
+        $message = is_scalar($message) ? (string) $message : self::DEFAULT_ERROR_MESSAGES[$name];
+
+        $this->error($message, self::ERROR_STATUS_CODES[$name]);
+    }
 
     public function success(mixed $data, ?int $ttl = null): void
     {
@@ -49,21 +90,6 @@ final class ApiResponder
         $this->sendJson(['error' => $message]);
     }
 
-    public function badRequest(string $message): void
-    {
-        $this->error($message, self::HTTP_BAD_REQUEST);
-    }
-
-    public function forbidden(string $message = 'Forbidden'): void
-    {
-        $this->error($message, self::HTTP_FORBIDDEN);
-    }
-
-    public function notFound(string $message = 'Not found'): void
-    {
-        $this->error($message, self::HTTP_NOT_FOUND);
-    }
-
     public function methodNotAllowed(string|array $allowedMethod): void
     {
         $allowedMethods = is_array($allowedMethod) ? $allowedMethod : [$allowedMethod];
@@ -76,16 +102,6 @@ final class ApiResponder
 
         header('Allow: ' . $allowHeader);
         $this->error('Method not allowed. Use ' . $allowHeader . '.', self::HTTP_METHOD_NOT_ALLOWED);
-    }
-
-    public function rateLimited(string $message = 'Rate limit exceeded'): void
-    {
-        $this->error($message, self::HTTP_TOO_MANY_REQUESTS);
-    }
-
-    public function serverError(string $message = 'Internal server error'): void
-    {
-        $this->error($message, self::HTTP_INTERNAL_ERROR);
     }
 
     /**
@@ -101,11 +117,6 @@ final class ApiResponder
         }
 
         $this->sendJson($data);
-    }
-
-    public function noContent(int $code = self::HTTP_OK): void
-    {
-        http_response_code($code);
     }
 
     private function sendJson(mixed $data): void

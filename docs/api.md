@@ -66,7 +66,7 @@ Retrieve a CSRF token for use with state-changing requests.
 | **Path** | `/csrf-token` |
 | **Cache TTL** | 30s |
 
-#### Response
+#### CSRF Token Response
 
 ```json
 {
@@ -87,7 +87,7 @@ Get server operating system, kernel, and network information.
 | **Path** | `/system/info` |
 | **Cache TTL** | 60s |
 
-#### Response
+#### System Info Response
 
 ```json
 {
@@ -109,7 +109,7 @@ Get status of core LEMP stack services (Nginx, PHP-FPM, MariaDB, Redis).
 | **Path** | `/services/status` |
 | **Cache TTL** | 15s |
 
-#### Response
+#### Service Status Response
 
 ```json
 {
@@ -134,7 +134,7 @@ List all WordPress sites managed by EngineScript.
 | **Path** | `/sites` |
 | **Cache TTL** | 120s |
 
-#### Response
+#### Sites Response
 
 ```json
 [
@@ -159,7 +159,7 @@ Get the total number of managed WordPress sites.
 | **Path** | `/sites/count` |
 | **Cache TTL** | 120s |
 
-#### Response
+#### Sites Count Response
 
 ```json
 {
@@ -181,7 +181,7 @@ Check availability and configuration of the Tiny File Manager integration.
 | **Path** | `/tools/filemanager/status` |
 | **Cache TTL** | 300s |
 
-#### Response
+#### File Manager Status Response
 
 ```json
 {
@@ -244,7 +244,7 @@ Get detailed information for each individual UptimeRobot monitor.
 | **Path** | `/monitoring/uptime/monitors` |
 | **Cache TTL** | 60s |
 
-#### Response
+#### Uptime Monitors Response
 
 ```json
 {
@@ -289,7 +289,7 @@ Clear one or more server-side caches. Requires CSRF token.
 
 `type` may be sent as a query parameter or JSON body field. `types` is accepted for JSON clients. One of `type` or `types` is required.
 
-#### Response
+#### Cache Clear Response
 
 ```json
 {
@@ -327,7 +327,7 @@ Get the current status of all cache systems (Redis, FastCGI, OPcache).
 | **Path** | `/cache/status` |
 | **Cache TTL** | 30s |
 
-#### Response
+#### Cache Status Response
 
 ```json
 {
@@ -360,7 +360,7 @@ Execute multiple API calls in a single request. Requires CSRF token.
 - Maximum 10 requests per batch
 - **Allowed endpoints**: `/system/info`, `/services/status`, `/sites`, `/sites/count`, `/tools/filemanager/status`, `/monitoring/uptime`, `/monitoring/uptime/monitors`, `/cache/status`
 
-#### Response
+#### Batch Response
 
 ```json
 {

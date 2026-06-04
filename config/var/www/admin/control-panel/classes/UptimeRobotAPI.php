@@ -113,31 +113,54 @@ class UptimeRobotAPI
      */
     private function makeRequest(string $endpoint, array $params = []): array|false
     {
-        // Validate endpoint to prevent injection
+        $url = $this->buildRequestUrl($endpoint);
+        if ($url === false) {
+            return false;
+        }
+
+        $params['api_key'] = $this->apiKey;
+
+        $curlHandle = $this->createCurlHandle();
+        if ($curlHandle === false) {
+            return false;
+        }
+
+        if (!$this->configureCurlRequest($curlHandle, $url, $params)) {
+            curl_close($curlHandle);
+            return false;
+        }
+
+        return $this->decodeCurlResult($this->executeCurlRequest($curlHandle));
+    }
+
+    private function buildRequestUrl(string $endpoint): string|false
+    {
         if (!preg_match('/^[a-zA-Z]+$/', $endpoint)) {
             $this->logError('Invalid endpoint', ['endpoint' => $endpoint]);
             return false;
         }
 
-        $url = self::API_BASE_URL . $endpoint;
+        return self::API_BASE_URL . $endpoint;
+    }
 
-        // Add API key to parameters
-        $params['api_key'] = $this->apiKey;
-
-        // Check if cURL is available
+    private function createCurlHandle(): CurlHandle|false
+    {
         if (!function_exists('curl_init')) {
             $this->logError('cURL not available', []);
             return false;
         }
 
-        // Initialize cURL
         // codacy:ignore - curl_init() required for API communication in standalone service
         $curlHandle = curl_init();
         if ($curlHandle === false) {
             throw new CurlInitException('Unable to initialize cURL handle');
         }
 
-        // Set cURL options
+        return $curlHandle;
+    }
+
+    private function configureCurlRequest(CurlHandle $curlHandle, string $url, array $params): bool
+    {
         // codacy:ignore - curl functions required for secure API communication
         $optionsSet = curl_setopt_array($curlHandle, [
             CURLOPT_URL => $url,
@@ -150,7 +173,6 @@ class UptimeRobotAPI
                 'Content-Type: application/x-www-form-urlencoded',
                 'Cache-Control: no-cache'
             ],
-            // Security settings
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_FOLLOWLOCATION => false,
@@ -159,34 +181,48 @@ class UptimeRobotAPI
 
         if ($optionsSet === false) {
             $this->logError('Unable to configure cURL request', []);
-            curl_close($curlHandle);
             return false;
         }
 
-        // Execute request
+        return true;
+    }
+
+    /**
+     * @return array{response: string|false, http_code: int, error: string}
+     */
+    private function executeCurlRequest(CurlHandle $curlHandle): array
+    {
         // codacy:ignore - curl_exec() required for API communication
         $response = curl_exec($curlHandle);
-        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
-        $error = curl_error($curlHandle);
+        $result = [
+            'response' => is_string($response) ? $response : false,
+            'http_code' => (int) curl_getinfo($curlHandle, CURLINFO_HTTP_CODE),
+            'error' => curl_error($curlHandle),
+        ];
 
         // codacy:ignore - curl_close() required for cleanup
         curl_close($curlHandle);
 
-        // Check for cURL errors
-        if ($response === false) {
-            $this->logError('cURL request failed', ['error' => $error]);
+        return $result;
+    }
+
+    /**
+     * @param array{response: string|false, http_code: int, error: string} $result
+     */
+    private function decodeCurlResult(array $result): array|false
+    {
+        if ($result['response'] === false) {
+            $this->logError('cURL request failed', ['error' => $result['error']]);
             return false;
         }
 
-        // Check HTTP status code
-        if ($httpCode !== 200) {
-            $this->logError('API returned non-200 status', ['http_code' => $httpCode]);
+        if ($result['http_code'] !== 200) {
+            $this->logError('API returned non-200 status', ['http_code' => $result['http_code']]);
             return false;
         }
 
-        // Decode JSON response
         try {
-            $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($result['response'], true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $this->logError('Invalid JSON response', ['error' => $e->getMessage()]);
             return false;

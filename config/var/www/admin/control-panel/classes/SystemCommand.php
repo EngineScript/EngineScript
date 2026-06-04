@@ -10,17 +10,14 @@
  * @security HIGH - Zero shell_exec/exec usage; all execution via proc_open array
  */
 
+require_once __DIR__ . '/SystemProcessRunner.php';
+
 class SystemCommand
 {
     /**
      * Maximum time a dashboard command may run before it is terminated.
      */
     private const DEFAULT_TIMEOUT_SECONDS = 8;
-
-    /**
-     * Maximum command output captured into memory.
-     */
-    private const MAX_OUTPUT_BYTES = 1048576;
 
     /**
      * Central allowlist — single source of truth for every executable we may invoke.
@@ -118,6 +115,8 @@ class SystemCommand
      */
     private static array $mockResultQueue = [];
 
+    private static ?SystemProcessRunner $processRunner = null;
+
     /**
      * Check if shell commands should be mocked (for testing)
      */
@@ -213,7 +212,36 @@ class SystemCommand
         array $argv,
         bool $captureStderr = false,
         int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS
-    ): string|false
+    ): string|false {
+        if (!self::hasValidCommandParts($argv)) {
+            return false;
+        }
+
+        $binary = $argv[0];
+        $binaryPath = self::resolveBinaryPath($binary);
+        if ($binaryPath === false) {
+            return false;
+        }
+
+        if (self::isMocked()) {
+            return self::mockCommand($argv);
+        }
+
+        if (!is_executable($binaryPath)) {
+            error_log('[EngineScript] SystemCommand executable not found or not executable: ' . $binaryPath);
+            return false;
+        }
+
+        $command = $argv;
+        $command[0] = $binaryPath;
+
+        return self::processRunner()->run($command, $captureStderr, $timeoutSeconds, $argv);
+    }
+
+    /**
+     * @param array<int,string> $argv
+     */
+    private static function hasValidCommandParts(array $argv): bool
     {
         if ($argv === []) {
             return false;
@@ -226,123 +254,24 @@ class SystemCommand
             }
         }
 
-        // Central allowlist — single source of truth for every executable we may
-        // invoke. proc_open with an array calls execve(2) directly (no shell), so
-        // shell metacharacters in arguments are inert by design.
-        $allowed = self::ALLOWED_BINARIES;
+        return true;
+    }
 
-        $binary = $argv[0];
-        if (!in_array($binary, $allowed, true) || !isset(self::BINARY_PATHS[$binary])) {
+    private static function resolveBinaryPath(string $binary): string|false
+    {
+        if (!in_array($binary, self::ALLOWED_BINARIES, true) || !isset(self::BINARY_PATHS[$binary])) {
             error_log('[EngineScript] SystemCommand blocked non-allowlisted command: ' . $binary);
             return false;
         }
 
-        if (self::isMocked()) {
-            return self::mockCommand($argv);
-        }
-
-        if (!is_executable(self::BINARY_PATHS[$binary])) {
-            error_log('[EngineScript] SystemCommand executable not found or not executable: ' . self::BINARY_PATHS[$binary]);
-            return false;
-        }
-
-        $command = $argv;
-        $command[0] = self::BINARY_PATHS[$binary];
-
-        [$descriptors, $pipeIndex] = self::buildPipeSpec($captureStderr);
-        $proc = proc_open($command, $descriptors, $pipes, null, null, ['bypass_shell' => true]); // codacy:ignore - command is an argv array assembled from strict binary and argument allowlists
-
-        if (!is_resource($proc)) {
-            return false;
-        }
-
-        stream_set_blocking($pipes[$pipeIndex], false);
-        $output = '';
-        $timedOut = false;
-        $startedAt = microtime(true);
-
-        while (true) {
-            $chunk = stream_get_contents($pipes[$pipeIndex]);
-            if (is_string($chunk) && $chunk !== '') {
-                $output .= $chunk;
-
-                if (strlen($output) > self::MAX_OUTPUT_BYTES) {
-                    proc_terminate($proc);
-                    usleep(100000);
-
-                    $status = proc_get_status($proc);
-                    if ($status['running']) {
-                        proc_terminate($proc, 9);
-                    }
-
-                    $timedOut = true;
-                    break;
-                }
-            }
-
-            $status = proc_get_status($proc);
-            if (!$status['running']) {
-                break;
-            }
-
-            if ((microtime(true) - $startedAt) >= $timeoutSeconds) {
-                proc_terminate($proc);
-                usleep(100000);
-
-                $status = proc_get_status($proc);
-                if ($status['running']) {
-                    proc_terminate($proc, 9);
-                }
-
-                $timedOut = true;
-                break;
-            }
-
-            usleep(50000);
-        }
-
-        $chunk = stream_get_contents($pipes[$pipeIndex]);
-        if (is_string($chunk) && $chunk !== '') {
-            $output .= $chunk;
-        }
-
-        $output = trim($output);
-
-        foreach ($pipes as $pipe) {
-            if (is_resource($pipe)) {
-                fclose($pipe);
-            }
-        }
-
-        $exitCode = proc_close($proc);
-
-        if ($timedOut) {
-            error_log('[EngineScript] SystemCommand terminated timed-out command: ' . implode(' ', $argv));
-            return false;
-        }
-
-        if ($output !== '') {
-            return $output;
-        }
-
-        return $exitCode === 0 ? '' : false;
+        return self::BINARY_PATHS[$binary];
     }
 
-    /**
-     * Build the proc_open descriptor array and pipe-read index.
-     *
-     * @return array{0: array<int, array<int, string>>, 1: int}
-     */
-    private static function buildPipeSpec(bool $captureStderr): array
+    private static function processRunner(): SystemProcessRunner
     {
-        $null = ['file', '/dev/null', 'w'];
-        $pipe = ['pipe', 'r'];
+        self::$processRunner ??= new SystemProcessRunner();
 
-        if ($captureStderr) {
-            return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];
-        }
-
-        return [[0 => ['file', '/dev/null', 'r'], 1 => $pipe, 2 => $null], 1];
+        return self::$processRunner;
     }
 
     /**

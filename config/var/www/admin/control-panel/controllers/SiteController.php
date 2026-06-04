@@ -214,51 +214,16 @@ class SiteController extends BaseController
     {
         // codacy:ignore - file_get_contents() required for configuration reading in standalone API
         $config_content = file_get_contents($config_real_path);
-        if ($config_content === false) {
+        if ($config_content === false || !$this->isWordPressConfig($config_content)) {
             return null;
         }
 
-        // Check if this is a WordPress site
-        if (!str_contains($config_content, 'wordpress') &&
-            !str_contains($config_content, 'wp-')) {
+        $domain = $this->extractPrimaryDomain($config_content);
+        if ($domain === '') {
             return null;
         }
 
-        // Extract domain name and document root safely
-        $domain = '';
-        $document_root = '';
-
-        if (preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
-            $domain = trim($matches[1]);
-
-            // Split multiple domains and take the first one
-            $domain_parts = preg_split('/\s+/', $domain);
-            $primary_domain = $domain_parts[0];
-
-            // Validate domain format
-            if (filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-                $domain = htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            }
-        }
-
-        // Extract document root for WordPress version detection
-        if (preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
-            $document_root = trim($matches[1]);
-            // Validate and sanitize document root path
-            if (preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
-                // codacy:ignore - realpath() required for path validation in standalone API
-                $document_root = realpath($document_root);
-            }
-
-            if (!$document_root) {
-                $document_root = '';
-            }
-        }
-
-        if (empty($domain)) {
-            return null;
-        }
-
+        $document_root = $this->extractDocumentRoot($config_content);
         $wp_version = $this->getWordPressVersion($document_root);
 
         return [
@@ -267,6 +232,44 @@ class SiteController extends BaseController
             'wp_version' => $wp_version,
             'ssl_status' => str_contains($config_content, 'ssl_certificate') ? 'Enabled' : 'Unknown'
         ];
+    }
+
+    private function isWordPressConfig(string $config_content): bool
+    {
+        return str_contains($config_content, 'wordpress') || str_contains($config_content, 'wp-');
+    }
+
+    private function extractPrimaryDomain(string $config_content): string
+    {
+        if (!preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
+            return '';
+        }
+
+        $domain_parts = preg_split('/\s+/', trim($matches[1]));
+        $primary_domain = is_array($domain_parts) ? $domain_parts[0] : '';
+
+        if (!filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+            return '';
+        }
+
+        return htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function extractDocumentRoot(string $config_content): string
+    {
+        if (!preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
+            return '';
+        }
+
+        $document_root = trim($matches[1]);
+        if (!preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
+            return '';
+        }
+
+        // codacy:ignore - realpath() required for path validation in standalone API
+        $real_document_root = realpath($document_root);
+
+        return is_string($real_document_root) ? $real_document_root : '';
     }
 
     /**

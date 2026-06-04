@@ -171,55 +171,78 @@ if ($request->method() === 'OPTIONS') {
 function validateCsrfToken(Request $request, Session $session, SecurityLogger $securityLogger): bool
 {
     $method = $request->method();
-    
-    // CSRF validation only required for state-changing methods
-    $safe_methods = ['GET', 'HEAD', 'OPTIONS'];
-    if (in_array($method, $safe_methods, true)) {
+
+    if (isCsrfSafeMethod($method)) {
         return true;
     }
-    
-    // Get CSRF token from header (preferred) or body parameter
-    $client_token = null;
-    
-    // Check header first (X-CSRF-Token)
+
+    $client_token = csrfTokenFromRequest($request, $securityLogger);
+    if ($client_token === false) {
+        return false;
+    }
+
+    return csrfTokenIsValid($method, $client_token, $session->get('csrf_token'), $securityLogger);
+}
+
+function isCsrfSafeMethod(string $method): bool
+{
+    return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
+}
+
+function csrfTokenFromRequest(Request $request, SecurityLogger $securityLogger): string|false|null
+{
     $headerToken = $request->header('X-CSRF-Token');
     if ($headerToken !== null) {
-        $client_token = $headerToken;
+        return $headerToken;
     }
-    // Fallback to body parameter
-    elseif ($request->post('_csrf_token') !== null) {
-        $client_token = $request->post('_csrf_token');
-    }
-    // Fallback for JSON clients that submit the token in the body.
-    elseif (str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
-        $input = $request->body();
-        if (trim($input) !== '') {
-            try {
-                $body = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
-                if (is_array($body) && isset($body['_csrf_token']) && is_string($body['_csrf_token'])) {
-                    $client_token = $body['_csrf_token'];
-                }
-            } catch (JsonException) {
-                $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
-                return false;
-            }
-        }
-    }
-    
-    $session_token = $session->get('csrf_token');
 
-    // Validate token exists
+    $postToken = $request->post('_csrf_token');
+    if ($postToken !== null) {
+        return $postToken;
+    }
+
+    if (!str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
+        return null;
+    }
+
+    return csrfTokenFromJsonBody($request, $securityLogger);
+}
+
+function csrfTokenFromJsonBody(Request $request, SecurityLogger $securityLogger): string|false|null
+{
+    $input = $request->body();
+    if (trim($input) === '') {
+        return null;
+    }
+
+    try {
+        $body = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException) {
+        $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
+        return false;
+    }
+
+    return is_array($body) && isset($body['_csrf_token']) && is_string($body['_csrf_token'])
+        ? $body['_csrf_token']
+        : null;
+}
+
+function csrfTokenIsValid(
+    string $method,
+    string|null $client_token,
+    mixed $session_token,
+    SecurityLogger $securityLogger
+): bool {
     if (empty($client_token) || !is_string($session_token) || $session_token === '') {
         $securityLogger->write('CSRF token missing', $method . ' request without token');
         return false;
     }
-    
-    // Use timing-safe comparison to prevent timing attacks
+
     if (!hash_equals($session_token, $client_token)) {
         $securityLogger->write('CSRF token mismatch', 'Invalid token submitted');
         return false;
     }
-    
+
     return true;
 }
 
