@@ -127,10 +127,6 @@ class UptimeRobotAPI
             return false;
         }
 
-        if ($curlHandle === false) {
-            return false;
-        }
-
         if (!$this->configureCurlRequest($curlHandle, $url, $params)) {
             curl_close($curlHandle);
             return false;
@@ -149,11 +145,10 @@ class UptimeRobotAPI
         return self::API_BASE_URL . $endpoint;
     }
 
-    private function createCurlHandle(): CurlHandle|false
+    private function createCurlHandle(): CurlHandle
     {
         if (!function_exists('curl_init')) {
-            $this->logError('cURL not available', []);
-            return false;
+            throw new CurlInitException('cURL extension not available');
         }
 
         // codacy:ignore - curl_init() required for API communication in standalone service

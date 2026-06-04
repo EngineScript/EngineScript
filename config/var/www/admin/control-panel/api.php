@@ -95,12 +95,12 @@ if (is_string($origin) && $origin !== '') {
     }
 }
 
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // codacy:ignore - CORS header required
-header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
 if ($cors_origin_allowed) {
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS'); // codacy:ignore - CORS header required
+    header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token'); // codacy:ignore - CORS header required
     header('Access-Control-Allow-Credentials: true'); // codacy:ignore - CORS header required for same-origin API credentials
+    header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
 }
-header('Access-Control-Max-Age: 86400'); // codacy:ignore - CORS header required
 
 // Rate limiting (basic implementation) - session functions required for API rate limiting
 if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status() required for session management in standalone API
@@ -146,6 +146,8 @@ if (isset($rate_limit['reset']) && is_int($rate_limit['reset']) && time() > $rat
 
 // Check rate limit (100 requests per minute)
 if (isset($rate_limit['count']) && is_int($rate_limit['count']) && $rate_limit['count'] >= 100) {
+    // Rejected requests intentionally preserve the current over-limit count.
+    // This keeps the lockout stable until the reset time without extending it.
     $session->set($rate_limit_key, $rate_limit);
     $response->rateLimited();
     die();
@@ -268,7 +270,7 @@ if (!empty($endpoint_param)) {
     $parsed_path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
     if (is_string($parsed_path)) {
         if (str_starts_with($parsed_path, '/api/')) {
-            $parsed_path = substr($parsed_path, 4);
+            $parsed_path = '/' . ltrim(substr($parsed_path, 5), '/');
         } elseif ($parsed_path === '/api') {
             $parsed_path = '/';
         }
