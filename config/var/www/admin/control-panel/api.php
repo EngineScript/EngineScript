@@ -265,14 +265,14 @@ if (!empty($endpoint_param)) {
     $path = '/' . ltrim($endpoint_param, '/');
     $path = rtrim($path, '/'); // Remove trailing slashes
 } else {
-    $path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
-    if ($path !== false) {
-        if (str_starts_with($path, '/api/')) {
-            $path = substr($path, 4);
-        } elseif ($path === '/api') {
-            $path = '/';
+    $parsed_path = parse_url($request_uri, PHP_URL_PATH); // codacy:ignore - parse_url() required for URL parsing
+    if (is_string($parsed_path)) {
+        if (str_starts_with($parsed_path, '/api/')) {
+            $parsed_path = substr($parsed_path, 4);
+        } elseif ($parsed_path === '/api') {
+            $parsed_path = '/';
         }
-        $path = rtrim($path, '/'); // Remove trailing slashes
+        $path = rtrim($parsed_path, '/'); // Remove trailing slashes
     }
 }
 

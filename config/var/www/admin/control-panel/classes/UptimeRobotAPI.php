@@ -120,7 +120,13 @@ class UptimeRobotAPI
 
         $params['api_key'] = $this->apiKey;
 
-        $curlHandle = $this->createCurlHandle();
+        try {
+            $curlHandle = $this->createCurlHandle();
+        } catch (CurlInitException $e) {
+            $this->logError('Unable to initialize cURL handle', ['error' => $e->getMessage()]);
+            return false;
+        }
+
         if ($curlHandle === false) {
             return false;
         }

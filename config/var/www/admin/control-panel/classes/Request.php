@@ -16,12 +16,23 @@
  * @method string scheme()
  * @method string remoteAddress()
  */
+require_once __DIR__ . '/RequestServerAccessor.php';
+
 class Request
 {
     /**
-     * @var array<string, mixed>
+     * Server-derived request value accessor.
      */
-    private array $server;
+    private RequestServerAccessor $serverAccessor;
+
+    private const SERVER_ACCESSOR_METHODS = [
+        'hasServer' => true,
+        'serverString' => true,
+        'uri' => true,
+        'hostHeader' => true,
+        'scheme' => true,
+        'remoteAddress' => true,
+    ];
 
     /**
      * @var array<string, mixed>
@@ -45,7 +56,7 @@ class Request
     public function __construct(?array $server = null, ?array $query = null, ?array $post = null, ?string $body = null)
     {
         // codacy:ignore-start - Request superglobal access is intentionally centralized in this wrapper
-        $this->server = $server ?? $_SERVER;
+        $this->serverAccessor = new RequestServerAccessor($server ?? $_SERVER);
         $this->query = $query ?? $_GET;
         $this->post = $post ?? $_POST;
         // codacy:ignore-end
@@ -54,48 +65,16 @@ class Request
 
     public function __call(string $name, array $arguments): mixed
     {
-        switch ($name) {
-            case 'hasServer':
-                return is_string($arguments[0] ?? null) && array_key_exists($arguments[0], $this->server);
-
-            case 'serverString':
-                return $this->serverString(
-                    is_string($arguments[0] ?? null) ? $arguments[0] : '',
-                    is_string($arguments[1] ?? null) ? $arguments[1] : ''
-                );
-
-            case 'uri':
-                return $this->serverString('REQUEST_URI');
-
-            case 'hostHeader':
-                return strtolower(trim($this->serverString('HTTP_HOST')));
-
-            case 'scheme':
-                $https = strtolower($this->serverString('HTTPS'));
-                return $https !== '' && $https !== 'off' && $https !== '0' ? 'https' : 'http';
-
-            case 'remoteAddress':
-                $ipAddress = $this->serverString('REMOTE_ADDR', 'unknown');
-                if ($ipAddress === 'unknown') {
-                    return 'unknown';
-                }
-                return filter_var($ipAddress, FILTER_VALIDATE_IP) !== false ? $ipAddress : 'invalid';
-
-            default:
-                throw new BadMethodCallException('Unknown request method: ' . $name);
+        if (!isset(self::SERVER_ACCESSOR_METHODS[$name])) {
+            throw new BadMethodCallException('Unknown request method: ' . $name);
         }
-    }
 
-    private function serverString(string $key, string $default = ''): string
-    {
-        $value = $this->server[$key] ?? $default;
-
-        return is_scalar($value) ? (string) $value : $default;
+        return $this->serverAccessor->{$name}(...$arguments);
     }
 
     public function method(): string
     {
-        $method = strtoupper($this->serverString('REQUEST_METHOD', 'GET'));
+        $method = strtoupper($this->serverAccessor->serverString('REQUEST_METHOD', 'GET'));
 
         return preg_match('/^[A-Z]+$/', $method) === 1 ? $method : 'GET';
     }
@@ -107,11 +86,11 @@ class Request
             ? $normalized
             : 'HTTP_' . $normalized;
 
-        if (!array_key_exists($serverKey, $this->server)) {
+        if (!$this->serverAccessor->hasServer($serverKey)) {
             return null;
         }
 
-        $value = $this->serverString($serverKey);
+        $value = $this->serverAccessor->serverString($serverKey);
 
         return $value === '' ? null : $value;
     }
