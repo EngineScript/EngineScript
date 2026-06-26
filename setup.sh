@@ -212,14 +212,23 @@ chmod -R 644 "/var/log/EngineScript"/*.log
 # Return to /usr/src
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
 
-# Create EngineScript Aliases
+# Create EngineScript Commands
 source "/etc/enginescript/install-state.conf"
-if [[ "${ALIAS}" = 1 ]];
+
+if [[ "${ALIAS:-0}" = 1 ]] && [[ -x "/usr/local/bin/es.config" ]] && [[ -x "/usr/local/bin/es.install" ]] && [[ -x "/usr/local/bin/es.menu" ]];
   then
-    echo "ALIAS script has already run"
+    echo "EngineScript command installer has already run"
   else
-    /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh
-    echo "ALIAS=1" >> /etc/enginescript/install-state.conf
+    if /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh; then
+      if grep -q '^ALIAS=' /etc/enginescript/install-state.conf; then
+        sed -i 's/^ALIAS=.*/ALIAS=1/' /etc/enginescript/install-state.conf
+      else
+        echo "ALIAS=1" >> /etc/enginescript/install-state.conf
+      fi
+    else
+      echo "Error: Failed to install EngineScript commands."
+      exit 1
+    fi
 fi
 
 # Cleanup
