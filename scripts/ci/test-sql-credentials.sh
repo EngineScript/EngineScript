@@ -338,6 +338,36 @@ echo "  vhost import/export archive contract test complete."
 
 
 #----------------------------------------------------------------------------------
+# Test 4: MariaDB install root authentication contract
+#----------------------------------------------------------------------------------
+echo ""
+echo "======================================================="
+echo "  Test 4: MariaDB install root authentication"
+echo "======================================================="
+echo ""
+
+MARIADB_INSTALL_SCRIPT="${REPO_ROOT}/scripts/install/mariadb/mariadb-install.sh"
+
+assert_file_contains \
+  "${MARIADB_INSTALL_SCRIPT}" \
+  "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket OR mysql_native_password USING PASSWORD" \
+  "MariaDB install keeps socket auth and enables mysql_native_password"
+assert_file_contains \
+  "${MARIADB_INSTALL_SCRIPT}" \
+  'mariadb --protocol=socket' \
+  "MariaDB install uses the local socket for root bootstrap SQL"
+
+if grep -Eq 'ed25519|UPDATE mysql\.global_priv SET priv=.*root' "${MARIADB_INSTALL_SCRIPT}"; then
+  fail "MariaDB install still contains unsupported ed25519 root auth or direct root global_priv rewrites"
+else
+  pass "MariaDB install avoids unsupported ed25519 root auth and direct root global_priv rewrites"
+fi
+
+echo ""
+echo "  MariaDB install root authentication test complete."
+
+
+#----------------------------------------------------------------------------------
 # Summary
 #----------------------------------------------------------------------------------
 echo ""

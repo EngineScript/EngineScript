@@ -24,6 +24,13 @@ if [[ "${MARIADB}" = 1 ]]; then
     exit 0
 fi
 
+escape_mariadb_sql_string_literal() {
+  local input="$1"
+  input="${input//\\/\\\\}"
+  input="${input//\'/\'\'}"
+  printf '%s' "$input"
+}
+
 # Add MariaDB repository
 curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
 print_last_errors
@@ -51,12 +58,14 @@ debug_pause "System Update and Cleanup"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${MARIADB_ADMIN_PASSWORD}" # new password for the MySQL root user
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MARIADB_ADMIN_PASSWORD}" # repeat password for the MySQL root user
 
-# Remote Connection to Database - use unix_socket for local root and ed25519 for password-based auth
-sudo mariadb -e "ALTER USER root@localhost IDENTIFIED VIA unix_socket OR ed25519 USING PASSWORD('${MARIADB_ADMIN_PASSWORD}');"
+# Keep local sudo/socket automation working while enabling the configured root password.
+SQL_ESCAPED_MARIADB_ADMIN_PASSWORD="$(escape_mariadb_sql_string_literal "${MARIADB_ADMIN_PASSWORD}")"
+sudo mariadb --protocol=socket << EOFMYSQLROOTAUTH
+ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket OR mysql_native_password USING PASSWORD('${SQL_ESCAPED_MARIADB_ADMIN_PASSWORD}');
+EOFMYSQLROOTAUTH
 
 # Manually Perform Secure Installation
-sudo mariadb -e "UPDATE mysql.global_priv SET priv=json_set(priv, '$.plugin', 'mysql_native_password', '$.authentication_string', PASSWORD('$MARIADB_ADMIN_PASSWORD')) WHERE User='root'";
-sudo mariadb << EOFMYSQLSECURE
+sudo mariadb --protocol=socket << EOFMYSQLSECURE
 DELETE FROM mysql.global_priv WHERE User='';
 DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
@@ -113,3 +122,4 @@ print_install_banner "MariaDB" 2
 
 # Mark the installation as complete
 echo "MARIADB=1" >> /etc/enginescript/install-state.conf
+echo "MariaDB completed successfully. Script done."
