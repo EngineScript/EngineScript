@@ -64,3 +64,4 @@ done
 
 # Mark the installation as complete
 echo "BLOCK=1" >> /etc/enginescript/install-state.conf
+echo "Block Unwanted Packages completed successfully. Script done."

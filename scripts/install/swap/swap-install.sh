@@ -73,3 +73,4 @@ echo "Swap file will be enabled once the server has restarted."
 
 # Mark the installation as complete
 echo "SWAP=1" >> /etc/enginescript/install-state.conf
+echo "Swap completed successfully. Script done."

@@ -120,3 +120,4 @@ fi
 
 # Mark the installation as complete
 echo "REPOS=1" >> /etc/enginescript/install-state.conf
+echo "Install Repositories completed successfully. Script done."

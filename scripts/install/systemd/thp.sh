@@ -33,3 +33,4 @@ systemctl start disable-thp
 
 # Mark the installation as complete
 echo "THP=1" >> /etc/enginescript/install-state.conf
+echo "Transparent Huge Pages completed successfully. Script done."

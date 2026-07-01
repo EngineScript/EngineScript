@@ -72,3 +72,4 @@ echo "File limits updated successfully."
 
 # Mark the installation as complete
 echo "SFL=1" >> /etc/enginescript/install-state.conf
+echo "Raising System File Limits completed successfully. Script done."

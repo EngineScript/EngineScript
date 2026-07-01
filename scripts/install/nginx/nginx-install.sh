@@ -113,3 +113,4 @@ print_install_banner "Nginx"
 
 # Mark the installation as complete
 echo "NGINX=1" >> /etc/enginescript/install-state.conf
+echo "Nginx completed successfully. Script done."

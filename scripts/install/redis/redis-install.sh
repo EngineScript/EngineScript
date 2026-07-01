@@ -92,3 +92,4 @@ verify_service_running "redis" "Redis"
 
 # Mark the installation as complete
 echo "REDIS=1" >> /etc/enginescript/install-state.conf
+echo "Redis completed successfully. Script done."

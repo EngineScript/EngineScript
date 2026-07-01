@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-07-01
+
+### 🐛 MARIADB ROOT AUTH INSTALL FIX
+
+- Replaced the MariaDB root authentication bootstrap command with `unix_socket OR mysql_native_password`, matching MariaDB's default multi-plugin root auth model and avoiding failures when the `ed25519` plugin is not installed.
+- Removed the direct root `mysql.global_priv` rewrite from `mariadb-install.sh` so local `sudo mariadb` socket automation remains available after the admin password is set.
+- Added a CI guard to prevent reintroducing unsupported root `ed25519` auth or direct root privilege-table rewrites in the MariaDB installer.
+
 ## 2026-04-29
 
 ### ⚡ NGINX: EARLY HINTS PASS-THROUGH SUPPORT

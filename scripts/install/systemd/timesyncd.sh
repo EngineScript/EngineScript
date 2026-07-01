@@ -34,3 +34,4 @@ systemctl restart systemd-timesyncd
 
 # Mark the installation as complete
 echo "NTP=1" >> /etc/enginescript/install-state.conf
+echo "NTP completed successfully. Script done."

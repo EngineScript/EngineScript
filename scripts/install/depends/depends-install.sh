@@ -175,3 +175,4 @@ update-alternatives --set editor /bin/nano
 
 # Mark the installation as complete
 echo "DEPENDS=1" >> /etc/enginescript/install-state.conf
+echo "Install Dependencies completed successfully. Script done."

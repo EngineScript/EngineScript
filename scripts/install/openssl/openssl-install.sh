@@ -32,3 +32,4 @@ download_and_extract "https://github.com/openssl/openssl/releases/download/opens
 
 # Mark the installation as complete
 echo "OPENSSL=1" >> /etc/enginescript/install-state.conf
+echo "OpenSSL completed successfully. Script done."

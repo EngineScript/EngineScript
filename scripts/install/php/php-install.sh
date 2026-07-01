@@ -108,3 +108,4 @@ debug_pause "Cleanup"
 
 # Mark the installation as complete
 echo "PHP=1" >> /etc/enginescript/install-state.conf
+echo "PHP completed successfully. Script done."

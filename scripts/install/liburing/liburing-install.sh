@@ -50,3 +50,4 @@ return_to_src
 
 # Mark the installation as complete
 echo "LIBURING=1" >> /etc/enginescript/install-state.conf
+echo "liburing completed successfully. Script done."

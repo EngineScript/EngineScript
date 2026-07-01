@@ -43,3 +43,4 @@ fi
 
 # Mark the installation as complete
 echo "GCC=1" >> /etc/enginescript/install-state.conf
+echo "GCC completed successfully. Script done."

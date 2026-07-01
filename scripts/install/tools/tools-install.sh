@@ -191,3 +191,4 @@ return_to_src
 
 # Mark the installation as complete
 echo "TOOLS=1" >> /etc/enginescript/install-state.conf
+echo "Tools completed successfully. Script done."

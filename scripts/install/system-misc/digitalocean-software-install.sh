@@ -87,3 +87,4 @@ fi
 
 # Mark the installation as complete
 echo "DO_CONSOLE=1" >> /etc/enginescript/install-state.conf
+echo "DigitalOcean Remote Console completed successfully. Script done."

@@ -32,3 +32,4 @@ download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pc
 
 # Mark the installation as complete
 echo "PCRE=1" >> /etc/enginescript/install-state.conf
+echo "PCRE completed successfully. Script done."

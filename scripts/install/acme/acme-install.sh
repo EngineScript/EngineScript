@@ -39,3 +39,4 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 
 # Mark the installation as complete
 echo "ACME=1" >> /etc/enginescript/install-state.conf
+echo "ACME.sh completed successfully. Script done."

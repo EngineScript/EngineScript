@@ -32,3 +32,4 @@ systemctl daemon-reload
 
 # Mark the installation as complete
 echo "KSM=1" >> /etc/enginescript/install-state.conf
+echo "Kernel Samepage Merging completed successfully. Script done."
