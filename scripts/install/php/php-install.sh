@@ -107,5 +107,5 @@ debug_pause "Cleanup"
 # https://www.managedserver.eu/introduction-to-php-fpm-tuning/
 
 # Mark the installation as complete
-echo "PHP=1" >> /etc/enginescript/install-state.conf
+set_install_state "PHP" "1"
 echo "PHP completed successfully. Script done."

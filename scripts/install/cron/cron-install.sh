@@ -76,5 +76,5 @@ add_cron_job "54 5 * * * cd /usr/local/bin/enginescript/scripts/functions/cron; 
 }
 
 # Mark the installation as complete
-echo "CRON=1" >> /etc/enginescript/install-state.conf
+set_install_state "CRON" "1"
 echo "Cron completed successfully. Script done."

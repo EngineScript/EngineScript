@@ -119,5 +119,5 @@ if [[ "${UBUNTU_VERSION}" == "24.04" ]]; then
 fi
 
 # Mark the installation as complete
-echo "REPOS=1" >> /etc/enginescript/install-state.conf
+set_install_state "REPOS" "1"
 echo "Install Repositories completed successfully. Script done."

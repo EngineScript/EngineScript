@@ -91,5 +91,5 @@ chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
 verify_service_running "redis" "Redis"
 
 # Mark the installation as complete
-echo "REDIS=1" >> /etc/enginescript/install-state.conf
+set_install_state "REDIS" "1"
 echo "Redis completed successfully. Script done."

@@ -31,5 +31,5 @@ apt-get remove --purge 'apache2.*' mysql-client mysql-common mysql-server 'nginx
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 # Mark the installation as complete
-echo "REMOVES=1" >> /etc/enginescript/install-state.conf
+set_install_state "REMOVES" "1"
 echo "Remove Preinstalled Software completed successfully. Script done."

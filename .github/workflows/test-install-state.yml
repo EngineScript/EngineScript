@@ -1,0 +1,50 @@
+---
+name: Test Install State
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - 'setup.sh'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/enginescript-install.sh'
+      - 'scripts/install/admin-control-panel/admin-control-panel-install.sh'
+      - 'scripts/install/phpmyadmin/phpmyadmin-install.sh'
+      - 'scripts/install/wp-cli/wp-cli-install.sh'
+      - 'scripts/install/tools/tools-install.sh'
+      - 'scripts/ci/test-install-state.sh'
+      - '.github/workflows/test-install-state.yml'
+  pull_request:
+    paths:
+      - 'setup.sh'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/enginescript-install.sh'
+      - 'scripts/install/admin-control-panel/admin-control-panel-install.sh'
+      - 'scripts/install/phpmyadmin/phpmyadmin-install.sh'
+      - 'scripts/install/wp-cli/wp-cli-install.sh'
+      - 'scripts/install/tools/tools-install.sh'
+      - 'scripts/ci/test-install-state.sh'
+      - '.github/workflows/test-install-state.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-install-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run install-state tests
+        run: |
+          bash -n scripts/ci/test-install-state.sh
+          bash scripts/ci/test-install-state.sh

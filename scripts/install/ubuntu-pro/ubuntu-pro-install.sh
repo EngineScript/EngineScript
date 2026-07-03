@@ -78,5 +78,5 @@ echo "============================================="
 echo ""
 
 # Mark the installation as complete
-echo "UBUNTU_PRO=1" >> /etc/enginescript/install-state.conf
+set_install_state "UBUNTU_PRO" "1"
 echo "Ubuntu Pro Setup completed successfully. Script done."

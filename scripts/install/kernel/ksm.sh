@@ -31,5 +31,5 @@ sudo systemctl enable --now ksm.service
 systemctl daemon-reload
 
 # Mark the installation as complete
-echo "KSM=1" >> /etc/enginescript/install-state.conf
+set_install_state "KSM" "1"
 echo "Kernel Samepage Merging completed successfully. Script done."

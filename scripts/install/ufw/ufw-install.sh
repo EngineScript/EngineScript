@@ -34,5 +34,5 @@ fi
 echo "y" | ufw enable
 
 # Mark the installation as complete
-echo "UFW=1" >> /etc/enginescript/install-state.conf
+set_install_state "UFW" "1"
 echo "UFW completed successfully. Script done."

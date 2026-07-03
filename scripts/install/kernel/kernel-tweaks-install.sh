@@ -36,5 +36,5 @@ echo tls >/etc/modules-load.d/tls.conf
 sysctl -e -p /etc/sysctl.d/60-enginescript.conf
 
 # Mark the installation as complete
-echo "KERNEL_TWEAKS=1" >> /etc/enginescript/install-state.conf
+set_install_state "KERNEL_TWEAKS" "1"
 echo "Kernel Tweaks completed successfully. Script done."

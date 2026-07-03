@@ -121,5 +121,5 @@ mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=val
 print_install_banner "MariaDB" 2
 
 # Mark the installation as complete
-echo "MARIADB=1" >> /etc/enginescript/install-state.conf
+set_install_state "MARIADB" "1"
 echo "MariaDB completed successfully. Script done."

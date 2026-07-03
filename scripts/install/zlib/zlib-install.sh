@@ -131,5 +131,5 @@ fi
 return_to_src
 
 # Mark the installation as complete
-echo "ZLIB=1" >> /etc/enginescript/install-state.conf
+set_install_state "ZLIB" "1"
 echo "zlib completed successfully. Script done."

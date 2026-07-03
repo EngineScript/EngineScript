@@ -49,5 +49,5 @@ make install
 return_to_src
 
 # Mark the installation as complete
-echo "LIBURING=1" >> /etc/enginescript/install-state.conf
+set_install_state "LIBURING" "1"
 echo "liburing completed successfully. Script done."

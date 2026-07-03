@@ -174,5 +174,5 @@ apt install -qy "${packages[@]}" || {
 update-alternatives --set editor /bin/nano
 
 # Mark the installation as complete
-echo "DEPENDS=1" >> /etc/enginescript/install-state.conf
+set_install_state "DEPENDS" "1"
 echo "Install Dependencies completed successfully. Script done."

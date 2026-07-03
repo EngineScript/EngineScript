@@ -53,4 +53,5 @@ echo "============================================================="
 echo ""
 echo ""
 
+set_install_state "PHPMYADMIN" "1"
 sleep 5

@@ -31,5 +31,5 @@ return_to_src
 download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz"
 
 # Mark the installation as complete
-echo "PCRE=1" >> /etc/enginescript/install-state.conf
+set_install_state "PCRE" "1"
 echo "PCRE completed successfully. Script done."

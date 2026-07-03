@@ -63,5 +63,5 @@ for ver in "${block_versions[@]}"; do
 done
 
 # Mark the installation as complete
-echo "BLOCK=1" >> /etc/enginescript/install-state.conf
+set_install_state "BLOCK" "1"
 echo "Block Unwanted Packages completed successfully. Script done."

@@ -31,5 +31,5 @@ return_to_src
 download_and_extract "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to download/extract OpenSSL."; exit 1; }
 
 # Mark the installation as complete
-echo "OPENSSL=1" >> /etc/enginescript/install-state.conf
+set_install_state "OPENSSL" "1"
 echo "OpenSSL completed successfully. Script done."

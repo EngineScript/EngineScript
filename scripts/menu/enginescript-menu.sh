@@ -18,6 +18,31 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+ENGINESCRIPT_REPO="/usr/local/bin/enginescript"
+ENGINESCRIPT_COMMIT="unknown"
+ENGINESCRIPT_BRANCH="unknown"
+ENGINESCRIPT_BRANCH_LABEL="unknown branch"
+
+if git -C "${ENGINESCRIPT_REPO}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    ENGINESCRIPT_COMMIT="$(git -C "${ENGINESCRIPT_REPO}" rev-parse --short=12 HEAD 2>/dev/null || echo "unknown")"
+    ENGINESCRIPT_BRANCH="$(git -C "${ENGINESCRIPT_REPO}" symbolic-ref --short HEAD 2>/dev/null || echo "detached")"
+
+    case "${ENGINESCRIPT_BRANCH}" in
+      "update-software-versions")
+        ENGINESCRIPT_BRANCH_LABEL="testing branch (update-software-versions)"
+        ;;
+      "master")
+        ENGINESCRIPT_BRANCH_LABEL="main branch (master)"
+        ;;
+      "detached")
+        ENGINESCRIPT_BRANCH_LABEL="detached HEAD"
+        ;;
+      *)
+        ENGINESCRIPT_BRANCH_LABEL="branch (${ENGINESCRIPT_BRANCH})"
+        ;;
+    esac
+fi
+
 # Main Menu
 while true
   do
@@ -27,6 +52,9 @@ while true
     echo "==============================================================="
     echo "EngineScript - Menu"
     echo "==============================================================="
+    echo ""
+    echo "EngineScript Commit: ${ENGINESCRIPT_COMMIT}"
+    echo "EngineScript Branch: ${ENGINESCRIPT_BRANCH_LABEL}"
     echo ""
     echo "Admin Control Panels:"
     echo "via Domain: https://admin.YOURDOMAIN.TLD"

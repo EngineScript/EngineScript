@@ -90,5 +90,6 @@ if ! "${WP_CLI_BIN}" cli update --stable --allow-root --yes 2>> /tmp/enginescrip
     echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
     exit 1
 fi
+set_install_state "WP_CLI" "1"
 print_last_errors
 debug_pause "WP-CLI Update"

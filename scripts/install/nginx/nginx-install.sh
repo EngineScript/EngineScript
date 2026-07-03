@@ -112,5 +112,5 @@ verify_service_running "nginx" "Nginx"
 print_install_banner "Nginx"
 
 # Mark the installation as complete
-echo "NGINX=1" >> /etc/enginescript/install-state.conf
+set_install_state "NGINX" "1"
 echo "Nginx completed successfully. Script done."

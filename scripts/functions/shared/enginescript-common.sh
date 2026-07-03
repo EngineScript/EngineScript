@@ -57,6 +57,115 @@ function print_last_errors() {
 
 
 # ----------------------------------------------------------------
+# Normalize and update EngineScript installation state.
+function set_install_state() {
+    local flag_name="$1"
+    local flag_value="${2:-1}"
+    local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
+    local state_dir
+    local tmp_file
+
+    if [[ ! "${flag_name}" =~ ^[A-Z0-9_]+$ ]]; then
+        echo "Error: Invalid install-state flag name: ${flag_name}" >&2
+        return 1
+    fi
+
+    if [[ "${flag_value}" != "0" && "${flag_value}" != "1" ]]; then
+        echo "Error: Invalid install-state value for ${flag_name}: ${flag_value}" >&2
+        return 1
+    fi
+
+    state_dir="$(dirname "${state_file}")"
+    mkdir -p "${state_dir}" || return 1
+    touch "${state_file}" || return 1
+    chmod 644 "${state_file}"
+
+    tmp_file="$(mktemp)" || return 1
+    awk -v key="${flag_name}" -v assignment="${flag_name}=${flag_value}" '
+        BEGIN { replaced = 0 }
+        $0 ~ "^" key "=" {
+            if (replaced == 0) {
+                print assignment
+                replaced = 1
+            }
+            next
+        }
+        { print }
+        END {
+            if (replaced == 0) {
+                print assignment
+            }
+        }
+    ' "${state_file}" > "${tmp_file}" || {
+        rm -f "${tmp_file}"
+        return 1
+    }
+
+    cat "${tmp_file}" > "${state_file}" || {
+        rm -f "${tmp_file}"
+        return 1
+    }
+    rm -f "${tmp_file}"
+}
+
+
+# ----------------------------------------------------------------
+# Ensure install-state.conf contains every install flag with a 0/1 value.
+function initialize_install_state_file() {
+    local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
+    local install_state_flags=(
+        "ALIAS"
+        "REPOS"
+        "REMOVES"
+        "BLOCK"
+        "UBUNTU_PRO"
+        "DEPENDS"
+        "CRON"
+        "ACME"
+        "GCC"
+        "OPENSSL"
+        "SWAP"
+        "KERNEL_TWEAKS"
+        "THP"
+        "KSM"
+        "SFL"
+        "NTP"
+        "DO_CONSOLE"
+        "PCRE"
+        "ZLIB"
+        "LIBURING"
+        "UFW"
+        "MARIADB"
+        "PHP"
+        "REDIS"
+        "NGINX"
+        "PHPMYADMIN"
+        "ADMIN_CONTROL_PANEL"
+        "WP_CLI"
+        "TOOLS"
+    )
+    local flag_name
+    local current_value
+
+    mkdir -p "$(dirname "${state_file}")" || return 1
+    touch "${state_file}" || return 1
+    chmod 644 "${state_file}"
+
+    for flag_name in "${install_state_flags[@]}"; do
+        current_value="$(
+            awk -F= -v key="${flag_name}" '$1 == key { value = $2; found = 1 } END { if (found == 1) print value }' "${state_file}"
+        )"
+
+        if [[ "${current_value}" != "1" ]]; then
+            current_value="0"
+        fi
+
+        set_install_state "${flag_name}" "${current_value}" || return 1
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Clear Nginx cache directory
 function clear_nginx_cache() {
     echo "Clearing Nginx FastCGI cache"
@@ -648,16 +757,21 @@ function set_php_permissions() {
 # Check if all required EngineScript installation steps are completed
 # Returns 0 if all installation steps are marked complete, returns 1 if incomplete
 function check_installation_completion() {
-    local install_log="/etc/enginescript/install-state.conf"
-    local install_options="/home/EngineScript/enginescript-install-options.txt"
+    local install_log="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
+    local install_options="${ENGINESCRIPT_INSTALL_OPTIONS_FILE:-/home/EngineScript/enginescript-install-options.txt}"
     local missing_steps=()
     local install_log_found="false"
     local quiet_mode="${1:-false}"  # Optional parameter to suppress success output
+    local wp_cli_bin="${ENGINESCRIPT_WP_CLI_BIN:-/usr/local/bin/wp}"
+    local admin_control_panel_path="${ENGINESCRIPT_ADMIN_CONTROL_PANEL_PATH:-/var/www/admin/control-panel/index.html}"
+    local phpmyadmin_path="${ENGINESCRIPT_PHPMYADMIN_PATH:-/var/www/admin/tools/phpmyadmin/config.inc.php}"
 
     if [[ -f "$install_options" ]]; then
         # shellcheck disable=SC1090
         source "$install_options" 2>/dev/null || true
     fi
+
+    initialize_install_state_file
 
     # Keep this in the same order as the run_install_step calls in enginescript-install.sh.
     local installation_steps=(
@@ -691,6 +805,15 @@ function check_installation_completion() {
         "PHP|PHP"
         "REDIS|Redis"
         "NGINX|Nginx"
+    )
+
+    if [[ "${INSTALL_PHPMYADMIN:-0}" = "1" ]]; then
+        installation_steps+=("PHPMYADMIN|phpMyAdmin")
+    fi
+
+    installation_steps+=(
+        "ADMIN_CONTROL_PANEL|Admin Control Panel"
+        "WP_CLI|WP-CLI"
         "TOOLS|Tools"
     )
 
@@ -699,6 +822,23 @@ function check_installation_completion() {
         # shellcheck disable=SC1090
         source "$install_log" 2>/dev/null || true
         install_log_found="true"
+    fi
+
+    # Backfill older installs where WP-CLI was completed as part of TOOLS.
+    if [[ "${WP_CLI:-0}" != "1" ]] && [[ "${TOOLS:-0}" = "1" ]] && [[ -x "${wp_cli_bin}" ]]; then
+        set_install_state "WP_CLI" "1"
+        WP_CLI=1
+    fi
+
+    # Backfill older installs where frontend/admin tools were completed as part of TOOLS.
+    if [[ "${ADMIN_CONTROL_PANEL:-0}" != "1" ]] && [[ "${TOOLS:-0}" = "1" ]] && [[ -f "${admin_control_panel_path}" ]]; then
+        set_install_state "ADMIN_CONTROL_PANEL" "1"
+        ADMIN_CONTROL_PANEL=1
+    fi
+
+    if [[ "${PHPMYADMIN:-0}" != "1" ]] && [[ "${TOOLS:-0}" = "1" ]] && [[ "${INSTALL_PHPMYADMIN:-0}" = "1" ]] && [[ -f "${phpmyadmin_path}" ]]; then
+        set_install_state "PHPMYADMIN" "1"
+        PHPMYADMIN=1
     fi
 
     # Check each installation step for its completion marker.

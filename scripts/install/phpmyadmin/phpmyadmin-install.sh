@@ -18,6 +18,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${PHPMYADMIN}" = 1 ]]; then
+    echo "PHPMYADMIN script has already run"
+    exit 0
+fi
+
+if [[ "${INSTALL_PHPMYADMIN}" != "1" ]]; then
+    echo "Skipping phpMyAdmin install"
+    exit 0
+fi
+
 # phpMyAdmin
 
 # Create tools directory if it doesn't exist
@@ -48,3 +59,5 @@ sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhos
 /usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 print_install_banner "phpMyAdmin"
+
+set_install_state "PHPMYADMIN" "1"

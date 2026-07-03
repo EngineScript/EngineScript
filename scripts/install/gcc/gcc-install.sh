@@ -42,5 +42,5 @@ if [[ "${UBUNTU_VERSION}" == "24.04" ]];
 fi
 
 # Mark the installation as complete
-echo "GCC=1" >> /etc/enginescript/install-state.conf
+set_install_state "GCC" "1"
 echo "GCC completed successfully. Script done."

@@ -38,5 +38,5 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 /root/.acme.sh/acme.sh --upgrade --auto-upgrade
 
 # Mark the installation as complete
-echo "ACME=1" >> /etc/enginescript/install-state.conf
+set_install_state "ACME" "1"
 echo "ACME.sh completed successfully. Script done."

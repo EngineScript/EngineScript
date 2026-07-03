@@ -167,6 +167,7 @@ validate_not_placeholder "WP_ADMIN_USERNAME" "$WP_ADMIN_USERNAME"
 validate_not_placeholder "WP_ADMIN_PASSWORD" "$WP_ADMIN_PASSWORD"
 
 # Install Check
+initialize_install_state_file
 source /etc/enginescript/install-state.conf
 
 # Repositories
@@ -248,6 +249,19 @@ run_install_step "REDIS" "/usr/local/bin/enginescript/scripts/install/redis/redi
 # Nginx
 run_install_step "NGINX" "/usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh" "Nginx"
 
+# phpMyAdmin (optional)
+if [[ "${INSTALL_PHPMYADMIN}" = "1" ]]; then
+  run_install_step "PHPMYADMIN" "/usr/local/bin/enginescript/scripts/install/phpmyadmin/phpmyadmin-install.sh" "phpMyAdmin"
+else
+  echo "Skipping phpMyAdmin install"
+fi
+
+# Admin Control Panel
+run_install_step "ADMIN_CONTROL_PANEL" "/usr/local/bin/enginescript/scripts/install/admin-control-panel/admin-control-panel-install.sh" "Admin Control Panel"
+
+# WP-CLI
+run_install_step "WP_CLI" "/usr/local/bin/enginescript/scripts/install/wp-cli/wp-cli-install.sh" "WP-CLI"
+
 # Tools
 run_install_step "TOOLS" "/usr/local/bin/enginescript/scripts/install/tools/tools-install.sh" "Tools"
 
@@ -266,12 +280,14 @@ echo ""
 # Verify all components completed successfully
 if check_installation_completion "true"; then
     echo "🎉 SUCCESS: EngineScript installation completed successfully!"
-    echo "🎉 All 24 core components have been installed and verified."
+    echo "🎉 All required core components have been installed and verified."
     echo ""
     echo "Installation Summary:"
     echo "✅ System repositories and dependencies"
     echo "✅ Security and firewall configuration"  
     echo "✅ Core services (MariaDB, PHP, Redis, Nginx)"
+    echo "✅ Admin control panel and admin tools"
+    echo "✅ WordPress command line tooling"
     echo "✅ SSL/TLS and build environment"
     echo "✅ System optimization and tools"
     echo ""

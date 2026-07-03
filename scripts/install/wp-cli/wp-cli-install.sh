@@ -18,6 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+source /etc/enginescript/install-state.conf
+if [[ "${WP_CLI}" = 1 ]]; then
+    echo "WP_CLI script has already run"
+    exit 0
+fi
+
 # WP-CLI
 cd /usr/local/src || { echo "Error: Failed to change directory to /usr/local/src" >&2; exit 1; }
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -109,5 +115,7 @@ echo ""
 echo "============================================================="
 echo ""
 echo ""
+
+set_install_state "WP_CLI" "1"
 
 sleep 5

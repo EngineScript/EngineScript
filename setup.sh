@@ -161,8 +161,10 @@ if [[ ! -d "/etc/enginescript" ]]; then
 fi
 
 # Ensure install state file exists
-touch "/etc/enginescript/install-state.conf"
-chmod 644 "/etc/enginescript/install-state.conf"
+initialize_install_state_file || {
+  echo "Error: Failed to initialize EngineScript install state."
+  exit 1
+}
 
 # Create /var/www/admin/control-panel/ if it doesn't exist
 if [[ ! -d "/var/www/admin/control-panel/" ]]; then
@@ -220,11 +222,7 @@ if [[ "${ALIAS:-0}" = 1 ]] && [[ -x "/usr/local/bin/es.config" ]] && [[ -x "/usr
     echo "EngineScript command installer has already run"
   else
     if /usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh; then
-      if grep -q '^ALIAS=' /etc/enginescript/install-state.conf; then
-        sed -i 's/^ALIAS=.*/ALIAS=1/' /etc/enginescript/install-state.conf
-      else
-        echo "ALIAS=1" >> /etc/enginescript/install-state.conf
-      fi
+      set_install_state "ALIAS" "1"
     else
       echo "Error: Failed to install EngineScript commands."
       exit 1
