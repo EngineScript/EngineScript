@@ -569,6 +569,7 @@ function normalize_nginx_http3_listen_directives() {
 # Keep Nginx HTTP/3 directives aligned with INSTALL_HTTP3 across all managed configs
 function sync_nginx_http3_config() {
     local http3_enabled="${INSTALL_HTTP3:-0}"
+    local early_hints_protocol_gate="\$http2"
     local quic_gso_enabled=0
     local nullglob_was_set=0
     local file_path
@@ -576,6 +577,8 @@ function sync_nginx_http3_config() {
 
     if [[ "${http3_enabled}" != "1" ]]; then
         http3_enabled=0
+    else
+        early_hints_protocol_gate="\$http2\$http3"
     fi
 
     set_commented_directive_state "/etc/nginx/nginx.conf" "http3 on;" "${http3_enabled}"
@@ -591,6 +594,9 @@ function sync_nginx_http3_config() {
 
     set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header Alt-Svc" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/globals/response-headers.conf" "add_header x-quic" "${http3_enabled}"
+    if [[ -f "/etc/nginx/globals/map-cache.conf" ]]; then
+        sed -Ei "s|^([[:space:]]*navigate[[:space:]]+).*;|\\1${early_hints_protocol_gate};|" "/etc/nginx/globals/map-cache.conf"
+    fi
 
     normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
     set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server multipath quic reuseport;" "${http3_enabled}"
