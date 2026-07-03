@@ -645,80 +645,98 @@ function set_php_permissions() {
 
 
 # ----------------------------------------------------------------
-# Check if all required EngineScript installation components are completed
-# Returns 0 if all components are installed, exits with error if incomplete
+# Check if all required EngineScript installation steps are completed
+# Returns 0 if all installation steps are marked complete, returns 1 if incomplete
 function check_installation_completion() {
     local install_log="/etc/enginescript/install-state.conf"
-    local missing_components=()
-    local quiet_mode="${1:-false}"  # Optional parameter for quiet mode
-    
-    # Source the install log if it exists
-    if [[ -f "$install_log" ]]; then
-        source "$install_log" 2>/dev/null || true
-    else
-        if [[ "$quiet_mode" != "true" ]]; then
-            echo "ERROR: Installation log not found at $install_log"
-            echo "This indicates EngineScript installation was never started or completed."
-            echo "Please run the full installation script first."
-        fi
-        return 1
+    local install_options="/home/EngineScript/enginescript-install-options.txt"
+    local missing_steps=()
+    local install_log_found="false"
+    local quiet_mode="${1:-false}"  # Optional parameter to suppress success output
+
+    if [[ -f "$install_options" ]]; then
+        # shellcheck disable=SC1090
+        source "$install_options" 2>/dev/null || true
     fi
-    
-    # Define all required installation components
-    local required_components=(
-        "REPOS"
-        "REMOVES"
-        "BLOCK"
-        "UBUNTU_PRO"
-        "DEPENDS"
-        "CRON"
-        "ACME"
-        "GCC"
-        "OPENSSL"
-        "SWAP"
-        "KERNEL_TWEAKS"
-        "THP"
-        "KSM"
-        "SFL"
-        "NTP"
-        "PCRE"
-        "ZLIB"
-        "LIBURING"
-        "UFW"
-        "MARIADB"
-        "PHP"
-        "REDIS"
-        "NGINX"
-        "TOOLS"
+
+    # Keep this in the same order as the run_install_step calls in enginescript-install.sh.
+    local installation_steps=(
+        "REPOS|Install Repositories"
+        "REMOVES|Remove Preinstalled Software"
+        "BLOCK|Block Unwanted Packages"
+        "UBUNTU_PRO|Ubuntu Pro Setup"
+        "DEPENDS|Install Dependencies"
+        "CRON|Cron"
+        "ACME|ACME.sh"
+        "GCC|GCC"
+        "OPENSSL|OpenSSL"
+        "SWAP|Swap"
+        "KERNEL_TWEAKS|Kernel Tweaks"
+        "THP|Transparent Huge Pages"
+        "KSM|Kernel Samepage Merging"
+        "SFL|Raising System File Limits"
+        "NTP|NTP"
     )
-    
-    # Check each required component
-    for component in "${required_components[@]}"; do
-        local var_name="$component"
+
+    if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE:-0}" = "1" ]]; then
+        installation_steps+=("DO_CONSOLE|DigitalOcean Remote Console")
+    fi
+
+    installation_steps+=(
+        "PCRE|PCRE"
+        "ZLIB|zlib"
+        "LIBURING|liburing"
+        "UFW|UFW"
+        "MARIADB|MariaDB"
+        "PHP|PHP"
+        "REDIS|Redis"
+        "NGINX|Nginx"
+        "TOOLS|Tools"
+    )
+
+    # Source the install log if it exists. If it does not exist, every step is incomplete.
+    if [[ -f "$install_log" ]]; then
+        # shellcheck disable=SC1090
+        source "$install_log" 2>/dev/null || true
+        install_log_found="true"
+    fi
+
+    # Check each installation step for its completion marker.
+    local step_definition
+    for step_definition in "${installation_steps[@]}"; do
+        local var_name="${step_definition%%|*}"
+        local step_name="${step_definition#*|}"
         local var_value="${!var_name:-0}"
-        
-        if [[ "$var_value" != "1" ]]; then
-            missing_components+=(
-                "$component"
-            )
+
+        if [[ "$install_log_found" != "true" || "$var_value" != "1" ]]; then
+            missing_steps+=("${var_name}|${step_name}")
         fi
     done
-    
+
     # Return results based on mode
-    if [[ ${#missing_components[@]} -eq 0 ]]; then
+    if [[ ${#missing_steps[@]} -eq 0 ]]; then
         if [[ "$quiet_mode" != "true" ]]; then
-            echo "✅ SUCCESS: All EngineScript components are installed and completed."
+            echo "✅ SUCCESS: All EngineScript installation steps are marked complete."
         fi
         return 0
     else
-        if [[ "$quiet_mode" != "true" ]]; then
+        if [[ "$install_log_found" != "true" ]]; then
+            echo "ERROR: Installation log not found at $install_log"
+            echo "This indicates EngineScript installation was never started or completed."
+        else
             echo "❌ ERROR: EngineScript installation is incomplete."
-            echo "❌ The following components are missing or failed to complete:"
-            echo ""
-            for component in "${missing_components[@]}"; do
-                echo "   - $component"
-            done
-            echo ""
+        fi
+
+        echo "❌ The following installation steps are not marked complete:"
+        echo ""
+        for step_definition in "${missing_steps[@]}"; do
+            local var_name="${step_definition%%|*}"
+            local step_name="${step_definition#*|}"
+            echo "   - ${var_name}: ${step_name}"
+        done
+        echo ""
+
+        if [[ "$quiet_mode" != "true" ]]; then
             echo "RESOLUTION:"
             echo "1. Run the full EngineScript installation script to complete setup"
             echo "2. Check /var/log/EngineScript/install-error-log.log for specific errors"

@@ -6,11 +6,21 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-07-01
 
+### NGINX SESSION CACHE KEY FIX
+
+- Moved the `$es_session` FastCGI cache key from global `nginx.conf` scope into `php-fpm.conf`, matching the WooCommerce window-shopping pattern where the session variable is defined and used in the PHP location.
+- Keeps WooCommerce session cache-key salting intact while avoiding nginx startup failures from an undefined global `$es_session` variable.
+
 ### 🐛 MARIADB ROOT AUTH INSTALL FIX
 
 - Replaced the MariaDB root authentication bootstrap command with `unix_socket OR mysql_native_password`, matching MariaDB's default multi-plugin root auth model and avoiding failures when the `ed25519` plugin is not installed.
 - Removed the direct root `mysql.global_priv` rewrite from `mariadb-install.sh` so local `sudo mariadb` socket automation remains available after the admin password is set.
 - Added a CI guard to prevent reintroducing unsupported root `ed25519` auth or direct root privilege-table rewrites in the MariaDB installer.
+
+### 🐛 PHP PACKAGE INSTALL FIX
+
+- Fixed PHP package helper output so `mapfile` receives one package per array item instead of one whitespace-delimited package string, resolving apt failures like `Unable to locate package php8.5 php8.5-bcmath ...`.
+- Added a focused CI test for PHP package list helpers, including PHP 8.5 opcache handling and whitespace-free array entries.
 
 ## 2026-04-29
 

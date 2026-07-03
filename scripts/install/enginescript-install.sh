@@ -251,6 +251,10 @@ run_install_step "NGINX" "/usr/local/bin/enginescript/scripts/install/nginx/ngin
 # Tools
 run_install_step "TOOLS" "/usr/local/bin/enginescript/scripts/install/tools/tools-install.sh" "Tools"
 
+# Cleanup
+/usr/local/bin/enginescript/scripts/functions/php-clean.sh
+/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+
 # --------------------------------------------------------
 # Final Installation Completion Verification
 echo ""
@@ -284,10 +288,6 @@ fi
 
 echo "============================================================="
 echo ""
-
-# Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
 
 # Server Reboot
 clear
