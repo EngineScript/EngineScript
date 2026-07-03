@@ -1053,9 +1053,7 @@ function return_to_src() {
 # ----------------------------------------------------------------
 # Get the array of base PHP packages to install for a given PHP version
 # Usage:
-# php_packages=(
-#     $(get_php_packages_array "8.4")
-# )
+# mapfile -t php_packages < <(get_php_packages_array "8.4")
 function get_php_packages_array() {
     local target_ver="$1"
     local packages=(
@@ -1085,21 +1083,19 @@ function get_php_packages_array() {
         )
     fi
 
-    echo "${packages[@]}"
+    printf '%s\n' "${packages[@]}"
 }
 
 
 # ----------------------------------------------------------------
 # Get the array of expanded PHP packages to install for a given PHP version
 # Usage:
-# expanded_php_packages=(
-#     $(get_expanded_php_packages_array "8.4")
-# )
+# mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "8.4")
 function get_expanded_php_packages_array() {
     local target_ver="$1"
     local packages=(
         "php${target_ver}-soap"
         "php${target_ver}-sqlite3"
     )
-    echo "${packages[@]}"
+    printf '%s\n' "${packages[@]}"
 }

@@ -1,0 +1,42 @@
+---
+name: Test PHP Package Lists
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/php/php-install.sh'
+      - 'scripts/update/php-update.sh'
+      - 'scripts/ci/test-php-package-lists.sh'
+      - '.github/workflows/test-php-package-lists.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/php/php-install.sh'
+      - 'scripts/update/php-update.sh'
+      - 'scripts/ci/test-php-package-lists.sh'
+      - '.github/workflows/test-php-package-lists.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-php-package-lists:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run PHP package list tests
+        run: |
+          bash -n scripts/ci/test-php-package-lists.sh
+          bash scripts/ci/test-php-package-lists.sh
