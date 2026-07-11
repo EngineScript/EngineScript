@@ -78,8 +78,38 @@ retry_add_ppa ppa:lepapareil/hurl
 #add-apt-repository -yn ppa:tuxinvader/lts-mainline-longterm
 
 # PHP
-# add-apt-repository handles keyring automatically on Ubuntu 24.04+
-retry_add_ppa ppa:ondrej/php
+install_php_repository() {
+  local ubuntu_codename
+  local sury_keyring_deb="/tmp/debsuryorg-archive-keyring.deb"
+
+  ubuntu_codename="$(lsb_release -cs)"
+
+  # Disable legacy or stale PHP sources when migrating an existing install.
+  find /etc/apt/sources.list.d/ -type f \( -name '*.list' -o -name '*.sources' \) \
+    -exec grep -lE 'ondrej/php|ppa\.launchpad(content)?\.net/ondrej/php|packages\.sury\.org/php' {} \; \
+    | while IFS= read -r apt_source; do
+        mv "${apt_source}" "${apt_source}.save"
+      done
+
+  curl -fsSL -o "${sury_keyring_deb}" "https://packages.sury.org/debsuryorg-archive-keyring.deb" || {
+    echo "Error: Failed to download the DEB.SURY.ORG archive keyring."
+    exit 1
+  }
+
+  dpkg -i "${sury_keyring_deb}" || {
+    echo "Error: Failed to install the DEB.SURY.ORG archive keyring."
+    exit 1
+  }
+  rm -f "${sury_keyring_deb}"
+
+  if [[ ! -s /usr/share/keyrings/debsuryorg-archive-keyring.gpg ]]; then
+    echo "Error: DEB.SURY.ORG archive keyring was not installed."
+    exit 1
+  fi
+
+  echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ ${ubuntu_codename} main" | sudo tee /etc/apt/sources.list.d/php.list
+}
+install_php_repository
 
 # Python
 retry_add_ppa ppa:deadsnakes/ppa
