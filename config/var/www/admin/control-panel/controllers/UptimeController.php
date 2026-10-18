@@ -1,9 +1,10 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Uptime Controller
- * 
+ *
  * Handles UptimeRobot API integration endpoints.
- * 
+ *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
  */
@@ -14,10 +15,12 @@ require_once __DIR__ . '/../classes/UptimeRobotAPI.php';
 
 /**
  * Uptime Controller
- * 
+ *
  * Provides UptimeRobot overall status and monitor details.
+ *
+ * @psalm-api
  */
-class UptimeController extends BaseController
+final class UptimeController extends BaseController
 {
     /**
      * API endpoint paths
@@ -27,7 +30,7 @@ class UptimeController extends BaseController
 
     /**
      * Monitor status codes
-     * 
+     *
      * Correspond to UptimeRobot API status values.
      */
     private const STATUS_PAUSED       = 0;
@@ -38,14 +41,14 @@ class UptimeController extends BaseController
 
     /**
      * UptimeRobot API instance
-     * 
+     *
      * @var UptimeRobotAPI|null
      */
     private ?UptimeRobotAPI $uptimeApi = null;
 
     /**
      * Get UptimeRobot API instance
-     * 
+     *
      * @return UptimeRobotAPI|null Returns null if not configured
      */
     private function getUptimeApi()
@@ -55,14 +58,30 @@ class UptimeController extends BaseController
             // codacy:ignore - file_exists() required for config checking in standalone service
             if (file_exists($configPath)) {
                 // codacy:ignore - parse_ini_file() required for config parsing in standalone service
-                $config = @parse_ini_file($configPath);
-                
-                if (is_array($config) && isset($config['api_key']) && !empty(trim($config['api_key']))) {
-                    $this->uptimeApi = new UptimeRobotAPI(trim($config['api_key']));
+                $apiKey = $this->apiKeyFromConfig(@parse_ini_file($configPath));
+
+                if ($apiKey !== null) {
+                    $this->uptimeApi = new UptimeRobotAPI($apiKey);
                 }
             }
         }
         return $this->uptimeApi;
+    }
+
+    /**
+     * The trimmed API key from the parsed configuration, or null when there is none.
+     *
+     * A key that trims to '' or '0' counts as none, as the earlier empty() test did.
+     */
+    private function apiKeyFromConfig(mixed $config): ?string
+    {
+        if (!is_array($config) || !isset($config['api_key']) || !is_string($config['api_key'])) {
+            return null;
+        }
+
+        $apiKey = trim($config['api_key']);
+
+        return $apiKey === '' || $apiKey === '0' ? null : $apiKey;
     }
 
     /**
@@ -73,8 +92,9 @@ class UptimeController extends BaseController
      * Endpoint: GET /monitoring/uptime
      *
      * @return void Outputs JSON response
+     * @psalm-api
      */
-    public function getStatus()
+    public function getStatus(): void
     {
         try {
             // Check cache first
@@ -89,7 +109,7 @@ class UptimeController extends BaseController
             if (!$api) {
                 $result = [
                     'enabled' => false,
-                    'reason' => 'UptimeRobot API not configured'
+                    'reason' => 'UptimeRobot API not configured',
                 ];
                 $this->response->success($result, $this->getTtl(self::ENDPOINT_STATUS));
                 return;
@@ -100,7 +120,7 @@ class UptimeController extends BaseController
             if ($monitors === false) {
                 $result = [
                     'enabled' => true,
-                    'error' => 'Failed to fetch monitors from UptimeRobot API'
+                    'error' => 'Failed to fetch monitors from UptimeRobot API',
                 ];
                 $this->response->success($result, $this->getTtl(self::ENDPOINT_STATUS));
                 return;
@@ -121,14 +141,15 @@ class UptimeController extends BaseController
 
     /**
      * Get detailed monitor list
-     * 
+     *
      * Returns all monitors with their current status and uptime ratios.
-     * 
+     *
      * Endpoint: GET /monitoring/uptime/monitors
-     * 
+     *
      * @return void Outputs JSON response
+     * @psalm-api
      */
-    public function getMonitors()
+    public function getMonitors(): void
     {
         try {
             // Check cache first
@@ -144,7 +165,7 @@ class UptimeController extends BaseController
                 $result = [
                     'enabled' => false,
                     'reason' => 'UptimeRobot API not configured',
-                    'monitors' => []
+                    'monitors' => [],
                 ];
                 $this->response->success($result, $this->getTtl(self::ENDPOINT_MONITORS));
                 return;
@@ -156,7 +177,7 @@ class UptimeController extends BaseController
                 $result = [
                     'enabled' => true,
                     'error' => 'Failed to fetch monitors from UptimeRobot API',
-                    'monitors' => []
+                    'monitors' => [],
                 ];
                 $this->response->success($result, $this->getTtl(self::ENDPOINT_MONITORS));
                 return;
@@ -177,30 +198,29 @@ class UptimeController extends BaseController
 
     /**
      * Calculate overall status from monitors
-     * 
-     * @param array $monitors Raw monitor data from API
-     * @return array Overall status summary
+     *
+     * @param array<mixed> $monitors Raw monitor data from API
+     * @return array<string, bool|int|string> Overall status summary
      */
-    private function calculateOverallStatus(array $monitors)
+    private function calculateOverallStatus(array $monitors): array
     {
         $total = count($monitors);
         $upCount = 0;
         $downCount = 0;
         $paused = 0;
 
-        foreach ($monitors as $monitor) {
-            $status = (int) ($monitor['status'] ?? 0);
+        foreach (array_map([$this, 'monitorStatus'], $monitors) as $status) {
             switch ($status) {
                 case self::STATUS_UP:
-                    $upCount++;
+                    ++$upCount;
                     break;
                 case self::STATUS_SEEMS_DOWN:
                 case self::STATUS_DOWN:
-                    $downCount++;
+                    ++$downCount;
                     break;
                 case self::STATUS_PAUSED:
                 case self::STATUS_NOT_CHECKED:
-                    $paused++;
+                    ++$paused;
                     break;
                 default:
                     break;
@@ -225,47 +245,73 @@ class UptimeController extends BaseController
             'total_monitors' => $total,
             'up' => $upCount,
             'down' => $downCount,
-            'paused' => $paused
+            'paused' => $paused,
         ];
     }
 
     /**
      * Format monitors for output
-     * 
-     * @param array $monitors Raw monitor data from API
-     * @return array Formatted monitor list
+     *
+     * @param array<mixed> $monitors Raw monitor data from API
+     * @return array<string, mixed> Formatted monitor list
      */
-    private function formatMonitors(array $monitors)
+    private function formatMonitors(array $monitors): array
     {
-        $formatted = [];
-
-        foreach ($monitors as $monitor) {
-            $status = (int) ($monitor['status'] ?? 0);
-            $status_text = $this->getStatusText($status);
-
-            $formatted[] = [
-                'id' => (int) ($monitor['id'] ?? 0),
-                'name' => $monitor['friendly_name'] ?? 'Unknown',
-                'url' => $monitor['url'] ?? '',
-                'status' => $status,
-                'status_text' => $status_text,
-                'uptime_day' => isset($monitor['custom_uptime_ratio']) ? $this->parseUptimeRatio($monitor['custom_uptime_ratio'], 0) : null,
-                'uptime_week' => isset($monitor['custom_uptime_ratio']) ? $this->parseUptimeRatio($monitor['custom_uptime_ratio'], 1) : null,
-                'uptime_month' => isset($monitor['custom_uptime_ratio']) ? $this->parseUptimeRatio($monitor['custom_uptime_ratio'], 2) : null,
-                'last_check' => isset($monitor['last_check_time']) ? (int) $monitor['last_check_time'] : null
-            ];
-        }
+        $formatted = array_values(array_map([$this, 'formatMonitor'], $monitors));
 
         return [
             'enabled' => true,
             'total' => count($formatted),
-            'monitors' => $formatted
+            'monitors' => $formatted,
         ];
     }
 
     /**
+     * The status code of one monitor from the API (0 when absent).
+     */
+    private function monitorStatus(mixed $monitor): int
+    {
+        return $this->toInt(is_array($monitor) ? ($monitor['status'] ?? 0) : 0);
+    }
+
+    /**
+     * Format one monitor from the API for output.
+     *
+     * @return array<string, mixed>
+     */
+    private function formatMonitor(mixed $monitor): array
+    {
+        $monitor = is_array($monitor) ? $monitor : [];
+        $status = $this->toInt($monitor['status'] ?? 0);
+
+        return [
+            'id' => $this->toInt($monitor['id'] ?? 0),
+            'name' => $monitor['friendly_name'] ?? 'Unknown',
+            'url' => $monitor['url'] ?? '',
+            'status' => $status,
+            'status_text' => $this->getStatusText($status),
+            'uptime_day' => $this->parseUptimeRatio($monitor['custom_uptime_ratio'] ?? null, 0),
+            'uptime_week' => $this->parseUptimeRatio($monitor['custom_uptime_ratio'] ?? null, 1),
+            'uptime_month' => $this->parseUptimeRatio($monitor['custom_uptime_ratio'] ?? null, 2),
+            'last_check' => isset($monitor['last_check_time']) ? $this->toInt($monitor['last_check_time']) : null,
+        ];
+    }
+
+    /**
+     * The (int) cast of a decoded JSON value: scalars and null as PHP casts them, arrays as 0 or 1.
+     */
+    private function toInt(mixed $value): int
+    {
+        if (is_array($value)) {
+            return $value === [] ? 0 : 1;
+        }
+
+        return is_scalar($value) ? (int) $value : 0;
+    }
+
+    /**
      * Get human-readable status text
-     * 
+     *
      * @param int $status UptimeRobot status code
      * @return string Status text
      */
@@ -276,7 +322,7 @@ class UptimeController extends BaseController
             self::STATUS_NOT_CHECKED => 'Not checked yet',
             self::STATUS_UP          => 'Up',
             self::STATUS_SEEMS_DOWN  => 'Seems down',
-            self::STATUS_DOWN        => 'Down'
+            self::STATUS_DOWN        => 'Down',
         ];
 
         return $statuses[$status] ?? 'Unknown';
@@ -284,14 +330,21 @@ class UptimeController extends BaseController
 
     /**
      * Parse uptime ratio from API response
-     * 
-     * @param string $ratio Hyphen-separated uptime ratios
+     *
+     * A ratio that is missing, or not a string or number, gives null.
+     *
+     * @param mixed $ratio Hyphen-separated uptime ratios
      * @param int $index Index to extract (0=day, 1=week, 2=month)
      * @return float|null Parsed ratio or null
      */
-    private function parseUptimeRatio(string $ratio, int $index)
+    private function parseUptimeRatio(mixed $ratio, int $index): ?float
     {
-        if (empty($ratio)) {
+        if (!is_string($ratio) && !is_int($ratio) && !is_float($ratio)) {
+            return null;
+        }
+
+        $ratio = (string) $ratio;
+        if ($ratio === '' || $ratio === '0') {
             return null;
         }
 

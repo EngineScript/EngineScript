@@ -1,0 +1,22 @@
+# yamllint configuration for the workflow and repository-automation files.
+#
+# The defaults are kept, except where they do not fit GitHub's YAML files.
+# Each exception states its reason.
+extends: default
+
+rules:
+  # Workflow steps hold shell and PHP as block text, and a GitHub expression
+  # cannot be wrapped.
+  line-length: disable
+
+  # GitHub's workflow and configuration files do not start with "---".
+  document-start: disable
+
+  # "on" is the workflow trigger key, not a boolean value.
+  truthy:
+    check-keys: false
+
+  # Allow one space inside a flow sequence, as in "branches: [ main ]".
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1

@@ -8,7 +8,7 @@ export class DashboardAPI {
   constructor() {
     this.csrfToken = null;
     this.csrfTokenPromise = null;
-    
+
     // Prevents duplicate API calls when multiple components request the same endpoint
     this.pendingRequests = new Map();
   }
@@ -24,18 +24,18 @@ export class DashboardAPI {
 
     this.csrfTokenPromise = (async () => {
       try { // codacy:ignore - Try/catch required for CSRF token loading
-        const response = await fetch('/api/csrf-token', {
-          method: 'GET',
-          credentials: 'include'
+        const response = await fetch("/api/csrf-token", {
+          method: "GET",
+          credentials: "include"
         });
         if (response.ok) {
           const data = await response.json();
           this.csrfToken = data.csrf_token || null;
         } else {
-          console.warn('Failed to load CSRF token');
+          console.warn("Failed to load CSRF token");
         }
       } catch (error) {
-        console.error('Error loading CSRF token:', error);
+        console.error("Error loading CSRF token:", error);
       } finally {
         this.csrfTokenPromise = null;
       }
@@ -63,7 +63,7 @@ export class DashboardAPI {
   /**
    * If a request to the same endpoint is already in-flight, return the existing promise
    * This prevents duplicate network requests when multiple components need the same data
-   * 
+   *
    * @param {string} endpoint - The API endpoint
    * @param {Function} fetchFn - The function that performs the actual fetch
    * @returns {Promise} The deduplicated promise
@@ -87,7 +87,7 @@ export class DashboardAPI {
   async getApiData(endpoint, fallback) {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
-      console.error('Invalid API endpoint:', endpoint);
+      console.error("Invalid API endpoint:", endpoint);
       return fallback;
     }
     try {
@@ -99,14 +99,14 @@ export class DashboardAPI {
       const data = await this.deduplicateRequest(endpoint, async () => {
         const headers = {};
         if (this.csrfToken) {
-          headers['X-CSRF-Token'] = this.csrfToken;
+          headers["X-CSRF-Token"] = this.csrfToken;
         }
 
         // codacy:ignore - SSRF mitigated: endpoint validated above to start with '/api/'
         const response = await fetch(endpoint, {
-          method: 'GET',
+          method: "GET",
           headers: headers,
-          credentials: 'include'
+          credentials: "include"
         });
 
         if (!response.ok) {
@@ -123,7 +123,7 @@ export class DashboardAPI {
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error("API request failed:", error);
       return fallback;
     }
   }
@@ -131,12 +131,12 @@ export class DashboardAPI {
   async postApiData(endpoint, data = {}) {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
-      console.error('Invalid API endpoint:', endpoint);
-      return { error: 'Invalid endpoint' }; // codacy:ignore - Object literal return
+      console.error("Invalid API endpoint:", endpoint);
+      return { error: "Invalid endpoint" }; // codacy:ignore - Object literal return
     }
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: 'Fetch not supported' }; // codacy:ignore - Object literal return
+        return { error: "Fetch not supported" }; // codacy:ignore - Object literal return
       }
 
       if (!this.csrfToken) {
@@ -144,16 +144,16 @@ export class DashboardAPI {
       }
 
       const headers = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       };
       if (this.csrfToken) {
-        headers['X-CSRF-Token'] = this.csrfToken;
+        headers["X-CSRF-Token"] = this.csrfToken;
       }
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: headers,
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(data)
       });
 
@@ -172,12 +172,12 @@ export class DashboardAPI {
   /**
    * Batch multiple API requests into a single call
    * Reduces network round-trips and improves performance
-   * 
+   *
    * @param {string[]} endpoints - Array of API endpoints to fetch. If more than
    *   the maximum batch size are provided, only the first `maxBatchSize`
    *   endpoints are sent in the request.
    * @returns {Promise<Object>} Object with results keyed by endpoint
-   * 
+   *
    * @example
    * const data = await api.batchRequest(['/system/info', '/services/status']);
    * console.log(data.results['/system/info']);
@@ -185,7 +185,7 @@ export class DashboardAPI {
   async batchRequest(endpoints) {
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: 'Fetch not supported', results: {}, errors: {} }; // codacy:ignore - Object literal return
+        return { error: "Fetch not supported", results: {}, errors: {} }; // codacy:ignore - Object literal return
       }
 
       if (!this.csrfToken) {
@@ -193,7 +193,7 @@ export class DashboardAPI {
       }
 
       if (!Array.isArray(endpoints) || endpoints.length === 0) {
-        return { error: 'No endpoints provided', results: {}, errors: {} }; // codacy:ignore - Object literal return
+        return { error: "No endpoints provided", results: {}, errors: {} }; // codacy:ignore - Object literal return
       }
 
       // Limit batch size client-side to match server limit
@@ -204,16 +204,16 @@ export class DashboardAPI {
       }
 
       const headers = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       };
       if (this.csrfToken) {
-        headers['X-CSRF-Token'] = this.csrfToken;
+        headers["X-CSRF-Token"] = this.csrfToken;
       }
 
-      const response = await fetch('/api/batch', {
-        method: 'POST',
+      const response = await fetch("/api/batch", {
+        method: "POST",
         headers: headers,
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({ requests: limitedEndpoints })
       });
 
@@ -224,7 +224,7 @@ export class DashboardAPI {
 
       return payload;
     } catch (error) {
-      console.error('Batch API request failed:', error);
+      console.error("Batch API request failed:", error);
       return { error: error.message, results: {}, errors: {} }; // codacy:ignore - Object literal return
     }
   }
@@ -236,5 +236,4 @@ export class DashboardAPI {
       throw new Error(`Invalid JSON response: ${error.message}`);
     }
   }
-
 }

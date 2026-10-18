@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Request Wrapper
  *
@@ -8,50 +9,35 @@
  * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
  * @security HIGH - Single point of request input access for the dashboard API
- *
- * @method bool hasServer(string $key)
- * @method string serverString(string $key, string $default = '')
- * @method string uri()
- * @method string hostHeader()
- * @method string scheme()
- * @method string remoteAddress()
  */
+
 require_once __DIR__ . '/RequestServerAccessor.php';
 
-class Request
+final class Request
 {
     /**
      * Server-derived request value accessor.
      */
     private RequestServerAccessor $serverAccessor;
 
-    private const SERVER_ACCESSOR_METHODS = [
-        'hasServer' => true,
-        'serverString' => true,
-        'uri' => true,
-        'hostHeader' => true,
-        'scheme' => true,
-        'remoteAddress' => true,
-    ];
-
     /**
-     * @var array<string, mixed>
+     * @var array<mixed>
      */
     private array $query;
 
     /**
-     * @var array<string, mixed>
+     * @var array<mixed>
      */
     private array $post;
 
     private ?string $body;
 
     /**
-     * @param array<string, mixed>|null $server
-     * @param array<string, mixed>|null $query
-     * @param array<string, mixed>|null $post
+     * @param array<mixed>|null $server
+     * @param array<mixed>|null $query
+     * @param array<mixed>|null $post
      *
-     * @SuppressWarnings(PHPMD.Superglobals)
+     * @SuppressWarnings("PHPMD.Superglobals")
      */
     public function __construct(?array $server = null, ?array $query = null, ?array $post = null, ?string $body = null)
     {
@@ -63,13 +49,29 @@ class Request
         $this->body = $body;
     }
 
-    public function __call(string $name, array $arguments): mixed
+    public function hasServer(string $key): bool
     {
-        if (!isset(self::SERVER_ACCESSOR_METHODS[$name])) {
-            throw new BadMethodCallException('Unknown request method: ' . $name);
-        }
+        return $this->serverAccessor->hasServer($key);
+    }
 
-        return $this->serverAccessor->{$name}(...$arguments);
+    public function uri(): string
+    {
+        return $this->serverAccessor->uri();
+    }
+
+    public function hostHeader(): string
+    {
+        return $this->serverAccessor->hostHeader();
+    }
+
+    public function scheme(): string
+    {
+        return $this->serverAccessor->scheme();
+    }
+
+    public function remoteAddress(): string
+    {
+        return $this->serverAccessor->remoteAddress();
     }
 
     public function method(): string

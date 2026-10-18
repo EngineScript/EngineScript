@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Process Runner
  *
@@ -20,7 +21,15 @@ final class SystemProcessRunner
     private const TERMINATE_GRACE_MICROSECONDS = 100000;
 
     /**
-     * @param array<int,string> $command Absolute executable path plus arguments
+     * Exit code that proc_get_status() reported when it first saw the process end, or -1.
+     *
+     * On PHP 8.2, proc_get_status() consumes the exit code, and proc_close() then
+     * returns -1; PHP 8.3 and later return the real code from both.
+     */
+    private int $exitCodeFromStatus = -1;
+
+    /**
+     * @param non-empty-list<string> $command Absolute executable path plus arguments
      * @param array<int,string> $displayCommand Original command used only for logs
      */
     public function run(
@@ -38,8 +47,8 @@ final class SystemProcessRunner
     }
 
     /**
-     * @param array<int,string> $command
-     * @return array{process: resource, pipes: array<int, resource>, pipeIndex: int}|false
+     * @param non-empty-list<string> $command
+     * @return array{process: resource, pipes: array<resource>, pipeIndex: int}|false
      */
     private function openProcess(array $command, bool $captureStderr): array|false
     {
@@ -63,13 +72,14 @@ final class SystemProcessRunner
     }
 
     /**
-     * @param array{process: resource, pipes: array<int, resource>, pipeIndex: int} $process
+     * @param array{process: resource, pipes: array<resource>, pipeIndex: int} $process
      * @param array<int,string> $displayCommand
      */
     private function collectOutput(array $process, int $timeoutSeconds, array $displayCommand): string|false
     {
         $output = '';
-        $deadline = microtime(true) + $timeoutSeconds;
+        $this->exitCodeFromStatus = -1;
+        $deadline = microtime(true) + (float) $timeoutSeconds;
         $terminated = false;
 
         while ($this->isRunning($process['process'])) {
@@ -122,6 +132,9 @@ final class SystemProcessRunner
     private function isRunning($process): bool
     {
         $status = proc_get_status($process);
+        if (!$status['running'] && $status['exitcode'] !== -1) {
+            $this->exitCodeFromStatus = $status['exitcode'];
+        }
 
         return $status['running'];
     }
@@ -140,26 +153,26 @@ final class SystemProcessRunner
     }
 
     /**
-     * @param array{process: resource, pipes: array<int, resource>, pipeIndex: int} $process
+     * @param array{process: resource, pipes: array<resource>, pipeIndex: int} $process
      */
     private function closeProcess(array $process): int
     {
         foreach ($process['pipes'] as $pipe) {
-            if (is_resource($pipe)) {
-                fclose($pipe);
-            }
+            fclose($pipe);
         }
 
-        return proc_close($process['process']);
+        $exitCode = proc_close($process['process']);
+
+        return $exitCode !== -1 ? $exitCode : $this->exitCodeFromStatus;
     }
 
     /**
-     * @return array{0: array<int, array<int, string>>, 1: int}
+     * @return array{0: array<int, list<string>>, 1: int}
      */
     private function buildPipeSpec(bool $captureStderr): array
     {
         $null = ['file', '/dev/null', 'w'];
-        $pipe = ['pipe', 'r'];
+        $pipe = ['pipe', 'w'];
 
         if ($captureStderr) {
             return [[0 => ['file', '/dev/null', 'r'], 1 => $null, 2 => $pipe], 2];

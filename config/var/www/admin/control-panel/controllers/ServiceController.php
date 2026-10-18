@@ -1,9 +1,10 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Service Controller
- * 
+ *
  * Handles service status endpoints for nginx, PHP-FPM, MariaDB, and Redis.
- * 
+ *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
  */
@@ -13,10 +14,12 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
 
 /**
  * Service Status Controller
- * 
+ *
  * Provides status information for server services.
+ *
+ * @psalm-api
  */
-class ServiceController extends BaseController
+final class ServiceController extends BaseController
 {
     /**
      * API endpoint path
@@ -25,15 +28,16 @@ class ServiceController extends BaseController
 
     /**
      * Get status of all services
-     * 
+     *
      * Returns status of nginx, PHP-FPM, MariaDB, and Redis.
      * Response is cached based on configured TTL.
-     * 
+     *
      * Endpoint: GET /services/status
-     * 
+     *
      * @return void Outputs JSON response
+     * @psalm-api
      */
-    public function getStatus()
+    public function getStatus(): void
     {
         try {
             // Check cache first
@@ -47,7 +51,7 @@ class ServiceController extends BaseController
                 'nginx' => $this->getServiceStatus('nginx'),
                 'php' => $this->getPhpServiceStatus(),
                 'mysql' => $this->getServiceStatus('mariadb'),
-                'redis' => $this->getServiceStatus('redis-server')
+                'redis' => $this->getServiceStatus('redis-server'),
             ];
 
             $result = $this->sanitizeOutput($services);
@@ -63,11 +67,11 @@ class ServiceController extends BaseController
 
     /**
      * Get status of a specific service
-     * 
+     *
      * @param string $service Service name to check
-     * @return array Service status with 'status', 'version', and 'online' keys
+     * @return array{status: string, version: string, online: bool} Service status with 'status', 'version', and 'online' keys
      */
-    private function getServiceStatus($service)
+    private function getServiceStatus($service): array
     {
         // Validate service name to prevent command injection
         $originalService = $service;
@@ -84,7 +88,7 @@ class ServiceController extends BaseController
             return [
                 'status' => $status === 'active' ? 'online' : 'offline',
                 'version' => $version,
-                'online' => $status === 'active'
+                'online' => $status === 'active',
             ];
         } catch (Throwable $e) {
             $this->logSecurityEvent('Service status error', $e->getMessage());
@@ -94,15 +98,15 @@ class ServiceController extends BaseController
 
     /**
      * Get PHP-FPM service status
-     * 
+     *
      * Dynamically finds and checks any running PHP-FPM service.
-     * 
-     * @return array Service status
+     *
+     * @return array{status: string, version: string, online: bool} Service status
      */
-    private function getPhpServiceStatus()
+    private function getPhpServiceStatus(): array
     {
         $php_service = $this->findActivePhpFpmService();
-        if ($php_service) {
+        if ($php_service !== null) {
             return $this->getServiceStatus($php_service);
         }
 
@@ -110,15 +114,15 @@ class ServiceController extends BaseController
         return [
             'status' => 'offline',
             'version' => 'Not Found',
-            'online' => false
+            'online' => false,
         ];
     }
 
     /**
      * Find active PHP-FPM service
-     * 
+     *
      * Searches for any running PHP-FPM service using systemctl.
-     * 
+     *
      * @return string|null Service name or null if not found
      */
     private function findActivePhpFpmService()
@@ -141,12 +145,11 @@ class ServiceController extends BaseController
             }
 
             // Extract service name (first column) with additional safety checks
-            $parts = preg_split('/\s+/', trim($line));
-            if (empty($parts[0]) || strlen($parts[0]) > 50) {
+            $parts = $this->whitespaceFields($line);
+            $service_name = $parts[0] ?? '';
+            if (in_array($service_name, ['', '0'], true) || strlen($service_name) > 50) {
                 continue;
             }
-
-            $service_name = $parts[0];
 
             // Additional security: ensure service name contains only allowed characters
             if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $service_name)) {
@@ -168,7 +171,7 @@ class ServiceController extends BaseController
 
     /**
      * Get system service status via systemctl
-     * 
+     *
      * @param string $service Service name
      * @return string 'active', 'inactive', or 'unknown'
      */
@@ -181,7 +184,7 @@ class ServiceController extends BaseController
 
     /**
      * Get service version
-     * 
+     *
      * @param string $service Service name
      * @return string Version string or 'Unknown'
      */
@@ -205,15 +208,15 @@ class ServiceController extends BaseController
 
     /**
      * Create error service status response
-     * 
-     * @return array Error status
+     *
+     * @return array{status: string, version: string, online: bool} Error status
      */
-    private function createErrorServiceStatus()
+    private function createErrorServiceStatus(): array
     {
         return [
             'status' => 'error',
             'version' => 'Error',
-            'online' => false
+            'online' => false,
         ];
     }
 
@@ -224,13 +227,13 @@ class ServiceController extends BaseController
      * HTML-escaped. Returns 'Unknown' when output is null or the pattern
      * does not match.
      *
-     * @param string|null $output Raw command output
-     * @param string $pattern PCRE pattern with one capture group for the version
+     * @param string|false $output Raw command output
+     * @param non-empty-string $pattern PCRE pattern with one capture group for the version
      * @return string Sanitized version string or 'Unknown'
      */
-    private function parseVersionOutput(?string $output, string $pattern): string
+    private function parseVersionOutput(string|false $output, string $pattern): string
     {
-        if ($output !== null && preg_match($pattern, $output, $matches)) {
+        if ($output !== false && preg_match($pattern, $output, $matches)) {
             return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
         return 'Unknown';
@@ -238,7 +241,7 @@ class ServiceController extends BaseController
 
     /**
      * Get Nginx version
-     * 
+     *
      * @return string Version or 'Unknown'
      */
     private function getNginxVersion()
@@ -249,7 +252,7 @@ class ServiceController extends BaseController
 
     /**
      * Get PHP version
-     * 
+     *
      * @return string Version or 'Unknown'
      */
     private function getPhpVersion()
@@ -260,7 +263,7 @@ class ServiceController extends BaseController
 
     /**
      * Get MariaDB version
-     * 
+     *
      * @return string Version or 'Unknown'
      */
     private function getMariadbVersion()
@@ -271,7 +274,7 @@ class ServiceController extends BaseController
 
     /**
      * Get Redis version
-     * 
+     *
      * @return string Version or 'Unknown'
      */
     private function getRedisVersion()

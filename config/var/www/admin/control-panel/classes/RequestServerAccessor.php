@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Server Request Accessor
  *
@@ -11,7 +12,7 @@
 final class RequestServerAccessor
 {
     /**
-     * @param array<string, mixed> $server
+     * @param array<mixed> $server
      */
     public function __construct(private array $server)
     {
@@ -24,9 +25,11 @@ final class RequestServerAccessor
 
     public function serverString(string $key, string $default = ''): string
     {
-        $value = $this->server[$key] ?? $default;
+        if (!isset($this->server[$key])) {
+            return $default;
+        }
 
-        return is_scalar($value) ? (string) $value : $default;
+        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $default;
     }
 
     public function uri(): string

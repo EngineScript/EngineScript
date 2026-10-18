@@ -1,0 +1,37 @@
+{
+  "name": "enginescript",
+  "private": true,
+  "description": "Development tooling for the EngineScript admin control panel: tests for the dashboard scripts, and the JavaScript, CSS, HTML and Markdown linters.",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "scripts": {
+    "lint:css": "stylelint \"config/var/www/admin/control-panel/**/*.css\"",
+    "lint:html": "html-validate \"config/var/www/admin/control-panel/**/*.html\"",
+    "lint:js": "eslint --max-warnings 0 .",
+    "lint:md": "markdownlint-cli2",
+    "test": "node --test \"tests/js/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-compat": "7.0.2",
+    "eslint-plugin-unicorn": "77.0.0",
+    "globals": "17.13.0",
+    "html-validate": "11.16.1",
+    "jsdom": "30.1.2",
+    "markdownlint-cli2": "0.23.3",
+    "stylelint": "17.16.0",
+    "stylelint-config-standard": "40.0.0",
+    "stylelint-no-unsupported-browser-features": "8.1.2"
+  },
+  "browserslist": [
+    "baseline widely available"
+  ],
+  "overrides": {
+    "smol-toml": "1.9.1",
+    "katex": "0.19.0"
+  }
+}

@@ -3,13 +3,25 @@
 # Excludes API endpoint patterns that are intentional by design
 
 exclude_paths:
-  # Documentation files with intentional long lines
-  - '.codacy-review-notes.md'
   # WordPress core files - not under our control
   - 'config/var/www/wordpress/wp-config.php'
   - 'config/var/www/wordpress/**'
 
 engines:
+  # TSLint is deprecated and is switched off for this repository in Codacy,
+  # yet Codacy may still run it, as it did in the plugin repositories. It is
+  # turned off from here in two ways: tslint.json enables no rule, and the
+  # paths below keep every file away from the tool. The two JSON files are
+  # named as well, because they are what it flagged there: it asked for
+  # trailing commas and sorted keys, which JSON and npm's lock file cannot
+  # have. Every other tool still reads every file.
+  tslint:
+    exclude_paths:
+      - "**"
+      - "**/*"
+      - "package.json"
+      - "package-lock.json"
+
   # PHP Code Sniffer Configuration
   phpcs:
     enabled: true
@@ -20,7 +32,7 @@ engines:
       # Use PSR-12 standard but allow API endpoint patterns
       standard: PSR12
 
-  # Markdown Linting Configuration  
+  # Markdown Linting Configuration
   markdownlint:
     enabled: true
     exclude_patterns:
@@ -63,11 +75,11 @@ patterns:
   - pattern_id: CSRF_NonceMissing
     enabled: false
     reason: "Not a WordPress project - CSRF protection via CORS and input validation"
-  
+
   - pattern_id: WordPress_InputNotUnslashed
     enabled: false
     reason: "Not a WordPress environment - wp_unslash() function doesn't exist"
-  
+
   # Suppress discouraged function warnings for legitimate API endpoint use
   - pattern_id: PHP_DiscouragedFunctions
     parameters:
@@ -79,13 +91,13 @@ patterns:
         - file_get_contents  # Used for outbound HTTP requests with timeout
         - stream_context_create  # Required for HTTP timeout configuration
     reason: "API endpoints require these functions for proper HTTP response handling"
-  
+
   # Suppress direct superglobal access when properly validated
   - pattern_id: PHP_DirectSuperglobalAccess
     exclude_paths:
       - 'config/var/www/admin/control-panel/api.php'
     reason: "Input validated against strict whitelists and sanitized before use"
-  
+
   # Allow require_once for module inclusion with __DIR__ constant
   - pattern_id: PHP_FileManipulation
     parameters:

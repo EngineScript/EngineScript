@@ -6,15 +6,15 @@
     <meta name="robots" content="noindex, nofollow">
     <title>EngineScript Admin Dashboard</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    
+
     <!-- External Dependencies -->
     <!-- NOTE: {FONTAWESOME_VER} is a placeholder replaced during installation with the desired Font Awesome version (e.g. 6.5.1). -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous" id="fontawesome-css">
     <script defer src="fontawesome-check.js?v={ES_DASHBOARD_VER}" data-cfasync="false"></script>
-    
+
     <!-- Custom Styles -->
     <link rel="stylesheet" href="dashboard.css?v={ES_DASHBOARD_VER}">
-    
+
     <!-- Preload Critical Resources -->
     <link rel="modulepreload" href="dashboard.js?v={ES_DASHBOARD_VER}">
     <link rel="modulepreload" href="modules/api.js?v={ES_DASHBOARD_VER}">
@@ -39,7 +39,7 @@
                 <h2><i class="fas fa-server"></i> EngineScript</h2>
                 <p class="version">Admin Dashboard</p>
             </div>
-            
+
             <ul class="sidebar-nav">
                 <li class="nav-item active" data-page="overview">
                     <a href="#"><i class="fas fa-tachometer-alt"></i> Overview</a>
@@ -54,7 +54,7 @@
                     <a href="#"><i class="fas fa-tools"></i> Tools</a>
                 </li>
             </ul>
-            
+
             <div class="sidebar-footer">
                 <div class="server-status" id="server-status">
                     <i class="fas fa-circle status-indicator"></i>
@@ -109,7 +109,7 @@
                                         <i class="fas fa-circle"></i>
                                     </div>
                                 </div>
-                                
+
                                 <div class="service-item" id="php-status">
                                     <div class="service-icon">
                                         <i class="fab fa-php"></i>
@@ -122,7 +122,7 @@
                                         <i class="fas fa-circle"></i>
                                     </div>
                                 </div>
-                                
+
                                 <div class="service-item" id="mysql-status">
                                     <div class="service-icon">
                                         <i class="fas fa-database"></i>
@@ -135,7 +135,7 @@
                                         <i class="fas fa-circle"></i>
                                     </div>
                                 </div>
-                                
+
                                 <div class="service-item" id="redis-status">
                                     <div class="service-icon">
                                         <i class="fas fa-memory"></i>
@@ -151,7 +151,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Uptime Monitoring Panel -->
                     <div class="card col-6">
                         <div class="card-header">
@@ -180,7 +180,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- EngineScript Commands Section -->
                 <div class="content-row">
                     <div class="card col-12">
@@ -252,7 +252,7 @@
                 <div class="page-header">
                     <h2>WordPress Sites</h2>
                 </div>
-                
+
                 <div class="sites-grid" id="sites-grid">
                     <div class="site-card loading">
                         <div class="site-header">
@@ -285,7 +285,7 @@
                 <div class="page-header">
                     <h2><i class="fas fa-tools"></i> Administrative Tools</h2>
                 </div>
-                
+
                 <div class="tools-grid">
                     <a href="/phpmyadmin/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
@@ -296,7 +296,7 @@
                             <p>Full-featured database administration interface for MySQL/MariaDB</p>
                         </div>
                     </a>
-                    
+
                     <a href="/phpinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fab fa-php"></i>
@@ -306,7 +306,7 @@
                             <p>Comprehensive PHP configuration and environment information</p>
                         </div>
                     </a>
-                    
+
                     <a href="/phpsysinfo/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fas fa-server"></i>
@@ -316,7 +316,7 @@
                             <p>Detailed system hardware and software information display</p>
                         </div>
                     </a>
-                    
+
                     <a href="/adminer/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fas fa-database"></i>
@@ -326,7 +326,7 @@
                             <p>Lightweight alternative database management interface</p>
                         </div>
                     </a>
-                    
+
                     <a href="/tinyfilemanager/tinyfilemanager.php" target="_blank" rel="noopener noreferrer" class="tool-card" id="filemanager-tool">
                         <div class="tool-icon">
                             <i class="fas fa-folder-open"></i>
@@ -340,7 +340,7 @@
                             </div>
                         </div>
                     </a>
-                    
+
                     <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer" class="tool-card">
                         <div class="tool-icon">
                             <i class="fas fa-heartbeat"></i>

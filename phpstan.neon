@@ -1,0 +1,8 @@
+parameters:
+    level: max
+    paths:
+        - config/var/www/admin
+
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors: []

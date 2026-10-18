@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - CurlInitException
  *
@@ -14,4 +15,6 @@
  * Extends \RuntimeException so existing catch (\RuntimeException $e) blocks
  * continue to catch this without modification.
  */
-final class CurlInitException extends \RuntimeException {}
+final class CurlInitException extends \RuntimeException
+{
+}

@@ -57,7 +57,7 @@ export class DashboardUtils {
     if (typeof input !== "string") {
       return fallback;
     }
-    
+
     // Strip control characters and limit length before parsing
     const sanitized = String(input)
       // eslint-disable-next-line no-control-regex
@@ -87,15 +87,14 @@ export class DashboardUtils {
     }
   }
 
-
   static isValidSite(site) {
     return (
-      site &&
-      typeof site === "object" &&
-      typeof site.domain === "string" &&
-      site.domain.length > 0 &&
-      site.domain.length < 255 &&
-      /^[a-zA-Z0-9.-]+$/.test(site.domain)
+      site
+      && typeof site === "object"
+      && typeof site.domain === "string"
+      && site.domain.length > 0
+      && site.domain.length < 255
+      && /^[a-zA-Z0-9.-]+$/.test(site.domain)
     ); // Basic domain validation
   }
 

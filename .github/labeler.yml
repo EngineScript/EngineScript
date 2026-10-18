@@ -4,69 +4,108 @@
 # Core system changes
 core:
   - changed-files:
-    - any-glob-to-any-file: scripts/install/**/*
-    - any-glob-to-any-file: scripts/functions/**/*
-    - any-glob-to-any-file: scripts/menu/**/*
-    - any-glob-to-any-file: setup.sh
-    - any-glob-to-any-file: enginescript-variables.txt
-    
+      - any-glob-to-any-file: scripts/install/**/*
+      - any-glob-to-any-file: scripts/functions/**/*
+      - any-glob-to-any-file: scripts/menu/**/*
+      - any-glob-to-any-file: setup.sh
+      - any-glob-to-any-file: enginescript-variables.txt
+
 # Configuration changes
 configuration:
   - changed-files:
-    - any-glob-to-any-file: config/**/*
+      - any-glob-to-any-file: config/**/*
 
 # Workflows and automation
 automation:
   - changed-files:
-    - any-glob-to-any-file: .github/**/*
+      - any-glob-to-any-file: .github/**/*
 
 # Security related changes
 security:
   - changed-files:
-    - any-glob-to-any-file: scripts/functions/security/**/*
-    - any-glob-to-any-file: SECURITY.md
+      - any-glob-to-any-file: scripts/functions/security/**/*
+      - any-glob-to-any-file: SECURITY.md
 
 # Documentation
 documentation:
   - changed-files:
-    - any-glob-to-any-file: README.md
-    - any-glob-to-any-file: '*.md'
+      - any-glob-to-any-file: README.md
+      - any-glob-to-any-file: '*.md'
 
 # Backup related changes
 backup:
   - changed-files:
-    - any-glob-to-any-file: scripts/functions/backup/**/*
+      - any-glob-to-any-file: scripts/functions/backup/**/*
 
 # Database related changes
 database:
   - changed-files:
-    - any-glob-to-any-file: config/etc/mysql/**/*
-    - any-glob-to-any-file: scripts/functions/backup/*database*
-    - any-glob-to-any-file: scripts/update/mariadb-update.sh
+      - any-glob-to-any-file: config/etc/mysql/**/*
+      - any-glob-to-any-file: scripts/functions/backup/*database*
+      - any-glob-to-any-file: scripts/update/mariadb-update.sh
 
 # Nginx related changes
 nginx:
   - changed-files:
-    - any-glob-to-any-file: config/etc/nginx/**/*
-    - any-glob-to-any-file: scripts/install/nginx/**/*
-    - any-glob-to-any-file: scripts/update/nginx-update.sh
-    - any-glob-to-any-file: patches/nginx/**/*
+      - any-glob-to-any-file: config/etc/nginx/**/*
+      - any-glob-to-any-file: scripts/install/nginx/**/*
+      - any-glob-to-any-file: scripts/update/nginx-update.sh
+      - any-glob-to-any-file: patches/nginx/**/*
 
 # PHP related changes
 php:
   - changed-files:
-    - any-glob-to-any-file: config/etc/php/**/*
-    - any-glob-to-any-file: scripts/install/php/**/*
-    - any-glob-to-any-file: scripts/update/php-*-update.sh
-    - any-glob-to-any-file: scripts/functions/php-clean.sh
+      - any-glob-to-any-file: config/etc/php/**/*
+      - any-glob-to-any-file: scripts/install/php/**/*
+      - any-glob-to-any-file: scripts/update/php-*-update.sh
+      - any-glob-to-any-file: scripts/functions/php-clean.sh
 
 # WordPress plugins
 wordpress-plugins:
   - changed-files:
-    - any-glob-to-any-file: config/var/www/wordpress/plugins/**/*
-    - any-glob-to-any-file: scripts/update/wp-cli-update.sh
+      - any-glob-to-any-file: scripts/update/wp-cli-update.sh
+
+# Admin control panel
+control-panel:
+  - changed-files:
+      - any-glob-to-any-file: config/var/www/admin/control-panel/**/*
+      - any-glob-to-any-file: scripts/install/admin-control-panel/**/*
+      - any-glob-to-any-file: docs/api.md
+
+# Admin tools
+admin-tools:
+  - changed-files:
+      - any-glob-to-any-file: config/var/www/admin/tools/**/*
+      - any-glob-to-any-file: scripts/install/tools/**/*
+      - any-glob-to-any-file: scripts/install/phpmyadmin/**/*
+      - any-glob-to-any-file: scripts/update/phpmyadmin-update.sh
 
 # Dependencies
 dependencies:
   - changed-files:
-    - any-glob-to-any-file: .github/dependabot.yml
+      - any-glob-to-any-file: .github/dependabot.yml
+      - any-glob-to-any-file: .github/lint-requirements.txt
+      - any-glob-to-any-file: composer.json
+      - any-glob-to-any-file: package.json
+      - any-glob-to-any-file: renovate.json
+
+# Tests and quality
+testing:
+  - changed-files:
+      - any-glob-to-any-file: tests/**/*
+      - any-glob-to-any-file: phpunit.xml
+      - any-glob-to-any-file: phpcs.xml
+      - any-glob-to-any-file: phpmd.xml
+      - any-glob-to-any-file: phpstan.neon
+      - any-glob-to-any-file: psalm.xml
+      - any-glob-to-any-file: rector.php
+      - any-glob-to-any-file: .php-cs-fixer.dist.php
+      - any-glob-to-any-file: .htmlvalidate.json
+      - any-glob-to-any-file: .markdownlint.json
+      - any-glob-to-any-file: .markdownlint-cli2.jsonc
+      - any-glob-to-any-file: .mypy.ini
+      - any-glob-to-any-file: .ruff.toml
+      - any-glob-to-any-file: eslint.config.mjs
+      - any-glob-to-any-file: .stylelintrc.json
+      - any-glob-to-any-file: .yamllint.yml
+      - any-glob-to-any-file: tslint.json

@@ -1,5 +1,7 @@
 # Local private files
 AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
 .private/
 .vscode/
 
@@ -36,11 +38,16 @@ __pycache__/
 *.orig
 *.temp
 *.tmp
-logs/
+# Anchored to the repository root: the tracked script directory
+# scripts/functions/logs/ is source code, not a log folder.
+/logs/
 temp/
 tmp/
 
 # Dependencies, tests, and build artifacts
+# Dev-tool locks resolved on the maintainer's machine; CI resolves dependencies itself.
+composer.lock
+package-lock.json
 build/
 coverage/
 dist/

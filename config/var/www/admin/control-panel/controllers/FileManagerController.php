@@ -1,9 +1,10 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - File Manager Controller
- * 
+ *
  * Handles TinyFileManager status endpoint.
- * 
+ *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
  */
@@ -12,10 +13,12 @@ require_once __DIR__ . '/BaseController.php';
 
 /**
  * File Manager Controller
- * 
+ *
  * Provides status information about TinyFileManager installation.
+ *
+ * @psalm-api
  */
-class FileManagerController extends BaseController
+final class FileManagerController extends BaseController
 {
     /**
      * API endpoint path
@@ -31,14 +34,15 @@ class FileManagerController extends BaseController
 
     /**
      * Get file manager status
-     * 
+     *
      * Returns availability, configuration status, version, and permissions.
-     * 
+     *
      * Endpoint: GET /tools/filemanager/status
-     * 
+     *
      * @return void Outputs JSON response
+     * @psalm-api
      */
-    public function getStatus()
+    public function getStatus(): void
     {
         try {
             // Check cache first
@@ -56,10 +60,10 @@ class FileManagerController extends BaseController
                 'config_exists' => file_exists(self::TFM_CONFIG), // codacy:ignore - file_exists() required for status checking
                 'writable_dirs' => [
                     '/var/www' => is_writable('/var/www'), // codacy:ignore - is_writable() required for permission checking
-                    '/tmp' => is_writable('/tmp') // codacy:ignore - is_writable() required for permission checking
+                    '/tmp' => is_writable('/tmp'), // codacy:ignore - is_writable() required for permission checking
                 ],
                 'url' => '/tinyfilemanager/tinyfilemanager.php',
-                'version' => $current_version
+                'version' => $current_version,
             ];
 
             $result = $this->sanitizeOutput($status);
@@ -75,7 +79,7 @@ class FileManagerController extends BaseController
 
     /**
      * Get TinyFileManager version from EngineScript variables
-     * 
+     *
      * @return string Version string or 'Unknown'
      */
     private function getFileManagerVersion()

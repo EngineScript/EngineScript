@@ -44,7 +44,6 @@
     ".private/**",
     "config/etc/nginx/ssl/**/*.pem",
     "config/var/www/admin/control-panel/favicon.png",
-    "languages/*.pot",
     "LICENSE"
   ],
   "ignoreRegExpList": [

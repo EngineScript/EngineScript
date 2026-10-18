@@ -1,10 +1,11 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard API
  * Secure API endpoints for dashboard functionality
- * 
+ *
  * Refactored to use Router/Controller pattern for maintainability.
- * 
+ *
  * @version 2.0.0
  * @security HIGH - Contains sensitive system information
  */
@@ -12,12 +13,20 @@
 // Load core classes
 // @codacy suppress [require_once statement detected] Secure class loading with __DIR__ constant - no user input
 require_once __DIR__ . '/classes/SystemCommand.php';
-require_once __DIR__ . '/classes/ApiResponse.php';
 require_once __DIR__ . '/classes/ApiResponder.php';
 require_once __DIR__ . '/classes/Request.php';
 require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/classes/SecurityLogger.php';
 require_once __DIR__ . '/classes/Session.php';
+require_once __DIR__ . '/controllers/BaseController.php';
+require_once __DIR__ . '/controllers/BatchController.php';
+require_once __DIR__ . '/controllers/CacheController.php';
+require_once __DIR__ . '/controllers/CsrfController.php';
+require_once __DIR__ . '/controllers/FileManagerController.php';
+require_once __DIR__ . '/controllers/ServiceController.php';
+require_once __DIR__ . '/controllers/SiteController.php';
+require_once __DIR__ . '/controllers/SystemController.php';
+require_once __DIR__ . '/controllers/UptimeController.php';
 
 $request = new Request();
 $response = new ApiResponder();
@@ -38,7 +47,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin'); // codacy:ignore - S
 header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';'); // codacy:ignore - Security header required
 
 // Check if client accepts gzip and zlib extension is available
-if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+$zlib_output_compression = ini_get('zlib.output_compression');
+if (extension_loaded('zlib') && in_array($zlib_output_compression, [false, '', '0'], true)) {
     // Check Accept-Encoding header for gzip support
     $accept_encoding = $request->header('Accept-Encoding') ?? '';
     if (str_contains($accept_encoding, 'gzip')) {
@@ -50,7 +60,6 @@ if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
 
 // Secure CORS - only echo a validated same-origin Origin header.
 $request_host_header = $request->hostHeader();
-$request_host = '';
 $request_port = null;
 if (preg_match('/^\[([^\]]+)\](?::(\d+))?$/', $request_host_header, $host_matches)) {
     $request_host = $host_matches[1];
@@ -76,10 +85,9 @@ if (is_string($origin) && $origin !== '') {
     $origin_scheme = strtolower($origin_parts['scheme'] ?? '');
     $origin_host = strtolower($origin_parts['host'] ?? '');
     $origin_host_for_compare = trim($origin_host, '[]');
-    $origin_port = isset($origin_parts['port']) ? ':' . (int) $origin_parts['port'] : '';
-    $origin_effective_port = isset($origin_parts['port'])
-        ? (int) $origin_parts['port']
-        : ($origin_scheme === 'https' ? 443 : 80);
+    $origin_port = isset($origin_parts['port']) ? ':' . $origin_parts['port'] : '';
+    $origin_effective_port = $origin_parts['port']
+        ?? ($origin_scheme === 'https' ? 443 : 80);
     $scheme_matches = hash_equals($request_scheme, $origin_scheme)
         || ($is_local_request_host && in_array($origin_scheme, ['http', 'https'], true));
     $port_matches = $request_effective_port === $origin_effective_port || $is_local_request_host;
@@ -112,9 +120,9 @@ if (session_status() === PHP_SESSION_NONE) { // codacy:ignore - session_status()
     ini_set('session.use_strict_mode', '1');   // Reject uninitialized session IDs
     ini_set('session.use_only_cookies', '1');  // Only use cookies for session ID
     // codacy:ignore-end
-    
+
     session_start(); // codacy:ignore - session_start() required for rate limiting functionality
-    
+
     if (!$session->has('_initialized')) {
         session_regenerate_id(true); // codacy:ignore - Security hardening for session fixation
         $session->set('_initialized', true);
@@ -133,11 +141,7 @@ if (!$session->has('csrf_token')) {
 }
 $client_ip = $request->remoteAddress();
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
-$rate_limit = $session->get($rate_limit_key);
-
-if (!is_array($rate_limit)) {
-    $rate_limit = ['count' => 0, 'reset' => time() + 60];
-}
+$rate_limit = rateLimitState($session->get($rate_limit_key));
 
 // Reset rate limit counter every minute
 if (isset($rate_limit['reset']) && is_int($rate_limit['reset']) && time() > $rate_limit['reset']) {
@@ -153,10 +157,28 @@ if (isset($rate_limit['count']) && is_int($rate_limit['count']) && $rate_limit['
     die();
 }
 
-$rate_limit['count'] = isset($rate_limit['count']) && is_int($rate_limit['count'])
-    ? $rate_limit['count'] + 1
-    : 1;
+$rate_limit['count'] = nextRateLimitCount($rate_limit);
 $session->set($rate_limit_key, $rate_limit);
+
+/**
+ * The stored rate-limit state, or a fresh window when nothing usable is stored.
+ *
+ * @return array<mixed>
+ */
+function rateLimitState(mixed $stored): array
+{
+    return is_array($stored) ? $stored : ['count' => 0, 'reset' => time() + 60];
+}
+
+/**
+ * The request count after this request.
+ *
+ * @param array<mixed> $rate_limit
+ */
+function nextRateLimitCount(array $rate_limit): int
+{
+    return isset($rate_limit['count']) && is_int($rate_limit['count']) ? $rate_limit['count'] + 1 : 1;
+}
 
 // Handle preflight requests
 if ($request->method() === 'OPTIONS') {
@@ -167,7 +189,7 @@ if ($request->method() === 'OPTIONS') {
 /**
  * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
  * Token can be sent via X-CSRF-Token header or _csrf_token body parameter
- * 
+ *
  * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
  */
 function validateCsrfToken(Request $request, Session $session, SecurityLogger $securityLogger): bool
@@ -218,24 +240,29 @@ function csrfTokenFromJsonBody(Request $request, SecurityLogger $securityLogger)
     }
 
     try {
-        $body = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+        return csrfTokenFromDecodedBody(json_decode($input, true, 512, JSON_THROW_ON_ERROR));
     } catch (JsonException) {
         $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
         return false;
     }
+}
 
-    return is_array($body) && isset($body['_csrf_token']) && is_string($body['_csrf_token'])
-        ? $body['_csrf_token']
-        : null;
+function csrfTokenFromDecodedBody(mixed $body): ?string
+{
+    if (!is_array($body) || !isset($body['_csrf_token']) || !is_string($body['_csrf_token'])) {
+        return null;
+    }
+
+    return $body['_csrf_token'];
 }
 
 function csrfTokenIsValid(
     string $method,
-    string|null $client_token,
+    ?string $client_token,
     mixed $session_token,
     SecurityLogger $securityLogger
 ): bool {
-    if (empty($client_token) || !is_string($session_token) || $session_token === '') {
+    if ($client_token === null || $client_token === '' || $client_token === '0' || !is_string($session_token) || $session_token === '') {
         $securityLogger->write('CSRF token missing', $method . ' request without token');
         return false;
     }
@@ -289,35 +316,35 @@ if (strlen($path) > 100 || !preg_match('/^\/[a-zA-Z0-9\/_-]*$/', $path)) {
 
 // ============ Router-Based Request Dispatch ============
 // Initialize router and register all routes
-$router = new Router(null, $response, $request, $securityLogger, $session);
+$router = new Router($response, $request, $securityLogger, $session);
 
 // CSRF Token endpoint
-$router->register('/csrf-token', 'CsrfController', 'getToken');
+$router->register('/csrf-token', CsrfController::class, 'getToken');
 
 // System information endpoint
-$router->register('/system/info', 'SystemController', 'getInfo');
+$router->register('/system/info', SystemController::class, 'getInfo');
 
 // Service status endpoint
-$router->register('/services/status', 'ServiceController', 'getStatus');
+$router->register('/services/status', ServiceController::class, 'getStatus');
 
 // Sites endpoints
-$router->register('/sites', 'SiteController', 'getSites');
-$router->register('/sites/count', 'SiteController', 'getSitesCount');
+$router->register('/sites', SiteController::class, 'getSites');
+$router->register('/sites/count', SiteController::class, 'getSitesCount');
 $router->alias('/sites/', '/sites'); // Handle trailing slash
 
 // File manager endpoint
-$router->register('/tools/filemanager/status', 'FileManagerController', 'getStatus');
+$router->register('/tools/filemanager/status', FileManagerController::class, 'getStatus');
 
 // Uptime monitoring endpoints
-$router->register('/monitoring/uptime', 'UptimeController', 'getStatus');
-$router->register('/monitoring/uptime/monitors', 'UptimeController', 'getMonitors');
+$router->register('/monitoring/uptime', UptimeController::class, 'getStatus');
+$router->register('/monitoring/uptime/monitors', UptimeController::class, 'getMonitors');
 
 // Cache management endpoint
-$router->register('/cache/clear', 'CacheController', 'clear', ['POST']);
-$router->register('/cache/status', 'CacheController', 'getStatus');
+$router->register('/cache/clear', CacheController::class, 'clear', ['POST']);
+$router->register('/cache/status', CacheController::class, 'getStatus');
 
 // Legacy batch endpoint (kept for backward compatibility)
-$router->register('/batch', 'BatchController', 'handle', ['POST']);
+$router->register('/batch', BatchController::class, 'handle', ['POST']);
 
 // Dispatch request through router
 try {

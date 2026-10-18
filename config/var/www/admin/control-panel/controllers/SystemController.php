@@ -1,9 +1,10 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - System Controller
- * 
+ *
  * Handles system information endpoints including OS, kernel, and network info.
- * 
+ *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
  */
@@ -13,10 +14,12 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
 
 /**
  * System Information Controller
- * 
+ *
  * Provides system-level information about the server.
+ *
+ * @psalm-api
  */
-class SystemController extends BaseController
+final class SystemController extends BaseController
 {
     /**
      * API endpoint path
@@ -25,15 +28,16 @@ class SystemController extends BaseController
 
     /**
      * Get system information
-     * 
+     *
      * Returns OS distribution, kernel version, and network information.
      * Response is cached based on configured TTL.
-     * 
+     *
      * Endpoint: GET /system/info
-     * 
+     *
      * @return void Outputs JSON response
+     * @psalm-api
      */
-    public function getInfo()
+    public function getInfo(): void
     {
         try {
             // Check cache first
@@ -46,7 +50,7 @@ class SystemController extends BaseController
             $info = [
                 'os' => $this->getOsInfo(),
                 'kernel' => $this->getKernelVersion(),
-                'network' => $this->getNetworkInfo()
+                'network' => $this->getNetworkInfo(),
             ];
 
             $result = $this->sanitizeOutput($info);
@@ -62,9 +66,9 @@ class SystemController extends BaseController
 
     /**
      * Get OS distribution information
-     * 
+     *
      * Reads PRETTY_NAME from /etc/os-release
-     * 
+     *
      * @return string OS distribution name or 'Unknown Linux Distribution'
      */
     private function getOsInfo()
@@ -80,9 +84,9 @@ class SystemController extends BaseController
 
     /**
      * Get kernel version
-     * 
+     *
      * Uses SystemCommand to safely retrieve kernel version.
-     * 
+     *
      * @return string Kernel version or 'Unknown'
      */
     private function getKernelVersion()
@@ -105,9 +109,9 @@ class SystemController extends BaseController
 
     /**
      * Get network information
-     * 
+     *
      * Returns hostname and primary IP address.
-     * 
+     *
      * @return string Network info in format "hostname (ip)"
      */
     private function getNetworkInfo()

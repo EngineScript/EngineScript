@@ -27,6 +27,9 @@ mkdir -p /var/www/admin/control-panel
 # Copy Admin Control Panel
 cp -a /usr/local/bin/enginescript/config/var/www/admin/control-panel/. /var/www/admin/control-panel/ || { echo "Error: Failed to copy admin control panel files to /var/www/admin/control-panel/" >&2; exit 1; }
 
+# The panel's README.md and LICENSE document the repository copy; they are not served.
+rm -f /var/www/admin/control-panel/README.md /var/www/admin/control-panel/LICENSE
+
 # Substitute frontend dependency versions
 # Note: The Font Awesome version placeholder {FONTAWESOME_VER} may also appear in
 # inline JS comments/strings in index.html, so we scope the substitution to only

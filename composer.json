@@ -27,76 +27,52 @@
     "support": {
         "issues": "https://github.com/EngineScript/EngineScript/issues",
         "source": "https://github.com/EngineScript/EngineScript",
-        "docs": "https://github.com/EngineScript/EngineScript/blob/main/README.md"
+        "docs": "https://github.com/EngineScript/EngineScript/blob/master/README.md"
     },
+    "minimum-stability": "stable",
     "require": {
-        "php": ">=8.3",
-        "ext-json": "*",
+        "php": ">=8.2",
         "ext-curl": "*",
-        "ext-mbstring": "*",
-        "ext-openssl": "*",
-        "ext-fileinfo": "*"
+        "ext-json": "*",
+        "ext-session": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "12.5.23",
-        "phpstan/phpstan": "2.1",
-        "phpcsstandards/php_codesniffer": "4.0",
-        "friendsofphp/php-cs-fixer": "3.95.1",
-        "yoast/phpunit-polyfills": "4.0",
-        "dealerdirect/phpcodesniffer-composer-installer": "1.2.0"
-        },
-    "autoload": {
-        "psr-4": {
-            "EngineScript\\": "src/"
-        },
-        "files": [
-            "config/var/www/admin/control-panel/api.php"
-        ]
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "EngineScript\\Tests\\": "tests/"
-        }
+        "phpunit/phpunit": "^11.5 || ^12.5 || ^13.4",
+        "squizlabs/php_codesniffer": "^3.13.6",
+        "phpcsstandards/phpcsutils": "^1.2.3",
+        "phpcsstandards/phpcsextra": "^1.5",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpmd/phpmd": "^3.0",
+        "vimeo/psalm": "^6.16",
+        "phpstan/phpstan": "^2.3.1",
+        "phpcompatibility/php-compatibility": "^9.3.5",
+        "sirbrillig/phpcs-variable-analysis": "^3.0",
+        "rector/rector": "^2.6"
     },
     "scripts": {
-        "test": "phpunit",
-        "test:coverage": "phpunit --coverage-html coverage",
-        "phpstan": "phpstan analyze",
-        "cs:check": "php-cs-fixer fix --dry-run --diff",
-        "cs:fix": "php-cs-fixer fix",
-        "phpcs": "phpcs --standard=PSR12 config/var/www/admin/",
-        "quality": [
-            "@phpstan",
+        "phpcs": "phpcs --standard=phpcs.xml",
+        "phpcs:fix": "phpcbf --standard=phpcs.xml",
+        "cs:check": "php-cs-fixer check --config=.php-cs-fixer.dist.php --diff",
+        "phpmd": "phpmd analyze config/var/www/admin --no-progress --format text --ruleset phpmd.xml",
+        "psalm": "psalm --config=psalm.xml --show-info=true",
+        "psalm:taint": "psalm --config=psalm.xml --taint-analysis",
+        "phpstan": "phpstan analyze --memory-limit=1G",
+        "rector": "rector process --dry-run --no-progress-bar",
+        "test": "phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite",
+        "check-all": [
+            "@phpcs",
             "@cs:check",
-            "@phpcs"
+            "@phpmd",
+            "@psalm",
+            "@psalm:taint",
+            "@phpstan",
+            "@test"
         ]
     },
     "config": {
-        "optimize-autoloader": true,
-        "sort-packages": true,
         "allow-plugins": {
-            "phpstan/extension-installer": true
-        },
-        "platform": {
-            "php": "8.4"
-        }
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
-    "archive": {
-        "exclude": [
-            "tests",
-            "docs",
-            ".github",
-            ".gitignore",
-            "phpunit.xml",
-            "phpstan.neon",
-            ".php-cs-fixer.php"
-        ]
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-main": "1.x-dev"
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }

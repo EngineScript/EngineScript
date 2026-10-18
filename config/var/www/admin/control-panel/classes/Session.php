@@ -1,18 +1,19 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - Session Wrapper
  *
  * Encapsulates all access to the $_SESSION superglobal so that no other class
  * touches the superglobal directly.  Centralizing the access here satisfies
- * PHPMD's SuperGlobals rule, improves testability (the class can be mocked or
- * subclassed in unit tests), and provides a single place to add future session
+ * PHPMD's SuperGlobals rule, improves testability (controllers receive the
+ * instance they use), and provides a single place to add future session
  * hardening (e.g. regeneration, encryption, or a custom session handler).
  *
  * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
  * @security HIGH - Single point of $_SESSION access for the entire dashboard
  */
-class Session
+final class Session
 {
     /**
      * Retrieve a value from the session.
@@ -21,7 +22,7 @@ class Session
      * dashboard.  The @SuppressWarnings annotation suppresses PHPMD's Superglobals
      * rule here by design — all other classes must go through this method.
      *
-     * @SuppressWarnings(PHPMD.Superglobals)
+     * @SuppressWarnings("PHPMD.Superglobals")
      *
      * @param string $key     Session key to look up.
      * @param mixed  $default Value returned when the key is absent or the
@@ -43,7 +44,7 @@ class Session
     /**
      * Determine whether a key exists in the active session.
      *
-     * @SuppressWarnings(PHPMD.Superglobals)
+     * @SuppressWarnings("PHPMD.Superglobals")
      */
     public function has(string $key): bool
     {
@@ -52,7 +53,7 @@ class Session
         }
 
         // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
-        return array_key_exists($key, $_SESSION);
+        return isset($_SESSION) && array_key_exists($key, $_SESSION);
     }
 
     /**
@@ -61,13 +62,12 @@ class Session
      * This is the single, intentional write-access point for $_SESSION in the
      * entire dashboard.  All other classes must go through this method.
      *
-     * @SuppressWarnings(PHPMD.Superglobals)
+     * @SuppressWarnings("PHPMD.Superglobals")
      *
      * @param string $key   Session key to set.
-     * @param mixed  $value Value to store.
-     * @return void
+     * @param bool|string|array<mixed> $value Value to store.
      */
-    public function set(string $key, mixed $value): void
+    public function set(string $key, bool|string|array $value): void
     {
         // If the session has not been started, silently do nothing to avoid
         // triggering warnings from accessing $_SESSION prematurely.

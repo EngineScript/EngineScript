@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="EngineScript Admin Control Panel PHPMD Ruleset"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+         xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+
+    <description>Code quality and naming checks for the admin control panel; PHPCS and PHP-CS-Fixer handle formatting.</description>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/.private/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+
+    <!-- Clean Code Rules -->
+    <rule ref="rulesets/cleancode.xml">
+        <!-- Allow explicit else branches; review branch behavior independently. -->
+        <exclude name="ElseExpression"/>
+        <!-- The panel declares no namespaces (observation O-029), so its classes and PHP's are global and need no imports. -->
+        <exclude name="MissingImport"/>
+    </rule>
+
+    <!-- Code Size Rules -->
+    <rule ref="rulesets/codesize.xml">
+        <!-- Added again below with limits measured on this code -->
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="ExcessiveClassComplexity"/>
+    </rule>
+
+    <!--
+        Each limit below is the highest value the panel measures, the strictest setting
+        that passes (PHPMD reports values above the limit). Lower them as the code is
+        simplified; never raise them to admit new code.
+    -->
+    <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
+        <properties>
+            <!-- SiteController::scanNginxConfigs() and UptimeController::calculateOverallStatus() measure 11. -->
+            <property name="reportLevel" value="11"/>
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
+        <properties>
+            <!-- SiteController measures 58. -->
+            <property name="maximum" value="58"/>
+        </properties>
+    </rule>
+
+    <!-- Controversial Rules. The panel uses camelCase, so the camelCase naming rules stay on. -->
+    <rule ref="rulesets/controversial.xml"/>
+
+    <!-- Design Rules -->
+    <rule ref="rulesets/design.xml"/>
+
+    <!-- Naming Rules -->
+    <rule ref="rulesets/naming.xml"/>
+
+    <!-- Unused Code Rules (always enforce) -->
+    <rule ref="rulesets/unusedcode.xml"/>
+
+</ruleset>

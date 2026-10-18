@@ -1,9 +1,9 @@
 // EngineScript Admin Dashboard - Modern JavaScript
 // Security-hardened version with input validation and XSS prevention
 
-import { DashboardAPI } from './modules/api.js?v={ES_DASHBOARD_VER}';
-import { DashboardState } from './modules/state.js?v={ES_DASHBOARD_VER}';
-import { DashboardUtils } from './modules/utils.js?v={ES_DASHBOARD_VER}';
+import { DashboardAPI } from "./modules/api.js?v={ES_DASHBOARD_VER}";
+import { DashboardState } from "./modules/state.js?v={ES_DASHBOARD_VER}";
+import { DashboardUtils } from "./modules/utils.js?v={ES_DASHBOARD_VER}";
 
 class EngineScriptDashboard {
   constructor() {
@@ -11,10 +11,10 @@ class EngineScriptDashboard {
     this.api = new DashboardAPI();
     this.state = new DashboardState();
     this.utils = new DashboardUtils();
-    
+
     // Cached keyboard navigation pages array
     this.keyboardNavPages = ["overview", "sites", "system", "tools"];
-    
+
     // Cached DOM element references for performance
     this.cachedNavItems = null;
     this.cachedPages = null;
@@ -39,13 +39,13 @@ class EngineScriptDashboard {
    * Initialize theme from localStorage or system preference
    */
   initTheme() {
-    const savedTheme = localStorage.getItem('dashboard-theme');
+    const savedTheme = localStorage.getItem("dashboard-theme");
     if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
     } else {
       // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
     }
   }
 
@@ -62,11 +62,11 @@ class EngineScriptDashboard {
    * Toggle between dark and light themes
    */
   toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('dashboard-theme', newTheme);
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("dashboard-theme", newTheme);
   }
 
   setupEventListeners() {
@@ -88,10 +88,10 @@ class EngineScriptDashboard {
       const mobileToggle = document.getElementById("mobile-menu-toggle");
       // Guard: If toggle element not present, nothing to do
       if (!mobileToggle) return;
-      
-      if (sidebar && sidebar.classList.contains("mobile-open") && 
-          !sidebar.contains(e.target) && 
-          !mobileToggle.contains(e.target)) {
+
+      if (sidebar && sidebar.classList.contains("mobile-open")
+        && !sidebar.contains(e.target)
+        && !mobileToggle.contains(e.target)) {
         this.closeMobileMenu();
       }
     });
@@ -106,7 +106,7 @@ class EngineScriptDashboard {
         // Find the nav-item element (could be clicked on link or icon inside)
         const navItem = navTarget.closest(".nav-item");
         if (!navItem) return;
-        
+
         e.preventDefault();
         const page = this.utils.sanitizeInput(navItem.dataset.page);
         if (this.state.isValidPage(page)) {
@@ -133,6 +133,7 @@ class EngineScriptDashboard {
     // File Manager tool card is now a direct HTML link
     // Status checking handled separately
   }
+
   setupNavigation() {
     // Set up single page app navigation using cached elements
     // Hide all pages except overview
@@ -187,7 +188,7 @@ class EngineScriptDashboard {
   getPageTitle(pageName) {
     return this.state.getPageTitle(pageName);
   }
-    
+
   loadPageData(pageName) {
     // Validate page name
     if (!this.state.isValidPage(pageName)) {
@@ -209,7 +210,7 @@ class EngineScriptDashboard {
         break;
     }
   }
-    
+
   hideLoadingScreen() {
     // Hide loading screen immediately - cards now appear instantly with async loading
     const loadingScreen = document.getElementById("loading-screen");
@@ -227,7 +228,7 @@ class EngineScriptDashboard {
     if (sidebar) {
       const isOpening = !sidebar.classList.contains("mobile-open");
       sidebar.classList.toggle("mobile-open");
-      
+
       // Manage focus when menu opens/closes
       if (isOpening) {
         this.setupMobileFocusTrap(sidebar);
@@ -257,21 +258,21 @@ class EngineScriptDashboard {
    */
   setupMobileFocusTrap(sidebar) {
     // Get all focusable elements in sidebar
-    const focusableSelector = 'a[href], button, [tabindex]:not([tabindex="-1"])';
+    const focusableSelector = "a[href], button, [tabindex]:not([tabindex=\"-1\"])";
     const focusableElements = sidebar.querySelectorAll(focusableSelector);
-    
+
     if (focusableElements.length === 0) return;
-    
+
     this.firstFocusable = focusableElements[0];
     this.lastFocusable = focusableElements[focusableElements.length - 1];
-    
+
     // Focus first element when menu opens
     this.firstFocusable.focus();
-    
+
     // Store bound handler for removal
     this.focusTrapHandler = (e) => {
-      if (e.key !== 'Tab') return;
-      
+      if (e.key !== "Tab") return;
+
       if (e.shiftKey) {
         // Shift+Tab: if on first element, wrap to last
         if (document.activeElement === this.firstFocusable) {
@@ -286,8 +287,8 @@ class EngineScriptDashboard {
         }
       }
     };
-    
-    document.addEventListener('keydown', this.focusTrapHandler);
+
+    document.addEventListener("keydown", this.focusTrapHandler);
   }
 
   /**
@@ -295,7 +296,7 @@ class EngineScriptDashboard {
    */
   removeMobileFocusTrap() {
     if (this.focusTrapHandler) {
-      document.removeEventListener('keydown', this.focusTrapHandler);
+      document.removeEventListener("keydown", this.focusTrapHandler);
       this.focusTrapHandler = null;
     }
     this.firstFocusable = null;
@@ -307,9 +308,9 @@ class EngineScriptDashboard {
     this.keyboardShortcutHandler = (event) => {
       // Don't trigger shortcuts when typing in inputs
       const tagName = event.target.tagName;
-      if (tagName === "INPUT" || 
-          tagName === "TEXTAREA" || 
-          event.target.isContentEditable) {
+      if (tagName === "INPUT"
+        || tagName === "TEXTAREA"
+        || event.target.isContentEditable) {
         return;
       }
 
@@ -341,16 +342,16 @@ class EngineScriptDashboard {
         }
       }
     };
-    
+
     document.addEventListener("keydown", this.keyboardShortcutHandler);
   }
 
   navigateWithKeys(forward) {
     // Use cached pages array instead of creating new array on each call
     const currentIndex = this.keyboardNavPages.indexOf(this.state.getCurrentPage());
-    
+
     if (currentIndex === -1) return;
-    
+
     const pagesLength = this.keyboardNavPages.length;
     let nextIndex;
     if (forward) {
@@ -358,18 +359,18 @@ class EngineScriptDashboard {
     } else {
       nextIndex = (currentIndex - 1 + pagesLength) % pagesLength;
     }
-    
+
     this.navigateToPage(this.keyboardNavPages[nextIndex]);
   }
-    
+
   startClock() {
     const serverTimeElement = document.getElementById("server-time");
-    
+
     // Early return if element doesn't exist (prevents errors)
     if (!serverTimeElement) {
       return;
     }
-    
+
     const updateClock = () => {
       const now = new Date();
       const timeString = now.toLocaleTimeString("en-US", {
@@ -386,7 +387,7 @@ class EngineScriptDashboard {
     updateClock();
     setInterval(updateClock, 1000);
   }
-    
+
   loadInitialData() {
     this.loadOverviewData();
     this.updateLastRefresh();
@@ -397,7 +398,7 @@ class EngineScriptDashboard {
     }, this.state.refreshInterval);
     this.state.setRefreshTimer(timer);
   }
-    
+
   refreshData() {
     const currentPage = this.state.getCurrentPage();
 
@@ -406,7 +407,7 @@ class EngineScriptDashboard {
     this.updateLastRefresh();
     this.announceToScreenReader("Dashboard refreshed");
   }
-    
+
   showRefreshAnimation() {
     const refreshBtn = document.getElementById("refresh-btn");
     if (!refreshBtn) return;
@@ -418,14 +419,14 @@ class EngineScriptDashboard {
       icon.classList.remove("refresh-spinning");
     }, 1000);
   }
-    
+
   updateLastRefresh() {
     const updateTime = document.getElementById("update-time");
     if (updateTime) {
       updateTime.textContent = new Date().toLocaleTimeString();
     }
   }
-    
+
   // Data Loading Methods
   async loadOverviewData() {
     try {
@@ -434,39 +435,36 @@ class EngineScriptDashboard {
 
       // Batch all overview API calls into a single request (3 round trips → 1)
       const batch = await this.api.batchRequest([
-        '/services/status',
-        '/monitoring/uptime',
-        '/monitoring/uptime/monitors'
+        "/services/status",
+        "/monitoring/uptime",
+        "/monitoring/uptime/monitors"
       ]);
 
       const results = batch.results || {};
 
       // Process each result using pre-fetched batch data
-      await this.loadServiceStatus(results['/services/status']);
+      await this.loadServiceStatus(results["/services/status"]);
       this.loadUptimeData(
-        results['/monitoring/uptime'],
-        results['/monitoring/uptime/monitors']
+        results["/monitoring/uptime"],
+        results["/monitoring/uptime/monitors"]
       );
-
     } catch (error) {
       this.utils.showError(
         `Failed to load dashboard data: ${error.message || error}`,
       );
     }
   }
-    
 
-    
   async loadServiceStatus(prefetchedData) {
     try {
       const services = prefetchedData ?? await this.api.getApiData("/api/services/status", null);
 
       if (!services) {
-        throw new Error('Failed to load service status');
+        throw new Error("Failed to load service status");
       }
 
       // Update each service
-      ["nginx", "php", "mysql", "redis"].forEach(service => {
+      ["nginx", "php", "mysql", "redis"].forEach((service) => {
         const status = services[service];
         const element = document.getElementById(`${service}-status`);
 
@@ -485,7 +483,7 @@ class EngineScriptDashboard {
 
       // Announce service status to screen readers
       const statusSummary = ["nginx", "php", "mysql", "redis"]
-        .map(s => {
+        .map((s) => {
           const st = services[s];
           return st ? `${s}: ${st.online ? "online" : "offline"}` : null;
         })
@@ -495,12 +493,12 @@ class EngineScriptDashboard {
         this.announceToScreenReader(`Service status loaded. ${statusSummary}`);
       }
     } catch (error) {
-      console.error('Failed to load service status:', error);
+      console.error("Failed to load service status:", error);
       // Set all services to error state
-      this.setAllServiceStatusElements('fas fa-circle offline', 'Error');
+      this.setAllServiceStatusElements("fas fa-circle offline", "Error");
     }
   }
-    
+
   async loadSites() {
     try {
       this.showSkeletonSites();
@@ -518,46 +516,46 @@ class EngineScriptDashboard {
               sitesGrid.appendChild(siteElement);
             }
           });
-          this.announceToScreenReader(`${sites.length} WordPress site${sites.length !== 1 ? 's' : ''} loaded`);
+          this.announceToScreenReader(`${sites.length} WordPress site${sites.length !== 1 ? "s" : ""} loaded`);
         } else {
           // Create no sites found element
           const noSitesElement = this.createNoSitesElement();
           sitesGrid.appendChild(noSitesElement);
-          this.announceToScreenReader('No WordPress sites found');
+          this.announceToScreenReader("No WordPress sites found");
         }
       }
     } catch (error) {
-      console.error('Failed to load sites:', error);
+      console.error("Failed to load sites:", error);
       // Show error message to user
       const sitesGrid = document.getElementById("sites-grid");
       if (sitesGrid) {
         sitesGrid.replaceChildren();
         const errorDiv = document.createElement("div");
         errorDiv.className = "site-card";
-        
+
         const headerDiv = document.createElement("div");
         headerDiv.className = "site-header";
-        
+
         const title = document.createElement("h3");
         title.textContent = "Error Loading Sites";
-        
+
         headerDiv.appendChild(title);
-        
+
         const infoDiv = document.createElement("div");
         infoDiv.className = "site-info";
-        
+
         const message = document.createElement("p");
         message.textContent = "Unable to load WordPress sites data.";
-        
+
         infoDiv.appendChild(message);
-        
+
         errorDiv.appendChild(headerDiv);
         errorDiv.appendChild(infoDiv);
         sitesGrid.appendChild(errorDiv);
       }
     }
   }
-    
+
   async loadSystemInfo() {
     try {
       this.showSkeletonSystemInfo();
@@ -583,20 +581,19 @@ class EngineScriptDashboard {
           }
         ];
 
-        infoItems.forEach(item => {
+        infoItems.forEach((item) => {
           const infoElement = this.createInfoElement(item.label, item.value);
           systemInfo.appendChild(infoElement);
         });
 
-        this.announceToScreenReader('System information loaded');
+        this.announceToScreenReader("System information loaded");
       }
-
     } catch (error) {
-      console.error('Failed to load system information:', error);
+      console.error("Failed to load system information:", error);
       this.showErrorSystemInfo();
     }
   }
-    
+
   normalizeMonitorCount(value) {
     const numericValue = Number(value);
     if (Number.isFinite(numericValue) && numericValue >= 0) {
@@ -613,7 +610,7 @@ class EngineScriptDashboard {
    * @param {string} versionText - Text to display in the version span
    */
   setAllServiceStatusElements(iconClass, versionText) {
-    ["nginx", "php", "mysql", "redis"].forEach(service => {
+    ["nginx", "php", "mysql", "redis"].forEach((service) => {
       const element = document.getElementById(`${service}-status`);
       if (element) {
         const statusIcon = element.querySelector(".service-status i");
@@ -628,8 +625,6 @@ class EngineScriptDashboard {
     });
   }
 
-
-
   showSkeletonServiceStatus() {
     this.setAllServiceStatusElements("fas fa-circle", "v--");
   }
@@ -641,28 +636,28 @@ class EngineScriptDashboard {
   showSkeletonSites() {
     const sitesGrid = document.getElementById("sites-grid");
     if (sitesGrid) {
-      sitesGrid.textContent = ''; // Clear efficiently
+      sitesGrid.textContent = ""; // Clear efficiently
       const fragment = document.createDocumentFragment();
-      
+
       for (let i = 0; i < 3; i++) {
-        const card = document.createElement('div');
-        card.className = 'skeleton-card';
-        
-        const title = document.createElement('div');
-        title.className = 'skeleton skeleton-title';
+        const card = document.createElement("div");
+        card.className = "skeleton-card";
+
+        const title = document.createElement("div");
+        title.className = "skeleton skeleton-title";
         card.appendChild(title);
-        
-        const text1 = document.createElement('div');
-        text1.className = 'skeleton skeleton-text';
+
+        const text1 = document.createElement("div");
+        text1.className = "skeleton skeleton-text";
         card.appendChild(text1);
-        
-        const text2 = document.createElement('div');
-        text2.className = 'skeleton skeleton-text short';
+
+        const text2 = document.createElement("div");
+        text2.className = "skeleton skeleton-text short";
         card.appendChild(text2);
-        
+
         fragment.appendChild(card);
       }
-      
+
       sitesGrid.appendChild(fragment);
     }
   }
@@ -674,46 +669,46 @@ class EngineScriptDashboard {
   showSkeletonSystemInfo() {
     const systemInfo = document.getElementById("system-info");
     if (systemInfo) {
-      systemInfo.textContent = ''; // Clear efficiently
+      systemInfo.textContent = ""; // Clear efficiently
       const fragment = document.createDocumentFragment();
-      
+
       for (let i = 0; i < 3; i++) {
-        const text = document.createElement('div');
-        text.className = 'skeleton skeleton-text';
+        const text = document.createElement("div");
+        text.className = "skeleton skeleton-text";
         fragment.appendChild(text);
       }
-      
+
       systemInfo.appendChild(fragment);
     }
   }
 
   // Empty state helpers
   createEmptyState(type, icon, title, message, actionText = null, actionCallback = null) {
-    const emptyState = document.createElement('div');
+    const emptyState = document.createElement("div");
     emptyState.className = `empty-state ${this.utils.sanitizeInput(type)}`;
 
-    const iconEl = document.createElement('i');
+    const iconEl = document.createElement("i");
     iconEl.className = `fas fa-${this.utils.sanitizeInput(icon)} empty-state-icon`;
     emptyState.appendChild(iconEl);
 
-    const titleEl = document.createElement('h3');
-    titleEl.className = 'empty-state-title';
+    const titleEl = document.createElement("h3");
+    titleEl.className = "empty-state-title";
     titleEl.textContent = title;
     emptyState.appendChild(titleEl);
 
-    const messageEl = document.createElement('p');
-    messageEl.className = 'empty-state-message';
+    const messageEl = document.createElement("p");
+    messageEl.className = "empty-state-message";
     messageEl.textContent = message;
     emptyState.appendChild(messageEl);
 
     if (actionText && actionCallback) {
-      const actionDiv = document.createElement('div');
-      actionDiv.className = 'empty-state-action';
+      const actionDiv = document.createElement("div");
+      actionDiv.className = "empty-state-action";
 
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-primary';
+      const btn = document.createElement("button");
+      btn.className = "btn btn-primary";
       btn.textContent = actionText;
-      btn.addEventListener('click', actionCallback);
+      btn.addEventListener("click", actionCallback);
 
       actionDiv.appendChild(btn);
       emptyState.appendChild(actionDiv);
@@ -726,10 +721,10 @@ class EngineScriptDashboard {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
       const emptyState = this.createEmptyState(
-        'warning',
-        'clock',
-        'No Monitors Configured',
-        'Add websites to monitor in your Uptime Robot dashboard'
+        "warning",
+        "clock",
+        "No Monitors Configured",
+        "Add websites to monitor in your Uptime Robot dashboard"
       );
       monitorsContainer.replaceChildren();
       monitorsContainer.appendChild(emptyState);
@@ -740,19 +735,18 @@ class EngineScriptDashboard {
     const systemInfo = document.getElementById("system-info");
     if (systemInfo) {
       const emptyState = this.createEmptyState(
-        'error',
-        'exclamation-circle',
-        'Unable to Load System Information',
-        'There was an error retrieving system data',
-        'Retry',
+        "error",
+        "exclamation-circle",
+        "Unable to Load System Information",
+        "There was an error retrieving system data",
+        "Retry",
         () => this.loadSystemInfo()
       );
       systemInfo.replaceChildren();
       systemInfo.appendChild(emptyState);
     }
   }
-    
-    
+
   // Helper method to create site card structure - eliminates duplication
   createSiteCardStructure(titleText) {
     const siteDiv = document.createElement("div");
@@ -769,7 +763,7 @@ class EngineScriptDashboard {
 
     return { siteDiv, headerDiv }; // codacy:ignore - Object literal return, not a lone block
   }
-  
+
   createSiteElement(site) {
     const { siteDiv, headerDiv } = this.createSiteCardStructure(this.utils.sanitizeInput(site.domain)); // codacy:ignore - Destructuring assignment
 
@@ -808,7 +802,7 @@ class EngineScriptDashboard {
 
     return siteDiv;
   }
-    
+
   createNoSitesElement() {
     const { siteDiv } = this.createSiteCardStructure("No sites found"); // codacy:ignore - Destructuring assignment
 
@@ -823,7 +817,7 @@ class EngineScriptDashboard {
 
     return siteDiv;
   }
-  
+
   createInfoElement(label, value) {
     const infoDiv = document.createElement("div");
     infoDiv.className = "info-item";
@@ -839,7 +833,7 @@ class EngineScriptDashboard {
 
     return infoDiv;
   }
-    
+
   // Cleanup method
   destroy() {
     if (this.liveRegionAnnouncementTimer) {
@@ -1011,7 +1005,7 @@ class EngineScriptDashboard {
       await this.loadUptimeSummary(summaryData);
       await this.loadUptimeMonitors(monitorsData);
     } catch (error) {
-      console.error('Failed to load uptime monitoring data:', error);
+      console.error("Failed to load uptime monitoring data:", error);
       // Show fallback uptime error state
       this.showUptimeError();
     }
@@ -1021,7 +1015,7 @@ class EngineScriptDashboard {
     try {
       const summary = prefetchedData ?? await this.api.getApiData("/api/monitoring/uptime", {});
 
-      if (!summary || typeof summary !== 'object') {
+      if (!summary || typeof summary !== "object") {
         this.showUptimeError();
         return;
       }
@@ -1030,7 +1024,7 @@ class EngineScriptDashboard {
         this.showUptimeError(summary.error);
         return;
       }
-      
+
       if (summary.enabled) {
         const totalCount = this.normalizeMonitorCount(summary.total_monitors);
         const upCount = this.normalizeMonitorCount(summary.up);
@@ -1045,7 +1039,7 @@ class EngineScriptDashboard {
         this.showUptimeNotConfigured();
       }
     } catch (error) {
-      console.error('Failed to load uptime summary:', error);
+      console.error("Failed to load uptime summary:", error);
       this.showUptimeError();
     }
   }
@@ -1054,10 +1048,10 @@ class EngineScriptDashboard {
     try {
       const response = prefetchedData ?? await this.api.getApiData("/api/monitoring/uptime/monitors", {});
       const monitorsContainer = document.getElementById("uptime-monitors");
-      
+
       if (!monitorsContainer) return;
 
-      if (!response || typeof response !== 'object') {
+      if (!response || typeof response !== "object") {
         this.showUptimeError();
         return;
       }
@@ -1066,29 +1060,28 @@ class EngineScriptDashboard {
         this.showUptimeError(response.error);
         return;
       }
-      
+
       if (!response.enabled) {
         this.showUptimeNotConfigured();
         return;
       }
-      
+
       const monitors = Array.isArray(response.monitors) ? response.monitors : [];
-      
+
       if (monitors.length === 0) {
         this.showEmptyUptimeMonitors();
         return;
       }
-      
+
       // Clear existing content
       monitorsContainer.replaceChildren();
-      
-      monitors.forEach(monitor => {
+
+      monitors.forEach((monitor) => {
         const monitorElement = this.createUptimeMonitorElement(monitor);
         monitorsContainer.appendChild(monitorElement);
       });
-      
     } catch (error) {
-      console.error('Failed to load uptime monitors:', error);
+      console.error("Failed to load uptime monitors:", error);
       this.showUptimeError();
     }
   }
@@ -1096,83 +1089,83 @@ class EngineScriptDashboard {
   createUptimeMonitorElement(monitor) {
     const monitorDiv = document.createElement("div");
     monitorDiv.className = "uptime-monitor";
-    
+
     // API returns 'status' (numeric) and 'status_text' (string)
     const statusClass = this.getUptimeStatusClass(monitor.status);
-    
+
     // Create elements programmatically to avoid XSS vulnerabilities
     const statusDiv = document.createElement("div");
     statusDiv.className = `monitor-status ${statusClass}`;
-    
+
     const statusDot = document.createElement("span");
     statusDot.className = "status-dot";
     statusDiv.appendChild(statusDot);
-    
+
     const infoDiv = document.createElement("div");
     infoDiv.className = "monitor-info";
-    
+
     const nameH4 = document.createElement("h4");
     nameH4.textContent = this.utils.sanitizeInput(monitor.name);
-    
+
     const urlP = document.createElement("p");
     urlP.className = "monitor-url";
     urlP.textContent = this.utils.sanitizeUrl(monitor.url);
-    
+
     infoDiv.appendChild(nameH4);
     infoDiv.appendChild(urlP);
-    
+
     // API returns uptime_day, uptime_week, uptime_month (use day for display)
     const uptimeRatio = Number(monitor.uptime_day ?? monitor.uptime_week ?? monitor.uptime_month ?? 0);
     const hasStats = Number.isFinite(uptimeRatio) && uptimeRatio > 0;
-    
+
     if (hasStats) {
       const statsDiv = document.createElement("div");
       statsDiv.className = "monitor-stats";
-      
+
       if (uptimeRatio > 0) {
         const uptimeStatDiv = document.createElement("div");
         uptimeStatDiv.className = "stat";
-        
+
         const uptimeValue = document.createElement("span");
         uptimeValue.className = "stat-value";
         uptimeValue.textContent = this.utils.sanitizeNumeric(uptimeRatio, "0") + "%";
-        
+
         const uptimeLabel = document.createElement("span");
         uptimeLabel.className = "stat-label";
         uptimeLabel.textContent = "Uptime";
-        
+
         uptimeStatDiv.appendChild(uptimeValue);
         uptimeStatDiv.appendChild(uptimeLabel);
         statsDiv.appendChild(uptimeStatDiv);
       }
-      
+
       monitorDiv.appendChild(statsDiv);
     }
-    
+
     const statusTextDiv = document.createElement("div");
     statusTextDiv.className = "monitor-status-text";
-    
+
     const statusText = document.createElement("span");
     statusText.className = "status-text";
     // API returns 'status_text' for the text version
-    statusText.textContent = this.utils.sanitizeInput(monitor.status_text || 'Unknown');
-    
+    statusText.textContent = this.utils.sanitizeInput(monitor.status_text || "Unknown");
+
     statusTextDiv.appendChild(statusText);
-    
+
     monitorDiv.appendChild(statusDiv);
     monitorDiv.appendChild(infoDiv);
     monitorDiv.appendChild(statusTextDiv);
-    
+
     return monitorDiv;
   }
 
   getUptimeStatusClass(statusCode) {
     switch (statusCode) {
-      case 2: return 'up';
+      case 2: return "up";
       case 8:
-      case 9: return 'down';
-      case 0: return 'paused';
-      default: return 'unknown';
+      case 9: return "down";
+      case 0: return "paused";
+      default: return "unknown";
     }
   }
 
@@ -1181,24 +1174,24 @@ class EngineScriptDashboard {
     if (monitorsContainer) {
       // Clear existing content
       monitorsContainer.replaceChildren();
-      
+
       // Create status div
       const statusDiv = document.createElement("div");
       statusDiv.className = "uptime-status";
-      
+
       // Create title
       const titleP = document.createElement("p");
       const titleStrong = document.createElement("strong");
       titleStrong.textContent = "Uptime Robot not configured";
       titleP.appendChild(titleStrong);
-      
+
       // Create instructions
       const instrP = document.createElement("p");
       instrP.textContent = "To enable website monitoring:";
-      
+
       // Create ordered list
       const ol = document.createElement("ol");
-      
+
       // Create list items
       const li1 = document.createElement("li");
       li1.textContent = "Create a free account at ";
@@ -1208,51 +1201,51 @@ class EngineScriptDashboard {
       link.rel = "noopener noreferrer";
       link.textContent = "UptimeRobot.com";
       li1.appendChild(link);
-      
+
       const li2 = document.createElement("li");
       li2.textContent = "Get your API key from Settings > API Settings";
-      
+
       const li3 = document.createElement("li");
       li3.textContent = "Configure it using: ";
       const code1 = document.createElement("code");
       code1.textContent = "sudo nano /etc/enginescript/uptimerobot.conf";
       li3.appendChild(code1);
-      
+
       const li4 = document.createElement("li");
       li4.textContent = "Add: ";
       const code2 = document.createElement("code");
       code2.textContent = "api_key=your_api_key_here";
       li4.appendChild(code2);
-      
+
       ol.appendChild(li1);
       ol.appendChild(li2);
       ol.appendChild(li3);
       ol.appendChild(li4);
-      
+
       statusDiv.appendChild(titleP);
       statusDiv.appendChild(instrP);
       statusDiv.appendChild(ol);
-      
+
       monitorsContainer.appendChild(statusDiv);
     }
-    
+
     // Reset summary stats
     this.utils.setTextContent("total-monitors", "--");
     this.utils.setTextContent("up-monitors", "--");
     this.utils.setTextContent("down-monitors", 0);
   }
 
-  showUptimeError(errorMessage = '') {
+  showUptimeError(errorMessage = "") {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
       monitorsContainer.replaceChildren();
       const statusDiv = document.createElement("div");
       statusDiv.className = "uptime-status";
-      
+
       const message = document.createElement("p");
       const safeErrorMessage = this.utils.sanitizeInput(errorMessage);
       message.textContent = safeErrorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
-      
+
       statusDiv.appendChild(message);
       monitorsContainer.appendChild(statusDiv);
     }
@@ -1266,15 +1259,15 @@ class EngineScriptDashboard {
    */
   announceToScreenReader(message) {
     if (!this.liveRegion) {
-      this.liveRegion = document.getElementById('es-dashboard-live-region');
+      this.liveRegion = document.getElementById("es-dashboard-live-region");
     }
 
     if (!this.liveRegion) {
-      this.liveRegion = document.createElement('div');
-      this.liveRegion.id = 'es-dashboard-live-region';
-      this.liveRegion.setAttribute('aria-live', 'polite');
-      this.liveRegion.setAttribute('aria-atomic', 'true');
-      this.liveRegion.className = 'sr-only';
+      this.liveRegion = document.createElement("div");
+      this.liveRegion.id = "es-dashboard-live-region";
+      this.liveRegion.setAttribute("aria-live", "polite");
+      this.liveRegion.setAttribute("aria-atomic", "true");
+      this.liveRegion.className = "sr-only";
       document.body.appendChild(this.liveRegion);
     }
 
@@ -1287,14 +1280,13 @@ class EngineScriptDashboard {
     }
 
     // Clear and re-set to trigger re-announcement
-    this.liveRegion.textContent = '';
+    this.liveRegion.textContent = "";
     this.liveRegionAnnouncementTimer = setTimeout(() => {
       if (this.liveRegion) {
         this.liveRegion.textContent = safeMessage;
       }
     }, 100);
   }
-
 }
 
 // Initialize dashboard when DOM is loaded

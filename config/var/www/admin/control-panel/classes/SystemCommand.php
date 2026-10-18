@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SystemCommand Class
  * Encapsulates all shell command executions for security, testing, and maintainability
@@ -12,7 +13,7 @@
 
 require_once __DIR__ . '/SystemProcessRunner.php';
 
-class SystemCommand
+final class SystemCommand
 {
     /**
      * Maximum time a dashboard command may run before it is terminated.
@@ -130,6 +131,7 @@ class SystemCommand
      *
      * @param array<int,string> $argv
      * @param string|false $result
+     * @psalm-api
      */
     public static function setMockResultForCommand(array $argv, string|false $result): void
     {
@@ -144,6 +146,7 @@ class SystemCommand
      * Configure the default mock result used when no command-specific mock is set.
      *
      * @param string|false $result
+     * @psalm-api
      */
     public static function setDefaultMockResult(string|false $result): void
     {
@@ -155,6 +158,7 @@ class SystemCommand
      * in the order added.
      *
      * @param string|false $result
+     * @psalm-api
      */
     public static function enqueueMockResult(string|false $result): void
     {
@@ -163,6 +167,8 @@ class SystemCommand
 
     /**
      * Reset all configured mock results to their defaults.
+     *
+     * @psalm-api
      */
     public static function resetMockResults(): void
     {
@@ -204,7 +210,7 @@ class SystemCommand
      * syntax calls execve(2) directly — the shell is never invoked, so
      * metacharacters in arguments are inert.
      *
-     * @param array<int,string> $argv Command array (binary + arguments)
+     * @param non-empty-list<string> $argv Command array (binary + arguments)
      * @param bool $captureStderr Read stderr instead of stdout (e.g. nginx -v)
      * @return string|false Trimmed output or false on failure
      */
@@ -248,7 +254,7 @@ class SystemCommand
         }
 
         foreach ($argv as $part) {
-            if (!is_string($part) || str_contains($part, "\0")) {
+            if (str_contains($part, "\0")) {
                 error_log('[EngineScript] SystemCommand blocked invalid command argument');
                 return false;
             }
@@ -259,7 +265,7 @@ class SystemCommand
 
     private static function resolveBinaryPath(string $binary): string|false
     {
-        if (!in_array($binary, self::ALLOWED_BINARIES, true) || !isset(self::BINARY_PATHS[$binary])) {
+        if (!in_array($binary, self::ALLOWED_BINARIES, true)) {
             error_log('[EngineScript] SystemCommand blocked non-allowlisted command: ' . $binary);
             return false;
         }
@@ -278,7 +284,7 @@ class SystemCommand
      * Run an allowlisted binary with arguments
      *
      * @param string $binary The binary name (must be in the allowlist)
-     * @param array<int,string> $args Arguments to pass to the binary
+     * @param array<int,mixed> $args Arguments to pass to the binary
      * @return string|false Command output or false on failure
      */
     public static function run(string $binary, array $args = []): string|false

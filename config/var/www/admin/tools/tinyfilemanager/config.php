@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EngineScript TinyFileManager Configuration
  * Dynamic configuration using EngineScript credentials
@@ -10,8 +11,8 @@ $fm_username = null;
 $fm_password = null;
 
 if (file_exists($credentials_file)) { // codacy:ignore - file_exists() required for configuration file checking in standalone service
-    $content = file_get_contents($credentials_file); // codacy:ignore - file_get_contents() required for configuration reading in standalone service
-    
+    $content = (string) file_get_contents($credentials_file); // codacy:ignore - file_get_contents() required for configuration reading in standalone service
+
     // Extract FILEMANAGER_USERNAME
     if (preg_match('/FILEMANAGER_USERNAME="([^"]*)"/', $content, $matches)) {
         $extracted_username = trim($matches[1]);
@@ -19,7 +20,7 @@ if (file_exists($credentials_file)) { // codacy:ignore - file_exists() required 
             $fm_username = $extracted_username;
         }
     }
-    
+
     // Extract FILEMANAGER_PASSWORD
     if (preg_match('/FILEMANAGER_PASSWORD="([^"]*)"/', $content, $matches)) {
         $extracted_password = trim($matches[1]);
@@ -36,13 +37,13 @@ if (empty($fm_username) || empty($fm_password)) {
 }
 
 // Generate authentication array with hashed password
-$auth_users = array(
-    $fm_username => password_hash($fm_password, PASSWORD_DEFAULT)
-);
+$auth_users = [
+    $fm_username => password_hash($fm_password, PASSWORD_DEFAULT),
+];
 
 // Set as non-global auth
 $use_auth = true;
-$readonly_users = array();
+$readonly_users = [];
 
 // Root path for file browsing - restrict to web directories
 $root_path = '/var/www';
@@ -54,13 +55,13 @@ $root_url = '';
 $max_upload_size_bytes = 104857600;
 
 // Exclude specific files/folders from listing
-$exclude_items = array(
+$exclude_items = [
     '.git',
     '.github',
     '.gitignore',
     '.htaccess',
-    'config.php'
-);
+    'config.php',
+];
 
 // Theme (light, dark)
 $theme = 'light';
@@ -88,4 +89,3 @@ $online_viewer = false;
 
 // Sticky navbar
 $sticky_navbar = true;
-?>

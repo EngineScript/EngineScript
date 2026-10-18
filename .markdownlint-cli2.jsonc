@@ -1,0 +1,8 @@
+{
+  // markdownlint-cli2 options. The rules are in .markdownlint.json.
+  //
+  // Lint every Markdown file that git does not ignore, so a local run and the
+  // CI run read the same files.
+  "globs": ["**/*.md"],
+  "gitignore": true
+}

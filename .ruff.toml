@@ -1,0 +1,33 @@
+# Ruff configuration for the automation scripts in .github/scripts.
+#
+# Every rule is on. Each exception below states its reason.
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["ALL"]
+ignore = [
+    # Two pairs of docstring rules contradict each other; D211 and D212 are the ones kept.
+    "D203",
+    "D213",
+    # These two conflict with the formatter.
+    "COM812",
+    "ISC001",
+    # The fixtures use the standard library's unittest on purpose, so the pytest style does not apply.
+    "PT",
+    # The scripts report to the workflow log through print.
+    "T201",
+    # The project puts no copyright notice in its files.
+    "CPY001",
+    # An exception message written where it is raised is clear enough in these short scripts.
+    "EM",
+    "TRY003",
+    # Every subprocess call runs a fixed argument list without a shell. Bandit checks the same
+    # thing, and each call carries its "nosec" note.
+    "S603",
+    "S607",
+]
+
+[lint.per-file-ignores]
+# The name of a unittest method states the case it covers.
+".github/scripts/test-automation.py" = ["D101", "D102"]

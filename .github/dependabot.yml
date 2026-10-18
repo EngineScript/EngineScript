@@ -17,9 +17,6 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
-    # Assign reviewers automatically
-    reviewers:
-      - "EngineScript"
     # Create a group of updates for all actions
     groups:
       actions:
@@ -45,9 +42,6 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
-    # Assign reviewers automatically
-    reviewers:
-      - "EngineScript"
     # Group updates by dependency type
     groups:
       # Group all dev dependencies together
@@ -66,3 +60,50 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+
+  # Updates for npm dependencies (the JavaScript tests and the linters)
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "master"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "UTC"
+    # Set custom labels on pull requests
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "automated"
+      - "maintenance"
+    # Limit the number of open PRs
+    open-pull-requests-limit: 10
+    # Group all of the development tooling together
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+    # Allow updates to all dependency types
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # Updates for the Python linters that the lint job installs
+  - package-ecosystem: "pip"
+    directory: "/.github"
+    target-branch: "master"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "UTC"
+    # Set custom labels on pull requests
+    labels:
+      - "dependencies"
+      - "python"
+      - "automated"
+      - "maintenance"
+    # Limit the number of open PRs
+    open-pull-requests-limit: 10
+    # Group all of the linters together
+    groups:
+      lint-tools:
+        patterns:
+          - "*"

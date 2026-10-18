@@ -1,10 +1,11 @@
 <?php
+
 /**
  * EngineScript Admin Dashboard - UptimeRobot API Client
- * 
+ *
  * Secure wrapper for UptimeRobot API interactions.
  * Handles API authentication, request formatting, and response parsing.
- * 
+ *
  * @package EngineScript\Dashboard\API
  * @version 1.0.0
  * @security HIGH - Handles API credentials
@@ -14,14 +15,14 @@ require_once __DIR__ . '/CurlInitException.php';
 
 /**
  * UptimeRobot API Client
- * 
+ *
  * Provides methods to interact with UptimeRobot's API.
- * 
+ *
  * Usage:
  *   $api = new UptimeRobotAPI('your-api-key');
  *   $monitors = $api->getMonitors();
  */
-class UptimeRobotAPI
+final class UptimeRobotAPI
 {
     /**
      * UptimeRobot API base URL
@@ -35,7 +36,7 @@ class UptimeRobotAPI
 
     /**
      * Create a new UptimeRobot API instance
-     * 
+     *
      * @param string $apiKey UptimeRobot API key (read-only key recommended)
      */
     public function __construct(private string $apiKey)
@@ -44,11 +45,11 @@ class UptimeRobotAPI
 
     /**
      * Get all monitors
-     * 
+     *
      * Fetches all monitors with their current status and uptime ratios.
      * Requests uptime ratios for 1, 7, and 30 days.
-     * 
-     * @return array|false Array of monitors or false on error
+     *
+     * @return array<mixed>|false Array of monitors or false on error
      */
     public function getMonitors(): array|false
     {
@@ -56,7 +57,7 @@ class UptimeRobotAPI
             'format' => 'json',
             'custom_uptime_ratios' => '1-7-30', // 1 day, 7 days, 30 days
             'response_times' => 0,
-            'logs' => 0
+            'logs' => 0,
         ];
 
         $response = $this->makeRequest('getMonitors', $params);
@@ -79,37 +80,13 @@ class UptimeRobotAPI
     }
 
     /**
-     * Get account details
-     * 
-     * @return array|false Account details or false on error
-     */
-    public function getAccountDetails(): array|false
-    {
-        $params = [
-            'format' => 'json'
-        ];
-
-        $response = $this->makeRequest('getAccountDetails', $params);
-
-        if ($response === false) {
-            return false;
-        }
-
-        if (!isset($response['stat']) || $response['stat'] !== 'ok') {
-            return false;
-        }
-
-        return $response['account'] ?? false;
-    }
-
-    /**
      * Make an API request
-     * 
+     *
      * Uses cURL to make a POST request to the UptimeRobot API.
-     * 
+     *
      * @param string $endpoint API endpoint (e.g., 'getMonitors')
-     * @param array $params Additional parameters to send
-     * @return array|false Decoded response or false on error
+     * @param array<string, scalar> $params Additional parameters to send
+     * @return array<mixed>|false Decoded response or false on error
      */
     private function makeRequest(string $endpoint, array $params = []): array|false
     {
@@ -135,6 +112,9 @@ class UptimeRobotAPI
         return $this->decodeCurlResult($this->executeCurlRequest($curlHandle));
     }
 
+    /**
+     * @return non-empty-string|false
+     */
     private function buildRequestUrl(string $endpoint): string|false
     {
         if (!preg_match('/^[a-zA-Z]+$/', $endpoint)) {
@@ -160,6 +140,10 @@ class UptimeRobotAPI
         return $curlHandle;
     }
 
+    /**
+     * @param non-empty-string $url
+     * @param array<string, scalar> $params
+     */
     private function configureCurlRequest(CurlHandle $curlHandle, string $url, array $params): bool
     {
         // codacy:ignore - curl functions required for secure API communication
@@ -172,12 +156,12 @@ class UptimeRobotAPI
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/x-www-form-urlencoded',
-                'Cache-Control: no-cache'
+                'Cache-Control: no-cache',
             ],
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_MAXREDIRS => 0
+            CURLOPT_MAXREDIRS => 0,
         ]);
 
         if ($optionsSet === false) {
@@ -209,6 +193,7 @@ class UptimeRobotAPI
 
     /**
      * @param array{response: string|false, http_code: int, error: string} $result
+     * @return array<mixed>|false
      */
     private function decodeCurlResult(array $result): array|false
     {
@@ -223,26 +208,31 @@ class UptimeRobotAPI
         }
 
         try {
-            $decoded = json_decode($result['response'], true, 512, JSON_THROW_ON_ERROR);
+            return $this->arrayOrFalse(json_decode($result['response'], true, 512, JSON_THROW_ON_ERROR));
         } catch (JsonException $e) {
             $this->logError('Invalid JSON response', ['error' => $e->getMessage()]);
             return false;
         }
+    }
 
-        return is_array($decoded) ? $decoded : false;
+    /**
+     * @return array<mixed>|false
+     */
+    private function arrayOrFalse(mixed $value): array|false
+    {
+        return is_array($value) ? $value : false;
     }
 
     /**
      * Log an error
-     * 
+     *
      * @param string $message Error message
-     * @param array $context Additional context
-     * @return void
+     * @param array<mixed> $context Additional context
      */
     private function logError(string $message, array $context): void
     {
         // Sanitize message for logging
-        $safe_message = preg_replace('/[\x00-\x1F\x7F]/', ' ', $message);
+        $safe_message = preg_replace('/[\x00-\x1F\x7F]/', ' ', $message) ?? '';
         $safe_message = substr($safe_message, 0, 255);
 
         // Don't log API key in context
@@ -252,17 +242,17 @@ class UptimeRobotAPI
 
         // Sanitize context values
         $safe_context = [];
-        foreach ($context as $key => $value) {
-            if (is_string($value)) {
-                $safe_context[$key] = substr(preg_replace('/[\x00-\x1F\x7F]/', ' ', $value), 0, 255);
-            } elseif (is_numeric($value)) {
-                $safe_context[$key] = $value;
+        foreach (array_keys($context) as $key) {
+            if (is_string($context[$key])) {
+                $safe_context[$key] = substr(preg_replace('/[\x00-\x1F\x7F]/', ' ', $context[$key]) ?? '', 0, 255);
+            } elseif (is_numeric($context[$key])) {
+                $safe_context[$key] = $context[$key];
             }
         }
 
         $log_entry = date('Y-m-d H:i:s') . " [UptimeRobotAPI] " . $safe_message;
         if (!empty($safe_context)) {
-            $log_entry .= " - " . json_encode($safe_context);
+            $log_entry .= " - " . (string) json_encode($safe_context);
         }
         $log_entry .= "\n";
 
