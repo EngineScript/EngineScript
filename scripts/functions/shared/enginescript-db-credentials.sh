@@ -299,8 +299,49 @@ execute_install_sql() {
 
 
 #----------------------------------------------------------------------------------
+# Convert a database's MyISAM tables to InnoDB.
+# A site imported from an older server can bring MyISAM tables: the dump keeps each table's
+# engine. InnoDB is crash-safe and locks rows instead of whole tables, which is what WordPress
+# and EngineScript's MariaDB settings expect. A table that cannot be converted stays MyISAM
+# and is reported; the site keeps working.
+#
+# Arguments:
+#   $1 - database name
+#
+# Returns 0 when every MyISAM table was converted (or there were none), 1 otherwise.
+#----------------------------------------------------------------------------------
+convert_myisam_tables_to_innodb() {
+  local db="$1"
+  local table
+  local converted=0
+  local tables=()
+
+  validate_db_identifier "${db}" "${db}" || return 1
+
+  mapfile -t tables < <(sudo mariadb -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db}' AND ENGINE = 'MyISAM' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;")
+  if [[ ${#tables[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  echo "Converting ${#tables[@]} MyISAM table(s) in '${db}' to InnoDB..."
+  for table in "${tables[@]}"; do
+    # Table names come from the server; double any backtick for the quoted identifier
+    if sudo mariadb -e "ALTER TABLE \`${db}\`.\`${table//\`/\`\`}\` ENGINE=InnoDB;"; then
+      converted=$((converted + 1))
+    else
+      echo "Warning: Could not convert table '${table}' to InnoDB; it stays MyISAM." >&2
+    fi
+  done
+  echo "Converted ${converted} of ${#tables[@]} MyISAM table(s) to InnoDB."
+  [[ "${converted}" -eq ${#tables[@]} ]]
+}
+
+
+#----------------------------------------------------------------------------------
 # Execute the SQL statements for vhost-import credential creation.
-# Uses charset/collation interpolation and grants on mysql.* for health checks.
+# Uses charset/collation interpolation. The site user gets privileges on its own database
+# only, as with vhost-install: privileges on the mysql system database would let a site
+# change any account's privileges and reach every other site's database.
 #
 # Arguments:
 #   $1 - DB (database name)
@@ -316,8 +357,19 @@ execute_import_sql() {
   local DB_CHARSET_VALIDATED="$4"
   local DB_COLLATION="$5"
 
-  sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};" # Use validated charset
-  sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"
-  sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"
-  sudo mariadb -e "GRANT ALL ON mysql.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;" # Needed for mariadb-health-checks plugin
+  # Use validated charset
+  if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};"; then
+    echo "Error: Failed to create database '${DB}'." >&2
+    return 1
+  fi
+
+  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+    echo "Error: Failed to create MariaDB user '${USR}'." >&2
+    return 1
+  fi
+
+  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+    echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
+    return 1
+  fi
 }

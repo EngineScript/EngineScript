@@ -368,6 +368,85 @@ echo "  MariaDB install root authentication test complete."
 
 
 #----------------------------------------------------------------------------------
+# Test 5: Site database users get no privileges on the mysql system database
+#----------------------------------------------------------------------------------
+echo ""
+echo "======================================================="
+echo "  Test 5: Site database user privileges"
+echo "======================================================="
+echo ""
+
+DB_CREDENTIALS_LIBRARY="${REPO_ROOT}/scripts/functions/shared/enginescript-db-credentials.sh"
+
+# Privileges on mysql.* would let one site change any account's privileges and reach every
+# other site's database.
+if grep -Eiq 'GRANT[^;]*ON[[:space:]]+`?mysql`?\.' "${DB_CREDENTIALS_LIBRARY}"; then
+  fail "Site database users are granted privileges on the mysql system database"
+else
+  pass "Site database users get privileges on their own database only"
+fi
+
+echo ""
+echo "  Site database user privileges test complete."
+
+
+#----------------------------------------------------------------------------------
+# Test 6: Imported sites' MyISAM tables are converted to InnoDB
+#----------------------------------------------------------------------------------
+echo ""
+echo "======================================================="
+echo "  Test 6: MyISAM to InnoDB conversion"
+echo "======================================================="
+echo ""
+
+sudo mariadb -e "DROP DATABASE IF EXISTS es_myisam_test; DROP DATABASE IF EXISTS es_other_test;
+  CREATE DATABASE es_myisam_test; CREATE DATABASE es_other_test;
+  CREATE TABLE es_myisam_test.wp_posts (ID INT PRIMARY KEY, post_content TEXT, FULLTEXT KEY body (post_content)) ENGINE=MyISAM;
+  INSERT INTO es_myisam_test.wp_posts VALUES (1, 'hello world'), (2, 'second post');
+  CREATE TABLE es_myisam_test.\`odd\`\`name\` (id INT PRIMARY KEY) ENGINE=MyISAM;
+  CREATE TABLE es_myisam_test.wp_options (option_id INT PRIMARY KEY) ENGINE=InnoDB;
+  CREATE TABLE es_other_test.legacy (id INT PRIMARY KEY) ENGINE=MyISAM;"
+
+if convert_myisam_tables_to_innodb "es_myisam_test"; then
+  pass "convert_myisam_tables_to_innodb reported success"
+else
+  fail "convert_myisam_tables_to_innodb reported a failure"
+fi
+
+engines="$(sudo mariadb -N -e "SELECT CONCAT(TABLE_NAME, '=', ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'es_myisam_test' ORDER BY TABLE_NAME;" | tr '\n' ' ')"
+if [[ "${engines}" == 'odd`name=InnoDB wp_options=InnoDB wp_posts=InnoDB ' ]]; then
+  pass "Every table in the imported database is InnoDB (including a name with a backtick)"
+else
+  fail "Engines after conversion: ${engines}"
+fi
+
+rows="$(sudo mariadb -N -e "SELECT COUNT(*) FROM es_myisam_test.wp_posts WHERE MATCH(post_content) AGAINST ('hello');")"
+if [[ "${rows}" == "1" ]]; then
+  pass "Rows and the FULLTEXT index survive the conversion"
+else
+  fail "FULLTEXT search after conversion returned '${rows}'"
+fi
+
+other="$(sudo mariadb -N -e "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'es_other_test' AND TABLE_NAME = 'legacy';")"
+if [[ "${other}" == "MyISAM" ]]; then
+  pass "Tables in other databases are left alone"
+else
+  fail "A table in another database was changed to ${other}"
+fi
+
+if convert_myisam_tables_to_innodb "es_myisam_test" > /dev/null; then
+  pass "A database without MyISAM tables is left as it is"
+else
+  fail "A database without MyISAM tables reported a failure"
+fi
+
+sudo mariadb -e "DROP DATABASE es_myisam_test; DROP DATABASE es_other_test;"
+
+echo ""
+echo "  MyISAM to InnoDB conversion test complete."
+
+
+#----------------------------------------------------------------------------------
 # Summary
 #----------------------------------------------------------------------------------
 echo ""

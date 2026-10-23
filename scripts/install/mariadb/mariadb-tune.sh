@@ -20,6 +20,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Tune MariaDB
 
+# The configuration file to tune: /etc/mysql/my.cnf by default, or a staging copy (the
+# MariaDB update tunes a copy while MariaDB keeps running, then swaps it in).
+# /etc/mysql/my.cnf is the MariaDB packages' link to /etc/mysql/mariadb.cnf; sed
+# --follow-symlinks edits that file and keeps the link (plain sed -i would replace the link
+# with a regular file and leave the untuned template in mariadb.cnf, which a package upgrade
+# then links back in).
+MARIADB_CONFIG="${1:-/etc/mysql/my.cnf}"
+
 # Open Files Limit - Use systemd override instead of modifying main service file
 # Create override directory if it doesn't exist
 mkdir -p "/etc/systemd/system/mariadb.service.d"
@@ -51,64 +59,63 @@ else
 fi
 
 # tmp_table_size & max_heap_table_size
-sed -i "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
-sed -i "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" /etc/mysql/my.cnf
+sed -i --follow-symlinks "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" "${MARIADB_CONFIG}"
+sed -i --follow-symlinks "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" "${MARIADB_CONFIG}"
 
 # Max Connections
 # Scaled proportionally to PHP-FPM pm.max_children with headroom for WP-CLI, cron, and admin tasks
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
-  sed -i "s|SEDMAXCON|50|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDMAXCON|50|g" "${MARIADB_CONFIG}"
 elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
-  sed -i "s|SEDMAXCON|75|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDMAXCON|75|g" "${MARIADB_CONFIG}"
 elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 8200 ]]; then
-  sed -i "s|SEDMAXCON|100|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDMAXCON|100|g" "${MARIADB_CONFIG}"
 else
-  sed -i "s|SEDMAXCON|150|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDMAXCON|150|g" "${MARIADB_CONFIG}"
 fi
 
 # Use the calculated SEDLBS variable for log buffer size
-sed -i "s|SEDLBS|${SEDLBS}M|g" /etc/mysql/my.cnf
+sed -i --follow-symlinks "s|SEDLBS|${SEDLBS}M|g" "${MARIADB_CONFIG}"
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    sed -i "s|SEDTCS|256|g" /etc/mysql/my.cnf
+    sed -i --follow-symlinks "s|SEDTCS|256|g" "${MARIADB_CONFIG}"
   else
-    sed -i "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" /etc/mysql/my.cnf
+    sed -i --follow-symlinks "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" "${MARIADB_CONFIG}"
 fi
 
 if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
   then
-    sed -i "s|SEDTOC|2000|g" /etc/mysql/my.cnf
+    sed -i --follow-symlinks "s|SEDTOC|2000|g" "${MARIADB_CONFIG}"
   else
-    sed -i "s|SEDTOC|4000|g" /etc/mysql/my.cnf
+    sed -i --follow-symlinks "s|SEDTOC|4000|g" "${MARIADB_CONFIG}"
 fi
 
 # Innodb Open Files - scaled by RAM tier
 if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1200 ]]; then
-  sed -i "s|SEDINOF|1000|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDINOF|1000|g" "${MARIADB_CONFIG}"
 elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
-  sed -i "s|SEDINOF|2000|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDINOF|2000|g" "${MARIADB_CONFIG}"
 elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
-  sed -i "s|SEDINOF|4000|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDINOF|4000|g" "${MARIADB_CONFIG}"
 else
-  sed -i "s|SEDINOF|8000|g" /etc/mysql/my.cnf
+  sed -i --follow-symlinks "s|SEDINOF|8000|g" "${MARIADB_CONFIG}"
 fi
 
 # Cap innodb_log_file_size at 512MB
 if [[ "${SERVER_MEMORY_TOTAL_09}" -gt 512 ]]; then
   SERVER_MEMORY_TOTAL_09=512
 fi
-sed -i "s|SEDMYSQL09PERCENT|${SERVER_MEMORY_TOTAL_09}M|g" /etc/mysql/my.cnf
+sed -i --follow-symlinks "s|SEDMYSQL09PERCENT|${SERVER_MEMORY_TOTAL_09}M|g" "${MARIADB_CONFIG}"
 
-sed -i "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" /etc/mysql/my.cnf
-sed -i "s|SEDMYSQL43PERCENT|${SERVER_MEMORY_TOTAL_43}M|g" /etc/mysql/my.cnf
-sed -i "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" /etc/mysql/my.cnf
+sed -i --follow-symlinks "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" "${MARIADB_CONFIG}"
+sed -i --follow-symlinks "s|SEDMYSQL43PERCENT|${SERVER_MEMORY_TOTAL_43}M|g" "${MARIADB_CONFIG}"
+sed -i --follow-symlinks "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" "${MARIADB_CONFIG}"
 
 # IOPS Benchmark
 
 # Define variables
 TEST_FILE="/tmp/fio_test_file"
-MARIADB_CONFIG="/etc/mysql/my.cnf"
 IOPS_AVG_VAR="SEDAVGIOPS"  # Placeholder for avg IOPS
 IOPS_MAX_VAR="SEDMAXIOPS"  # Placeholder for max IOPS
 
@@ -142,11 +149,11 @@ if [[ -z "$max_iops" ]] || [[ "$max_iops" -lt "$avg_iops" ]]; then
 fi
 
 # Modify MariaDB config for avg IOPS
-sed -i "s/$IOPS_AVG_VAR/$avg_iops/g" "$MARIADB_CONFIG"
+sed -i --follow-symlinks "s/$IOPS_AVG_VAR/$avg_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
 
 # Modify MariaDB config for max IOPS
-sed -i "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
+sed -i --follow-symlinks "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
 echo "MariaDB $IOPS_MAX_VAR updated to $max_iops."
 
 # Clean up fio test file to prevent /tmp exhaustion

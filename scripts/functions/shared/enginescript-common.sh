@@ -510,6 +510,36 @@ function get_sites_without_php() {
 
 
 # ----------------------------------------------------------------
+# Print the WordPress sites on this server that cannot reach their database, one per line
+#
+# Runs a query with each site's own credentials from wp-config.php (WP-CLI), so it checks the
+# account WordPress uses. Sites without wp-config.php (no WordPress) are skipped. Prints nothing
+# when every site reaches its database or there are no sites. Callers compare the result with a
+# list taken before a change, as with get_sites_without_php.
+function get_sites_without_database() {
+    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local site site_root
+
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for site in "${SITES[@]}"; do
+        site_root="/var/www/sites/${site}/html"
+        if [[ ! -f "${site_root}/wp-config.php" ]]; then
+            continue
+        fi
+        if ! timeout 60 wp db query "SELECT 1" --path="${site_root}" --allow-root --skip-plugins --skip-themes > /dev/null 2>&1; then
+            echo "${site}"
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Print the sites in the second list that are not in the first (newline-separated lists)
 # Usage: newly_failing_sites "${FAILING_BEFORE}" "${FAILING_AFTER}"
 function newly_failing_sites() {
@@ -1015,6 +1045,23 @@ function set_php_permissions() {
     chown -R www-data:www-data /var/cache/opcache
     chown -R www-data:www-data /var/cache/php-sessions
     chown -R www-data:www-data /var/cache/wsdlcache
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for /home/EngineScript
+#
+# It holds the install options (the MariaDB root password, the Cloudflare API key, admin
+# passwords), database and configuration backups (including TLS private keys), and site
+# database credentials. Only root uses it, so nothing else may read it.
+function set_enginescript_home_permissions() {
+    if [[ -d /home/EngineScript ]]; then
+        chown root:root /home/EngineScript
+        chmod 700 /home/EngineScript
+    fi
+    if [[ -f /home/EngineScript/enginescript-install-options.txt ]]; then
+        chmod 600 /home/EngineScript/enginescript-install-options.txt
+    fi
 }
 
 

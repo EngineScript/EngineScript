@@ -46,7 +46,7 @@ sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32
 
 # phpMyAdmin Control User (server)
 sed -i "s|'pma'|'phpmyadmin_controlusr_$RAND_CHAR8'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | sudo mariadb -e "CREATE USER 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
-sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | sudo mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | sudo mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Create phpMyAdmin Tables
 sudo cat /var/www/admin/tools/phpmyadmin/sql/create_tables.sql | mariadb

@@ -523,7 +523,7 @@ validate_import_credentials "${DB}" "${USR}" "${PSWD}" "${DB_CHARSET}" || exit 1
 DB_CHARSET="${ES_DB_CHARSET_VALIDATED}"
 DB_COLLATION="${ES_DB_COLLATION}"
 
-execute_import_sql "${DB}" "${USR}" "${PSWD}" "${DB_CHARSET}" "${DB_COLLATION}"
+execute_import_sql "${DB}" "${USR}" "${PSWD}" "${DB_CHARSET}" "${DB_COLLATION}" || exit 1
 
 # Create backup directories
 create_backup_directories "${SITE_URL}"
@@ -599,6 +599,11 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 echo "Database imported successfully."
+
+# Tables from older servers may be MyISAM; convert them to InnoDB
+if ! convert_myisam_tables_to_innodb "${DB}"; then
+    echo "Some tables stay MyISAM (see the warnings above). The site works, but those tables lack InnoDB's crash safety and row locking."
+fi
 
 # Clean up temp file if created
 if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then

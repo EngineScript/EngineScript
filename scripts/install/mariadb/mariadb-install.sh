@@ -38,7 +38,7 @@ debug_pause "MariaDB Repository"
 
 # Install MariaDB
 apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
-sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log
+sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "MariaDB Installation"
 
@@ -54,24 +54,47 @@ debug_pause "System Update and Cleanup"
 # New MariaDB Secure Method
 # Probably safer to do the secure installation manually, as the previous method would break if MariaDB changed anything in the order that they ask questions.
 
-# Set the password with `debconf-set-selections` so the user is not prompted.
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${MARIADB_ADMIN_PASSWORD}" # new password for the MySQL root user
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MARIADB_ADMIN_PASSWORD}" # repeat password for the MySQL root user
+# The root password and secure-installation SQL below need a running MariaDB. apt normally
+# starts it after the install; start it if not, and stop the install if it does not answer,
+# instead of continuing without a root password.
+if ! systemctl is-active --quiet mariadb; then
+  systemctl start mariadb 2>> /tmp/enginescript_install_errors.log
+fi
+MARIADB_READY=0
+for _ in $(seq 1 15); do
+  if sudo mariadb --protocol=socket -e "SELECT 1" > /dev/null 2>&1; then
+    MARIADB_READY=1
+    break
+  fi
+  sleep 2
+done
+if [[ "${MARIADB_READY}" != "1" ]]; then
+  echo "Error: MariaDB is not running, so the root password and secure-installation steps cannot run. Check 'systemctl status mariadb' and /var/log/mysql/." >&2
+  exit 1
+fi
 
 # Keep local sudo/socket automation working while enabling the configured root password.
 SQL_ESCAPED_MARIADB_ADMIN_PASSWORD="$(escape_mariadb_sql_string_literal "${MARIADB_ADMIN_PASSWORD}")"
-sudo mariadb --protocol=socket << EOFMYSQLROOTAUTH
+if ! sudo mariadb --protocol=socket << EOFMYSQLROOTAUTH
 ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket OR mysql_native_password USING PASSWORD('${SQL_ESCAPED_MARIADB_ADMIN_PASSWORD}');
 EOFMYSQLROOTAUTH
+then
+  echo "Error: Setting the MariaDB root password failed." >&2
+  exit 1
+fi
 
 # Manually Perform Secure Installation
-sudo mariadb --protocol=socket << EOFMYSQLSECURE
+if ! sudo mariadb --protocol=socket << EOFMYSQLSECURE
 DELETE FROM mysql.global_priv WHERE User='';
 DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 EOFMYSQLSECURE
+then
+  echo "Error: The MariaDB secure-installation step failed." >&2
+  exit 1
+fi
 
 # Old MariaDB Secure Method
 # MySQL Secure Installation Automated
@@ -90,6 +113,9 @@ EOFMYSQLSECURE
 systemctl stop mariadb.service
 cp -rf /usr/local/bin/enginescript/config/etc/mysql/my.cnf /etc/mysql/my.cnf
 
+# Directory for secure_file_priv (my.cnf); MariaDB does not start without it
+install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+
 # Create Logs
 touch /var/log/mysql/mysql-error.log
 touch /var/log/mysql/mariadb-slow.log
@@ -103,11 +129,8 @@ chown -R mysql:adm /var/log/mysql/mysql.log
 print_last_errors
 debug_pause "MariaDB Configuration"
 
-# Ensure MariaDB service always restarts on failure
-if grep -q '^Restart=on-abnormal' /lib/systemd/system/mariadb.service; then
-  sed -i 's/^Restart=on-abnormal/Restart=always/' /lib/systemd/system/mariadb.service
-  systemctl daemon-reload
-fi
+# Restart=always comes from EngineScript's systemd override (mariadb-tune.sh), which package
+# upgrades leave alone, unlike the package's own /lib/systemd/system/mariadb.service
 
 # Restart Service
 systemctl daemon-reload
