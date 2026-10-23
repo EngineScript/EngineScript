@@ -4,6 +4,110 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-21
+
+### ⬆️ NGINX 1.31 MAINLINE AND OPENSSL 4.0
+
+- Moved Nginx from 1.29.8 (a closed mainline branch that no longer receives security fixes) to the current mainline, 1.31.8.
+- Moved OpenSSL from the 3.5 long-term support series (3.5.6) to the latest stable release, 4.0.3. OpenSSL 4.0 is supported until May 2027, so the next stable series will need to follow before then.
+- Updated the other modules and libraries built into Nginx: headers-more 0.40, ngx_cache_purge 3.0.4, and PCRE2 10.49.
+- Verified by running EngineScript's own download, patch, and compile scripts on Ubuntu 24.04 with GCC 14: the dynamic TLS records patch applies cleanly to 1.31.8; the patch, brotli, headers-more, and cache purge directives load; and with `sslshared.conf` the server negotiates the post-quantum X25519MLKEM768 key exchange and the four allowed TLS 1.2 ciphers, and refuses the excluded ones.
+
+### 🔧 NGINX BUILD
+
+- Nginx, the Brotli library, and zlib-rs are now compiled for `x86-64-v3` (AVX2, BMI1/BMI2, FMA; Intel Haswell 2013+, AMD Zen 2017+) with generic tuning, instead of `-march=native` and a block that added CPU flags detected on the build machine. A native build only runs on CPUs with the build machine's exact instruction set, so moving a server to other hardware (live migration, snapshot restore, resize) could stop Nginx with "illegal instruction". CPUs that cannot run x86-64-v3 are built for x86-64-v2. The shared `get_x86_64_level` function in `enginescript-common.sh` picks the level.
+- Removed the compiler flags that suppressed warnings (`-Wno-implicit-function-declaration`, `-Wno-int-conversion`, and the other `-Wno-*` flags). Nginx 1.31.8 and its modules build with no warnings on GCC 14, and Nginx's own `-Werror` now stops the build if a future module introduces a problem.
+- `nginx-compile.sh` now lists its `./configure` options once and adds `--with-http_v3_module` only when `INSTALL_HTTP3=1`, instead of keeping two copies of the whole command.
+
+### 🔄 NGINX UPDATES WITH ROLLBACK
+
+- `nginx-update.sh` no longer takes Nginx down during the update. Nginx keeps serving while the new version compiles and the new configuration is applied, then restarts once (about one second).
+- The update backs up `/etc/nginx` and the current Nginx binary first (`/home/EngineScript/config-backups/nginx/pre-update/`). If the new configuration fails `nginx -t`, or Nginx does not start and answer afterwards, the update restores the previous configuration and binary, keeps or restarts the previous version, and keeps the failed configuration in `/etc/nginx.update-failed` for troubleshooting.
+- A failed compile now stops the update (and the install) before any configuration is changed. `nginx-compile.sh` checks `configure`, `make`, and `make install`, and no longer stops Nginx itself.
+- During installs and updates, the Cloudflare IP updater only replaces its file instead of reloading Nginx with a half-updated configuration.
+- New `migrate_nginx_vhosts` function: brings existing site and admin vhost files up to date with template changes on every Nginx install and update, and when a site is created.
+
+### 🔧 NGINX SERVICE AND CERTIFICATE RENEWALS
+
+- Updated the Nginx systemd unit: `systemctl reload nginx` now tests the configuration first and reports a failure instead of Nginx silently keeping its old configuration; Nginx restarts itself after a crash (`Restart=on-failure`); and basic hardening is on (`NoNewPrivileges`, `ProtectSystem=full`, `ProtectHome`, `PrivateDevices`, kernel and control-group protection). Removed the `sleep 0.1` start workaround and the obsolete `syslog.target`. Nginx updates now install the current unit (and roll it back with the rest of the update on failure).
+- Certificates now reload Nginx after each renewal (`acme.sh --reloadcmd "systemctl reload nginx"`). Before, Nginx kept serving the old certificate until something else reloaded it. EngineScript updates add the reload command to existing sites' certificates.
+
+### 🔒 NGINX FILE PERMISSIONS
+
+- `/etc/nginx` is now owned by root instead of `www-data`, the user PHP and the Nginx workers run as. A compromised site could previously change the Nginx configuration, which the root-owned Nginx master process loads, including any `load_module` line.
+- TLS private keys (`key.pem`, `*.key`) are now readable by root only (600), in root-only directories (700). They were readable by `www-data`. New sites' keys are secured as soon as the certificate is installed.
+- The admin password file (`.htpasswd`) is `root:www-data` 640, so the Nginx workers can still check admin logins.
+- These permissions are applied by the Nginx install and update scripts and by the daily permissions cron job.
+
+### 🔒 PHP AND LOG FILE PERMISSIONS
+
+- `/etc/php` is now owned by root (directories 755, files 644) instead of `www-data` with mode 775. The PHP-FPM master process runs as root and loads the configuration and every extension it lists, so a compromised site could previously add an extension or a pool running as another user and gain root at the next PHP restart.
+- The log directories `/var/log/nginx` and `/var/log/domains` (and each site's directory) are now owned by root. Before, `www-data` could replace a log file with a symbolic link that the root Nginx master would then write to and hand to `www-data` when reopening logs, the same flaw as CVE-2016-1247 in Debian's Nginx package. The old PHP-FPM log directory, `/var/log/php`, is also made root-owned where it still exists.
+- Nginx and site log files are `www-data:adm` 640 (the Nginx workers reopen them after rotation, and PHP writes each site's WordPress debug log).
+- Applied by the Nginx and PHP install and update scripts, new sites, log rotation, and the daily permissions cron job.
+
+### 🐛 PHP VERSION HANDLING AND SWITCHING
+
+- Fixed Nginx updates pointing every site at a PHP version that is not installed. Scripts used the default PHP version from `enginescript-variables.txt` (8.5 since February 2026) instead of the version installed on the server, so on a server still running PHP 8.4 the next Nginx update wrote the PHP 8.5 socket into `php-fpm.conf`, and every PHP request failed with 502 while the update reported success. EngineScript now detects the installed PHP-FPM version (`get_installed_php_version`) and uses it on existing servers; the default and `PHP_VERSION_OVERRIDE` only choose the version for new installs and the target of a PHP version switch.
+- Nginx updates now check that the PHP-FPM socket in the new configuration exists before restarting, and after restarting check that every site that reached PHP before the update still does (bypassing the FastCGI cache). Either failure rolls the update back.
+- Switching PHP versions (`php-update.sh`, `es.menu > Update Software > Switch PHP Version`) no longer takes the sites down. The new version is installed and started next to the current one, checked on its own socket, and only then is Nginx pointed at it; the previous version is removed only after every site answers on the new one. If any step fails, Nginx is pointed back at the previous version, which never stopped, and the new version is removed. Before, PHP was stopped for the whole package installation, and a new version that failed to start left every site down.
+- Removed PHP 8.2 support. PHP 8.2 reaches end of life on December 31, 2026, and WooCommerce requires PHP 8.3 or newer. Supported versions are 8.3, 8.4, and 8.5 (default). Servers still running 8.2 keep working and are detected correctly; EngineScript updates show a warning, and the version switch moves them to a supported version. The admin control panel's code checks (Composer, PHPCompatibility, PHP-CS-Fixer, Psalm, and Rector) now target PHP 8.3 as well.
+
+### 🐛 PHP FIXES
+
+- Fixed the PHP-FPM log growing without limit. EngineScript logged to `/var/log/php/phpX.Y-fpm.log`, which no logrotate file covered. PHP-FPM now logs to the PHP package's default, `/var/log/phpX.Y-fpm.log`, which the package's own logrotate file rotates weekly (EngineScript keeps 5). EngineScript updates move existing installs: they change only the `error_log` line, test the configuration, reload PHP-FPM, and rename the old log to `.old`.
+- Uploads close to the 128 MB limit no longer fail with an empty request. `post_max_size` (PHP) and `client_max_body_size` (Nginx) are now 136M, so the file and the form's other fields fit. The upload limit stays 128M.
+- Commented out `pm.process_idle_timeout` in `www.conf`. It only applies to `pm = ondemand`, and EngineScript uses `pm = dynamic`.
+- PHP installs no longer create `/var/log/opcache` or its logrotate file. OPcache errors already go to the PHP-FPM log, because `opcache.error_log` is not set.
+- Cleaned up `php.ini` for PHP 8.5 (checked against PHP 8.5.12 with EngineScript's packages, which reports no deprecated settings): removed `log_errors_max_len` (removed in PHP 8.1) and `mysqli.reconnect` (removed in PHP 8.2); `error_reporting` is now `E_ALL & ~E_DEPRECATED`, the value in PHP's own production `php.ini` (`E_STRICT` has had no effect since PHP 8.0); and commented out the settings for the ODBC, PostgreSQL, Tidy, and LDAP extensions and for Apache, the PHP CGI binary, and PHP's development web server, none of which EngineScript installs or WordPress and WooCommerce use. PHP's behavior is unchanged.
+
+### 🔧 SOFTWARE VERSION CHECK WORKFLOW
+
+- The workflow now tracks the latest stable OpenSSL release of any series (alpha, beta, and pre-releases excluded) instead of only the 3.5 series.
+- It now finds the latest Nginx mainline release (odd minor version) from all repository tags, instead of looking for 1.31.x first, which would have stopped it from moving to 1.33 and later. The download check now tests for HTTP status 200 instead of the text "200 OK", which HTTP/2 responses do not contain.
+- Fixed the ngx_cache_purge lookup, which took the newest tag of any kind and stripped non-digits, turning the release candidate `4.0.0-rc2` into the non-existent version `4.0.02`. It now takes the latest stable tag.
+- Fixed the version comparison, which treated every version as an update (it tested the comparison's debug text instead of its result). Pull requests listed unchanged versions, and a lookup that returned an older version would have downgraded EngineScript. Versions now change only when the new one is newer.
+
+### 🔒 NGINX: UPLOADS PHP BLOCKING AND TLS UPDATES
+
+- PHP files in `wp-content/uploads` are now always blocked with a 403 response, whatever `NGINX_BLOCK_UNSAFE_FILES` is set to. The new `$es_uploads_php` map in `map-cache.conf` matches the decoded request path, so URL-encoded file names and query strings cannot get around it. The optional unsafe-files rule for uploads no longer lists PHP.
+- Added the hybrid post-quantum key exchange `X25519MLKEM768` as the first choice in `ssl_ecdh_curve` (requires OpenSSL 3.5 or newer).
+- Limited TLS 1.2 to the four ECDHE AES-GCM ciphers that both Cloudflare (for connections to your server) and Mozilla's TLS guidelines support. TLS 1.3 settings are unchanged.
+- The default server in `admin.localhost.conf` now refuses HTTPS connections that do not name one of your domains (`ssl_reject_handshake on`). HTTPS requests to the server's IP address now fail during the handshake instead of returning an empty 204 response. The default server also no longer asks visitors for a client certificate.
+- Added a warning to `debug-headers.conf`: the debug headers echo visitors' cookies, so enable the file only while debugging, never on a live site behind a cache.
+
+### 🐛 NGINX FIXES
+
+- Fixed the HTTP to HTTPS redirect in `admin.localhost.conf`, which sent visitors to `https://_/...` because it used `$server_name`. It now uses the requested host.
+- `debug-headers.conf` no longer references `$es_http_user_agent` and `$es_query_string`. Their maps are commented out by default, so enabling the file made `nginx -t` fail.
+- The Cloudflare IP updater now writes the new list to a staging file and swaps it in, instead of editing the live `cloudflare.conf`. When Nginx is running, it tests the configuration and reloads instead of restarting; if the test fails, it restores the previous list and exits with an error.
+- Fixed HTTP/3 (`INSTALL_HTTP3=1`), which produced a configuration Nginx refused to load: Nginx rejects `multipath` on QUIC listeners, and `reuseport` may appear only once per address and port. The default server now holds `listen 443 quic reuseport;`, every other vhost uses `listen 443 quic;`, and existing vhosts are converted the next time the HTTP/3 settings are synced (Nginx update or new vhost).
+- The optional `http3_max_concurrent_streams` and `http3_stream_buffer_size` lines now show Nginx's defaults (128 and 64k) and stay commented. The previous values (1024 and 1024k) would have let one HTTP/3 connection buffer up to about 1 GB.
+
+### ⚡ NGINX: CACHING AND RESPONSE HEADERS
+
+- Static files now send a single `Cache-Control` header: `expires off` in `static-files.conf` stops the expires map from adding a second, conflicting one. Images, media, fonts, CSS, and JavaScript are cached for one year (`public, max-age=31536000, immutable`). The long-lived header is no longer sent on 404 responses.
+- `robots.txt` now falls back to WordPress when no physical file exists, so the virtual robots.txt from WordPress and SEO plugins works.
+- The `.zip` rule now applies. `.zip` was also listed in the general file-types rule above it, so zip files were cached for a year instead of receiving the intended `no-store` header.
+- Responses that set a WooCommerce session or cart cookie, or the WordPress login cookie, are never stored in the FastCGI cache (`$es_no_cache_setcookie`, checked after PHP responds). This backs up the existing `Set-Cookie` removal on cacheable pages.
+- Removed the `auth_` pattern from the cache-bypass cookie list in `map-cache.conf`. No plugin was found that uses it, and it matched any cookie name or value containing `auth_`.
+- The cache-bypass cookie list (`$es_http_cookie`) is now one regular expression instead of one per cookie, and it matches only at the start of a cookie name. Visitors whose cookie values happen to contain a pattern (for example a tracking cookie holding a `/wp-content/` URL) now get cached pages. In a benchmark the map took about 9 µs per request instead of 16 µs.
+- Removed the unused `$es_session` cache-key suffix and the `$sent_http_set_cookie` check from `php-fpm.conf`. Requests with a WooCommerce session already bypass the cache, and the check could never match. Cache keys for stored pages are unchanged.
+- Security headers from `response-headers.conf` are now added once in `nginx.conf` with `add_header_inherit merge`, instead of in each location. Locations that add their own headers, such as `Cache-Control` for static files, keep the security headers as well. Admin subdomain vhosts use `add_header_inherit on` to keep only their own headers; existing admin vhosts are updated automatically on the next Nginx update.
+
+### 🧹 NGINX CLEANUP
+
+- Fixed missing-file errors not being logged for any site. A leftover `log_not_found off;` line in `static-files.conf`, from a commented-out location, applied to every request on the site and overrode `log_not_found on` in `nginx.conf`.
+- Removed the `proxy_*` settings from `nginx.conf` and the `/tmp/nginx_proxy` directory. EngineScript does not proxy requests to other servers, so they were never used.
+- Removed `connection_pool_size` and `request_pool_size`, so Nginx uses its defaults. The Nginx documentation advises against changing them; the connection pool was already at its 64-bit default, and the request pool reserved 32 KB per request instead of 4 KB.
+- Removed `accept_mutex_delay`, which has no effect while `accept_mutex` is off (the default since Nginx 1.11.3).
+- Moved `aio_write` next to the commented `aio threads` line in the vhost template and commented it out. It only works with `aio threads`, so it did nothing with `aio on`.
+- Commented out the OCSP stapling settings (`resolver`, `resolver_timeout`, `ssl_stapling`, `ssl_stapling_verify`) in `sslshared.conf` and `ssl_trusted_certificate` in the vhost templates. Stapling was already off, and behind Cloudflare it has no benefit because visitors never receive the origin certificate. The lines are kept, set to `on`, so stapling can be enabled by uncommenting them.
+- Removed `ssl_dhparam` and the `ffdhe` DH parameter files. TLS 1.2 now uses only ECDHE ciphers and TLS 1.3 never uses DH parameters, so the file was loaded but never used. Existing servers keep their copy in `/etc/nginx/ssl/dhe`, which does no harm.
+- JavaScript generated by PHP and sent as `application/javascript` is now compressed with gzip and Brotli. Only `text/javascript`, the type Nginx uses for `.js` files, was listed before.
+- The HTTP/3 `Alt-Svc` header (sent when `INSTALL_HTTP3=1`) now advertises only the final HTTP/3 version, `h3`, instead of the obsolete drafts `h3-29` and `h3-27`.
+- Disabled the `X-DNS-Prefetch-Control` header, which is not a standardized header. The line stays in `response-headers.conf`, commented out.
+
 ## 2026-07-01
 
 ### NGINX SESSION CACHE KEY FIX
