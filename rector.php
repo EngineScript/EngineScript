@@ -18,7 +18,7 @@ return RectorConfig::configure()
     ->withPaths([
         __DIR__ . '/config/var/www/admin',
     ])
-    ->withPhpSets(php82: true)
+    ->withPhpSets(php83: true)
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,

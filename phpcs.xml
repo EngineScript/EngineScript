@@ -74,7 +74,7 @@
     <rule ref="PHPCompatibility">
         <include-pattern>*\.php$</include-pattern>
     </rule>
-    <config name="testVersion" value="8.2-"/>
+    <config name="testVersion" value="8.3-"/>
 
     <!-- File formatting -->
     <rule ref="Generic.Files.ByteOrderMark"/>
