@@ -187,7 +187,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Application Server**|||
 |PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
-|MARIADB|11.8.6|<https://mariadb.org/download/>|
+|MARIADB|11.8.9|<https://mariadb.org/download/>|
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||

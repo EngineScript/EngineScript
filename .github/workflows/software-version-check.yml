@@ -80,10 +80,12 @@ jobs:
             fi
           }
           
-          # MariaDB (11.8.x series)
-          LATEST_MARIADB=$(curl -sL https://downloads.mariadb.org/mariadb/+releases/ | 
-            grep -oP '11\.8\.[0-9]+(?=/)' | 
-            sort -V | 
+          # MariaDB (11.8 long-term series), from MariaDB's REST API. The releases page this used to
+          # read moved, and its pattern then matched nothing, so MariaDB stopped being updated.
+          LATEST_MARIADB=$(curl -fsSL https://downloads.mariadb.org/rest-api/mariadb/11.8/ |
+            jq -r '.releases | keys[]' |
+            grep -E '^11\.8\.[0-9]+$' |
+            sort -V |
             tail -n1)
           check_version "MARIADB_VER" "$LATEST_MARIADB"
           
