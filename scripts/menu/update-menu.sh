@@ -74,15 +74,13 @@ while true
           echo "Switch PHP Version"
           echo "=================="
           echo ""
-          # Detect currently installed PHP-FPM version
-          CURRENT_PHP=""
-          for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-              if dpkg -l 2>/dev/null | grep -q "php${ver}-fpm"; then
-                  CURRENT_PHP="${ver}"
-              fi
-          done
+          # Detect the installed PHP-FPM version (any version, including unsupported ones)
+          CURRENT_PHP="$(get_installed_php_version)"
           if [[ -n "${CURRENT_PHP}" ]]; then
               echo "Currently installed: PHP ${CURRENT_PHP}"
+              if ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${CURRENT_PHP}"; then
+                  echo "PHP ${CURRENT_PHP} is no longer supported by EngineScript. Please switch to a supported version."
+              fi
           else
               echo "No PHP-FPM installation detected."
           fi

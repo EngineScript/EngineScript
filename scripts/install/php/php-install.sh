@@ -52,7 +52,6 @@ print_last_errors
 debug_pause "PHP Package Installation"
 
 # Logrotate
-cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/opcache" "/etc/logrotate.d/opcache"
 sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${PHP_VER}-fpm"
 
 # Backup PHP config
@@ -66,14 +65,6 @@ debug_pause "PHP Configuration"
 mkdir -p /var/cache/opcache
 mkdir -p /var/cache/php-sessions
 mkdir -p /var/cache/wsdlcache
-mkdir -p /var/log/opcache
-mkdir -p /var/log/php
-
-touch "/var/log/opcache/opcache.log"
-touch "/var/log/php/php${PHP_VER}-fpm.log"
-#touch /var/log/php/php.log
-#touch /var/log/php/php-www.log
-#touch /var/log/php/php-fpm.log
 
 # Assign PHP Permissions
 set_php_permissions

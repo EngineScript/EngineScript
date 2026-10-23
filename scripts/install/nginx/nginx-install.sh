@@ -50,7 +50,11 @@ print_last_errors
 debug_pause "Patch Nginx"
 
 # Compile Nginx
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: Nginx failed to compile. Stopping the Nginx install; see /tmp/enginescript_install_errors.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Compile Nginx"
 

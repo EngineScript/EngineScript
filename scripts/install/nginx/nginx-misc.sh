@@ -32,6 +32,9 @@ if [[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" ]]; then
     sed -i 's|^  #\("~\*/wp-content/uploads/\.\*\\.\|  \1|' /etc/nginx/globals/map-cache.conf
 fi
 
+# Bring existing site and admin vhost files up to date with template changes
+migrate_nginx_vhosts
+
 # Create nginx user and group if they don't exist
 if ! id "www-data" &>/dev/null; then
     useradd -r -s /bin/false www-data

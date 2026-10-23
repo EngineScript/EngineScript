@@ -4,7 +4,7 @@ name: Test PHP Package Lists
 "on":
   push:
     branches:
-      - main
+      - master
     paths:
       - 'scripts/functions/shared/enginescript-common.sh'
       - 'scripts/install/php/php-install.sh'

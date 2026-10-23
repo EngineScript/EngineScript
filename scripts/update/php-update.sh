@@ -17,6 +17,20 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 #----------------------------------------------------------------------------------
 # Start Main Script
+#
+# Switch flow (the sites keep running on the current PHP version until step 4):
+#   1. Back up the PHP configuration and the Nginx files that name the PHP-FPM socket
+#   2. Install the new PHP version alongside the current one (each version has its own
+#      service and socket)
+#   3. Configure the new version, test it (php-fpm -t), start it, and check that it runs PHP
+#   4. Point Nginx at the new socket, test (nginx -t), and reload
+#   5. Check that every site that reached PHP before the switch still does
+#   6. Remove the previous version(s)
+# On a failure in steps 2 to 5, Nginx is pointed back at the previous socket and the new
+# version is removed. The previous PHP-FPM is never stopped before step 6, so the sites keep
+# PHP throughout.
+
+ROLLBACK_DIR="/home/EngineScript/config-backups/php/pre-switch"
 
 # Prompt for EngineScript Update
 if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
@@ -27,217 +41,243 @@ fi
 print_last_errors
 debug_pause "EngineScript Update"
 
-# Accept target version from argument (used by menu) or fall back to variables + override
-if [[ -n "${1}" ]]; then
-    NEW_PHP_VER="${1}"
-else
-    NEW_PHP_VER="${PHP_VER}"
-fi
-
-new_php_valid=false
-for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-    if [[ "${NEW_PHP_VER}" == "${ver}" ]]; then
-        new_php_valid=true
-        break
-    fi
-done
-
-if [[ "${new_php_valid}" != true ]]; then
-    echo "Unsupported PHP version: ${NEW_PHP_VER}"
+# Target version: from the argument (used by the menu), or the version the install options
+# select (PHP_VERSION_OVERRIDE or the default)
+NEW_PHP_VER="${1:-${PHP_CONFIGURED_VER}}"
+if ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${NEW_PHP_VER}"; then
+    echo "Unsupported PHP version: ${NEW_PHP_VER}. Supported versions: ${SUPPORTED_PHP_VERSIONS[*]}"
     exit 1
 fi
 
-# Auto-detect currently installed PHP-FPM version
-DPKG_LIST_OUTPUT="$(dpkg -l)"
-OLD_PHP_VERS=()
-for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-    if [[ "${ver}" != "${NEW_PHP_VER}" ]] && grep -q "php${ver}-fpm" <<< "${DPKG_LIST_OUTPUT}"; then
-        OLD_PHP_VERS+=(
-            "${ver}"
-        )
-    fi
-done
-
-if [[ ${#OLD_PHP_VERS[@]} -eq 0 ]]; then
-    # Check if target version is already installed
-    if dpkg-query -W -f='${Status}' "php${NEW_PHP_VER}-fpm" 2>/dev/null | grep -q 'install ok installed'; then
-        echo "PHP ${NEW_PHP_VER} is already installed. Nothing to upgrade."
-        exit 0
-    else
-        echo "No existing PHP-FPM installation detected. Use php-install.sh for fresh installs."
-        exit 1
-    fi
+# Installed PHP-FPM versions (any version, including ones EngineScript no longer supports)
+mapfile -t INSTALLED_PHP_VERS < <(get_installed_php_versions)
+if [[ ${#INSTALLED_PHP_VERS[@]} -eq 0 ]]; then
+    echo "No existing PHP-FPM installation detected. Use php-install.sh for fresh installs."
+    exit 1
 fi
 
-# Keep backward-compatible single-version variable for legacy downstream logic.
-# Migration logic must use MIGRATION_SOURCE_PHP_VERS to ensure all detected old versions are handled.
-OLD_PHP_VER="${OLD_PHP_VERS[0]}"
-MIGRATION_SOURCE_PHP_VERS=(
-    "${OLD_PHP_VERS[@]}"
-)
+# The version Nginx passes PHP requests to now: the switch rolls back to it on a failure
+CURRENT_PHP_VER="$(get_nginx_php_socket | sed -n 's|^/run/php/php\([0-9][0-9]*\.[0-9][0-9]*\)-fpm\.sock$|\1|p')"
+CURRENT_PHP_VER="${CURRENT_PHP_VER:-${PHP_VER}}"
 
-echo ""
-echo "============================================================="
-echo ""
-echo "PHP Upgrade: Migrating to PHP ${NEW_PHP_VER} from detected old version(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
-echo ""
-echo "============================================================="
-echo ""
-
-echo "Detected PHP installation(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
-echo "Proceeding with upgrade to PHP ${NEW_PHP_VER}..."
-
-# Stop old PHP service(s)
-for old_ver in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-    echo "Stopping PHP ${old_ver} service..."
-    systemctl stop "php${old_ver}-fpm" 2>/dev/null || true
+OLD_PHP_VERS=()
+NEW_WAS_INSTALLED=0
+for ver in "${INSTALLED_PHP_VERS[@]}"; do
+    if [[ "${ver}" == "${NEW_PHP_VER}" ]]; then
+        NEW_WAS_INSTALLED=1
+    else
+        OLD_PHP_VERS+=("${ver}")
+    fi
 done
 
-# Install new PHP version
-echo "Installing PHP ${NEW_PHP_VER}..."
+SWITCH_NEEDED=1
+if [[ "${CURRENT_PHP_VER}" == "${NEW_PHP_VER}" ]]; then
+    if [[ ${#OLD_PHP_VERS[@]} -eq 0 ]]; then
+        echo "PHP ${NEW_PHP_VER} is already installed and in use. Nothing to switch."
+        exit 0
+    fi
+    # Left over from an interrupted switch: only remove the other versions
+    SWITCH_NEEDED=0
+fi
 
-# Package blocking pins every non-selected PHP version during install. Remove
-# the target pin before switching so apt can install the requested PHP version.
-rm -f "/etc/apt/preferences.d/php${NEW_PHP_VER//./}-block"
+echo ""
+echo "============================================================="
+echo ""
+echo "PHP Switch: PHP ${CURRENT_PHP_VER} -> PHP ${NEW_PHP_VER}"
+echo "Installed PHP-FPM version(s): ${INSTALLED_PHP_VERS[*]}"
+echo ""
+echo "============================================================="
+echo ""
 
-# Define the PHP packages to install
-mapfile -t php_packages < <(get_php_packages_array "${NEW_PHP_VER}")
+# Sites that do not reach PHP before the switch (not held against it in step 5)
+SITES_FAILING_BEFORE="$(get_sites_without_php)"
+NGINX_SWITCHED=0
 
-# Install the packages with error checking
-apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
-    echo "Error: Unable to install PHP ${NEW_PHP_VER} packages. Exiting..."
+# Undo the switch: point Nginx back at the previous PHP-FPM (still running), remove the new
+# version, and restore the apt pins
+rollback_switch() {
+    echo "" >&2
+    echo "ERROR: $1" >&2
+    echo "Rolling back to PHP ${CURRENT_PHP_VER}..." >&2
+
+    if [[ "${NGINX_SWITCHED}" == "1" ]]; then
+        tar -xzf "${ROLLBACK_DIR}/etc-nginx.tar.gz" -C / || echo "Error: Could not restore ${ROLLBACK_DIR}/etc-nginx.tar.gz" >&2
+        if /usr/sbin/nginx -t > /dev/null 2>&1; then
+            systemctl reload nginx
+        else
+            echo "CRITICAL: The restored Nginx configuration fails nginx -t. Run 'nginx -t' and fix it." >&2
+        fi
+    fi
+    if [[ -f "${ROLLBACK_DIR}/phpsysinfo.ini" ]]; then
+        cp -p "${ROLLBACK_DIR}/phpsysinfo.ini" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
+    fi
+
+    if [[ "${NEW_WAS_INSTALLED}" == "0" ]]; then
+        systemctl stop "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
+        systemctl disable "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
+        apt purge -y "php${NEW_PHP_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+        rm -rf "/etc/php/${NEW_PHP_VER}"
+    fi
+    rm -f /etc/apt/preferences.d/php*-block
+    cp -p "${ROLLBACK_DIR}"/apt-preferences/php*-block /etc/apt/preferences.d/ 2> /dev/null || true
+
+    systemctl start "php${CURRENT_PHP_VER}-fpm" 2> /dev/null || true
+    if php_fpm_answers "${CURRENT_PHP_VER}"; then
+        echo "The switch was rolled back. The sites are running on PHP ${CURRENT_PHP_VER}." >&2
+    else
+        echo "CRITICAL: PHP ${CURRENT_PHP_VER} does not answer after the rollback. Check 'systemctl status php${CURRENT_PHP_VER}-fpm'." >&2
+    fi
     exit 1
 }
 
-# Install expanded PHP packages if enabled
-if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
-    echo "Installing expanded PHP ${NEW_PHP_VER} packages..."
-    mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
-
-    apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
-        echo "Error: Unable to install expanded PHP ${NEW_PHP_VER} packages. Exiting..."
+if [[ "${SWITCH_NEEDED}" == "1" ]]; then
+    # 1. Back up
+    echo "Backing up the PHP configuration and Nginx files to ${ROLLBACK_DIR}..."
+    rm -rf "${ROLLBACK_DIR}"
+    mkdir -p "${ROLLBACK_DIR}/apt-preferences"
+    if ! tar -czf "${ROLLBACK_DIR}/etc-nginx.tar.gz" -C / etc/nginx; then
+        echo "Error: Could not back up /etc/nginx. The switch stopped; nothing was changed." >&2
         exit 1
-    }
-fi
-print_last_errors
-debug_pause "PHP Package Installation"
+    fi
+    cp -p /etc/apt/preferences.d/php*-block "${ROLLBACK_DIR}/apt-preferences/" 2> /dev/null || true
+    if [[ -f /var/www/admin/tools/phpsysinfo/phpsysinfo.ini ]]; then
+        cp -p /var/www/admin/tools/phpsysinfo/phpsysinfo.ini "${ROLLBACK_DIR}/phpsysinfo.ini"
+    fi
+    # Dated backup of the PHP configuration as well
+    /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
 
-# Logrotate
-if [[ -f "/etc/logrotate.d/php${NEW_PHP_VER}-fpm" ]]; then
-    sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${NEW_PHP_VER}-fpm"
-fi
+    # 2. Install the new version alongside the current one
+    echo "Installing PHP ${NEW_PHP_VER} alongside PHP ${CURRENT_PHP_VER}..."
 
-# Backup PHP config
-/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
+    # Package blocking pins every non-selected PHP version. Remove the target pin so apt can
+    # install the requested version.
+    rm -f "/etc/apt/preferences.d/php${NEW_PHP_VER//./}-block"
 
-# Update PHP config with the latest EngineScript settings
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh "${NEW_PHP_VER}" 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "PHP Configuration"
+    mapfile -t php_packages < <(get_php_packages_array "${NEW_PHP_VER}")
+    if [[ "${INSTALL_EXPANDED_PHP}" == "1" ]]; then
+        mapfile -t -O "${#php_packages[@]}" php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
+    fi
+    if ! apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        rollback_switch "Unable to install the PHP ${NEW_PHP_VER} packages."
+    fi
+    print_last_errors
+    debug_pause "PHP Package Installation"
 
-# Create necessary directories and log files
-mkdir -p /var/cache/opcache
-mkdir -p /var/cache/php-sessions
-mkdir -p /var/cache/wsdlcache
-mkdir -p /var/log/opcache
-mkdir -p /var/log/php
+    if [[ -f "/etc/logrotate.d/php${NEW_PHP_VER}-fpm" ]]; then
+        sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${NEW_PHP_VER}-fpm"
+    fi
 
-touch "/var/log/opcache/opcache.log"
-touch "/var/log/php/php${NEW_PHP_VER}-fpm.log"
+    # 3. Configure, test, start, and check the new version
+    if ! /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${NEW_PHP_VER}" 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        rollback_switch "Applying the EngineScript configuration to PHP ${NEW_PHP_VER} failed."
+    fi
+    print_last_errors
+    debug_pause "PHP Configuration"
 
-# Assign PHP Permissions
-set_php_permissions
+    mkdir -p /var/cache/opcache
+    mkdir -p /var/cache/php-sessions
+    mkdir -p /var/cache/wsdlcache
+    set_php_permissions
 
-# Update Nginx configuration to use new PHP version
-echo "Updating Nginx configuration for PHP ${NEW_PHP_VER}..."
-
-# Update php-fpm.conf
-if [[ -f "/etc/nginx/globals/php-fpm.conf" ]]; then
-    for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i \
-            -e "s|(unix:/run/php/)php${OLD_VER//./\.}-fpm(\.sock)|\1php${NEW_PHP_VER}-fpm\2|g" \
-            -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER//./\.}(-fpm)|\1${NEW_PHP_VER}\2|g" \
-            "/etc/nginx/globals/php-fpm.conf"
+    if ! "php-fpm${NEW_PHP_VER}" -t 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        rollback_switch "The PHP ${NEW_PHP_VER} configuration failed its test (php-fpm${NEW_PHP_VER} -t)."
+    fi
+    systemctl enable "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
+    systemctl restart "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
+    new_php_ok=0
+    for _ in 1 2 3 4 5; do
+        if php_fpm_answers "${NEW_PHP_VER}"; then
+            new_php_ok=1
+            break
+        fi
+        sleep 2
     done
-fi
+    if [[ "${new_php_ok}" != "1" ]]; then
+        rollback_switch "PHP ${NEW_PHP_VER} did not start or does not run PHP (check 'systemctl status php${NEW_PHP_VER}-fpm')."
+    fi
+    echo "PHP ${NEW_PHP_VER} is running and answering on /run/php/php${NEW_PHP_VER}-fpm.sock."
 
-# Update all nginx site configurations
-for config_file in /etc/nginx/sites-available/*; do
-    if [[ -f "$config_file" ]]; then
-        for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-            sed -E -i -e "s|(fastcgi_pass[[:space:]]+[^;]*php)${OLD_VER//./\.}(-fpm)|\1${NEW_PHP_VER}\2|g" "$config_file"
+    # 4. Point Nginx at the new socket
+    echo "Pointing Nginx at PHP ${NEW_PHP_VER}..."
+    NGINX_SWITCHED=1
+    if [[ -f /etc/nginx/globals/php-fpm.conf ]]; then
+        sed -E -i "s|(unix:/run/php/php)[0-9]+\.[0-9]+(-fpm\.sock)|\1${NEW_PHP_VER}\2|g" /etc/nginx/globals/php-fpm.conf
+    fi
+    for config_file in /etc/nginx/sites-available/*; do
+        if [[ -f "${config_file}" ]]; then
+            sed -E -i "s|(fastcgi_pass[[:space:]]+[^;]*php)[0-9]+\.[0-9]+(-fpm)|\1${NEW_PHP_VER}\2|g" "${config_file}"
+        fi
+    done
+    if ! /usr/sbin/nginx -t 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        rollback_switch "The Nginx configuration for PHP ${NEW_PHP_VER} failed its test (nginx -t)."
+    fi
+    if ! systemctl reload nginx 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        rollback_switch "Nginx did not reload with the PHP ${NEW_PHP_VER} configuration."
+    fi
+
+    # 5. Check the sites
+    sleep 2
+    sites_ok=0
+    for _ in 1 2 3; do
+        new_failures="$(newly_failing_sites "${SITES_FAILING_BEFORE}" "$(get_sites_without_php)")"
+        if [[ -z "${new_failures}" ]]; then
+            sites_ok=1
+            break
+        fi
+        sleep 3
+    done
+    if [[ "${sites_ok}" != "1" ]]; then
+        echo "These sites do not reach PHP ${NEW_PHP_VER} (HTTP 502, 504, or no response):" >&2
+        echo "${new_failures}" | sed 's/^/  /' >&2
+        rollback_switch "Sites did not answer on PHP ${NEW_PHP_VER}."
+    fi
+    echo "PASSED: The sites are running on PHP ${NEW_PHP_VER}."
+
+    # The switch is complete: update the other references to the PHP version
+    if [[ -f /var/www/admin/tools/phpsysinfo/phpsysinfo.ini ]]; then
+        echo "Updating phpSysInfo configuration..."
+        for OLD_VER in "${OLD_PHP_VERS[@]}"; do
+            sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER//./\.}(-fpm)?|\1php${NEW_PHP_VER}\2|g" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
         done
     fi
-done
-
-# Update phpSysInfo configuration
-if [[ -f "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini" ]]; then
-    echo "Updating phpSysInfo configuration..."
-    for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER//./\.}(-fpm)?|\1php${NEW_PHP_VER}\2|g" "/var/www/admin/tools/phpsysinfo/phpsysinfo.ini"
-    done
-fi
-
-# Update admin control panel API configuration
-if [[ -f "/var/www/admin/control-panel/api.php" ]]; then
-    echo "Updating admin control panel API configuration..."
-    for OLD_VER in "${MIGRATION_SOURCE_PHP_VERS[@]}"; do
-        sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER//./\.}(-fpm)?|\1${NEW_PHP_VER}\2|g" "/var/www/admin/control-panel/api.php"
-    done
-fi
-
-# Start new PHP service
-echo "Starting PHP ${NEW_PHP_VER} service..."
-systemctl enable "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
-systemctl start "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
-
-# Reload Nginx to pick up the new PHP configuration
-echo "Reloading Nginx configuration..."
-systemctl reload nginx 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "PHP Service Start"
-
-# PHP Service Check
-STATUS="$(systemctl is-active "php${NEW_PHP_VER}-fpm")"
-if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: PHP ${NEW_PHP_VER} is running."
-    set_install_state "PHP" "1"
-else
-    echo "FAILED: PHP ${NEW_PHP_VER} not running. Please diagnose this issue before proceeding."
-    exit 1
-fi
-
-# Remove old PHP version(s)
-echo "Removing old PHP installation(s)..."
-
-for OLD_VER in "${OLD_PHP_VERS[@]}"; do
-    echo "Removing PHP ${OLD_VER} installation..."
-
-    # Stop and disable old PHP service
-    systemctl stop "php${OLD_VER}-fpm" 2>/dev/null || true
-    systemctl disable "php${OLD_VER}-fpm" 2>/dev/null || true
-
-    # Remove old PHP packages
-    apt purge -y "php${OLD_VER}*" 2>/dev/null || true
-
-    # Remove old PHP configuration directory
-    rm -rf "/etc/php/${OLD_VER}" 2>/dev/null || true
-
-    # Remove old PHP logrotate configuration
-    rm -f "/etc/logrotate.d/php${OLD_VER}-fpm" 2>/dev/null || true
-
-    # Archive old log
-    if [[ -f "/var/log/php/php${OLD_VER}-fpm.log" ]]; then
-        mv "/var/log/php/php${OLD_VER}-fpm.log" "/var/log/php/php${OLD_VER}-fpm.log.old" 2>/dev/null || true
+    if [[ -f /var/www/admin/control-panel/api.php ]]; then
+        echo "Updating admin control panel API configuration..."
+        for OLD_VER in "${OLD_PHP_VERS[@]}"; do
+            sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER//./\.}(-fpm)?|\1${NEW_PHP_VER}\2|g" /var/www/admin/control-panel/api.php
+        done
     fi
+fi
 
+set_install_state "PHP" "1"
+
+# 6. Remove the previous version(s)
+for OLD_VER in "${OLD_PHP_VERS[@]}"; do
+    echo "Removing PHP ${OLD_VER}..."
+    systemctl stop "php${OLD_VER}-fpm" 2> /dev/null || true
+    systemctl disable "php${OLD_VER}-fpm" 2> /dev/null || true
+    apt purge -y "php${OLD_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+    rm -rf "/etc/php/${OLD_VER}"
+    rm -f "/etc/logrotate.d/php${OLD_VER}-fpm"
+
+    # Archive the old log (the package default location, and the one older EngineScript
+    # installs used)
+    for old_log in "/var/log/php${OLD_VER}-fpm.log" "/var/log/php/php${OLD_VER}-fpm.log"; do
+        if [[ -f "${old_log}" ]]; then
+            mv "${old_log}" "${old_log}.old" 2> /dev/null || true
+        fi
+    done
     echo "PHP ${OLD_VER} has been removed."
 done
 
-# Keep PHP apt pins aligned with the selected version after the switch.
-for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-    sanitized="${ver//.}"
-    pin_file="/etc/apt/preferences.d/php${sanitized}-block"
+# Keep the apt pins aligned with the selected version: block every other supported version,
+# and the versions just removed
+for ver in "${SUPPORTED_PHP_VERSIONS[@]}" "${OLD_PHP_VERS[@]}"; do
+    pin_file="/etc/apt/preferences.d/php${ver//./}-block"
     if [[ "${ver}" == "${NEW_PHP_VER}" ]]; then
         rm -f "${pin_file}"
     else
@@ -262,13 +302,15 @@ echo ""
 echo ""
 echo "============================================================="
 echo ""
-echo "PHP upgrade from ${MIGRATION_SOURCE_PHP_VERS[*]} to ${NEW_PHP_VER} completed successfully."
+echo "PHP switch to ${NEW_PHP_VER} completed successfully."
 echo ""
 echo "Changes made:"
-echo "  - Installed PHP ${NEW_PHP_VER} and extensions"
+echo "  - Installed PHP ${NEW_PHP_VER} and extensions alongside the previous version"
 echo "  - Applied EngineScript configuration for PHP ${NEW_PHP_VER}"
-echo "  - Updated Nginx configuration"
-echo "  - Removed PHP version(s): ${MIGRATION_SOURCE_PHP_VERS[*]}"
+echo "  - Pointed Nginx at PHP ${NEW_PHP_VER} and checked every site"
+if [[ ${#OLD_PHP_VERS[@]} -gt 0 ]]; then
+    echo "  - Removed PHP version(s): ${OLD_PHP_VERS[*]}"
+fi
 echo ""
 echo "============================================================="
 echo ""

@@ -185,7 +185,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB|1.3.2|<https://github.com/madler/zlib>|
 |**Application Server**|||
-|PHP|8.5|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
+|PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
 |MARIADB|11.8.6|<https://mariadb.org/download/>|
 |**Object Cache**|||

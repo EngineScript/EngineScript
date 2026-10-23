@@ -203,6 +203,23 @@ fi
 print_last_errors
 debug_pause "EngineScript Plugins Update"
 
+# Certificates of existing sites: reload Nginx after each renewal
+migrate_acme_reload_commands 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
+# PHP-FPM log: move existing installs back to the package default, which logrotate covers
+migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
+# Warn when the installed PHP version is no longer supported
+INSTALLED_PHP_VER="$(get_installed_php_version)"
+if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then
+  echo ""
+  echo "WARNING: PHP ${INSTALLED_PHP_VER} is no longer supported by EngineScript (supported: ${SUPPORTED_PHP_VERSIONS[*]})."
+  echo "Switch to a supported version with: es.menu > Update Software > Switch PHP Version"
+  echo ""
+fi
+
 echo ""
 echo ""
 echo "============================================================="

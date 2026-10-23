@@ -98,7 +98,9 @@ create_nginx_vhost() {
       echo ""
   fi
 
-  # Keep template-derived HTTP/3 listeners aligned with the current setting.
+  # Bring all vhost files up to date with template changes, then keep
+  # template-derived HTTP/3 listeners aligned with the current setting.
+  migrate_nginx_vhosts
   sync_nginx_http3_config
 }
 
@@ -120,11 +122,16 @@ create_ssl_certificate() {
   /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k "${SSL_KEYLENGTH}"
 
   # Install SSL Certificate
+  # acme.sh saves --reloadcmd and runs it after every renewal, so Nginx loads the new certificate
   /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
   --cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
   --key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
   --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
-  --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
+  --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem" \
+  --reloadcmd "systemctl reload nginx"
+
+  # The private key is readable by root only (renewals keep these modes)
+  secure_nginx_ssl_directory "/etc/nginx/ssl/${DOMAIN}"
 }
 
 
@@ -155,14 +162,17 @@ create_domain_logs() {
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-error.log"
-  chown -R www-data:www-data "/var/log/domains/${SITE_URL}"
-  
+
   # Admin Subdomain Logs (stored in root of /var/log/domains/)
   # These are for the admin.DOMAIN control panel access auditing
   touch "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
   touch "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
-  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
-  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
+
+  # Root-owned directories, log files owned by www-data (see set_nginx_permissions)
+  chown root:root "/var/log/domains" "/var/log/domains/${SITE_URL}"
+  chmod 755 "/var/log/domains" "/var/log/domains/${SITE_URL}"
+  chown www-data:adm "/var/log/domains/${SITE_URL}/"*.log "/var/log/domains/admin.${SITE_URL}-nginx-"*.log
+  chmod 640 "/var/log/domains/${SITE_URL}/"*.log "/var/log/domains/admin.${SITE_URL}-nginx-"*.log
 }
 
 

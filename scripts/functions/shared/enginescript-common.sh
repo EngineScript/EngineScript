@@ -350,26 +350,81 @@ function clear_all_system_caches() {
 
 
 # ----------------------------------------------------------------
-# Resolve PHP version from override or default
-# If PHP_VERSION_OVERRIDE is set in install options, use it instead of the default PHP_VER
-# Validates that the override is a supported version
-function resolve_php_version() {
-    if [[ -n "${PHP_VERSION_OVERRIDE}" ]]; then
-        local valid=false
-        for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-            if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
-                valid=true
-                break
-            fi
-        done
+# List the PHP-FPM versions installed on this server (for example "8.4"), newest first
+# Any installed version is listed, including versions EngineScript no longer supports, so a
+# server on such a version can still be detected and switched with php-update.sh.
+function get_installed_php_versions() {
+    local line
+    local pattern='^php([0-9]+\.[0-9]+)-fpm install ok installed$'
+    local versions=()
 
-        if [[ "${valid}" == true ]]; then
-            PHP_VER="${PHP_VERSION_OVERRIDE}"
+    if ! command -v dpkg-query > /dev/null 2>&1; then
+        return 0
+    fi
+    while IFS= read -r line; do
+        if [[ "${line}" =~ ${pattern} ]]; then
+            versions+=("${BASH_REMATCH[1]}")
         fi
+    done < <(dpkg-query -W -f='${Package} ${Status}\n' 'php*-fpm' 2> /dev/null || true)
+
+    if [[ ${#versions[@]} -gt 0 ]]; then
+        printf '%s\n' "${versions[@]}" | sort -rV
     fi
 }
 
-# Apply PHP version override if set
+
+# ----------------------------------------------------------------
+# Print the PHP-FPM version this server runs, or nothing when PHP-FPM is not installed
+# With more than one installed (during a PHP version switch), a running version is preferred,
+# then the newest.
+function get_installed_php_version() {
+    local versions=()
+    local ver
+
+    mapfile -t versions < <(get_installed_php_versions)
+    if [[ ${#versions[@]} -eq 0 ]]; then
+        return 0
+    fi
+    for ver in "${versions[@]}"; do
+        if systemctl is-active --quiet "php${ver}-fpm" 2> /dev/null; then
+            echo "${ver}"
+            return 0
+        fi
+    done
+    echo "${versions[0]}"
+}
+
+
+# ----------------------------------------------------------------
+# Resolve the PHP version EngineScript works with
+#
+# PHP_CONFIGURED_VER is the version the install options select: PHP_VERSION_OVERRIDE when it
+# names a supported version, otherwise the default PHP_VER. New installs use it, and
+# php-update.sh uses it as the target when no version is given.
+#
+# PHP_VER is the version installed on this server, when PHP-FPM is installed. Scripts that
+# configure an existing server (for example the Nginx update, which writes the PHP-FPM socket
+# path) must use the version that is actually installed: the default changing in a later
+# EngineScript release must not point Nginx at a PHP-FPM socket that does not exist. Changing
+# versions is an explicit step: php-update.sh, or es.menu > Update Software > Switch PHP Version.
+function resolve_php_version() {
+    local ver installed
+
+    PHP_CONFIGURED_VER="${PHP_VER:-}"
+    if [[ -n "${PHP_VERSION_OVERRIDE:-}" ]]; then
+        for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+            if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
+                PHP_CONFIGURED_VER="${PHP_VERSION_OVERRIDE}"
+                break
+            fi
+        done
+    fi
+
+    installed="$(get_installed_php_version)"
+    PHP_VER="${installed:-${PHP_CONFIGURED_VER}}"
+}
+
+# Resolve the PHP version (installed version, override, or default)
 resolve_php_version
 
 
@@ -387,13 +442,86 @@ function restart_service() {
 # ----------------------------------------------------------------
 # Function to restart PHP-FPM service
 function restart_php_fpm() {
-    for version in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-        if systemctl is-active --quiet "php${version}-fpm"; then
-            restart_service "php${version}-fpm"
-            return
+    if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+        restart_service "php${PHP_VER}-fpm"
+        return
+    fi
+    echo "Error: No active PHP-FPM service found."
+}
+
+
+# ----------------------------------------------------------------
+# Print the PHP-FPM socket that /etc/nginx/globals/php-fpm.conf passes PHP requests to
+function get_nginx_php_socket() {
+    sed -n 's|^[[:space:]]*fastcgi_pass[[:space:]]*unix:\([^;[:space:]]*\);.*|\1|p' /etc/nginx/globals/php-fpm.conf 2> /dev/null | head -1
+}
+
+
+# ----------------------------------------------------------------
+# Check that PHP-FPM runs PHP, by sending one FastCGI request straight to its socket
+# (php-fpm-check.php). Works without any site, and is not affected by the FastCGI cache.
+# Usage: php_fpm_answers "8.5"
+function php_fpm_answers() {
+    local ver="$1"
+    local socket="/run/php/php${ver}-fpm.sock"
+    local check_dir="/run/enginescript-php-check"
+    local output
+
+    if [[ ! -S "${socket}" ]]; then
+        return 1
+    fi
+    mkdir -p "${check_dir}"
+    chmod 755 "${check_dir}"
+    printf '<?php echo "enginescript-php-ok ", PHP_VERSION;\n' > "${check_dir}/check.php"
+    chmod 644 "${check_dir}/check.php"
+    output="$(php /usr/local/bin/enginescript/scripts/functions/shared/php-fpm-check.php "${socket}" "${check_dir}/check.php" 2> /dev/null)"
+    rm -rf "${check_dir}"
+    [[ "${output}" == "enginescript-php-ok ${ver}."* ]]
+}
+
+
+# ----------------------------------------------------------------
+# Print the sites on this server that do not reach PHP through Nginx, one per line
+#
+# A site fails on a gateway error (502 or 504: Nginx could not reach PHP-FPM) or no response.
+# 503 is not counted: WordPress answers 503 in maintenance mode. The query string bypasses the
+# FastCGI cache, so a cached page cannot hide a PHP-FPM that does not answer. Prints nothing
+# when every site answers or there are no sites. Callers compare the result with a list taken
+# before a change, so a site that was already failing does not count against the change.
+function get_sites_without_php() {
+    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local site code
+
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for site in "${SITES[@]}"; do
+        code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 20 \
+            --resolve "${site}:443:127.0.0.1" "https://${site}/?enginescript-check=${RANDOM}")"
+        if [[ "${code}" == "000" || "${code}" == "502" || "${code}" == "504" ]]; then
+            echo "${site}"
         fi
     done
-    echo "Error: No active PHP-FPM service found."
+}
+
+
+# ----------------------------------------------------------------
+# Print the sites in the second list that are not in the first (newline-separated lists)
+# Usage: newly_failing_sites "${FAILING_BEFORE}" "${FAILING_AFTER}"
+function newly_failing_sites() {
+    local before="$1"
+    local after="$2"
+    local site
+
+    while IFS= read -r site; do
+        if [[ -n "${site}" ]] && ! grep -qxF -- "${site}" <<< "${before}"; then
+            echo "${site}"
+        fi
+    done <<< "${after}"
 }
 
 
@@ -613,27 +741,110 @@ function set_enginescript_frontend_permissions() {
 
 # ----------------------------------------------------------------
 # Set permissions for Nginx directories and files
+#
+# The Nginx configuration belongs to root. The Nginx master process runs as root and loads
+# it (including any load_module line), so it must not be writable by www-data, the user PHP
+# and the Nginx worker processes run as. TLS private keys are readable by root only.
 function set_nginx_permissions() {
-    chown -R www-data:www-data /etc/nginx
-    chown -R www-data:www-data /tmp/nginx_proxy
-    chown -R www-data:www-data /usr/lib/nginx/modules
+    # Configuration: root-owned, directories 755, files 644
+    if [[ -d /etc/nginx ]]; then
+        chown -R root:root /etc/nginx
+        find /etc/nginx -type d -exec chmod 755 {} +
+        find /etc/nginx -type f -exec chmod 644 {} +
+    fi
+
+    # TLS certificates and keys: only root needs them (the master process reads them)
+    if [[ -d /etc/nginx/ssl ]]; then
+        find /etc/nginx/ssl -type d -exec chmod 700 {} +
+        find /etc/nginx/ssl -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
+    fi
+
+    # Admin basic-auth password file: the worker processes (www-data) read it on each request
+    if [[ -d /etc/nginx/restricted-access ]]; then
+        chown -R root:www-data /etc/nginx/restricted-access
+        chmod 750 /etc/nginx/restricted-access
+        find /etc/nginx/restricted-access -type f -exec chmod 640 {} +
+    fi
+
+    # Modules are loaded by the master process as root
+    if [[ -d /usr/lib/nginx/modules ]]; then
+        chown -R root:root /usr/lib/nginx/modules
+    fi
+
+    # Runtime directories the worker processes and PHP write to
     chown -R www-data:www-data /var/cache/nginx
     chown -R www-data:www-data /var/lib/nginx
-    chown -R www-data:www-data /var/log/domains
-    chown -R www-data:www-data /var/log/nginx
     chown -R www-data:www-data /var/www
     chmod 775 /var/cache/nginx
-    chmod 755 /var/log/nginx
-    chmod 755 /var/log/domains
 
-    # Set proper permissions for SSL certificates
-    if [ -d "/etc/nginx/ssl" ]; then
-        chown -R root:www-data /etc/nginx/ssl
-        chmod -R 750 /etc/nginx/ssl
-        find /etc/nginx/ssl -name "*.key" -exec chmod 640 {} \;
-        find /etc/nginx/ssl -name "*.crt" -exec chmod 644 {} \;
-        find /etc/nginx/ssl -name "*.pem" -exec chmod 644 {} \;
+    # Logs: the directories belong to root, so www-data cannot replace a log file with a
+    # symlink that the root master process would then open and chown (CVE-2016-1247). The
+    # log files stay owned by www-data: the worker processes reopen them after rotation, and
+    # PHP writes the WordPress debug log in each site's directory.
+    local log_dir
+    for log_dir in /var/log/nginx /var/log/domains; do
+        if [[ -d "${log_dir}" ]]; then
+            find "${log_dir}" -type d -exec chown root:root {} + -exec chmod 755 {} +
+            find "${log_dir}" -type f -exec chown www-data:adm {} + -exec chmod 640 {} +
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Give existing sites' certificates a reload command.
+#
+# Sites created before acme.sh was given --reloadcmd renew their certificates without
+# reloading Nginx, which keeps serving the old certificate until something else reloads it.
+# Re-running --install-cert with the same paths saves the reload command for future renewals
+# (and reloads Nginx once). Sites that already have a reload command are left alone.
+function migrate_acme_reload_commands() {
+    local acme="/root/.acme.sh/acme.sh"
+    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local domain domain_conf
+
+    if [[ ! -x "${acme}" || ! -f "${sites_file}" ]]; then
+        return 0
     fi
+
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for domain in "${SITES[@]}"; do
+        domain_conf="/root/.acme.sh/${domain}_ecc/${domain}.conf"
+        if [[ ! -f "${domain_conf}" || ! -d "/etc/nginx/ssl/${domain}" ]]; then
+            continue
+        fi
+        if grep -q "^Le_ReloadCmd='..*'" "${domain_conf}"; then
+            continue
+        fi
+        echo "Adding a certificate reload command for ${domain}..."
+        "${acme}" --install-cert -d "${domain}" --ecc \
+            --cert-file "/etc/nginx/ssl/${domain}/cert.pem" \
+            --key-file "/etc/nginx/ssl/${domain}/key.pem" \
+            --fullchain-file "/etc/nginx/ssl/${domain}/fullchain.pem" \
+            --ca-file "/etc/nginx/ssl/${domain}/ca.pem" \
+            --reloadcmd "systemctl reload nginx" \
+            || echo "Warning: Could not add a certificate reload command for ${domain}." >&2
+        secure_nginx_ssl_directory "/etc/nginx/ssl/${domain}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Restrict one site's TLS directory to root (used right after a certificate is installed)
+function secure_nginx_ssl_directory() {
+    local ssl_dir="$1"
+
+    if [[ ! -d "${ssl_dir}" ]]; then
+        return 0
+    fi
+
+    chown -R root:root "${ssl_dir}"
+    chmod 700 "${ssl_dir}"
+    find "${ssl_dir}" -type f -exec chmod 644 {} +
+    find "${ssl_dir}" -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
 }
 
 
@@ -657,7 +868,10 @@ function set_commented_directive_state() {
 
 
 # ----------------------------------------------------------------
-# Normalize legacy HTTP/3 listen directives to the current MPTCP-aware form
+# Normalize legacy HTTP/3 listen directives to the current form.
+# "reuseport" may appear only once per address and port, so only the default
+# server keeps "quic reuseport"; every other vhost uses "listen 443 quic;".
+# "multipath" (Multipath TCP) does not apply to QUIC (UDP) listeners.
 function normalize_nginx_http3_listen_directives() {
     local file_path="$1"
 
@@ -666,10 +880,10 @@ function normalize_nginx_http3_listen_directives() {
     fi
 
     sed -Ei \
-        -e 's|^([[:space:]]*#?listen 443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen \[::\]:443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen 443 )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen \[::\]:443 )quic reuseport;|\1multipath quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen 443 default_server )(multipath )?quic reuseport;|\1quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 default_server )(multipath )?quic reuseport;|\1quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen 443 )(multipath )?quic reuseport;|\1quic;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 )(multipath )?quic reuseport;|\1quic;|' \
         "${file_path}"
 }
 
@@ -690,9 +904,9 @@ function sync_nginx_http3_config() {
         early_hints_protocol_gate="\$http2\$http3"
     fi
 
+    # http3_max_concurrent_streams and http3_stream_buffer_size stay commented
+    # (Nginx defaults) and are left for manual tuning.
     set_commented_directive_state "/etc/nginx/nginx.conf" "http3 on;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_max_concurrent_streams" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_stream_buffer_size" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/nginx.conf" "quic_bpf on;" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/nginx.conf" "quic_retry on;" "${http3_enabled}"
 
@@ -708,8 +922,8 @@ function sync_nginx_http3_config() {
     fi
 
     normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server multipath quic reuseport;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server multipath quic reuseport;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport;" "${http3_enabled}"
 
     if shopt -q nullglob; then
         nullglob_was_set=1
@@ -729,27 +943,114 @@ function sync_nginx_http3_config() {
 
     for file_path in "${site_config_files[@]}"; do
         normalize_nginx_http3_listen_directives "${file_path}"
-        set_commented_directive_state "${file_path}" "listen 443 multipath quic reuseport;" "${http3_enabled}"
-        set_commented_directive_state "${file_path}" "listen \[::\]:443 multipath quic reuseport;" "${http3_enabled}"
+        set_commented_directive_state "${file_path}" "listen 443 quic;" "${http3_enabled}"
+        set_commented_directive_state "${file_path}" "listen \[::\]:443 quic;" "${http3_enabled}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Bring existing site and admin vhost files up to date with template changes.
+#
+# Vhost files are copied from the templates once, when a site is created, so later template
+# changes never reach them on their own. Put new rules in the shared includes
+# (/etc/nginx/globals) whenever possible; add a step here only when a vhost file itself must
+# change. Every step must be safe to run again on an already-updated file.
+# Runs on every Nginx install and update (nginx-misc.sh) and when a vhost is created.
+function migrate_nginx_vhosts() {
+    local nullglob_was_set=0
+    local file_path
+    local vhost_files=()
+
+    if shopt -q nullglob; then
+        nullglob_was_set=1
+    else
+        shopt -s nullglob
+    fi
+    vhost_files=(/etc/nginx/sites-enabled/*.conf /etc/nginx/admin/admin.*.conf)
+    if [[ "${nullglob_was_set}" == "0" ]]; then
+        shopt -u nullglob
+    fi
+
+    for file_path in "${vhost_files[@]}"; do
+        # 2026-10: QUIC listeners. Only the default server keeps "reuseport"; no "multipath".
+        normalize_nginx_http3_listen_directives "${file_path}"
+
+        # 2026-10: admin subdomain vhosts keep their own security headers instead of merging in
+        # the site-wide headers from nginx.conf (add_header_inherit merge), which would send
+        # conflicting duplicates such as two X-Frame-Options values.
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf && "${file_path}" != "/etc/nginx/admin/admin.localhost.conf" ]] \
+            && ! grep -q "add_header_inherit" "${file_path}"; then
+            sed -i '/^[[:space:]]*server_name admin\./a\  add_header_inherit on;' "${file_path}"
+        fi
     done
 }
 
 
 # ----------------------------------------------------------------
 # Set permissions for PHP directories and files
+#
+# The PHP-FPM master process runs as root and loads the configuration and every extension it
+# lists, so /etc/php must not be writable by www-data, the user the PHP workers run as.
 function set_php_permissions() {
-    find "/var/log/php" -exec chmod 775 {} \;
-    find "/var/log/opcache" -exec chmod 775 {} \;
-    find "/etc/php" -exec chmod 775 {} \;
+    # Configuration: root-owned, directories 755, files 644
+    if [[ -d /etc/php ]]; then
+        chown -R root:root /etc/php
+        find /etc/php -type d -exec chmod 755 {} +
+        find /etc/php -type f -exec chmod 644 {} +
+    fi
+
+    # Older installs logged to /var/log/php (see migrate_php_fpm_log_path). The FPM master
+    # writes its log as root, so a root-owned directory keeps www-data from replacing the log
+    # with a symlink.
+    if [[ -d /var/log/php ]]; then
+        chown root:root /var/log/php
+        chmod 755 /var/log/php
+        find /var/log/php -type f -exec chown root:adm {} + -exec chmod 640 {} +
+    fi
+
     chmod 775 /var/cache/opcache
     chmod 775 /var/cache/php-sessions
     chmod 775 /var/cache/wsdlcache
     chown -R www-data:www-data /var/cache/opcache
     chown -R www-data:www-data /var/cache/php-sessions
     chown -R www-data:www-data /var/cache/wsdlcache
-    chown -R www-data:www-data /var/log/opcache
-    chown -R www-data:www-data /var/log/php
-    chown -R www-data:www-data /etc/php
+}
+
+
+# ----------------------------------------------------------------
+# Move the PHP-FPM log back to the package default
+#
+# EngineScript used to set error_log = /var/log/php/phpX.Y-fpm.log, which no logrotate file
+# covers, so the log grew without limit. The PHP package logs to /var/log/phpX.Y-fpm.log and
+# rotates it with its own logrotate file. This changes only the error_log line of existing
+# installs, tests the configuration, and reloads PHP-FPM.
+function migrate_php_fpm_log_path() {
+    local conf ver old_log
+    for conf in /etc/php/*/fpm/php-fpm.conf; do
+        [[ -f "${conf}" ]] || continue
+        ver="$(basename "$(dirname "$(dirname "${conf}")")")"
+        old_log="/var/log/php/php${ver}-fpm.log"
+        grep -q "^error_log = ${old_log}$" "${conf}" || continue
+
+        echo "Moving the PHP ${ver} FPM log to /var/log/php${ver}-fpm.log..."
+        cp -p "${conf}" "${conf}.pre-log-migration"
+        sed -i "s|^error_log = ${old_log}$|error_log = /var/log/php${ver}-fpm.log|" "${conf}"
+        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
+            echo "Error: php-fpm${ver} -t failed; kept the previous PHP-FPM log setting." >&2
+            mv -f "${conf}.pre-log-migration" "${conf}"
+            continue
+        fi
+        rm -f "${conf}.pre-log-migration"
+
+        # A reload (graceful restart) rereads php-fpm.conf and opens the new log
+        if systemctl is-active --quiet "php${ver}-fpm"; then
+            systemctl reload "php${ver}-fpm"
+        fi
+        if [[ -f "${old_log}" ]]; then
+            mv -f "${old_log}" "${old_log}.old"
+        fi
+    done
 }
 
 
@@ -1211,6 +1512,21 @@ function safe_wget() {
 # Safely return to /usr/src
 function return_to_src() {
     cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
+}
+
+
+# ----------------------------------------------------------------
+# CPU target for compiled software (Nginx, Brotli, zlib-rs).
+# Prints x86-64-v3 (AVX2, BMI1/BMI2, FMA, MOVBE) when this CPU supports it, otherwise x86-64-v2.
+# A fixed level is used instead of -march=native: a native build uses every instruction of the
+# build machine's CPU, so moving the server to other hardware (live migration, snapshot restore,
+# resize) can stop the program with "illegal instruction".
+function get_x86_64_level() {
+    if /lib64/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
+        echo "x86-64-v3"
+    else
+        echo "x86-64-v2"
+    fi
 }
 
 
