@@ -90,6 +90,7 @@ SHOW_ENGINESCRIPT_HEADER=0
 # Blocks access to potentially unsafe file types and locations in FastCGI cache.
 # When enabled, blocks: .env, .log, .ini, wp-config.php, composer.json, backup files, etc.
 # Disable if you need to access these files through the web (not recommended for security).
+# PHP files in wp-content/uploads are always blocked, whatever this setting is.
 NGINX_BLOCK_UNSAFE_FILES=0
 
 ## Experimental: zlib Alternative for Nginx (Optional) ##

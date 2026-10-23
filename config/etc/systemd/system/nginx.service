@@ -1,16 +1,36 @@
 [Unit]
 Description=The NGINX HTTP and reverse proxy server
-After=syslog.target network.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+After=network-online.target remote-fs.target nss-lookup.target
 
 [Service]
 Type=forking
-ExecStartPost=/bin/sleep 0.1
 PIDFile=/run/nginx.pid
-ExecStartPre=/usr/sbin/nginx -t
+ExecStartPre=/usr/sbin/nginx -t -q
 ExecStart=/usr/sbin/nginx
-ExecReload=/usr/sbin/nginx -s reload
+# Test the configuration first, so "systemctl reload nginx" reports a failure instead of
+# Nginx silently keeping its old configuration
+ExecReload=/usr/sbin/nginx -t -q
+ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s QUIT $MAINPID
+TimeoutStopSec=30s
+Restart=on-failure
+RestartSec=5s
+
+# Hardening: Nginx never writes to /usr or /etc, needs no home directories or devices, and
+# drops privileges itself. Capabilities are not restricted, because the master process needs
+# several (binding ports 80 and 443, switching to www-data, raising its file limit).
 PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
 
 [Install]
 WantedBy=multi-user.target
