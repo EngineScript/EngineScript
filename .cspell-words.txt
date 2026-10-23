@@ -37,6 +37,7 @@ cvefile
 cwnd
 dbfilename
 dealerdirect
+debconf
 debhelper
 defaultbinmode
 defaultlrl
