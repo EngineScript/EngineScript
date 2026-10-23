@@ -141,14 +141,10 @@ create_backup_directories() {
   local SITE_URL="$1"
   
   # Create backup directories
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database"
+  # Layout written by enginescript-backup.sh
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/daily"
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/hourly"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/nginx"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-content"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads"
+  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/files"
 }
 
 

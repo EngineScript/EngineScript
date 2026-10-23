@@ -146,7 +146,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 |Command|Function|
 |-|-|
-|**`es.backup`**|Runs the backup script to back up all domains locally and *optionally* in the cloud|
+|**`es.backup`**|Backs up every site's database and files and the EngineScript configuration now, locally and *optionally* to Amazon S3|
 |**`es.cache`**|Clears FastCGI cache, OPcache, and Redis *(server-wide)*|
 |**`es.config`**|Opens the configuration file in Nano|
 |**`es.debug`**|Displays debug information for EngineScript|

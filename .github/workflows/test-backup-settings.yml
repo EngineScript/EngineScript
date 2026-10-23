@@ -1,0 +1,37 @@
+name: Test Backup Settings
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-backup-settings.sh'
+      - '.github/workflows/test-backup-settings.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-backup-settings.sh'
+      - '.github/workflows/test-backup-settings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-backup-settings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run backup settings tests
+        run: |
+          bash -n scripts/ci/test-backup-settings.sh
+          bash scripts/ci/test-backup-settings.sh

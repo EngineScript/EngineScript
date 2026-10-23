@@ -1049,6 +1049,97 @@ function set_php_permissions() {
 
 
 # ----------------------------------------------------------------
+# Resolve the backup settings
+#
+# The install options set BACKUP_DATABASE_FREQUENCY (off | hourly | daily),
+# BACKUP_FILES_FREQUENCY (off | daily | weekly), BACKUP_CONFIG_FREQUENCY (off | daily), their
+# retention, and the Amazon S3 settings. Options files written before these settings existed
+# keep working: their per-type switches (HOURLY_LOCAL_DATABASE_BACKUP,
+# DAILY_LOCAL_DATABASE_BACKUP, WEEKLY_LOCAL_WPCONTENT_BACKUP, INSTALL_S3_BACKUP and the S3
+# switches) are translated here. Invalid values fall back to the defaults with a warning.
+function resolve_backup_settings() {
+    if [[ -z "${BACKUP_DATABASE_FREQUENCY:-}" ]]; then
+        if [[ "${HOURLY_LOCAL_DATABASE_BACKUP:-0}" == "1" ]]; then
+            BACKUP_DATABASE_FREQUENCY="hourly"
+        elif [[ "${DAILY_LOCAL_DATABASE_BACKUP:-0}" == "1" ]]; then
+            BACKUP_DATABASE_FREQUENCY="daily"
+        else
+            BACKUP_DATABASE_FREQUENCY="off"
+        fi
+    fi
+    if [[ -z "${BACKUP_FILES_FREQUENCY:-}" ]]; then
+        if [[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP:-0}" == "1" ]]; then
+            BACKUP_FILES_FREQUENCY="weekly"
+        else
+            BACKUP_FILES_FREQUENCY="off"
+        fi
+    fi
+    BACKUP_CONFIG_FREQUENCY="${BACKUP_CONFIG_FREQUENCY:-daily}"
+    if [[ -z "${BACKUP_S3:-}" ]]; then
+        BACKUP_S3=0
+        if [[ "${INSTALL_S3_BACKUP:-0}" == "1" ]] && [[ "${DAILY_S3_DATABASE_BACKUP:-0}" == "1" \
+            || "${HOURLY_S3_DATABASE_BACKUP:-0}" == "1" || "${WEEKLY_S3_WPCONTENT_BACKUP:-0}" == "1" ]]; then
+            BACKUP_S3=1
+        fi
+    fi
+    BACKUP_S3_INCLUDE_CONFIG="${BACKUP_S3_INCLUDE_CONFIG:-0}"
+    # Empty: EngineScript never deletes anything from S3
+    BACKUP_S3_KEEP_DAYS="${BACKUP_S3_KEEP_DAYS:-}"
+
+    case "${BACKUP_DATABASE_FREQUENCY}" in off|hourly|daily) ;; *)
+        echo "Warning: BACKUP_DATABASE_FREQUENCY='${BACKUP_DATABASE_FREQUENCY}' is not off, hourly, or daily; using daily." >&2
+        BACKUP_DATABASE_FREQUENCY="daily" ;; esac
+    case "${BACKUP_FILES_FREQUENCY}" in off|daily|weekly) ;; *)
+        echo "Warning: BACKUP_FILES_FREQUENCY='${BACKUP_FILES_FREQUENCY}' is not off, daily, or weekly; using weekly." >&2
+        BACKUP_FILES_FREQUENCY="weekly" ;; esac
+    case "${BACKUP_CONFIG_FREQUENCY}" in off|daily) ;; *)
+        echo "Warning: BACKUP_CONFIG_FREQUENCY='${BACKUP_CONFIG_FREQUENCY}' is not off or daily; using daily." >&2
+        BACKUP_CONFIG_FREQUENCY="daily" ;; esac
+    [[ "${BACKUP_S3}" == "1" ]] || BACKUP_S3=0
+    [[ "${BACKUP_S3_INCLUDE_CONFIG}" == "1" ]] || BACKUP_S3_INCLUDE_CONFIG=0
+
+    local setting default
+    for setting in BACKUP_DATABASE_KEEP_DAYS:30 BACKUP_FILES_KEEP_COPIES:4 BACKUP_CONFIG_KEEP_DAYS:30; do
+        default="${setting#*:}"
+        setting="${setting%%:*}"
+        if [[ -z "${!setting:-}" ]]; then
+            printf -v "${setting}" '%s' "${default}"
+        elif [[ ! "${!setting}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Warning: ${setting}='${!setting}' is not a whole number above 0; using ${default}." >&2
+            printf -v "${setting}" '%s' "${default}"
+        fi
+    done
+    if [[ -n "${BACKUP_S3_KEEP_DAYS}" && ! "${BACKUP_S3_KEEP_DAYS}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Warning: BACKUP_S3_KEEP_DAYS='${BACKUP_S3_KEEP_DAYS}' is not a whole number above 0; S3 backups are not deleted." >&2
+        BACKUP_S3_KEEP_DAYS=""
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Install the backup scheduler cron job
+#
+# enginescript-backup.sh runs every hour and reads the backup frequencies from the install
+# options, so changing a setting needs no cron change. Older installs had a separate cron job
+# per backup script; those are replaced. Safe to run again.
+function install_backup_cron() {
+    local scheduler="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
+    local legacy='daily-database-backup\.sh|hourly-database-backup\.sh|weekly-wp-content-backup\.sh'
+    local current
+
+    current="$(crontab -l 2> /dev/null)" || current=""
+    if ! grep -qE "${legacy}" <<< "${current}" && grep -qxF "${scheduler}" <<< "${current}"; then
+        return 0
+    fi
+    echo "Installing the backup scheduler cron job (replaces the separate backup jobs)..."
+    {
+        grep -vE "${legacy}" <<< "${current}" | grep -vxF "${scheduler}" | sed '/^$/d'
+        echo "${scheduler}"
+    } | crontab -
+}
+
+
+# ----------------------------------------------------------------
 # Set permissions for /home/EngineScript
 #
 # It holds the install options (the MariaDB root password, the Cloudflare API key, admin

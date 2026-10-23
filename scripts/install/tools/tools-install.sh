@@ -115,7 +115,8 @@ debug_pause "Testssl.sh"
 #------------------------------------------------
 
 # Amazon AWS CLI
-if [[ "${INSTALL_S3_BACKUP}" == "1" ]];
+resolve_backup_settings
+if [[ "${BACKUP_S3}" == "1" ]];
   then
     echo "Installing Amazon CLI"
     echo "Please follow the instructions in the script that is about to run."

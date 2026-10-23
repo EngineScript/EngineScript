@@ -211,6 +211,10 @@ print_last_errors
 migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
+# Backups: one scheduler cron job in place of the separate backup jobs
+install_backup_cron 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
 # Warn when the installed PHP version is no longer supported
 INSTALLED_PHP_VER="$(get_installed_php_version)"
 if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then

@@ -32,7 +32,7 @@ fi
 # Newlines within the double-quoted string are preserved by printf.
 printf "${BOLD}EngineScript Commands:${NORMAL}
 --------------------------------
-es.backup       - Runs the backup script to back up all domains locally and optionally in the cloud
+es.backup       - Backs up every site's database and files and the EngineScript configuration now (and to S3 if enabled)
 es.cache        - Clears FastCGI cache, OPcache, and Redis (server-wide)
 es.config       - Opens the configuration file in Nano
 es.debug        - Displays debug information for EngineScript

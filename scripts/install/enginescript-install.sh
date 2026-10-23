@@ -80,13 +80,11 @@ echo "ADMIN_SUBDOMAIN = $ADMIN_SUBDOMAIN"
 echo "INSTALL_ADMINER = $INSTALL_ADMINER"
 echo "INSTALL_PHPMYADMIN = $INSTALL_PHPMYADMIN"
 echo "SHOW_ENGINESCRIPT_HEADER = $SHOW_ENGINESCRIPT_HEADER"
-echo "DAILY_LOCAL_DATABASE_BACKUP = $DAILY_LOCAL_DATABASE_BACKUP"
-echo "HOURLY_LOCAL_DATABASE_BACKUP = $HOURLY_LOCAL_DATABASE_BACKUP"
-echo "WEEKLY_LOCAL_WPCONTENT_BACKUP = $WEEKLY_LOCAL_WPCONTENT_BACKUP"
-echo "INSTALL_S3_BACKUP = $INSTALL_S3_BACKUP"
-echo "DAILY_S3_DATABASE_BACKUP = $DAILY_S3_DATABASE_BACKUP"
-echo "HOURLY_S3_DATABASE_BACKUP = $HOURLY_S3_DATABASE_BACKUP"
-echo "WEEKLY_S3_WPCONTENT_BACKUP = $WEEKLY_S3_WPCONTENT_BACKUP"
+resolve_backup_settings
+echo "BACKUP_DATABASE_FREQUENCY = ${BACKUP_DATABASE_FREQUENCY} (keep ${BACKUP_DATABASE_KEEP_DAYS} days)"
+echo "BACKUP_FILES_FREQUENCY = ${BACKUP_FILES_FREQUENCY} (keep ${BACKUP_FILES_KEEP_COPIES} copies)"
+echo "BACKUP_CONFIG_FREQUENCY = ${BACKUP_CONFIG_FREQUENCY} (keep ${BACKUP_CONFIG_KEEP_DAYS} days)"
+echo "BACKUP_S3 = ${BACKUP_S3} (include configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})"
 echo -e "${BOLD}\nUser Credentials:${NORMAL}"
 echo "S3_BUCKET_NAME = $S3_BUCKET_NAME"
 echo "CF_GLOBAL_API_KEY = $CF_GLOBAL_API_KEY"
@@ -142,8 +140,8 @@ if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
 fi
 
 # Check S3 Install
-if [[ "$INSTALL_S3_BACKUP" = 1 ]]; then
-    validate_not_placeholder "S3_BUCKET_NAME" "$S3_BUCKET_NAME" "You have set INSTALL_S3_BACKUP=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER.\nYou can also disable S3 cloud backup by setting INSTALL_S3_BACKUP=0."
+if [[ "${BACKUP_S3}" = 1 ]]; then
+    validate_not_placeholder "S3_BUCKET_NAME" "$S3_BUCKET_NAME" "You have set BACKUP_S3=1 but have not properly set S3_BUCKET_NAME.\nPlease return to the config file with the ${BOLD}es.config${NORMAL} command and change S3_BUCKET_NAME to show your bucket name instead of PLACEHOLDER.\nYou can also disable S3 cloud backup by setting BACKUP_S3=0."
 fi
 
 # Check Cloudflare Credentials

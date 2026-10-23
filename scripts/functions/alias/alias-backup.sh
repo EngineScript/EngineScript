@@ -20,7 +20,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 echo -e "\nRunning Backup Script\n"
 
-/usr/local/bin/enginescript/scripts/functions/backup/daily-database-backup.sh
-/usr/local/bin/enginescript/scripts/functions/backup/weekly-wp-content-backup.sh
+# Databases, wp-config.php, wp-content, and the EngineScript configuration, whatever the
+# BACKUP_* frequencies are; copies go to Amazon S3 when BACKUP_S3=1
+bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh now
 
 echo -e "\nBackup Script Done\n"

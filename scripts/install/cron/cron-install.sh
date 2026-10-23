@@ -39,12 +39,8 @@ fi
 # WordPress Maintenance
 add_cron_job "*/15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1"
 
-# Backup Tasks
-[[ "${DAILY_LOCAL_DATABASE_BACKUP}" == "1" ]] && add_cron_job "0 1 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash daily-database-backup.sh >/dev/null 2>&1"
-
-[[ "${HOURLY_LOCAL_DATABASE_BACKUP}" == "1" ]] && add_cron_job "5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash hourly-database-backup.sh >/dev/null 2>&1"
-
-[[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP}" == "1" ]] && add_cron_job "10 1 * * 0 cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1"
+# Backup Tasks: one job every hour; enginescript-backup.sh reads the BACKUP_* frequencies
+install_backup_cron
 
 # System Maintenance
 add_cron_job "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1"
