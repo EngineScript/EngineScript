@@ -60,8 +60,9 @@ jobs:
             
             echo "::debug::Checking $var_name: current='$current_ver', new='$new_ver'"
             
-            # Handle special case where current version is "null" or empty
-            if [[ -n "$new_ver" && ( "$current_ver" = "null" || -z "$current_ver" || $(version_gt "$new_ver" "$current_ver") ) ]]; then
+            # Update only when the new version is newer (or the current one is "null" or empty).
+            # version_gt is called for its exit status; its debug output must not be the test.
+            if [[ -n "$new_ver" ]] && { [[ "$current_ver" = "null" || -z "$current_ver" ]] || version_gt "$new_ver" "$current_ver"; }; then
               echo "::debug::Version update detected for $var_name"
               # Update version in enginescript-variables.txt directly
               sed -i "s/^${var_name}=\"[^\"]*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
@@ -134,17 +135,17 @@ jobs:
             echo "::warning::Failed to fetch PCRE2 version, keeping current version"
           fi
           
-          # OpenSSL (3.5.x series)
+          # OpenSSL (latest stable release of any series; alpha, beta, and pre-releases excluded)
           echo "::debug::Fetching OpenSSL version..."
-          OPENSSL_API_RESPONSE=$(curl -s https://api.github.com/repos/openssl/openssl/releases)
-          echo "::debug::OpenSSL API Response: $(echo "$OPENSSL_API_RESPONSE" | jq -r '.[0:3]')"
-          
-          LATEST_OPENSSL=$(echo "$OPENSSL_API_RESPONSE" | 
-            jq -r '.[].tag_name // empty' | 
-            grep '^openssl-3\.5\.[0-9]*$' | 
-            sort -V | 
-            tail -n 1 | 
-            sed 's/openssl-//')
+          OPENSSL_API_RESPONSE=$(curl -s "https://api.github.com/repos/openssl/openssl/releases?per_page=100")
+          echo "::debug::OpenSSL API Response: $(echo "$OPENSSL_API_RESPONSE" | jq -r '[.[]?.tag_name][0:5]')"
+
+          LATEST_OPENSSL=$(echo "$OPENSSL_API_RESPONSE" |
+            jq -r '.[]? | select(.prerelease == false and .draft == false) | .tag_name // empty' |
+            grep -E '^openssl-[0-9]+\.[0-9]+\.[0-9]+$' |
+            sed 's/^openssl-//' |
+            sort -V |
+            tail -n 1)
           echo "::debug::Parsed OpenSSL version: '$LATEST_OPENSSL'"
           
           if [[ -n "$LATEST_OPENSSL" && "$LATEST_OPENSSL" != "null" ]]; then
@@ -153,36 +154,23 @@ jobs:
             echo "::warning::Failed to fetch OpenSSL version, keeping current version"
           fi
           
-          # NGINX (1.31.x series - mainline)
-          echo "::debug::Fetching NGINX version from GitHub..."
-          NGINX_API_RESPONSE=$(curl -s https://api.github.com/repos/nginx/nginx/tags)
-          echo "::debug::NGINX GitHub API Response: $(echo "$NGINX_API_RESPONSE" | jq -r '.[0:5]')"
-          
-          # Look for the latest 1.31.x version from GitHub tags
-          LATEST_NGINX=$(echo "$NGINX_API_RESPONSE" | 
-            jq -r '.[].name // empty' | 
-            grep -E '^release-1\.31\.[0-9]+$' | 
-            sort -V | 
-            tail -n 1 | 
-            sed 's/release-//')
-          echo "::debug::Latest 1.31.x version found: '$LATEST_NGINX'"
-          
-          # If no 1.31.x version found, get the latest mainline (odd minor version)
-          if [[ -z "$LATEST_NGINX" ]]; then
-            echo "::debug::No 1.31.x version found, looking for latest mainline version..."
-            LATEST_NGINX=$(echo "$NGINX_API_RESPONSE" | 
-              jq -r '.[].name // empty' | 
-              grep -E '^release-1\.(2[579]|3[13579]|4[13579])\.[0-9]+$' | 
-              sort -V | 
-              tail -n 1 | 
-              sed 's/release-//')
-            echo "::debug::Latest mainline version found: '$LATEST_NGINX'"
-          fi
-          
+          # NGINX mainline (latest release with an odd minor version, for example 1.31.x)
+          # Reads every release tag with git ls-remote; the GitHub tags API returns only one
+          # page of tags in no guaranteed version order.
+          echo "::debug::Fetching NGINX release tags from GitHub..."
+          LATEST_NGINX=$(git ls-remote --tags --refs https://github.com/nginx/nginx.git 'release-*' |
+            sed 's#.*refs/tags/release-##' |
+            grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
+            awk -F. '$2 % 2 == 1' |
+            sort -V |
+            tail -n 1)
+          echo "::debug::Latest mainline version found: '$LATEST_NGINX'"
+
           # Verify the version exists on nginx.org before accepting it
-          if [[ -n "$LATEST_NGINX" && "$LATEST_NGINX" != "null" ]]; then
+          if [[ -n "$LATEST_NGINX" ]]; then
             echo "::debug::Verifying nginx-${LATEST_NGINX}.tar.gz exists on nginx.org..."
-            if curl -s --head "https://nginx.org/download/nginx-${LATEST_NGINX}.tar.gz" | grep -q "200 OK"; then
+            NGINX_DOWNLOAD_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --head "https://nginx.org/download/nginx-${LATEST_NGINX}.tar.gz")
+            if [[ "$NGINX_DOWNLOAD_STATUS" == "200" ]]; then
               echo "::debug::Confirmed: nginx-${LATEST_NGINX}.tar.gz is available for download"
               check_version "NGINX_VER" "$LATEST_NGINX"
             else
@@ -275,10 +263,15 @@ jobs:
           
           # NGINX Cache Purge Module
           echo "::debug::Fetching NGINX Cache Purge Module version..."
-          NGINX_PURGE_API_RESPONSE=$(curl -s https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags)
-          echo "::debug::NGINX Purge API Response: $(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0:3]')"
-          
-          LATEST_NGINX_PURGE=$(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/[^0-9\.]//g')
+          NGINX_PURGE_API_RESPONSE=$(curl -s "https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags?per_page=100")
+          echo "::debug::NGINX Purge API Response: $(echo "$NGINX_PURGE_API_RESPONSE" | jq -r '[.[]?.name][0:5]')"
+
+          # Latest stable tag only (release candidates such as 4.0.0-rc2 are excluded)
+          LATEST_NGINX_PURGE=$(echo "$NGINX_PURGE_API_RESPONSE" |
+            jq -r '.[]?.name // empty' |
+            grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
+            sort -V |
+            tail -n 1)
           echo "::debug::Parsed NGINX Purge version: '$LATEST_NGINX_PURGE'"
           
           if [[ -n "$LATEST_NGINX_PURGE" && "$LATEST_NGINX_PURGE" != "null" ]]; then
