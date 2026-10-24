@@ -211,6 +211,10 @@ print_last_errors
 migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
+# PHP: turn off session upload progress (security; WordPress does not use it)
+migrate_php_upload_progress 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
 # Backups: one scheduler cron job in place of the separate backup jobs
 install_backup_cron 2>> /tmp/enginescript_install_errors.log
 print_last_errors

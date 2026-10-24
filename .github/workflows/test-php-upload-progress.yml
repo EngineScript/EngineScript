@@ -1,0 +1,39 @@
+name: Test PHP Upload Progress
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-php-upload-progress.sh'
+      - 'config/etc/php/php.ini'
+      - '.github/workflows/test-php-upload-progress.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-php-upload-progress.sh'
+      - 'config/etc/php/php.ini'
+      - '.github/workflows/test-php-upload-progress.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-php-upload-progress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run PHP upload progress tests
+        run: |
+          bash -n scripts/ci/test-php-upload-progress.sh
+          bash scripts/ci/test-php-upload-progress.sh

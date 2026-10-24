@@ -1351,6 +1351,48 @@ function migrate_php_fpm_log_path() {
 
 
 # ----------------------------------------------------------------
+# Turn off PHP's session upload progress on existing installs
+#
+# session.upload_progress writes data from any upload request into a PHP session file, a known
+# step in attacks that include session files, and WordPress does not use it. php.ini from the
+# repo only reaches a server on a PHP install or version switch, so this sets
+# session.upload_progress.enabled = Off in each installed version's PHP-FPM php.ini, tests the
+# configuration, and reloads PHP-FPM. ES_PHP_ETC overrides /etc/php (for tests).
+function migrate_php_upload_progress() {
+    local ini ver
+    for ini in "${ES_PHP_ETC:-/etc/php}"/*/fpm/php.ini; do
+        [[ -f "${ini}" ]] || continue
+        grep -qiE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=[[:space:]]*"?(off|0|false|no)"?[[:space:]]*$' "${ini}" && continue
+        ver="$(basename "$(dirname "$(dirname "${ini}")")")"
+
+        echo "Turning off session upload progress for PHP ${ver}..."
+        cp -p "${ini}" "${ini}.pre-upload-progress"
+        if grep -qE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
+            sed -i -E 's/^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/session.upload_progress.enabled = Off/' "${ini}"
+        elif grep -qE '^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
+            sed -i -E '0,/^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/s//session.upload_progress.enabled = Off/' "${ini}"
+        elif grep -q '^\[Session\]' "${ini}"; then
+            sed -i '/^\[Session\]/a session.upload_progress.enabled = Off' "${ini}"
+        else
+            echo "session.upload_progress.enabled = Off" >> "${ini}"
+        fi
+
+        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
+            echo "Error: php-fpm${ver} -t failed; kept the previous php.ini." >&2
+            mv -f "${ini}.pre-upload-progress" "${ini}"
+            continue
+        fi
+        rm -f "${ini}.pre-upload-progress"
+
+        # A reload (graceful restart) starts new workers with the changed php.ini
+        if systemctl is-active --quiet "php${ver}-fpm"; then
+            systemctl reload "php${ver}-fpm"
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Check if all required EngineScript installation steps are completed
 # Returns 0 if all installation steps are marked complete, returns 1 if incomplete
 function check_installation_completion() {
