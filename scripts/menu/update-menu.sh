@@ -126,7 +126,8 @@ while true
           break
           ;;
         "Update Ubuntu Distribution (apt full-upgrade)")
-          apt full-upgrade
+          # Keep EngineScript's configuration files (see enginescript-apt-update.sh)
+          apt full-upgrade -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
           break
           ;;
         "Update Ubuntu Software (apt upgrade)")

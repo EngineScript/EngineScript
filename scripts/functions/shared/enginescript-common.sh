@@ -1049,6 +1049,36 @@ function set_php_permissions() {
 
 
 # ----------------------------------------------------------------
+# Set permissions for Redis directories and files
+#
+# www-data is in the redis group so PHP can use Redis's socket. The socket needs nothing here:
+# Redis creates it from unixsocketperm (770) on every start, in /run/redis, which systemd
+# creates. The configuration and its directory are root-owned so neither www-data nor Redis
+# itself can change or replace it (CONFIG REWRITE renames a new file over it), and the data and
+# log files are not writable by the redis group. Redis's unit creates files with UMask 0007
+# (group-writable), so this also runs from the daily permissions cron.
+function set_redis_permissions() {
+    if [[ -d /etc/redis ]]; then
+        chown -R root:redis /etc/redis
+        chmod 2750 /etc/redis
+        find /etc/redis -mindepth 1 -type d -exec chmod 750 {} +
+        find /etc/redis -type f -exec chmod 640 {} +
+    fi
+    if [[ -d /var/lib/redis ]]; then
+        chown redis:redis /var/lib/redis
+        chmod 750 /var/lib/redis
+        find /var/lib/redis -mindepth 1 -type d -exec chmod 750 {} +
+        find /var/lib/redis -type f -exec chown redis:redis {} + -exec chmod 640 {} +
+    fi
+    if [[ -d /var/log/redis ]]; then
+        chown redis:adm /var/log/redis
+        chmod 2750 /var/log/redis
+        find /var/log/redis -type f -exec chown redis:adm {} + -exec chmod 640 {} +
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Resolve the backup settings
 #
 # The install options set BACKUP_DATABASE_FREQUENCY (off | hourly | daily),

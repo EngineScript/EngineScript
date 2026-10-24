@@ -24,20 +24,20 @@ if [[ "${REDIS}" = 1 ]]; then
     exit 0
 fi
 
-# Install Redis
-apt install -qy redis redis-server redis-tools
+# Install Redis (from Redis's repository, packages.redis.io, added by repositories-install.sh)
+if ! apt install -qy redis redis-server redis-tools; then
+  echo "Error: Installing Redis failed." >&2
+  exit 1
+fi
 
-# Setup Redis
-#mkdir -p /run/redis
-#mkdir -p /var/lib/redis
-touch /var/log/redis/redis-server.log
-find /var/lib/redis -type d -o -type f -exec chmod 775 {} \;
-chmod 775 /run/redis
-chmod 775 /var/lib/redis
-chmod 775 /var/log/redis
-#chown -R redis:redis /run/redis
-#chown -R redis:redis /var/lib/redis
-#chown -R redis:redis /var/log/redis
+# EngineScript's redis.conf is written for Redis's own packages. If the Redis repository was not
+# added (for example the key download failed), apt installs Ubuntu's older Redis instead; stop
+# with a clear error rather than run a Redis that EngineScript did not set up for.
+if ! apt-cache policy redis-server | awk '/^ \*\*\* /{getline; print; exit}' | grep -q 'packages\.redis\.io'; then
+  echo "Error: Redis was not installed from Redis's repository (packages.redis.io)." >&2
+  echo "Installed: $(dpkg-query -W -f='${Version}' redis-server 2> /dev/null). Check /etc/apt/sources.list.d/redis.list and the key in /usr/share/keyrings/redis-archive-keyring.gpg, then run the Redis install again." >&2
+  exit 1
+fi
 
 # Copy Redis Config File
 cp -rf /usr/local/bin/enginescript/config/etc/redis/redis.conf /etc/redis/redis.conf
@@ -48,7 +48,6 @@ sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
 configure_redis_io_threads() {
   local thread_count="$1"
   sed -i "s|^# io-threads 4|io-threads ${thread_count}|" /etc/redis/redis.conf
-  sed -i "s|^# io-threads-do-reads no|io-threads-do-reads yes|" /etc/redis/redis.conf
 }
 
 if [[ "${CPU_COUNT}" -ge '16' ]]; then
@@ -61,20 +60,17 @@ elif [[ "${CPU_COUNT}" -ge '4' && "${CPU_COUNT}" -le '6' ]]; then
   configure_redis_io_threads 2
 fi
 
-# Redis Service
-#sed -i "s|Type=notify|Type=forking|g" /lib/systemd/system/redis-server.service
-#sed -i "s|--daemonize no|--daemonize yes|g" /lib/systemd/system/redis-server.service
-sed -i "s|ReadWritePaths=-/var/run|ReadWritePaths=-/run|g" /lib/systemd/system/redis-server.service
-
-# Permissions
-chown -R redis:redis /etc/redis/redis.conf
-chmod 775 /etc/redis/redis.conf
-
 # Add www-data to Redis Group
 if ! getent group redis > /dev/null; then
   groupadd redis
 fi
 usermod -aG redis www-data
+
+# Running PHP-FPM workers keep the groups they started with, so the Redis Object Cache plugin
+# cannot reach the socket until PHP-FPM restarts. A reload starts new workers.
+for fpm_unit in $(systemctl list-units --type=service --state=active --plain --no-legend 'php*-fpm.service' | awk '{print $1}'); do
+  systemctl reload "${fpm_unit}"
+done
 
 # Finalize Redis Install
 systemctl daemon-reload
@@ -83,9 +79,8 @@ systemctl enable redis-server
 
 sleep 3
 
-# Ensure correct socket ownership and permissions
-chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
-chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
+# Permissions (after the restart: the Redis that stopped saved its data with group write)
+set_redis_permissions
 
 # Redis Service Check
 verify_service_running "redis" "Redis"
