@@ -108,6 +108,7 @@ libpcre
 librabbitmq
 libz
 lighttpd
+listpack
 Litespeed
 loadmodule
 logtail
@@ -281,3 +282,4 @@ yoast
 zerossl
 zgrep
 zimageoptimizer
+ziplist
