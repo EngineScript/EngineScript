@@ -215,6 +215,14 @@ print_last_errors
 install_backup_cron 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
+# Redis: 128 databases, and every site on its own database number
+migrate_redis_databases 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
+# Redis: cache flushes free memory in the background
+migrate_redis_lazy_user_flush 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
 # Warn when the installed PHP version is no longer supported
 INSTALLED_PHP_VER="$(get_installed_php_version)"
 if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then

@@ -682,22 +682,9 @@ configure_redis() {
   local SITE_URL="$1"
   local WP_CONFIG_PATH="$2"
   
-  # Redis Config
-  # Scale Redis Databases to Number of Installed Domains
-  source /home/EngineScript/sites-list/sites.sh
-  if [[ "${#SITES[@]}" -eq 1 ]];
-    then
-      # If number of installed domains = 1, leave Redis at 1 database and WordPress set to use database 0
-      echo "There is only 1 domain in the site list. Not adding additional Redis databases."
-    else
-      # Raise number of Redis databases to equal number of domains in sites.sh
-      OLDREDISDB=$((${#SITES[@]} - 1))
-      sed -i "s|databases ${OLDREDISDB}|databases ${#SITES[@]}|g" /etc/redis/redis.conf
-      restart_service "redis-server"
-
-      # Set WordPress to use the latest Redis database number.
-      # Redis starts databases at number 0, so we take the total number of domains in sites.sh and reduce by 1. Three installed domains = database 2
-      sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" "${WP_CONFIG_PATH}"
+  # Give the site its own Redis database (the lowest number no other site uses)
+  if ! assign_site_redis_database "${WP_CONFIG_PATH}"; then
+    echo "Warning: The site uses Redis database 0, which other sites may share." >&2
   fi
 
   # Set Redis Prefix

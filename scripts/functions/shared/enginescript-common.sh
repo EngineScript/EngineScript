@@ -1079,6 +1079,134 @@ function set_redis_permissions() {
 
 
 # ----------------------------------------------------------------
+# Redis database numbers of the sites
+#
+# Each site uses its own Redis database (WP_REDIS_DATABASE in its wp-config.php), so the Redis
+# Object Cache plugin's "flush cache" (FLUSHDB) empties only that site's cache. "databases" in
+# redis.conf sets how many exist (128; each costs about 6 KB). A new site gets the lowest number
+# no other site uses, so removing a site frees its number. ES_REDIS_CONF and ES_SITES_ROOT
+# override the paths (for tests).
+REDIS_MIN_DATABASES=128
+
+# Print the number of databases redis.conf sets
+function get_redis_database_count() {
+    awk '$1 == "databases" {print $2; exit}' "${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+}
+
+# Print the Redis database number a wp-config.php sets (nothing when it sets none)
+function get_site_redis_database() {
+    sed -n "s/^[[:space:]]*define([[:space:]]*['\"]WP_REDIS_DATABASE['\"][[:space:]]*,[[:space:]]*\([0-9]\{1,\}\)[[:space:]]*).*/\1/p" "$1" | head -n 1
+}
+
+# Print "<number> <wp-config.php>" for every site that sets a Redis database
+function list_site_redis_databases() {
+    local wp_config number
+    for wp_config in "${ES_SITES_ROOT:-/var/www/sites}"/*/html/wp-config.php; do
+        [[ -f "${wp_config}" ]] || continue
+        number="$(get_site_redis_database "${wp_config}")"
+        if [[ -n "${number}" ]]; then
+            echo "${number} ${wp_config}"
+        fi
+    done
+}
+
+# Set "databases" in redis.conf and restart Redis (which empties every site's object cache:
+# the setting cannot change while Redis runs)
+function set_redis_database_count() {
+    sed -i "s/^databases[[:space:]]\{1,\}[0-9]\{1,\}[[:space:]]*$/databases $1/" "${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+    restart_service "redis-server"
+}
+
+# Give a site (its wp-config.php) the lowest Redis database number that no other site uses. When
+# every number is taken, the number of databases is doubled.
+function assign_site_redis_database() {
+    local wp_config="$1" count number site_config
+    local -A taken=()
+
+    count="$(get_redis_database_count)"
+    if [[ ! "${count}" =~ ^[0-9]+$ ]]; then
+        echo "Error: No 'databases' setting in ${ES_REDIS_CONF:-/etc/redis/redis.conf}; the site keeps its Redis database number." >&2
+        return 1
+    fi
+
+    while read -r number site_config; do
+        if [[ "${site_config}" != "${wp_config}" ]]; then
+            taken["${number}"]=1
+        fi
+    done < <(list_site_redis_databases)
+
+    for ((number = 0; number < count; number++)); do
+        [[ -z "${taken[${number}]:-}" ]] && break
+    done
+    if (( number >= count )); then
+        echo "All ${count} Redis databases are in use. Raising the number of databases to $((count * 2)); Redis restarts, which empties every site's object cache."
+        set_redis_database_count $((count * 2))
+    fi
+
+    sed -i "s/^\([[:space:]]*define([[:space:]]*['\"]WP_REDIS_DATABASE['\"][[:space:]]*,[[:space:]]*\)[0-9]\{1,\}/\1${number}/" "${wp_config}"
+    if [[ "$(get_site_redis_database "${wp_config}")" != "${number}" ]]; then
+        echo "Error: Could not set WP_REDIS_DATABASE in ${wp_config}." >&2
+        return 1
+    fi
+    echo "Redis database ${number}: ${wp_config}"
+}
+
+# Existing servers: at least REDIS_MIN_DATABASES databases, and every site on its own number.
+# Earlier versions numbered sites by the site count, so a site added after a removal could share
+# a number with another site. The first site (in directory order) keeps a shared number; the
+# others move to free numbers, which only empties their object cache.
+function migrate_redis_databases() {
+    local count number wp_config
+    local -a moves=()
+    local -A taken=()
+
+    [[ -f "${ES_REDIS_CONF:-/etc/redis/redis.conf}" ]] || return 0
+    count="$(get_redis_database_count)"
+    [[ "${count}" =~ ^[0-9]+$ ]] || return 0
+
+    if (( count < REDIS_MIN_DATABASES )); then
+        echo "Raising the number of Redis databases from ${count} to ${REDIS_MIN_DATABASES}..."
+        set_redis_database_count "${REDIS_MIN_DATABASES}"
+        count="${REDIS_MIN_DATABASES}"
+    fi
+
+    while read -r number wp_config; do
+        if (( number < count )) && [[ -z "${taken[${number}]:-}" ]]; then
+            taken["${number}"]=1
+        else
+            moves+=("${wp_config}")
+        fi
+    done < <(list_site_redis_databases)
+
+    for wp_config in "${moves[@]}"; do
+        echo "Moving a site that shared its Redis database (or used one out of range) to a free one:"
+        assign_site_redis_database "${wp_config}"
+    done
+}
+
+# Existing servers: FLUSHDB and FLUSHALL (the Redis Object Cache plugin's and the control panel's
+# cache buttons) free memory in the background instead of blocking Redis for every site
+# (lazyfree-lazy-user-flush). Added after lazyfree-lazy-user-del unless the file already sets
+# it, and applied to the running Redis, which can change it without a restart.
+function migrate_redis_lazy_user_flush() {
+    local redis_conf="${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+
+    [[ -f "${redis_conf}" ]] || return 0
+    grep -q '^lazyfree-lazy-user-flush[[:space:]]' "${redis_conf}" && return 0
+
+    echo "Redis: freeing memory in the background on cache flushes (lazyfree-lazy-user-flush)..."
+    if grep -q '^lazyfree-lazy-user-del[[:space:]]' "${redis_conf}"; then
+        sed -i '/^lazyfree-lazy-user-del[[:space:]]/a lazyfree-lazy-user-flush yes' "${redis_conf}"
+    else
+        echo "lazyfree-lazy-user-flush yes" >> "${redis_conf}"
+    fi
+    if [[ "$(redis-cli -s /run/redis/redis-server.sock CONFIG SET lazyfree-lazy-user-flush yes 2> /dev/null)" != "OK" ]]; then
+        echo "Redis is not running; the setting applies when it starts."
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Resolve the backup settings
 #
 # The install options set BACKUP_DATABASE_FREQUENCY (off | hourly | daily),

@@ -35,7 +35,7 @@ define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
 define( 'NONCE_SALT',       'put your unique phrase here' );
 
 /* Redis Object Cache Plugin */
-define( 'WP_REDIS_DATABASE', 0 ); // EngineScript scales this based on the number of installed domains
+define( 'WP_REDIS_DATABASE', 0 ); // EngineScript gives each site its own database number
 define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
 define( 'WP_REDIS_MAXTTL', '43200' ); // 43200 seconds = 12 hours
 define( 'WP_REDIS_PATH', '/run/redis/redis-server.sock' );

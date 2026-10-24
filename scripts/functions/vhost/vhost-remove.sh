@@ -158,29 +158,8 @@ else
   echo -e "${BOLD}Log Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a log directory.\n\n"
 fi
 
-# --- Update Redis Database Count ---
-echo "Updating Redis database count..."
-# Source the updated site list
-source /home/EngineScript/sites-list/sites.sh
-
-# Get the number of remaining sites
-REMAINING_SITES_COUNT=${#SITES[@]}
-
-# Ensure the database count is at least 1
-if [[ $REMAINING_SITES_COUNT -lt 1 ]]; then
-    EFFECTIVE_DB_COUNT=1
-else
-    EFFECTIVE_DB_COUNT=$REMAINING_SITES_COUNT
-fi
-
-# Update redis.conf if the number needs changing
-CURRENT_DB_COUNT=$(grep -E "^databases\s+[0-9]+" /etc/redis/redis.conf | awk '{print $2}')
-if [[ "$CURRENT_DB_COUNT" != "$EFFECTIVE_DB_COUNT" ]]; then
-    echo "Adjusting Redis databases from ${CURRENT_DB_COUNT} to ${EFFECTIVE_DB_COUNT}..."
-    sed -i "s/^databases\s+[0-9]\+/databases ${EFFECTIVE_DB_COUNT}/" /etc/redis/redis.conf
-else
-    echo "Redis database count (${EFFECTIVE_DB_COUNT}) is already correct."
-fi
+# The site's Redis database number is free again: new sites take the lowest number no other
+# site's wp-config.php uses, so nothing changes in redis.conf.
 
 # Restart Services (including Redis if needed by alias-restart.sh)
 echo "Restarting Nginx, PHP, and Redis..."
