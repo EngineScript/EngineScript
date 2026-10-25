@@ -87,6 +87,7 @@ hostedtoolcache
 hyperv
 icanhazip
 idrac
+igbinary
 importtest
 inal
 ioengine

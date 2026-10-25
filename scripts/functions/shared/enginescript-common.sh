@@ -1373,6 +1373,33 @@ function migrate_php_fpm_log_path() {
 
 
 # ----------------------------------------------------------------
+# Install igbinary explicitly for every installed PHP version
+#
+# Redis Object Cache serializes with it (WP_REDIS_IGBINARY). Existing servers only have it as a
+# dependency of php-redis, marked automatically installed, so apt autoremove would remove it if
+# php-redis ever stopped requiring it. Installing it by name marks it manually installed, and
+# adds it where it is missing (then PHP-FPM reloads to load the extension).
+function ensure_php_igbinary() {
+    local ver
+    while IFS= read -r ver; do
+        [[ -n "${ver}" ]] || continue
+        if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
+            apt-mark manual "php${ver}-igbinary" > /dev/null
+            continue
+        fi
+        echo "Installing php${ver}-igbinary..."
+        if apt-get install -y -qq "php${ver}-igbinary" > /dev/null; then
+            if systemctl is-active --quiet "php${ver}-fpm"; then
+                systemctl reload "php${ver}-fpm"
+            fi
+        else
+            echo "Error: Installing php${ver}-igbinary failed." >&2
+        fi
+    done < <(get_installed_php_versions)
+}
+
+
+# ----------------------------------------------------------------
 # Turn off PHP's session upload progress on existing installs
 #
 # session.upload_progress writes data from any upload request into a PHP session file, a known
@@ -1903,6 +1930,9 @@ function get_php_packages_array() {
         "php${target_ver}-curl"
         "php${target_ver}-fpm"
         "php${target_ver}-gd"
+        # igbinary: Redis Object Cache's serializer (WP_REDIS_IGBINARY). php-redis currently pulls
+        # it in as a dependency; listed so it does not depend on that.
+        "php${target_ver}-igbinary"
         "php${target_ver}-imagick"
         "php${target_ver}-intl"
         "php${target_ver}-mbstring"

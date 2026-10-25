@@ -211,6 +211,10 @@ print_last_errors
 migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
+# PHP: igbinary installed by name (Redis Object Cache's serializer), not only as a dependency
+ensure_php_igbinary 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
 # PHP: turn off session upload progress (security; WordPress does not use it)
 migrate_php_upload_progress 2>> /tmp/enginescript_install_errors.log
 print_last_errors
