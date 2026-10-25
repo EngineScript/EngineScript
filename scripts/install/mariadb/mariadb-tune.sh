@@ -28,11 +28,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # then links back in).
 MARIADB_CONFIG="${1:-/etc/mysql/my.cnf}"
 
-# Open Files Limit - Use systemd override instead of modifying main service file
-# Create override directory if it doesn't exist
+# Service limits and settings: a systemd override instead of editing MariaDB's own unit file
 mkdir -p "/etc/systemd/system/mariadb.service.d"
-
-# Create override file for MariaDB service limits
 cat > /etc/systemd/system/mariadb.service.d/enginescript-limits.conf << 'EOF'
 [Service]
 # EngineScript MariaDB Performance Tuning
@@ -41,128 +38,50 @@ LimitMEMLOCK=524288
 
 Restart=always
 
+# If memory runs out, the kernel's OOM killer picks a PHP-FPM worker (replaced at once) or Redis
+# (-300) before MariaDB, whose loss takes every site down
+OOMScoreAdjust=-600
+
 # Environment variables to prevent startup errors
 Environment="MYSQLD_OPTS="
 Environment="_WSREP_NEW_CLUSTER="
 EOF
 
-# Set Memory Variables
-SERVER_MEMORY_TOTAL_43="$(free -m | awk 'NR==2{printf "%d", $2*0.43 }')"
-SERVER_MEMORY_TOTAL_13="$(free -m | awk 'NR==2{printf "%d", $2*0.13 }')"
-
-# Log Buffer Size variable calculation (MB)
-# Choose a sensible innodb_log_buffer_size based on memory
-if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]]; then
-  SEDLBS="32"
-else
-  SEDLBS="64"
+# The shared tuning plan (enginescript-tuning.sh): written first if the server has none yet
+tuning_load
+if [[ -z "$(tuning_get MARIADB_BUFFER_POOL_MB)" ]]; then
+  tuning_write_plan || exit 1
+  tuning_load
 fi
 
-# tmp_table_size & max_heap_table_size
-sed -i --follow-symlinks "s|SEDTMPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" "${MARIADB_CONFIG}"
-sed -i --follow-symlinks "s|SEDMXHPTBLSZ|${SERVER_MEMORY_TOTAL_03}M|g" "${MARIADB_CONFIG}"
-
-# Max Connections
-# Scaled proportionally to PHP-FPM pm.max_children with headroom for WP-CLI, cron, and admin tasks
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
-  sed -i --follow-symlinks "s|SEDMAXCON|50|g" "${MARIADB_CONFIG}"
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
-  sed -i --follow-symlinks "s|SEDMAXCON|75|g" "${MARIADB_CONFIG}"
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 8200 ]]; then
-  sed -i --follow-symlinks "s|SEDMAXCON|100|g" "${MARIADB_CONFIG}"
-else
-  sed -i --follow-symlinks "s|SEDMAXCON|150|g" "${MARIADB_CONFIG}"
+# innodb_io_capacity from the database disk's measured write rate, measured once and saved
+if [[ -z "$(tuning_get MARIADB_IO_CAPACITY)" ]]; then
+  tuning_benchmark_disk /var/lib/mysql
+  tuning_load
 fi
 
-# Use the calculated SEDLBS variable for log buffer size
-sed -i --follow-symlinks "s|SEDLBS|${SEDLBS}M|g" "${MARIADB_CONFIG}"
+sed -i --follow-symlinks \
+  -e "s|SEDMAXCON|$(tuning_get MARIADB_MAX_CONNECTIONS)|g" \
+  -e "s|SEDTMPTBLSZ|$(tuning_get MARIADB_TMP_TABLE_MB)M|g" \
+  -e "s|SEDMXHPTBLSZ|$(tuning_get MARIADB_TMP_TABLE_MB)M|g" \
+  -e "s|SEDTOC|$(tuning_get MARIADB_TABLE_CACHE)|g" \
+  -e "s|SEDARIA|$(tuning_get MARIADB_ARIA_MB)M|g" \
+  -e "s|SEDLOGFILE|$(tuning_get MARIADB_LOG_FILE_MB)M|g" \
+  -e "s|SEDPOOL|$(tuning_get MARIADB_BUFFER_POOL_MB)M|g" \
+  -e "s|SEDLBS|$(tuning_get MARIADB_LOG_BUFFER_MB)M|g" \
+  -e "s|SEDIOCAP|$(tuning_get MARIADB_IO_CAPACITY)|g" \
+  "${MARIADB_CONFIG}"
 
-if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
-  then
-    sed -i --follow-symlinks "s|SEDTCS|256|g" "${MARIADB_CONFIG}"
-  else
-    sed -i --follow-symlinks "s|SEDTCS|${SERVER_MEMORY_TOTAL_07}|g" "${MARIADB_CONFIG}"
+if grep -qE 'SED[A-Z]+' "${MARIADB_CONFIG}"; then
+  echo "Error: ${MARIADB_CONFIG} still has placeholders: $(grep -oE 'SED[A-Z]+' "${MARIADB_CONFIG}" | sort -u | paste -sd' ' -)" >&2
+  exit 1
 fi
-
-if [[ "${SERVER_MEMORY_TOTAL_80}" -lt 4000 ]];
-  then
-    sed -i --follow-symlinks "s|SEDTOC|2000|g" "${MARIADB_CONFIG}"
-  else
-    sed -i --follow-symlinks "s|SEDTOC|4000|g" "${MARIADB_CONFIG}"
-fi
-
-# Innodb Open Files - scaled by RAM tier
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1200 ]]; then
-  sed -i --follow-symlinks "s|SEDINOF|1000|g" "${MARIADB_CONFIG}"
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 2200 ]]; then
-  sed -i --follow-symlinks "s|SEDINOF|2000|g" "${MARIADB_CONFIG}"
-elif [[ "${SERVER_MEMORY_TOTAL_100}" -lt 4200 ]]; then
-  sed -i --follow-symlinks "s|SEDINOF|4000|g" "${MARIADB_CONFIG}"
-else
-  sed -i --follow-symlinks "s|SEDINOF|8000|g" "${MARIADB_CONFIG}"
-fi
-
-# Cap innodb_log_file_size at 512MB
-if [[ "${SERVER_MEMORY_TOTAL_09}" -gt 512 ]]; then
-  SERVER_MEMORY_TOTAL_09=512
-fi
-sed -i --follow-symlinks "s|SEDMYSQL09PERCENT|${SERVER_MEMORY_TOTAL_09}M|g" "${MARIADB_CONFIG}"
-
-sed -i --follow-symlinks "s|SEDMYSQL13PERCENT|${SERVER_MEMORY_TOTAL_13}|g" "${MARIADB_CONFIG}"
-sed -i --follow-symlinks "s|SEDMYSQL43PERCENT|${SERVER_MEMORY_TOTAL_43}M|g" "${MARIADB_CONFIG}"
-sed -i --follow-symlinks "s|SEDMYSQL80PERCENT|${SERVER_MEMORY_TOTAL_80}|g" "${MARIADB_CONFIG}"
-
-# IOPS Benchmark
-
-# Define variables
-TEST_FILE="/tmp/fio_test_file"
-IOPS_AVG_VAR="SEDAVGIOPS"  # Placeholder for avg IOPS
-IOPS_MAX_VAR="SEDMAXIOPS"  # Placeholder for max IOPS
-
-# Run fio IOPS benchmark with JSON output for reliable parsing across versions
-echo "Running fio test (random mixed read/write)..."
-fio_json_output="/tmp/fio_output.json"
-sudo fio --ioengine=libaio --direct=1 --name=test --filename="$TEST_FILE" --bs=4k --size=500M --readwrite=randrw --rwmixread=70 --output-format=json --output="$fio_json_output" > /dev/null 2>&1
-
-# Extract IOPS from JSON - uses jq for reliable parsing across fio versions
-# Read IOPS = average IOPS metric, Write IOPS = secondary metric for headroom
-if jq empty "$fio_json_output" 2>/dev/null; then
-    avg_iops=$(jq -r '.jobs[0].read.iops // .jobs[0].iops // 0' "$fio_json_output" 2>/dev/null | cut -d '.' -f 1)
-    max_iops=$(jq -r '.jobs[0].write.iops // .jobs[0].iops // 0' "$fio_json_output" 2>/dev/null | cut -d '.' -f 1)
-else
-    avg_iops=""
-    max_iops=""
-    echo "Warning: Failed to parse fio JSON output"
-fi
-
-# Failsafe: Set avg IOPS to 500 and max IOPS to 1000 if avg IOPS is less than 500 or if extraction failed
-if [[ -z "$avg_iops" ]] || [[ "$avg_iops" -lt 500 ]]; then
-    avg_iops=500
-    max_iops=1000
-    echo "Failsafe activated: avg IOPS set to 500 and max IOPS set to 1000."
-fi
-
-# Ensure max_iops is always >= avg_iops (MariaDB requires innodb_io_capacity_max >= innodb_io_capacity)
-if [[ -z "$max_iops" ]] || [[ "$max_iops" -lt "$avg_iops" ]]; then
-    max_iops=$((avg_iops * 2))
-    echo "max IOPS adjusted to $max_iops (2x avg) to satisfy innodb_io_capacity_max >= innodb_io_capacity."
-fi
-
-# Modify MariaDB config for avg IOPS
-sed -i --follow-symlinks "s/$IOPS_AVG_VAR/$avg_iops/g" "$MARIADB_CONFIG"
-echo "MariaDB $IOPS_AVG_VAR updated to $avg_iops."
-
-# Modify MariaDB config for max IOPS
-sed -i --follow-symlinks "s/$IOPS_MAX_VAR/$max_iops/g" "$MARIADB_CONFIG"
-echo "MariaDB $IOPS_MAX_VAR updated to $max_iops."
-
-# Clean up fio test file to prevent /tmp exhaustion
-rm -f "$TEST_FILE"
 
 # Reload systemd daemon to apply the new override configuration
 systemctl daemon-reload
 
 
 # References:
-# https://linuxblog.io/innodb_flush_method-innodb_flush_log_at_trx_commit-optimizing-mysql/
-# https://www.percona.com/blog/2018/01/31/how-to-tune-mariadb-10-3-for-high-performance/
+# https://mariadb.com/docs/server/server-usage/storage-engines/innodb/innodb-page-flushing
+# https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/mariadb-performance-advanced-configurations/configuring-mariadb-for-optimal-performance
+# https://mariadb.com/docs/server/server-management/starting-and-stopping-mariadb/systemd/configuring

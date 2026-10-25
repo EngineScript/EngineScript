@@ -52,6 +52,7 @@ dnsutils
 domaincrawler
 dumpable
 ecwid
+Elementor
 endscript
 ensurepath
 epoll
@@ -90,6 +91,7 @@ idrac
 igbinary
 importtest
 inal
+iodepth
 ioengine
 iotop
 ipinfo
@@ -201,6 +203,7 @@ Pushbullet
 pwgen
 quicktime
 randrw
+randwrite
 Rankmath
 rdbchecksum
 rdbcompression

@@ -1,0 +1,39 @@
+name: Test Tuning Plan
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-tuning.sh'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-tuning-plan.sh'
+      - '.github/workflows/test-tuning-plan.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-tuning.sh'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-tuning-plan.sh'
+      - '.github/workflows/test-tuning-plan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-tuning-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run tuning plan tests
+        run: |
+          bash -n scripts/ci/test-tuning-plan.sh
+          bash scripts/ci/test-tuning-plan.sh

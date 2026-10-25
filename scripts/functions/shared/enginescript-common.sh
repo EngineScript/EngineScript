@@ -1012,6 +1012,24 @@ function migrate_nginx_vhosts() {
             && ! grep -q "add_header_inherit" "${file_path}"; then
             sed -i '/^[[:space:]]*server_name admin\./a\  add_header_inherit on;' "${file_path}"
         fi
+
+        # 2026-10: site vhosts log failed requests (status 400 and up) to their own log instead of
+        # no access log at all. The $es_failed_request map is in nginx.conf, which only an Nginx
+        # install or update replaces: until then, keep (or put back) "access_log off;", or a site
+        # created in between would make nginx -t fail.
+        if [[ "${file_path}" == /etc/nginx/sites-enabled/*.conf ]]; then
+            local domain
+            domain="$(basename "${file_path}" .conf)"
+            if grep -q 'es_failed_request' /etc/nginx/nginx.conf 2> /dev/null; then
+                if grep -qx '  access_log off;' "${file_path}"; then
+                    mkdir -p "/var/log/domains/${domain}"
+                    sed -i "s|^  access_log off;\$|  # Failed requests only (status 400 and up), written in batches\n  access_log /var/log/domains/${domain}/${domain}-nginx-failed.log main buffer=32k flush=5s if=\$es_failed_request;|" "${file_path}"
+                fi
+            elif grep -q 'if=\$es_failed_request' "${file_path}"; then
+                sed -i -e '/^  # Failed requests only (status 400 and up), written in batches$/d' \
+                    -e 's|^  access_log .*if=\$es_failed_request;$|  access_log off;|' "${file_path}"
+            fi
+        fi
     done
 }
 
@@ -1074,6 +1092,197 @@ function set_redis_permissions() {
         chmod 2750 /var/log/redis
         find /var/log/redis -type f -exec chown redis:adm {} + -exec chmod 640 {} +
     fi
+}
+
+
+# ----------------------------------------------------------------
+# Redis systemd override: if memory runs out, the kernel's OOM killer picks a PHP-FPM worker
+# (replaced at once) before Redis (-300), and Redis before MariaDB (-600). Losing Redis shows
+# Redis Object Cache's error page on every site until it restarts.
+function install_redis_service_override() {
+    mkdir -p /etc/systemd/system/redis-server.service.d
+    cat > /etc/systemd/system/redis-server.service.d/enginescript.conf << 'EOF'
+[Service]
+OOMScoreAdjust=-300
+EOF
+    systemctl daemon-reload
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan to an installed Redis without restarting it
+#
+# Rebuilds /etc/redis/redis.conf from the repo template with the plan's maxmemory, keeping the
+# server's current "databases" count (it doubles when every number is taken). The new file is
+# loaded by a throwaway Redis on a temporary socket first; if that fails, nothing changes.
+# maxmemory and activedefrag are applied to the running Redis with CONFIG SET; settings that
+# need a restart (io-threads) take effect at Redis's next restart. Redis Object Cache shows an
+# error page on every site while Redis is down, so this never restarts it.
+function apply_redis_tuning() {
+    local conf=/etc/redis/redis.conf template=/usr/local/bin/enginescript/config/etc/redis/redis.conf
+    local sock=/run/redis/redis-server.sock candidate test_dir databases maxmemory test_pid ok=0
+
+    [[ -f "${conf}" && -f "${template}" ]] || return 0
+    tuning_load
+    maxmemory="$(tuning_get REDIS_MAXMEMORY_MB)"
+    [[ -n "${maxmemory}" ]] || { echo "Error: No Redis maxmemory in the tuning plan." >&2; return 1; }
+    databases="$(awk '$1 == "databases" {print $2; exit}' "${conf}")"
+    [[ "${databases}" =~ ^[0-9]+$ ]] && (( databases > REDIS_MIN_DATABASES )) || databases="${REDIS_MIN_DATABASES}"
+
+    candidate="$(mktemp)"
+    sed -e "s|SEDREDISMAXMEM|${maxmemory}|g" -e "s|^databases .*|databases ${databases}|" "${template}" > "${candidate}"
+    if cmp -s "${candidate}" "${conf}"; then
+        rm -f "${candidate}"
+        return 0
+    fi
+
+    # Load the new file in a throwaway Redis (own socket, no TCP, temporary directory)
+    test_dir="$(mktemp -d)"
+    chown redis:redis "${test_dir}"
+    chmod 644 "${candidate}"
+    sudo -u redis redis-server "${candidate}" --port 0 --unixsocket "${test_dir}/test.sock" --daemonize no \
+        --supervised no --logfile "${test_dir}/test.log" --dir "${test_dir}" --pidfile "${test_dir}/test.pid" > /dev/null 2>&1 &
+    test_pid=$!
+    for _ in $(seq 1 20); do
+        if [[ "$(redis-cli -s "${test_dir}/test.sock" PING 2> /dev/null)" == "PONG" ]]; then ok=1; break; fi
+        sleep 0.25
+    done
+    redis-cli -s "${test_dir}/test.sock" SHUTDOWN NOSAVE > /dev/null 2>&1
+    wait "${test_pid}" 2> /dev/null
+    if (( ok == 0 )); then
+        echo "Error: The new redis.conf did not load in a test instance; kept the current one." >&2
+        tail -5 "${test_dir}/test.log" >&2 2> /dev/null
+        rm -rf "${test_dir}" "${candidate}"
+        return 1
+    fi
+    rm -rf "${test_dir}"
+
+    cp -p "${conf}" "${conf}.bak"
+    mv -f "${candidate}" "${conf}"
+    set_redis_permissions
+    if [[ -S "${sock}" ]]; then
+        redis-cli -s "${sock}" CONFIG SET maxmemory "${maxmemory}mb" > /dev/null
+        redis-cli -s "${sock}" CONFIG SET activedefrag yes > /dev/null
+    fi
+    echo "Redis: applied the tuning plan (maxmemory ${maxmemory} MB) without a restart."
+}
+
+
+# ----------------------------------------------------------------
+# Set the OOM killer priority of a running service's processes (its systemd override applies
+# from its next start). Usage: set_running_oom_score_adj <process name> <score>
+function set_running_oom_score_adj() {
+    local pid
+    for pid in $(pgrep -x "$1"); do
+        echo "$2" > "/proc/${pid}/oom_score_adj" 2> /dev/null || true
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan to an installed MariaDB without restarting it
+#
+# Builds the new my.cnf from the repo template in a staging file (mariadb-tune.sh), checks it
+# with mariadbd --help --verbose, installs it, and applies every setting MariaDB can change while
+# running with SET GLOBAL. aria_pagecache_buffer_size, innodb_log_buffer_size, and
+# innodb_open_files take effect at MariaDB's next restart. The previous file is kept as
+# /etc/mysql/my.cnf.enginescript-previous.
+function apply_mariadb_tuning() {
+    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement failed=0
+
+    [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
+    cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
+    install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+    if ! /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${staged}" 2>> /tmp/enginescript_install_errors.log; then
+        echo "Error: Tuning the new MariaDB configuration failed; kept the current one." >&2
+        rm -f "${staged}"
+        return 1
+    fi
+    check="$(mariadbd --defaults-file="${staged}" --help --verbose 2>&1 > /dev/null)"
+    rc=$?
+    if [[ "${rc}" -ne 0 ]] || grep -q '\[ERROR\]' <<< "${check}"; then
+        echo "Error: The new MariaDB configuration failed its check; kept the current one:" >&2
+        grep -E '\[(ERROR|Warning)\]' <<< "${check}" | head -5 >&2
+        rm -f "${staged}"
+        return 1
+    fi
+    if cmp -s "${staged}" /etc/mysql/my.cnf; then
+        rm -f "${staged}"
+        return 0
+    fi
+
+    # cp writes through /etc/mysql/my.cnf, the MariaDB packages' link to mariadb.cnf
+    cp -fL /etc/mysql/my.cnf /etc/mysql/my.cnf.enginescript-previous
+    cp -f "${staged}" /etc/mysql/my.cnf
+    rm -f "${staged}"
+
+    tuning_load
+    io_max=$(( $(tuning_get MARIADB_IO_CAPACITY) * 2 ))
+    (( io_max < 2000 )) && io_max=2000
+    for statement in \
+        "SET GLOBAL max_connections = $(tuning_get MARIADB_MAX_CONNECTIONS)" \
+        "SET GLOBAL tmp_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
+        "SET GLOBAL max_heap_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
+        "SET GLOBAL table_open_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
+        "SET GLOBAL table_definition_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
+        "SET GLOBAL innodb_io_capacity_max = ${io_max}" \
+        "SET GLOBAL innodb_io_capacity = $(tuning_get MARIADB_IO_CAPACITY)" \
+        "SET GLOBAL innodb_flush_neighbors = 0" \
+        "SET GLOBAL innodb_log_file_size = $(( $(tuning_get MARIADB_LOG_FILE_MB) * 1048576 ))" \
+        "SET GLOBAL innodb_buffer_pool_size = $(( $(tuning_get MARIADB_BUFFER_POOL_MB) * 1048576 ))"; do
+        if ! mariadb -e "${statement}" 2>> /tmp/enginescript_install_errors.log; then
+            echo "Warning: MariaDB refused \"${statement}\"; it applies at MariaDB's next restart." >&2
+            failed=1
+        fi
+    done
+    set_running_oom_score_adj mariadbd -600
+    if (( failed == 0 )); then
+        echo "MariaDB: applied the tuning plan (buffer pool $(tuning_get MARIADB_BUFFER_POOL_MB) MB) without a restart."
+    else
+        echo "MariaDB: installed the tuning plan; the settings above apply at MariaDB's next restart."
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan's Nginx values to the running nginx.conf
+#
+# Patches the FastCGI cache index and disk limit, and the October 2026 tuning (cache inactive
+# 3h with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
+# worker_rlimit_nofile 16384), tests with nginx -t, and reloads; the previous file is restored if
+# the test fails. Other template changes arrive with the next Nginx update.
+function apply_nginx_tuning() {
+    local conf=/etc/nginx/nginx.conf backup
+
+    [[ -f "${conf}" ]] && command -v nginx > /dev/null 2>&1 || return 0
+    tuning_load
+    backup="$(mktemp)"
+    cp -p "${conf}" "${backup}"
+    sed -i -E \
+        -e "s|keys_zone=EngineScriptWP:[0-9]+m|keys_zone=EngineScriptWP:$(tuning_get NGINX_CACHE_ZONE_MB)m|" \
+        -e "s|(fastcgi_cache_path [^;]*) inactive=[0-9]+[a-z]|\1 inactive=3h|" \
+        -e "s|(fastcgi_cache_path [^;]*) max_size=[0-9]+m|\1 max_size=$(tuning_get NGINX_CACHE_MAX_MB)m|" \
+        -e "/fastcgi_cache_path/{/min_free=/!s| use_temp_path=| min_free=1g use_temp_path=|}" \
+        -e "s|^([[:space:]]*)keepalive_timeout [0-9]+s?;|\1keepalive_timeout 900s;|" \
+        -e "s|^([[:space:]]*)open_file_cache_errors on;|\1open_file_cache_errors off;|" \
+        -e "s|^([[:space:]]*)worker_connections [0-9]+;|\1worker_connections 4096;|" \
+        -e "s|^worker_rlimit_nofile [0-9]+;|worker_rlimit_nofile 16384;|" \
+        "${conf}"
+    if cmp -s "${conf}" "${backup}"; then
+        rm -f "${backup}"
+        return 0
+    fi
+    if nginx -t > /dev/null 2>&1; then
+        systemctl reload nginx
+        echo "Nginx: applied the tuning plan (cache index $(tuning_get NGINX_CACHE_ZONE_MB) MB, cache limit $(tuning_get NGINX_CACHE_MAX_MB) MB)."
+    else
+        cp -p "${backup}" "${conf}"
+        echo "Error: nginx -t failed with the tuned nginx.conf; restored the previous one." >&2
+        nginx -t 2>&1 | tail -3 >&2
+        rm -f "${backup}"
+        return 1
+    fi
+    rm -f "${backup}"
 }
 
 
@@ -2016,3 +2225,9 @@ function get_expanded_php_packages_array() {
     )
     printf '%s\n' "${packages[@]}"
 }
+
+
+# ----------------------------------------------------------------
+# Shared tuning plan (memory budget for Nginx, PHP-FPM, MariaDB, and Redis)
+# shellcheck source=enginescript-tuning.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-tuning.sh"

@@ -33,95 +33,40 @@ if [[ -n "${1:-}" ]]; then
   fi
 fi
 
-# Validate required capacity signals before tuning.
-require_basic_system_resources "MEMORY_TOTAL_MB" "CPU_COUNT"
-
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Calculate PHP FPM tune depending on RAM
-calculate_php() {
-  # No fallbacks needed as this script will be run on a system with a modern kernel.
-  # MemAvailable field will be present in /proc/meminfo on modern kernels and is the most accurate representation of available memory for applications.
-  AVAILABLE_MEMORY=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
-  # Validate that AVAILABLE_MEMORY is a non-empty numeric value; exit if it cannot be determined.
-  if ! [[ "${AVAILABLE_MEMORY}" =~ ^[0-9]+$ ]]; then
-    echo "Error: Unable to determine available memory from /proc/meminfo; cannot continue." >&2
-    exit 1
-  fi
-  AVERAGE_PHP_MEMORY_REQ_MB=80  # average PHP memory requirement in MB
-  # Memory thresholds in MB for tuning PHP-FPM and PHP settings
-  MEMORY_THRESHOLD_LOW=1200
-  MEMORY_THRESHOLD_MEDIUM=2200
-  MEMORY_THRESHOLD_HIGH=4200
-  # PHP-FPM process limits are tuned using available memory and average per-process usage.
+# Apply the shared tuning plan (enginescript-tuning.sh) to PHP-FPM: worker counts,
+# memory_limit, and OPcache sizes. The plan is written first if the server has none yet.
+apply_php_tuning() {
+  local www="/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ini="/etc/php/${PHP_VER}/fpm/php.ini"
 
-  # Dynamically calculate pm.start_servers, pm.min_spare_servers, and pm.max_spare_servers based on CPU threads
-  if [[ "${CPU_COUNT}" -eq 1 ]]; then
-    PHP_FPM_START_SERVERS=2
-    PHP_FPM_MIN_SPARE_SERVERS=1
-    PHP_FPM_MAX_SPARE_SERVERS=3
-  elif [[ "${CPU_COUNT}" -eq 2 ]]; then
-    PHP_FPM_START_SERVERS=3
-    PHP_FPM_MIN_SPARE_SERVERS=2
-    PHP_FPM_MAX_SPARE_SERVERS=5
-  elif [[ "${CPU_COUNT}" -eq 3 ]]; then
-    PHP_FPM_START_SERVERS=3
-    PHP_FPM_MIN_SPARE_SERVERS=3
-    PHP_FPM_MAX_SPARE_SERVERS=6
-  elif [[ "${CPU_COUNT}" -eq 4 ]]; then
-    PHP_FPM_START_SERVERS=4
-    PHP_FPM_MIN_SPARE_SERVERS=3
-    PHP_FPM_MAX_SPARE_SERVERS=6
-  elif [[ "${CPU_COUNT}" -le 8 ]]; then
-    PHP_FPM_START_SERVERS=5
-    PHP_FPM_MIN_SPARE_SERVERS=4
-    PHP_FPM_MAX_SPARE_SERVERS=7
-  elif [[ "${CPU_COUNT}" -le 16 ]]; then
-    PHP_FPM_START_SERVERS=8
-    PHP_FPM_MIN_SPARE_SERVERS=6
-    PHP_FPM_MAX_SPARE_SERVERS=14
-  else
-    PHP_FPM_START_SERVERS=5
-    PHP_FPM_MIN_SPARE_SERVERS=4
-    PHP_FPM_MAX_SPARE_SERVERS=7
-  fi
-  
-  # Calculate server configuration based on available memory
-  if [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_LOW}" ]]; then
-    PHP_FPM_MAX_CHILDREN=8
-    PHP_MEMORY_LIMIT="256M"
-    OPCACHE_JIT_BUFFER="64M"
-    OPCACHE_INT_BUFFER=16
-  elif [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_MEDIUM}" ]]; then
-    PHP_FPM_MAX_CHILDREN=16
-    PHP_MEMORY_LIMIT="256M"
-    OPCACHE_JIT_BUFFER="64M"
-    OPCACHE_INT_BUFFER=32
-  elif [[ "${AVAILABLE_MEMORY}" -lt "${MEMORY_THRESHOLD_HIGH}" ]]; then
-    PHP_FPM_MAX_CHILDREN=24
-    PHP_MEMORY_LIMIT="512M"
-    OPCACHE_JIT_BUFFER="96M"
-    OPCACHE_INT_BUFFER=64
-  else
-    PHP_FPM_MAX_CHILDREN=48
-    PHP_MEMORY_LIMIT="512M"
-    OPCACHE_JIT_BUFFER="128M"
-    OPCACHE_INT_BUFFER=64
+  tuning_load
+  if [[ -z "$(tuning_get PHP_MAX_CHILDREN)" ]]; then
+    tuning_write_plan || exit 1
+    tuning_load
   fi
 
-  # Apply calculated values to PHP-FPM configuration
-  sed -i "s|pm.start_servers = .*|pm.start_servers = ${PHP_FPM_START_SERVERS}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = ${PHP_FPM_MIN_SPARE_SERVERS}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = ${PHP_FPM_MAX_SPARE_SERVERS}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.max_children = .*|pm.max_children = ${PHP_FPM_MAX_CHILDREN}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|pm.start_servers = .*|pm.start_servers = $(tuning_get PHP_START_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
 
-  # Apply memory and OPcache settings to php.ini
-  sed -i "s|SEDPHPMEMLIMIT|${PHP_MEMORY_LIMIT}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEINTBUF|${OPCACHE_INT_BUFFER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
-  # Arithmetic expansion result is unlikely to need quoting; template controls any surrounding quotes
-  sed -i "s|SEDOPCACHEMEM|$((AVAILABLE_MEMORY / 8))M|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDOPCACHEMEM|$(tuning_get OPCACHE_MEMORY_MB)M|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDOPCACHEMAXFILES|$(tuning_get OPCACHE_MAX_FILES)|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
+}
+
+# Put back the configuration files saved before this run (used when the new one fails php-fpm -t)
+restore_php_configs() {
+  local file
+  for file in "/etc/php/${PHP_VER}/fpm/php.ini" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf"; do
+    if [[ -f "${file}.bak" ]]; then
+      cp -p "${file}.bak" "${file}"
+    fi
+  done
 }
 
 # Update PHP config
@@ -153,6 +98,14 @@ fi
 sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
 
 # Tune PHP Configuration
-calculate_php
+apply_php_tuning
+
+# Test the new configuration; keep the previous one if it fails
+if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! "php-fpm${PHP_VER}" -t > /dev/null 2>> /tmp/enginescript_install_errors.log; then
+  echo "Error: php-fpm${PHP_VER} -t failed with the new configuration; restored the previous configuration files." >&2
+  restore_php_configs
+  print_last_errors
+  exit 1
+fi
 print_last_errors
 debug_pause "PHP Configuration Update"

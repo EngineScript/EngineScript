@@ -36,6 +36,7 @@ while true
       "Update PHP"
       "Switch PHP Version"
       "Update Server Tools"
+      "Re-tune Services (memory, workers, caches)"
       "Update Ubuntu Distribution (apt full-upgrade)"
       "Update Ubuntu Software (apt upgrade)"
       "Exit Update Software Menu"
@@ -123,6 +124,11 @@ while true
           ;;
         "Update Server Tools")
           /usr/local/bin/enginescript/scripts/update/software-update.sh
+          break
+          ;;
+        "Re-tune Services (memory, workers, caches)")
+          # Also measures the database disk again (30 seconds of disk load)
+          /usr/local/bin/enginescript/scripts/update/retune-services.sh --benchmark
           break
           ;;
         "Update Ubuntu Distribution (apt full-upgrade)")

@@ -246,6 +246,14 @@ if [[ -f /etc/systemd/system/disable-thp.service ]]; then
   systemctl daemon-reload
 fi
 
+# Shared tuning plan: re-tune PHP-FPM, Redis, MariaDB, and Nginx when the server has no plan
+# yet, the plan format changed, or RAM or the CPU count changed (a resized droplet)
+if tuning_needs_replan; then
+  echo "Re-tuning services for this server's RAM and CPUs..."
+  /usr/local/bin/enginescript/scripts/update/retune-services.sh 2>> /tmp/enginescript_install_errors.log
+  print_last_errors
+fi
+
 # Warn when the installed PHP version is no longer supported
 INSTALLED_PHP_VER="$(get_installed_php_version)"
 if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then

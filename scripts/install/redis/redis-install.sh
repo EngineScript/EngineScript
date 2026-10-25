@@ -42,23 +42,18 @@ fi
 # Copy Redis Config File
 cp -rf /usr/local/bin/enginescript/config/etc/redis/redis.conf /etc/redis/redis.conf
 
-# Redis Tuning
-sed -i "s|SEDREDISMAXMEM|${SERVER_MEMORY_TOTAL_06}|g" /etc/redis/redis.conf
-
-configure_redis_io_threads() {
-  local thread_count="$1"
-  sed -i "s|^# io-threads 4|io-threads ${thread_count}|" /etc/redis/redis.conf
-}
-
-if [[ "${CPU_COUNT}" -ge '16' ]]; then
-  configure_redis_io_threads 8
-elif [[ "${CPU_COUNT}" -ge '12' && "${CPU_COUNT}" -le '15' ]]; then
-  configure_redis_io_threads 6
-elif [[ "${CPU_COUNT}" -ge '7' && "${CPU_COUNT}" -le '11' ]]; then
-  configure_redis_io_threads 4
-elif [[ "${CPU_COUNT}" -ge '4' && "${CPU_COUNT}" -le '6' ]]; then
-  configure_redis_io_threads 2
+# Redis Tuning: maxmemory from the shared tuning plan (enginescript-tuning.sh). Redis runs
+# single-threaded (its default): a WordPress object cache's small requests over the local socket
+# stay far below what one thread serves, and I/O threads would compete with PHP for CPU.
+tuning_load
+if [[ -z "$(tuning_get REDIS_MAXMEMORY_MB)" ]]; then
+  tuning_write_plan || exit 1
+  tuning_load
 fi
+sed -i "s|SEDREDISMAXMEM|$(tuning_get REDIS_MAXMEMORY_MB)|g" /etc/redis/redis.conf
+
+# OOM killer order: PHP-FPM workers first, then Redis, then MariaDB
+install_redis_service_override
 
 # Add www-data to Redis Group
 if ! getent group redis > /dev/null; then
