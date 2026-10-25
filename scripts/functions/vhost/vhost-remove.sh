@@ -131,6 +131,9 @@ else
   echo -e "${BOLD}SSL Certificates Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have SSL Certificates.\n\n"
 fi
 
+# Delete the site's Redis keys (read from its wp-config.php, so before the files go)
+flush_site_redis_cache "/var/www/sites/${DOMAIN}/html/wp-config.php"
+
 # Remove main directory
 if [[ -d "/var/www/sites/${DOMAIN}" ]];
 then
@@ -161,9 +164,18 @@ fi
 # The site's Redis database number is free again: new sites take the lowest number no other
 # site's wp-config.php uses, so nothing changes in redis.conf.
 
-# Restart Services (including Redis if needed by alias-restart.sh)
-echo "Restarting Nginx, PHP, and Redis..."
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh # This should restart nginx, php-fpm, and redis
+# Reload Nginx (the site's vhost is gone) and PHP-FPM (drops the site's code from OPcache).
+# Redis keeps running: Redis Object Cache shows an error page on every site while Redis is
+# unreachable, and the site's keys are already deleted.
+echo "Reloading Nginx and PHP-FPM..."
+if nginx -t > /dev/null 2>&1; then
+  systemctl reload nginx
+else
+  echo "Error: nginx -t failed after removing ${DOMAIN}; Nginx was not reloaded. Check with: nginx -t" >&2
+fi
+if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+  systemctl reload "php${PHP_VER}-fpm"
+fi
 echo ""
 
 # Summary

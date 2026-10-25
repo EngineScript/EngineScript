@@ -1151,6 +1151,28 @@ function assign_site_redis_database() {
     echo "Redis database ${number}: ${wp_config}"
 }
 
+# Delete one site's keys from Redis, for a site being removed, without restarting Redis or
+# touching other sites' caches. Redis Object Cache names keys
+# "<WP_REDIS_PREFIX><table prefix without _-:$ at its ends>:<group>:<key>", so the match is
+# exact even where two sites still share a database number.
+function flush_site_redis_cache() {
+    local wp_config="$1" number salt table_prefix pattern
+    local -a cli=(redis-cli -s /run/redis/redis-server.sock)
+
+    [[ -f "${wp_config}" ]] || return 0
+    number="$(get_site_redis_database "${wp_config}")"
+    salt="$(sed -n "s/^[[:space:]]*define([[:space:]]*['\"]WP_REDIS_PREFIX['\"][[:space:]]*,[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" "${wp_config}" | head -n 1)"
+    table_prefix="$(sed -n "s/^[[:space:]]*\$table_prefix[[:space:]]*=[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" "${wp_config}" | head -n 1)"
+    table_prefix="$(sed -e 's/^[-_:$]*//' -e 's/[-_:$]*$//' <<< "${table_prefix}")"
+    if [[ ! "${number}" =~ ^[0-9]+$ || ! "${salt}" =~ ^[A-Za-z0-9_.-]+$ || ! "${table_prefix}" =~ ^[A-Za-z0-9_]*$ ]]; then
+        echo "No usable Redis database or key prefix in ${wp_config}; nothing deleted from Redis."
+        return 0
+    fi
+    pattern="${salt}${table_prefix}:*"
+    "${cli[@]}" -n "${number}" --scan --pattern "${pattern}" | xargs -r -n 500 "${cli[@]}" -n "${number}" UNLINK > /dev/null
+    echo "Deleted the site's Redis keys (${pattern}) from database ${number}."
+}
+
 # Existing servers: at least REDIS_MIN_DATABASES databases, and every site on its own number.
 # Earlier versions numbered sites by the site count, so a site added after a removal could share
 # a number with another site. The first site (in directory order) keeps a shared number; the

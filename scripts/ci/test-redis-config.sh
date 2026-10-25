@@ -22,10 +22,22 @@ TEMPLATE="${REPO_ROOT}/config/var/www/wordpress/wp-config.php"
 # redis-cli stand-in: records its arguments, answers OK unless REDIS_DOWN is set
 mkdir -p "${WORK}/bin"
 export REDIS_CLI_LOG="${WORK}/redis-cli.log"
+# --scan prints the keys listed in REDIS_SCAN_KEYS that match its --pattern (a glob)
+export REDIS_SCAN_KEYS="${WORK}/scan-keys.txt"
+: > "${REDIS_SCAN_KEYS}"
 cat > "${WORK}/bin/redis-cli" << 'EOF'
 #!/usr/bin/env bash
 echo "$*" >> "${REDIS_CLI_LOG}"
 [[ -n "${REDIS_DOWN:-}" ]] && exit 1
+if [[ " $* " == *" --scan "* ]]; then
+  pattern=""
+  while [[ $# -gt 0 ]]; do [[ "$1" == "--pattern" ]] && pattern="$2"; shift; done
+  while IFS= read -r key; do
+    # shellcheck disable=SC2053 # the pattern is a glob on purpose
+    [[ "${key}" == ${pattern} ]] && echo "${key}"
+  done < "${REDIS_SCAN_KEYS}"
+  exit 0
+fi
 echo "OK"
 EOF
 chmod +x "${WORK}/bin/redis-cli"
@@ -198,6 +210,28 @@ if REDIS_DOWN=1 migrate_redis_lazy_user_flush > /dev/null; then
 else
   fail "migrate_redis_lazy_user_flush failed with Redis not running"
 fi
+
+echo "Removing a site: only its own Redis keys are deleted"
+reset_server 128
+add_site gone.test 3
+sed -i -e "s/SEDREDISPREFIX/es_aaaaaaaaaaaa/" -e "s/SEDPREFIX_/abc_/" "${ES_SITES_ROOT}/gone.test/html/wp-config.php"
+cat > "${REDIS_SCAN_KEYS}" << 'EOF'
+es_aaaaaaaaaaaaabc:options:alloptions
+es_aaaaaaaaaaaaabc:posts:12
+es_aaaaaaaaaaaaabcd:options:alloptions
+es_bbbbbbbbbbbbxyz:options:alloptions
+EOF
+: > "${REDIS_CLI_LOG}"
+flush_site_redis_cache "${ES_SITES_ROOT}/gone.test/html/wp-config.php" > /dev/null
+check "scans the site's database for its exact key prefix" "$(grep -c -- '-n 3 --scan --pattern es_aaaaaaaaaaaaabc:\*' "${REDIS_CLI_LOG}")" "1"
+check "deletes only the site's keys" "$(grep 'UNLINK' "${REDIS_CLI_LOG}")" "-s /run/redis/redis-server.sock -n 3 UNLINK es_aaaaaaaaaaaaabc:options:alloptions es_aaaaaaaaaaaaabc:posts:12"
+check "no FLUSHDB, FLUSHALL, or restart" "$(grep -c 'FLUSH' "${REDIS_CLI_LOG}") ${RESTARTS}" "0 0"
+add_site placeholder.test
+: > "${REDIS_CLI_LOG}"
+flush_site_redis_cache "${ES_SITES_ROOT}/placeholder.test/html/wp-config.php" > /dev/null
+check "an unfilled template prefix deletes nothing" "$(grep -c 'UNLINK' "${REDIS_CLI_LOG}")" "0"
+flush_site_redis_cache "${ES_SITES_ROOT}/missing.test/html/wp-config.php" > /dev/null && pass "a missing wp-config.php: nothing to do" || fail "flush_site_redis_cache failed without wp-config.php"
+: > "${REDIS_SCAN_KEYS}"
 
 echo "Update without Redis"
 reset_server 128
