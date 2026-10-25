@@ -121,7 +121,6 @@ expected_flags=(
   "SWAP"
   "KERNEL_TWEAKS"
   "THP"
-  "KSM"
   "SFL"
   "NTP"
   "DO_CONSOLE"

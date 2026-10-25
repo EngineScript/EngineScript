@@ -209,9 +209,6 @@ run_install_step "KERNEL_TWEAKS" "/usr/local/bin/enginescript/scripts/install/ke
 # Transparent Huge Pages
 run_install_step "THP" "/usr/local/bin/enginescript/scripts/install/systemd/thp.sh" "Transparent Huge Pages"
 
-# Kernel Samepage Merging
-run_install_step "KSM" "/usr/local/bin/enginescript/scripts/install/kernel/ksm.sh" "Kernel Samepage Merging"
-
 # Raising System File Limits
 run_install_step "SFL" "/usr/local/bin/enginescript/scripts/install/system-misc/file-limits.sh" "Raising System File Limits"
 

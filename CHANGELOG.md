@@ -4,6 +4,24 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-25
+
+### 🧠 SYSTEM MEMORY AND KERNEL SETTINGS
+
+- The kernel settings file (`/etc/sysctl.d/60-enginescript.conf`) was audited setting by setting and benchmarked. Removed settings that were harmful or outdated:
+  - The local port range 1024 - 65535 let outgoing connections take the ports MariaDB (3306) and Redis (6379) listen on, so a service could fail to start after a reboot; the default range is used again.
+  - `net.unix.max_dgram_qlen = 50` lowered the queue that journald and syslog use from systemd's 512.
+  - The 2018 IP fragment limits (a FragmentSmack workaround for a kernel bug fixed long ago).
+  - `fs.file-max`, `fs.nr_open`, and the inotify limits, which all lowered the defaults.
+  - High-throughput network card tuning (`netdev_budget`, `netdev_budget_usecs`, `netdev_max_backlog`).
+  - Larger default socket buffers for every socket, and ECN on outgoing connections.
+- Removed settings that only repeated the defaults or had no effect (TCP timestamps, SACK, window scaling, retry counts, `somaxconn`, neighbor table sizes, System V message queue limits, TCP Fast Open, and others).
+- Kept, with measurements: BBR congestion control with the `fq` scheduler (10 to 20 times the throughput of the default on a path with 80 ms and 1% packet loss), `tcp_notsent_lowat = 16384` (small pages p90 107 ms against 157 ms while a large response shared an HTTP/2 connection, as Cloudflare's connections to the origin do), and `tcp_slow_start_after_idle = 0` (a 500 KB page on a reused connection in 15 ms against 65 ms). The security settings stay.
+- The file is installed root-writable only (0644; was group-writable). EngineScript updates install it and apply it without a reboot; the removed settings with fixed defaults are reset at once, and the rest at the next reboot.
+- Kernel Samepage Merging (`ksmtuned`) is no longer installed, and EngineScript updates turn it off. It was added for Netdata, which EngineScript no longer installs; Nginx, PHP-FPM, MariaDB, and Redis never mark memory as mergeable (tested), so it had nothing to merge.
+- Transparent Huge Pages are now switched off before MariaDB, Redis, PHP-FPM, and Nginx start (systemd ordering), instead of at the same time.
+- New servers get a 4 GB swap file from 2 GB of RAM (3 GB below that). The swap install no longer adds a second `/etc/fstab` line when a swap file exists.
+
 ## 2026-10-21
 
 ### ⬆️ NGINX 1.31 MAINLINE AND OPENSSL 4.0

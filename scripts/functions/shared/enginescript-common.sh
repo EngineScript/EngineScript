@@ -127,7 +127,6 @@ function initialize_install_state_file() {
         "SWAP"
         "KERNEL_TWEAKS"
         "THP"
-        "KSM"
         "SFL"
         "NTP"
         "DO_CONSOLE"
@@ -1373,6 +1372,55 @@ function migrate_php_fpm_log_path() {
 
 
 # ----------------------------------------------------------------
+# Install EngineScript's kernel settings and apply them
+#
+# Installs config/etc/sysctl.d/60-enginescript.conf (root-only writable) and the kernel TLS
+# module (Nginx uses kTLS), then applies all sysctl files. Settings removed from the file in
+# October 2026 keep their old value until the next reboot, so the ones with fixed defaults that
+# mattered are reset now: the local port range (1024 - 65535 let outgoing connections take
+# MariaDB's and Redis's ports), the Unix datagram queue (50 cut systemd's 512), the IP fragment
+# limits (a 2018 workaround), ECN, and the default socket buffers. The others (file-max,
+# nr_open, inotify, the network budget) return to their defaults at the next reboot.
+function install_enginescript_sysctl() {
+    local conf=/etc/sysctl.d/60-enginescript.conf
+    cp -f /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf "${conf}"
+    chown root:root "${conf}"
+    chmod 644 "${conf}"
+
+    echo tls > /etc/modules-load.d/tls.conf
+    modprobe tls 2> /dev/null || true
+
+    sysctl -w net.ipv4.ip_local_port_range="32768 60999" > /dev/null 2>&1
+    sysctl -w net.unix.max_dgram_qlen=512 > /dev/null 2>&1
+    sysctl -w net.ipv4.ipfrag_high_thresh=4194304 net.ipv4.ipfrag_low_thresh=3145728 > /dev/null 2>&1
+    sysctl -w net.ipv6.ip6frag_high_thresh=4194304 net.ipv6.ip6frag_low_thresh=3145728 > /dev/null 2>&1
+    sysctl -w net.ipv4.tcp_ecn=2 > /dev/null 2>&1
+    sysctl -w net.core.rmem_default=212992 net.core.wmem_default=212992 > /dev/null 2>&1
+
+    sysctl --system > /dev/null 2>> /tmp/enginescript_install_errors.log || true
+}
+
+
+# ----------------------------------------------------------------
+# Turn off Kernel Samepage Merging on servers that installed it
+#
+# EngineScript installed ksmtuned for Netdata, which marks its memory mergeable. Netdata is no
+# longer installed, and Nginx, PHP-FPM, MariaDB, and Redis never mark memory mergeable (tested:
+# no "mg" regions), so KSM had nothing to merge and only cost CPU when ksmtuned started it.
+function disable_ksm() {
+    local unit
+    for unit in ksmtuned.service ksm.service; do
+        if systemctl list-unit-files "${unit}" 2> /dev/null | grep -q "^${unit}"; then
+            systemctl disable --now "${unit}" > /dev/null 2>&1
+        fi
+    done
+    if [[ -w /sys/kernel/mm/ksm/run ]] && [[ "$(cat /sys/kernel/mm/ksm/run)" != "0" ]]; then
+        echo 0 > /sys/kernel/mm/ksm/run
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Install igbinary explicitly for every installed PHP version
 #
 # Redis Object Cache serializes with it (WP_REDIS_IGBINARY). Existing servers only have it as a
@@ -1475,7 +1523,6 @@ function check_installation_completion() {
         "SWAP|Swap"
         "KERNEL_TWEAKS|Kernel Tweaks"
         "THP|Transparent Huge Pages"
-        "KSM|Kernel Samepage Merging"
         "SFL|Raising System File Limits"
         "NTP|NTP"
     )
