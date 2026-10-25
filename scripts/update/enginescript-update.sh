@@ -34,7 +34,7 @@ else
 fi
 
 # Copy EngineScript
-cd /usr/local/bin/enginescript
+cd /usr/local/bin/enginescript || { echo "Error: Failed to change to /usr/local/bin/enginescript" >&2; exit 1; }
 echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
 git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
 git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
