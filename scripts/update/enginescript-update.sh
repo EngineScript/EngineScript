@@ -27,32 +27,41 @@ return_to_src
 # Determine which branch to use based on TEST_MODE setting
 if [[ "${TEST_MODE}" == "1" ]]; then
     ENGINESCRIPT_BRANCH="update-software-versions"
-    echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
 else
     ENGINESCRIPT_BRANCH="master"
-    echo "Updating from production branch (master)"
 fi
 
-# Copy EngineScript
-cd /usr/local/bin/enginescript || { echo "Error: Failed to change to /usr/local/bin/enginescript" >&2; exit 1; }
-echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
-git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "EngineScript Git Pull"
+# Copy EngineScript, then run the new copy of this script for the rest of the update (--fetched).
+# Bash keeps running the text of the file it started with, and the shared functions sourced
+# above are the old ones, so without the restart an update would run the previous version's steps.
+if [[ "${1:-}" != "--fetched" ]]; then
+    if [[ "${TEST_MODE}" == "1" ]]; then
+        echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
+    else
+        echo "Updating from production branch (master)"
+    fi
+    cd /usr/local/bin/enginescript || { echo "Error: Failed to change to /usr/local/bin/enginescript" >&2; exit 1; }
+    echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
+    git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+    git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+    git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+    debug_pause "EngineScript Git Pull"
 
-# Convert line endings
-dos2unix /usr/local/bin/enginescript/*
+    # Convert line endings
+    dos2unix /usr/local/bin/enginescript/*
 
-# Set directory and file permissions to 755
-find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
+    # Set directory and file permissions to 755
+    find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
 
-# Set ownership
-chown -R root:root /usr/local/bin/enginescript
+    # Set ownership
+    chown -R root:root /usr/local/bin/enginescript
 
-# Make shell scripts executable
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+    # Make shell scripts executable
+    find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+
+    exec bash /usr/local/bin/enginescript/scripts/update/enginescript-update.sh --fetched
+fi
 
 echo ""
 echo ""
@@ -202,66 +211,6 @@ else
 fi
 print_last_errors
 debug_pause "EngineScript Plugins Update"
-
-# Certificates of existing sites: reload Nginx after each renewal
-migrate_acme_reload_commands 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP-FPM log: move existing installs back to the package default, which logrotate covers
-migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP: igbinary installed by name (Redis Object Cache's serializer), not only as a dependency
-ensure_php_igbinary 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP: turn off session upload progress (security; WordPress does not use it)
-migrate_php_upload_progress 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Backups: one scheduler cron job in place of the separate backup jobs
-install_backup_cron 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Redis: 128 databases, and every site on its own database number
-migrate_redis_databases 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Redis: cache flushes free memory in the background
-migrate_redis_lazy_user_flush 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Kernel settings: the audited sysctl file, applied live (a reboot completes the rest)
-install_enginescript_sysctl 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Kernel Samepage Merging: nothing on these servers can use it
-disable_ksm 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Transparent Huge Pages: switched off before the services start
-if [[ -f /etc/systemd/system/disable-thp.service ]]; then
-  cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
-  chmod 644 /etc/systemd/system/disable-thp.service
-  systemctl daemon-reload
-fi
-
-# Shared tuning plan: re-tune PHP-FPM, Redis, MariaDB, and Nginx when the server has no plan
-# yet, the plan format changed, or RAM or the CPU count changed (a resized droplet)
-if tuning_needs_replan; then
-  echo "Re-tuning services for this server's RAM and CPUs..."
-  /usr/local/bin/enginescript/scripts/update/retune-services.sh 2>> /tmp/enginescript_install_errors.log
-  print_last_errors
-fi
-
-# Warn when the installed PHP version is no longer supported
-INSTALLED_PHP_VER="$(get_installed_php_version)"
-if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then
-  echo ""
-  echo "WARNING: PHP ${INSTALLED_PHP_VER} is no longer supported by EngineScript (supported: ${SUPPORTED_PHP_VERSIONS[*]})."
-  echo "Switch to a supported version with: es.menu > Update Software > Switch PHP Version"
-  echo ""
-fi
 
 echo ""
 echo ""
