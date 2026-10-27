@@ -1283,7 +1283,7 @@ function apply_mariadb_tuning() {
 # Patches the FastCGI cache index and disk limit, and the October 2026 tuning (cache inactive
 # 3h with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
 # worker_rlimit_nofile 16384), tests with nginx -t, and reloads; the previous file is restored if
-# the test fails. Other template changes arrive with the next Nginx update.
+# the test or the reload fails. Other template changes arrive with the next Nginx update.
 function apply_nginx_tuning() {
     local conf=/etc/nginx/nginx.conf backup
 
@@ -1305,16 +1305,22 @@ function apply_nginx_tuning() {
         rm -f "${backup}"
         return 0
     fi
-    if nginx -t > /dev/null 2>&1; then
-        systemctl reload nginx
-        echo "Nginx: applied the tuning plan (cache index $(tuning_get NGINX_CACHE_ZONE_MB) MB, cache limit $(tuning_get NGINX_CACHE_MAX_MB) MB)."
-    else
+    if ! nginx -t > /dev/null 2>&1; then
         cp -p "${backup}" "${conf}"
         echo "Error: nginx -t failed with the tuned nginx.conf; restored the previous one." >&2
         nginx -t 2>&1 | tail -3 >&2
         rm -f "${backup}"
         return 1
     fi
+    # A stopped Nginx reads the new file when it starts. If the reload fails, the previous file
+    # is restored, so the next re-tune applies the plan again instead of finding nothing to change.
+    if systemctl is-active --quiet nginx && ! systemctl reload nginx; then
+        cp -p "${backup}" "${conf}"
+        echo "Error: Nginx did not reload with the tuned nginx.conf; restored the previous one." >&2
+        rm -f "${backup}"
+        return 1
+    fi
+    echo "Nginx: applied the tuning plan (cache index $(tuning_get NGINX_CACHE_ZONE_MB) MB, cache limit $(tuning_get NGINX_CACHE_MAX_MB) MB)."
     rm -f "${backup}"
 }
 

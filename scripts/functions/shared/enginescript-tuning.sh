@@ -195,10 +195,12 @@ function tuning_get() {
     echo "${TUNING[$1]:-}"
 }
 
-# True when there is no usable plan, it was written by an older plan version, or RAM or the CPU
-# count changed (more than 5% for RAM) since it was written
+# True when there is no usable plan, it was written by an older plan version, RAM or the CPU
+# count changed (more than 5% for RAM) since it was written, or the last re-tune did not finish
+# (retune-services.sh keeps tuning.pending until every service has taken the plan)
 function tuning_needs_replan() {
     local conf="${ES_TUNING_CONF:-/etc/enginescript/tuning.conf}" saved_mem saved_cpus saved_version mem cpus
+    [[ -e "${ES_TUNING_PENDING:-/etc/enginescript/tuning.pending}" ]] && return 0
     saved_version="$(tuning_read_file "${conf}" | sed -n 's/^TUNING_VERSION=//p')"
     saved_mem="$(tuning_read_file "${conf}" | sed -n 's/^TUNING_MEM_MB=//p')"
     saved_cpus="$(tuning_read_file "${conf}" | sed -n 's/^TUNING_CPUS=//p')"

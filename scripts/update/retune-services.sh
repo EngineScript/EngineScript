@@ -37,6 +37,10 @@ if ! tuning_write_plan; then
 fi
 tuning_load
 
+# Kept until every service has taken the plan, so the next EngineScript update tries again
+TUNING_PENDING="${ES_TUNING_PENDING:-/etc/enginescript/tuning.pending}"
+touch "${TUNING_PENDING}"
+
 echo ""
 echo "Tuning plan for $(tuning_get TUNING_MEM_MB) MB of RAM and $(tuning_get TUNING_CPUS) CPUs:"
 echo "  PHP-FPM workers:   $(tuning_get PHP_MAX_CHILDREN) (memory_limit $(tuning_get PHP_MEMORY_LIMIT_MB)M)"
@@ -54,10 +58,12 @@ RETUNE_FAILED=0
 while IFS= read -r ver; do
   [[ -n "${ver}" ]] || continue
   if /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${ver}"; then
-    if systemctl is-active --quiet "php${ver}-fpm"; then
-      systemctl reload "php${ver}-fpm"
+    if systemctl is-active --quiet "php${ver}-fpm" && ! systemctl reload "php${ver}-fpm"; then
+      echo "Error: PHP ${ver}-FPM did not reload; its new configuration applies at its next restart." >&2
+      RETUNE_FAILED=1
+    else
+      echo "PHP ${ver}: applied the tuning plan."
     fi
-    echo "PHP ${ver}: applied the tuning plan."
   else
     RETUNE_FAILED=1
   fi
@@ -79,6 +85,8 @@ apply_nginx_tuning || RETUNE_FAILED=1
 print_last_errors
 if [[ "${RETUNE_FAILED}" == "1" ]]; then
   echo "Re-tuning finished with errors (above); the services that failed kept their previous configuration." >&2
+  echo "The next EngineScript update tries again." >&2
   exit 1
 fi
+rm -f "${TUNING_PENDING}"
 echo "Re-tuning finished."

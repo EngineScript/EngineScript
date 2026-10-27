@@ -5,7 +5,7 @@
 # tuning_calculate must give the decided values for common server sizes; tuning.conf and the
 # overrides file must be read with the strict KEY=number parser (never sourced); overrides take
 # precedence; a re-plan keeps the saved disk benchmark result; tuning_needs_replan must detect a
-# missing or old plan and RAM or CPU changes.
+# missing or old plan, RAM or CPU changes, and a re-tune that did not finish.
 
 set -euo pipefail
 
@@ -14,6 +14,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 export ES_TUNING_CONF="${WORK}/tuning.conf"
 export ES_TUNING_OVERRIDES="${WORK}/tuning-overrides.conf"
+export ES_TUNING_PENDING="${WORK}/tuning.pending"
 
 # Read by enginescript-common.sh
 # shellcheck disable=SC2034
@@ -119,11 +120,19 @@ check "RAM within 5%: no re-plan" "$(tuning_needs_replan 7700 4 && echo yes || e
 check "RAM changed more than 5%: re-plan" "$(tuning_needs_replan 7400 4 && echo yes || echo no)" "yes"
 check "droplet resized up: re-plan" "$(tuning_needs_replan 15900 8 && echo yes || echo no)" "yes"
 check "CPU count changed: re-plan" "$(tuning_needs_replan 7940 2 && echo yes || echo no)" "yes"
+touch "${ES_TUNING_PENDING}"
+check "last re-tune did not finish: re-plan" "$(tuning_needs_replan 7940 4 && echo yes || echo no)" "yes"
+rm -f "${ES_TUNING_PENDING}"
+check "re-tune finished: no re-plan" "$(tuning_needs_replan 7940 4 && echo yes || echo no)" "no"
 sed -i 's/^TUNING_VERSION=.*/TUNING_VERSION=0/' "${ES_TUNING_CONF}"
 check "older plan version: re-plan" "$(tuning_needs_replan 7940 4 && echo yes || echo no)" "yes"
 rm -f "${ES_TUNING_CONF}"
 check "no plan yet: re-plan" "$(tuning_needs_replan 7940 4 && echo yes || echo no)" "yes"
-tuning_write_plan 100 1 1000 2> /dev/null && fail "a plan for 100 MB was written" || pass "an unreadable or tiny memory size writes no plan"
+if tuning_write_plan 100 1 1000 2> /dev/null; then
+  fail "a plan for 100 MB was written"
+else
+  pass "an unreadable or tiny memory size writes no plan"
+fi
 
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
