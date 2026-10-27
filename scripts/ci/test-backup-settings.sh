@@ -117,8 +117,16 @@ if grep -qE 'daily-database-backup|hourly-database-backup|weekly-wp-content-back
 else
   pass "Old backup jobs removed"
 fi
-[[ "$(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")" == "1" ]] && pass "Scheduler job added once" || fail "Scheduler job count: $(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")"
-grep -q 'wp-cron.sh' "${FAKE_CRONTAB}" && grep -q 'nginx-backup.sh' "${FAKE_CRONTAB}" && pass "Other cron jobs kept" || fail "Other cron jobs were removed"
+if [[ "$(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")" == "1" ]]; then
+  pass "Scheduler job added once"
+else
+  fail "Scheduler job count: $(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")"
+fi
+if grep -q 'wp-cron.sh' "${FAKE_CRONTAB}" && grep -q 'nginx-backup.sh' "${FAKE_CRONTAB}"; then
+  pass "Other cron jobs kept"
+else
+  fail "Other cron jobs were removed"
+fi
 cp "${FAKE_CRONTAB}" "${FAKE_BIN}/before.txt"
 output="$(install_backup_cron)"
 if [[ -z "${output}" ]] && cmp -s "${FAKE_CRONTAB}" "${FAKE_BIN}/before.txt"; then
@@ -128,7 +136,11 @@ else
 fi
 : > "${FAKE_CRONTAB}"
 install_backup_cron > /dev/null
-[[ "$(cat "${FAKE_CRONTAB}")" == "${SCHEDULER}" ]] && pass "Empty crontab gets the scheduler job" || fail "Empty crontab: '$(cat "${FAKE_CRONTAB}")'"
+if [[ "$(cat "${FAKE_CRONTAB}")" == "${SCHEDULER}" ]]; then
+  pass "Empty crontab gets the scheduler job"
+else
+  fail "Empty crontab: '$(cat "${FAKE_CRONTAB}")'"
+fi
 
 echo "======================================================="
 echo "  RESULTS: ${TESTS_PASSED} passed, ${TESTS_FAILED} failed"

@@ -78,7 +78,11 @@ for spec in "1970 1" "1970 2" "3920 2" "7940 4" "16000 8" "32000 16"; do
   eval "$(tuning_calculate "${mem}" "${cpus}" 100000 | sed 's/^/local_/')"
   # shellcheck disable=SC2154 # local_* come from the eval
   total=$((192 + mem * 5 / 100 + local_REDIS_MAXMEMORY_MB * 125 / 100 + local_OPCACHE_MEMORY_MB + local_MARIADB_BUFFER_POOL_MB + 160 + local_MARIADB_ARIA_MB + local_MARIADB_MAX_CONNECTIONS + local_PHP_MAX_CHILDREN * 70))
-  (( total <= mem )) && pass "${mem} MB, ${cpus} vCPU: budget ${total} MB fits" || fail "${mem} MB, ${cpus} vCPU: budget ${total} MB exceeds RAM"
+  if (( total <= mem )); then
+    pass "${mem} MB, ${cpus} vCPU: budget ${total} MB fits"
+  else
+    fail "${mem} MB, ${cpus} vCPU: budget ${total} MB exceeds RAM"
+  fi
 done
 
 echo "Writing, reading, and overriding the plan"
@@ -100,7 +104,11 @@ check "an override takes precedence" "$(tuning_get PHP_MAX_CHILDREN)" "20"
 check "a command substitution is ignored" "$(tuning_get REDIS_MAXMEMORY_MB)" "392"
 check "trailing shell code is ignored" "$(tuning_get MARIADB_BUFFER_POOL_MB)" "1312"
 check "lowercase keys and spaced lines are ignored" "$(tuning_get OPCACHE_MEMORY_MB) $(tuning_get not_upper)" "384 "
-[[ ! -e /tmp/es-tuning-pwned ]] && pass "nothing in the overrides file was executed" || fail "the overrides file was executed"
+if [[ ! -e /tmp/es-tuning-pwned ]]; then
+  pass "nothing in the overrides file was executed"
+else
+  fail "the overrides file was executed"
+fi
 rm -f "${ES_TUNING_OVERRIDES}"
 
 echo "The saved disk benchmark result survives a re-plan"
@@ -111,8 +119,16 @@ check "MARIADB_IO_CAPACITY kept" "$(tuning_get MARIADB_IO_CAPACITY)" "3500"
 check "the plan was recalculated" "$(tuning_get PHP_MAX_CHILDREN)" "24"
 tuning_set_value MARIADB_IO_CAPACITY 4000
 check "tuning_set_value replaces, not appends" "$(grep -c '^MARIADB_IO_CAPACITY=' "${ES_TUNING_CONF}")" "1"
-tuning_set_value "BAD KEY" 5 && fail "tuning_set_value accepted a bad key" || pass "tuning_set_value rejects a bad key"
-tuning_set_value GOOD_KEY "5; reboot" && fail "tuning_set_value accepted a bad value" || pass "tuning_set_value rejects a bad value"
+if tuning_set_value "BAD KEY" 5; then
+  fail "tuning_set_value accepted a bad key"
+else
+  pass "tuning_set_value rejects a bad key"
+fi
+if tuning_set_value GOOD_KEY "5; reboot"; then
+  fail "tuning_set_value accepted a bad value"
+else
+  pass "tuning_set_value rejects a bad value"
+fi
 
 echo "When a re-plan is needed"
 check "same RAM and CPUs: no re-plan" "$(tuning_needs_replan 7940 4 && echo yes || echo no)" "no"

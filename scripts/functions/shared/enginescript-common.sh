@@ -1021,6 +1021,8 @@ function migrate_nginx_vhosts() {
         if [[ "${file_path}" == /etc/nginx/sites-enabled/*.conf ]]; then
             local domain
             domain="$(basename "${file_path}" .conf)"
+            # $es_failed_request is an Nginx variable, matched literally
+            # shellcheck disable=SC2016
             if grep -q 'es_failed_request' /etc/nginx/nginx.conf 2> /dev/null; then
                 if grep -qx '  access_log off;' "${file_path}"; then
                     mkdir -p "/var/log/domains/${domain}"
@@ -1078,7 +1080,7 @@ function set_php_permissions() {
 function set_redis_permissions() {
     if [[ -d /etc/redis ]]; then
         chown -R root:redis /etc/redis
-        chmod 2750 /etc/redis
+        chmod u=rwx,g=rxs,o= /etc/redis
         find /etc/redis -mindepth 1 -type d -exec chmod 750 {} +
         find /etc/redis -type f -exec chmod 640 {} +
     fi
@@ -1090,7 +1092,7 @@ function set_redis_permissions() {
     fi
     if [[ -d /var/log/redis ]]; then
         chown redis:adm /var/log/redis
-        chmod 2750 /var/log/redis
+        chmod u=rwx,g=rxs,o= /var/log/redis
         find /var/log/redis -type f -exec chown redis:adm {} + -exec chmod 640 {} +
     fi
 }

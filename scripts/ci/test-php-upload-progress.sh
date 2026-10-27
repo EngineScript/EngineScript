@@ -112,8 +112,11 @@ cp "${ES_PHP_ETC}/8.3/fpm/php.ini" "${WORK}/after-first-run.ini"
 : > "${CALLS}"
 out="$(FPM_ACTIVE="php8.5-fpm" migrate_php_upload_progress)"
 check "a second run changes nothing" "$(cmp -s "${WORK}/after-first-run.ini" "${ES_PHP_ETC}/8.3/fpm/php.ini" && echo same) $(wc -c < "${CALLS}" | tr -d ' ') ${out:-quiet}" "same 0 quiet"
-diff <(sed 's/^session\.upload_progress\.enabled = Off$/;session.upload_progress.enabled = On/' "${ES_PHP_ETC}/8.3/fpm/php.ini") "${OLD_INI}" > /dev/null \
-  && pass "nothing else in php.ini changed" || fail "other lines of php.ini changed"
+if diff <(sed 's/^session\.upload_progress\.enabled = Off$/;session.upload_progress.enabled = On/' "${ES_PHP_ETC}/8.3/fpm/php.ini") "${OLD_INI}" > /dev/null; then
+  pass "nothing else in php.ini changed"
+else
+  fail "other lines of php.ini changed"
+fi
 
 echo "Active setting On (an administrator's edit)"
 reset
@@ -149,14 +152,22 @@ reset
 add_version 8.3
 add_version 8.4
 FPM_TEST_FAILS=8.3 FPM_ACTIVE="php8.3-fpm php8.4-fpm" migrate_php_upload_progress > /dev/null 2> "${WORK}/err.log"
-cmp -s "${OLD_INI}" "${ES_PHP_ETC}/8.3/fpm/php.ini" && pass "8.3: previous php.ini kept" || fail "8.3: php.ini changed although the test failed"
+if cmp -s "${OLD_INI}" "${ES_PHP_ETC}/8.3/fpm/php.ini"; then
+  pass "8.3: previous php.ini kept"
+else
+  fail "8.3: php.ini changed although the test failed"
+fi
 check "8.3: error reported" "$(grep -c 'php-fpm8.3 -t failed' "${WORK}/err.log")" "1"
 check "8.3: not reloaded; 8.4 changed and reloaded" "$(grep 'reload' "${CALLS}") | $(setting 8.4)" "systemctl reload php8.4-fpm | session.upload_progress.enabled = Off"
 check "no backup left" "$(find "${ES_PHP_ETC}" -name '*.pre-upload-progress' | wc -l | tr -d ' ')" "0"
 
 echo "No PHP installed"
 reset
-migrate_php_upload_progress > /dev/null && pass "nothing to do" || fail "failed without PHP"
+if migrate_php_upload_progress > /dev/null; then
+  pass "nothing to do"
+else
+  fail "failed without PHP"
+fi
 
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"

@@ -124,8 +124,11 @@ check "no Redis restart while numbers are free" "${RESTARTS}" "0"
 check "databases unchanged" "$(get_redis_database_count)" "128"
 assign_site_redis_database "${ES_SITES_ROOT}/e.test/html/wp-config.php" > /dev/null
 check "assigning again keeps a site on its own number (it does not count itself)" "$(db_of e.test)" "3"
-grep -q "define( 'WP_REDIS_DATABASE', 3 ); // EngineScript gives each site its own database number" "${ES_SITES_ROOT}/e.test/html/wp-config.php" \
-  && pass "only the number changes in wp-config.php" || fail "the WP_REDIS_DATABASE line was changed beyond its number"
+if grep -q "define( 'WP_REDIS_DATABASE', 3 ); // EngineScript gives each site its own database number" "${ES_SITES_ROOT}/e.test/html/wp-config.php"; then
+  pass "only the number changes in wp-config.php"
+else
+  fail "the WP_REDIS_DATABASE line was changed beyond its number"
+fi
 
 echo "All numbers taken: the number of databases doubles"
 reset_server 4
@@ -136,7 +139,11 @@ new_site s4.test
 check "the fifth site gets number 4" "$(db_of s4.test)" "4"
 check "databases doubled to 8" "$(get_redis_database_count)" "8"
 check "Redis restarted once" "${RESTARTS}" "1"
-grep -qx 'databases 8' "${ES_REDIS_CONF}" && pass "redis.conf has exactly 'databases 8'" || fail "redis.conf 'databases' line is wrong: $(grep '^databases' "${ES_REDIS_CONF}")"
+if grep -qx 'databases 8' "${ES_REDIS_CONF}"; then
+  pass "redis.conf has exactly 'databases 8'"
+else
+  fail "redis.conf 'databases' line is wrong: $(grep '^databases' "${ES_REDIS_CONF}")"
+fi
 
 echo "No 'databases' setting: the site keeps its number"
 reset_server 128
@@ -230,14 +237,26 @@ add_site placeholder.test
 : > "${REDIS_CLI_LOG}"
 flush_site_redis_cache "${ES_SITES_ROOT}/placeholder.test/html/wp-config.php" > /dev/null
 check "an unfilled template prefix deletes nothing" "$(grep -c 'UNLINK' "${REDIS_CLI_LOG}")" "0"
-flush_site_redis_cache "${ES_SITES_ROOT}/missing.test/html/wp-config.php" > /dev/null && pass "a missing wp-config.php: nothing to do" || fail "flush_site_redis_cache failed without wp-config.php"
+if flush_site_redis_cache "${ES_SITES_ROOT}/missing.test/html/wp-config.php" > /dev/null; then
+  pass "a missing wp-config.php: nothing to do"
+else
+  fail "flush_site_redis_cache failed without wp-config.php"
+fi
 : > "${REDIS_SCAN_KEYS}"
 
 echo "Update without Redis"
 reset_server 128
 rm -f "${ES_REDIS_CONF}"
-migrate_redis_databases > /dev/null && pass "no redis.conf: databases step does nothing" || fail "migrate_redis_databases failed without redis.conf"
-migrate_redis_lazy_user_flush > /dev/null && pass "no redis.conf: lazy flush step does nothing" || fail "migrate_redis_lazy_user_flush failed without redis.conf"
+if migrate_redis_databases > /dev/null; then
+  pass "no redis.conf: databases step does nothing"
+else
+  fail "migrate_redis_databases failed without redis.conf"
+fi
+if migrate_redis_lazy_user_flush > /dev/null; then
+  pass "no redis.conf: lazy flush step does nothing"
+else
+  fail "migrate_redis_lazy_user_flush failed without redis.conf"
+fi
 
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"

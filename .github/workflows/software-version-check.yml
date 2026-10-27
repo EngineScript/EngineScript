@@ -82,7 +82,7 @@ jobs:
           
           # MariaDB (11.8 long-term series), from MariaDB's REST API. The releases page this used to
           # read moved, and its pattern then matched nothing, so MariaDB stopped being updated.
-          LATEST_MARIADB=$(curl -fsSL https://downloads.mariadb.org/rest-api/mariadb/11.8/ |
+          LATEST_MARIADB=$(curl -fsSL --proto '=https' https://downloads.mariadb.org/rest-api/mariadb/11.8/ |
             jq -r '.releases | keys[]' |
             grep -E '^11\.8\.[0-9]+$' |
             sort -V |

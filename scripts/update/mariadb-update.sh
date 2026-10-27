@@ -58,7 +58,7 @@ sites_reach_database() {
   new_failures="$(newly_failing_sites "${SITES_FAILING_BEFORE}" "$(get_sites_without_database)")"
   if [[ -n "${new_failures}" ]]; then
     echo "These sites can no longer reach their database:" >&2
-    echo "${new_failures}" | sed 's/^/  /' >&2
+    printf '  %s\n' "${new_failures//$'\n'/$'\n'  }" >&2
     return 1
   fi
   return 0
@@ -144,7 +144,7 @@ fi
 # /etc/mysql/mariadb.cnf, so dpkg would ask whether to keep it (and fail without a terminal);
 # --force-confold keeps it, and step 3 re-applies the current template anyway.
 rm -f /etc/apt/sources.list.d/mariadb.list
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+curl -LsS --proto '=https' https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "MariaDB Repository"
 
@@ -191,7 +191,7 @@ else
 fi
 if [[ -n "${CONFIG_PROBLEM}" ]]; then
   echo "ERROR: The new MariaDB configuration failed its check:" >&2
-  echo "${CONFIG_PROBLEM}" | sed 's/^/  /' >&2
+  printf '  %s\n' "${CONFIG_PROBLEM//$'\n'/$'\n'  }" >&2
   mv -f "${STAGED_CONFIG}" "${ROLLBACK_DIR}/my.cnf.failed"
   if [[ -f "${ROLLBACK_DIR}/enginescript-limits.conf" ]]; then
     cp -p "${ROLLBACK_DIR}/enginescript-limits.conf" "${OVERRIDE_FILE}"

@@ -379,7 +379,8 @@ echo ""
 DB_CREDENTIALS_LIBRARY="${REPO_ROOT}/scripts/functions/shared/enginescript-db-credentials.sh"
 
 # Privileges on mysql.* would let one site change any account's privileges and reach every
-# other site's database.
+# other site's database. The backticks are MySQL's identifier quotes, matched literally.
+# shellcheck disable=SC2016
 if grep -Eiq 'GRANT[^;]*ON[[:space:]]+`?mysql`?\.' "${DB_CREDENTIALS_LIBRARY}"; then
   fail "Site database users are granted privileges on the mysql system database"
 else
