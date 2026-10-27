@@ -41,7 +41,7 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🔄 ENGINESCRIPT UPDATES
 
 - The steps that bring existing servers up to date now run on the first update to a new version. They run from `normal-auto-upgrade.sh`, which the update starts after downloading the new version. Before, they were part of `enginescript-update.sh`, and an update kept running the previous version of that script after downloading the new one, so new steps waited for the following update.
-- `enginescript-update.sh` now continues with the version it just downloaded, so later changes to the update itself also apply on the first update.
+- `enginescript-update.sh` now continues with the version it just downloaded, so later changes to the update itself also apply on the first update. The Nginx, PHP, and MariaDB updates do the same after they update EngineScript.
 
 ## 2026-10-21
 

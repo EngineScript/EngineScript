@@ -82,14 +82,18 @@ restore_previous_config() {
   fi
 }
 
-# Prompt for EngineScript Update
-if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
-    /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
-else
-    echo "Skipping EngineScript update."
+# Prompt for EngineScript Update. After it, run the new copy of this script: bash keeps running
+# the text of the file it started with, and the shared functions sourced above are the old ones.
+if [[ "${ES_ENGINESCRIPT_UPDATED:-0}" != "1" ]]; then
+    if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
+        /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
+        print_last_errors
+        debug_pause "EngineScript Update"
+        ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/mariadb-update.sh "$@"
+    else
+        echo "Skipping EngineScript update."
+    fi
 fi
-print_last_errors
-debug_pause "EngineScript Update"
 
 if ! mariadb_is_serving; then
   echo "Error: MariaDB is not running. Start it and fix any problem before updating, so its databases can be backed up first." >&2
