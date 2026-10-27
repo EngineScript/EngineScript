@@ -38,7 +38,7 @@ echo ""
 
 # Download and execute DigitalOcean's official installation script
 echo "Downloading and installing DigitalOcean Droplet Agent..."
-if wget -qO- https://repos-droplet.digitalocean.com/install.sh | bash; then
+if curl -fsSL --proto '=https' https://repos-droplet.digitalocean.com/install.sh | bash; then
     echo "✅ DigitalOcean Droplet Agent installed successfully"
     echo ""
     echo "Remote Console access is now enabled in your DigitalOcean control panel."
@@ -64,7 +64,7 @@ if [[ "${INSTALL_DIGITALOCEAN_METRICS_AGENT}" == "1" ]]; then
     
     # Download and execute DigitalOcean's official metrics agent installation script
     echo "Downloading and installing DigitalOcean Metrics Agent..."
-    if curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash; then
+    if curl -sSL --proto '=https' https://repos.insights.digitalocean.com/install.sh | sudo bash; then
         echo "✅ DigitalOcean Metrics Agent installed successfully"
         echo ""
         echo "Enhanced server metrics are now available in your DigitalOcean control panel."

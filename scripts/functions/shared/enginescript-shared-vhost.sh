@@ -639,7 +639,7 @@ install_enginescript_custom_plugins() {
     
     # 1. EngineScript Site Optimizer plugin
     mkdir -p "/tmp/enginescript-es-so-plugin"
-    wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" || {
+    curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" || {
       echo "ERROR: Failed to download EngineScript Site Optimizer plugin (version ${ES_SO_PLUGIN_VER})."
       rm -rf "/tmp/enginescript-es-so-plugin"
       return 1
@@ -653,7 +653,7 @@ install_enginescript_custom_plugins() {
 
     # 2. EngineScript Site Exporter plugin
     mkdir -p "/tmp/enginescript-es-se-plugin"
-    wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" || {
+    curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" || {
       echo "ERROR: Failed to download EngineScript Site Exporter plugin (version ${ES_SE_PLUGIN_VER})."
       rm -rf "/tmp/enginescript-es-se-plugin"
       return 1
@@ -727,7 +727,7 @@ fetch_wp_salts() {
 
   echo "Generating new WordPress salts..."
   for (( attempt=1; attempt<=max_attempts; attempt++ )); do
-    salt=$(curl --fail --silent --show-error --location --connect-timeout 10 --max-time 30 \
+    salt=$(curl --fail --silent --show-error --location --proto '=https' --connect-timeout 10 --max-time 30 \
       "https://api.wordpress.org/secret-key/1.1/salt/" 2>/dev/null)
     if [[ -n "${salt}" ]] && printf '%s' "${salt}" | grep -q "define("; then
       local string='put your unique phrase here'

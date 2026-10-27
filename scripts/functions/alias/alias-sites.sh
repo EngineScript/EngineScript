@@ -94,7 +94,7 @@ for domain in "${SITES[@]}"; do
         status="${RED}✗ Missing${NORMAL}"
     else
         # Check if site is accessible
-        if curl -sL -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null | grep -q "200"; then
+        if curl -sL --proto '=https' -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null | grep -q "200"; then
             status="${GREEN}✓ Online${NORMAL}"
         elif curl -sL -w "%{http_code}" "http://$domain" -o /dev/null 2>/dev/null | grep -q "200"; then
             status="${YELLOW}⚠ HTTP Only${NORMAL}"

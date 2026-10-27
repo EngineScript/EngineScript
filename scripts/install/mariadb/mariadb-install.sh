@@ -32,7 +32,7 @@ escape_mariadb_sql_string_literal() {
 }
 
 # Add MariaDB repository
-curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+curl -LsS --proto '=https' https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "MariaDB Repository"
 
