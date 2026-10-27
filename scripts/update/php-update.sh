@@ -232,8 +232,8 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
         sleep 3
     done
     if [[ "${sites_ok}" != "1" ]]; then
-        echo "These sites do not reach PHP ${NEW_PHP_VER} (HTTP 502, 504, or no response):" >&2
-        echo "${new_failures}" | sed 's/^/  /' >&2
+        echo "These sites do not work on PHP ${NEW_PHP_VER} (HTTP 500, 502, 504, or no response):" >&2
+        printf '  %s\n' "${new_failures//$'\n'/$'\n'  }" >&2
         rollback_switch "Sites did not answer on PHP ${NEW_PHP_VER}."
     fi
     echo "PASSED: The sites are running on PHP ${NEW_PHP_VER}."

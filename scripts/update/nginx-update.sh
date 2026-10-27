@@ -50,8 +50,8 @@ sites_are_serving() {
     echo "Waiting for the sites to answer (attempt ${attempt} of 3)..."
     sleep 3
   done
-  echo "These sites no longer reach PHP (HTTP 502, 504, or no response):" >&2
-  echo "${new_failures}" | sed 's/^/  /' >&2
+  echo "These sites no longer work (HTTP 500, 502, 504, or no response):" >&2
+  printf '  %s\n' "${new_failures//$'\n'/$'\n'  }" >&2
   return 1
 }
 

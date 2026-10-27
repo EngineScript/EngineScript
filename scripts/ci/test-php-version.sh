@@ -33,7 +33,20 @@ if [[ "$1" == "is-active" ]]; then
 fi
 exit 0
 EOF
-chmod +x "${FAKE_BIN}/dpkg-query" "${FAKE_BIN}/systemctl"
+# curl stand-in for get_sites_without_php: prints the status FAKE_HTTP_CODES gives the site
+# ("<site>=<code> ..."; 000 when a site is not listed)
+cat > "${FAKE_BIN}/curl" << 'EOF'
+#!/usr/bin/env bash
+url="${!#}"
+site="${url#https://}"
+site="${site%%/*}"
+code="000"
+for pair in ${FAKE_HTTP_CODES:-}; do
+  [[ "${pair%%=*}" == "${site}" ]] && code="${pair#*=}"
+done
+printf '%s' "${code}"
+EOF
+chmod +x "${FAKE_BIN}/dpkg-query" "${FAKE_BIN}/systemctl" "${FAKE_BIN}/curl"
 export PATH="${FAKE_BIN}:${PATH}"
 
 # Read by enginescript-common.sh
@@ -124,6 +137,46 @@ if [[ -z "$(newly_failing_sites "" "")" ]]; then
   pass "No sites, no failures"
 else
   fail "newly_failing_sites reported failures for empty lists"
+fi
+
+# The site check after a PHP switch or an Nginx update: which answers count as a failing site
+export ES_SITES_LIST="${FAKE_BIN}/sites.sh"
+cat > "${ES_SITES_LIST}" << 'EOF'
+SITES=(
+"ok.test"
+"fatal.test"
+"gateway.test"
+"timeout.test"
+"maintenance.test"
+"missing.test"
+)
+EOF
+export FAKE_HTTP_CODES="ok.test=200 fatal.test=500 gateway.test=502 timeout.test=504 maintenance.test=503 missing.test=404"
+failing="$(get_sites_without_php | paste -sd' ' -)"
+if [[ "${failing}" == "fatal.test gateway.test timeout.test" ]]; then
+  pass "Sites answering 500, 502, or 504 fail the site check; 200, 503, and 404 do not"
+else
+  fail "get_sites_without_php reported '${failing}', expected 'fatal.test gateway.test timeout.test'"
+fi
+FAKE_HTTP_CODES="ok.test=200"
+failing="$(get_sites_without_php | paste -sd' ' -)"
+if [[ "${failing}" == "fatal.test gateway.test timeout.test maintenance.test missing.test" ]]; then
+  pass "Sites that do not answer at all fail the site check"
+else
+  fail "get_sites_without_php reported '${failing}' for sites that do not answer"
+fi
+# A site that already failed before the switch does not block it
+new_failures="$(newly_failing_sites "fatal.test" "$(FAKE_HTTP_CODES="ok.test=200 fatal.test=500 gateway.test=200 timeout.test=200 maintenance.test=200 missing.test=200" get_sites_without_php)")"
+if [[ -z "${new_failures}" ]]; then
+  pass "A site that returned 500 before the change is not held against it"
+else
+  fail "newly_failing_sites reported '${new_failures}' for a site that already failed"
+fi
+ES_SITES_LIST="${FAKE_BIN}/no-such-sites.sh"
+if [[ -z "$(get_sites_without_php)" ]]; then
+  pass "No sites list, no failing sites"
+else
+  fail "get_sites_without_php reported sites without a sites list"
 fi
 
 echo "======================================================="

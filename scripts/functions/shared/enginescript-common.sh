@@ -480,15 +480,16 @@ function php_fpm_answers() {
 
 
 # ----------------------------------------------------------------
-# Print the sites on this server that do not reach PHP through Nginx, one per line
+# Print the sites on this server that do not work through Nginx and PHP, one per line
 #
-# A site fails on a gateway error (502 or 504: Nginx could not reach PHP-FPM) or no response.
-# 503 is not counted: WordPress answers 503 in maintenance mode. The query string bypasses the
-# FastCGI cache, so a cached page cannot hide a PHP-FPM that does not answer. Prints nothing
-# when every site answers or there are no sites. Callers compare the result with a list taken
-# before a change, so a site that was already failing does not count against the change.
+# A site fails on a gateway error (502 or 504: Nginx could not reach PHP-FPM), on 500 (a fatal
+# PHP error, such as a plugin that does not run on a new PHP version, or an Nginx error), or with
+# no response. 503 is not counted: WordPress answers 503 in maintenance mode. The query string
+# bypasses the FastCGI cache, so a cached page cannot hide a PHP-FPM that does not answer. Prints
+# nothing when every site answers or there are no sites. Callers compare the result with a list
+# taken before a change, so a site that was already failing does not count against the change.
 function get_sites_without_php() {
-    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
     local site code
 
     if [[ ! -f "${sites_file}" ]]; then
@@ -501,7 +502,7 @@ function get_sites_without_php() {
     for site in "${SITES[@]}"; do
         code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 20 \
             --resolve "${site}:443:127.0.0.1" "https://${site}/?enginescript-check=${RANDOM}")"
-        if [[ "${code}" == "000" || "${code}" == "502" || "${code}" == "504" ]]; then
+        if [[ "${code}" == "000" || "${code}" == "500" || "${code}" == "502" || "${code}" == "504" ]]; then
             echo "${site}"
         fi
     done
