@@ -158,7 +158,7 @@ backup_databases() {
 }
 
 backup_files() {
-  local site site_root dir tmp file rc old
+  local site site_root dir tmp file rc
   for site in "${SITES[@]}"; do
     site_root="/var/www/sites/${site}/html"
     if [[ ! -d "${site_root}/wp-content" ]]; then
@@ -179,14 +179,34 @@ backup_files() {
       s3_upload "${file}" "${site}/backups/files/${TODAY}/${site}-wp-content.tar.gz"
     else
       rm -f "${tmp}"
+      # Removed only if empty: an earlier run today may have saved an archive here
+      rmdir "${dir}" 2> /dev/null
       record_failure "Files backup failed: ${site} (tar exit ${rc})"
     fi
-    # Keep the newest BACKUP_FILES_KEEP_COPIES dated folders
-    while IFS= read -r old; do
-      rm -rf "${SITE_BACKUPS:?}/${site}/files/${old}"
-    done < <(find "${SITE_BACKUPS}/${site}/files" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
-      | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort | head -n "-${BACKUP_FILES_KEEP_COPIES}")
+    prune_file_backups "${site}"
     s3_prune "${site}/backups/files/" "$(days_ago "${BACKUP_S3_KEEP_DAYS:-0}")"
+  done
+}
+
+# Keeps a site's newest BACKUP_FILES_KEEP_COPIES files backups. Only dated folders that hold a
+# finished archive count as copies; folders without one (left by a failed or interrupted run)
+# are removed, so failed runs never push good backups out.
+# Usage: prune_file_backups <site>
+prune_file_backups() {
+  local site="$1" base name excess i
+  local -a complete=()
+  base="${SITE_BACKUPS}/${site}/files"
+  [[ -d "${base}" ]] || return 0
+  while IFS= read -r name; do
+    if [[ -f "${base}/${name}/${site}-wp-content.tar.gz" ]]; then
+      complete+=("${name}")
+    else
+      rm -rf "${base:?}/${name}"
+    fi
+  done < <(find "${base}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort)
+  excess=$((${#complete[@]} - BACKUP_FILES_KEEP_COPIES))
+  for ((i = 0; i < excess; i++)); do
+    rm -rf "${base:?}/${complete[i]}"
   done
 }
 
