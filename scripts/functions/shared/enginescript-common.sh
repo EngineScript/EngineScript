@@ -1110,6 +1110,34 @@ EOF
 
 
 # ----------------------------------------------------------------
+# Load a redis.conf in a throwaway Redis (own socket, no TCP, temporary directory) and stop it.
+# Returns 0 when it answered PING. Its output and log go to the file given as the second argument
+# (Redis prints configuration errors on stderr, not in its log).
+function test_redis_conf() {
+    local candidate="$1" output="$2" test_dir test_pid ok=1
+
+    test_dir="$(mktemp -d)"
+    chown redis:redis "${test_dir}"
+    chmod 644 "${candidate}"
+    # The root-owned output file is opened by this shell on purpose; Redis only writes to it
+    # shellcheck disable=SC2024
+    sudo -u redis redis-server "${candidate}" --port 0 --unixsocket "${test_dir}/test.sock" --daemonize no \
+        --supervised no --logfile "${test_dir}/test.log" --dir "${test_dir}" --pidfile "${test_dir}/test.pid" > "${output}" 2>&1 &
+    test_pid=$!
+    for _ in $(seq 1 20); do
+        if [[ "$(redis-cli -s "${test_dir}/test.sock" PING 2> /dev/null)" == "PONG" ]]; then ok=0; break; fi
+        kill -0 "${test_pid}" 2> /dev/null || break
+        sleep 0.25
+    done
+    redis-cli -s "${test_dir}/test.sock" SHUTDOWN NOSAVE > /dev/null 2>&1
+    wait "${test_pid}" 2> /dev/null
+    cat "${test_dir}/test.log" >> "${output}" 2> /dev/null
+    rm -rf "${test_dir}"
+    return "${ok}"
+}
+
+
+# ----------------------------------------------------------------
 # Apply the shared tuning plan to an installed Redis without restarting it
 #
 # Rebuilds /etc/redis/redis.conf from the repo template with the plan's maxmemory, keeping the
@@ -1120,7 +1148,7 @@ EOF
 # error page on every site while Redis is down, so this never restarts it.
 function apply_redis_tuning() {
     local conf=/etc/redis/redis.conf template=/usr/local/bin/enginescript/config/etc/redis/redis.conf
-    local sock=/run/redis/redis-server.sock candidate test_dir databases maxmemory test_pid ok=0
+    local sock=/run/redis/redis-server.sock candidate test_output databases maxmemory defrag=yes
 
     [[ -f "${conf}" && -f "${template}" ]] || return 0
     tuning_load
@@ -1130,41 +1158,45 @@ function apply_redis_tuning() {
     [[ "${databases}" =~ ^[0-9]+$ ]] && (( databases > REDIS_MIN_DATABASES )) || databases="${REDIS_MIN_DATABASES}"
 
     candidate="$(mktemp)"
+    test_output="$(mktemp)"
     sed -e "s|SEDREDISMAXMEM|${maxmemory}|g" -e "s|^databases .*|databases ${databases}|" "${template}" > "${candidate}"
     if cmp -s "${candidate}" "${conf}"; then
-        rm -f "${candidate}"
+        rm -f "${candidate}" "${test_output}"
         return 0
     fi
 
-    # Load the new file in a throwaway Redis (own socket, no TCP, temporary directory)
-    test_dir="$(mktemp -d)"
-    chown redis:redis "${test_dir}"
-    chmod 644 "${candidate}"
-    sudo -u redis redis-server "${candidate}" --port 0 --unixsocket "${test_dir}/test.sock" --daemonize no \
-        --supervised no --logfile "${test_dir}/test.log" --dir "${test_dir}" --pidfile "${test_dir}/test.pid" > /dev/null 2>&1 &
-    test_pid=$!
-    for _ in $(seq 1 20); do
-        if [[ "$(redis-cli -s "${test_dir}/test.sock" PING 2> /dev/null)" == "PONG" ]]; then ok=1; break; fi
-        sleep 0.25
-    done
-    redis-cli -s "${test_dir}/test.sock" SHUTDOWN NOSAVE > /dev/null 2>&1
-    wait "${test_pid}" 2> /dev/null
-    if (( ok == 0 )); then
-        echo "Error: The new redis.conf did not load in a test instance; kept the current one." >&2
-        tail -5 "${test_dir}/test.log" >&2 2> /dev/null
-        rm -rf "${test_dir}" "${candidate}"
-        return 1
+    if ! test_redis_conf "${candidate}" "${test_output}"; then
+        # Ubuntu's own Redis package is built without the jemalloc that active defragmentation
+        # needs and refuses "activedefrag yes"; keep the rest of the plan on those servers
+        if grep -q 'Active defragmentation cannot be enabled' "${test_output}"; then
+            sed -i 's|^activedefrag yes$|activedefrag no|' "${candidate}"
+            defrag=no
+            if cmp -s "${candidate}" "${conf}"; then
+                rm -f "${candidate}" "${test_output}"
+                return 0
+            fi
+        fi
+        if [[ "${defrag}" == "yes" ]] || ! test_redis_conf "${candidate}" "${test_output}"; then
+            echo "Error: The new redis.conf did not load in a test instance; kept the current one." >&2
+            tail -5 "${test_output}" >&2
+            rm -f "${candidate}" "${test_output}"
+            return 1
+        fi
     fi
-    rm -rf "${test_dir}"
+    rm -f "${test_output}"
 
     cp -p "${conf}" "${conf}.bak"
     mv -f "${candidate}" "${conf}"
     set_redis_permissions
     if [[ -S "${sock}" ]]; then
         redis-cli -s "${sock}" CONFIG SET maxmemory "${maxmemory}mb" > /dev/null
-        redis-cli -s "${sock}" CONFIG SET activedefrag yes > /dev/null
+        redis-cli -s "${sock}" CONFIG SET activedefrag "${defrag}" > /dev/null
     fi
     echo "Redis: applied the tuning plan (maxmemory ${maxmemory} MB) without a restart."
+    if [[ "${defrag}" == "no" ]]; then
+        echo "Redis: this Redis cannot run active defragmentation (Ubuntu's own package), so it stays off."
+        echo "       EngineScript installs Redis from packages.redis.io, which supports it."
+    fi
 }
 
 

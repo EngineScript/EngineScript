@@ -95,6 +95,7 @@ iodepth
 ioengine
 iotop
 ipinfo
+jemalloc
 journalctl
 jpegoptim
 keyout
