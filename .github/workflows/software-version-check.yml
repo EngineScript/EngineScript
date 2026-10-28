@@ -23,7 +23,9 @@ jobs:
   check-versions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check Software Versions
         id: version-check
@@ -31,7 +33,7 @@ jobs:
           # Initialize software versions changed flag and changelog
           SOFTWARE_VERSIONS_CHANGED=false
           CHANGELOG_CONTENT=""
-          
+
           # Function to compare version numbers
           version_gt() {
             local v1=$1
@@ -45,21 +47,21 @@ jobs:
               return 1
             fi
           }
-          
+
           # Function to extract current version
           get_current_version() {
             local var_name=$1
             grep "^${var_name}=" enginescript-variables.txt | cut -d'"' -f2
           }
-          
+
           # Function to check and update version
           check_version() {
             local var_name=$1
             local new_ver=$2
             local current_ver=$(get_current_version "$var_name")
-            
+
             echo "::debug::Checking $var_name: current='$current_ver', new='$new_ver'"
-            
+
             # Update only when the new version is newer (or the current one is "null" or empty).
             # version_gt is called for its exit status; its debug output must not be the test.
             if [[ -n "$new_ver" ]] && { [[ "$current_ver" = "null" || -z "$current_ver" ]] || version_gt "$new_ver" "$current_ver"; }; then
@@ -68,7 +70,7 @@ jobs:
               sed -i "s/^${var_name}=\"[^\"]*\"/${var_name}=\"${new_ver}\"/" enginescript-variables.txt
               SOFTWARE_VERSIONS_CHANGED=true
               echo "::notice::${var_name} update available: ${current_ver} -> ${new_ver}"
-              
+
               # Add to changelog
               if [[ -z "$CHANGELOG_CONTENT" ]]; then
                 CHANGELOG_CONTENT="| ${var_name} | ${current_ver} | **${new_ver}** |"
@@ -79,7 +81,7 @@ jobs:
               echo "::debug::No update needed for $var_name"
             fi
           }
-          
+
           # MariaDB (11.8 long-term series), from MariaDB's REST API. The releases page this used to
           # read moved, and its pattern then matched nothing, so MariaDB stopped being updated.
           LATEST_MARIADB=$(curl -fsSL --proto '=https' https://downloads.mariadb.org/rest-api/mariadb/11.8/ |
@@ -88,55 +90,55 @@ jobs:
             sort -V |
             tail -n1)
           check_version "MARIADB_VER" "$LATEST_MARIADB"
-          
+
           # EngineScript Site Exporter Plugin
           echo "::debug::Fetching ES_SE Plugin version..."
           ES_SE_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-exporter/releases/latest)
           echo "::debug::ES_SE API Response: $ES_SE_API_RESPONSE"
-          
+
           LATEST_ES_SE=$(echo "$ES_SE_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/v//')
           echo "::debug::Parsed ES_SE version: '$LATEST_ES_SE'"
-          
+
           # Only check version if we got a valid response
           if [[ -n "$LATEST_ES_SE" && "$LATEST_ES_SE" != "null" ]]; then
             check_version "ES_SE_PLUGIN_VER" "$LATEST_ES_SE"
           else
             echo "::warning::Failed to fetch ES_SE Plugin version, keeping current version"
           fi
-          
+
           # EngineScript Site Optimizer Plugin
           echo "::debug::Fetching ES_SO Plugin version..."
           ES_SO_API_RESPONSE=$(curl -s https://api.github.com/repos/EngineScript/enginescript-site-optimizer/releases/latest)
           echo "::debug::ES_SO API Response: $ES_SO_API_RESPONSE"
-          
+
           LATEST_ES_SO=$(echo "$ES_SO_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/^v//')
           echo "::debug::Parsed ES_SO version: '$LATEST_ES_SO'"
-          
+
           # Debug current version
           CURRENT_ES_SO_VER=$(get_current_version "ES_SO_PLUGIN_VER")
           echo "::debug::Current ES_SO version: '$CURRENT_ES_SO_VER'"
-          
+
           # Only check version if we got a valid response
           if [[ -n "$LATEST_ES_SO" && "$LATEST_ES_SO" != "null" ]]; then
             check_version "ES_SO_PLUGIN_VER" "$LATEST_ES_SO"
           else
             echo "::warning::Failed to fetch ES_SO Plugin version, keeping current version"
           fi
-          
+
           # PCRE2
           echo "::debug::Fetching PCRE2 version..."
           PCRE2_API_RESPONSE=$(curl -s https://api.github.com/repos/PCRE2Project/pcre2/releases/latest)
           echo "::debug::PCRE2 API Response: $PCRE2_API_RESPONSE"
-          
+
           LATEST_PCRE2=$(echo "$PCRE2_API_RESPONSE" | jq -r '.tag_name // empty' | sed 's/pcre2-//')
           echo "::debug::Parsed PCRE2 version: '$LATEST_PCRE2'"
-          
+
           if [[ -n "$LATEST_PCRE2" && "$LATEST_PCRE2" != "null" ]]; then
             check_version "PCRE2_VER" "$LATEST_PCRE2"
           else
             echo "::warning::Failed to fetch PCRE2 version, keeping current version"
           fi
-          
+
           # OpenSSL (latest stable release of any series; alpha, beta, and pre-releases excluded)
           echo "::debug::Fetching OpenSSL version..."
           OPENSSL_API_RESPONSE=$(curl -s "https://api.github.com/repos/openssl/openssl/releases?per_page=100")
@@ -149,13 +151,13 @@ jobs:
             sort -V |
             tail -n 1)
           echo "::debug::Parsed OpenSSL version: '$LATEST_OPENSSL'"
-          
+
           if [[ -n "$LATEST_OPENSSL" && "$LATEST_OPENSSL" != "null" ]]; then
             check_version "OPENSSL_VER" "$LATEST_OPENSSL"
           else
             echo "::warning::Failed to fetch OpenSSL version, keeping current version"
           fi
-          
+
           # NGINX mainline (latest release with an odd minor version, for example 1.31.x)
           # Reads every release tag with git ls-remote; the GitHub tags API returns only one
           # page of tags in no guaranteed version order.
@@ -181,88 +183,88 @@ jobs:
           else
             echo "::warning::Failed to fetch NGINX version from GitHub, keeping current version"
           fi
-          
+
           # phpMyAdmin
-          LATEST_PMA=$(curl -s https://www.phpmyadmin.net/downloads/ | 
-            grep -oP 'phpMyAdmin-\K[0-9]+\.[0-9]+\.[0-9]+(?=-all-languages\.zip)' | 
+          LATEST_PMA=$(curl -s https://www.phpmyadmin.net/downloads/ |
+            grep -oP 'phpMyAdmin-\K[0-9]+\.[0-9]+\.[0-9]+(?=-all-languages\.zip)' |
             head -n1)
           check_version "PHPMYADMIN_VER" "$LATEST_PMA"
-          
+
           # Zlib
           echo "::debug::Fetching Zlib version..."
           ZLIB_API_RESPONSE=$(curl -s https://api.github.com/repos/madler/zlib/tags)
           echo "::debug::Zlib API Response: $(echo "$ZLIB_API_RESPONSE" | jq -r '.[0:3]')"
-          
+
           LATEST_ZLIB=$(echo "$ZLIB_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/v//')
           echo "::debug::Parsed Zlib version: '$LATEST_ZLIB'"
-          
+
           if [[ -n "$LATEST_ZLIB" && "$LATEST_ZLIB" != "null" ]]; then
             check_version "ZLIB_VER" "$LATEST_ZLIB"
           else
             echo "::warning::Failed to fetch Zlib version, keeping current version"
           fi
-          
+
           # zlib-ng
           echo "::debug::Fetching zlib-ng version..."
           ZLIB_NG_API_RESPONSE=$(curl -s https://api.github.com/repos/zlib-ng/zlib-ng/releases/latest)
           echo "::debug::zlib-ng API Response: $ZLIB_NG_API_RESPONSE"
-          
+
           LATEST_ZLIB_NG=$(echo "$ZLIB_NG_API_RESPONSE" | jq -r '.tag_name // empty')
           echo "::debug::Parsed zlib-ng version: '$LATEST_ZLIB_NG'"
-          
+
           if [[ -n "$LATEST_ZLIB_NG" && "$LATEST_ZLIB_NG" != "null" ]]; then
             check_version "ZLIB_NG_VER" "$LATEST_ZLIB_NG"
           else
             echo "::warning::Failed to fetch zlib-ng version, keeping current version"
           fi
-          
+
           # zlib-rs
           echo "::debug::Fetching zlib-rs version..."
           ZLIB_RS_API_RESPONSE=$(curl -s https://api.github.com/repos/trifectatechfoundation/zlib-rs/releases/latest)
           echo "::debug::zlib-rs API Response: $ZLIB_RS_API_RESPONSE"
-          
+
           LATEST_ZLIB_RS=$(echo "$ZLIB_RS_API_RESPONSE" | jq -r '.tag_name // empty')
           echo "::debug::Parsed zlib-rs version: '$LATEST_ZLIB_RS'"
-          
+
           if [[ -n "$LATEST_ZLIB_RS" && "$LATEST_ZLIB_RS" != "null" ]]; then
             check_version "ZLIB_RS_VER" "$LATEST_ZLIB_RS"
           else
             echo "::warning::Failed to fetch zlib-rs version, keeping current version"
           fi
-          
+
           # liburing
           echo "::debug::Fetching liburing version..."
           LIBURING_API_RESPONSE=$(curl -s https://api.github.com/repos/axboe/liburing/tags)
           echo "::debug::liburing API Response: $(echo "$LIBURING_API_RESPONSE" | jq -r '.[0:3]')"
-          
+
           LATEST_LIBURING=$(echo "$LIBURING_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/liburing-//')
           echo "::debug::Parsed liburing version: '$LATEST_LIBURING'"
-          
+
           if [[ -n "$LATEST_LIBURING" && "$LATEST_LIBURING" != "null" ]]; then
             check_version "LIBURING_VER" "$LATEST_LIBURING"
           else
             echo "::warning::Failed to fetch liburing version, keeping current version"
           fi
-          
+
           # NGINX Headers More Module
           echo "::debug::Fetching NGINX Headers More Module version..."
           NGINX_HEADER_API_RESPONSE=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags)
           echo "::debug::NGINX Headers API Response: $(echo "$NGINX_HEADER_API_RESPONSE" | jq -r '.[0:3]')"
-          
+
           # Filter for stable releases only (exclude pre-releases and dev versions)
-          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" | 
-            jq -r '.[].name // empty' | 
-            grep -E '^v[0-9]+\.[0-9]+$' | 
-            head -n 1 | 
+          LATEST_NGINX_HEADER=$(echo "$NGINX_HEADER_API_RESPONSE" |
+            jq -r '.[].name // empty' |
+            grep -E '^v[0-9]+\.[0-9]+$' |
+            head -n 1 |
             sed 's/v//')
           echo "::debug::Parsed NGINX Headers version: '$LATEST_NGINX_HEADER'"
-          
+
           if [[ -n "$LATEST_NGINX_HEADER" && "$LATEST_NGINX_HEADER" != "null" ]]; then
             check_version "NGINX_HEADER_VER" "$LATEST_NGINX_HEADER"
           else
             echo "::warning::Failed to fetch NGINX Headers More Module version, keeping current version"
           fi
-          
+
           # NGINX Cache Purge Module
           echo "::debug::Fetching NGINX Cache Purge Module version..."
           NGINX_PURGE_API_RESPONSE=$(curl -s "https://api.github.com/repos/nginx-modules/ngx_cache_purge/tags?per_page=100")
@@ -275,25 +277,25 @@ jobs:
             sort -V |
             tail -n 1)
           echo "::debug::Parsed NGINX Purge version: '$LATEST_NGINX_PURGE'"
-          
+
           if [[ -n "$LATEST_NGINX_PURGE" && "$LATEST_NGINX_PURGE" != "null" ]]; then
             check_version "NGINX_PURGE_VER" "$LATEST_NGINX_PURGE"
           else
             echo "::warning::Failed to fetch NGINX Cache Purge Module version, keeping current version"
           fi
-          
+
           # NGINX Dynamic TLS Records Patch - Track repository commits
           echo "::debug::Fetching NGINX Dynamic TLS Records Patch latest commit..."
           LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(curl -sL --proto '=https' https://api.github.com/repos/nginx-modules/ngx_http_tls_dyn_size/commits/master | jq -r '.sha')
           echo "::debug::Fetched commit SHA: '$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA'"
-          
+
           CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(get_current_version "NGINX_DYN_TLS_PATCH_COMMIT_SHA")
-          
+
           if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" != "null" && "$CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA" != "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" ]]; then
             sed -i "s/^NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA\"/" enginescript-variables.txt
             SOFTWARE_VERSIONS_CHANGED=true
             echo "::notice::NGINX_DYN_TLS_PATCH_COMMIT_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA"
-            
+
             # Add to changelog
             if [[ -z "$CHANGELOG_CONTENT" ]]; then
               CHANGELOG_CONTENT="| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7} | **${LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7}** |"
@@ -305,41 +307,41 @@ jobs:
               echo "::warning::Failed to fetch NGINX Dynamic TLS Records Patch commit SHA, keeping current SHA"
             fi
           fi
-          
-          
+
+
           # Font Awesome (restricted to 7.0.x releases)
           echo "::debug::Fetching Font Awesome 7.0.x version..."
           FONTAWESOME_API_RESPONSE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases)
           echo "::debug::Font Awesome API Response: $FONTAWESOME_API_RESPONSE"
-          
+
           # Filter for 7.0.x releases only, get the latest one
           LATEST_FONTAWESOME=$(echo "$FONTAWESOME_API_RESPONSE" | jq -r '[.[] | select(.tag_name | test("^7\\.0\\.[0-9]+$")) | .tag_name] | first // empty' | sed 's/[^0-9\.]//g')
           echo "::debug::Parsed Font Awesome 7.0.x version: '$LATEST_FONTAWESOME'"
-          
+
           if [[ -n "$LATEST_FONTAWESOME" && "$LATEST_FONTAWESOME" != "null" ]]; then
             check_version "FONTAWESOME_VER" "$LATEST_FONTAWESOME"
           else
             echo "::warning::Failed to fetch Font Awesome 7.0.x version, keeping current version"
           fi
-          
+
           # TinyFileManager
           echo "::debug::Fetching TinyFileManager version..."
           TFM_API_RESPONSE=$(curl -s https://api.github.com/repos/prasathmani/tinyfilemanager/releases/latest)
           echo "::debug::TinyFileManager API Response: $TFM_API_RESPONSE"
-          
+
           LATEST_TFM=$(echo "$TFM_API_RESPONSE" | jq -r '.tag_name // empty')
           echo "::debug::Parsed TinyFileManager version: '$LATEST_TFM'"
-          
+
           if [[ -n "$LATEST_TFM" && "$LATEST_TFM" != "null" ]]; then
             check_version "TINYFILEMANAGER_VER" "$LATEST_TFM"
           else
             echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
           fi
-          
+
           # Output results if software versions changed
           if [[ "$SOFTWARE_VERSIONS_CHANGED" = true ]]; then
             echo "software_versions_changed=true" >> $GITHUB_OUTPUT
-            
+
             # Generate changelog
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
             echo "The following software versions have been updated:" >> $GITHUB_OUTPUT
@@ -356,7 +358,7 @@ jobs:
               echo "software_versions_changed=false" >> $GITHUB_OUTPUT
             else
               echo "File changes detected, proceeding with PR creation"
-              
+
               # Update README.md table directly in this step
               echo "Updating README.md..."
               sed -i -E \
@@ -402,18 +404,18 @@ jobs:
 
       - name: Update existing PR or create new one
         if: steps.version-check.outputs.software_versions_changed == 'true'
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update software versions"
           title: "chore: update software versions"
           body: |
             Automated software version updates
-            
+
             ${{ steps.version-check.outputs.changelog }}
-            
+
             These updates ensure EngineScript uses the latest stable versions of its dependencies.
-            
+
             ---
             *Last updated: ${{ github.run_id }} on ${{ github.run_number }}*
           branch: update-software-versions

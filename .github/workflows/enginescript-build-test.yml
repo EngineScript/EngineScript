@@ -35,10 +35,12 @@ jobs:
     name: Nginx Build Test
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    
+
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Maximize Disk Space
         run: |
@@ -57,17 +59,17 @@ jobs:
       - name: Setup Nginx Build Environment
         run: |
           echo "🏗️ Setting up Nginx build environment..."
-          
+
           # Create required directories including log directories
           sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript /tmp/ci-logs
-          
+
           # Set proper permissions on log directory for file operations
           sudo chmod 755 /tmp/ci-logs
           sudo chown runner:runner /tmp/ci-logs
-          
+
           # Copy entire project to build location
           sudo cp -r . /usr/local/bin/enginescript/
-          
+
           # Copy CI-specific configuration files
           if [ -f .github/ci-config/enginescript-install-options-ci.txt ]; then
             sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
@@ -76,7 +78,7 @@ jobs:
             echo "⚠️ CI install options file not found, creating default"
             sudo touch /home/EngineScript/enginescript-install-options.txt
           fi
-          
+
           # Copy CI-specific variables file (prevents command substitution timeouts)
           if [ -f .github/ci-config/enginescript-variables-ci.txt ]; then
             sudo cp .github/ci-config/enginescript-variables-ci.txt /usr/local/bin/enginescript/enginescript-variables.txt
@@ -84,25 +86,25 @@ jobs:
           else
             echo "⚠️ CI variables file not found, using original"
           fi
-          
+
           # Initialize main CI log with timestamp
           echo "EngineScript Nginx CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
           echo "Build environment: Ubuntu $(lsb_release -rs)" | sudo tee -a /tmp/ci-logs/ci-main.log
-          
+
           echo "✅ Nginx build environment setup completed with proper permissions"
 
       - name: Run Base System Setup
         run: |
           echo "🔧 Running base system setup..."
           cd /usr/local/bin/enginescript
-          
+
           # Set CI environment variable to bypass root checks in scripts
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
-          
+
           # Initialize setup log
           echo "EngineScript Base System Setup Started: $(date)" | sudo tee /tmp/ci-logs/setup.log
-          
+
           # Check user privileges (CI runs as root via sudo)
           # In CI environment, force root context for script compatibility
           if ! sudo bash -c 'test "${EUID}" -eq 0'; then
@@ -110,7 +112,7 @@ jobs:
             exit 1
           fi
           echo "✅ Running with root privileges (CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Check architecture
           BIT_TYPE=$(uname -m)
           if [ "${BIT_TYPE}" != 'x86_64' ]; then
@@ -118,22 +120,22 @@ jobs:
             exit 1
           fi
           echo "✅ Detected 64-bit architecture: $BIT_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Check Ubuntu version
           LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
           UBUNTU_VERSION="$(lsb_release -sr)"
-          
+
           if [ "$LINUX_TYPE" != "Ubuntu" ]; then
             echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04" | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           fi
           echo "✅ Detected Linux Type: $LINUX_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Current Ubuntu Version: $UBUNTU_VERSION" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Install required packages for script (excluding problematic packages)
           echo "📦 Installing core packages..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo apt update --allow-releaseinfo-change -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Core packages without dos2unix and tzdata (problematic in CI)
           # Also install pwgen which is used by scripts (but not in CI variables file)
           core_packages=(
@@ -161,7 +163,7 @@ jobs:
             exit 1
           }
           echo "✅ Core packages installed successfully" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Check for required commands (excluding dos2unix)
           required_commands=("apt" "boxes" "git" "nano" "wget")
           for cmd in "${required_commands[@]}"; do
@@ -171,16 +173,16 @@ jobs:
             fi
           done
           echo "✅ All required commands available" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Configure needrestart for automated restarts
           sudo sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Configured needrestart for automated mode" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Upgrade software
           echo "📈 Upgrading system packages..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo apt upgrade -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ System packages upgraded" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Create EngineScript directories (already done in earlier step, but ensure completeness)
           echo "📁 Creating EngineScript directories..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo mkdir -p "/home/EngineScript/config-backups/nginx"
@@ -190,14 +192,14 @@ jobs:
           sudo mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
           sudo mkdir -p "/home/EngineScript/temp/site-import/root-directory"
           echo "✅ EngineScript directories created" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Set directory and file permissions
           echo "🔧 Setting permissions..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo find /usr/local/bin/enginescript -exec chmod 755 {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           sudo chown -R root:root /usr/local/bin/enginescript 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           sudo find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \; 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Permissions set correctly" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Create EngineScript log files (already done in earlier step, but ensure completeness)
           echo "📊 Creating log files..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo touch "/var/log/EngineScript/install-error-log.log"
@@ -207,33 +209,33 @@ jobs:
           sudo touch "/var/log/EngineScript/vhost-remove.log"
           sudo touch "/var/log/EngineScript/enginescript-api-security.log"
           echo "✅ Log files created" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip logrotate setup (not needed for CI)
           echo "⏭️ Skipping logrotate setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
-          # Skip alias setup (not needed for CI) 
+
+          # Skip alias setup (not needed for CI)
           echo "⏭️ Skipping alias setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Cleanup old packages
           echo "🧹 Cleaning up old packages..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo apt-get remove 'apache2.*' -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Old packages cleaned up" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip duplicate full upgrade pass to reduce CI runtime
           echo "⏭️ Skipping duplicate final apt update/upgrade pass in CI" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip timezone configuration (problematic in CI)
           echo "⏭️ Skipping timezone configuration (not suitable for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip unattended upgrades configuration (not needed for CI)
           echo "⏭️ Skipping unattended upgrades configuration (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip MOTD setup (not needed for CI)
           echo "⏭️ Skipping MOTD setup (not needed for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Skip HWE kernel installation (not suitable for CI)
           echo "⏭️ Skipping HWE kernel installation (not suitable for CI environment)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Remove old downloads and clean up
           echo "🗑️ Final cleanup..." | sudo tee -a /tmp/ci-logs/setup.log
           sudo rm -rf /usr/src/*.tar.gz* 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
@@ -241,7 +243,7 @@ jobs:
           sudo apt autoremove --purge -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           sudo apt autoclean -y 2>&1 | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Final cleanup completed" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Ensure options file exists (create if missing)
           if [ ! -f "/home/EngineScript/enginescript-install-options.txt" ]; then
             echo "📝 Creating default install options file..." | sudo tee -a /tmp/ci-logs/setup.log
@@ -250,9 +252,9 @@ jobs:
           else
             echo "✅ Install options file already exists" | sudo tee -a /tmp/ci-logs/setup.log
           fi
-          
+
           echo "✅ Base system setup completed successfully at $(date)" | sudo tee -a /tmp/ci-logs/setup.log
-          
+
           # Ensure log is flushed and has content
           sudo sync
           if [ -s /tmp/ci-logs/setup.log ]; then
@@ -265,36 +267,36 @@ jobs:
       - name: Remove Default Nginx Installation
         run: |
           echo "🗑️ Removing default Nginx installation..."
-          
+
           # Set CI environment variables
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
-          
+
           # Remove any existing Nginx installations
           echo "Stopping and removing existing Nginx services..." | sudo tee /tmp/ci-logs/nginx-removal.log
           sudo systemctl stop nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "Nginx service not running"
           sudo systemctl disable nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "Nginx service not enabled"
-          
+
           # Remove Nginx packages completely
           sudo apt-get remove --purge nginx nginx-* -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No nginx packages to remove"
           sudo apt-get autoremove -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log
-          
+
           # Remove Nginx directories and files
           sudo rm -rf /etc/nginx/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /etc/nginx directory"
           sudo rm -rf /var/log/nginx/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /var/log/nginx directory"
           sudo rm -rf /var/www/html/ 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No /var/www/html directory"
           sudo rm -f /usr/sbin/nginx 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No nginx binary to remove"
-          
+
           # Remove other web servers and conflicting packages
           sudo apt-get remove --purge apache2 apache2-* lighttpd -y 2>&1 | sudo tee -a /tmp/ci-logs/nginx-removal.log || echo "No other web servers to remove"
-          
+
           # Verify removal
           if command -v nginx >/dev/null 2>&1; then
             echo "⚠️ Nginx still present after removal attempt" | sudo tee -a /tmp/ci-logs/nginx-removal.log
           else
             echo "✅ Nginx successfully removed" | sudo tee -a /tmp/ci-logs/nginx-removal.log
           fi
-          
+
           sudo sync
           echo "✅ Default software removal completed"
 
@@ -302,13 +304,13 @@ jobs:
         run: |
           echo "📦 Installing repositories..."
           cd /usr/local/bin/enginescript/scripts/install
-          
+
           # Set CI environment variables
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           export NEEDRESTART_MODE=a
           export NEEDRESTART_SUSPEND=1
-          
+
           # Verify script exists and is executable
           echo "🔍 Checking repositories-install.sh..."
           if [ -f "./repositories/repositories-install.sh" ]; then
@@ -319,7 +321,7 @@ jobs:
             ls -la ./repositories/
             exit 1
           fi
-          
+
           # Test script syntax first
           echo "🧪 Testing script syntax..."
           if bash -n ./repositories/repositories-install.sh; then
@@ -328,11 +330,11 @@ jobs:
             echo "❌ Script syntax error detected"
             exit 1
           fi
-          
+
           # Execute with timeout and error handling
           echo "🚀 Installing repositories..."
           echo "Script start time: $(date)" | sudo tee /tmp/ci-logs/repositories.log
-          
+
           timeout 300 sudo bash ./repositories/repositories-install.sh 2>&1 | sudo tee -a /tmp/ci-logs/repositories.log || {
             SCRIPT_EXIT_CODE=$?
             echo "❌ Repositories installation failed or timed out"
@@ -341,7 +343,7 @@ jobs:
             echo "📋 Last 30 lines of output:"
             tail -30 /tmp/ci-logs/repositories.log 2>/dev/null || echo "No log output available"
             echo "📋 Full log size: $(wc -l < /tmp/ci-logs/repositories.log 2>/dev/null || echo 0) lines"
-            
+
             # Check if it was a timeout (exit code 124)
             if [ $SCRIPT_EXIT_CODE -eq 124 ]; then
               echo "🕐 Script timed out after 300 seconds"
@@ -350,10 +352,10 @@ jobs:
             else
               echo "🔍 Script exited with code $SCRIPT_EXIT_CODE"
             fi
-            
+
             exit 1
           }
-          
+
           echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/repositories.log
           sudo sync
           echo "✅ Repositories installation completed"
@@ -362,13 +364,13 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           cd /usr/local/bin/enginescript/scripts/install
-          
+
           # Set CI environment variables with maximum verbosity
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
           export NEEDRESTART_MODE=a
           export NEEDRESTART_SUSPEND=1
-          
+
           # Debug: Check script exists and is executable
           echo "🔍 Checking depends-install.sh..."
           if [ -f "./depends/depends-install.sh" ]; then
@@ -379,7 +381,7 @@ jobs:
             ls -la ./depends/
             exit 1
           fi
-          
+
           # Debug: Check environment and fix EUID issue
           echo "🔍 Environment check:"
           echo "Current user: $(whoami)"
@@ -387,7 +389,7 @@ jobs:
           echo "PWD: $PWD"
           echo "CI_ENVIRONMENT: $CI_ENVIRONMENT"
           echo "DEBIAN_FRONTEND: $DEBIAN_FRONTEND"
-          
+
           # Debug: Check required files exist and their content
           echo "🔍 Checking required files..."
           if [ -f "/usr/local/bin/enginescript/enginescript-variables.txt" ]; then
@@ -398,7 +400,7 @@ jobs:
             echo "❌ enginescript-variables.txt missing"
             ls -la /usr/local/bin/enginescript/ | head -10
           fi
-          
+
           if [ -f "/home/EngineScript/enginescript-install-options.txt" ]; then
             echo "✅ enginescript-install-options.txt exists"
             echo "📄 First 10 lines of install options file:"
@@ -407,7 +409,7 @@ jobs:
             echo "❌ enginescript-install-options.txt missing"
             ls -la /home/EngineScript/
           fi
-          
+
           # Test sourcing the files to ensure they don't hang
           echo "🧪 Testing configuration file loading..."
           if timeout 10 bash -c "source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }"; then
@@ -416,22 +418,22 @@ jobs:
             echo "❌ Variables file failed to load or timed out"
             exit 1
           fi
-          
+
           if timeout 10 bash -c "source /home/EngineScript/enginescript-install-options.txt"; then
             echo "✅ Install options file loads successfully"
           else
             echo "❌ Install options file failed to load or timed out"
             exit 1
           fi
-          
+
           # Run with simplified execution approach
           echo "🚀 Starting dependencies installation..."
           cd /usr/local/bin/enginescript/scripts/install
-          
+
           # Verify script is executable (permissions already set in setup step)
           echo "📄 Script permissions:"
           ls -la ./depends/depends-install.sh
-          
+
           # Test script syntax first
           echo "🧪 Testing script syntax..."
           if bash -n ./depends/depends-install.sh; then
@@ -440,11 +442,11 @@ jobs:
             echo "❌ Script syntax error detected"
             exit 1
           fi
-          
+
           # Execute with timeout and error handling
           echo "🏃 Executing dependencies installation..."
           echo "Script start time: $(date)" | sudo tee -a /tmp/ci-logs/depends.log
-          
+
           timeout 300 sudo bash ./depends/depends-install.sh 2>&1 | sudo tee -a /tmp/ci-logs/depends.log || {
             SCRIPT_EXIT_CODE=$?
             echo "❌ Dependencies installation failed or timed out"
@@ -457,7 +459,7 @@ jobs:
             ls -la ./depends/depends-install.sh
             echo "📋 Current directory:"
             pwd
-            
+
             # Check if it was a timeout (exit code 124)
             if [ $SCRIPT_EXIT_CODE -eq 124 ]; then
               echo "🕐 Script timed out after 300 seconds"
@@ -466,10 +468,10 @@ jobs:
             else
               echo "🔍 Script exited with code $SCRIPT_EXIT_CODE"
             fi
-            
+
             exit 1
           }
-          
+
           echo "Script end time: $(date)" | sudo tee -a /tmp/ci-logs/depends.log
           sudo sync
           echo "✅ Dependencies installation completed"
@@ -518,23 +520,23 @@ jobs:
         run: |
           echo "🔨 Building Nginx component..."
           cd /usr/local/bin/enginescript/scripts/install
-          
+
           # Set CI environment variables to bypass root checks
           export CI_ENVIRONMENT=true
           export DEBIAN_FRONTEND=noninteractive
-          
+
           # Create nginx log directory and set permissions before testing
           echo "📁 Creating nginx log directory..."
           sudo mkdir -p /var/log/nginx
           sudo chmod 755 /var/log/nginx
           sudo chown root:root /var/log/nginx
-          
+
           # Create nginx run directory and set permissions
           echo "📁 Creating nginx run directory..."
           sudo mkdir -p /run/nginx
           sudo chmod 755 /run/nginx
           sudo chown root:root /run/nginx
-          
+
           # Ensure nginx error log file exists with proper permissions
           echo "📝 Creating nginx error log file..."
           sudo touch /var/log/nginx/nginx.error.log
@@ -542,7 +544,7 @@ jobs:
           sudo chown root:root /var/log/nginx/nginx.error.log
 
           cd /usr/local/bin/enginescript/scripts/install
-          
+
           # Build Nginx with custom optimizations
           echo "🌐 Building Nginx..."
           timeout 1200 sudo bash ./nginx/nginx-install.sh 2>&1 | sudo tee /tmp/ci-logs/nginx.log || {
@@ -550,7 +552,7 @@ jobs:
             tail -50 /tmp/ci-logs/nginx.log 2>/dev/null || echo "No Nginx log available"
             exit 1
           }
-          
+
           # Ensure log is flushed and has content
           sudo sync
           if [ -s /tmp/ci-logs/nginx.log ]; then
@@ -559,14 +561,14 @@ jobs:
             echo "⚠️ Nginx build log is empty, creating summary"
             echo "Nginx build completed at $(date)" | sudo tee /tmp/ci-logs/nginx.log
           fi
-          
+
           echo "✅ Nginx build completed"
 
       - name: Verify Nginx Build Results
         if: always()
         run: |
           echo "🔍 Verifying Nginx build results..."
-          
+
           # Check if Nginx binary exists and works
           if [ -f /usr/sbin/nginx ]; then
             echo "✅ Nginx binary installed at /usr/sbin/nginx"
@@ -574,11 +576,11 @@ jobs:
           else
             echo "❌ Nginx binary missing"
           fi
-          
+
           # Check Nginx configuration
           echo "📁 Nginx configuration:"
           [ -f /etc/nginx/nginx.conf ] && echo "✅ Nginx config exists" || echo "❌ Nginx config missing"
-          
+
           # Test Nginx configuration syntax
           # Note: Config test skipped in CI environment due to permission restrictions
           # (SSL certs, log directory permissions, non-root user context)
@@ -588,7 +590,7 @@ jobs:
             echo "   (Permissions and SSL certificates only available on production servers)"
             echo "   Configuration will be validated automatically on actual deployment"
           fi
-          
+
           # Capture Nginx build information
           echo "🔧 Nginx Build Information:"
           if [ -f /usr/sbin/nginx ]; then
@@ -597,11 +599,11 @@ jobs:
           else
             echo "❌ Cannot capture build info - Nginx binary not found"
           fi
-          
+
           # Show disk usage
           echo "💾 Final disk usage:"
           df -h
-          
+
           echo "📊 Build artifacts summary:"
           du -sh /usr/local/bin/enginescript/ 2>/dev/null || echo "Build directory size unknown"
           du -sh /var/log/EngineScript/ 2>/dev/null || echo "Log directory size unknown"
@@ -609,36 +611,38 @@ jobs:
       - name: Report Test Results
         id: report-test-results
         if: always()
+        env:
+          WORKFLOW_NAME: ${{ github.workflow }}
         run: |
           echo "📋 Generating comprehensive test results..."
-          
+
           # Initialize result variables
           NGINX_STATUS="❌ Failed"
           OVERALL_STATUS="❌ FAILED"
-          
+
           # Check Nginx status based on binary and logs
           if [ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v >/dev/null 2>&1; then
             NGINX_STATUS="✅ Success"
           fi
-          
+
           # Determine overall status based on Nginx only
           if [[ "$NGINX_STATUS" == "✅ Success" ]]; then
             OVERALL_STATUS="✅ SUCCESS"
           fi
-          
+
           # Create comprehensive test summary
           cat > /tmp/ci-logs/test-summary.md << EOF
           # EngineScript Nginx Build Test Results
-          
+
           ## 🎯 Overall Status
           **$OVERALL_STATUS**
-          
+
           ## 📦 Component Results
-          
+
           | Component | Status | Version | Config |
           |-----------|--------|---------|--------|
           | **Nginx** | $NGINX_STATUS | $([ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v 2>&1 | head -1 | cut -d' ' -f3 | cut -d'/' -f2 || echo "Not installed") | $([ -f /etc/nginx/nginx.conf ] && echo "✅ Present" || echo "❌ Missing") |
-          
+
           ## 📊 Build Environment
           - **OS**: Ubuntu $(lsb_release -rs)
           - **Architecture**: $(uname -m)
@@ -646,14 +650,14 @@ jobs:
           - **Available Memory**: $(free -h | grep '^Mem:' | awk '{print $7}')
           - **Available Disk**: $(df -h / | tail -1 | awk '{print $4}')
           - **Build Time**: $(date)
-          - **Workflow**: ${{ github.workflow }}
+          - **Workflow**: ${WORKFLOW_NAME}
           - **Run ID**: ${{ github.run_id }}
           - **CI Environment**: GitHub Actions Ubuntu 24.04
-          
+
           ## 📁 Log Files Generated
           $(ls -la /tmp/ci-logs/ 2>/dev/null | grep -E '\.log$' | wc -l) log files created:
           $(ls -1 /tmp/ci-logs/*.log 2>/dev/null | sed 's/.*\//- /' || echo "- No log files found")
-          
+
           ## 🔧 Nginx Build Details
           $(if [ -f /tmp/ci-logs/nginx-build-info.log ]; then
             echo "\`\`\`"
@@ -662,39 +666,39 @@ jobs:
           else
             echo "Build information not available"
           fi)
-          
+
           ## 💾 Disk Usage
           **Build Directory**: $(du -sh /usr/local/bin/enginescript/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Logs Directory**: $(du -sh /tmp/ci-logs/ 2>/dev/null | cut -f1 || echo "Unknown")
           **Available Space**: $(df -h / | tail -1 | awk '{print $4}')
-          
+
           EOF
-          
+
           echo "📋 Test Summary Generated:"
           cat /tmp/ci-logs/test-summary.md
-          
+
           # Set output for potential PR commenting and issue reporting
           echo "OVERALL_STATUS=$OVERALL_STATUS" >> $GITHUB_OUTPUT
           echo "NGINX_STATUS=$NGINX_STATUS" >> $GITHUB_OUTPUT
           echo "TEST_FAILED=$([ "$OVERALL_STATUS" = "❌ FAILED" ] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
-          
+
           # Create simple status for PR comment
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
             cat > /tmp/ci-logs/pr-comment.md << EOF
           🎉 **EngineScript Nginx Build Test PASSED** 🎉
-          
+
           Nginx core component built successfully:
           - Nginx: $NGINX_STATUS
-          
+
           ✅ Ready for deployment testing!
           EOF
           else
             cat > /tmp/ci-logs/pr-comment.md << EOF
           ⚠️ **EngineScript Nginx Build Test FAILED** ⚠️
-          
+
           Component status:
           - Nginx: $NGINX_STATUS
-          
+
           📋 Please review the build logs for detailed error information.
           EOF
           fi
@@ -707,74 +711,74 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "📝 Creating GitHub annotations and job summary..."
-          
+
           # Add test summary to job summary (already created in test-summary.md)
           if [ -f /tmp/ci-logs/test-summary.md ]; then
             cat /tmp/ci-logs/test-summary.md >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Create GitHub annotations for build results
           echo "🔍 Creating annotations for build results..."
-          
+
           # Overall build status annotation
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
             echo "::notice title=Build Success::EngineScript Nginx build completed successfully for $EVENT_NAME event. All components built and configured correctly."
           else
             echo "::warning title=Build Failed::EngineScript Nginx build failed for $EVENT_NAME event. Check job summary for detailed error information."
           fi
-          
+
           # Component-specific annotations
           if [ "$NGINX_STATUS" = "✅ Success" ]; then
             echo "::notice title=Nginx Build Success::Nginx compiled and installed successfully with custom optimizations."
           else
             echo "::error title=Nginx Build Failed::Nginx build or installation failed. Review nginx.log for compilation errors."
           fi
-          
+
           # Check for specific issues in build logs and create targeted annotations
           if [ -f /tmp/ci-logs/nginx.log ]; then
             # Check for compilation errors
             if grep -qi "error:\|fatal error:\|compilation terminated" /tmp/ci-logs/nginx.log 2>/dev/null; then
               echo "::error title=Nginx Compilation Error::Nginx build encountered compilation errors. Check nginx.log for details."
             fi
-            
+
             # Check for missing dependencies
             if grep -qi "not found\|cannot find\|missing" /tmp/ci-logs/nginx.log 2>/dev/null; then
               echo "::warning title=Missing Dependencies::Nginx build detected missing dependencies. Review depends.log and nginx.log."
             fi
-            
+
             # Check for configuration issues
             if grep -qi "configuration error\|invalid configuration" /tmp/ci-logs/nginx.log 2>/dev/null; then
               echo "::error title=Nginx Configuration Error::Nginx configuration validation failed. Check nginx.conf syntax."
             fi
           fi
-          
+
           # Check setup log for system issues
           if [ -f /tmp/ci-logs/setup.log ]; then
             if grep -qi "error\|failed" /tmp/ci-logs/setup.log 2>/dev/null; then
               echo "::warning title=Setup Issues Detected::Base system setup encountered errors. Review setup.log for details."
             fi
           fi
-          
+
           # Check dependencies log for package issues
           if [ -f /tmp/ci-logs/depends.log ]; then
             if grep -qi "unable to install\|package.*not available\|failed to fetch" /tmp/ci-logs/depends.log 2>/dev/null; then
               echo "::error title=Dependency Installation Failed::Critical dependencies failed to install. Review depends.log."
             fi
           fi
-          
+
           # Disk space warnings
           AVAILABLE_SPACE=$(df -h / | tail -1 | awk '{print $4}')
           AVAILABLE_SPACE_NUM=$(df / | tail -1 | awk '{print $4}')
           if [ "$AVAILABLE_SPACE_NUM" -lt 1048576 ]; then  # Less than 1GB
             echo "::warning title=Low Disk Space::Available disk space is low ($AVAILABLE_SPACE). This may affect build performance."
           fi
-          
+
           # Memory warnings
           AVAILABLE_MEM=$(free -m | grep '^Mem:' | awk '{print $7}')
           if [ "$AVAILABLE_MEM" -lt 512 ]; then  # Less than 512MB
             echo "::warning title=Low Memory::Available memory is low (${AVAILABLE_MEM}MB). This may affect build performance."
           fi
-          
+
           # Summary annotation with actionable information
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
             echo "::notice title=Build Complete::All build steps completed successfully. Logs available in workflow artifacts for 7 days."
@@ -784,18 +788,18 @@ jobs:
 
       - name: Create Issue Report for Failed Build
         if: failure() && steps.report-test-results.outputs.TEST_FAILED == 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const fs = require('fs');
-            
+
             // Prepare detailed failure information
             let nginxLog = 'Log not available';
             let setupLog = 'Log not available';
             let dependsLog = 'Log not available';
             let gccLog = 'Log not available';
             let opensslLog = 'Log not available';
-            
+
             try {
               if (fs.existsSync('/tmp/ci-logs/nginx.log')) {
                 const fullLog = fs.readFileSync('/tmp/ci-logs/nginx.log', 'utf8');
@@ -805,7 +809,7 @@ jobs:
             } catch (e) {
               nginxLog = 'Error reading Nginx log';
             }
-            
+
             try {
               if (fs.existsSync('/tmp/ci-logs/setup.log')) {
                 const fullLog = fs.readFileSync('/tmp/ci-logs/setup.log', 'utf8');
@@ -814,7 +818,7 @@ jobs:
             } catch (e) {
               setupLog = 'Error reading setup log';
             }
-            
+
             try {
               if (fs.existsSync('/tmp/ci-logs/depends.log')) {
                 const fullLog = fs.readFileSync('/tmp/ci-logs/depends.log', 'utf8');
@@ -823,7 +827,7 @@ jobs:
             } catch (e) {
               dependsLog = 'Error reading dependencies log';
             }
-            
+
             try {
               if (fs.existsSync('/tmp/ci-logs/gcc.log')) {
                 const fullLog = fs.readFileSync('/tmp/ci-logs/gcc.log', 'utf8');
@@ -832,7 +836,7 @@ jobs:
             } catch (e) {
               gccLog = 'Error reading GCC log';
             }
-            
+
             try {
               if (fs.existsSync('/tmp/ci-logs/openssl.log')) {
                 const fullLog = fs.readFileSync('/tmp/ci-logs/openssl.log', 'utf8');
@@ -841,19 +845,19 @@ jobs:
             } catch (e) {
               opensslLog = 'Error reading OpenSSL log';
             }
-            
+
             // Get workflow context
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const commitSha = context.sha.substring(0, 7);
             const branch = context.ref.replace('refs/heads/', '');
-            
+
             // Create comprehensive issue title and body
             const issueTitle = `🚨 CI Build Failure: Nginx Build Test Failed on ${new Date().toISOString().split('T')[0]}`;
-            
+
             const issueBody = `## 🔥 Automated CI Failure Report
-            
+
             The EngineScript Nginx Build Test has failed during automated testing.
-            
+
             ### 📊 Failure Details
             - **Workflow**: ${context.workflow}
             - **Run ID**: [${context.runId}](${runUrl})
@@ -862,79 +866,79 @@ jobs:
             - **Ubuntu Version**: Ubuntu 24.04
             - **Failure Time**: ${new Date().toISOString()}
             - **Trigger**: ${context.eventName}
-            
+
             ### 🎯 Component Status
             - **Nginx**: ❌ Failed
-            
+
             ### 📋 Critical Log Excerpts
-            
+
             #### Nginx Build Log (Last 100 lines)
             <details>
             <summary>Click to expand Nginx build log</summary>
-            
+
             \`\`\`
             ${nginxLog}
             \`\`\`
             </details>
-            
+
             #### Setup Log (Last 50 lines)
             <details>
             <summary>Click to expand setup log</summary>
-            
+
             \`\`\`
             ${setupLog}
             \`\`\`
             </details>
-            
+
             #### Dependencies Log (Last 50 lines)
             <details>
             <summary>Click to expand dependencies log</summary>
-            
+
             \`\`\`
             ${dependsLog}
             \`\`\`
             </details>
-            
+
             #### GCC Log (Last 30 lines)
             <details>
             <summary>Click to expand GCC log</summary>
-            
+
             \`\`\`
             ${gccLog}
             \`\`\`
             </details>
-            
+
             #### OpenSSL Log (Last 30 lines)
             <details>
             <summary>Click to expand OpenSSL log</summary>
-            
+
             \`\`\`
             ${opensslLog}
             \`\`\`
             </details>
-            
+
             ### 🔍 Immediate Actions Required
             1. **Review Nginx build logs** for compilation errors
             2. **Check dependency installation** for missing packages
             3. **Verify Ubuntu 24.04 compatibility** for all components
             4. **Test locally** with the same commit to reproduce the issue
             5. **Update CI workflow** if environment changes are needed
-            
+
             ### 🔗 Additional Resources
             - [Full Workflow Run](${runUrl})
             - [Build Artifacts](${runUrl}#artifacts) (Available for 7 days)
             - [EngineScript Documentation](https://github.com/EngineScript/EngineScript/blob/main/README.md)
-            
+
             ### 🏷️ Labels
             This issue was automatically created by the CI/CD pipeline when the Nginx build test failed.
-            
+
             ---
             *This issue was automatically generated by GitHub Actions on failure of workflow run [${context.runId}](${runUrl})*`;
-            
+
             // Check if a similar issue already exists (within last 24 hours)
             const oneDayAgo = new Date();
             oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-            
+
             try {
               const { data: existingIssues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
@@ -944,32 +948,32 @@ jobs:
                 since: oneDayAgo.toISOString(),
                 per_page: 10
               });
-              
+
               // Check if there's already a similar CI failure issue open
-              const existingCiFailure = existingIssues.find(issue => 
-                issue.title.includes('CI Build Failure') && 
+              const existingCiFailure = existingIssues.find(issue =>
+                issue.title.includes('CI Build Failure') &&
                 issue.title.includes('Nginx Build Test Failed')
               );
-              
+
               if (existingCiFailure) {
                 console.log(`Similar CI failure issue already exists: #${existingCiFailure.number}`);
-                
+
                 // Add a comment to the existing issue instead of creating a new one
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: existingCiFailure.number,
                   body: `## 🔄 Additional CI Failure Report
-                  
+
                   Another build failure occurred:
                   - **Run ID**: [${context.runId}](${runUrl})
                   - **Commit**: \`${commitSha}\`
                   - **Time**: ${new Date().toISOString()}
                   - **Branch**: \`${branch}\`
-                  
+
                   This appears to be a recurring issue. Please review the [latest workflow run](${runUrl}) for updated logs.`
                 });
-                
+
                 console.log(`Added comment to existing issue #${existingCiFailure.number}`);
               } else {
                 // Create a new issue
@@ -980,7 +984,7 @@ jobs:
                   body: issueBody,
                   labels: ['bug', 'ci-failure', 'nginx', 'automated-report']
                 });
-                
+
                 console.log(`Created new CI failure issue: #${newIssue.number}`);
                 console.log(`Issue URL: ${newIssue.html_url}`);
               }
@@ -991,25 +995,25 @@ jobs:
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const fs = require('fs');
             try {
               const comment = fs.readFileSync('/tmp/ci-logs/pr-comment.md', 'utf8');
-              
+
               // Find existing comment to update
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
               });
-              
-              const botComment = comments.find(comment => 
-                comment.user.type === 'Bot' && 
+
+              const botComment = comments.find(comment =>
+                comment.user.type === 'Bot' &&
                 comment.body.includes('EngineScript') && comment.body.includes('Build Test')
               );
-              
+
               if (botComment) {
                 // Update existing comment
                 await github.rest.issues.updateComment({
@@ -1034,22 +1038,22 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: nginx-build-logs-ubuntu-24.04
           path: |
             /tmp/ci-logs/*
             /var/log/EngineScript/
           retention-days: 7
-          
+
       - name: Final Status Check
         if: always()
         run: |
           echo "🏁 Final workflow status check..."
-          
+
           # Check if Nginx is working
           FAILED_COMPONENTS=0
-          
+
           echo "🔍 Testing Nginx installation..."
           if ! [ -f /usr/sbin/nginx ]; then
             echo "❌ Nginx binary not found at /usr/sbin/nginx"
@@ -1061,7 +1065,7 @@ jobs:
             echo "✅ Nginx binary exists and responds to version check"
             echo "📋 Nginx version: $(/usr/sbin/nginx -v 2>&1)"
           fi
-          
+
           # Note: Full nginx config validation (-t) skipped in CI due to environment restrictions
           # Production servers will validate automatically on deployment
           if [ $FAILED_COMPONENTS -eq 0 ]; then
