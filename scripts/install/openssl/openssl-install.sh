@@ -19,7 +19,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 source /etc/enginescript/install-state.conf
-if [[ "${OPENSSL}" = 1 ]]; then
+# ES_REFRESH_SOURCES=1 (from nginx-update.sh): fetch the current version even after the install
+if [[ "${OPENSSL}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
     echo "OPENSSL script has already run"
     exit 0
 fi

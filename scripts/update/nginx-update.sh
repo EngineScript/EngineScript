@@ -143,18 +143,22 @@ debug_pause "Nginx Source Downloads"
 print_last_errors
 debug_pause "Brotli"
 
+# OpenSSL, zlib, and PCRE2 are compiled into Nginx from their sources in /usr/src. Their install
+# scripts skip once the install has marked them complete; ES_REFRESH_SOURCES=1 makes them fetch
+# the versions in enginescript-variables.txt, which may be newer than the ones the server has.
+
 # Retrieve Latest OpenSSL
-/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
+ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "OpenSSL"
 
 # Retrieve Latest zlib
-/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
+ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "zlib"
 
 # Retrieve Latest PCRE2
-/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
+ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "PCRE2"
 
