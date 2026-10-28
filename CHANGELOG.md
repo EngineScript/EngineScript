@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-28
+
+### 🐛 SITE CREATION FIXES
+
+- Fixed the backup that runs after a site is created or imported. It still used the layout from before the 2026-10-25 backup rebuild: it saved only the database (in an undated file the backup retention does not manage), its wp-content, wp-config.php, Nginx, and certificate backups failed into folders that no longer exist, and it still reported "Backup: Complete". It now runs the same backup as `es.backup`, with the scheduled backups' layout, retention, and S3 copy, and warns when the backup reports errors. Sites created without WordPress back up EngineScript's configuration, which holds the site's certificate and key.
+- Fixed Hello Dolly staying on new sites: WP-CLI could not delete it before `wp-config.php` existed. The plugin file is now removed right after WordPress is downloaded.
+
 ## 2026-10-27
 
 ### 🐛 NGINX FIXES
