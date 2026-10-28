@@ -752,58 +752,20 @@ create_robots_txt() {
 
 
 #----------------------------------------------------------------------------------
-# Perform site backup
+# Back up every site, the new one included, and EngineScript's configuration now: the same run
+# as es.backup, so the first backup has the scheduled backups' layout, retention, and S3 copy.
 perform_site_backup() {
   local SITE_URL="$1"
-  local WP_ROOT_PATH="$2"
-  
+
   echo ""
   echo "Backup script will now run for all sites on this server."
   echo ""
 
-  # Date
-  NOW=$(date +%m-%d-%Y-%H)
-
-  # Filenames
-  DATABASE_FILE="${NOW}-database.sql";
-  FULLWPFILES="${NOW}-wordpress-files.gz";
-  NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
-  PHP_FILE="${NOW}-php.tar.gz";
-  SSL_FILE="${NOW}-ssl-keys.gz";
-  UPLOADS_FILE="${NOW}-uploads.tar.gz";
-  VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
-  WPCONFIG_FILE="${NOW}-wp-config.php.gz";
-  WPCONTENT_FILE="${NOW}-wp-content.gz";
-
-  cd "${WP_ROOT_PATH}"
-
-  # Backup database
-  wp db export "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE" --add-drop-table --allow-root
-
-  # Compress database file
-  gzip -f "/home/EngineScript/site-backups/${SITE_URL}/database/daily/$DATABASE_FILE"
-
-  # Backup uploads, themes, and plugins
-  tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/wp-content/$WPCONTENT_FILE" wp-content
-
-  # Nginx vhost backup
-  gzip -cf "/etc/nginx/sites-enabled/${SITE_URL}.conf" > "/home/EngineScript/site-backups/${SITE_URL}/nginx/$VHOST_FILE"
-
-  # SSL keys backup
-  tar -zcf "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys/$SSL_FILE" "/etc/nginx/ssl/${SITE_URL}"
-
-  # wp-config.php backup
-  gzip -cf "${WP_ROOT_PATH}/wp-config.php" > "/home/EngineScript/site-backups/${SITE_URL}/wp-config/$WPCONFIG_FILE"
-
-  # Remove old backups
-  find "/home/EngineScript/site-backups/${SITE_URL}/database/daily" -type f -mtime +7 -delete
-  find "/home/EngineScript/site-backups/${SITE_URL}/nginx" -type f -mtime +7 -delete
-  find "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys" -type f -mtime +7 -delete
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-config" -type f -mtime +7 -delete
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-content" -type f -mtime +15 -delete
-  find "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads" -type f -mtime +15 -delete
-
-  echo "Backup: Complete"
+  if bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh now; then
+    echo "Backup: Complete"
+  else
+    echo "Warning: The backup after setting up ${SITE_URL} reported errors; see /var/log/EngineScript/enginescript-backup.log. The site itself is set up." >&2
+  fi
   clear
 }
 

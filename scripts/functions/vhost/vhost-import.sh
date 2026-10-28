@@ -679,7 +679,7 @@ fi
 clear
 
 # Perform site backup
-perform_site_backup "${SITE_URL}" "${TARGET_WP_PATH}"
+perform_site_backup "${SITE_URL}"
 
 # Display final credentials summary
 display_credentials_summary "${SITE_URL}" "${DB}" "${PREFIX}" "${USR}" "${PSWD}"

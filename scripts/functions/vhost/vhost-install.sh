@@ -218,9 +218,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
 
   # Download WordPress using WP-CLI
   wp core download --allow-root
-  if ! wp plugin delete hello-dolly --allow-root; then
-    echo "Notice: Could not delete 'hello-dolly' via WP-CLI. This is expected on newer WordPress versions where the plugin is not installed by default. Continuing installation."
-  fi
+  # Hello Dolly ships as a single file. WP-CLI cannot delete plugins before wp-config.php
+  # exists, so the file is removed directly.
+  rm -f "/var/www/sites/${DOMAIN}/html/wp-content/plugins/hello.php"
 
   # Create Extra WordPress Directories
   # WordPress often doesn't include these directories by default, despite them being used or checked in the Health Check plugin.
@@ -342,7 +342,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   clear
 
   # Perform site backup
-  perform_site_backup "${DOMAIN}" "/var/www/sites/${DOMAIN}/html"
+  perform_site_backup "${DOMAIN}"
 
   # Display final credentials summary
   display_credentials_summary "${DOMAIN}" "${DB}" "${PREFIX}" "${USR}" "${PSWD}"
@@ -363,10 +363,10 @@ else
   find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
   chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
 
-  # Backup nginx vhost and SSL keys
-  BACKUP_DATE_HOUR=$(date +%m-%d-%Y-%H)
-  gzip -cf "/etc/nginx/sites-enabled/${DOMAIN}.conf" > "/home/EngineScript/site-backups/${DOMAIN}/nginx/${BACKUP_DATE_HOUR}-nginx-vhost.conf.gz"
-  tar -zcf "/home/EngineScript/site-backups/${DOMAIN}/ssl-keys/${BACKUP_DATE_HOUR}-ssl-keys.gz" "/etc/nginx/ssl/${DOMAIN}"
+  # Back up EngineScript's configuration, which holds the site's certificate and key (acme.sh)
+  if ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh config; then
+    echo "Warning: The configuration backup reported errors; see /var/log/EngineScript/enginescript-backup.log." >&2
+  fi
 
   clear
 
