@@ -53,7 +53,11 @@ else
   OPENSSL_TESTS_FLAG="no-tests"
 fi
 
-OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-deprecated no-psk no-srp no-ssl3-method no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
+# OpenSSL's deprecated functions stay in the build: Nginx still calls some (it defines
+# OPENSSL_SUPPRESS_DEPRECATED for them), and no-deprecated removed X509_check_host and
+# X509_check_ip once OpenSSL 4.1 deprecated them. Nginx links OpenSSL statically, so functions it
+# does not call never reach the binary. SSLv3 is gone from OpenSSL 4, so no-ssl3-method is not set.
+OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-psk no-srp no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
 
 # Determine zlib implementation flags for nginx configure
 ZLIB_CC_EXTRA=""
