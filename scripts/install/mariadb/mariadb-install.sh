@@ -31,8 +31,17 @@ escape_mariadb_sql_string_literal() {
   printf '%s' "$input"
 }
 
-# Add MariaDB repository
-curl -LsS --proto '=https' https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+# Add MariaDB repository. The setup script is saved before it runs, so a download that breaks off
+# cannot run part of it, and a failed download stops here instead of installing Ubuntu's MariaDB.
+REPO_SETUP="$(mktemp)"
+if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> /tmp/enginescript_install_errors.log; then
+  rm -f "${REPO_SETUP}"
+  print_last_errors
+  echo "Error: Could not download MariaDB's repository setup script. MariaDB was not installed." >&2
+  exit 1
+fi
+sudo bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
