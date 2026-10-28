@@ -179,9 +179,9 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Web Server**|||
 |NGINX MAINLINE|1.31.8|<https://nginx.org/en/download.html>|
 |NGINX CACHE PURGE|3.0.4|<https://github.com/nginx-modules/ngx_cache_purge>|
-|NGINX HEADERS MORE|0.40|<https://github.com/openresty/headers-more-nginx-module>|
+|NGINX HEADERS MORE|0.41|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
-|OPENSSL|4.0.3|<https://www.openssl.org/source/>|
+|OPENSSL|4.1.0|<https://www.openssl.org/source/>|
 |PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB|1.3.2|<https://github.com/madler/zlib>|
 |**Application Server**|||
@@ -199,8 +199,8 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Content Management System (CMS)**|||
 |WORDPRESS|Latest|<https://wordpress.org>|
 |PLUGIN: Action Scheduler *(optional)*||<https://wordpress.org/plugins/action-scheduler/>|
-|PLUGIN: EngineScript Site Exporter *(optional)*|2.0.0|[https://github.com/EngineScript/enginescript-site-exporter](https://github.com/EngineScript/enginescript-site-exporter)|
-|PLUGIN: EngineScript Site Optimizer *(optional)*|2.0.0|[https://github.com/EngineScript/enginescript-site-optimizer](https://github.com/EngineScript/enginescript-site-optimizer)|
+|PLUGIN: EngineScript Site Exporter *(optional)*|2.1.2|[https://github.com/EngineScript/enginescript-site-exporter](https://github.com/EngineScript/enginescript-site-exporter)|
+|PLUGIN: EngineScript Site Optimizer *(optional)*|2.2.0|[https://github.com/EngineScript/enginescript-site-optimizer](https://github.com/EngineScript/enginescript-site-optimizer)|
 |PLUGIN: MariaDB Health Checks *(highly recommended)*||<https://wordpress.org/plugins/mariadb-health-checks/>|
 |PLUGIN: Nginx Helper *(required)*||<https://wordpress.org/plugins/nginx-helper/>|
 |PLUGIN: Performance Lab *(optional)*||<https://wordpress.org/plugins/performance-lab/>|
@@ -226,7 +226,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
 |**Misc Supplemental Software**|||
-|LIBURING|2.14|<https://github.com/axboe/liburing>|
+|LIBURING|2.15|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
 
 ## Star History
