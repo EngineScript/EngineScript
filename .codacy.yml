@@ -22,6 +22,15 @@ engines:
       - "package.json"
       - "package-lock.json"
 
+  # Lizard reads the lock files as source code and reports their length.
+  # Composer and npm generate them; nobody writes them by hand.
+  lizard:
+    exclude_paths:
+      - "composer.lock"
+      - "package-lock.json"
+      - "**/composer.lock"
+      - "**/package-lock.json"
+
   # PHP Code Sniffer Configuration
   phpcs:
     enabled: true

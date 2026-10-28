@@ -356,7 +356,7 @@ while IFS= read -r site; do
     fi
     
     # Get HTTP status with error handling
-    if ! curl_result=$(curl -sL -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null); then
+    if ! curl_result=$(curl -sL --proto '=https' -w "%{http_code}" "https://$domain" -o /dev/null 2>/dev/null); then
         curl_result="000" # Default to connection failed
     fi
     

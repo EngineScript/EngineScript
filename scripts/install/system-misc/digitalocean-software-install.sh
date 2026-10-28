@@ -16,6 +16,21 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 
 #----------------------------------------------------------------------------------
+# Download an installer to a file, then run it: a download that breaks off cannot run part of it
+run_downloaded_installer() {
+    local url="$1" installer status
+    installer="$(mktemp)" || return 1
+    if curl -fsSL --proto '=https' -o "${installer}" "${url}"; then
+        sudo bash "${installer}"
+        status=$?
+    else
+        status=1
+    fi
+    rm -f "${installer}"
+    return "${status}"
+}
+
+#----------------------------------------------------------------------------------
 # Start Main Script
 
 source /etc/enginescript/install-state.conf
@@ -38,7 +53,7 @@ echo ""
 
 # Download and execute DigitalOcean's official installation script
 echo "Downloading and installing DigitalOcean Droplet Agent..."
-if wget -qO- https://repos-droplet.digitalocean.com/install.sh | bash; then
+if run_downloaded_installer https://repos-droplet.digitalocean.com/install.sh; then
     echo "✅ DigitalOcean Droplet Agent installed successfully"
     echo ""
     echo "Remote Console access is now enabled in your DigitalOcean control panel."
@@ -64,7 +79,7 @@ if [[ "${INSTALL_DIGITALOCEAN_METRICS_AGENT}" == "1" ]]; then
     
     # Download and execute DigitalOcean's official metrics agent installation script
     echo "Downloading and installing DigitalOcean Metrics Agent..."
-    if curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash; then
+    if run_downloaded_installer https://repos.insights.digitalocean.com/install.sh; then
         echo "✅ DigitalOcean Metrics Agent installed successfully"
         echo ""
         echo "Enhanced server metrics are now available in your DigitalOcean control panel."

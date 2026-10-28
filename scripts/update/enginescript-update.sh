@@ -159,7 +159,7 @@ if [[ -f "$SITES_FILE" ]]; then
         # 1. EngineScript Site Exporter plugin
         echo "Updating EngineScript Site Exporter plugin for $DOMAIN..."
         mkdir -p "/tmp/es-se-plugin-update"
-        if wget -q "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -O "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" 2>/dev/null; then
+        if curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -o "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" 2>/dev/null; then
           # Verify the downloaded file is a valid zip
           if unzip -t "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" >/dev/null 2>&1; then
             unzip -q -o "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
@@ -175,7 +175,7 @@ if [[ -f "$SITES_FILE" ]]; then
         # 2. EngineScript Site Optimizer plugin
         echo "Updating EngineScript Site Optimizer plugin for $DOMAIN..."
         mkdir -p "/tmp/es-so-plugin-update"
-        if wget -q "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -O "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" 2>/dev/null; then
+        if curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -o "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" 2>/dev/null; then
           # Verify the downloaded file is a valid zip
           if unzip -t "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
             unzip -q -o "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"

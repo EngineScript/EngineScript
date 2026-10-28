@@ -2131,7 +2131,7 @@ function download_and_extract() {
     local output_file="$2"
     local extract_dir="${3:-$(dirname "${output_file}")}"
 
-    wget -nv -O "${output_file}" "${url}" || {
+    curl -fsSL --proto '=https' -o "${output_file}" "${url}" || {
         echo "Error: Failed to download ${url}"
         return 1
     }
@@ -2179,13 +2179,13 @@ function git_clone_fresh() {
 
 
 # ----------------------------------------------------------------
-# Download a file with wget using consistent flags
+# Download a file over HTTPS (redirects to plain HTTP are refused)
 # Usage: safe_wget "URL" "/destination/path"
 function safe_wget() {
     local url="$1"
     local dest="$2"
 
-    wget -nv -O "${dest}" "${url}" || {
+    curl -fsSL --proto '=https' -o "${dest}" "${url}" || {
         echo "Error: Failed to download ${url}"
         return 1
     }

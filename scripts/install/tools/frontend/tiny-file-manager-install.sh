@@ -36,7 +36,7 @@ if [[ ! -d "$TFM_DIR" ]]; then
 fi
 
 # Download and extract TFM with error handling
-if curl -fsSL --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_FILE}"; then
+if curl -fsSL --proto '=https' --connect-timeout 30 --max-time 60 "${TFM_ZIP_URL}" -o "${TFM_ZIP_FILE}"; then
     if tar -xzf "${TFM_ZIP_FILE}" -C /tmp/; then
         # Copy files from extracted directory to our target directory
         cp -r "/tmp/tinyfilemanager-${TINYFILEMANAGER_VER}/"* "$TFM_DIR/"

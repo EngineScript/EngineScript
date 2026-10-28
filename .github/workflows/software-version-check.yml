@@ -284,7 +284,7 @@ jobs:
           
           # NGINX Dynamic TLS Records Patch - Track repository commits
           echo "::debug::Fetching NGINX Dynamic TLS Records Patch latest commit..."
-          LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(curl -sL https://api.github.com/repos/nginx-modules/ngx_http_tls_dyn_size/commits/master | jq -r '.sha')
+          LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(curl -sL --proto '=https' https://api.github.com/repos/nginx-modules/ngx_http_tls_dyn_size/commits/master | jq -r '.sha')
           echo "::debug::Fetched commit SHA: '$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA'"
           
           CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(get_current_version "NGINX_DYN_TLS_PATCH_COMMIT_SHA")
