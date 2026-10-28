@@ -59,9 +59,10 @@ jobs:
         with:
           node-version: '24'
 
+      # --ignore-scripts: no package's install scripts run in CI; none of the checks needs them
       - name: Install npm dependencies
         id: npm_ci
-        run: npm ci --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       # Each check runs even when an earlier one failed, so one run reports every problem
       - name: ESLint (control panel JavaScript)
