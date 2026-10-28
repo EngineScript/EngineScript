@@ -6,6 +6,10 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-10-28
 
+### 🐛 NGINX UPDATE FIXES
+
+- Fixed Nginx updates on existing servers failing to compile whenever EngineScript moved to a new OpenSSL, zlib, or PCRE2 version, as with OpenSSL 4.0 on 2026-10-25 ("can't cd to /usr/src/openssl-4.0.3"). Their download scripts skipped once the install had marked them complete, so the new source was never fetched; the Nginx update now fetches the current versions every time. The failed updates changed nothing: Nginx kept running the previous version.
+
 ### 🐛 SITE CREATION FIXES
 
 - Fixed the backup that runs after a site is created or imported. It still used the layout from before the 2026-10-25 backup rebuild: it saved only the database (in an undated file the backup retention does not manage), its wp-content, wp-config.php, Nginx, and certificate backups failed into folders that no longer exist, and it still reported "Backup: Complete". It now runs the same backup as `es.backup`, with the scheduled backups' layout, retention, and S3 copy, and warns when the backup reports errors. Sites created without WordPress back up EngineScript's configuration, which holds the site's certificate and key.
