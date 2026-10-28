@@ -56,7 +56,7 @@ export class DashboardAPI {
 
   isOperaMini() {
     return (
-      Object.prototype.toString.call(window.operamini) === "[object OperaMini]"
+      Object.prototype.toString.call(globalThis.operamini) === "[object OperaMini]"
     );
   }
 
@@ -105,7 +105,7 @@ export class DashboardAPI {
         // codacy:ignore - SSRF mitigated: endpoint validated above to start with '/api/'
         const response = await fetch(endpoint, {
           method: "GET",
-          headers: headers,
+          headers,
           credentials: "include"
         });
 
@@ -152,7 +152,7 @@ export class DashboardAPI {
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: headers,
+        headers,
         credentials: "include",
         body: JSON.stringify(data)
       });
@@ -212,7 +212,7 @@ export class DashboardAPI {
 
       const response = await fetch("/api/batch", {
         method: "POST",
-        headers: headers,
+        headers,
         credentials: "include",
         body: JSON.stringify({ requests: limitedEndpoints })
       });
@@ -233,7 +233,7 @@ export class DashboardAPI {
     try {
       return await response.json();
     } catch (error) {
-      throw new Error(`Invalid JSON response: ${error.message}`);
+      throw new Error(`Invalid JSON response: ${error.message}`, { cause: error });
     }
   }
 }

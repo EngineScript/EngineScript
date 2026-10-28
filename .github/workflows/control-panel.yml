@@ -1,0 +1,85 @@
+name: Control Panel
+
+# Runs the npm scripts in package.json: ESLint, Stylelint, and html-validate on the admin control
+# panel, markdownlint on every Markdown file, and the JavaScript tests. npm ci also fails when
+# package.json and package-lock.json disagree (for example a dependency update without its lock
+# file).
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'config/var/www/admin/control-panel/**'
+      - '**/*.md'
+      - 'tests/js/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'eslint.config.mjs'
+      - '.stylelintrc.json'
+      - '.htmlvalidate.json'
+      - '.markdownlint.json'
+      - '.markdownlint-cli2.jsonc'
+      - '.github/workflows/control-panel.yml'
+  pull_request:
+    paths:
+      - 'config/var/www/admin/control-panel/**'
+      - '**/*.md'
+      - 'tests/js/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'eslint.config.mjs'
+      - '.stylelintrc.json'
+      - '.htmlvalidate.json'
+      - '.markdownlint.json'
+      - '.markdownlint-cli2.jsonc'
+      - '.github/workflows/control-panel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: Lint and test (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install npm dependencies
+        id: npm_ci
+        run: npm ci --no-audit --no-fund
+
+      # Each check runs even when an earlier one failed, so one run reports every problem
+      - name: ESLint (control panel JavaScript)
+        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
+        run: npm run lint:js
+
+      - name: Stylelint (control panel CSS)
+        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
+        run: npm run lint:css
+
+      - name: html-validate (control panel HTML)
+        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
+        run: npm run lint:html
+
+      - name: markdownlint (Markdown files)
+        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
+        run: npm run lint:md
+
+      - name: JavaScript tests
+        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
+        run: npm test

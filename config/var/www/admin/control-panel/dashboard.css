@@ -414,6 +414,7 @@ body {
     flex: 1;
     padding: 2rem;
     overflow-y: auto;
+    animation: fade-in 0.5s ease;
 }
 
 .page-header {
@@ -889,10 +890,6 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.page-content {
-    animation: fade-in 0.5s ease;
 }
 
 /* Scrollbar Styling */

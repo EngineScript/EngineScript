@@ -68,18 +68,18 @@
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
-                    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation menu">
+                    <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-label="Open navigation menu">
                         <i class="fas fa-bars" aria-hidden="true"></i>
                     </button>
                     <h1 id="page-title">Overview</h1>
                     <span id="last-updated">Last updated: <span id="update-time">--</span></span>
                 </div>
                 <div class="header-right">
-                    <button class="theme-toggle" id="theme-toggle" title="Toggle dark/light theme" aria-label="Toggle dark/light theme">
+                    <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle dark/light theme" aria-label="Toggle dark/light theme">
                         <i class="fas fa-moon"></i>
                         <i class="fas fa-sun"></i>
                     </button>
-                    <button class="btn btn-primary" id="refresh-btn">
+                    <button class="btn btn-primary" id="refresh-btn" type="button">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                     <div class="server-time" id="server-time">--:--:--</div>
@@ -365,7 +365,7 @@
                                         <span class="cache-detail">Loading...</span>
                                     </div>
                                 </div>
-                                <div class="cache-actions" aria-label="Cache actions">
+                                <div class="cache-actions" role="group" aria-label="Cache actions">
                                     <button class="btn btn-secondary" type="button" data-cache-type="redis">
                                         <i class="fas fa-memory" aria-hidden="true"></i> Redis
                                     </button>

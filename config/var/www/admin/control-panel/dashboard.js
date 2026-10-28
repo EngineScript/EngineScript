@@ -44,7 +44,7 @@ class EngineScriptDashboard {
       document.documentElement.setAttribute("data-theme", savedTheme);
     } else {
       // Check system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
     }
   }
@@ -513,14 +513,14 @@ class EngineScriptDashboard {
           sites.forEach((site) => {
             if (this.utils.isValidSite(site)) {
               const siteElement = this.createSiteElement(site);
-              sitesGrid.appendChild(siteElement);
+              sitesGrid.append(siteElement);
             }
           });
           this.announceToScreenReader(`${sites.length} WordPress site${sites.length !== 1 ? "s" : ""} loaded`);
         } else {
           // Create no sites found element
           const noSitesElement = this.createNoSitesElement();
-          sitesGrid.appendChild(noSitesElement);
+          sitesGrid.append(noSitesElement);
           this.announceToScreenReader("No WordPress sites found");
         }
       }
@@ -539,7 +539,7 @@ class EngineScriptDashboard {
         const title = document.createElement("h3");
         title.textContent = "Error Loading Sites";
 
-        headerDiv.appendChild(title);
+        headerDiv.append(title);
 
         const infoDiv = document.createElement("div");
         infoDiv.className = "site-info";
@@ -547,11 +547,11 @@ class EngineScriptDashboard {
         const message = document.createElement("p");
         message.textContent = "Unable to load WordPress sites data.";
 
-        infoDiv.appendChild(message);
+        infoDiv.append(message);
 
-        errorDiv.appendChild(headerDiv);
-        errorDiv.appendChild(infoDiv);
-        sitesGrid.appendChild(errorDiv);
+        errorDiv.append(headerDiv);
+        errorDiv.append(infoDiv);
+        sitesGrid.append(errorDiv);
       }
     }
   }
@@ -583,7 +583,7 @@ class EngineScriptDashboard {
 
         infoItems.forEach((item) => {
           const infoElement = this.createInfoElement(item.label, item.value);
-          systemInfo.appendChild(infoElement);
+          systemInfo.append(infoElement);
         });
 
         this.announceToScreenReader("System information loaded");
@@ -645,20 +645,20 @@ class EngineScriptDashboard {
 
         const title = document.createElement("div");
         title.className = "skeleton skeleton-title";
-        card.appendChild(title);
+        card.append(title);
 
         const text1 = document.createElement("div");
         text1.className = "skeleton skeleton-text";
-        card.appendChild(text1);
+        card.append(text1);
 
         const text2 = document.createElement("div");
         text2.className = "skeleton skeleton-text short";
-        card.appendChild(text2);
+        card.append(text2);
 
-        fragment.appendChild(card);
+        fragment.append(card);
       }
 
-      sitesGrid.appendChild(fragment);
+      sitesGrid.append(fragment);
     }
   }
 
@@ -675,10 +675,10 @@ class EngineScriptDashboard {
       for (let i = 0; i < 3; i++) {
         const text = document.createElement("div");
         text.className = "skeleton skeleton-text";
-        fragment.appendChild(text);
+        fragment.append(text);
       }
 
-      systemInfo.appendChild(fragment);
+      systemInfo.append(fragment);
     }
   }
 
@@ -689,17 +689,17 @@ class EngineScriptDashboard {
 
     const iconEl = document.createElement("i");
     iconEl.className = `fas fa-${this.utils.sanitizeInput(icon)} empty-state-icon`;
-    emptyState.appendChild(iconEl);
+    emptyState.append(iconEl);
 
     const titleEl = document.createElement("h3");
     titleEl.className = "empty-state-title";
     titleEl.textContent = title;
-    emptyState.appendChild(titleEl);
+    emptyState.append(titleEl);
 
     const messageEl = document.createElement("p");
     messageEl.className = "empty-state-message";
     messageEl.textContent = message;
-    emptyState.appendChild(messageEl);
+    emptyState.append(messageEl);
 
     if (actionText && actionCallback) {
       const actionDiv = document.createElement("div");
@@ -710,8 +710,8 @@ class EngineScriptDashboard {
       btn.textContent = actionText;
       btn.addEventListener("click", actionCallback);
 
-      actionDiv.appendChild(btn);
-      emptyState.appendChild(actionDiv);
+      actionDiv.append(btn);
+      emptyState.append(actionDiv);
     }
 
     return emptyState;
@@ -727,7 +727,7 @@ class EngineScriptDashboard {
         "Add websites to monitor in your Uptime Robot dashboard"
       );
       monitorsContainer.replaceChildren();
-      monitorsContainer.appendChild(emptyState);
+      monitorsContainer.append(emptyState);
     }
   }
 
@@ -743,7 +743,7 @@ class EngineScriptDashboard {
         () => this.loadSystemInfo()
       );
       systemInfo.replaceChildren();
-      systemInfo.appendChild(emptyState);
+      systemInfo.append(emptyState);
     }
   }
 
@@ -758,8 +758,8 @@ class EngineScriptDashboard {
     const title = document.createElement("h3");
     title.textContent = titleText;
 
-    headerDiv.appendChild(title);
-    siteDiv.appendChild(headerDiv);
+    headerDiv.append(title);
+    siteDiv.append(headerDiv);
 
     return { siteDiv, headerDiv }; // codacy:ignore - Object literal return, not a lone block
   }
@@ -776,9 +776,9 @@ class EngineScriptDashboard {
 
     const statusText = document.createTextNode(sanitizedStatus);
 
-    statusDiv.appendChild(statusIndicator);
-    statusDiv.appendChild(statusText);
-    headerDiv.appendChild(statusDiv);
+    statusDiv.append(statusIndicator);
+    statusDiv.append(statusText);
+    headerDiv.append(statusDiv);
 
     // Site info
     const infoDiv = document.createElement("div");
@@ -787,18 +787,18 @@ class EngineScriptDashboard {
     const wpInfo = document.createElement("p");
     const wpLabel = document.createElement("strong");
     wpLabel.textContent = "WordPress: ";
-    wpInfo.appendChild(wpLabel);
-    wpInfo.appendChild(document.createTextNode(this.utils.sanitizeInput(site.wp_version) || "Unknown"));
+    wpInfo.append(wpLabel);
+    wpInfo.append(document.createTextNode(this.utils.sanitizeInput(site.wp_version) || "Unknown"));
 
     const sslInfo = document.createElement("p");
     const sslLabel = document.createElement("strong");
     sslLabel.textContent = "SSL: ";
-    sslInfo.appendChild(sslLabel);
-    sslInfo.appendChild(document.createTextNode(this.utils.sanitizeInput(site.ssl_status) || "Unknown"));
+    sslInfo.append(sslLabel);
+    sslInfo.append(document.createTextNode(this.utils.sanitizeInput(site.ssl_status) || "Unknown"));
 
-    infoDiv.appendChild(wpInfo);
-    infoDiv.appendChild(sslInfo);
-    siteDiv.appendChild(infoDiv);
+    infoDiv.append(wpInfo);
+    infoDiv.append(sslInfo);
+    siteDiv.append(infoDiv);
 
     return siteDiv;
   }
@@ -812,8 +812,8 @@ class EngineScriptDashboard {
     const message = document.createElement("p");
     message.textContent = "No WordPress sites are currently configured.";
 
-    infoDiv.appendChild(message);
-    siteDiv.appendChild(infoDiv);
+    infoDiv.append(message);
+    siteDiv.append(infoDiv);
 
     return siteDiv;
   }
@@ -828,8 +828,8 @@ class EngineScriptDashboard {
     const valueElement = document.createElement("span");
     valueElement.textContent = value;
 
-    infoDiv.appendChild(labelElement);
-    infoDiv.appendChild(valueElement);
+    infoDiv.append(labelElement);
+    infoDiv.append(valueElement);
 
     return infoDiv;
   }
@@ -868,7 +868,7 @@ class EngineScriptDashboard {
 
     if (available && typeof status.url === "string") {
       try {
-        toolCard.href = this.utils.sanitizeUrl(new URL(status.url, window.location.origin).href, toolCard.href);
+        toolCard.href = this.utils.sanitizeUrl(new URL(status.url, globalThis.location.origin).href, toolCard.href);
       } catch {
         // Keep the static fallback href already present in the template.
       }
@@ -927,8 +927,8 @@ class EngineScriptDashboard {
     detailElement.className = "cache-detail";
     detailElement.textContent = this.utils.sanitizeInput(detail);
 
-    item.appendChild(nameElement);
-    item.appendChild(detailElement);
+    item.append(nameElement);
+    item.append(detailElement);
 
     return item;
   }
@@ -1078,7 +1078,7 @@ class EngineScriptDashboard {
 
       monitors.forEach((monitor) => {
         const monitorElement = this.createUptimeMonitorElement(monitor);
-        monitorsContainer.appendChild(monitorElement);
+        monitorsContainer.append(monitorElement);
       });
     } catch (error) {
       console.error("Failed to load uptime monitors:", error);
@@ -1099,7 +1099,7 @@ class EngineScriptDashboard {
 
     const statusDot = document.createElement("span");
     statusDot.className = "status-dot";
-    statusDiv.appendChild(statusDot);
+    statusDiv.append(statusDot);
 
     const infoDiv = document.createElement("div");
     infoDiv.className = "monitor-info";
@@ -1111,8 +1111,8 @@ class EngineScriptDashboard {
     urlP.className = "monitor-url";
     urlP.textContent = this.utils.sanitizeUrl(monitor.url);
 
-    infoDiv.appendChild(nameH4);
-    infoDiv.appendChild(urlP);
+    infoDiv.append(nameH4);
+    infoDiv.append(urlP);
 
     // API returns uptime_day, uptime_week, uptime_month (use day for display)
     const uptimeRatio = Number(monitor.uptime_day ?? monitor.uptime_week ?? monitor.uptime_month ?? 0);
@@ -1128,18 +1128,18 @@ class EngineScriptDashboard {
 
         const uptimeValue = document.createElement("span");
         uptimeValue.className = "stat-value";
-        uptimeValue.textContent = this.utils.sanitizeNumeric(uptimeRatio, "0") + "%";
+        uptimeValue.textContent = `${this.utils.sanitizeNumeric(uptimeRatio, "0")}%`;
 
         const uptimeLabel = document.createElement("span");
         uptimeLabel.className = "stat-label";
         uptimeLabel.textContent = "Uptime";
 
-        uptimeStatDiv.appendChild(uptimeValue);
-        uptimeStatDiv.appendChild(uptimeLabel);
-        statsDiv.appendChild(uptimeStatDiv);
+        uptimeStatDiv.append(uptimeValue);
+        uptimeStatDiv.append(uptimeLabel);
+        statsDiv.append(uptimeStatDiv);
       }
 
-      monitorDiv.appendChild(statsDiv);
+      monitorDiv.append(statsDiv);
     }
 
     const statusTextDiv = document.createElement("div");
@@ -1150,11 +1150,11 @@ class EngineScriptDashboard {
     // API returns 'status_text' for the text version
     statusText.textContent = this.utils.sanitizeInput(monitor.status_text || "Unknown");
 
-    statusTextDiv.appendChild(statusText);
+    statusTextDiv.append(statusText);
 
-    monitorDiv.appendChild(statusDiv);
-    monitorDiv.appendChild(infoDiv);
-    monitorDiv.appendChild(statusTextDiv);
+    monitorDiv.append(statusDiv);
+    monitorDiv.append(infoDiv);
+    monitorDiv.append(statusTextDiv);
 
     return monitorDiv;
   }
@@ -1183,7 +1183,7 @@ class EngineScriptDashboard {
       const titleP = document.createElement("p");
       const titleStrong = document.createElement("strong");
       titleStrong.textContent = "Uptime Robot not configured";
-      titleP.appendChild(titleStrong);
+      titleP.append(titleStrong);
 
       // Create instructions
       const instrP = document.createElement("p");
@@ -1200,7 +1200,7 @@ class EngineScriptDashboard {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = "UptimeRobot.com";
-      li1.appendChild(link);
+      li1.append(link);
 
       const li2 = document.createElement("li");
       li2.textContent = "Get your API key from Settings > API Settings";
@@ -1209,24 +1209,24 @@ class EngineScriptDashboard {
       li3.textContent = "Configure it using: ";
       const code1 = document.createElement("code");
       code1.textContent = "sudo nano /etc/enginescript/uptimerobot.conf";
-      li3.appendChild(code1);
+      li3.append(code1);
 
       const li4 = document.createElement("li");
       li4.textContent = "Add: ";
       const code2 = document.createElement("code");
       code2.textContent = "api_key=your_api_key_here";
-      li4.appendChild(code2);
+      li4.append(code2);
 
-      ol.appendChild(li1);
-      ol.appendChild(li2);
-      ol.appendChild(li3);
-      ol.appendChild(li4);
+      ol.append(li1);
+      ol.append(li2);
+      ol.append(li3);
+      ol.append(li4);
 
-      statusDiv.appendChild(titleP);
-      statusDiv.appendChild(instrP);
-      statusDiv.appendChild(ol);
+      statusDiv.append(titleP);
+      statusDiv.append(instrP);
+      statusDiv.append(ol);
 
-      monitorsContainer.appendChild(statusDiv);
+      monitorsContainer.append(statusDiv);
     }
 
     // Reset summary stats
@@ -1246,8 +1246,8 @@ class EngineScriptDashboard {
       const safeErrorMessage = this.utils.sanitizeInput(errorMessage);
       message.textContent = safeErrorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
 
-      statusDiv.appendChild(message);
-      monitorsContainer.appendChild(statusDiv);
+      statusDiv.append(message);
+      monitorsContainer.append(statusDiv);
     }
     this.utils.setTextContent("total-monitors", "--");
     this.utils.setTextContent("up-monitors", "--");
@@ -1268,7 +1268,7 @@ class EngineScriptDashboard {
       this.liveRegion.setAttribute("aria-live", "polite");
       this.liveRegion.setAttribute("aria-atomic", "true");
       this.liveRegion.className = "sr-only";
-      document.body.appendChild(this.liveRegion);
+      document.body.append(this.liveRegion);
     }
 
     const safeMessage = this.utils.sanitizeInput(message);
@@ -1292,14 +1292,14 @@ class EngineScriptDashboard {
 // Initialize dashboard when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   // Only initialize if not already initialized
-  if (!window.engineScriptDashboard) {
-    window.engineScriptDashboard = new EngineScriptDashboard();
+  if (!globalThis.engineScriptDashboard) {
+    globalThis.engineScriptDashboard = new EngineScriptDashboard();
   }
 });
 
 // Handle page unload
 window.addEventListener("beforeunload", () => {
-  if (window.engineScriptDashboard) {
-    window.engineScriptDashboard.destroy();
+  if (globalThis.engineScriptDashboard) {
+    globalThis.engineScriptDashboard.destroy();
   }
 });

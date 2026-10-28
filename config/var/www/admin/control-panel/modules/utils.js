@@ -13,10 +13,10 @@ export class DashboardUtils {
     // XSS prevention is handled by using textContent for all DOM output
     return String(input)
       // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove all control characters
-      .replace(/\s+/g, " ") // Normalize whitespace
+      .replaceAll(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove all control characters
+      .replaceAll(/\s+/g, " ") // Normalize whitespace
       .trim()
-      .substring(0, 1000); // Limit length
+      .slice(0, 1000); // Limit length
   }
 
   static sanitizeNumeric(input, fallback = "0") {
@@ -37,11 +37,11 @@ export class DashboardUtils {
       return fallback;
     }
 
-    const normalized = sign + (intPart || "0") + (fracPart ? "." + fracPart : "");
-    const parsed = parseFloat(normalized);
+    const normalized = sign + (intPart || "0") + (fracPart ? `.${fracPart}` : "");
+    const parsed = Number.parseFloat(normalized);
 
     // Check if it's a valid number and within reasonable bounds
-    if (isNaN(parsed) || !isFinite(parsed)) {
+    if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
       return fallback;
     }
 
@@ -61,9 +61,9 @@ export class DashboardUtils {
     // Strip control characters and limit length before parsing
     const sanitized = String(input)
       // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters
+      .replaceAll(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters
       .trim()
-      .substring(0, 2048); // Limit URL length
+      .slice(0, 2048); // Limit URL length
 
     // Use the native URL constructor for spec-compliant, ReDoS-safe validation.
     // This inherently blocks data:, javascript:, vbscript: and other dangerous schemes.
@@ -110,7 +110,7 @@ export class DashboardUtils {
     notification.className = `notification-toast notification-${notificationType}`;
     notification.textContent = sanitizedMessage;
 
-    document.body.appendChild(notification);
+    document.body.append(notification);
 
     setTimeout(() => {
       notification.remove();
