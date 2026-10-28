@@ -147,8 +147,18 @@ fi
 # 2. Upgrade the MariaDB packages. EngineScript's configuration replaces the packaged
 # /etc/mysql/mariadb.cnf, so dpkg would ask whether to keep it (and fail without a terminal);
 # --force-confold keeps it, and step 3 re-applies the current template anyway.
+# MariaDB's repository setup script is saved before it runs: a download that breaks off cannot run
+# part of it, and a failed download stops here, before the repository list is removed.
+REPO_SETUP="$(mktemp)"
+if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> /tmp/enginescript_install_errors.log; then
+  rm -f "${REPO_SETUP}"
+  print_last_errors
+  echo "Error: Could not download MariaDB's repository setup script. The update stopped; the MariaDB packages were not changed." >&2
+  exit 1
+fi
 rm -f /etc/apt/sources.list.d/mariadb.list
-curl -LsS --proto '=https' https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+sudo bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
