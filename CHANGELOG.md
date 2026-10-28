@@ -15,6 +15,10 @@ Changes are organized by date, with the most recent changes listed first.
 - Fixed the backup that runs after a site is created or imported. It still used the layout from before the 2026-10-25 backup rebuild: it saved only the database (in an undated file the backup retention does not manage), its wp-content, wp-config.php, Nginx, and certificate backups failed into folders that no longer exist, and it still reported "Backup: Complete". It now runs the same backup as `es.backup`, with the scheduled backups' layout, retention, and S3 copy, and warns when the backup reports errors. Sites created without WordPress back up EngineScript's configuration, which holds the site's certificate and key.
 - Fixed Hello Dolly staying on new sites: WP-CLI could not delete it before `wp-config.php` existed. The plugin file is now removed right after WordPress is downloaded.
 
+### 🔧 NGINX BUILD
+
+- OpenSSL is no longer built with `no-deprecated`. OpenSSL 4.1 deprecates `X509_check_host()` and `X509_check_ip()`, which Nginx still calls, so `no-deprecated` stopped Nginx from compiling with it. Nginx links OpenSSL statically, so deprecated functions it does not call never reach the binary. The `no-ssl3-method` option is dropped as well: OpenSSL 4 no longer has SSLv3 and only warned about it.
+
 ## 2026-10-27
 
 ### 🐛 NGINX FIXES
