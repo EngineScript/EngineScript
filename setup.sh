@@ -252,9 +252,11 @@ dos2unix /etc/update-motd.d/99-enginescript
 run-parts --test /etc/update-motd.d/
 run-parts /etc/update-motd.d/
 
-# HWE
-UBUNTU_VERSION_NO_DOT="${UBUNTU_VERSION//./}"
-apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION_NO_DOT}" -y
+# HWE kernel. Ubuntu's package name keeps the dot (linux-generic-hwe-24.04); the new kernel is
+# used from the reboot at the end of setup.
+if ! apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION}" -y; then
+  echo "Warning: Could not install the HWE kernel (linux-generic-hwe-${UBUNTU_VERSION}). The server keeps its current kernel." >&2
+fi
 
 # Update and upgrade
 apt update --allow-releaseinfo-change -y

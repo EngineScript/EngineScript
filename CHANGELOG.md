@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-27
+
+### 🐛 NGINX FIXES
+
+- Fixed new installs ending without a running Nginx, and Nginx updates being rolled back, since the 2026-10-25 changes: `nginx -t` refused `nginx.conf` ("map_hash_bucket_size directive is duplicate"), because the new failed-request `map` came before `map_hash_bucket_size`. Servers that ran an Nginx update in that time kept their previous Nginx and configuration.
+
+### 🐛 SETUP FIXES
+
+- Fixed `setup.sh` never installing the Ubuntu HWE kernel: it asked for `linux-generic-hwe-2404`, a package that does not exist, instead of `linux-generic-hwe-24.04`. New servers now get the HWE kernel, used from the reboot at the end of setup. If the install fails, setup prints a warning and the server keeps its current kernel.
+
 ## 2026-10-25
 
 ### ⚙️ ONE MEMORY BUDGET FOR NGINX, PHP, MARIADB, AND REDIS
