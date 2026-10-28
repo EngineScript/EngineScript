@@ -110,8 +110,8 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
 
   cd /usr/src/zlib-rs/libz-rs-sys-cdylib
 
-  # Build with native CPU optimizations for best performance
-  RUSTFLAGS="-Ctarget-cpu=native -Cllvm-args=-enable-dfa-jump-thread" \
+  # Build for a fixed CPU level (see get_x86_64_level in enginescript-common.sh)
+  RUSTFLAGS="-Ctarget-cpu=$(get_x86_64_level) -Cllvm-args=-enable-dfa-jump-thread" \
     cargo build --release --features c-allocator
 
   echo "zlib-rs library built successfully"

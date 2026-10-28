@@ -35,22 +35,22 @@ define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
 define( 'NONCE_SALT',       'put your unique phrase here' );
 
 /* Redis Object Cache Plugin */
-define( 'WP_REDIS_DATABASE', 0 ); // EngineScript scales this based on the number of installed domains
-define( 'WP_REDIS_DISABLE_BANNERS', 'true' );
-define( 'WP_REDIS_MAXTTL', '43200' ); // 43200 seconds = 12 hours
+define( 'WP_REDIS_DATABASE', 0 ); // EngineScript gives each site its own database number
+define( 'WP_REDIS_DISABLE_BANNERS', true );
+define( 'WP_REDIS_IGBINARY', true ); // Compact serializer (php-igbinary); flush the cache before changing it on a running site
+define( 'WP_REDIS_MAXTTL', 43200 ); // 43200 seconds = 12 hours
 define( 'WP_REDIS_PATH', '/run/redis/redis-server.sock' );
 define( 'WP_REDIS_PREFIX', 'SEDREDISPREFIX' );
 define( 'WP_REDIS_READ_TIMEOUT', 1 );
 define( 'WP_REDIS_SCHEME', 'unix' );
 define( 'WP_REDIS_TIMEOUT', 1 );
-//define( 'WP_REDIS_DISABLE_ADMINBAR', 'true' );
-//define( 'WP_REDIS_DISABLE_METRICS', 'true' );
-//define( 'WP_REDIS_DISABLED', 'true' ); // Emergency disable method
+//define( 'WP_REDIS_DISABLE_ADMINBAR', true );
+//define( 'WP_REDIS_DISABLE_METRICS', true );
+//define( 'WP_REDIS_DISABLED', true ); // Emergency disable method
 //define( 'WP_REDIS_FLUSH_TIMEOUT', 5 ); // Experimental
-//define( 'WP_REDIS_IGBINARY', 'true' ); // Better compression. Saves memory, slower
-//define( 'WP_REDIS_IGNORED_GROUPS', 'PLACEHOLDER' ); // Unsupported / SLOW
+//define( 'WP_REDIS_IGNORED_GROUPS', array( 'PLACEHOLDER' ) ); // Groups kept out of Redis (cached per request only)
 //define( 'WP_REDIS_PASSWORD', 'PLACEHOLDER' );
-//define( 'WP_REDIS_SELECTIVE_FLUSH', 'true' ); // Unsupported / SLOW
+//define( 'WP_REDIS_SELECTIVE_FLUSH', true ); // Unsupported by the plugin's authors, slow
 
 /* Nginx Helper FastCGI cache plugin */
 define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/cache/nginx/' );

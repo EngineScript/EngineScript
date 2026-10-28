@@ -127,7 +127,6 @@ function initialize_install_state_file() {
         "SWAP"
         "KERNEL_TWEAKS"
         "THP"
-        "KSM"
         "SFL"
         "NTP"
         "DO_CONSOLE"
@@ -350,26 +349,81 @@ function clear_all_system_caches() {
 
 
 # ----------------------------------------------------------------
-# Resolve PHP version from override or default
-# If PHP_VERSION_OVERRIDE is set in install options, use it instead of the default PHP_VER
-# Validates that the override is a supported version
-function resolve_php_version() {
-    if [[ -n "${PHP_VERSION_OVERRIDE}" ]]; then
-        local valid=false
-        for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-            if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
-                valid=true
-                break
-            fi
-        done
+# List the PHP-FPM versions installed on this server (for example "8.4"), newest first
+# Any installed version is listed, including versions EngineScript no longer supports, so a
+# server on such a version can still be detected and switched with php-update.sh.
+function get_installed_php_versions() {
+    local line
+    local pattern='^php([0-9]+\.[0-9]+)-fpm install ok installed$'
+    local versions=()
 
-        if [[ "${valid}" == true ]]; then
-            PHP_VER="${PHP_VERSION_OVERRIDE}"
+    if ! command -v dpkg-query > /dev/null 2>&1; then
+        return 0
+    fi
+    while IFS= read -r line; do
+        if [[ "${line}" =~ ${pattern} ]]; then
+            versions+=("${BASH_REMATCH[1]}")
         fi
+    done < <(dpkg-query -W -f='${Package} ${Status}\n' 'php*-fpm' 2> /dev/null || true)
+
+    if [[ ${#versions[@]} -gt 0 ]]; then
+        printf '%s\n' "${versions[@]}" | sort -rV
     fi
 }
 
-# Apply PHP version override if set
+
+# ----------------------------------------------------------------
+# Print the PHP-FPM version this server runs, or nothing when PHP-FPM is not installed
+# With more than one installed (during a PHP version switch), a running version is preferred,
+# then the newest.
+function get_installed_php_version() {
+    local versions=()
+    local ver
+
+    mapfile -t versions < <(get_installed_php_versions)
+    if [[ ${#versions[@]} -eq 0 ]]; then
+        return 0
+    fi
+    for ver in "${versions[@]}"; do
+        if systemctl is-active --quiet "php${ver}-fpm" 2> /dev/null; then
+            echo "${ver}"
+            return 0
+        fi
+    done
+    echo "${versions[0]}"
+}
+
+
+# ----------------------------------------------------------------
+# Resolve the PHP version EngineScript works with
+#
+# PHP_CONFIGURED_VER is the version the install options select: PHP_VERSION_OVERRIDE when it
+# names a supported version, otherwise the default PHP_VER. New installs use it, and
+# php-update.sh uses it as the target when no version is given.
+#
+# PHP_VER is the version installed on this server, when PHP-FPM is installed. Scripts that
+# configure an existing server (for example the Nginx update, which writes the PHP-FPM socket
+# path) must use the version that is actually installed: the default changing in a later
+# EngineScript release must not point Nginx at a PHP-FPM socket that does not exist. Changing
+# versions is an explicit step: php-update.sh, or es.menu > Update Software > Switch PHP Version.
+function resolve_php_version() {
+    local ver installed
+
+    PHP_CONFIGURED_VER="${PHP_VER:-}"
+    if [[ -n "${PHP_VERSION_OVERRIDE:-}" ]]; then
+        for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+            if [[ "${PHP_VERSION_OVERRIDE}" == "${ver}" ]]; then
+                PHP_CONFIGURED_VER="${PHP_VERSION_OVERRIDE}"
+                break
+            fi
+        done
+    fi
+
+    installed="$(get_installed_php_version)"
+    PHP_VER="${installed:-${PHP_CONFIGURED_VER}}"
+}
+
+# Resolve the PHP version (installed version, override, or default)
 resolve_php_version
 
 
@@ -387,13 +441,117 @@ function restart_service() {
 # ----------------------------------------------------------------
 # Function to restart PHP-FPM service
 function restart_php_fpm() {
-    for version in "${SUPPORTED_PHP_VERSIONS[@]}"; do
-        if systemctl is-active --quiet "php${version}-fpm"; then
-            restart_service "php${version}-fpm"
-            return
+    if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+        restart_service "php${PHP_VER}-fpm"
+        return
+    fi
+    echo "Error: No active PHP-FPM service found."
+}
+
+
+# ----------------------------------------------------------------
+# Print the PHP-FPM socket that /etc/nginx/globals/php-fpm.conf passes PHP requests to
+function get_nginx_php_socket() {
+    sed -n 's|^[[:space:]]*fastcgi_pass[[:space:]]*unix:\([^;[:space:]]*\);.*|\1|p' /etc/nginx/globals/php-fpm.conf 2> /dev/null | head -1
+}
+
+
+# ----------------------------------------------------------------
+# Check that PHP-FPM runs PHP, by sending one FastCGI request straight to its socket
+# (php-fpm-check.php). Works without any site, and is not affected by the FastCGI cache.
+# Usage: php_fpm_answers "8.5"
+function php_fpm_answers() {
+    local ver="$1"
+    local socket="/run/php/php${ver}-fpm.sock"
+    local check_dir="/run/enginescript-php-check"
+    local output
+
+    if [[ ! -S "${socket}" ]]; then
+        return 1
+    fi
+    mkdir -p "${check_dir}"
+    chmod 755 "${check_dir}"
+    printf '<?php echo "enginescript-php-ok ", PHP_VERSION;\n' > "${check_dir}/check.php"
+    chmod 644 "${check_dir}/check.php"
+    output="$(php /usr/local/bin/enginescript/scripts/functions/shared/php-fpm-check.php "${socket}" "${check_dir}/check.php" 2> /dev/null)"
+    rm -rf "${check_dir}"
+    [[ "${output}" == "enginescript-php-ok ${ver}."* ]]
+}
+
+
+# ----------------------------------------------------------------
+# Print the sites on this server that do not work through Nginx and PHP, one per line
+#
+# A site fails on a gateway error (502 or 504: Nginx could not reach PHP-FPM), on 500 (a fatal
+# PHP error, such as a plugin that does not run on a new PHP version, or an Nginx error), or with
+# no response. 503 is not counted: WordPress answers 503 in maintenance mode. The query string
+# bypasses the FastCGI cache, so a cached page cannot hide a PHP-FPM that does not answer. Prints
+# nothing when every site answers or there are no sites. Callers compare the result with a list
+# taken before a change, so a site that was already failing does not count against the change.
+function get_sites_without_php() {
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+    local site code
+
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for site in "${SITES[@]}"; do
+        code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 20 \
+            --resolve "${site}:443:127.0.0.1" "https://${site}/?enginescript-check=${RANDOM}")"
+        if [[ "${code}" == "000" || "${code}" == "500" || "${code}" == "502" || "${code}" == "504" ]]; then
+            echo "${site}"
         fi
     done
-    echo "Error: No active PHP-FPM service found."
+}
+
+
+# ----------------------------------------------------------------
+# Print the WordPress sites on this server that cannot reach their database, one per line
+#
+# Runs a query with each site's own credentials from wp-config.php (WP-CLI), so it checks the
+# account WordPress uses. Sites without wp-config.php (no WordPress) are skipped. Prints nothing
+# when every site reaches its database or there are no sites. Callers compare the result with a
+# list taken before a change, as with get_sites_without_php.
+function get_sites_without_database() {
+    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local site site_root
+
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for site in "${SITES[@]}"; do
+        site_root="/var/www/sites/${site}/html"
+        if [[ ! -f "${site_root}/wp-config.php" ]]; then
+            continue
+        fi
+        if ! timeout 60 wp db query "SELECT 1" --path="${site_root}" --allow-root --skip-plugins --skip-themes > /dev/null 2>&1; then
+            echo "${site}"
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Print the sites in the second list that are not in the first (newline-separated lists)
+# Usage: newly_failing_sites "${FAILING_BEFORE}" "${FAILING_AFTER}"
+function newly_failing_sites() {
+    local before="$1"
+    local after="$2"
+    local site
+
+    while IFS= read -r site; do
+        if [[ -n "${site}" ]] && ! grep -qxF -- "${site}" <<< "${before}"; then
+            echo "${site}"
+        fi
+    done <<< "${after}"
 }
 
 
@@ -613,27 +771,110 @@ function set_enginescript_frontend_permissions() {
 
 # ----------------------------------------------------------------
 # Set permissions for Nginx directories and files
+#
+# The Nginx configuration belongs to root. The Nginx master process runs as root and loads
+# it (including any load_module line), so it must not be writable by www-data, the user PHP
+# and the Nginx worker processes run as. TLS private keys are readable by root only.
 function set_nginx_permissions() {
-    chown -R www-data:www-data /etc/nginx
-    chown -R www-data:www-data /tmp/nginx_proxy
-    chown -R www-data:www-data /usr/lib/nginx/modules
+    # Configuration: root-owned, directories 755, files 644
+    if [[ -d /etc/nginx ]]; then
+        chown -R root:root /etc/nginx
+        find /etc/nginx -type d -exec chmod 755 {} +
+        find /etc/nginx -type f -exec chmod 644 {} +
+    fi
+
+    # TLS certificates and keys: only root needs them (the master process reads them)
+    if [[ -d /etc/nginx/ssl ]]; then
+        find /etc/nginx/ssl -type d -exec chmod 700 {} +
+        find /etc/nginx/ssl -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
+    fi
+
+    # Admin basic-auth password file: the worker processes (www-data) read it on each request
+    if [[ -d /etc/nginx/restricted-access ]]; then
+        chown -R root:www-data /etc/nginx/restricted-access
+        chmod 750 /etc/nginx/restricted-access
+        find /etc/nginx/restricted-access -type f -exec chmod 640 {} +
+    fi
+
+    # Modules are loaded by the master process as root
+    if [[ -d /usr/lib/nginx/modules ]]; then
+        chown -R root:root /usr/lib/nginx/modules
+    fi
+
+    # Runtime directories the worker processes and PHP write to
     chown -R www-data:www-data /var/cache/nginx
     chown -R www-data:www-data /var/lib/nginx
-    chown -R www-data:www-data /var/log/domains
-    chown -R www-data:www-data /var/log/nginx
     chown -R www-data:www-data /var/www
     chmod 775 /var/cache/nginx
-    chmod 755 /var/log/nginx
-    chmod 755 /var/log/domains
 
-    # Set proper permissions for SSL certificates
-    if [ -d "/etc/nginx/ssl" ]; then
-        chown -R root:www-data /etc/nginx/ssl
-        chmod -R 750 /etc/nginx/ssl
-        find /etc/nginx/ssl -name "*.key" -exec chmod 640 {} \;
-        find /etc/nginx/ssl -name "*.crt" -exec chmod 644 {} \;
-        find /etc/nginx/ssl -name "*.pem" -exec chmod 644 {} \;
+    # Logs: the directories belong to root, so www-data cannot replace a log file with a
+    # symlink that the root master process would then open and chown (CVE-2016-1247). The
+    # log files stay owned by www-data: the worker processes reopen them after rotation, and
+    # PHP writes the WordPress debug log in each site's directory.
+    local log_dir
+    for log_dir in /var/log/nginx /var/log/domains; do
+        if [[ -d "${log_dir}" ]]; then
+            find "${log_dir}" -type d -exec chown root:root {} + -exec chmod 755 {} +
+            find "${log_dir}" -type f -exec chown www-data:adm {} + -exec chmod 640 {} +
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Give existing sites' certificates a reload command.
+#
+# Sites created before acme.sh was given --reloadcmd renew their certificates without
+# reloading Nginx, which keeps serving the old certificate until something else reloads it.
+# Re-running --install-cert with the same paths saves the reload command for future renewals
+# (and reloads Nginx once). Sites that already have a reload command are left alone.
+function migrate_acme_reload_commands() {
+    local acme="/root/.acme.sh/acme.sh"
+    local sites_file="/home/EngineScript/sites-list/sites.sh"
+    local domain domain_conf
+
+    if [[ ! -x "${acme}" || ! -f "${sites_file}" ]]; then
+        return 0
     fi
+
+    local SITES=()
+    # shellcheck source=/dev/null
+    source "${sites_file}"
+
+    for domain in "${SITES[@]}"; do
+        domain_conf="/root/.acme.sh/${domain}_ecc/${domain}.conf"
+        if [[ ! -f "${domain_conf}" || ! -d "/etc/nginx/ssl/${domain}" ]]; then
+            continue
+        fi
+        if grep -q "^Le_ReloadCmd='..*'" "${domain_conf}"; then
+            continue
+        fi
+        echo "Adding a certificate reload command for ${domain}..."
+        "${acme}" --install-cert -d "${domain}" --ecc \
+            --cert-file "/etc/nginx/ssl/${domain}/cert.pem" \
+            --key-file "/etc/nginx/ssl/${domain}/key.pem" \
+            --fullchain-file "/etc/nginx/ssl/${domain}/fullchain.pem" \
+            --ca-file "/etc/nginx/ssl/${domain}/ca.pem" \
+            --reloadcmd "systemctl reload nginx" \
+            || echo "Warning: Could not add a certificate reload command for ${domain}." >&2
+        secure_nginx_ssl_directory "/etc/nginx/ssl/${domain}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Restrict one site's TLS directory to root (used right after a certificate is installed)
+function secure_nginx_ssl_directory() {
+    local ssl_dir="$1"
+
+    if [[ ! -d "${ssl_dir}" ]]; then
+        return 0
+    fi
+
+    chown -R root:root "${ssl_dir}"
+    chmod 700 "${ssl_dir}"
+    find "${ssl_dir}" -type f -exec chmod 644 {} +
+    find "${ssl_dir}" -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
 }
 
 
@@ -657,7 +898,10 @@ function set_commented_directive_state() {
 
 
 # ----------------------------------------------------------------
-# Normalize legacy HTTP/3 listen directives to the current MPTCP-aware form
+# Normalize legacy HTTP/3 listen directives to the current form.
+# "reuseport" may appear only once per address and port, so only the default
+# server keeps "quic reuseport"; every other vhost uses "listen 443 quic;".
+# "multipath" (Multipath TCP) does not apply to QUIC (UDP) listeners.
 function normalize_nginx_http3_listen_directives() {
     local file_path="$1"
 
@@ -666,10 +910,10 @@ function normalize_nginx_http3_listen_directives() {
     fi
 
     sed -Ei \
-        -e 's|^([[:space:]]*#?listen 443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen \[::\]:443 default_server )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen 443 )quic reuseport;|\1multipath quic reuseport;|' \
-        -e 's|^([[:space:]]*#?listen \[::\]:443 )quic reuseport;|\1multipath quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen 443 default_server )(multipath )?quic reuseport;|\1quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 default_server )(multipath )?quic reuseport;|\1quic reuseport;|' \
+        -e 's|^([[:space:]]*#?listen 443 )(multipath )?quic reuseport;|\1quic;|' \
+        -e 's|^([[:space:]]*#?listen \[::\]:443 )(multipath )?quic reuseport;|\1quic;|' \
         "${file_path}"
 }
 
@@ -690,9 +934,9 @@ function sync_nginx_http3_config() {
         early_hints_protocol_gate="\$http2\$http3"
     fi
 
+    # http3_max_concurrent_streams and http3_stream_buffer_size stay commented
+    # (Nginx defaults) and are left for manual tuning.
     set_commented_directive_state "/etc/nginx/nginx.conf" "http3 on;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_max_concurrent_streams" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/nginx.conf" "http3_stream_buffer_size" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/nginx.conf" "quic_bpf on;" "${http3_enabled}"
     set_commented_directive_state "/etc/nginx/nginx.conf" "quic_retry on;" "${http3_enabled}"
 
@@ -708,8 +952,8 @@ function sync_nginx_http3_config() {
     fi
 
     normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server multipath quic reuseport;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server multipath quic reuseport;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport;" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport;" "${http3_enabled}"
 
     if shopt -q nullglob; then
         nullglob_was_set=1
@@ -729,27 +973,769 @@ function sync_nginx_http3_config() {
 
     for file_path in "${site_config_files[@]}"; do
         normalize_nginx_http3_listen_directives "${file_path}"
-        set_commented_directive_state "${file_path}" "listen 443 multipath quic reuseport;" "${http3_enabled}"
-        set_commented_directive_state "${file_path}" "listen \[::\]:443 multipath quic reuseport;" "${http3_enabled}"
+        set_commented_directive_state "${file_path}" "listen 443 quic;" "${http3_enabled}"
+        set_commented_directive_state "${file_path}" "listen \[::\]:443 quic;" "${http3_enabled}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Bring existing site and admin vhost files up to date with template changes.
+#
+# Vhost files are copied from the templates once, when a site is created, so later template
+# changes never reach them on their own. Put new rules in the shared includes
+# (/etc/nginx/globals) whenever possible; add a step here only when a vhost file itself must
+# change. Every step must be safe to run again on an already-updated file.
+# Runs on every Nginx install and update (nginx-misc.sh) and when a vhost is created.
+function migrate_nginx_vhosts() {
+    local nullglob_was_set=0
+    local file_path
+    local vhost_files=()
+
+    if shopt -q nullglob; then
+        nullglob_was_set=1
+    else
+        shopt -s nullglob
+    fi
+    vhost_files=(/etc/nginx/sites-enabled/*.conf /etc/nginx/admin/admin.*.conf)
+    if [[ "${nullglob_was_set}" == "0" ]]; then
+        shopt -u nullglob
+    fi
+
+    for file_path in "${vhost_files[@]}"; do
+        # 2026-10: QUIC listeners. Only the default server keeps "reuseport"; no "multipath".
+        normalize_nginx_http3_listen_directives "${file_path}"
+
+        # 2026-10: admin subdomain vhosts keep their own security headers instead of merging in
+        # the site-wide headers from nginx.conf (add_header_inherit merge), which would send
+        # conflicting duplicates such as two X-Frame-Options values.
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf && "${file_path}" != "/etc/nginx/admin/admin.localhost.conf" ]] \
+            && ! grep -q "add_header_inherit" "${file_path}"; then
+            sed -i '/^[[:space:]]*server_name admin\./a\  add_header_inherit on;' "${file_path}"
+        fi
+
+        # 2026-10: site vhosts log failed requests (status 400 and up) to their own log instead of
+        # no access log at all. The $es_failed_request map is in nginx.conf, which only an Nginx
+        # install or update replaces: until then, keep (or put back) "access_log off;", or a site
+        # created in between would make nginx -t fail.
+        if [[ "${file_path}" == /etc/nginx/sites-enabled/*.conf ]]; then
+            local domain
+            domain="$(basename "${file_path}" .conf)"
+            # $es_failed_request is an Nginx variable, matched literally
+            # shellcheck disable=SC2016
+            if grep -q 'es_failed_request' /etc/nginx/nginx.conf 2> /dev/null; then
+                if grep -qx '  access_log off;' "${file_path}"; then
+                    mkdir -p "/var/log/domains/${domain}"
+                    sed -i "s|^  access_log off;\$|  # Failed requests only (status 400 and up), written in batches\n  access_log /var/log/domains/${domain}/${domain}-nginx-failed.log main buffer=32k flush=5s if=\$es_failed_request;|" "${file_path}"
+                fi
+            elif grep -q 'if=\$es_failed_request' "${file_path}"; then
+                sed -i -e '/^  # Failed requests only (status 400 and up), written in batches$/d' \
+                    -e 's|^  access_log .*if=\$es_failed_request;$|  access_log off;|' "${file_path}"
+            fi
+        fi
     done
 }
 
 
 # ----------------------------------------------------------------
 # Set permissions for PHP directories and files
+#
+# The PHP-FPM master process runs as root and loads the configuration and every extension it
+# lists, so /etc/php must not be writable by www-data, the user the PHP workers run as.
 function set_php_permissions() {
-    find "/var/log/php" -exec chmod 775 {} \;
-    find "/var/log/opcache" -exec chmod 775 {} \;
-    find "/etc/php" -exec chmod 775 {} \;
+    # Configuration: root-owned, directories 755, files 644
+    if [[ -d /etc/php ]]; then
+        chown -R root:root /etc/php
+        find /etc/php -type d -exec chmod 755 {} +
+        find /etc/php -type f -exec chmod 644 {} +
+    fi
+
+    # Older installs logged to /var/log/php (see migrate_php_fpm_log_path). The FPM master
+    # writes its log as root, so a root-owned directory keeps www-data from replacing the log
+    # with a symlink.
+    if [[ -d /var/log/php ]]; then
+        chown root:root /var/log/php
+        chmod 755 /var/log/php
+        find /var/log/php -type f -exec chown root:adm {} + -exec chmod 640 {} +
+    fi
+
     chmod 775 /var/cache/opcache
     chmod 775 /var/cache/php-sessions
     chmod 775 /var/cache/wsdlcache
     chown -R www-data:www-data /var/cache/opcache
     chown -R www-data:www-data /var/cache/php-sessions
     chown -R www-data:www-data /var/cache/wsdlcache
-    chown -R www-data:www-data /var/log/opcache
-    chown -R www-data:www-data /var/log/php
-    chown -R www-data:www-data /etc/php
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for Redis directories and files
+#
+# www-data is in the redis group so PHP can use Redis's socket. The socket needs nothing here:
+# Redis creates it from unixsocketperm (770) on every start, in /run/redis, which systemd
+# creates. The configuration and its directory are root-owned so neither www-data nor Redis
+# itself can change or replace it (CONFIG REWRITE renames a new file over it), and the data and
+# log files are not writable by the redis group. Redis's unit creates files with UMask 0007
+# (group-writable), so this also runs from the daily permissions cron.
+function set_redis_permissions() {
+    if [[ -d /etc/redis ]]; then
+        chown -R root:redis /etc/redis
+        chmod u=rwx,g=rxs,o= /etc/redis
+        find /etc/redis -mindepth 1 -type d -exec chmod 750 {} +
+        find /etc/redis -type f -exec chmod 640 {} +
+    fi
+    if [[ -d /var/lib/redis ]]; then
+        chown redis:redis /var/lib/redis
+        chmod 750 /var/lib/redis
+        find /var/lib/redis -mindepth 1 -type d -exec chmod 750 {} +
+        find /var/lib/redis -type f -exec chown redis:redis {} + -exec chmod 640 {} +
+    fi
+    if [[ -d /var/log/redis ]]; then
+        chown redis:adm /var/log/redis
+        chmod u=rwx,g=rxs,o= /var/log/redis
+        find /var/log/redis -type f -exec chown redis:adm {} + -exec chmod 640 {} +
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Redis systemd override: if memory runs out, the kernel's OOM killer picks a PHP-FPM worker
+# (replaced at once) before Redis (-300), and Redis before MariaDB (-600). Losing Redis shows
+# Redis Object Cache's error page on every site until it restarts.
+function install_redis_service_override() {
+    mkdir -p /etc/systemd/system/redis-server.service.d
+    cat > /etc/systemd/system/redis-server.service.d/enginescript.conf << 'EOF'
+[Service]
+OOMScoreAdjust=-300
+EOF
+    systemctl daemon-reload
+}
+
+
+# ----------------------------------------------------------------
+# Load a redis.conf in a throwaway Redis (own socket, no TCP, temporary directory) and stop it.
+# Returns 0 when it answered PING. Its output and log go to the file given as the second argument
+# (Redis prints configuration errors on stderr, not in its log).
+function test_redis_conf() {
+    local candidate="$1" output="$2" test_dir test_pid ok=1
+
+    test_dir="$(mktemp -d)"
+    chown redis:redis "${test_dir}"
+    chmod 644 "${candidate}"
+    # The root-owned output file is opened by this shell on purpose; Redis only writes to it
+    # shellcheck disable=SC2024
+    sudo -u redis redis-server "${candidate}" --port 0 --unixsocket "${test_dir}/test.sock" --daemonize no \
+        --supervised no --logfile "${test_dir}/test.log" --dir "${test_dir}" --pidfile "${test_dir}/test.pid" > "${output}" 2>&1 &
+    test_pid=$!
+    for _ in $(seq 1 20); do
+        if [[ "$(redis-cli -s "${test_dir}/test.sock" PING 2> /dev/null)" == "PONG" ]]; then ok=0; break; fi
+        kill -0 "${test_pid}" 2> /dev/null || break
+        sleep 0.25
+    done
+    redis-cli -s "${test_dir}/test.sock" SHUTDOWN NOSAVE > /dev/null 2>&1
+    wait "${test_pid}" 2> /dev/null
+    cat "${test_dir}/test.log" >> "${output}" 2> /dev/null
+    rm -rf "${test_dir}"
+    return "${ok}"
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan to an installed Redis without restarting it
+#
+# Rebuilds /etc/redis/redis.conf from the repo template with the plan's maxmemory, keeping the
+# server's current "databases" count (it doubles when every number is taken). The new file is
+# loaded by a throwaway Redis on a temporary socket first; if that fails, nothing changes.
+# maxmemory and activedefrag are applied to the running Redis with CONFIG SET; settings that
+# need a restart (io-threads) take effect at Redis's next restart. Redis Object Cache shows an
+# error page on every site while Redis is down, so this never restarts it.
+function apply_redis_tuning() {
+    local conf=/etc/redis/redis.conf template=/usr/local/bin/enginescript/config/etc/redis/redis.conf
+    local sock=/run/redis/redis-server.sock candidate test_output databases maxmemory defrag=yes
+
+    [[ -f "${conf}" && -f "${template}" ]] || return 0
+    tuning_load
+    maxmemory="$(tuning_get REDIS_MAXMEMORY_MB)"
+    [[ -n "${maxmemory}" ]] || { echo "Error: No Redis maxmemory in the tuning plan." >&2; return 1; }
+    databases="$(awk '$1 == "databases" {print $2; exit}' "${conf}")"
+    [[ "${databases}" =~ ^[0-9]+$ ]] && (( databases > REDIS_MIN_DATABASES )) || databases="${REDIS_MIN_DATABASES}"
+
+    candidate="$(mktemp)"
+    test_output="$(mktemp)"
+    sed -e "s|SEDREDISMAXMEM|${maxmemory}|g" -e "s|^databases .*|databases ${databases}|" "${template}" > "${candidate}"
+    if cmp -s "${candidate}" "${conf}"; then
+        rm -f "${candidate}" "${test_output}"
+        return 0
+    fi
+
+    if ! test_redis_conf "${candidate}" "${test_output}"; then
+        # Ubuntu's own Redis package is built without the jemalloc that active defragmentation
+        # needs and refuses "activedefrag yes"; keep the rest of the plan on those servers
+        if grep -q 'Active defragmentation cannot be enabled' "${test_output}"; then
+            sed -i 's|^activedefrag yes$|activedefrag no|' "${candidate}"
+            defrag=no
+            if cmp -s "${candidate}" "${conf}"; then
+                rm -f "${candidate}" "${test_output}"
+                return 0
+            fi
+        fi
+        if [[ "${defrag}" == "yes" ]] || ! test_redis_conf "${candidate}" "${test_output}"; then
+            echo "Error: The new redis.conf did not load in a test instance; kept the current one." >&2
+            tail -5 "${test_output}" >&2
+            rm -f "${candidate}" "${test_output}"
+            return 1
+        fi
+    fi
+    rm -f "${test_output}"
+
+    cp -p "${conf}" "${conf}.bak"
+    mv -f "${candidate}" "${conf}"
+    set_redis_permissions
+    if [[ -S "${sock}" ]]; then
+        redis-cli -s "${sock}" CONFIG SET maxmemory "${maxmemory}mb" > /dev/null
+        redis-cli -s "${sock}" CONFIG SET activedefrag "${defrag}" > /dev/null
+    fi
+    echo "Redis: applied the tuning plan (maxmemory ${maxmemory} MB) without a restart."
+    if [[ "${defrag}" == "no" ]]; then
+        echo "Redis: this Redis cannot run active defragmentation (Ubuntu's own package), so it stays off."
+        echo "       EngineScript installs Redis from packages.redis.io, which supports it."
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Set the OOM killer priority of a running service's processes (its systemd override applies
+# from its next start). Usage: set_running_oom_score_adj <process name> <score>
+function set_running_oom_score_adj() {
+    local pid
+    for pid in $(pgrep -x "$1"); do
+        echo "$2" > "/proc/${pid}/oom_score_adj" 2> /dev/null || true
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan to an installed MariaDB without restarting it
+#
+# Builds the new my.cnf from the repo template in a staging file (mariadb-tune.sh), checks it
+# with mariadbd --help --verbose, installs it, and applies every setting MariaDB can change while
+# running with SET GLOBAL. aria_pagecache_buffer_size, innodb_log_buffer_size, and
+# innodb_open_files take effect at MariaDB's next restart. The previous file is kept as
+# /etc/mysql/my.cnf.enginescript-previous.
+function apply_mariadb_tuning() {
+    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement failed=0
+
+    [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
+    cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
+    install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+    if ! /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${staged}" 2>> /tmp/enginescript_install_errors.log; then
+        echo "Error: Tuning the new MariaDB configuration failed; kept the current one." >&2
+        rm -f "${staged}"
+        return 1
+    fi
+    check="$(mariadbd --defaults-file="${staged}" --help --verbose 2>&1 > /dev/null)"
+    rc=$?
+    if [[ "${rc}" -ne 0 ]] || grep -q '\[ERROR\]' <<< "${check}"; then
+        echo "Error: The new MariaDB configuration failed its check; kept the current one:" >&2
+        grep -E '\[(ERROR|Warning)\]' <<< "${check}" | head -5 >&2
+        rm -f "${staged}"
+        return 1
+    fi
+    if cmp -s "${staged}" /etc/mysql/my.cnf; then
+        rm -f "${staged}"
+        return 0
+    fi
+
+    # cp writes through /etc/mysql/my.cnf, the MariaDB packages' link to mariadb.cnf
+    cp -fL /etc/mysql/my.cnf /etc/mysql/my.cnf.enginescript-previous
+    cp -f "${staged}" /etc/mysql/my.cnf
+    rm -f "${staged}"
+
+    tuning_load
+    io_max=$(( $(tuning_get MARIADB_IO_CAPACITY) * 2 ))
+    (( io_max < 2000 )) && io_max=2000
+    for statement in \
+        "SET GLOBAL max_connections = $(tuning_get MARIADB_MAX_CONNECTIONS)" \
+        "SET GLOBAL tmp_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
+        "SET GLOBAL max_heap_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
+        "SET GLOBAL table_open_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
+        "SET GLOBAL table_definition_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
+        "SET GLOBAL innodb_io_capacity_max = ${io_max}" \
+        "SET GLOBAL innodb_io_capacity = $(tuning_get MARIADB_IO_CAPACITY)" \
+        "SET GLOBAL innodb_flush_neighbors = 0" \
+        "SET GLOBAL innodb_log_file_size = $(( $(tuning_get MARIADB_LOG_FILE_MB) * 1048576 ))" \
+        "SET GLOBAL innodb_buffer_pool_size = $(( $(tuning_get MARIADB_BUFFER_POOL_MB) * 1048576 ))"; do
+        if ! mariadb -e "${statement}" 2>> /tmp/enginescript_install_errors.log; then
+            echo "Warning: MariaDB refused \"${statement}\"; it applies at MariaDB's next restart." >&2
+            failed=1
+        fi
+    done
+    set_running_oom_score_adj mariadbd -600
+    if (( failed == 0 )); then
+        echo "MariaDB: applied the tuning plan (buffer pool $(tuning_get MARIADB_BUFFER_POOL_MB) MB) without a restart."
+    else
+        echo "MariaDB: installed the tuning plan; the settings above apply at MariaDB's next restart."
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Apply the shared tuning plan's Nginx values to the running nginx.conf
+#
+# Patches the FastCGI cache index and disk limit, and the October 2026 tuning (cache inactive
+# 3h with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
+# worker_rlimit_nofile 16384), tests with nginx -t, and reloads; the previous file is restored if
+# the test or the reload fails. Other template changes arrive with the next Nginx update.
+function apply_nginx_tuning() {
+    local conf=/etc/nginx/nginx.conf backup
+
+    [[ -f "${conf}" ]] && command -v nginx > /dev/null 2>&1 || return 0
+    tuning_load
+    backup="$(mktemp)"
+    cp -p "${conf}" "${backup}"
+    sed -i -E \
+        -e "s|keys_zone=EngineScriptWP:[0-9]+m|keys_zone=EngineScriptWP:$(tuning_get NGINX_CACHE_ZONE_MB)m|" \
+        -e "s|(fastcgi_cache_path [^;]*) inactive=[0-9]+[a-z]|\1 inactive=3h|" \
+        -e "s|(fastcgi_cache_path [^;]*) max_size=[0-9]+m|\1 max_size=$(tuning_get NGINX_CACHE_MAX_MB)m|" \
+        -e "/fastcgi_cache_path/{/min_free=/!s| use_temp_path=| min_free=1g use_temp_path=|}" \
+        -e "s|^([[:space:]]*)keepalive_timeout [0-9]+s?;|\1keepalive_timeout 900s;|" \
+        -e "s|^([[:space:]]*)open_file_cache_errors on;|\1open_file_cache_errors off;|" \
+        -e "s|^([[:space:]]*)worker_connections [0-9]+;|\1worker_connections 4096;|" \
+        -e "s|^worker_rlimit_nofile [0-9]+;|worker_rlimit_nofile 16384;|" \
+        "${conf}"
+    if cmp -s "${conf}" "${backup}"; then
+        rm -f "${backup}"
+        return 0
+    fi
+    if ! nginx -t > /dev/null 2>&1; then
+        cp -p "${backup}" "${conf}"
+        echo "Error: nginx -t failed with the tuned nginx.conf; restored the previous one." >&2
+        nginx -t 2>&1 | tail -3 >&2
+        rm -f "${backup}"
+        return 1
+    fi
+    # A stopped Nginx reads the new file when it starts. If the reload fails, the previous file
+    # is restored, so the next re-tune applies the plan again instead of finding nothing to change.
+    if systemctl is-active --quiet nginx && ! systemctl reload nginx; then
+        cp -p "${backup}" "${conf}"
+        echo "Error: Nginx did not reload with the tuned nginx.conf; restored the previous one." >&2
+        rm -f "${backup}"
+        return 1
+    fi
+    echo "Nginx: applied the tuning plan (cache index $(tuning_get NGINX_CACHE_ZONE_MB) MB, cache limit $(tuning_get NGINX_CACHE_MAX_MB) MB)."
+    rm -f "${backup}"
+}
+
+
+# ----------------------------------------------------------------
+# Redis database numbers of the sites
+#
+# Each site uses its own Redis database (WP_REDIS_DATABASE in its wp-config.php), so the Redis
+# Object Cache plugin's "flush cache" (FLUSHDB) empties only that site's cache. "databases" in
+# redis.conf sets how many exist (128; each costs about 6 KB). A new site gets the lowest number
+# no other site uses, so removing a site frees its number. ES_REDIS_CONF and ES_SITES_ROOT
+# override the paths (for tests).
+REDIS_MIN_DATABASES=128
+
+# Print the number of databases redis.conf sets
+function get_redis_database_count() {
+    awk '$1 == "databases" {print $2; exit}' "${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+}
+
+# Print the Redis database number a wp-config.php sets (nothing when it sets none)
+function get_site_redis_database() {
+    sed -n "s/^[[:space:]]*define([[:space:]]*['\"]WP_REDIS_DATABASE['\"][[:space:]]*,[[:space:]]*\([0-9]\{1,\}\)[[:space:]]*).*/\1/p" "$1" | head -n 1
+}
+
+# Print "<number> <wp-config.php>" for every site that sets a Redis database
+function list_site_redis_databases() {
+    local wp_config number
+    for wp_config in "${ES_SITES_ROOT:-/var/www/sites}"/*/html/wp-config.php; do
+        [[ -f "${wp_config}" ]] || continue
+        number="$(get_site_redis_database "${wp_config}")"
+        if [[ -n "${number}" ]]; then
+            echo "${number} ${wp_config}"
+        fi
+    done
+}
+
+# Set "databases" in redis.conf and restart Redis (which empties every site's object cache:
+# the setting cannot change while Redis runs)
+function set_redis_database_count() {
+    sed -i "s/^databases[[:space:]]\{1,\}[0-9]\{1,\}[[:space:]]*$/databases $1/" "${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+    restart_service "redis-server"
+}
+
+# Give a site (its wp-config.php) the lowest Redis database number that no other site uses. When
+# every number is taken, the number of databases is doubled.
+function assign_site_redis_database() {
+    local wp_config="$1" count number site_config
+    local -A taken=()
+
+    count="$(get_redis_database_count)"
+    if [[ ! "${count}" =~ ^[0-9]+$ ]]; then
+        echo "Error: No 'databases' setting in ${ES_REDIS_CONF:-/etc/redis/redis.conf}; the site keeps its Redis database number." >&2
+        return 1
+    fi
+
+    while read -r number site_config; do
+        if [[ "${site_config}" != "${wp_config}" ]]; then
+            taken["${number}"]=1
+        fi
+    done < <(list_site_redis_databases)
+
+    for ((number = 0; number < count; number++)); do
+        [[ -z "${taken[${number}]:-}" ]] && break
+    done
+    if (( number >= count )); then
+        echo "All ${count} Redis databases are in use. Raising the number of databases to $((count * 2)); Redis restarts, which empties every site's object cache."
+        set_redis_database_count $((count * 2))
+    fi
+
+    sed -i "s/^\([[:space:]]*define([[:space:]]*['\"]WP_REDIS_DATABASE['\"][[:space:]]*,[[:space:]]*\)[0-9]\{1,\}/\1${number}/" "${wp_config}"
+    if [[ "$(get_site_redis_database "${wp_config}")" != "${number}" ]]; then
+        echo "Error: Could not set WP_REDIS_DATABASE in ${wp_config}." >&2
+        return 1
+    fi
+    echo "Redis database ${number}: ${wp_config}"
+}
+
+# Delete one site's keys from Redis, for a site being removed, without restarting Redis or
+# touching other sites' caches. Redis Object Cache names keys
+# "<WP_REDIS_PREFIX><table prefix without _-:$ at its ends>:<group>:<key>", so the match is
+# exact even where two sites still share a database number.
+function flush_site_redis_cache() {
+    local wp_config="$1" number salt table_prefix pattern
+    local -a cli=(redis-cli -s /run/redis/redis-server.sock)
+
+    [[ -f "${wp_config}" ]] || return 0
+    number="$(get_site_redis_database "${wp_config}")"
+    salt="$(sed -n "s/^[[:space:]]*define([[:space:]]*['\"]WP_REDIS_PREFIX['\"][[:space:]]*,[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" "${wp_config}" | head -n 1)"
+    table_prefix="$(sed -n "s/^[[:space:]]*\$table_prefix[[:space:]]*=[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" "${wp_config}" | head -n 1)"
+    table_prefix="$(sed -e 's/^[-_:$]*//' -e 's/[-_:$]*$//' <<< "${table_prefix}")"
+    if [[ ! "${number}" =~ ^[0-9]+$ || ! "${salt}" =~ ^[A-Za-z0-9_.-]+$ || ! "${table_prefix}" =~ ^[A-Za-z0-9_]*$ ]]; then
+        echo "No usable Redis database or key prefix in ${wp_config}; nothing deleted from Redis."
+        return 0
+    fi
+    pattern="${salt}${table_prefix}:*"
+    "${cli[@]}" -n "${number}" --scan --pattern "${pattern}" | xargs -r -n 500 "${cli[@]}" -n "${number}" UNLINK > /dev/null
+    echo "Deleted the site's Redis keys (${pattern}) from database ${number}."
+}
+
+# Existing servers: at least REDIS_MIN_DATABASES databases, and every site on its own number.
+# Earlier versions numbered sites by the site count, so a site added after a removal could share
+# a number with another site. The first site (in directory order) keeps a shared number; the
+# others move to free numbers, which only empties their object cache.
+function migrate_redis_databases() {
+    local count number wp_config
+    local -a moves=()
+    local -A taken=()
+
+    [[ -f "${ES_REDIS_CONF:-/etc/redis/redis.conf}" ]] || return 0
+    count="$(get_redis_database_count)"
+    [[ "${count}" =~ ^[0-9]+$ ]] || return 0
+
+    if (( count < REDIS_MIN_DATABASES )); then
+        echo "Raising the number of Redis databases from ${count} to ${REDIS_MIN_DATABASES}..."
+        set_redis_database_count "${REDIS_MIN_DATABASES}"
+        count="${REDIS_MIN_DATABASES}"
+    fi
+
+    while read -r number wp_config; do
+        if (( number < count )) && [[ -z "${taken[${number}]:-}" ]]; then
+            taken["${number}"]=1
+        else
+            moves+=("${wp_config}")
+        fi
+    done < <(list_site_redis_databases)
+
+    for wp_config in "${moves[@]}"; do
+        echo "Moving a site that shared its Redis database (or used one out of range) to a free one:"
+        assign_site_redis_database "${wp_config}"
+    done
+}
+
+# Existing servers: FLUSHDB and FLUSHALL (the Redis Object Cache plugin's and the control panel's
+# cache buttons) free memory in the background instead of blocking Redis for every site
+# (lazyfree-lazy-user-flush). Added after lazyfree-lazy-user-del unless the file already sets
+# it, and applied to the running Redis, which can change it without a restart.
+function migrate_redis_lazy_user_flush() {
+    local redis_conf="${ES_REDIS_CONF:-/etc/redis/redis.conf}"
+
+    [[ -f "${redis_conf}" ]] || return 0
+    grep -q '^lazyfree-lazy-user-flush[[:space:]]' "${redis_conf}" && return 0
+
+    echo "Redis: freeing memory in the background on cache flushes (lazyfree-lazy-user-flush)..."
+    if grep -q '^lazyfree-lazy-user-del[[:space:]]' "${redis_conf}"; then
+        sed -i '/^lazyfree-lazy-user-del[[:space:]]/a lazyfree-lazy-user-flush yes' "${redis_conf}"
+    else
+        echo "lazyfree-lazy-user-flush yes" >> "${redis_conf}"
+    fi
+    if [[ "$(redis-cli -s /run/redis/redis-server.sock CONFIG SET lazyfree-lazy-user-flush yes 2> /dev/null)" != "OK" ]]; then
+        echo "Redis is not running; the setting applies when it starts."
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Resolve the backup settings
+#
+# The install options set BACKUP_DATABASE_FREQUENCY (off | hourly | daily),
+# BACKUP_FILES_FREQUENCY (off | daily | weekly), BACKUP_CONFIG_FREQUENCY (off | daily), their
+# retention, and the Amazon S3 settings. Options files written before these settings existed
+# keep working: their per-type switches (HOURLY_LOCAL_DATABASE_BACKUP,
+# DAILY_LOCAL_DATABASE_BACKUP, WEEKLY_LOCAL_WPCONTENT_BACKUP, INSTALL_S3_BACKUP and the S3
+# switches) are translated here. Invalid values fall back to the defaults with a warning.
+function resolve_backup_settings() {
+    if [[ -z "${BACKUP_DATABASE_FREQUENCY:-}" ]]; then
+        if [[ "${HOURLY_LOCAL_DATABASE_BACKUP:-0}" == "1" ]]; then
+            BACKUP_DATABASE_FREQUENCY="hourly"
+        elif [[ "${DAILY_LOCAL_DATABASE_BACKUP:-0}" == "1" ]]; then
+            BACKUP_DATABASE_FREQUENCY="daily"
+        else
+            BACKUP_DATABASE_FREQUENCY="off"
+        fi
+    fi
+    if [[ -z "${BACKUP_FILES_FREQUENCY:-}" ]]; then
+        if [[ "${WEEKLY_LOCAL_WPCONTENT_BACKUP:-0}" == "1" ]]; then
+            BACKUP_FILES_FREQUENCY="weekly"
+        else
+            BACKUP_FILES_FREQUENCY="off"
+        fi
+    fi
+    BACKUP_CONFIG_FREQUENCY="${BACKUP_CONFIG_FREQUENCY:-daily}"
+    if [[ -z "${BACKUP_S3:-}" ]]; then
+        BACKUP_S3=0
+        if [[ "${INSTALL_S3_BACKUP:-0}" == "1" ]] && [[ "${DAILY_S3_DATABASE_BACKUP:-0}" == "1" \
+            || "${HOURLY_S3_DATABASE_BACKUP:-0}" == "1" || "${WEEKLY_S3_WPCONTENT_BACKUP:-0}" == "1" ]]; then
+            BACKUP_S3=1
+        fi
+    fi
+    BACKUP_S3_INCLUDE_CONFIG="${BACKUP_S3_INCLUDE_CONFIG:-0}"
+    # Empty: EngineScript never deletes anything from S3
+    BACKUP_S3_KEEP_DAYS="${BACKUP_S3_KEEP_DAYS:-}"
+
+    case "${BACKUP_DATABASE_FREQUENCY}" in off|hourly|daily) ;; *)
+        echo "Warning: BACKUP_DATABASE_FREQUENCY='${BACKUP_DATABASE_FREQUENCY}' is not off, hourly, or daily; using daily." >&2
+        BACKUP_DATABASE_FREQUENCY="daily" ;; esac
+    case "${BACKUP_FILES_FREQUENCY}" in off|daily|weekly) ;; *)
+        echo "Warning: BACKUP_FILES_FREQUENCY='${BACKUP_FILES_FREQUENCY}' is not off, daily, or weekly; using weekly." >&2
+        BACKUP_FILES_FREQUENCY="weekly" ;; esac
+    case "${BACKUP_CONFIG_FREQUENCY}" in off|daily) ;; *)
+        echo "Warning: BACKUP_CONFIG_FREQUENCY='${BACKUP_CONFIG_FREQUENCY}' is not off or daily; using daily." >&2
+        BACKUP_CONFIG_FREQUENCY="daily" ;; esac
+    [[ "${BACKUP_S3}" == "1" ]] || BACKUP_S3=0
+    [[ "${BACKUP_S3_INCLUDE_CONFIG}" == "1" ]] || BACKUP_S3_INCLUDE_CONFIG=0
+
+    local setting default
+    for setting in BACKUP_DATABASE_KEEP_DAYS:30 BACKUP_FILES_KEEP_COPIES:4 BACKUP_CONFIG_KEEP_DAYS:30; do
+        default="${setting#*:}"
+        setting="${setting%%:*}"
+        if [[ -z "${!setting:-}" ]]; then
+            printf -v "${setting}" '%s' "${default}"
+        elif [[ ! "${!setting}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Warning: ${setting}='${!setting}' is not a whole number above 0; using ${default}." >&2
+            printf -v "${setting}" '%s' "${default}"
+        fi
+    done
+    if [[ -n "${BACKUP_S3_KEEP_DAYS}" && ! "${BACKUP_S3_KEEP_DAYS}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Warning: BACKUP_S3_KEEP_DAYS='${BACKUP_S3_KEEP_DAYS}' is not a whole number above 0; S3 backups are not deleted." >&2
+        BACKUP_S3_KEEP_DAYS=""
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Install the backup scheduler cron job
+#
+# enginescript-backup.sh runs every hour and reads the backup frequencies from the install
+# options, so changing a setting needs no cron change. Older installs had a separate cron job
+# per backup script; those are replaced. Safe to run again.
+function install_backup_cron() {
+    local scheduler="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
+    local legacy='daily-database-backup\.sh|hourly-database-backup\.sh|weekly-wp-content-backup\.sh'
+    local current
+
+    current="$(crontab -l 2> /dev/null)" || current=""
+    if ! grep -qE "${legacy}" <<< "${current}" && grep -qxF "${scheduler}" <<< "${current}"; then
+        return 0
+    fi
+    echo "Installing the backup scheduler cron job (replaces the separate backup jobs)..."
+    {
+        grep -vE "${legacy}" <<< "${current}" | grep -vxF "${scheduler}" | sed '/^$/d'
+        echo "${scheduler}"
+    } | crontab -
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for /home/EngineScript
+#
+# It holds the install options (the MariaDB root password, the Cloudflare API key, admin
+# passwords), database and configuration backups (including TLS private keys), and site
+# database credentials. Only root uses it, so nothing else may read it.
+function set_enginescript_home_permissions() {
+    if [[ -d /home/EngineScript ]]; then
+        chown root:root /home/EngineScript
+        chmod 700 /home/EngineScript
+    fi
+    if [[ -f /home/EngineScript/enginescript-install-options.txt ]]; then
+        chmod 600 /home/EngineScript/enginescript-install-options.txt
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Move the PHP-FPM log back to the package default
+#
+# EngineScript used to set error_log = /var/log/php/phpX.Y-fpm.log, which no logrotate file
+# covers, so the log grew without limit. The PHP package logs to /var/log/phpX.Y-fpm.log and
+# rotates it with its own logrotate file. This changes only the error_log line of existing
+# installs, tests the configuration, and reloads PHP-FPM.
+function migrate_php_fpm_log_path() {
+    local conf ver old_log
+    for conf in /etc/php/*/fpm/php-fpm.conf; do
+        [[ -f "${conf}" ]] || continue
+        ver="$(basename "$(dirname "$(dirname "${conf}")")")"
+        old_log="/var/log/php/php${ver}-fpm.log"
+        grep -q "^error_log = ${old_log}$" "${conf}" || continue
+
+        echo "Moving the PHP ${ver} FPM log to /var/log/php${ver}-fpm.log..."
+        cp -p "${conf}" "${conf}.pre-log-migration"
+        sed -i "s|^error_log = ${old_log}$|error_log = /var/log/php${ver}-fpm.log|" "${conf}"
+        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
+            echo "Error: php-fpm${ver} -t failed; kept the previous PHP-FPM log setting." >&2
+            mv -f "${conf}.pre-log-migration" "${conf}"
+            continue
+        fi
+        rm -f "${conf}.pre-log-migration"
+
+        # A reload (graceful restart) rereads php-fpm.conf and opens the new log
+        if systemctl is-active --quiet "php${ver}-fpm"; then
+            systemctl reload "php${ver}-fpm"
+        fi
+        if [[ -f "${old_log}" ]]; then
+            mv -f "${old_log}" "${old_log}.old"
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Install EngineScript's kernel settings and apply them
+#
+# Installs config/etc/sysctl.d/60-enginescript.conf (root-only writable) and the kernel TLS
+# module (Nginx uses kTLS), then applies all sysctl files. Settings removed from the file in
+# October 2026 keep their old value until the next reboot, so the ones with fixed defaults that
+# mattered are reset now: the local port range (1024 - 65535 let outgoing connections take
+# MariaDB's and Redis's ports), the Unix datagram queue (50 cut systemd's 512), the IP fragment
+# limits (a 2018 workaround), ECN, and the default socket buffers. The others (file-max,
+# nr_open, inotify, the network budget) return to their defaults at the next reboot.
+function install_enginescript_sysctl() {
+    local conf=/etc/sysctl.d/60-enginescript.conf
+    cp -f /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf "${conf}"
+    chown root:root "${conf}"
+    chmod 644 "${conf}"
+
+    echo tls > /etc/modules-load.d/tls.conf
+    modprobe tls 2> /dev/null || true
+
+    sysctl -w net.ipv4.ip_local_port_range="32768 60999" > /dev/null 2>&1
+    sysctl -w net.unix.max_dgram_qlen=512 > /dev/null 2>&1
+    sysctl -w net.ipv4.ipfrag_high_thresh=4194304 net.ipv4.ipfrag_low_thresh=3145728 > /dev/null 2>&1
+    sysctl -w net.ipv6.ip6frag_high_thresh=4194304 net.ipv6.ip6frag_low_thresh=3145728 > /dev/null 2>&1
+    sysctl -w net.ipv4.tcp_ecn=2 > /dev/null 2>&1
+    sysctl -w net.core.rmem_default=212992 net.core.wmem_default=212992 > /dev/null 2>&1
+
+    sysctl --system > /dev/null 2>> /tmp/enginescript_install_errors.log || true
+}
+
+
+# ----------------------------------------------------------------
+# Turn off Kernel Samepage Merging on servers that installed it
+#
+# EngineScript installed ksmtuned for Netdata, which marks its memory mergeable. Netdata is no
+# longer installed, and Nginx, PHP-FPM, MariaDB, and Redis never mark memory mergeable (tested:
+# no "mg" regions), so KSM had nothing to merge and only cost CPU when ksmtuned started it.
+function disable_ksm() {
+    local unit
+    for unit in ksmtuned.service ksm.service; do
+        if systemctl list-unit-files "${unit}" 2> /dev/null | grep -q "^${unit}"; then
+            systemctl disable --now "${unit}" > /dev/null 2>&1
+        fi
+    done
+    if [[ -w /sys/kernel/mm/ksm/run ]] && [[ "$(cat /sys/kernel/mm/ksm/run)" != "0" ]]; then
+        echo 0 > /sys/kernel/mm/ksm/run
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Install igbinary explicitly for every installed PHP version
+#
+# Redis Object Cache serializes with it (WP_REDIS_IGBINARY). Existing servers only have it as a
+# dependency of php-redis, marked automatically installed, so apt autoremove would remove it if
+# php-redis ever stopped requiring it. Installing it by name marks it manually installed, and
+# adds it where it is missing (then PHP-FPM reloads to load the extension).
+function ensure_php_igbinary() {
+    local ver
+    while IFS= read -r ver; do
+        [[ -n "${ver}" ]] || continue
+        if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
+            apt-mark manual "php${ver}-igbinary" > /dev/null
+            continue
+        fi
+        echo "Installing php${ver}-igbinary..."
+        if apt-get install -y -qq "php${ver}-igbinary" > /dev/null; then
+            if systemctl is-active --quiet "php${ver}-fpm"; then
+                systemctl reload "php${ver}-fpm"
+            fi
+        else
+            echo "Error: Installing php${ver}-igbinary failed." >&2
+        fi
+    done < <(get_installed_php_versions)
+}
+
+
+# ----------------------------------------------------------------
+# Turn off PHP's session upload progress on existing installs
+#
+# session.upload_progress writes data from any upload request into a PHP session file, a known
+# step in attacks that include session files, and WordPress does not use it. php.ini from the
+# repo only reaches a server on a PHP install or version switch, so this sets
+# session.upload_progress.enabled = Off in each installed version's PHP-FPM php.ini, tests the
+# configuration, and reloads PHP-FPM. ES_PHP_ETC overrides /etc/php (for tests).
+function migrate_php_upload_progress() {
+    local ini ver
+    for ini in "${ES_PHP_ETC:-/etc/php}"/*/fpm/php.ini; do
+        [[ -f "${ini}" ]] || continue
+        grep -qiE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=[[:space:]]*"?(off|0|false|no)"?[[:space:]]*$' "${ini}" && continue
+        ver="$(basename "$(dirname "$(dirname "${ini}")")")"
+
+        echo "Turning off session upload progress for PHP ${ver}..."
+        cp -p "${ini}" "${ini}.pre-upload-progress"
+        if grep -qE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
+            sed -i -E 's/^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/session.upload_progress.enabled = Off/' "${ini}"
+        elif grep -qE '^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
+            sed -i -E '0,/^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/s//session.upload_progress.enabled = Off/' "${ini}"
+        elif grep -q '^\[Session\]' "${ini}"; then
+            sed -i '/^\[Session\]/a session.upload_progress.enabled = Off' "${ini}"
+        else
+            echo "session.upload_progress.enabled = Off" >> "${ini}"
+        fi
+
+        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
+            echo "Error: php-fpm${ver} -t failed; kept the previous php.ini." >&2
+            mv -f "${ini}.pre-upload-progress" "${ini}"
+            continue
+        fi
+        rm -f "${ini}.pre-upload-progress"
+
+        # A reload (graceful restart) starts new workers with the changed php.ini
+        if systemctl is-active --quiet "php${ver}-fpm"; then
+            systemctl reload "php${ver}-fpm"
+        fi
+    done
 }
 
 
@@ -787,7 +1773,6 @@ function check_installation_completion() {
         "SWAP|Swap"
         "KERNEL_TWEAKS|Kernel Tweaks"
         "THP|Transparent Huge Pages"
-        "KSM|Kernel Samepage Merging"
         "SFL|Raising System File Limits"
         "NTP|NTP"
     )
@@ -1215,6 +2200,21 @@ function return_to_src() {
 
 
 # ----------------------------------------------------------------
+# CPU target for compiled software (Nginx, Brotli, zlib-rs).
+# Prints x86-64-v3 (AVX2, BMI1/BMI2, FMA, MOVBE) when this CPU supports it, otherwise x86-64-v2.
+# A fixed level is used instead of -march=native: a native build uses every instruction of the
+# build machine's CPU, so moving the server to other hardware (live migration, snapshot restore,
+# resize) can stop the program with "illegal instruction".
+function get_x86_64_level() {
+    if /lib64/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported"; then
+        echo "x86-64-v3"
+    else
+        echo "x86-64-v2"
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Get the array of base PHP packages to install for a given PHP version
 # Usage:
 # mapfile -t php_packages < <(get_php_packages_array "8.4")
@@ -1227,6 +2227,9 @@ function get_php_packages_array() {
         "php${target_ver}-curl"
         "php${target_ver}-fpm"
         "php${target_ver}-gd"
+        # igbinary: Redis Object Cache's serializer (WP_REDIS_IGBINARY). php-redis currently pulls
+        # it in as a dependency; listed so it does not depend on that.
+        "php${target_ver}-igbinary"
         "php${target_ver}-imagick"
         "php${target_ver}-intl"
         "php${target_ver}-mbstring"
@@ -1263,3 +2266,9 @@ function get_expanded_php_packages_array() {
     )
     printf '%s\n' "${packages[@]}"
 }
+
+
+# ----------------------------------------------------------------
+# Shared tuning plan (memory budget for Nginx, PHP-FPM, MariaDB, and Redis)
+# shellcheck source=enginescript-tuning.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-tuning.sh"

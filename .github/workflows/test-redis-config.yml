@@ -1,0 +1,41 @@
+name: Test Redis Config
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-redis-config.sh'
+      - 'config/etc/redis/redis.conf'
+      - 'config/var/www/wordpress/wp-config.php'
+      - '.github/workflows/test-redis-config.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/ci/test-redis-config.sh'
+      - 'config/etc/redis/redis.conf'
+      - 'config/var/www/wordpress/wp-config.php'
+      - '.github/workflows/test-redis-config.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-redis-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run Redis config tests
+        run: |
+          bash -n scripts/ci/test-redis-config.sh
+          bash scripts/ci/test-redis-config.sh

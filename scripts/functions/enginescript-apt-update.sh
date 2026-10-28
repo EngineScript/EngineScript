@@ -18,5 +18,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 # Update & Upgrade
+# EngineScript replaces some packages' configuration files (for example /etc/redis/redis.conf),
+# so dpkg would ask whether to keep them on an upgrade, and fail without a terminal. Keep them.
 apt update --allow-releaseinfo-change -y
-apt upgrade -y
+apt upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold

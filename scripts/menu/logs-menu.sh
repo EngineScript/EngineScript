@@ -60,7 +60,7 @@ while true
         "PHP")
           clear
           echo "${BOLD}Showing last 30 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 "/var/log/php/php${PHP_VER}-fpm.log" && read -n 1 -s -r -p "Press any key to continue"
+          tail -n30 "/var/log/php${PHP_VER}-fpm.log" && read -n 1 -s -r -p "Press any key to continue"
           break
           ;;
         "Redis")

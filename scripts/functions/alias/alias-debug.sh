@@ -240,15 +240,13 @@ debug_print "Show Header | ${SHOW_ENGINESCRIPT_HEADER}" "| Show Header | \`${SHO
 
 # Backup Settings
 debug_print "\n### Backup Configuration\n" "\n### Backup Configuration\n"
-debug_print "| Backup Type | Enabled |" "| Backup Type | Enabled |"
-debug_print "|-------------|----------|" "|-------------|----------|"
-debug_print "Daily Local DB | ${DAILY_LOCAL_DATABASE_BACKUP}" "| Daily Local DB | \`${DAILY_LOCAL_DATABASE_BACKUP}\` |"
-debug_print "Hourly Local DB | ${HOURLY_LOCAL_DATABASE_BACKUP}" "| Hourly Local DB | \`${HOURLY_LOCAL_DATABASE_BACKUP}\` |"
-debug_print "Weekly Local wp-content | ${WEEKLY_LOCAL_WPCONTENT_BACKUP}" "| Weekly Local wp-content | \`${WEEKLY_LOCAL_WPCONTENT_BACKUP}\` |"
-debug_print "S3 Backup Enabled | ${INSTALL_S3_BACKUP}" "| S3 Backup Enabled | \`${INSTALL_S3_BACKUP}\` |"
-debug_print "Daily S3 DB | ${DAILY_S3_DATABASE_BACKUP}" "| Daily S3 DB | \`${DAILY_S3_DATABASE_BACKUP}\` |"
-debug_print "Hourly S3 DB | ${HOURLY_S3_DATABASE_BACKUP}" "| Hourly S3 DB | \`${HOURLY_S3_DATABASE_BACKUP}\` |"
-debug_print "Weekly S3 wp-content | ${WEEKLY_S3_WPCONTENT_BACKUP}" "| Weekly S3 wp-content | \`${WEEKLY_S3_WPCONTENT_BACKUP}\` |"
+resolve_backup_settings
+debug_print "| Backup | Setting |" "| Backup | Setting |"
+debug_print "|--------|---------|" "|--------|---------|"
+debug_print "Databases | ${BACKUP_DATABASE_FREQUENCY}, keep ${BACKUP_DATABASE_KEEP_DAYS} days" "| Databases | \`${BACKUP_DATABASE_FREQUENCY}\`, keep ${BACKUP_DATABASE_KEEP_DAYS} days |"
+debug_print "Files (wp-content) | ${BACKUP_FILES_FREQUENCY}, keep ${BACKUP_FILES_KEEP_COPIES} copies" "| Files (wp-content) | \`${BACKUP_FILES_FREQUENCY}\`, keep ${BACKUP_FILES_KEEP_COPIES} copies |"
+debug_print "EngineScript configuration | ${BACKUP_CONFIG_FREQUENCY}, keep ${BACKUP_CONFIG_KEEP_DAYS} days" "| EngineScript configuration | \`${BACKUP_CONFIG_FREQUENCY}\`, keep ${BACKUP_CONFIG_KEEP_DAYS} days |"
+debug_print "Amazon S3 | ${BACKUP_S3} (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})" "| Amazon S3 | \`${BACKUP_S3}\` (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted}) |"
 
 # Software Versions
 debug_print "\n## Software Versions\n" "\n## Software Versions\n"

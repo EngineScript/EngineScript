@@ -4,6 +4,202 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-25
+
+### ⚙️ ONE MEMORY BUDGET FOR NGINX, PHP, MARIADB, AND REDIS
+
+- Nginx, PHP-FPM, MariaDB, and Redis are now sized from one shared memory budget instead of each taking its own share of RAM. Before, the four services together could ask for about 170% of RAM on a 1 GB server and 150% on 2 GB (so a traffic spike pushed the server into swap or made the out-of-memory killer stop MariaDB), while 16 GB servers left gigabytes unused. The plan is worked out from the server's real memory (or its container limit, if lower) and CPU count, and saved in `/etc/enginescript/tuning.conf`. Every value can be overridden in `/etc/enginescript/tuning-overrides.conf` (same `KEY=value` format).
+- The split, in order: a system reserve (192 MB + 5% of RAM); Redis (10% of RAM, at most 2 GB; 64 MB on 1 GB servers); OPcache by size tier; MariaDB (a buffer pool of at least 20% of RAM, plus its own overhead); PHP-FPM workers (70 MB each, at most 6 per CPU, at least 3); and 75% of whatever is left to MariaDB's buffer pool. The sizes come from measurements of a WordPress site with 34 active plugins (WooCommerce, Elementor, and other popular plugins): 42 MB private memory per busy PHP worker at most, 165 MB of OPcache for one site, and 63 MB peak memory per request.
+- Typical results: a 1 GB server runs 3 PHP-FPM workers (was 8), 2 GB servers 6 to 7 (was 16), 4 GB 12 (was 24), 8 GB 24 (was 48), 16 GB 48; MariaDB connections follow the worker count (workers + 30).
+- New update menu item, "Re-tune Services", applies the plan for the server's current RAM and CPUs without restarting a service (for example after resizing a droplet). EngineScript updates do this automatically when RAM or the CPU count changed, and once to bring existing servers onto the plan. Each service's new configuration is tested before it is used (`php-fpm -t`, a throwaway Redis instance, `mariadbd --help --verbose`, `nginx -t`) and the previous one is kept if the test fails. If a service fails its test or its reload, the next EngineScript update tries again.
+- PHP: OPcache is sized for whole sites instead of one eighth of the memory that happened to be free at install time (192 MB on 1 GB servers up to 1.5 GB on 16 GB, with a string buffer of 48 to 128 MB and room for 20,000 to 320,000 files; was 30,000 on every server). `memory_limit` is unchanged.
+- MariaDB: temporary tables are limited to 32 MB (64 MB from 4 GB), instead of 3% of RAM per table and connection with no cap (480 MB on 16 GB servers, a worst case of about 77 GB by MySQLTuner's count). The Aria page cache is set explicitly (64 MB on 1 GB servers up to 256 MB on 16 GB) and counted in the budget. The table caches and `innodb_open_files` share one value (2,000, 4,000, or 8,000 by size). The redo log is 25% of the buffer pool (96 MB to 2 GB). `thread_cache_size` is left to MariaDB, which never caches more threads than `max_connections` (it was set to a percentage of RAM). `innodb_flush_neighbors = 0` (cloud disks often report as rotational, so MariaDB's own SSD detection cannot be relied on). MariaDB is protected from the out-of-memory killer (`OOMScoreAdjust=-600`).
+- MariaDB's disk benchmark now measures random 16 KB writes (InnoDB's page size) on the database disk for 30 seconds and sets `innodb_io_capacity` to half the measured rate (200 to 20,000), once, during the MariaDB install. It used the read rate of a mixed test in `/tmp` with no time limit, and ran again on every MariaDB update while sites were serving. The result is saved, MariaDB updates reuse it, and "Re-tune Services" measures again.
+- Redis: `maxmemory` follows the plan and is applied without a restart. Active defragmentation is on (it starts only above 100 MB of wasted memory); on servers running Ubuntu's own Redis package, which cannot defragment and refuses the setting, it stays off and the rest of the plan still applies. Redis runs single-threaded: the I/O threads EngineScript enabled on servers with 4 or more CPUs only competed with PHP for CPU. Redis is protected from the out-of-memory killer, after PHP-FPM workers and before MariaDB (`OOMScoreAdjust=-300`).
+- Nginx: `worker_connections` is 4,096 on every server (was 512 on 1 GB servers, by RAM) with `worker_rlimit_nofile` 16,384. In testing, 512 per worker dropped connections above about 920 on a 2-CPU server and failed a burst of 2,000 clients completely; 4,096 held 6,000 idle TLS connections, at about 10 to 20 KB each.
+- Nginx's FastCGI cache index is a fixed 32 MB (64 MB from 6 GB; 1 MB holds about 8,000 pages) instead of 3% of RAM, and its disk limit is 5% of the cache disk (512 MB to 10 GB) instead of 5% of RAM (48 MB on 1 GB servers). Cached pages that are still valid are no longer deleted after an hour without requests (`inactive=3h`, matching their 3-hour validity), and the cache shrinks when the disk has less than 1 GB free (`min_free`).
+- Nginx keeps idle connections for 900 seconds (was 20): Cloudflare reuses idle connections to the origin for up to 900 seconds, and the short timeout made it open new TLS connections. Nginx no longer caches "file not found" results, which kept newly created files (uploads, CSS and JavaScript that plugins generate) returning 404 for up to two minutes.
+- Each site now logs its failed requests (status 400 and up) to `/var/log/domains/<domain>/<domain>-nginx-failed.log`, written in batches. Existing sites get it with the next Nginx update.
+- Fixed `nginx-tune.sh` counting NUMA lines as CPUs and printing the L1 cache as "L3 Cache".
+
+### 🧠 SYSTEM MEMORY AND KERNEL SETTINGS
+
+- The kernel settings file (`/etc/sysctl.d/60-enginescript.conf`) was audited setting by setting and benchmarked. Removed settings that were harmful or outdated:
+  - The local port range 1024 - 65535 let outgoing connections take the ports MariaDB (3306) and Redis (6379) listen on, so a service could fail to start after a reboot; the default range is used again.
+  - `net.unix.max_dgram_qlen = 50` lowered the queue that journald and syslog use from systemd's 512.
+  - The 2018 IP fragment limits (a FragmentSmack workaround for a kernel bug fixed long ago).
+  - `fs.file-max`, `fs.nr_open`, and the inotify limits, which all lowered the defaults.
+  - High-throughput network card tuning (`netdev_budget`, `netdev_budget_usecs`, `netdev_max_backlog`).
+  - Larger default socket buffers for every socket, and ECN on outgoing connections.
+- Removed settings that only repeated the defaults or had no effect (TCP timestamps, SACK, window scaling, retry counts, `somaxconn`, neighbor table sizes, System V message queue limits, TCP Fast Open, and others).
+- Kept, with measurements: BBR congestion control with the `fq` scheduler (10 to 20 times the throughput of the default on a path with 80 ms and 1% packet loss), `tcp_notsent_lowat = 16384` (small pages p90 107 ms against 157 ms while a large response shared an HTTP/2 connection, as Cloudflare's connections to the origin do), and `tcp_slow_start_after_idle = 0` (a 500 KB page on a reused connection in 15 ms against 65 ms). The security settings stay.
+- The file is installed root-writable only (0644; was group-writable). EngineScript updates install it and apply it without a reboot; the removed settings with fixed defaults are reset at once, and the rest at the next reboot.
+- Kernel Samepage Merging (`ksmtuned`) is no longer installed, and EngineScript updates turn it off. It was added for Netdata, which EngineScript no longer installs; Nginx, PHP-FPM, MariaDB, and Redis never mark memory as mergeable (tested), so it had nothing to merge.
+- Transparent Huge Pages are now switched off before MariaDB, Redis, PHP-FPM, and Nginx start (systemd ordering), instead of at the same time.
+- New servers get a 4 GB swap file from 2 GB of RAM (3 GB below that). The swap install no longer adds a second `/etc/fstab` line when a swap file exists.
+
+### 🔄 ENGINESCRIPT UPDATES
+
+- The steps that bring existing servers up to date now run on the first update to a new version. They run from `normal-auto-upgrade.sh`, which the update starts after downloading the new version. Before, they were part of `enginescript-update.sh`, and an update kept running the previous version of that script after downloading the new one, so new steps waited for the following update.
+- `enginescript-update.sh` now continues with the version it just downloaded, so later changes to the update itself also apply on the first update. The Nginx, PHP, and MariaDB updates do the same after they update EngineScript.
+
+## 2026-10-21
+
+### ⬆️ NGINX 1.31 MAINLINE AND OPENSSL 4.0
+
+- Moved Nginx from 1.29.8 (a closed mainline branch that no longer receives security fixes) to the current mainline, 1.31.8.
+- Moved OpenSSL from the 3.5 long-term support series (3.5.6) to the latest stable release, 4.0.3. OpenSSL 4.0 is supported until May 2027, so the next stable series will need to follow before then.
+- Updated the other modules and libraries built into Nginx: headers-more 0.40, ngx_cache_purge 3.0.4, and PCRE2 10.49.
+- Verified by running EngineScript's own download, patch, and compile scripts on Ubuntu 24.04 with GCC 14: the dynamic TLS records patch applies cleanly to 1.31.8; the patch, brotli, headers-more, and cache purge directives load; and with `sslshared.conf` the server negotiates the post-quantum X25519MLKEM768 key exchange and the four allowed TLS 1.2 ciphers, and refuses the excluded ones.
+
+### 🔧 NGINX BUILD
+
+- Nginx, the Brotli library, and zlib-rs are now compiled for `x86-64-v3` (AVX2, BMI1/BMI2, FMA; Intel Haswell 2013+, AMD Zen 2017+) with generic tuning, instead of `-march=native` and a block that added CPU flags detected on the build machine. A native build only runs on CPUs with the build machine's exact instruction set, so moving a server to other hardware (live migration, snapshot restore, resize) could stop Nginx with "illegal instruction". CPUs that cannot run x86-64-v3 are built for x86-64-v2. The shared `get_x86_64_level` function in `enginescript-common.sh` picks the level.
+- Removed the compiler flags that suppressed warnings (`-Wno-implicit-function-declaration`, `-Wno-int-conversion`, and the other `-Wno-*` flags). Nginx 1.31.8 and its modules build with no warnings on GCC 14, and Nginx's own `-Werror` now stops the build if a future module introduces a problem.
+- `nginx-compile.sh` now lists its `./configure` options once and adds `--with-http_v3_module` only when `INSTALL_HTTP3=1`, instead of keeping two copies of the whole command.
+
+### 🔄 NGINX UPDATES WITH ROLLBACK
+
+- `nginx-update.sh` no longer takes Nginx down during the update. Nginx keeps serving while the new version compiles and the new configuration is applied, then restarts once (about one second).
+- The update backs up `/etc/nginx` and the current Nginx binary first (`/home/EngineScript/config-backups/nginx/pre-update/`). If the new configuration fails `nginx -t`, or Nginx does not start and answer afterwards, the update restores the previous configuration and binary, keeps or restarts the previous version, and keeps the failed configuration in `/etc/nginx.update-failed` for troubleshooting.
+- A failed compile now stops the update (and the install) before any configuration is changed. `nginx-compile.sh` checks `configure`, `make`, and `make install`, and no longer stops Nginx itself.
+- During installs and updates, the Cloudflare IP updater only replaces its file instead of reloading Nginx with a half-updated configuration.
+- New `migrate_nginx_vhosts` function: brings existing site and admin vhost files up to date with template changes on every Nginx install and update, and when a site is created.
+
+### 🔧 NGINX SERVICE AND CERTIFICATE RENEWALS
+
+- Updated the Nginx systemd unit: `systemctl reload nginx` now tests the configuration first and reports a failure instead of Nginx silently keeping its old configuration; Nginx restarts itself after a crash (`Restart=on-failure`); and basic hardening is on (`NoNewPrivileges`, `ProtectSystem=full`, `ProtectHome`, `PrivateDevices`, kernel and control-group protection). Removed the `sleep 0.1` start workaround and the obsolete `syslog.target`. Nginx updates now install the current unit (and roll it back with the rest of the update on failure).
+- Certificates now reload Nginx after each renewal (`acme.sh --reloadcmd "systemctl reload nginx"`). Before, Nginx kept serving the old certificate until something else reloaded it. EngineScript updates add the reload command to existing sites' certificates.
+
+### 🔒 NGINX FILE PERMISSIONS
+
+- `/etc/nginx` is now owned by root instead of `www-data`, the user PHP and the Nginx workers run as. A compromised site could previously change the Nginx configuration, which the root-owned Nginx master process loads, including any `load_module` line.
+- TLS private keys (`key.pem`, `*.key`) are now readable by root only (600), in root-only directories (700). They were readable by `www-data`. New sites' keys are secured as soon as the certificate is installed.
+- The admin password file (`.htpasswd`) is `root:www-data` 640, so the Nginx workers can still check admin logins.
+- These permissions are applied by the Nginx install and update scripts and by the daily permissions cron job.
+
+### 🔒 PHP AND LOG FILE PERMISSIONS
+
+- `/etc/php` is now owned by root (directories 755, files 644) instead of `www-data` with mode 775. The PHP-FPM master process runs as root and loads the configuration and every extension it lists, so a compromised site could previously add an extension or a pool running as another user and gain root at the next PHP restart.
+- The log directories `/var/log/nginx` and `/var/log/domains` (and each site's directory) are now owned by root. Before, `www-data` could replace a log file with a symbolic link that the root Nginx master would then write to and hand to `www-data` when reopening logs, the same flaw as CVE-2016-1247 in Debian's Nginx package. The old PHP-FPM log directory, `/var/log/php`, is also made root-owned where it still exists.
+- Nginx and site log files are `www-data:adm` 640 (the Nginx workers reopen them after rotation, and PHP writes each site's WordPress debug log).
+- Applied by the Nginx and PHP install and update scripts, new sites, log rotation, and the daily permissions cron job.
+
+### 🔒 MARIADB AND CREDENTIAL SECURITY
+
+- Imported sites no longer give their database user privileges on MariaDB's `mysql` system database. With `ALL ON mysql.*`, a compromised imported site could change any account's privileges and reach every other site's database. New sites never had this grant. Sites imported before this change keep it; to remove it, run `REVOKE ALL PRIVILEGES ON mysql.* FROM '<database user>'@'localhost';` with the user from `/home/EngineScript/mysql-credentials/<domain>.txt`.
+- `/home/EngineScript` is now readable by root only, and the install options file is 600. It holds the MariaDB root password, the Cloudflare API key, the admin passwords, every site's database and `wp-config.php` backups, and the Nginx configuration backups with the TLS private keys, all of which were readable by `www-data`, the user PHP runs as. Setup and the daily permissions cron job apply this.
+- phpMyAdmin's control user no longer receives `WITH GRANT OPTION` on its database (new installs).
+- MariaDB refuses `LOAD DATA LOCAL INFILE` (`local_infile = 0`). WordPress never uses it, and PHP keeps it off by default.
+- MariaDB's server-side file operations (`LOAD DATA INFILE`, `SELECT ... INTO OUTFILE`, `LOAD_FILE()`) are confined to `/var/lib/mysql-files` (`secure_file_priv`). They were allowed anywhere the `mysql` user could read or write. Only root can use them, and WordPress does not. The MariaDB install and update create the directory; MariaDB does not start without it.
+- Removed two `debconf-set-selections` lines from the MariaDB install. They pre-answered a root password question that only Oracle's MySQL package asks, ran after MariaDB was already installed, and only stored the root password in the debconf password database.
+
+### 💾 BACKUPS REBUILT
+
+- New backup settings in the install options: `BACKUP_DATABASE_FREQUENCY` (off, hourly, or daily; hourly also keeps a daily backup), `BACKUP_DATABASE_KEEP_DAYS`, `BACKUP_FILES_FREQUENCY` (off, daily, or weekly), `BACKUP_FILES_KEEP_COPIES`, `BACKUP_CONFIG_FREQUENCY`, `BACKUP_CONFIG_KEEP_DAYS`, and for Amazon S3 `BACKUP_S3`, `BACKUP_S3_INCLUDE_CONFIG`, and `BACKUP_S3_KEEP_DAYS`. Options files from earlier versions keep working: their per-type switches are translated, and with them S3 backups are never deleted. Older per-type S3 switches become one: with `INSTALL_S3_BACKUP=1` and any S3 switch on, every local backup is copied to S3.
+- One script, `enginescript-backup.sh`, replaces the separate daily, hourly, and weekly backup scripts. One cron job runs it every hour and it reads the frequencies each time, so a changed setting needs no cron change; EngineScript updates replace the old cron jobs. `es.backup` backs up everything immediately. The old script names still work. Removed `vhost-backup.sh`, the original backup script, which nothing had run since September 2023.
+- New: a daily backup of EngineScript's own configuration (install options, site list, database credentials, acme.sh certificates and account, root's crontab), kept locally (root only) for 30 days. It is copied to S3 only with `BACKUP_S3_INCLUDE_CONFIG=1`, because it holds passwords and keys.
+- Fixed backups being deleted: the daily `wp-config.php` backups were all removed about every 30 days, and the weekly `wp-content` backups every other week, right after the new backup was written. The cleanup matched the backup folder itself once it was old enough. Cleanup now removes only dated backup folders.
+- Fixed the weekly `wp-content` backup archiving the wrong site's files when a site's directory was missing.
+- Each step is checked: a failed database export, archive, or S3 upload is logged to `/var/log/EngineScript/enginescript-backup.log`, no partial file is kept, the other sites are still backed up, and the run exits with an error. Before, failures were silent. Only one backup run happens at a time. Only dated folders that hold a finished archive count toward `BACKUP_FILES_KEEP_COPIES`, and a failed files backup leaves no empty folder behind, so failed runs never delete good backups.
+- Database backups use `--single-transaction`, so tables are not locked while they are exported.
+- Every backup uses one dated layout (`database/hourly/<date-hour>`, `database/daily/<date>` with `wp-config.php`, `files/<date>`), the same in S3. S3 cleanup only removes EngineScript's own dated folders, and only when `BACKUP_S3_KEEP_DAYS` is set. Files left from the previous layout are removed once they are older than `BACKUP_DATABASE_KEEP_DAYS`.
+
+### 🔄 MARIADB UPDATES WITH ROLLBACK AND FIXES
+
+- Updated MariaDB to 11.8.9. The software version check workflow stopped finding new MariaDB releases when MariaDB moved its releases page (EngineScript stayed on 11.8.6 through three releases); it now reads MariaDB's REST API.
+- `mariadb-update.sh` now backs up every database (`mariadb-dump`, compressed) and the MariaDB configuration before upgrading, and stops if the backup fails or the disk is too full for it. The new configuration is prepared and tuned in a staging file while MariaDB keeps running, checked with `mariadbd --help --verbose`, and swapped in with a single restart. If MariaDB does not answer afterwards, or a site that reached its database before the update no longer does, the previous configuration is restored and MariaDB restarted. Before, MariaDB stayed stopped through the whole tuning run, including the disk benchmark, and an update that left it unable to start had no way back.
+- Fixed MariaDB restarting on an untuned configuration during package upgrades, and the upgrade stopping at a configuration file question. `/etc/mysql/my.cnf` is the MariaDB packages' link to `/etc/mysql/mariadb.cnf`. The install wrote the template through that link and then tuned it with `sed -i`, which replaced the link with a separate file: `mariadb.cnf` kept the untuned template with its placeholders. A package upgrade restored the link (MariaDB then restarted on the template until EngineScript re-applied its configuration), and dpkg asked whether to keep the changed `mariadb.cnf`, which interrupted the update and failed without a terminal. Tuning now edits through the link, the MariaDB update moves an existing installation's configuration back behind the link before upgrading, and package upgrades keep EngineScript's file (`--force-confold`).
+- Imported sites: MyISAM tables that a site brings from an older server are converted to InnoDB after the database import (crash-safe, row-level locking). A table that cannot be converted stays MyISAM and is reported; the import goes on.
+- Cleaned up `my.cnf`: removed the `[mysqld_safe]` section (the systemd unit starts `mariadbd` directly, so it was never read) and the commented-out Galera cluster section, commented out `bulk_insert_buffer_size` (MyISAM only), and corrected two comments (errors are logged to a file, not syslog; MariaDB's system tables use Aria, not MyISAM). The small MyISAM key buffer stays: it replaces MariaDB's 128 MB default, which would otherwise be allocated for nothing.
+- Removed `character_set_client = utf8mb4` from `my.cnf`. It is not a server option: MariaDB read it as `character-set-client-handshake`, ignored it, and logged two warnings on every start. The client and server character sets are unchanged (`utf8mb4`).
+- The installer no longer edits MariaDB's own unit file to set `Restart=always`; package upgrades overwrote that edit, and EngineScript's systemd override already sets it.
+- Imported sites: creating the database, the user, or the grant now stops the import with an error when it fails, as it does for new sites, instead of continuing with credentials that do not work.
+- The MariaDB install now makes sure MariaDB is running before it sets the root password and runs the secure-installation steps, and stops with an error if either fails. Before, a MariaDB that was not running left the server without its root password, and the install carried on silently.
+- Fixed the hourly database backup saving the wrong site's database: when a site's directory was missing, it exported the previous site's database under this site's name.
+
+### 🔒 REDIS PERMISSIONS AND INSTALL
+
+- Redis's configuration is now owned by root and readable only by the `redis` group (`/etc/redis` 2750, `redis.conf` 640). `redis.conf` was 775 and owned by `redis`, and `www-data`, the user PHP runs as, is in the `redis` group so that WordPress can use Redis's socket: a compromised site could change Redis's configuration. Redis itself can no longer rewrite its configuration either.
+- Redis's data (`/var/lib/redis`, 750 with files 640) and logs (`/var/log/redis`, `redis:adm` 2750 with files 640) are no longer writable by `www-data`.
+- Fixed the Redis log never being rotated: logrotate skipped it because its directory was group-writable, so the log grew without limit. The Redis package's own logrotate file (`/etc/logrotate.d/redis-server`, weekly, 12 compressed copies) now rotates it while Redis keeps running. Removed EngineScript's unused `config/etc/logrotate.d/redis`, which no script ever installed.
+- These permissions are applied by the Redis install and the daily permissions cron job (new `set_redis_permissions` function), so existing servers get them within a day. Removed the socket `chown` and `chmod` from both, and the `/run/redis` `chmod` from the install: Redis creates its socket from `unixsocketperm 770` and systemd recreates `/run/redis` on every start, so those lines had no lasting effect. Tested with the Redis Object Cache plugin through PHP-FPM.
+- The Redis install now reloads PHP-FPM after adding `www-data` to the `redis` group. Running PHP-FPM workers keep the groups they started with, so the Redis Object Cache plugin could not reach Redis's socket until PHP-FPM was restarted.
+- Fixed Redis package upgrades failing: EngineScript replaces `/etc/redis/redis.conf`, so dpkg asked whether to keep it, which stopped `apt upgrade -y` (and failed without a terminal). Answering with the package's version would have restarted Redis without its socket, disconnecting every site's object cache. EngineScript's software updates (`apt upgrade` and the menu's `apt full-upgrade`) now keep changed configuration files (`--force-confold`); the package's new version is left beside it as `redis.conf.dpkg-dist`.
+- Fixed sites sharing a Redis database. Each site's database number was the site count minus one, so a site added after a removal could get another site's number, and the plugin's "flush cache" then emptied both sites' caches. Removing a site also never lowered the database count (its `sed` pattern never matched), and on servers with 10 or more sites adding one could write a wrong count. Redis now has 128 databases (each costs about 6 KB), and new and imported sites get the lowest number no other site uses, without restarting Redis (which emptied every site's cache each time a site was added). If all numbers are taken, the count doubles. EngineScript updates raise existing servers to 128 databases (one Redis restart) and move sites that share a number to a free one.
+- Removed the Redis install's edit of the packaged systemd unit (`ReadWritePaths`): the Redis 8 unit has no such line, so it did nothing.
+- Removing a site no longer restarts Redis or empties every site's object cache. Redis Object Cache shows an error page on all sites while Redis is unreachable, so the restart briefly took every site down. Site removal now deletes only the removed site's keys (its own key prefix) and reloads Nginx and PHP-FPM.
+- `wp-config.php` for new sites: `WP_REDIS_MAXTTL` and `WP_REDIS_DISABLE_BANNERS` are a number and a boolean instead of strings, as the plugin documents, and the commented-out Redis examples have corrected types and descriptions.
+- New and imported sites store their Redis object cache with igbinary (`WP_REDIS_IGBINARY`), a compact binary serializer, instead of PHP's text serializer. Existing sites are unchanged: switching serializer needs an empty cache.
+- The igbinary PHP extension is now installed by name with PHP (install and version switch). It was only present as a dependency of `php-redis`. EngineScript updates install it by name for every installed PHP version, so `apt autoremove` cannot remove it.
+- The Redis install now stops with an error when the package install fails, or when apt installed Ubuntu's older Redis instead of Redis's own package (for example when adding Redis's repository failed).
+- Cache flushes no longer block Redis: `lazyfree-lazy-user-flush yes` frees the memory of a flushed cache in the background (the Redis Object Cache plugin's "Flush cache" and the admin control panel's "clear Redis cache"), as EngineScript already did for evictions, expiry, and deletes. Before, Redis stopped answering every site until a large flush finished. EngineScript updates add it to existing servers and apply it without restarting Redis.
+- `redis.conf` uses the current setting names: the `*-ziplist-*` settings are now `*-listpack-*`, and `lua-time-limit` is `busy-reply-threshold` (the old names are aliases; the values are unchanged). Removed the `gopher-enabled` comment (Redis 7 removed Gopher support) and a stray comment line.
+- `redis.conf` is updated for Redis 8.10: new settings are listed as comments with their defaults, and `io-threads-do-reads` is removed (Redis 8 no longer uses it). The new backup, hash template, and array settings stay commented, so the file still starts on Redis 7, which refuses settings it does not know.
+
+### 🐛 PHP VERSION HANDLING AND SWITCHING
+
+- Fixed Nginx updates pointing every site at a PHP version that is not installed. Scripts used the default PHP version from `enginescript-variables.txt` (8.5 since February 2026) instead of the version installed on the server, so on a server still running PHP 8.4 the next Nginx update wrote the PHP 8.5 socket into `php-fpm.conf`, and every PHP request failed with 502 while the update reported success. EngineScript now detects the installed PHP-FPM version (`get_installed_php_version`) and uses it on existing servers; the default and `PHP_VERSION_OVERRIDE` only choose the version for new installs and the target of a PHP version switch.
+- Nginx updates now check that the PHP-FPM socket in the new configuration exists before restarting, and after restarting check that every site that worked before the update still does (bypassing the FastCGI cache). A site fails the check with HTTP 500, 502, or 504, or no answer. Either failure rolls the update back.
+- Switching PHP versions (`php-update.sh`, `es.menu > Update Software > Switch PHP Version`) no longer takes the sites down. The new version is installed and started next to the current one, checked on its own socket, and only then is Nginx pointed at it; the previous version is removed only after every site works on the new one. A site that answers with HTTP 500 (for example a plugin that does not run on the new version), 502, or 504, or does not answer, stops the switch; a site that already failed before the switch does not. If any step fails, Nginx is pointed back at the previous version, which never stopped, and the new version is removed. Before, PHP was stopped for the whole package installation, and a new version that failed to start left every site down.
+- Removed PHP 8.2 support. PHP 8.2 reaches end of life on December 31, 2026, and WooCommerce requires PHP 8.3 or newer. Supported versions are 8.3, 8.4, and 8.5 (default). Servers still running 8.2 keep working and are detected correctly; EngineScript updates show a warning, and the version switch moves them to a supported version. The admin control panel's code checks (Composer, PHPCompatibility, PHP-CS-Fixer, Psalm, and Rector) now target PHP 8.3 as well.
+
+### 🐛 PHP FIXES
+
+- Turned off PHP's session upload progress (`session.upload_progress.enabled = Off`; PHP's default is on). It writes data from any upload request into a PHP session file, a known step in attacks that include session files, and neither WordPress nor WooCommerce uses it. phpMyAdmin's import still works, without its progress bar. EngineScript updates turn it off on existing servers for each installed PHP version: they change only this setting, test the configuration with `php-fpm -t` (keeping the previous `php.ini` if it fails), and reload PHP-FPM without a restart.
+- Fixed the PHP-FPM log growing without limit. EngineScript logged to `/var/log/php/phpX.Y-fpm.log`, which no logrotate file covered. PHP-FPM now logs to the PHP package's default, `/var/log/phpX.Y-fpm.log`, which the package's own logrotate file rotates weekly (EngineScript keeps 5). EngineScript updates move existing installs: they change only the `error_log` line, test the configuration, reload PHP-FPM, and rename the old log to `.old`.
+- Uploads close to the 128 MB limit no longer fail with an empty request. `post_max_size` (PHP) and `client_max_body_size` (Nginx) are now 136M, so the file and the form's other fields fit. The upload limit stays 128M.
+- Commented out `pm.process_idle_timeout` in `www.conf`. It only applies to `pm = ondemand`, and EngineScript uses `pm = dynamic`.
+- PHP installs no longer create `/var/log/opcache` or its logrotate file. OPcache errors already go to the PHP-FPM log, because `opcache.error_log` is not set.
+- Cleaned up `php.ini` for PHP 8.5 (checked against PHP 8.5.12 with EngineScript's packages, which reports no deprecated settings): removed `log_errors_max_len` (removed in PHP 8.1) and `mysqli.reconnect` (removed in PHP 8.2); `error_reporting` is now `E_ALL & ~E_DEPRECATED`, the value in PHP's own production `php.ini` (`E_STRICT` has had no effect since PHP 8.0); and commented out the settings for the ODBC, PostgreSQL, Tidy, and LDAP extensions and for Apache, the PHP CGI binary, and PHP's development web server, none of which EngineScript installs or WordPress and WooCommerce use. PHP's behavior is unchanged.
+
+### 🔧 SOFTWARE VERSION CHECK WORKFLOW
+
+- The workflow now tracks the latest stable OpenSSL release of any series (alpha, beta, and pre-releases excluded) instead of only the 3.5 series.
+- It now finds the latest Nginx mainline release (odd minor version) from all repository tags, instead of looking for 1.31.x first, which would have stopped it from moving to 1.33 and later. The download check now tests for HTTP status 200 instead of the text "200 OK", which HTTP/2 responses do not contain.
+- Fixed the ngx_cache_purge lookup, which took the newest tag of any kind and stripped non-digits, turning the release candidate `4.0.0-rc2` into the non-existent version `4.0.02`. It now takes the latest stable tag.
+- Fixed the version comparison, which treated every version as an update (it tested the comparison's debug text instead of its result). Pull requests listed unchanged versions, and a lookup that returned an older version would have downgraded EngineScript. Versions now change only when the new one is newer.
+
+### 🔒 NGINX: UPLOADS PHP BLOCKING AND TLS UPDATES
+
+- PHP files in `wp-content/uploads` are now always blocked with a 403 response, whatever `NGINX_BLOCK_UNSAFE_FILES` is set to. The new `$es_uploads_php` map in `map-cache.conf` matches the decoded request path, so URL-encoded file names and query strings cannot get around it. The optional unsafe-files rule for uploads no longer lists PHP.
+- Added the hybrid post-quantum key exchange `X25519MLKEM768` as the first choice in `ssl_ecdh_curve` (requires OpenSSL 3.5 or newer).
+- Limited TLS 1.2 to the four ECDHE AES-GCM ciphers that both Cloudflare (for connections to your server) and Mozilla's TLS guidelines support. TLS 1.3 settings are unchanged.
+- The default server in `admin.localhost.conf` now refuses HTTPS connections that do not name one of your domains (`ssl_reject_handshake on`). HTTPS requests to the server's IP address now fail during the handshake instead of returning an empty 204 response. The default server also no longer asks visitors for a client certificate.
+- Added a warning to `debug-headers.conf`: the debug headers echo visitors' cookies, so enable the file only while debugging, never on a live site behind a cache.
+
+### 🐛 NGINX FIXES
+
+- Fixed the HTTP to HTTPS redirect in `admin.localhost.conf`, which sent visitors to `https://_/...` because it used `$server_name`. It now uses the requested host.
+- `debug-headers.conf` no longer references `$es_http_user_agent` and `$es_query_string`. Their maps are commented out by default, so enabling the file made `nginx -t` fail.
+- The Cloudflare IP updater now writes the new list to a staging file and swaps it in, instead of editing the live `cloudflare.conf`. When Nginx is running, it tests the configuration and reloads instead of restarting; if the test fails, it restores the previous list and exits with an error.
+- Fixed HTTP/3 (`INSTALL_HTTP3=1`), which produced a configuration Nginx refused to load: Nginx rejects `multipath` on QUIC listeners, and `reuseport` may appear only once per address and port. The default server now holds `listen 443 quic reuseport;`, every other vhost uses `listen 443 quic;`, and existing vhosts are converted the next time the HTTP/3 settings are synced (Nginx update or new vhost).
+- The optional `http3_max_concurrent_streams` and `http3_stream_buffer_size` lines now show Nginx's defaults (128 and 64k) and stay commented. The previous values (1024 and 1024k) would have let one HTTP/3 connection buffer up to about 1 GB.
+
+### ⚡ NGINX: CACHING AND RESPONSE HEADERS
+
+- Static files now send a single `Cache-Control` header: `expires off` in `static-files.conf` stops the expires map from adding a second, conflicting one. Images, media, fonts, CSS, and JavaScript are cached for one year (`public, max-age=31536000, immutable`). The long-lived header is no longer sent on 404 responses.
+- `robots.txt` now falls back to WordPress when no physical file exists, so the virtual robots.txt from WordPress and SEO plugins works.
+- The `.zip` rule now applies. `.zip` was also listed in the general file-types rule above it, so zip files were cached for a year instead of receiving the intended `no-store` header.
+- Responses that set a WooCommerce session or cart cookie, or the WordPress login cookie, are never stored in the FastCGI cache (`$es_no_cache_setcookie`, checked after PHP responds). This backs up the existing `Set-Cookie` removal on cacheable pages.
+- Removed the `auth_` pattern from the cache-bypass cookie list in `map-cache.conf`. No plugin was found that uses it, and it matched any cookie name or value containing `auth_`.
+- The cache-bypass cookie list (`$es_http_cookie`) is now one regular expression instead of one per cookie, and it matches only at the start of a cookie name. Visitors whose cookie values happen to contain a pattern (for example a tracking cookie holding a `/wp-content/` URL) now get cached pages. In a benchmark the map took about 9 µs per request instead of 16 µs.
+- Removed the unused `$es_session` cache-key suffix and the `$sent_http_set_cookie` check from `php-fpm.conf`. Requests with a WooCommerce session already bypass the cache, and the check could never match. Cache keys for stored pages are unchanged.
+- Security headers from `response-headers.conf` are now added once in `nginx.conf` with `add_header_inherit merge`, instead of in each location. Locations that add their own headers, such as `Cache-Control` for static files, keep the security headers as well. Admin subdomain vhosts use `add_header_inherit on` to keep only their own headers; existing admin vhosts are updated automatically on the next Nginx update.
+
+### 🧹 NGINX CLEANUP
+
+- Fixed missing-file errors not being logged for any site. A leftover `log_not_found off;` line in `static-files.conf`, from a commented-out location, applied to every request on the site and overrode `log_not_found on` in `nginx.conf`.
+- Removed the `proxy_*` settings from `nginx.conf` and the `/tmp/nginx_proxy` directory. EngineScript does not proxy requests to other servers, so they were never used.
+- Removed `connection_pool_size` and `request_pool_size`, so Nginx uses its defaults. The Nginx documentation advises against changing them; the connection pool was already at its 64-bit default, and the request pool reserved 32 KB per request instead of 4 KB.
+- Removed `accept_mutex_delay`, which has no effect while `accept_mutex` is off (the default since Nginx 1.11.3).
+- Moved `aio_write` next to the commented `aio threads` line in the vhost template and commented it out. It only works with `aio threads`, so it did nothing with `aio on`.
+- Commented out the OCSP stapling settings (`resolver`, `resolver_timeout`, `ssl_stapling`, `ssl_stapling_verify`) in `sslshared.conf` and `ssl_trusted_certificate` in the vhost templates. Stapling was already off, and behind Cloudflare it has no benefit because visitors never receive the origin certificate. The lines are kept, set to `on`, so stapling can be enabled by uncommenting them.
+- Removed `ssl_dhparam` and the `ffdhe` DH parameter files. TLS 1.2 now uses only ECDHE ciphers and TLS 1.3 never uses DH parameters, so the file was loaded but never used. Existing servers keep their copy in `/etc/nginx/ssl/dhe`, which does no harm.
+- JavaScript generated by PHP and sent as `application/javascript` is now compressed with gzip and Brotli. Only `text/javascript`, the type Nginx uses for `.js` files, was listed before.
+- The HTTP/3 `Alt-Svc` header (sent when `INSTALL_HTTP3=1`) now advertises only the final HTTP/3 version, `h3`, instead of the obsolete drafts `h3-29` and `h3-27`.
+- Disabled the `X-DNS-Prefetch-Control` header, which is not a standardized header. The line stays in `response-headers.conf`, commented out.
+
 ## 2026-07-01
 
 ### NGINX SESSION CACHE KEY FIX

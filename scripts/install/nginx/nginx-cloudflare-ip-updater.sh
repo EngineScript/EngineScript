@@ -101,36 +101,62 @@ cat "$TEMP_FILE_IPV4"
 echo "Debug: IPv6 ranges downloaded:"
 cat "$TEMP_FILE_IPV6"
 
-# Generate the new config file with the latest IPs
-echo "# Cloudflare IP addresses" > $CLOUDFLARE_NGINX_CONFIG
-echo "# > IPv4" >> $CLOUDFLARE_NGINX_CONFIG
+# Generate the new config in a staging file next to the live one,
+# so a failed run never leaves a partly written cloudflare.conf in place
+CLOUDFLARE_NGINX_CONFIG_NEW="${CLOUDFLARE_NGINX_CONFIG}.new"
+CLOUDFLARE_NGINX_CONFIG_PREVIOUS="${CLOUDFLARE_NGINX_CONFIG}.previous"
+
+echo "# Cloudflare IP addresses" > "$CLOUDFLARE_NGINX_CONFIG_NEW"
+echo "# > IPv4" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 IPV4_PROCESSED=0
 while IFS= read -r ip || [[ -n "$ip" ]]
 do
 	# Skip empty lines
 	[[ -z "$ip" ]] && continue
-	echo "set_real_ip_from $ip;" >> $CLOUDFLARE_NGINX_CONFIG
+	echo "set_real_ip_from $ip;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 	((IPV4_PROCESSED++))
 done< "$TEMP_FILE_IPV4"
 
-echo "# > IPv6" >> $CLOUDFLARE_NGINX_CONFIG
+echo "# > IPv6" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 IPV6_PROCESSED=0
 while IFS= read -r ip || [[ -n "$ip" ]]
 do
 	# Skip empty lines
 	[[ -z "$ip" ]] && continue
-	echo "set_real_ip_from $ip;" >> $CLOUDFLARE_NGINX_CONFIG
+	echo "set_real_ip_from $ip;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 	((IPV6_PROCESSED++))
 done < "$TEMP_FILE_IPV6"
 
-echo "real_ip_header CF-Connecting-IP;" >> $CLOUDFLARE_NGINX_CONFIG
+echo "real_ip_header CF-Connecting-IP;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 echo "Processed $IPV4_PROCESSED IPv4 ranges and $IPV6_PROCESSED IPv6 ranges into config file"
 
 # Clean-up temporary files
 rm $TEMP_FILE_IPV4 $TEMP_FILE_IPV6
 
-# Reload Nginx to implement changes
-restart_service "nginx"
+# Swap the new file in, keeping the previous one for rollback
+if [[ -f "$CLOUDFLARE_NGINX_CONFIG" ]]; then
+	cp -p "$CLOUDFLARE_NGINX_CONFIG" "$CLOUDFLARE_NGINX_CONFIG_PREVIOUS"
+fi
+mv -f "$CLOUDFLARE_NGINX_CONFIG_NEW" "$CLOUDFLARE_NGINX_CONFIG"
+
+# Test and reload Nginx only when it is running and no install or update is in progress.
+# Installs and updates set ENGINESCRIPT_SKIP_NGINX_RELOAD=1 (or have Nginx stopped); they test
+# the whole configuration and restart Nginx themselves, so a reload here would apply a
+# half-updated configuration to the running Nginx.
+if [[ "${ENGINESCRIPT_SKIP_NGINX_RELOAD:-0}" != "1" ]] && systemctl is-active --quiet nginx; then
+	if /usr/sbin/nginx -t; then
+		systemctl reload nginx
+		rm -f "$CLOUDFLARE_NGINX_CONFIG_PREVIOUS"
+	else
+		echo "FAILED. Reason: nginx -t rejected the configuration. Restoring the previous Cloudflare IP list."
+		if [[ -f "$CLOUDFLARE_NGINX_CONFIG_PREVIOUS" ]]; then
+			mv -f "$CLOUDFLARE_NGINX_CONFIG_PREVIOUS" "$CLOUDFLARE_NGINX_CONFIG"
+		fi
+		exit 1
+	fi
+else
+	rm -f "$CLOUDFLARE_NGINX_CONFIG_PREVIOUS"
+fi

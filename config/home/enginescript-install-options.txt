@@ -90,6 +90,7 @@ SHOW_ENGINESCRIPT_HEADER=0
 # Blocks access to potentially unsafe file types and locations in FastCGI cache.
 # When enabled, blocks: .env, .log, .ini, wp-config.php, composer.json, backup files, etc.
 # Disable if you need to access these files through the web (not recommended for security).
+# PHP files in wp-content/uploads are always blocked, whatever this setting is.
 NGINX_BLOCK_UNSAFE_FILES=0
 
 ## Experimental: zlib Alternative for Nginx (Optional) ##
@@ -150,20 +151,42 @@ TEST_MODE=0
 # 0 = disabled
 # 1 = enabled
 
-# Note:
-# Amazon S3 backups require the local backups settings below to be enabled.
-# If you want hourly, daily, and weekly backups to the cloud, set local backups accordingly.
+# Backups are kept in /home/EngineScript (root only), and copied to Amazon S3 when
+# BACKUP_S3=1. Daily and weekly backups run at 01:05 (weekly on Sundays).
+# Run all backups now with: es.backup
 
-## Local Backup ##
-DAILY_LOCAL_DATABASE_BACKUP=1
-HOURLY_LOCAL_DATABASE_BACKUP=1
-WEEKLY_LOCAL_WPCONTENT_BACKUP=1
+## Site Databases ##
+# off | hourly | daily
+# hourly: a backup every hour, kept for 2 days, plus the daily backup
+# daily:  one backup a day, at 01:05
+# wp-config.php is backed up with each daily database backup.
+BACKUP_DATABASE_FREQUENCY="hourly"
+# Days to keep the daily database backups
+BACKUP_DATABASE_KEEP_DAYS=30
+
+## Site Files (wp-content: themes, plugins, uploads) ##
+# off | daily | weekly
+BACKUP_FILES_FREQUENCY="weekly"
+# Number of files backups to keep
+BACKUP_FILES_KEEP_COPIES=4
+
+## EngineScript Configuration ##
+# This options file, the site list, the database credentials, the acme.sh certificates and
+# account, and root's crontab. These hold passwords and keys.
+# off | daily
+BACKUP_CONFIG_FREQUENCY="daily"
+# Days to keep the configuration backups
+BACKUP_CONFIG_KEEP_DAYS=30
 
 ## Amazon S3 Backup ##
-INSTALL_S3_BACKUP=0
-DAILY_S3_DATABASE_BACKUP=0
-HOURLY_S3_DATABASE_BACKUP=0
-WEEKLY_S3_WPCONTENT_BACKUP=0
+# 1 = copy the backups above to Amazon S3 (installs the AWS CLI)
+BACKUP_S3=0
+# 1 = also copy the EngineScript configuration backup to S3. It holds passwords and keys,
+# so only enable this for a private bucket.
+BACKUP_S3_INCLUDE_CONFIG=0
+# Days to keep backups in S3 (hourly database backups: 2 days). Leave empty to never delete
+# anything from S3 (manage it with an S3 lifecycle rule instead).
+BACKUP_S3_KEEP_DAYS=30
 
 ## Amazon S3 Cloud Backup Bucket Name (Optional) ##
 # Instructions:

@@ -50,9 +50,11 @@ set_nginx_permissions
 # Assign PHP Permissions
 set_php_permissions
 
-# Ensure correct socket ownership and permissions
-chown redis:redis /run/redis/redis-server.sock 2>/dev/null || true
-chmod 770 /run/redis/redis-server.sock 2>/dev/null || true
+# /home/EngineScript holds credentials and backups: root only
+set_enginescript_home_permissions
+
+# Assign Redis Permissions
+set_redis_permissions
 
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*

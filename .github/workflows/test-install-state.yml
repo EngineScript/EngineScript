@@ -4,7 +4,7 @@ name: Test Install State
 "on":
   push:
     branches:
-      - main
+      - master
     paths:
       - 'setup.sh'
       - 'scripts/functions/shared/enginescript-common.sh'

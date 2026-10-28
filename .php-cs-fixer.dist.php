@@ -20,7 +20,7 @@ $finder = (new PhpCsFixer\Finder())
 return (new PhpCsFixer\Config())
     ->setRules([
         '@PER-CS3x0' => true,
-        '@PHP8x2Migration' => true,
+        '@PHP8x3Migration' => true,
         // PER allows an empty body as {} on one line, or with the closing brace on
         // its own line; PSR-12, which PHPCS checks, requires the second form.
         'single_line_empty_body' => false,

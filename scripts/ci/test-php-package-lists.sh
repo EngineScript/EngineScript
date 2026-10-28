@@ -8,7 +8,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 SUPPORTED_PHP_VERSIONS=(
-  "8.2"
   "8.3"
   "8.4"
   "8.5"
@@ -87,16 +86,16 @@ mapfile -t php85_packages < <(get_php_packages_array "8.5")
 mapfile -t php84_packages < <(get_php_packages_array "8.4")
 mapfile -t expanded_php85_packages < <(get_expanded_php_packages_array "8.5")
 
-if [[ ${#php85_packages[@]} -eq 14 ]]; then
-  pass "PHP 8.5 base package list has 14 entries"
+if [[ ${#php85_packages[@]} -eq 15 ]]; then
+  pass "PHP 8.5 base package list has 15 entries"
 else
-  fail "PHP 8.5 base package list should have 14 entries, got ${#php85_packages[@]}"
+  fail "PHP 8.5 base package list should have 15 entries, got ${#php85_packages[@]}"
 fi
 
-if [[ ${#php84_packages[@]} -eq 15 ]]; then
-  pass "PHP 8.4 base package list has 15 entries"
+if [[ ${#php84_packages[@]} -eq 16 ]]; then
+  pass "PHP 8.4 base package list has 16 entries"
 else
-  fail "PHP 8.4 base package list should have 15 entries, got ${#php84_packages[@]}"
+  fail "PHP 8.4 base package list should have 16 entries, got ${#php84_packages[@]}"
 fi
 
 if [[ ${#expanded_php85_packages[@]} -eq 2 ]]; then
@@ -111,6 +110,8 @@ assert_no_whitespace_items "Expanded PHP packages are emitted one per array item
 
 assert_contains "PHP 8.5 includes FPM" "php8.5-fpm" "${php85_packages[@]}"
 assert_contains "PHP 8.5 includes MySQL extension" "php8.5-mysql" "${php85_packages[@]}"
+assert_contains "PHP 8.5 includes igbinary (Redis Object Cache serializer)" "php8.5-igbinary" "${php85_packages[@]}"
+assert_contains "PHP 8.4 includes igbinary" "php8.4-igbinary" "${php84_packages[@]}"
 assert_not_contains "PHP 8.5 omits separate opcache package" "php8.5-opcache" "${php85_packages[@]}"
 assert_contains "PHP 8.4 includes separate opcache package" "php8.4-opcache" "${php84_packages[@]}"
 assert_contains "Expanded PHP list includes SOAP" "php8.5-soap" "${expanded_php85_packages[@]}"

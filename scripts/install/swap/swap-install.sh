@@ -31,24 +31,22 @@ create_swap_file() {
     fallocate -l "${swap_size}" /swapfile || {
         echo "Error: Failed to create swap file."
     }
-    # Suppress mkswap permission warning in debug mode
-    if [[ "${DEBUG_INSTALL}" == "1" ]]; then
-      mkswap_output=$(mkswap /swapfile 2>&1)
-      echo "$mkswap_output" | grep -v 'insecure permissions 0644, fix with: chmod 0600 /swapfile'
-    else
-      mkswap /swapfile
-    fi
-    echo "Setting correct swapfile permissions: chmod 0600"
+    # Root-only before mkswap, which warns about readable swap files
     chmod 0600 /swapfile || {
         echo "Error: Failed to set swapfile permissions."
     }
+    mkswap /swapfile
     swapon /swapfile || {
         echo "Error: Failed to enable swap."
     }
 }
 
-# Function to back up fstab and enable swap on boot
+# Function to back up fstab and enable swap on boot (once)
 enable_swap_on_boot() {
+    if grep -qE '^/swapfile[[:space:]]' /etc/fstab; then
+        echo "The swap file is already in /etc/fstab."
+        return
+    fi
     echo "Backing up /etc/fstab."
     cp -rf /etc/fstab /etc/fstab.bak || {
         echo "Error: Failed to back up /etc/fstab."
@@ -59,17 +57,22 @@ enable_swap_on_boot() {
     }
 }
 
+# Swap is a safety net: 3 GB on servers with less than 1.5 GB of RAM (where the PHP-FPM worker
+# floor can overcommit memory), 4 GB on larger servers
+if [[ "$(tuning_detect_memory_mb)" -lt 1536 ]]; then
+    SWAP_SIZE="3G"
+else
+    SWAP_SIZE="4G"
+fi
+
 # Check if swap file already exists
 if swapon --show | grep -q '/swapfile'; then
     echo "Swap file already exists. Skipping creation."
 else
-    create_swap_file "3G"
+    create_swap_file "${SWAP_SIZE}"
 fi
 
 enable_swap_on_boot
-
-echo "Ignore any swap errors listed above."
-echo "Swap file will be enabled once the server has restarted."
 
 # Mark the installation as complete
 set_install_state "SWAP" "1"

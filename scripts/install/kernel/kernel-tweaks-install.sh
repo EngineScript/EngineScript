@@ -25,15 +25,7 @@ if [[ "${KERNEL_TWEAKS}" = 1 ]]; then
 fi
 
 # Kernel Tweaks
-cp -rf /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf /etc/sysctl.d/60-enginescript.conf
-chown -R root:root /etc/sysctl.d/60-enginescript.conf
-chmod 0664 /etc/sysctl.d/60-enginescript.conf
-
-# KTLS (testing)
-echo tls >/etc/modules-load.d/tls.conf
-
-# Enable Kernel Tweaks
-sysctl -e -p /etc/sysctl.d/60-enginescript.conf
+install_enginescript_sysctl
 
 # Mark the installation as complete
 set_install_state "KERNEL_TWEAKS" "1"

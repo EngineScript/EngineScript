@@ -98,7 +98,9 @@ create_nginx_vhost() {
       echo ""
   fi
 
-  # Keep template-derived HTTP/3 listeners aligned with the current setting.
+  # Bring all vhost files up to date with template changes, then keep
+  # template-derived HTTP/3 listeners aligned with the current setting.
+  migrate_nginx_vhosts
   sync_nginx_http3_config
 }
 
@@ -120,11 +122,16 @@ create_ssl_certificate() {
   /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k "${SSL_KEYLENGTH}"
 
   # Install SSL Certificate
+  # acme.sh saves --reloadcmd and runs it after every renewal, so Nginx loads the new certificate
   /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
   --cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
   --key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
   --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
-  --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem"
+  --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem" \
+  --reloadcmd "systemctl reload nginx"
+
+  # The private key is readable by root only (renewals keep these modes)
+  secure_nginx_ssl_directory "/etc/nginx/ssl/${DOMAIN}"
 }
 
 
@@ -134,14 +141,10 @@ create_backup_directories() {
   local SITE_URL="$1"
   
   # Create backup directories
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database"
+  # Layout written by enginescript-backup.sh
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/daily"
   mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/database/hourly"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/nginx"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-content"
-  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/wp-uploads"
+  mkdir -p "/home/EngineScript/site-backups/${SITE_URL}/files"
 }
 
 
@@ -155,14 +158,17 @@ create_domain_logs() {
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-wp-error.log"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-helper.log"
   touch "/var/log/domains/${SITE_URL}/${SITE_URL}-nginx-error.log"
-  chown -R www-data:www-data "/var/log/domains/${SITE_URL}"
-  
+
   # Admin Subdomain Logs (stored in root of /var/log/domains/)
   # These are for the admin.DOMAIN control panel access auditing
   touch "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
   touch "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
-  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-access.log"
-  chown www-data:www-data "/var/log/domains/admin.${SITE_URL}-nginx-error.log"
+
+  # Root-owned directories, log files owned by www-data (see set_nginx_permissions)
+  chown root:root "/var/log/domains" "/var/log/domains/${SITE_URL}"
+  chmod 755 "/var/log/domains" "/var/log/domains/${SITE_URL}"
+  chown www-data:adm "/var/log/domains/${SITE_URL}/"*.log "/var/log/domains/admin.${SITE_URL}-nginx-"*.log
+  chmod 640 "/var/log/domains/${SITE_URL}/"*.log "/var/log/domains/admin.${SITE_URL}-nginx-"*.log
 }
 
 
@@ -676,22 +682,9 @@ configure_redis() {
   local SITE_URL="$1"
   local WP_CONFIG_PATH="$2"
   
-  # Redis Config
-  # Scale Redis Databases to Number of Installed Domains
-  source /home/EngineScript/sites-list/sites.sh
-  if [[ "${#SITES[@]}" -eq 1 ]];
-    then
-      # If number of installed domains = 1, leave Redis at 1 database and WordPress set to use database 0
-      echo "There is only 1 domain in the site list. Not adding additional Redis databases."
-    else
-      # Raise number of Redis databases to equal number of domains in sites.sh
-      OLDREDISDB=$((${#SITES[@]} - 1))
-      sed -i "s|databases ${OLDREDISDB}|databases ${#SITES[@]}|g" /etc/redis/redis.conf
-      restart_service "redis-server"
-
-      # Set WordPress to use the latest Redis database number.
-      # Redis starts databases at number 0, so we take the total number of domains in sites.sh and reduce by 1. Three installed domains = database 2
-      sed -i "s|WP_REDIS_DATABASE', 0|WP_REDIS_DATABASE', ${OLDREDISDB}|g" "${WP_CONFIG_PATH}"
+  # Give the site its own Redis database (the lowest number no other site uses)
+  if ! assign_site_redis_database "${WP_CONFIG_PATH}"; then
+    echo "Warning: The site uses Redis database 0, which other sites may share." >&2
   fi
 
   # Set Redis Prefix

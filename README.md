@@ -146,7 +146,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 
 |Command|Function|
 |-|-|
-|**`es.backup`**|Runs the backup script to back up all domains locally and *optionally* in the cloud|
+|**`es.backup`**|Backs up every site's database and files and the EngineScript configuration now, locally and *optionally* to Amazon S3|
 |**`es.cache`**|Clears FastCGI cache, OPcache, and Redis *(server-wide)*|
 |**`es.config`**|Opens the configuration file in Nano|
 |**`es.debug`**|Displays debug information for EngineScript|
@@ -177,17 +177,17 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.29.8|<https://nginx.org/en/download.html>|
-|NGINX CACHE PURGE|3.0.2|<https://github.com/nginx-modules/ngx_cache_purge>|
-|NGINX HEADERS MORE|0.39|<https://github.com/openresty/headers-more-nginx-module>|
+|NGINX MAINLINE|1.31.8|<https://nginx.org/en/download.html>|
+|NGINX CACHE PURGE|3.0.4|<https://github.com/nginx-modules/ngx_cache_purge>|
+|NGINX HEADERS MORE|0.40|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
-|OPENSSL|3.5.6|<https://www.openssl.org/source/>|
-|PCRE2|10.47|<https://github.com/PCRE2Project/pcre2/releases>|
+|OPENSSL|4.0.3|<https://www.openssl.org/source/>|
+|PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB|1.3.2|<https://github.com/madler/zlib>|
 |**Application Server**|||
-|PHP|8.5|<https://launchpad.net/~ondrej/+archive/ubuntu/php>|
+|PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
-|MARIADB|11.8.6|<https://mariadb.org/download/>|
+|MARIADB|11.8.9|<https://mariadb.org/download/>|
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||

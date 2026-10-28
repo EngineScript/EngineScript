@@ -8,7 +8,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 SUPPORTED_PHP_VERSIONS=(
-  "8.2"
   "8.3"
   "8.4"
   "8.5"
@@ -122,7 +121,6 @@ expected_flags=(
   "SWAP"
   "KERNEL_TWEAKS"
   "THP"
-  "KSM"
   "SFL"
   "NTP"
   "DO_CONSOLE"

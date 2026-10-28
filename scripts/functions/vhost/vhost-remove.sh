@@ -131,6 +131,9 @@ else
   echo -e "${BOLD}SSL Certificates Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have SSL Certificates.\n\n"
 fi
 
+# Delete the site's Redis keys (read from its wp-config.php, so before the files go)
+flush_site_redis_cache "/var/www/sites/${DOMAIN}/html/wp-config.php"
+
 # Remove main directory
 if [[ -d "/var/www/sites/${DOMAIN}" ]];
 then
@@ -158,33 +161,21 @@ else
   echo -e "${BOLD}Log Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a log directory.\n\n"
 fi
 
-# --- Update Redis Database Count ---
-echo "Updating Redis database count..."
-# Source the updated site list
-source /home/EngineScript/sites-list/sites.sh
+# The site's Redis database number is free again: new sites take the lowest number no other
+# site's wp-config.php uses, so nothing changes in redis.conf.
 
-# Get the number of remaining sites
-REMAINING_SITES_COUNT=${#SITES[@]}
-
-# Ensure the database count is at least 1
-if [[ $REMAINING_SITES_COUNT -lt 1 ]]; then
-    EFFECTIVE_DB_COUNT=1
+# Reload Nginx (the site's vhost is gone) and PHP-FPM (drops the site's code from OPcache).
+# Redis keeps running: Redis Object Cache shows an error page on every site while Redis is
+# unreachable, and the site's keys are already deleted.
+echo "Reloading Nginx and PHP-FPM..."
+if nginx -t > /dev/null 2>&1; then
+  systemctl reload nginx
 else
-    EFFECTIVE_DB_COUNT=$REMAINING_SITES_COUNT
+  echo "Error: nginx -t failed after removing ${DOMAIN}; Nginx was not reloaded. Check with: nginx -t" >&2
 fi
-
-# Update redis.conf if the number needs changing
-CURRENT_DB_COUNT=$(grep -E "^databases\s+[0-9]+" /etc/redis/redis.conf | awk '{print $2}')
-if [[ "$CURRENT_DB_COUNT" != "$EFFECTIVE_DB_COUNT" ]]; then
-    echo "Adjusting Redis databases from ${CURRENT_DB_COUNT} to ${EFFECTIVE_DB_COUNT}..."
-    sed -i "s/^databases\s+[0-9]\+/databases ${EFFECTIVE_DB_COUNT}/" /etc/redis/redis.conf
-else
-    echo "Redis database count (${EFFECTIVE_DB_COUNT}) is already correct."
+if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+  systemctl reload "php${PHP_VER}-fpm"
 fi
-
-# Restart Services (including Redis if needed by alias-restart.sh)
-echo "Restarting Nginx, PHP, and Redis..."
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh # This should restart nginx, php-fpm, and redis
 echo ""
 
 # Summary

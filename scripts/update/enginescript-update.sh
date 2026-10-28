@@ -27,32 +27,41 @@ return_to_src
 # Determine which branch to use based on TEST_MODE setting
 if [[ "${TEST_MODE}" == "1" ]]; then
     ENGINESCRIPT_BRANCH="update-software-versions"
-    echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
 else
     ENGINESCRIPT_BRANCH="master"
-    echo "Updating from production branch (master)"
 fi
 
-# Copy EngineScript
-cd /usr/local/bin/enginescript
-echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
-git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "EngineScript Git Pull"
+# Copy EngineScript, then run the new copy of this script for the rest of the update (--fetched).
+# Bash keeps running the text of the file it started with, and the shared functions sourced
+# above are the old ones, so without the restart an update would run the previous version's steps.
+if [[ "${1:-}" != "--fetched" ]]; then
+    if [[ "${TEST_MODE}" == "1" ]]; then
+        echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
+    else
+        echo "Updating from production branch (master)"
+    fi
+    cd /usr/local/bin/enginescript || { echo "Error: Failed to change to /usr/local/bin/enginescript" >&2; exit 1; }
+    echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
+    git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+    git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
+    git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+    debug_pause "EngineScript Git Pull"
 
-# Convert line endings
-dos2unix /usr/local/bin/enginescript/*
+    # Convert line endings
+    dos2unix /usr/local/bin/enginescript/*
 
-# Set directory and file permissions to 755
-find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
+    # Set directory and file permissions to 755
+    find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
 
-# Set ownership
-chown -R root:root /usr/local/bin/enginescript
+    # Set ownership
+    chown -R root:root /usr/local/bin/enginescript
 
-# Make shell scripts executable
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+    # Make shell scripts executable
+    find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+
+    exec bash /usr/local/bin/enginescript/scripts/update/enginescript-update.sh --fetched
+fi
 
 echo ""
 echo ""
