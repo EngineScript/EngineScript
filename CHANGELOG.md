@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-27
+
+### 🐛 NGINX FIXES
+
+- Fixed new installs ending without a running Nginx, and Nginx updates being rolled back, since the 2026-10-25 changes: `nginx -t` refused `nginx.conf` ("map_hash_bucket_size directive is duplicate"), because the new failed-request `map` came before `map_hash_bucket_size`. Servers that ran an Nginx update in that time kept their previous Nginx and configuration.
+
 ## 2026-10-25
 
 ### ⚙️ ONE MEMORY BUDGET FOR NGINX, PHP, MARIADB, AND REDIS
