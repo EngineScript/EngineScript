@@ -23,7 +23,7 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/labeler@v6
+      - uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d  # v6.2.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Run AI inference
         id: inference
-        uses: actions/ai-inference@v2
+        uses: actions/ai-inference@a7805884c80886efc241e94a5351df715968a0ad  # v2.1.1
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -49,7 +49,7 @@ jobs:
             Body: ${{ env.ISSUE_BODY }}
 
       - name: Upsert guidance comment
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           AI_SUMMARY: ${{ steps.inference.outputs.response }}
         with:
@@ -123,7 +123,7 @@ jobs:
       issues: write
     steps:
       - name: Post manual guidance comment
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
         with:
           issue-number: ${{ inputs.issue_number }}
           body: |
@@ -162,7 +162,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/stale@v10
+      - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629  # v10.4.0
         with:
           stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Remove stale label or comment or this will be closed in 5 days.'
           stale-pr-message: 'This PR is stale because it has been open 45 days with no activity. Remove stale label or comment or this will be closed in 10 days.'

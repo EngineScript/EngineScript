@@ -4,11 +4,13 @@
 
 name: New Pull Request Guidance
 
+# pull_request_target lets the comment reach pull requests from forks. It is safe here: the job
+# checks out nothing, runs no code from the pull request, and only posts a fixed comment.
 on:
-  pull_request_target:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     types: [opened]
 
-permissions: {} # Deny all by default; specific permissions granted at job level
+permissions: {}  # Deny all by default; specific permissions granted at job level
 
 jobs:
   guide:
@@ -18,7 +20,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Post guidance comment on new PR
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |

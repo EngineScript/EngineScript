@@ -1,9 +1,12 @@
 name: Control Panel
 
-# Runs the npm scripts in package.json: ESLint, Stylelint, and html-validate on the admin control
-# panel, markdownlint on every Markdown file, and the JavaScript tests. npm ci also fails when
-# package.json and package-lock.json disagree (for example a dependency update without its lock
-# file).
+# The checks that the control panel's tooling (package.json, composer.json, and
+# .github/lint-requirements.txt) defines:
+#   node      ESLint, Stylelint, and html-validate on the admin control panel, markdownlint on every
+#             Markdown file, and the JavaScript tests. npm ci also fails when package.json and
+#             package-lock.json disagree (for example a dependency update without its lock file).
+#   composer  static analysis of the control panel's PHP
+#   python    the repository scripts in .github/scripts and the workflow files
 "on":
   push:
     branches:
@@ -11,28 +14,50 @@ name: Control Panel
     paths:
       - 'config/var/www/admin/control-panel/**'
       - '**/*.md'
-      - 'tests/js/**'
+      - 'tests/**'
+      - '.github/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'composer.json'
+      - 'composer.lock'
       - 'eslint.config.mjs'
       - '.stylelintrc.json'
       - '.htmlvalidate.json'
       - '.markdownlint.json'
       - '.markdownlint-cli2.jsonc'
-      - '.github/workflows/control-panel.yml'
+      - '.php-cs-fixer.dist.php'
+      - 'phpcs.xml'
+      - 'phpmd.xml'
+      - 'phpstan.neon'
+      - 'psalm.xml'
+      - 'phpunit.xml'
+      - '.ruff.toml'
+      - '.mypy.ini'
+      - '.yamllint.yml'
   pull_request:
     paths:
       - 'config/var/www/admin/control-panel/**'
       - '**/*.md'
-      - 'tests/js/**'
+      - 'tests/**'
+      - '.github/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'composer.json'
+      - 'composer.lock'
       - 'eslint.config.mjs'
       - '.stylelintrc.json'
       - '.htmlvalidate.json'
       - '.markdownlint.json'
       - '.markdownlint-cli2.jsonc'
-      - '.github/workflows/control-panel.yml'
+      - '.php-cs-fixer.dist.php'
+      - 'phpcs.xml'
+      - 'phpmd.xml'
+      - 'phpstan.neon'
+      - 'psalm.xml'
+      - 'phpunit.xml'
+      - '.ruff.toml'
+      - '.mypy.ini'
+      - '.yamllint.yml'
   workflow_dispatch:
 
 permissions:
@@ -84,3 +109,102 @@ jobs:
       - name: JavaScript tests
         if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
         run: npm test
+
+  composer:
+    name: PHP static analysis (PHP 8.3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # PHP 8.3 is the control panel's minimum version (composer.json's platform)
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: composer_install
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # composer check-all also runs PHPCS, PHPMD, Psalm (without taint analysis), and PHPUnit.
+      # They report problems in the control panel's PHP that its open work is fixing (class
+      # names without a namespace, snake_case variables, untyped class constants, and no unit
+      # tests yet); each joins this job once it passes on master.
+      - name: PHP-CS-Fixer
+        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
+        run: composer cs:check
+
+      - name: PHPStan
+        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
+        run: composer phpstan
+
+      - name: Psalm taint analysis
+        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
+        run: composer psalm:taint
+
+  python:
+    name: Repository scripts and workflows (Python 3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+
+      # A virtual environment holds the versions that .github/lint-requirements.txt pins
+      - name: Install the pinned linters
+        id: linters
+        run: |
+          python -m venv "$RUNNER_TEMP/lint-venv"
+          "$RUNNER_TEMP/lint-venv/bin/pip" install --disable-pip-version-check --quiet \
+            --requirement .github/lint-requirements.txt
+          echo "$RUNNER_TEMP/lint-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Ruff
+        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        run: |
+          ruff check .github/scripts
+          ruff format --check .github/scripts
+
+      - name: mypy (strict)
+        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        run: mypy
+
+      - name: Repository script tests
+        if: ${{ !cancelled() }}
+        run: python3 .github/scripts/test-automation.py
+
+      - name: Deployed control panel files match the allowlist
+        if: ${{ !cancelled() }}
+        run: python3 .github/scripts/check-deployment-surface.py
+
+      - name: yamllint
+        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        run: |
+          # Tracked files only, so installed dependencies are left out
+          mapfile -d '' -t YAML_FILES < <(git ls-files -z -- '*.yml' '*.yaml')
+          yamllint -c .yamllint.yml "${YAML_FILES[@]}"
+
+      # actionlint's ShellCheck pass is off: on the largest workflows it runs for a very long
+      # time, so the shell in run: blocks is not checked here
+      - name: actionlint
+        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        run: actionlint -shellcheck=
+
+      - name: zizmor
+        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        run: zizmor --offline .github/workflows
