@@ -35,7 +35,7 @@
   "dictionaryDefinitions": [
     {
       "name": "enginescript-project",
-      "path": "./.cspell-words.txt",
+      "path": "./cspell-words.txt",
       "addWords": true
     }
   ],
