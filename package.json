@@ -32,6 +32,7 @@
   ],
   "overrides": {
     "smol-toml": "1.9.1",
-    "katex": "0.19.0"
+    "katex": "0.19.0",
+    "re2js": "2.8.7"
   }
 }
