@@ -25,8 +25,11 @@ if [[ "${WP_CLI}" = 1 ]]; then
 fi
 
 # WP-CLI
+# The nightly build: WP-CLI 2.12.0's "wp core download" cuts paths over 100 characters short,
+# which leaves WordPress 7 without some of its core files (wp-cli/core-command#336). Return to the
+# stable build (wp-cli.phar here, --stable in wp-cli-update.sh) once a release includes the fix.
 cd /usr/local/src || { echo "Error: Failed to change directory to /usr/local/src" >&2; exit 1; }
-curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+curl -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli-nightly.phar
 chmod +x wp-cli.phar
 sudo mv wp-cli.phar /usr/local/bin/wp
 WP_CLI_BIN="/usr/local/bin/wp"

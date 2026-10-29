@@ -84,9 +84,12 @@ configure_wp_cli_package_fetching() {
 
 configure_wp_cli_package_fetching
 
-# The intent is to fail when either command fails 
-if ! "${WP_CLI_BIN}" cli update --stable --allow-root --yes 2>> /tmp/enginescript_install_errors.log \
-    || ! "${WP_CLI_BIN}" package update --allow-root --yes 2>> /tmp/enginescript_install_errors.log; then
+# The nightly build until a WP-CLI release keeps WordPress 7's long core paths intact on
+# "wp core download" (see wp-cli-install.sh). The nightly is WP-CLI 3, whose "package update"
+# takes --no-interaction instead of --yes; it runs after "cli update", so on the nightly.
+# The intent is to fail when either command fails
+if ! "${WP_CLI_BIN}" cli update --nightly --allow-root --yes 2>> /tmp/enginescript_install_errors.log \
+    || ! "${WP_CLI_BIN}" package update --allow-root --no-interaction 2>> /tmp/enginescript_install_errors.log; then
     echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
     exit 1
 fi

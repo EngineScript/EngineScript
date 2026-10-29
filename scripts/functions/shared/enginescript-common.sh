@@ -641,7 +641,9 @@ function prompt_yes_no() {
 
 
 # ----------------------------------------------------------------
-# Prompts user for text input with validation and timeout
+# Prompts user for text input with validation and timeout.
+# Prints only the answer on stdout, so callers capture it with $(...); messages go to stderr.
+# Inside $(...), the exit on "exit" or a timeout ends only that subshell: callers check the status.
 function prompt_input() {
     local prompt_text="$1"
     local default_value="${2:-""}"
@@ -655,12 +657,12 @@ function prompt_input() {
     fi
     
     while true; do
-        echo -e "\n${prompt_text}${prompt_suffix}"
-        echo "Type 'exit' to abort the script."
+        echo -e "\n${prompt_text}${prompt_suffix}" >&2
+        echo "Type 'exit' to abort the script." >&2
         if read -t "${timeout_seconds}" -p "> " user_input; then
             case "${user_input,,}" in
                 "exit"|"quit"|"abort"|"stop")
-                    echo -e "\nExiting script as requested."
+                    echo -e "\nExiting script as requested." >&2
                     exit 1
                     ;;
                 "")
@@ -671,7 +673,7 @@ function prompt_input() {
                         echo ""
                         return 0
                     else
-                        echo "Input cannot be empty. Please enter a value or type 'exit' to abort."
+                        echo "Input cannot be empty. Please enter a value or type 'exit' to abort." >&2
                     fi
                     ;;
                 *)
@@ -681,7 +683,7 @@ function prompt_input() {
                             echo "$user_input"
                             return 0
                         else
-                            echo "Invalid input format. Please try again or type 'exit' to abort."
+                            echo "Invalid input format. Please try again or type 'exit' to abort." >&2
                         fi
                     else
                         echo "$user_input"
@@ -690,7 +692,7 @@ function prompt_input() {
                     ;;
             esac
         else
-            echo -e "\nTimeout reached (${timeout_seconds}s). Exiting script."
+            echo -e "\nTimeout reached (${timeout_seconds}s). Exiting script." >&2
             exit 1
         fi
     done
