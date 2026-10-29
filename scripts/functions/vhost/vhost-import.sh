@@ -381,6 +381,8 @@ fi
 
 # Extract domain from URL (remove http(s):// and potential trailing slash)
 SITE_URL=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain extracted from URL
+# The domain the site's content refers to; the URLs are moved to the new domain if it changes below
+ORIGINAL_SITE_URL="${SITE_URL}"
 
 # Extract DB Charset (optional, for reference)
 DB_CHARSET=$(extract_define 'DB_CHARSET')
@@ -416,15 +418,18 @@ while true; do
     [Cc]* )
       echo "Please enter the correct values:"
       
-      # Site URL input with validation
+      # Site URL input with validation. Takes https://example.com or example.com, and keeps the
+      # domain: EngineScript serves each site at the root of its own domain.
       while true; do
-          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300)
+          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
           if [[ -n "$new_site_url" ]]; then
-              if validate_url "$new_site_url"; then
-                  SITE_URL="$new_site_url"
+              [[ "$new_site_url" =~ ^https?:// ]] || new_site_url="https://${new_site_url}"
+              new_site_url="${new_site_url%/}"
+              if validate_url "$new_site_url" && [[ ! "$new_site_url" =~ ^https?://[^/]+/ ]]; then
+                  SITE_URL=$(echo "$new_site_url" | sed -E 's#^https?://##')
                   break
               else
-                  echo "Invalid URL format. Please use format: https://example.com or http://example.com"
+                  echo "Invalid URL format. Please use format: https://example.com or example.com (no path)"
               fi
           else
               break  # Keep existing value
@@ -432,7 +437,7 @@ while true; do
       done
 
       # DB Prefix input with validation
-      new_prefix=$(prompt_input "Enter correct DB Prefix" "${PREFIX}" 300 "^[a-zA-Z0-9_]+$" true)
+      new_prefix=$(prompt_input "Enter correct DB Prefix" "${PREFIX}" 300 "^[a-zA-Z0-9_]+$" true) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
       if [[ -n "$new_prefix" ]]; then
           # Ensure prefix ends with _ if not empty
           if [[ "${new_prefix: -1}" != "_" ]]; then
@@ -443,7 +448,7 @@ while true; do
       fi
 
       # DB Charset input with validation
-      new_db_charset=$(prompt_input "Enter correct DB Charset" "${DB_CHARSET}" 300 "^[a-zA-Z0-9_]+$" true)
+      new_db_charset=$(prompt_input "Enter correct DB Charset" "${DB_CHARSET}" 300 "^[a-zA-Z0-9_]+$" true) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
       if [[ -n "$new_db_charset" ]]; then
           DB_CHARSET="$new_db_charset"
       fi
@@ -481,8 +486,8 @@ else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
 fi
 
-# Canonical URL used for import/search-replace workflows.
-# Currently source and target are the same during import.
+# Canonical URL used for import/search-replace workflows: the site's URLs move from
+# ORIGINAL_SITE_URL (http or https) to it.
 NEW_URL="https://${SITE_URL}" # Assume https for consistency
 
 # Logging
@@ -614,9 +619,9 @@ fi
 
 # Search and Replace URLs
 echo "Running search-replace for URL consistency in the database..."
-echo "Ensuring URL is '${NEW_URL}'"
-HTTPS_ORIGINAL_URL="${NEW_URL}"
-HTTP_ORIGINAL_URL="${HTTPS_ORIGINAL_URL/#https:\/\//http://}"
+echo "Ensuring URL is '${NEW_URL}' (the export's URLs were for ${ORIGINAL_SITE_URL})"
+HTTPS_ORIGINAL_URL="https://${ORIGINAL_SITE_URL}"
+HTTP_ORIGINAL_URL="http://${ORIGINAL_SITE_URL}"
 
 run_url_search_replace_if_present() {
     local original_url="$1"

@@ -4,6 +4,17 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-29
+
+### 🐛 SITE CREATION FIXES
+
+- Fixed new sites getting an incomplete WordPress: WP-CLI 2.12.0, the current release, cuts file paths longer than 100 characters short when `wp core download` unpacks WordPress 7, so 25 core files under `wp-includes/php-ai-client/` were missing (stored under cut-off names). EngineScript now installs WP-CLI's nightly build, which has the fix, and the daily WP-CLI update keeps it on the nightly. EngineScript will return to the stable build once a WP-CLI release includes the fix. Sites created before this are not changed: `wp core verify-checksums --allow-root` in a site's directory shows whether it is affected, and once the server has the nightly build (the next daily WP-CLI update), `wp core download --force --skip-content --version=<the site's WordPress version> --allow-root` restores the missing files. The cut-off copies it then lists as "File should not exist" can be deleted.
+
+### 🐛 SITE IMPORT AND EXPORT FIXES
+
+- Fixed changing the site address while importing a site. At "Are these details correct?", choosing [C] Change rejected every address as "Invalid URL format" and asked again without end, and typing `exit` did not stop it. The new address can now be given as `https://example.com` or `example.com`, the site is set up under it, and the site's URLs in the database are moved from the old address to the new one (before, they kept pointing to the old domain). Typing `exit` at these prompts now stops the import.
+- The site export now leaves out the same files as the EngineScript Site Exporter plugin, so both create the same archive: version-control folders (`.git`, `.svn`, `.hg`), macOS `.DS_Store` files, and `.htaccess` and `.user.ini` files. A `.user.ini` carries PHP settings for the old server (such as file paths), which PHP-FPM on the new server would otherwise apply.
+
 ## 2026-10-28
 
 ### 🐛 NGINX UPDATE FIXES
