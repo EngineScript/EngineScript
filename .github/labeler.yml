@@ -87,7 +87,6 @@ dependencies:
       - any-glob-to-any-file: .github/lint-requirements.txt
       - any-glob-to-any-file: composer.json
       - any-glob-to-any-file: package.json
-      - any-glob-to-any-file: renovate.json
 
 # Tests and quality
 testing:
@@ -101,7 +100,6 @@ testing:
       - any-glob-to-any-file: rector.php
       - any-glob-to-any-file: .php-cs-fixer.dist.php
       - any-glob-to-any-file: .htmlvalidate.json
-      - any-glob-to-any-file: .markdownlint.json
       - any-glob-to-any-file: .markdownlint-cli2.jsonc
       - any-glob-to-any-file: .mypy.ini
       - any-glob-to-any-file: .ruff.toml

@@ -21,19 +21,17 @@
 # stays in them. Directories are named themselves, not as dir/**.
 /.github export-ignore
 /.codacy.yml export-ignore
-/.cspell-words.txt export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
 /.htmlvalidate.json export-ignore
-/.markdownlint.json export-ignore
 /.markdownlint-cli2.jsonc export-ignore
 /.mypy.ini export-ignore
 /.php-cs-fixer.dist.php export-ignore
 /.ruff.toml export-ignore
 /.stylelintrc.json export-ignore
+/.vscode export-ignore
 /.yamllint.yml export-ignore
 /composer.json export-ignore
-/cspell.json export-ignore
 /eslint.config.mjs export-ignore
 /package.json export-ignore
 /phpcs.xml export-ignore
@@ -42,6 +40,5 @@
 /phpunit.xml export-ignore
 /psalm.xml export-ignore
 /rector.php export-ignore
-/renovate.json export-ignore
 /tests export-ignore
 /tslint.json export-ignore

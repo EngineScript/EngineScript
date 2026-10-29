@@ -3,7 +3,10 @@ AGENTS.md
 CLAUDE.md
 .github/copilot-instructions.md
 .private/
-.vscode/
+# Local editor settings; the spell checker's configuration is shared
+.vscode/*
+!.vscode/cspell.json
+!.vscode/.cspell-words.txt
 
 # JetBrains IDE project files
 .idea/
