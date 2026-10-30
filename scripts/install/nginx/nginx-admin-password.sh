@@ -25,4 +25,6 @@ echo "${BOLD}Nginx Admin Authentication:${NORMAL}"
 echo "----------------------------------------------------------"
 
 # Set Restricted Access Password
-printf "%s:%s\n" "${ADMIN_CONTROL_PANEL_USERNAME}" "$(openssl passwd -apr1 "${ADMIN_CONTROL_PANEL_PASSWORD}")" >> /etc/nginx/restricted-access/.htpasswd
+# The file is replaced, not appended to: nginx uses the first line that names the user, so
+# an appended line would leave an older password in force.
+printf "%s:%s\n" "${ADMIN_CONTROL_PANEL_USERNAME}" "$(openssl passwd -apr1 "${ADMIN_CONTROL_PANEL_PASSWORD}")" > /etc/nginx/restricted-access/.htpasswd
