@@ -39,6 +39,7 @@ PANEL_FILES = {
     "controllers/ServiceController.php",
     "controllers/SiteController.php",
     "controllers/SystemController.php",
+    "controllers/ToolsController.php",
     "controllers/UptimeController.php",
     "dashboard.css",
     "dashboard.js",

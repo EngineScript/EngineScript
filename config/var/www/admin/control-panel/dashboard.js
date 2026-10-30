@@ -816,9 +816,29 @@ class EngineScriptDashboard {
   // Tools management methods
   async loadToolsData() {
     await Promise.allSettled([
+      this.loadToolAvailability(),
       this.loadFileManagerStatus(),
       this.loadCacheStatus()
     ]);
+  }
+
+  /**
+   * Show the Adminer card only when Adminer is installed (it is optional and off by default).
+   * The card stays hidden when the status cannot be loaded, so it never links to nothing.
+   */
+  async loadToolAvailability() {
+    const adminerCard = document.getElementById("adminer-tool");
+    if (!adminerCard) {
+      return;
+    }
+
+    try {
+      const tools = await this.api.getApiData("/api/tools/status");
+      adminerCard.classList.toggle("es-hidden", tools?.adminer !== true);
+    } catch (error) {
+      console.error("Failed to load tool availability:", error);
+      adminerCard.classList.add("es-hidden");
+    }
   }
 
   async loadFileManagerStatus() {

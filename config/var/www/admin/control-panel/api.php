@@ -26,6 +26,7 @@ require_once __DIR__ . '/controllers/FileManagerController.php';
 require_once __DIR__ . '/controllers/ServiceController.php';
 require_once __DIR__ . '/controllers/SiteController.php';
 require_once __DIR__ . '/controllers/SystemController.php';
+require_once __DIR__ . '/controllers/ToolsController.php';
 require_once __DIR__ . '/controllers/UptimeController.php';
 
 $request = new Request();

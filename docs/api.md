@@ -12,6 +12,7 @@ API documentation for the EngineScript admin control panel. All endpoints are se
   - [System Info](#system-info)
   - [Service Status](#service-status)
   - [Sites](#sites)
+  - [Tools Status](#tools-status)
   - [File Manager Status](#file-manager-status)
   - [Uptime Status](#uptime-status)
   - [Uptime Monitors](#uptime-monitors)
@@ -154,6 +155,26 @@ List the WordPress sites in Nginx's `/etc/nginx/sites-enabled`.
 ```
 
 A site is listed when its configuration mentions WordPress. `domain` is the first `server_name`. `wp_version` comes from the site's `wp-includes/version.php`, or is `Unknown`. `ssl_status` is `Enabled` when the configuration names an `ssl_certificate`, otherwise `Unknown`. A configuration file that resolves outside `sites-enabled`, or a `version.php` that resolves outside the site's root, is not read.
+
+---
+
+### Tools Status
+
+Which optional admin tools are installed. The dashboard shows the Adminer card only when
+`adminer` is `true`; Adminer is installed only with `INSTALL_ADMINER=1`.
+
+| | |
+| --- | --- |
+| **Method** | `GET`, `HEAD` |
+| **Path** | `/tools/status` |
+
+#### Tools Status Response
+
+```json
+{
+  "adminer": false
+}
+```
 
 ---
 

@@ -73,6 +73,7 @@ final readonly class Router
             '/system/info' => [self::GET, fn() => $this->controller(SystemController::class)->getInfo()],
             '/services/status' => [self::GET, fn() => $this->controller(ServiceController::class)->getStatus()],
             '/sites' => [self::GET, fn() => $this->controller(SiteController::class)->getSites()],
+            '/tools/status' => [self::GET, fn() => $this->controller(ToolsController::class)->getStatus()],
             '/tools/filemanager/status' => [
                 self::GET,
                 fn() => $this->controller(FileManagerController::class)->getStatus(),
