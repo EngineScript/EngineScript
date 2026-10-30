@@ -95,9 +95,6 @@ debug_pause "Auto-Upgrades"
 # --------------------------------------------------------
 # Update EngineScript Frontend
 
-# Safety Check: Verify we're only wiping the control-panel directory
-# This prevents accidental deletion of admin tools (phpMyAdmin, etc.)
-CONTROL_PANEL_DIR="/var/www/admin/control-panel"
 TOOLS_DIR="/var/www/admin/tools"
 
 # Verify tools directory exists and is not empty (contains user configurations)
@@ -112,20 +109,11 @@ else
     mkdir -p "$TOOLS_DIR"
 fi
 
-# Admin Control Panel - Remove old files and replace with new version
-# NOTE: Only the control-panel directory is wiped on updates.
-# Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer, phpinfo)
-# are stored in /var/www/admin/tools/ and are NOT affected by updates.
-echo "Cleaning up old Admin Control Panel files..."
-
-# Safety: Double-check we're targeting the correct directory
-if [[ "$CONTROL_PANEL_DIR" == "/var/www/admin/control-panel" ]]; then
-    rm -rf "${CONTROL_PANEL_DIR:?}"/*
-else
-    echo "ERROR: Control panel directory path mismatch. Aborting for safety."
-    exit 1
-fi
-
+# Admin Control Panel - replace with the new version
+# The installer builds the new panel beside the running one and swaps it in only when it is
+# complete: files the new version no longer has go away, and a failed update leaves the
+# running panel as it was. Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer,
+# phpinfo) are stored in /var/www/admin/tools/ and are NOT affected by updates.
 /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Admin Control Panel Update"

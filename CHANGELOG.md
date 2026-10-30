@@ -9,6 +9,8 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🐛 ADMIN CONTROL PANEL FIXES
 
 - Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
+- Installs and updates now build the control panel, TinyFileManager, and phpSysInfo beside the running copy and switch over only when the new copy is complete, so a failed download or copy keeps the working copy. Before, `es.update` emptied the control panel first, and the tool installers deleted the installed tool before downloading the new one. The admin control panel install step is recorded as done only when every part of it succeeded, so a failed part runs again on the next install.
+- phpSysInfo's `.git` directory is no longer installed into the served `/phpsysinfo/` directory.
 
 ### 🔒 ADMIN SUBDOMAIN
 
@@ -26,6 +28,7 @@ Changes are organized by date, with the most recent changes listed first.
 - The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
 - Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
 - Removed the cron job that deleted the control panel's API cache every minute; cache entries expire on their own. EngineScript updates remove the job from existing servers.
+- The dashboard's version in its asset URLs now includes a hash of its files, so browsers load the new files after any update, even two on the same day.
 
 ## 2026-10-29
 

@@ -2190,6 +2190,29 @@ function clean_directory() {
 
 
 # ----------------------------------------------------------------
+# Replace a directory with a complete new copy: the old one is moved aside, the new one renamed
+# into its place, and the old one removed. If the rename fails, the old one is put back. Both
+# must be on the same filesystem, so the renames are instant. Returns 1 on failure.
+# Usage: replace_directory "/var/www/admin/.control-panel-new.abc123" "/var/www/admin/control-panel"
+function replace_directory() {
+    local new_dir="$1"
+    local target_dir="$2"
+    local old_dir="${new_dir}.old"
+
+    if [[ -e "${target_dir}" ]]; then
+        mv -T "${target_dir}" "${old_dir}" || return 1
+    fi
+    if ! mv -T "${new_dir}" "${target_dir}"; then
+        if [[ -e "${old_dir}" ]]; then
+            mv -T "${old_dir}" "${target_dir}"
+        fi
+        return 1
+    fi
+    rm -rf "${old_dir}"
+}
+
+
+# ----------------------------------------------------------------
 # Download a file and extract a tarball
 # Usage: download_and_extract "URL" "/path/to/output.tar.gz" [extract_dir]
 function download_and_extract() {
