@@ -20,12 +20,14 @@ Thumbs.db
 .cache/
 .cspellcache
 .eslintcache
+.mypy_cache/
 .php-cs-fixer.cache
 .phpcs-cache
 .phpstan.cache
 .phpunit.cache
 .phpunit.result.cache
 .psalm/cache
+.ruff_cache/
 .stylelintcache
 __pycache__/
 
