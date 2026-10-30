@@ -1618,6 +1618,23 @@ function install_backup_cron() {
 
 
 # ----------------------------------------------------------------
+# Remove the control panel's API cache sweep cron job
+#
+# The job deleted the panel's API cache files every minute. Cache entries expire on their own
+# after 60 seconds (BaseController::CACHE_TTL), so the job and its script were removed. Safe to
+# run again.
+function remove_api_cache_sweep_cron() {
+    local current
+
+    current="$(crontab -l 2> /dev/null)" || return 0
+    if grep -qF 'sweep-api-cache.sh' <<< "${current}"; then
+        echo "Removing the API cache sweep cron job..."
+        grep -vF 'sweep-api-cache.sh' <<< "${current}" | crontab -
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Set permissions for /home/EngineScript
 #
 # It holds the install options (the MariaDB root password, the Cloudflare API key, admin

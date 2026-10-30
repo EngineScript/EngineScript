@@ -45,9 +45,6 @@ install_backup_cron
 # System Maintenance
 add_cron_job "7 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash cleanup-cron.sh >/dev/null 2>&1"
 
-# API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
-add_cron_job "* * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
-
 [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]] && add_cron_job "37 5 * * 0 cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1"
 
 # Configuration Backups

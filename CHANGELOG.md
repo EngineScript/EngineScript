@@ -25,6 +25,7 @@ Changes are organized by date, with the most recent changes listed first.
 - The API sends data as it is instead of HTML-escaped (the dashboard inserts it as text), sends no CORS headers (the dashboard never needed them), answers `OPTIONS` with 405, and caches only the UptimeRobot answer. Status commands answer in about 2 ms instead of 50 ms each.
 - The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
 - Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
+- Removed the cron job that deleted the control panel's API cache every minute; cache entries expire on their own. EngineScript updates remove the job from existing servers.
 
 ## 2026-10-29
 
