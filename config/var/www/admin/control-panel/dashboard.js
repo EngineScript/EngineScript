@@ -224,30 +224,32 @@ class EngineScriptDashboard {
 
   toggleMobileMenu() {
     const sidebar = document.querySelector(".sidebar");
-    if (sidebar) {
-      const isOpening = !sidebar.classList.contains("mobile-open");
-      sidebar.classList.toggle("mobile-open");
+    if (!sidebar) return;
 
-      // Manage focus when menu opens/closes
-      if (isOpening) {
-        this.setupMobileFocusTrap(sidebar);
-      } else {
-        this.removeMobileFocusTrap();
-        // Return focus to toggle button
-        const mobileToggle = document.getElementById("mobile-menu-toggle");
-        if (mobileToggle) mobileToggle.focus();
-      }
+    if (sidebar.classList.contains("mobile-open")) {
+      this.closeMobileMenu();
+      return;
     }
+
+    sidebar.classList.add("mobile-open");
+    document.getElementById("mobile-menu-toggle")?.setAttribute("aria-expanded", "true");
+    this.setupMobileFocusTrap(sidebar);
   }
 
+  /**
+   * Close the mobile menu and return focus to its toggle. Does nothing when the menu is
+   * closed, so desktop navigation and Escape elsewhere leave focus where it is.
+   */
   closeMobileMenu() {
     const sidebar = document.querySelector(".sidebar");
-    if (sidebar) {
-      sidebar.classList.remove("mobile-open");
-      this.removeMobileFocusTrap();
-      // Return focus to toggle button
-      const mobileToggle = document.getElementById("mobile-menu-toggle");
-      if (mobileToggle) mobileToggle.focus();
+    if (!sidebar?.classList.contains("mobile-open")) return;
+
+    sidebar.classList.remove("mobile-open");
+    this.removeMobileFocusTrap();
+    const mobileToggle = document.getElementById("mobile-menu-toggle");
+    if (mobileToggle) {
+      mobileToggle.setAttribute("aria-expanded", "false");
+      mobileToggle.focus();
     }
   }
 
@@ -258,7 +260,8 @@ class EngineScriptDashboard {
   setupMobileFocusTrap(sidebar) {
     // Get all focusable elements in sidebar
     const focusableSelector = "a[href], button, [tabindex]:not([tabindex=\"-1\"])";
-    const focusableElements = sidebar.querySelectorAll(focusableSelector);
+    // An array, not the NodeList querySelectorAll returns: a NodeList has no at()
+    const focusableElements = [...sidebar.querySelectorAll(focusableSelector)];
 
     if (focusableElements.length === 0) return;
 
@@ -313,16 +316,15 @@ class EngineScriptDashboard {
         return;
       }
 
-      // ESC - Close mobile menu
+      // ESC - Close the mobile menu (closeMobileMenu does nothing when it is closed)
       if (event.key === "Escape") {
         this.closeMobileMenu();
         return;
       }
 
-      // Ctrl+R or F5 - Refresh data (prevent default browser refresh)
-      if ((event.ctrlKey && event.key === "r") || event.key === "F5") {
-        event.preventDefault();
-        this.refreshData();
+      // F5 and Ctrl+R stay the browser's reload. Arrows and digits act only while focus is in
+      // the navigation, so they keep their usual meaning everywhere else on the page.
+      if (!(event.target instanceof Element) || !event.target.closest(".sidebar-nav")) {
         return;
       }
 
@@ -330,19 +332,28 @@ class EngineScriptDashboard {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         this.navigateWithKeys(event.key === "ArrowRight");
+        this.focusActiveNavItem();
         return;
       }
 
       // Number keys - Quick page navigation using the cached pages array
       if (event.key >= "1" && event.key <= String(this.keyboardNavPages.length) && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-        const pageIndex = parseInt(event.key, 10) - 1;
+        const pageIndex = Number.parseInt(event.key, 10) - 1;
         if (pageIndex < this.keyboardNavPages.length) {
           this.navigateToPage(this.keyboardNavPages[pageIndex]);
+          this.focusActiveNavItem();
         }
       }
     };
 
     document.addEventListener("keydown", this.keyboardShortcutHandler);
+  }
+
+  /**
+   * Move focus to the active page's navigation link, so keyboard navigation continues from there
+   */
+  focusActiveNavItem() {
+    document.querySelector(".nav-item.active a")?.focus();
   }
 
   navigateWithKeys(forward) {
@@ -465,7 +476,9 @@ class EngineScriptDashboard {
             statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
           }
           if (versionSpan && status.version) {
-            versionSpan.textContent = `v${status.version}`;
+            // "v" only before a version number, not before "Unknown" or "Not Found"
+            const version = String(status.version);
+            versionSpan.textContent = /^\d/.test(version) ? `v${version}` : version;
           }
         }
       });
@@ -624,7 +637,7 @@ class EngineScriptDashboard {
   }
 
   showSkeletonServiceStatus() {
-    this.setAllServiceStatusElements("fas fa-circle", "v--");
+    this.setAllServiceStatusElements("fas fa-circle", "--");
   }
 
   /**
@@ -973,6 +986,9 @@ class EngineScriptDashboard {
       return;
     }
 
+    // A disabled button loses focus; it gets it back when the clear is done
+    const hadFocus = document.activeElement === button;
+
     if (button) {
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
@@ -995,7 +1011,10 @@ class EngineScriptDashboard {
         button.disabled = false;
         button.removeAttribute("aria-busy");
         delete button.dataset.loading;
-        button.blur();
+        // Keyboard users continue from the button they pressed
+        if (hadFocus) {
+          button.focus();
+        }
       }
     }
   }
