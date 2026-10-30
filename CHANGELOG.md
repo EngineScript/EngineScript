@@ -39,6 +39,7 @@ Changes are organized by date, with the most recent changes listed first.
 - The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
 - Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
 - Removed the cron job that deleted the control panel's API cache every minute; cache entries expire on their own. EngineScript updates remove the job from existing servers.
+- Updated Font Awesome, the admin control panel's icons, from 7.0.1 to 7.3.1. The software version check had held it at 7.0.x while cdnjs, which serves it, could not publish new releases; it now reads the version from cdnjs, offers any newer stable release (no beta or release candidate) once cdnjs serves its stylesheet, and warns when cdnjs falls behind Font Awesome's own releases.
 - Simplified the dashboard's script: it drops unused code (an Opera Mini fallback, an unused token accessor, refresh limits nothing read, the cleanup on page unload) and the text sanitizing the page never needed, since every value is set as text, never as HTML. Links from the API are still checked to be http or https.
 - The dashboard's version in its asset URLs now includes a hash of its files, so browsers load the new files after any update, even two on the same day.
 
