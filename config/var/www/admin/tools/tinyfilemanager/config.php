@@ -7,11 +7,12 @@
 
 declare(strict_types=1);
 
-// The login: written by update-config-files.sh (which es.update runs) from FILEMANAGER_USERNAME
-// and FILEMANAGER_PASSWORD in the install options. It holds a hash of the password, so the web
-// server never reads the install options file.
-$es_fm_login_file = '/var/lib/enginescript/admin/tinyfilemanager-auth.php';
-$es_fm_login = is_readable($es_fm_login_file) ? require $es_fm_login_file : null;
+// The login: JSON written by update-config-files.sh (which es.update runs) from
+// FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD in the install options. It holds a hash of the
+// password, so the web server never reads the install options file.
+$es_fm_login_file = '/var/lib/enginescript/admin/tinyfilemanager-auth.json';
+$es_fm_login_json = is_readable($es_fm_login_file) ? file_get_contents($es_fm_login_file) : false;
+$es_fm_login = is_string($es_fm_login_json) ? json_decode($es_fm_login_json, true) : null;
 
 // Security check - fail if credentials are not properly configured
 if (

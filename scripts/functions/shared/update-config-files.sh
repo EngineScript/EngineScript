@@ -38,8 +38,11 @@ update_uptimerobot_config() {
 # server (www-data) can read, so it never needs the install options file
 update_filemanager_login() {
     local login_dir="/var/lib/enginescript/admin"
-    local login_file="${login_dir}/tinyfilemanager-auth.php"
+    local login_file="${login_dir}/tinyfilemanager-auth.json"
     local temp_file
+
+    # The first version of this file was PHP code (tinyfilemanager-auth.php); the login is data now
+    rm -f "${login_dir}/tinyfilemanager-auth.php"
 
     if [[ -z "$FILEMANAGER_USERNAME" || "$FILEMANAGER_USERNAME" == "PLACEHOLDER" \
         || -z "$FILEMANAGER_PASSWORD" || "$FILEMANAGER_PASSWORD" == "PLACEHOLDER" ]]; then
@@ -59,7 +62,7 @@ update_filemanager_login() {
             "username" => (string) getenv("FM_USERNAME"),
             "password_hash" => password_hash((string) stream_get_contents(STDIN), PASSWORD_DEFAULT),
         ];
-        echo "<?php\n\n// Tiny File Manager login, written by update-config-files.sh from the install options.\n\nreturn ", var_export($login, true), ";\n";
+        echo json_encode($login, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), "\n";
     ' > "$temp_file" && chown root:www-data "$temp_file" && chmod 640 "$temp_file" && mv -f "$temp_file" "$login_file"; then
         echo "✓ File Manager login updated"
     else
