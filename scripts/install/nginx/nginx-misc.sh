@@ -20,7 +20,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # Retrieve EngineScript Nginx Configuration
 cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
-sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf
+sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf /etc/nginx/globals/php-fpm-admin.conf
 
 # Enable unsafe file blocking if configured
 if [[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" ]]; then

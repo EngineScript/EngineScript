@@ -207,9 +207,11 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     # 4. Point Nginx at the new socket
     echo "Pointing Nginx at PHP ${NEW_PHP_VER}..."
     NGINX_SWITCHED=1
-    if [[ -f /etc/nginx/globals/php-fpm.conf ]]; then
-        sed -E -i "s|(unix:/run/php/php)[0-9]+\.[0-9]+(-fpm\.sock)|\1${NEW_PHP_VER}\2|g" /etc/nginx/globals/php-fpm.conf
-    fi
+    for config_file in /etc/nginx/globals/php-fpm.conf /etc/nginx/globals/php-fpm-admin.conf; do
+        if [[ -f "${config_file}" ]]; then
+            sed -E -i "s|(unix:/run/php/php)[0-9]+\.[0-9]+(-fpm\.sock)|\1${NEW_PHP_VER}\2|g" "${config_file}"
+        fi
+    done
     for config_file in /etc/nginx/sites-available/*; do
         if [[ -f "${config_file}" ]]; then
             sed -E -i "s|(fastcgi_pass[[:space:]]+[^;]*php)[0-9]+\.[0-9]+(-fpm)|\1${NEW_PHP_VER}\2|g" "${config_file}"
@@ -247,12 +249,6 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
         echo "Updating phpSysInfo configuration..."
         for OLD_VER in "${OLD_PHP_VERS[@]}"; do
             sed -E -i "s|^([[:space:]]*[[:alnum:]_.-]+[[:space:]]*=[[:space:]]*.*)php${OLD_VER//./\.}(-fpm)?|\1php${NEW_PHP_VER}\2|g" /var/www/admin/tools/phpsysinfo/phpsysinfo.ini
-        done
-    fi
-    if [[ -f /var/www/admin/control-panel/api.php ]]; then
-        echo "Updating admin control panel API configuration..."
-        for OLD_VER in "${OLD_PHP_VERS[@]}"; do
-            sed -E -i "/(php-fpm|fastcgi_pass|sock(et)?|service)/ s|(php)${OLD_VER//./\.}(-fpm)?|\1${NEW_PHP_VER}\2|g" /var/www/admin/control-panel/api.php
         done
     fi
 fi

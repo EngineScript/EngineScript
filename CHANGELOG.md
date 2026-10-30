@@ -10,6 +10,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 - Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
 
+### 🔒 ADMIN SUBDOMAIN
+
+- The admin subdomain runs only the control panel's `api.php`. Its other PHP files (the classes and controllers) answer 404 instead of running; the admin tools are unchanged.
+- The admin subdomain's PHP has its own settings, `globals/php-fpm-admin.conf`, instead of the WordPress sites' `php-fpm.conf`: no FastCGI page cache, no WooCommerce cookie handling, and no fallback to `/index.php` (a missing PHP file answers 404 instead of 500). The API's `Cache-Control: no-store` is no longer replaced by the expires map. `php-update.sh` moves it to the new PHP version along with the sites.
+- Unknown paths on the admin subdomain answer 404 instead of the dashboard page, and the unused `/services` rewrite is removed.
+- Existing admin vhosts get these changes at the next Nginx install or update (`migrate_nginx_vhosts`).
+
 ### 🔧 ADMIN CONTROL PANEL
 
 - The overview loads with three ordinary requests instead of one combined `POST /api/batch`; `/api/batch` and `/api/sites/count` are removed. `docs/api.md` describes the API as it is.
