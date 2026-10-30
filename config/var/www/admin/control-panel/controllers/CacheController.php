@@ -9,8 +9,9 @@
  * @version 1.0.0
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/BaseController.php';
-// codacy:ignore - require_once with __DIR__ constant and hardcoded path; no user input in path
 require_once __DIR__ . '/../classes/SystemCommand.php';
 
 /**
@@ -25,12 +26,7 @@ final class CacheController extends BaseController
     /**
      * Valid cache types
      */
-    private const VALID_CACHE_TYPES = ['redis', 'fastcgi', 'opcache'];
-
-    /**
-     * Nginx FastCGI cache directory
-     */
-    private const FASTCGI_CACHE_PATH = '/var/cache/enginescript/fcgi';
+    private const array VALID_CACHE_TYPES = ['redis', 'fastcgi', 'opcache'];
 
     /**
      * Clear specified caches
@@ -46,12 +42,6 @@ final class CacheController extends BaseController
     public function clear(): void
     {
         try {
-            // Require POST method for cache clearing
-            if ($this->getRequestMethod() !== 'POST') {
-                $this->response->methodNotAllowed('POST');
-                return;
-            }
-
             // Validate and parse cache types from request
             $validated = $this->validateCacheTypes();
             if ($validated === null) {
@@ -86,11 +76,9 @@ final class CacheController extends BaseController
                 ];
             }
 
-            // Clear API cache for relevant endpoints after cache operations
-            $this->clearCacheFor('/services/status');
-            $this->response->success($this->sanitizeOutput($response));
+            $this->response->success($response);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Cache clear error', $e->getMessage());
+            $this->securityLogger->write('Cache clear error', $e->getMessage());
             $this->response->serverError('Unable to clear cache');
         }
     }
@@ -98,11 +86,12 @@ final class CacheController extends BaseController
     /**
      * Validate and parse cache types from the request
      *
-     * @return array{0: list<string>, 1: list<string>}|null [validTypes, invalidTypes] or null if validation failed (response already sent)
+     * @return array{0: list<'redis'|'fastcgi'|'opcache'>, 1: list<string>}|null [validTypes, invalidTypes]
+     *         or null if validation failed (response already sent)
      */
     private function validateCacheTypes(): ?array
     {
-        $typeParam = $this->getQueryParam('type') ?? '';
+        $typeParam = $this->request->query('type') ?? '';
 
         if ($typeParam === '') {
             $body = $this->getJsonBody();
@@ -114,7 +103,7 @@ final class CacheController extends BaseController
             return null;
         }
 
-        $requestedTypes = array_map('trim', explode(',', $typeParam));
+        $requestedTypes = array_map(trim(...), explode(',', $typeParam));
         $validTypes = [];
         $invalidTypes = [];
 
@@ -130,7 +119,7 @@ final class CacheController extends BaseController
         $validTypes = array_values(array_unique($validTypes));
         $invalidTypes = array_values(array_unique($invalidTypes));
 
-        if (empty($validTypes)) {
+        if ($validTypes === []) {
             $this->response->badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
             return null;
         }
@@ -144,7 +133,8 @@ final class CacheController extends BaseController
     private function typeParamFromBody(mixed $bodyTypes): string
     {
         if (is_array($bodyTypes)) {
-            return implode(',', array_filter($bodyTypes, 'is_string'));
+            // Non-strings drop out here; empty names are skipped by the validation anyway.
+            return implode(',', array_filter(array_map($this->stringOrNull(...), $bodyTypes)));
         }
 
         return is_string($bodyTypes) ? $bodyTypes : '';
@@ -153,24 +143,16 @@ final class CacheController extends BaseController
     /**
      * Clear a specific cache type
      *
-     * @param string $type Cache type to clear
+     * @param 'redis'|'fastcgi'|'opcache' $type Cache type to clear
      * @return array{success: bool, message: string} Result with success status and message
      */
     private function clearCacheType(string $type): array
     {
-        switch ($type) {
-            case 'redis':
-                return $this->clearRedisCache();
-            case 'fastcgi':
-                return $this->clearFastCgiCache();
-            case 'opcache':
-                return $this->clearOpcache();
-            default:
-                return [
-                    'success' => false,
-                    'message' => 'Unknown cache type',
-                ];
-        }
+        return match ($type) {
+            'redis' => $this->clearRedisCache(),
+            'fastcgi' => $this->clearFastCgiCache(),
+            'opcache' => $this->clearOpcache(),
+        };
     }
 
     /**
@@ -180,11 +162,10 @@ final class CacheController extends BaseController
      */
     private function clearRedisCache(): array
     {
-        // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::run('redis-cli', ['FLUSHALL']);
+        $output = SystemCommand::flushRedis();
 
-        if ($output !== false && trim($output) === 'OK') {
-            $this->logSecurityEvent('Cache cleared', 'Redis cache flushed successfully');
+        if ($output === 'OK') {
+            $this->securityLogger->write('Cache cleared', 'Redis cache flushed successfully');
             return [
                 'success' => true,
                 'message' => 'Redis cache cleared successfully',
@@ -204,16 +185,14 @@ final class CacheController extends BaseController
      */
     private function clearFastCgiCache(): array
     {
-        // codacy:ignore - file_exists() required for cache directory checking
-        if (!file_exists(self::FASTCGI_CACHE_PATH)) {
+        if (!file_exists(SystemCommand::FASTCGI_CACHE_PATH)) {
             return [
                 'success' => true,
                 'message' => 'FastCGI cache directory does not exist (nothing to clear)',
             ];
         }
 
-        // codacy:ignore - is_dir() required for cache directory validation
-        if (!is_dir(self::FASTCGI_CACHE_PATH)) {
+        if (!is_dir(SystemCommand::FASTCGI_CACHE_PATH)) {
             return [
                 'success' => false,
                 'message' => 'FastCGI cache path exists but is not a directory',
@@ -221,16 +200,10 @@ final class CacheController extends BaseController
         }
 
         // Clear cache files using find command (safer than rm -rf)
-        // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::run('find', [
-            self::FASTCGI_CACHE_PATH,
-            '-type',
-            'f',
-            '-delete',
-        ]);
+        $output = SystemCommand::clearFastCgiCache();
 
         if ($output !== false) {
-            $this->logSecurityEvent('Cache cleared', 'FastCGI cache cleared successfully');
+            $this->securityLogger->write('Cache cleared', 'FastCGI cache cleared successfully');
             return [
                 'success' => true,
                 'message' => 'FastCGI cache cleared successfully',
@@ -262,7 +235,7 @@ final class CacheController extends BaseController
         $result = opcache_reset();
 
         if ($result) {
-            $this->logSecurityEvent('Cache cleared', 'OPcache reset successfully');
+            $this->securityLogger->write('Cache cleared', 'OPcache reset successfully');
             return [
                 'success' => true,
                 'message' => 'OPcache cleared successfully',
@@ -288,26 +261,16 @@ final class CacheController extends BaseController
     public function getStatus(): void
     {
         try {
-            // Check cache first
-            $cached = $this->getCached('/cache/status');
-            if ($cached !== null) {
-                $this->response->cached($cached, $this->getTtl('/cache/status'));
-                return;
-            }
-
+            // Never cached: the status must show the effect of a cache clear at once.
             $status = [
                 'redis' => $this->getRedisStatus(),
                 'fastcgi' => $this->getFastCgiStatus(),
                 'opcache' => $this->getOpcacheStatus(),
             ];
 
-            $result = $this->sanitizeOutput($status);
-
-            // Cache the result
-            $this->setCached('/cache/status', $result);
-            $this->response->success($result, $this->getTtl('/cache/status'));
+            $this->response->success($status);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Cache status error', $e->getMessage());
+            $this->securityLogger->write('Cache status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve cache status');
         }
     }
@@ -319,8 +282,7 @@ final class CacheController extends BaseController
      */
     private function getRedisStatus(): array
     {
-        // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::run('redis-cli', ['INFO', 'memory']);
+        $output = SystemCommand::getRedisMemoryInfo();
 
         if ($output === false) {
             return [
@@ -353,8 +315,7 @@ final class CacheController extends BaseController
      */
     private function getFastCgiStatus(): array
     {
-        // codacy:ignore - file_exists() and is_dir() required for cache status checking
-        if (!file_exists(self::FASTCGI_CACHE_PATH) || !is_dir(self::FASTCGI_CACHE_PATH)) {
+        if (!is_dir(SystemCommand::FASTCGI_CACHE_PATH)) {
             return [
                 'available' => false,
                 'reason' => 'FastCGI cache directory not found',
@@ -362,8 +323,7 @@ final class CacheController extends BaseController
         }
 
         // Get cache directory size
-        // codacy:ignore - Static SystemCommand method used; dependency injection would require service container
-        $output = SystemCommand::run('du', ['-sh', self::FASTCGI_CACHE_PATH]);
+        $output = SystemCommand::getFastCgiCacheSize();
         $size = 'Unknown';
 
         if ($output !== false) {
@@ -375,7 +335,7 @@ final class CacheController extends BaseController
 
         return [
             'available' => true,
-            'path' => self::FASTCGI_CACHE_PATH,
+            'path' => SystemCommand::FASTCGI_CACHE_PATH,
             'size' => $size,
         ];
     }

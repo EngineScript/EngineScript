@@ -11,15 +11,14 @@
  * @security HIGH - Core logging infrastructure
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/Request.php';
 
-final class SecurityLogger
+final readonly class SecurityLogger
 {
-    private Request $request;
-
-    public function __construct(?Request $request = null)
+    public function __construct(private Request $request)
     {
-        $this->request = $request ?? new Request();
     }
 
     /**
@@ -27,13 +26,12 @@ final class SecurityLogger
      *
      * @param string $event   The primary event description
      * @param string $details Additional details about the event
-     * @return void
      */
     public function write(string $event, string $details = ''): void
     {
         $safe_event = self::sanitize($event);
 
-        $log_entry = date('Y-m-d H:i:s') . " [SECURITY] " . $safe_event;
+        $log_entry = gmdate(DATE_ATOM) . " [SECURITY] " . $safe_event;
 
         if ($details !== '' && $details !== '0') {
             $safe_details = self::sanitize($details);
@@ -42,6 +40,7 @@ final class SecurityLogger
 
         $client_ip = $this->request->remoteAddress();
 
+        $log_entry .= " - User: " . self::sanitize($this->request->authenticatedUser);
         $log_entry .= " - IP: " . $client_ip . "\n";
 
         // Log to a secure location
@@ -78,7 +77,6 @@ final class SecurityLogger
         $sanitized = substr(trim($sanitized), 0, 255);
 
         // Encode any remaining special characters for safe output
-        // codacy:ignore - addcslashes() required for log injection prevention
         return addcslashes($sanitized, '\\');
     }
 }

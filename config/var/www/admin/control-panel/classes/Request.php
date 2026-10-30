@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * EngineScript Admin Dashboard - Request Wrapper
  *
@@ -10,15 +12,12 @@
  * @version 1.0.0
  * @security HIGH - Single point of request input access for the dashboard API
  */
-
-require_once __DIR__ . '/RequestServerAccessor.php';
-
 final class Request
 {
     /**
-     * Server-derived request value accessor.
+     * @var array<mixed>
      */
-    private RequestServerAccessor $serverAccessor;
+    private array $server;
 
     /**
      * @var array<mixed>
@@ -30,7 +29,10 @@ final class Request
      */
     private array $post;
 
-    private ?string $body;
+    /**
+     * Basic-auth identity captured with this request; never includes the password.
+     */
+    public readonly string $authenticatedUser;
 
     /**
      * @param array<mixed>|null $server
@@ -39,44 +41,38 @@ final class Request
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      */
-    public function __construct(?array $server = null, ?array $query = null, ?array $post = null, ?string $body = null)
+    public function __construct(?array $server = null, ?array $query = null, ?array $post = null, private ?string $body = null)
     {
-        // codacy:ignore-start - Request superglobal access is intentionally centralized in this wrapper
-        $this->serverAccessor = new RequestServerAccessor($server ?? $_SERVER);
+        $this->server = $server ?? $_SERVER;
         $this->query = $query ?? $_GET;
         $this->post = $post ?? $_POST;
-        // codacy:ignore-end
-        $this->body = $body;
+        $this->authenticatedUser = $this->serverString('PHP_AUTH_USER', 'unknown');
     }
 
     public function hasServer(string $key): bool
     {
-        return $this->serverAccessor->hasServer($key);
+        return array_key_exists($key, $this->server);
     }
 
     public function uri(): string
     {
-        return $this->serverAccessor->uri();
-    }
-
-    public function hostHeader(): string
-    {
-        return $this->serverAccessor->hostHeader();
-    }
-
-    public function scheme(): string
-    {
-        return $this->serverAccessor->scheme();
+        return $this->serverString('REQUEST_URI');
     }
 
     public function remoteAddress(): string
     {
-        return $this->serverAccessor->remoteAddress();
+        $ipAddress = $this->serverString('REMOTE_ADDR', 'unknown');
+
+        if ($ipAddress === 'unknown') {
+            return 'unknown';
+        }
+
+        return filter_var($ipAddress, FILTER_VALIDATE_IP) !== false ? $ipAddress : 'invalid';
     }
 
     public function method(): string
     {
-        $method = strtoupper($this->serverAccessor->serverString('REQUEST_METHOD', 'GET'));
+        $method = strtoupper($this->serverString('REQUEST_METHOD', 'GET'));
 
         return preg_match('/^[A-Z]+$/', $method) === 1 ? $method : 'GET';
     }
@@ -88,11 +84,11 @@ final class Request
             ? $normalized
             : 'HTTP_' . $normalized;
 
-        if (!$this->serverAccessor->hasServer($serverKey)) {
+        if (!$this->hasServer($serverKey)) {
             return null;
         }
 
-        $value = $this->serverAccessor->serverString($serverKey);
+        $value = $this->serverString($serverKey);
 
         return $value === '' ? null : $value;
     }
@@ -113,11 +109,19 @@ final class Request
             return $this->body;
         }
 
-        // codacy:ignore - file_get_contents() required for reading the raw request body in standalone API
         $input = file_get_contents('php://input');
         $this->body = is_string($input) ? $input : '';
 
         return $this->body;
+    }
+
+    private function serverString(string $key, string $default = ''): string
+    {
+        if (!isset($this->server[$key])) {
+            return $default;
+        }
+
+        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $default;
     }
 
     private function scalarInput(mixed $value): ?string

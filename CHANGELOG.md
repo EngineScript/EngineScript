@@ -4,6 +4,21 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-30
+
+### 🐛 ADMIN CONTROL PANEL FIXES
+
+- Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
+
+### 🔧 ADMIN CONTROL PANEL
+
+- The overview loads with three ordinary requests instead of one combined `POST /api/batch`; `/api/batch` and `/api/sites/count` are removed. `docs/api.md` describes the API as it is.
+- UptimeRobot moved to its v3 API: every monitor is listed (in pages), each monitor's uptime over the last day is shown for accounts with up to 8 monitors, UptimeRobot's request limit is respected (at most one fetch a minute), and only the fields the dashboard shows are kept.
+- API responses are no longer kept by the browser (`Cache-Control: no-store`), and one browser's requests no longer wait for each other. The session cookie is now `__Host-esp_session`: reload an open dashboard once after updating.
+- The API sends data as it is instead of HTML-escaped (the dashboard inserts it as text), sends no CORS headers (the dashboard never needed them), answers `OPTIONS` with 405, and caches only the UptimeRobot answer. Status commands answer in about 2 ms instead of 50 ms each.
+- The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
+- Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
+
 ## 2026-10-29
 
 ### 🐛 SITE CREATION FIXES
@@ -102,9 +117,10 @@ Changes are organized by date, with the most recent changes listed first.
 - During installs and updates, the Cloudflare IP updater only replaces its file instead of reloading Nginx with a half-updated configuration.
 - New `migrate_nginx_vhosts` function: brings existing site and admin vhost files up to date with template changes on every Nginx install and update, and when a site is created.
 
-### 🔧 NGINX SERVICE AND CERTIFICATE RENEWALS
+### 🔧 NGINX SERVICE, CACHE BUTTON, AND CERTIFICATE RENEWALS
 
 - Updated the Nginx systemd unit: `systemctl reload nginx` now tests the configuration first and reports a failure instead of Nginx silently keeping its old configuration; Nginx restarts itself after a crash (`Restart=on-failure`); and basic hardening is on (`NoNewPrivileges`, `ProtectSystem=full`, `ProtectHome`, `PrivateDevices`, kernel and control-group protection). Removed the `sleep 0.1` start workaround and the obsolete `syslog.target`. Nginx updates now install the current unit (and roll it back with the rest of the update on failure).
+- Fixed the admin control panel's "clear FastCGI cache" button and cache size, which used `/var/cache/enginescript/fcgi` instead of the Nginx cache in `/var/cache/nginx`.
 - Certificates now reload Nginx after each renewal (`acme.sh --reloadcmd "systemctl reload nginx"`). Before, Nginx kept serving the old certificate until something else reloaded it. EngineScript updates add the reload command to existing sites' certificates.
 
 ### 🔒 NGINX FILE PERMISSIONS

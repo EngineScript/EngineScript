@@ -9,6 +9,8 @@
  * @version 1.0.0
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../classes/SystemCommand.php';
 
@@ -22,15 +24,9 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
 final class SystemController extends BaseController
 {
     /**
-     * API endpoint path
-     */
-    private const ENDPOINT = '/system/info';
-
-    /**
      * Get system information
      *
      * Returns OS distribution, kernel version, and network information.
-     * Response is cached based on configured TTL.
      *
      * Endpoint: GET /system/info
      *
@@ -40,26 +36,15 @@ final class SystemController extends BaseController
     public function getInfo(): void
     {
         try {
-            // Check cache first
-            $cached = $this->getCached(self::ENDPOINT);
-            if ($cached !== null) {
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
-                return;
-            }
-
             $info = [
                 'os' => $this->getOsInfo(),
                 'kernel' => $this->getKernelVersion(),
                 'network' => $this->getNetworkInfo(),
             ];
 
-            $result = $this->sanitizeOutput($info);
-
-            // Cache the result
-            $this->setCached(self::ENDPOINT, $result);
-            $this->response->success($result, $this->getTtl(self::ENDPOINT));
+            $this->response->success($info);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('System info error', $e->getMessage());
+            $this->securityLogger->write('System info error', $e->getMessage());
             $this->response->serverError('Unable to retrieve system info');
         }
     }
@@ -71,10 +56,9 @@ final class SystemController extends BaseController
      *
      * @return string OS distribution name or 'Unknown Linux Distribution'
      */
-    private function getOsInfo()
+    private function getOsInfo(): string
     {
-        // codacy:ignore - parse_ini_file() required for OS info reading in standalone API
-        $os_release = @parse_ini_file('/etc/os-release');
+        $os_release = parse_ini_file('/etc/os-release');
         if (is_array($os_release) && !empty($os_release['PRETTY_NAME']) && is_string($os_release['PRETTY_NAME'])) {
             return $os_release['PRETTY_NAME'];
         }
@@ -89,20 +73,15 @@ final class SystemController extends BaseController
      *
      * @return string Kernel version or 'Unknown'
      */
-    private function getKernelVersion()
+    private function getKernelVersion(): string
     {
         try {
-            // codacy:ignore - Static utility class pattern
             $version = SystemCommand::getKernelVersion();
-            if ($version !== false) {
-                $version = trim($version);
-                // Validate kernel version format
-                if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $version)) {
-                    return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                }
+            if ($version !== false && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $version)) {
+                return $version;
             }
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Kernel version error', $e->getMessage());
+            $this->securityLogger->write('Kernel version error', $e->getMessage());
         }
         return 'Unknown';
     }
@@ -114,41 +93,20 @@ final class SystemController extends BaseController
      *
      * @return string Network info in format "hostname (ip)"
      */
-    private function getNetworkInfo()
+    private function getNetworkInfo(): string
     {
         try {
             $hostname = gethostname();
-            if ($hostname === false) {
-                $hostname = 'Unknown';
-            }
+            // getNetworkIP() returns a validated address or false.
+            $ip_address = SystemCommand::getNetworkIP();
 
-            if ($hostname !== 'Unknown') {
-                $hostname = htmlspecialchars($hostname, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            }
-
-            // Use safer method to get IP
-            $client_ip = 'Unknown';
-
-            // codacy:ignore - file_exists() required for network info reading in standalone API
-            if (file_exists('/proc/net/route')) {
-                // codacy:ignore - Static utility class pattern
-                $ip_output = SystemCommand::getNetworkIP();
-                if ($ip_output !== false) {
-                    $client_ip = trim($ip_output);
-                    // Validate the IP
-                    if (!filter_var($client_ip, FILTER_VALIDATE_IP)) {
-                        $client_ip = 'Unknown';
-                    }
-
-                    if ($client_ip !== 'Unknown') {
-                        $client_ip = htmlspecialchars($client_ip, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                    }
-                }
-            }
-
-            return $hostname . ' (' . $client_ip . ')';
+            return sprintf(
+                '%s (%s)',
+                $hostname === false ? 'Unknown' : $hostname,
+                $ip_address === false ? 'Unknown' : $ip_address
+            );
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Network info error', $e->getMessage());
+            $this->securityLogger->write('Network info error', $e->getMessage());
             return 'Unknown (Unknown)';
         }
     }

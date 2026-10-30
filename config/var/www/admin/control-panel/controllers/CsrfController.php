@@ -3,12 +3,14 @@
 /**
  * EngineScript Admin Dashboard - CSRF Controller
  *
- * Handles CSRF token generation and retrieval.
+ * Retrieves the CSRF token initialized by the API entry point.
  *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
  * @security HIGH - CSRF protection
  */
+
+declare(strict_types=1);
 
 require_once __DIR__ . '/BaseController.php';
 
@@ -36,25 +38,17 @@ final class CsrfController extends BaseController
     public function getToken(): void
     {
         try {
-            $csrfToken = $this->getSessionString('csrf_token');
+            $csrfToken = $this->stringOrNull($this->session->get('csrf_token'));
             if ($csrfToken === null) {
-                // Generate a new CSRF token if one does not exist
-                try {
-                    $csrfToken = bin2hex(random_bytes(32));
-                } catch (Throwable $e) {
-                    // Explicitly handle random_bytes() failure to avoid using an invalid token
-                    $this->logSecurityEvent('CSRF token generation failed', $e->getMessage());
-                    $this->response->serverError('Unable to generate CSRF token');
-                    return;
-                }
-                $this->setSessionValue('csrf_token', $csrfToken);
+                $this->response->serverError('Unable to retrieve CSRF token');
+                return;
             }
             $this->response->success([
                 'csrf_token' => $csrfToken,
                 'token_name' => '_csrf_token',
             ]);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('CSRF token error', $e->getMessage());
+            $this->securityLogger->write('CSRF token error', $e->getMessage());
             $this->response->serverError('Unable to retrieve CSRF token');
         }
     }

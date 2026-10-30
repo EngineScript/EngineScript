@@ -24,4 +24,16 @@ return RectorConfig::configure()
         codeQuality: true,
         typeDeclarations: true,
         earlyReturn: true,
-    );
+    )
+    ->withSkip([
+        // sanitize() is a pure helper with no instance state; calling it on
+        // $this would only change the invocation style.
+        \Rector\CodeQuality\Rector\ClassMethod\LocallyCalledStaticMethodToNonStaticRector::class => [
+            __DIR__ . '/config/var/www/admin/control-panel/classes/SecurityLogger.php',
+        ],
+        // The property is ?UptimeRobotAPI; "=== null" states the lazy
+        // initialization more directly than a negated instanceof.
+        \Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector::class => [
+            __DIR__ . '/config/var/www/admin/control-panel/controllers/UptimeController.php',
+        ],
+    ]);

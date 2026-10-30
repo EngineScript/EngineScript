@@ -9,6 +9,8 @@
  * @version 1.0.0
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../classes/SystemCommand.php';
 
@@ -22,15 +24,10 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
 final class ServiceController extends BaseController
 {
     /**
-     * API endpoint path
-     */
-    private const ENDPOINT = '/services/status';
-
-    /**
      * Get status of all services
      *
-     * Returns status of nginx, PHP-FPM, MariaDB, and Redis.
-     * Response is cached based on configured TTL.
+     * Returns status of nginx, PHP-FPM, MariaDB, and Redis. Not cached: the
+     * commands take about 0.3 s together (measured in Phase 11).
      *
      * Endpoint: GET /services/status
      *
@@ -40,13 +37,6 @@ final class ServiceController extends BaseController
     public function getStatus(): void
     {
         try {
-            // Check cache first
-            $cached = $this->getCached(self::ENDPOINT);
-            if ($cached !== null) {
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT));
-                return;
-            }
-
             $services = [
                 'nginx' => $this->getServiceStatus('nginx'),
                 'php' => $this->getPhpServiceStatus(),
@@ -54,44 +44,29 @@ final class ServiceController extends BaseController
                 'redis' => $this->getServiceStatus('redis-server'),
             ];
 
-            $result = $this->sanitizeOutput($services);
-
-            // Cache the result
-            $this->setCached(self::ENDPOINT, $result);
-            $this->response->success($result, $this->getTtl(self::ENDPOINT));
+            $this->response->success($services);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Services status error', $e->getMessage());
+            $this->securityLogger->write('Services status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve services status');
         }
     }
 
     /**
-     * Get status of a specific service
+     * Get status of one of the services SystemCommand knows: nginx, mariadb, or redis-server
      *
-     * @param string $service Service name to check
-     * @return array{status: string, version: string, online: bool} Service status with 'status', 'version', and 'online' keys
+     * @return array{version: string, online: bool} Service status
      */
-    private function getServiceStatus($service): array
+    private function getServiceStatus(string $service): array
     {
-        // Validate service name to prevent command injection
-        $originalService = $service;
-        $service = $this->validateService($service);
-        if ($service === false) {
-            $this->logSecurityEvent('Invalid service name attempted', $originalService);
-            return $this->createErrorServiceStatus();
-        }
-
         try {
-            $status = $this->getSystemServiceStatus($service);
-            $version = $this->getServiceVersion($service);
+            $online = SystemCommand::getServiceState($service) === 'active';
 
             return [
-                'status' => $status === 'active' ? 'online' : 'offline',
-                'version' => $version,
-                'online' => $status === 'active',
+                'version' => $this->getServiceVersion($service),
+                'online' => $online,
             ];
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Service status error', $e->getMessage());
+            $this->securityLogger->write('Service status error', $e->getMessage());
             return $this->createErrorServiceStatus();
         }
     }
@@ -99,187 +74,62 @@ final class ServiceController extends BaseController
     /**
      * Get PHP-FPM service status
      *
-     * Dynamically finds and checks any running PHP-FPM service.
+     * This request is answered by PHP-FPM, so the service is running, and the
+     * running process reports its own version.
      *
-     * @return array{status: string, version: string, online: bool} Service status
+     * @return array{version: string, online: bool} Service status
      */
     private function getPhpServiceStatus(): array
     {
-        $php_service = $this->findActivePhpFpmService();
-        if ($php_service !== null) {
-            return $this->getServiceStatus($php_service);
-        }
-
-        // Fallback: return offline status if no PHP-FPM service found
         return [
-            'status' => 'offline',
-            'version' => 'Not Found',
-            'online' => false,
+            'version' => sprintf('%d.%d.%d', PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION),
+            'online' => true,
         ];
-    }
-
-    /**
-     * Find active PHP-FPM service
-     *
-     * Searches for any running PHP-FPM service using systemctl.
-     *
-     * @return string|null Service name or null if not found
-     */
-    private function findActivePhpFpmService()
-    {
-        // codacy:ignore - Static utility class pattern
-        $services_output = SystemCommand::getSystemdServices();
-
-        if ($services_output === false || empty($services_output)) {
-            return null;
-        }
-
-        // Parse services in PHP for better security control. Prefer active
-        // units, but keep an inactive match as a fallback for clearer status.
-        $lines = explode("\n", trim($services_output));
-        $fallback_service = null;
-
-        foreach ($lines as $line) {
-            if (empty(trim($line))) {
-                continue;
-            }
-
-            // Extract service name (first column) with additional safety checks
-            $parts = $this->whitespaceFields($line);
-            $service_name = $parts[0] ?? '';
-            if (in_array($service_name, ['', '0'], true) || strlen($service_name) > 50) {
-                continue;
-            }
-
-            // Additional security: ensure service name contains only allowed characters
-            if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $service_name)) {
-                continue;
-            }
-
-            // Check if it's a PHP-FPM service
-            if (preg_match('/php[0-9.]*-?fpm/', $service_name)) {
-                if (($parts[2] ?? '') === 'active') {
-                    return $service_name;
-                }
-
-                $fallback_service ??= $service_name;
-            }
-        }
-
-        return $fallback_service;
-    }
-
-    /**
-     * Get system service status via systemctl
-     *
-     * @param string $service Service name
-     * @return string 'active', 'inactive', or 'unknown'
-     */
-    private function getSystemServiceStatus($service)
-    {
-        // codacy:ignore - Static utility class pattern
-        $status_output = SystemCommand::getServiceStatus($service);
-        return $status_output !== false ? $status_output : 'unknown';
     }
 
     /**
      * Get service version
      *
-     * @param string $service Service name
      * @return string Version string or 'Unknown'
      */
-    private function getServiceVersion($service)
+    private function getServiceVersion(string $service): string
     {
-        switch ($service) {
-            case 'nginx':
-                return $this->getNginxVersion();
-            case 'mariadb':
-                return $this->getMariadbVersion();
-            case 'redis-server':
-                return $this->getRedisVersion();
-            default:
-                // Check if it's any PHP-FPM service
-                if (preg_match('/^php[a-zA-Z0-9\.\-_]*fpm[a-zA-Z0-9\.\-_]*$/', $service)) {
-                    return $this->getPhpVersion();
-                }
-                return 'Unknown';
-        }
+        return match ($service) {
+            'nginx' => $this->parseVersionOutput(SystemCommand::getNginxVersion(), '/nginx\/(\d+\.\d+\.\d+)/'),
+            'mariadb' => $this->parseVersionOutput(SystemCommand::getMariadbVersion(), '/mariadb.*?(\d+\.\d+\.\d+)/'),
+            'redis-server' => $this->parseVersionOutput(SystemCommand::getRedisVersion(), '/v=(\d+\.\d+\.\d+)/'),
+            default => 'Unknown',
+        };
     }
 
     /**
      * Create error service status response
      *
-     * @return array{status: string, version: string, online: bool} Error status
+     * @return array{version: string, online: bool} Error status
      */
     private function createErrorServiceStatus(): array
     {
         return [
-            'status' => 'error',
             'version' => 'Error',
             'online' => false,
         ];
     }
 
     /**
-     * Extract and sanitize a version string from command output.
+     * Extract a version string from command output.
      *
-     * Applies $pattern to $output and returns the first capture group,
-     * HTML-escaped. Returns 'Unknown' when output is null or the pattern
-     * does not match.
+     * Applies $pattern to $output and returns the first capture group.
+     * Returns 'Unknown' when output is false or the pattern does not match.
      *
      * @param string|false $output Raw command output
      * @param non-empty-string $pattern PCRE pattern with one capture group for the version
-     * @return string Sanitized version string or 'Unknown'
+     * @return string Version string or 'Unknown'
      */
     private function parseVersionOutput(string|false $output, string $pattern): string
     {
         if ($output !== false && preg_match($pattern, $output, $matches)) {
-            return htmlspecialchars($matches[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return $matches[1];
         }
         return 'Unknown';
-    }
-
-    /**
-     * Get Nginx version
-     *
-     * @return string Version or 'Unknown'
-     */
-    private function getNginxVersion()
-    {
-        // codacy:ignore - Static utility class pattern
-        return $this->parseVersionOutput(SystemCommand::getNginxVersion(), '/nginx\/(\d+\.\d+\.\d+)/');
-    }
-
-    /**
-     * Get PHP version
-     *
-     * @return string Version or 'Unknown'
-     */
-    private function getPhpVersion()
-    {
-        // codacy:ignore - Static utility class pattern
-        return $this->parseVersionOutput(SystemCommand::getPhpVersion(), '/PHP (\d+\.\d+\.\d+)/');
-    }
-
-    /**
-     * Get MariaDB version
-     *
-     * @return string Version or 'Unknown'
-     */
-    private function getMariadbVersion()
-    {
-        // codacy:ignore - Static utility class pattern
-        return $this->parseVersionOutput(SystemCommand::getMariadbVersion(), '/mariadb.*?(\d+\.\d+\.\d+)/');
-    }
-
-    /**
-     * Get Redis version
-     *
-     * @return string Version or 'Unknown'
-     */
-    private function getRedisVersion()
-    {
-        // codacy:ignore - Static utility class pattern
-        return $this->parseVersionOutput(SystemCommand::getRedisVersion(), '/v=(\d+\.\d+\.\d+)/');
     }
 }

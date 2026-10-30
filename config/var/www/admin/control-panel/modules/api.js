@@ -3,7 +3,6 @@
 
 export class DashboardAPI {
   static API_PREFIX = "/api/";
-  static MAX_BATCH_SIZE = 10;
 
   constructor() {
     this.csrfToken = null;
@@ -23,7 +22,7 @@ export class DashboardAPI {
     }
 
     this.csrfTokenPromise = (async () => {
-      try { // codacy:ignore - Try/catch required for CSRF token loading
+      try {
         const response = await fetch("/api/csrf-token", {
           method: "GET",
           credentials: "include"
@@ -96,16 +95,10 @@ export class DashboardAPI {
       }
 
       // Use request deduplication for all GET requests
-      const data = await this.deduplicateRequest(endpoint, async () => {
-        const headers = {};
-        if (this.csrfToken) {
-          headers["X-CSRF-Token"] = this.csrfToken;
-        }
-
-        // codacy:ignore - SSRF mitigated: endpoint validated above to start with '/api/'
+      // GET requests change nothing, so they carry no CSRF token.
+      return await this.deduplicateRequest(endpoint, async () => {
         const response = await fetch(endpoint, {
           method: "GET",
-          headers,
           credentials: "include"
         });
 
@@ -115,13 +108,6 @@ export class DashboardAPI {
 
         return this.parseJsonResponse(response);
       });
-
-      // Handle endpoint-specific response format differences.
-      if (endpoint.includes("/sites/count") && data.count !== undefined) {
-        return data.count.toString();
-      }
-
-      return data;
     } catch (error) {
       console.error("API request failed:", error);
       return fallback;
@@ -132,11 +118,11 @@ export class DashboardAPI {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
       console.error("Invalid API endpoint:", endpoint);
-      return { error: "Invalid endpoint" }; // codacy:ignore - Object literal return
+      return { error: "Invalid endpoint" };
     }
     try {
       if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: "Fetch not supported" }; // codacy:ignore - Object literal return
+        return { error: "Fetch not supported" };
       }
 
       if (!this.csrfToken) {
@@ -165,67 +151,7 @@ export class DashboardAPI {
       return payload;
     } catch (error) {
       console.error(`Error posting to ${endpoint}:`, error);
-      return { error: error.message }; // codacy:ignore - Object literal return
-    }
-  }
-
-  /**
-   * Batch multiple API requests into a single call
-   * Reduces network round-trips and improves performance
-   *
-   * @param {string[]} endpoints - Array of API endpoints to fetch. If more than
-   *   the maximum batch size are provided, only the first `maxBatchSize`
-   *   endpoints are sent in the request.
-   * @returns {Promise<Object>} Object with results keyed by endpoint
-   *
-   * @example
-   * const data = await api.batchRequest(['/system/info', '/services/status']);
-   * console.log(data.results['/system/info']);
-   */
-  async batchRequest(endpoints) {
-    try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: "Fetch not supported", results: {}, errors: {} }; // codacy:ignore - Object literal return
-      }
-
-      if (!this.csrfToken) {
-        await this.loadCsrfToken();
-      }
-
-      if (!Array.isArray(endpoints) || endpoints.length === 0) {
-        return { error: "No endpoints provided", results: {}, errors: {} }; // codacy:ignore - Object literal return
-      }
-
-      // Limit batch size client-side to match server limit
-      let limitedEndpoints = endpoints;
-      if (endpoints.length > DashboardAPI.MAX_BATCH_SIZE) {
-        console.warn(`Batch size ${endpoints.length} exceeds max ${DashboardAPI.MAX_BATCH_SIZE}, truncating`);
-        limitedEndpoints = endpoints.slice(0, DashboardAPI.MAX_BATCH_SIZE);
-      }
-
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      if (this.csrfToken) {
-        headers["X-CSRF-Token"] = this.csrfToken;
-      }
-
-      const response = await fetch("/api/batch", {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ requests: limitedEndpoints })
-      });
-
-      const payload = await this.parseJsonResponse(response);
-      if (!response.ok) {
-        throw new Error(payload?.error || `Batch API returned ${response.status}: ${response.statusText}`);
-      }
-
-      return payload;
-    } catch (error) {
-      console.error("Batch API request failed:", error);
-      return { error: error.message, results: {}, errors: {} }; // codacy:ignore - Object literal return
+      return { error: error.message };
     }
   }
 

@@ -10,34 +10,44 @@
  * @security HIGH - Executes validated argv arrays without shell interpretation
  */
 
-final class SystemProcessRunner
+declare(strict_types=1);
+
+require_once __DIR__ . '/CommandRunner.php';
+
+final class SystemProcessRunner implements CommandRunner
 {
     /**
      * Maximum command output captured into memory.
      */
-    private const MAX_OUTPUT_BYTES = 1048576;
-
-    private const READ_SLEEP_MICROSECONDS = 50000;
-    private const TERMINATE_GRACE_MICROSECONDS = 100000;
+    private const int MAX_OUTPUT_BYTES = 1048576;
 
     /**
-     * Exit code that proc_get_status() reported when it first saw the process end, or -1.
-     *
-     * On PHP 8.2, proc_get_status() consumes the exit code, and proc_close() then
-     * returns -1; PHP 8.3 and later return the real code from both.
+     * Longest single wait for output, so a command that exits while another
+     * process still holds its pipe is noticed.
      */
-    private int $exitCodeFromStatus = -1;
+    private const int SELECT_SLICE_MICROSECONDS = 100000;
 
     /**
-     * @param non-empty-list<string> $command Absolute executable path plus arguments
-     * @param array<int,string> $displayCommand Original command used only for logs
+     * Poll intervals: while waiting for the exit after the pipe closed, and
+     * after stream_select() failed (for example, interrupted by a signal).
      */
+    private const int EXIT_POLL_MICROSECONDS = 1000;
+    private const int FALLBACK_POLL_MICROSECONDS = 10000;
+
+    private const int TERMINATE_GRACE_MICROSECONDS = 100000;
+
+    #[\Override]
     public function run(
         array $command,
         bool $captureStderr,
         int $timeoutSeconds,
         array $displayCommand
     ): string|false {
+        if (!is_executable($command[0])) {
+            error_log('[EngineScript] SystemCommand executable not found or not executable: ' . $command[0]);
+            return false;
+        }
+
         $process = $this->openProcess($command, $captureStderr);
         if ($process === false) {
             return false;
@@ -54,10 +64,9 @@ final class SystemProcessRunner
     {
         [$descriptors, $pipeIndex] = $this->buildPipeSpec($captureStderr);
 
-        // codacy:ignore-start - argv array assembled from strict binary and argument allowlists
-        // nosemgrep
-        $process = proc_open($command, $descriptors, $pipes, null, null, ['bypass_shell' => true]);
-        // codacy:ignore-end
+        // An argv array is run without a shell on Linux.
+        // nosemgrep: php.lang.security.exec-use.exec-use
+        $process = proc_open($command, $descriptors, $pipes);
         if (!is_resource($process)) {
             return false;
         }
@@ -78,25 +87,11 @@ final class SystemProcessRunner
     private function collectOutput(array $process, int $timeoutSeconds, array $displayCommand): string|false
     {
         $output = '';
-        $this->exitCodeFromStatus = -1;
         $deadline = microtime(true) + (float) $timeoutSeconds;
-        $terminated = false;
+        $pipe = $process['pipes'][$process['pipeIndex']];
 
-        while ($this->isRunning($process['process'])) {
-            if ($this->appendPipeOutput($process['pipes'][$process['pipeIndex']], $output)) {
-                $terminated = true;
-                break;
-            }
-
-            if (microtime(true) >= $deadline) {
-                $terminated = true;
-                break;
-            }
-
-            usleep(self::READ_SLEEP_MICROSECONDS);
-        }
-
-        $this->appendPipeOutput($process['pipes'][$process['pipeIndex']], $output);
+        $terminated = !$this->readUntilClosed($pipe, $process['process'], $deadline, $output)
+            || !$this->waitForExit($process['process'], $deadline);
 
         if ($terminated) {
             $this->terminateProcess($process['process']);
@@ -111,6 +106,59 @@ final class SystemProcessRunner
         $output = trim($output);
 
         return $output !== '' ? $output : ($exitCode === 0 ? '' : false);
+    }
+
+    /**
+     * Read the pipe until the command closes it or exits, waking as soon as
+     * output arrives; false when the output grows too large or time runs out.
+     *
+     * @param resource $pipe
+     * @param resource $process
+     */
+    private function readUntilClosed($pipe, $process, float $deadline, string &$output): bool
+    {
+        while (!feof($pipe)) {
+            $waitMicroseconds = min(self::SELECT_SLICE_MICROSECONDS, (int) (($deadline - microtime(true)) * 1e6));
+            if ($waitMicroseconds <= 0) {
+                return false;
+            }
+
+            $read = [$pipe];
+            $write = null;
+            $except = null;
+            $ready = stream_select($read, $write, $except, 0, $waitMicroseconds);
+            if ($ready === false) {
+                usleep(self::FALLBACK_POLL_MICROSECONDS);
+            }
+
+            if ($this->appendPipeOutput($pipe, $output)) {
+                return false;
+            }
+
+            if ($ready !== 1 && !$this->isRunning($process)) {
+                break;
+            }
+        }
+
+        return !$this->appendPipeOutput($pipe, $output);
+    }
+
+    /**
+     * Wait for the command to exit; false if it is still running at the deadline.
+     *
+     * @param resource $process
+     */
+    private function waitForExit($process, float $deadline): bool
+    {
+        while ($this->isRunning($process)) {
+            if (microtime(true) >= $deadline) {
+                return false;
+            }
+
+            usleep(self::EXIT_POLL_MICROSECONDS);
+        }
+
+        return true;
     }
 
     /**
@@ -131,12 +179,7 @@ final class SystemProcessRunner
      */
     private function isRunning($process): bool
     {
-        $status = proc_get_status($process);
-        if (!$status['running'] && $status['exitcode'] !== -1) {
-            $this->exitCodeFromStatus = $status['exitcode'];
-        }
-
-        return $status['running'];
+        return proc_get_status($process)['running'];
     }
 
     /**
@@ -161,9 +204,8 @@ final class SystemProcessRunner
             fclose($pipe);
         }
 
-        $exitCode = proc_close($process['process']);
-
-        return $exitCode !== -1 ? $exitCode : $this->exitCodeFromStatus;
+        // From PHP 8.3, proc_close() returns the exit code even after proc_get_status() saw the exit.
+        return proc_close($process['process']);
     }
 
     /**

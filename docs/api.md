@@ -1,56 +1,63 @@
 # EngineScript Control Panel API Reference
 
-API documentation for the EngineScript admin control panel. All endpoints are served from `/api/` on the control panel host.
+API documentation for the EngineScript admin control panel. All endpoints are served from `/api/` on the control panel host; `/api/system/info` and `/api.php?endpoint=system/info` reach the same endpoint.
 
 ## Table of Contents
 
 - [Authentication & Security](#authentication--security)
 - [Rate Limiting](#rate-limiting)
-- [Caching](#caching)
+- [Responses and Caching](#responses-and-caching)
 - [Endpoints](#endpoints)
   - [CSRF Token](#csrf-token)
   - [System Info](#system-info)
   - [Service Status](#service-status)
   - [Sites](#sites)
-  - [Sites Count](#sites-count)
   - [File Manager Status](#file-manager-status)
   - [Uptime Status](#uptime-status)
   - [Uptime Monitors](#uptime-monitors)
   - [Cache Clear](#cache-clear)
   - [Cache Status](#cache-status)
-  - [Batch Requests](#batch-requests)
 - [Error Responses](#error-responses)
 
 ---
 
 ## Authentication & Security
 
-All API requests require an active PHP session (session-based authentication). Requests without a valid session receive a `403 Forbidden` response.
+**Authentication**: Nginx protects the whole control panel with HTTP basic authentication (`/etc/nginx/restricted-access/.htpasswd`). A request without valid credentials gets nginx's `401` before it reaches PHP.
 
-**CSRF Protection**: State-changing methods (`POST`, `PUT`, `DELETE`, `PATCH`) require a valid CSRF token sent via:
+**Session**: The API keeps a PHP session in the `__Host-esp_session` cookie (`Secure`, `HttpOnly`, `SameSite=Strict`). It holds the CSRF token and the rate-limit counter. A request without a session gets a new one; it is not refused.
 
-- `X-CSRF-Token` request header, **or**
-- `_csrf_token` parameter in the request body
+**CSRF Protection**: `POST` requests (and any method other than `GET`, `HEAD`, and `OPTIONS`) need the session's CSRF token, sent as:
 
-Obtain a token from the [`GET /csrf-token`](#csrf-token) endpoint. Token validation uses timing-safe comparison (`hash_equals`).
+- the `X-CSRF-Token` request header, **or**
+- a `_csrf_token` field in a form body or a JSON body.
 
-**CORS**: Same-origin only. Requests are restricted to the server's `HTTP_HOST`, `localhost`, and `127.0.0.1`.
+Obtain the token from [`GET /csrf-token`](#csrf-token). It is compared in constant time (`hash_equals`). A missing or wrong token gets `403`. `GET` requests need no token.
 
-**Security Headers**: All responses include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a restrictive Content Security Policy.
+**CORS**: None. The API sends no `Access-Control-*` headers: the dashboard calls it from its own origin, and browsers refuse cross-origin reads.
+
+**Methods**: Every `GET` endpoint also answers `HEAD`. Any other method, `OPTIONS` included, gets `405` with an `Allow` header naming the methods the endpoint accepts.
+
+**Endpoint names**: A path with characters other than letters, digits, `/`, `_`, and `-`, or longer than 100 characters, gets `400`; it is refused, never cleaned up.
+
+**Security Headers**: The API sends `Content-Type: application/json; charset=UTF-8`, `Cache-Control: no-store`, and `Content-Security-Policy: default-src 'none'; frame-ancestors 'none';`. The admin site's nginx configuration adds `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: strict-origin-when-cross-origin` to every response, and leaves the API's `Cache-Control` as it is.
 
 ---
 
 ## Rate Limiting
 
-- **Limit**: 100 requests per minute per IP address
-- **Tracking**: Session-based with SHA-256 hashed IP
-- **Exceeded**: Returns `429 Too Many Requests`
+- **Limit**: 100 requests per minute, counted in the session for the client's address (stored as a SHA-256 hash)
+- **Exceeded**: `429` with `{"error": "Rate limit exceeded"}` until the minute is over
 
 ---
 
-## Caching
+## Responses and Caching
 
-Responses are cached using a file-based cache at `/var/cache/enginescript/api/`. Cache TTLs vary per endpoint (noted below). Cached responses include a `X-Cache: HIT` header.
+Every response is JSON with `Cache-Control: no-store`: browsers and proxies keep no copy.
+
+Strings are sent as they are, not HTML-escaped: a monitor named `Pete's Shop & Café` arrives as exactly that. Insert values into a page as text (the dashboard uses `textContent`). Bytes that are not valid UTF-8 arrive as `U+FFFD`.
+
+The server caches one thing: UptimeRobot's monitor list, shared by both uptime endpoints for 60 seconds in `/var/cache/enginescript/api/`. Those two endpoints send `X-Cache: HIT` or `X-Cache: MISS`. Every other endpoint reads its data fresh on each request.
 
 ---
 
@@ -58,13 +65,12 @@ Responses are cached using a file-based cache at `/var/cache/enginescript/api/`.
 
 ### CSRF Token
 
-Retrieve a CSRF token for use with state-changing requests.
+Retrieve the session's CSRF token for `POST` requests.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/csrf-token` |
-| **Cache TTL** | 30s |
 
 #### CSRF Token Response
 
@@ -75,64 +81,65 @@ Retrieve a CSRF token for use with state-changing requests.
 }
 ```
 
+`token_name` is the body field name the token may be sent in.
+
 ---
 
 ### System Info
 
-Get server operating system, kernel, and network information.
+Get the server's operating system, kernel, and network information.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/system/info` |
-| **Cache TTL** | 60s |
 
 #### System Info Response
 
 ```json
 {
-  "os": "Ubuntu 24.04 LTS",
+  "os": "Ubuntu 24.04.3 LTS",
   "kernel": "6.8.0-40-generic",
   "network": "hostname (192.168.1.1)"
 }
 ```
 
+`os` is `PRETTY_NAME` from `/etc/os-release`, or `Unknown Linux Distribution`. `kernel` is `Unknown` when `uname -r` gives no version. In `network`, the host name or the address is `Unknown` when it cannot be read; the address is the one the server uses for outgoing traffic.
+
 ---
 
 ### Service Status
 
-Get status of core LEMP stack services (Nginx, PHP-FPM, MariaDB, Redis).
+Get the state and version of Nginx, PHP-FPM, MariaDB, and Redis.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/services/status` |
-| **Cache TTL** | 15s |
 
 #### Service Status Response
 
 ```json
 {
-  "nginx": { "status": "online", "version": "1.27.4", "online": true },
-  "php":   { "status": "online", "version": "8.4.1", "online": true },
-  "mysql": { "status": "online", "version": "11.8.1", "online": true },
-  "redis": { "status": "online", "version": "7.4.2", "online": true }
+  "nginx": { "version": "1.28.0", "online": true },
+  "php":   { "version": "8.5.1", "online": true },
+  "mysql": { "version": "11.8.5", "online": true },
+  "redis": { "version": "8.2.3", "online": false }
 }
 ```
 
-> **Note**: The `mysql` key reports MariaDB status. The `php` key dynamically discovers the active `php*-fpm` service.
+`online` is `true` when `systemctl is-active` reports the unit active (`nginx.service`, `mariadb.service`, `redis-server.service`). `php` is the PHP-FPM process answering this request, so it is always online, with its own version. The `mysql` key reports MariaDB. `version` is `Unknown` when the version command gives none, and `Error` (with `online: false`) when the check itself fails.
 
 ---
 
 ### Sites
 
-List all WordPress sites managed by EngineScript.
+List the WordPress sites in Nginx's `/etc/nginx/sites-enabled`.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/sites` |
-| **Cache TTL** | 120s |
 
 #### Sites Response
 
@@ -140,46 +147,24 @@ List all WordPress sites managed by EngineScript.
 [
   {
     "domain": "example.com",
-    "status": "online",
-    "wp_version": "6.7.1",
+    "wp_version": "6.8.3",
     "ssl_status": "Enabled"
   }
 ]
 ```
 
----
-
-### Sites Count
-
-Get the total number of managed WordPress sites.
-
-| | |
-| --- | --- |
-| **Method** | `GET` |
-| **Path** | `/sites/count` |
-| **Cache TTL** | 120s |
-
-#### Sites Count Response
-
-```json
-{
-  "count": 3
-}
-```
-
-> **Note**: `/sites/` (with trailing slash) is an alias for `/sites`.
+A site is listed when its configuration mentions WordPress. `domain` is the first `server_name`. `wp_version` comes from the site's `wp-includes/version.php`, or is `Unknown`. `ssl_status` is `Enabled` when the configuration names an `ssl_certificate`, otherwise `Unknown`. A configuration file that resolves outside `sites-enabled`, or a `version.php` that resolves outside the site's root, is not read.
 
 ---
 
 ### File Manager Status
 
-Check availability and configuration of the Tiny File Manager integration.
+Check the Tiny File Manager integration.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/tools/filemanager/status` |
-| **Cache TTL** | 300s |
 
 #### File Manager Status Response
 
@@ -187,26 +172,24 @@ Check availability and configuration of the Tiny File Manager integration.
 {
   "available": true,
   "config_exists": true,
-  "writable_dirs": {
-    "/var/www": true,
-    "/tmp": true
-  },
   "url": "/tinyfilemanager/tinyfilemanager.php",
-  "version": "2.5.3"
+  "version": "2.6"
 }
 ```
+
+`version` is `TINYFILEMANAGER_VER` from EngineScript's variables file, or `Unknown`.
 
 ---
 
 ### Uptime Status
 
-Get a summary of UptimeRobot monitor status.
+Get a summary of the UptimeRobot account's monitors.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/monitoring/uptime` |
-| **Cache TTL** | 60s |
+| **Server cache** | 60s, shared with Uptime Monitors |
 
 #### Response: Configured
 
@@ -221,7 +204,7 @@ Get a summary of UptimeRobot monitor status.
 }
 ```
 
-`overall_status` values: `healthy`, `critical`, `partial`, `unknown`
+`overall_status` values: `critical` (a monitor is down or seems down), `healthy` (every active monitor is up; paused and not yet checked monitors are left out), `partial` (some up, others in an unknown state), `unknown` (no active monitors). `paused` counts paused and not yet checked monitors.
 
 #### Response: Not Configured
 
@@ -232,17 +215,19 @@ Get a summary of UptimeRobot monitor status.
 }
 ```
 
+The API key is read from `api_key` in `/etc/enginescript/uptimerobot.conf`.
+
 ---
 
 ### Uptime Monitors
 
-Get detailed information for each individual UptimeRobot monitor.
+Get each UptimeRobot monitor.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/monitoring/uptime/monitors` |
-| **Cache TTL** | 60s |
+| **Server cache** | 60s, shared with Uptime Status |
 
 #### Uptime Monitors Response
 
@@ -257,28 +242,30 @@ Get detailed information for each individual UptimeRobot monitor.
       "url": "https://example.com",
       "status": 2,
       "status_text": "Up",
-      "uptime_day": 99.99,
-      "uptime_week": 99.95,
-      "uptime_month": 99.90,
-      "last_check": 1709300000
+      "uptime_day": 99.99
     }
   ]
 }
 ```
 
-Monitor `status` codes: `0` Paused, `1` Not checked yet, `2` Up, `8` Seems down, `9` Down
+Monitor `status` codes: `0` Paused, `1` Not checked yet, `2` Up, `8` Seems down, `9` Down, `-1` Unknown
+
+`uptime_day` is the monitor's uptime over the last 24 hours, in percent, from UptimeRobot's per-monitor statistics. It is read for accounts with up to 8 monitors (one request each, so that with the list a refresh stays within UptimeRobot's free-plan limit of 10 requests a minute); above 8 monitors, or when a read fails, it is `null`.
+
+When not configured, the answer is as for Uptime Status, with `"monitors": []`.
+
+Both uptime endpoints answer from one read of UptimeRobot's API v3 (all pages of the monitor list, then the statistics). When UptimeRobot cannot be read, both answer `200` with `"enabled": true` and an `error` message (for example after UptimeRobot's limit of 10 requests a minute: `"UptimeRobot request limit reached; try again later"`); the monitors endpoint then also returns `"monitors": []`. A failure is cached for the minute like a result.
 
 ---
 
 ### Cache Clear
 
-Clear one or more server-side caches. Requires CSRF token.
+Clear one or more server caches. Requires the CSRF token.
 
 | | |
 | --- | --- |
 | **Method** | `POST` |
 | **Path** | `/cache/clear` |
-| **Cache TTL** | None |
 
 #### Request Data
 
@@ -287,7 +274,7 @@ Clear one or more server-side caches. Requires CSRF token.
 | `type` | string | Yes* | Comma-separated cache types: `redis`, `fastcgi`, `opcache` |
 | `types` | array | Yes* | JSON array of cache types: `["redis", "fastcgi"]` |
 
-`type` may be sent as a query parameter or JSON body field. `types` is accepted for JSON clients. One of `type` or `types` is required.
+`type` may be sent as a query parameter or a JSON body field; `types` as a JSON body field. One of them is required.
 
 #### Cache Clear Response
 
@@ -302,7 +289,9 @@ Clear one or more server-side caches. Requires CSRF token.
 }
 ```
 
-If invalid types are included, a `warnings` field is added:
+`success` is `false` when any requested cache failed to clear; each entry in `results` says which. `redis` runs `FLUSHALL`; `fastcgi` deletes the files under Nginx's cache directory, `/var/cache/nginx` (a missing directory counts as cleared); `opcache` resets PHP-FPM's OPcache.
+
+If unknown types are included, they are ignored and a `warnings` field is added:
 
 ```json
 {
@@ -313,75 +302,49 @@ If invalid types are included, a `warnings` field is added:
 }
 ```
 
-**Errors**: `400` if `type` is empty or all types invalid. `405` if not POST.
+**Errors**: `400` if no type is given or none is valid; `403` without a valid CSRF token; `405` for any method but `POST`.
 
 ---
 
 ### Cache Status
 
-Get the current status of all cache systems (Redis, FastCGI, OPcache).
+Get the current state of Redis, the FastCGI cache, and OPcache.
 
 | | |
 | --- | --- |
-| **Method** | `GET` |
+| **Method** | `GET`, `HEAD` |
 | **Path** | `/cache/status` |
-| **Cache TTL** | 30s |
 
 #### Cache Status Response
 
 ```json
 {
-  "redis": { ... },
-  "fastcgi": { ... },
-  "opcache": { ... }
-}
-```
-
----
-
-### Batch Requests
-
-Execute multiple API calls in a single request. Requires CSRF token.
-
-| | |
-| --- | --- |
-| **Method** | `POST` |
-| **Path** | `/batch` |
-| **Cache TTL** | None |
-
-#### Request Body JSON
-
-```json
-{
-  "requests": ["/system/info", "/services/status", "/sites"]
-}
-```
-
-- Maximum 10 requests per batch
-- **Allowed endpoints**: `/system/info`, `/services/status`, `/sites`, `/sites/count`, `/tools/filemanager/status`, `/monitoring/uptime`, `/monitoring/uptime/monitors`, `/cache/status`
-
-#### Batch Response
-
-```json
-{
-  "results": {
-    "/system/info": { "os": "Ubuntu 24.04 LTS", "kernel": "...", "network": "..." },
-    "/services/status": { "nginx": { ... }, "php": { ... } }
+  "redis": {
+    "available": true,
+    "used_memory": 1031336,
+    "used_memory_human": "1007.16K"
   },
-  "errors": {
-    "/bad/endpoint": "Endpoint not allowed in batch requests"
+  "fastcgi": {
+    "available": true,
+    "path": "/var/cache/nginx",
+    "size": "12K"
   },
-  "cached_count": 1
+  "opcache": {
+    "available": true,
+    "enabled": true,
+    "memory_usage": { "used_memory": 9482240, "free_memory": 124735488, "wasted_memory": 0 },
+    "statistics": { "num_cached_scripts": 19, "hits": 152, "misses": 19 }
+  }
 }
 ```
 
-**Errors**: `400` if body invalid, missing `requests` array, or batch size exceeds 10. `405` if not POST.
+A cache that cannot be read is reported as `{"available": false, "reason": "..."}`: `Unable to connect to Redis`, `FastCGI cache directory not found`, `OPcache extension not available`, or `Unable to get OPcache status`. The FastCGI `size` is as `du -sh` prints it, or `Unknown`.
 
 ---
 
 ## Error Responses
 
-All errors follow a consistent JSON structure:
+Errors are JSON:
 
 ```json
 {
@@ -391,10 +354,10 @@ All errors follow a consistent JSON structure:
 
 | Status Code | Description |
 | --- | --- |
-| `400` | Bad Request — missing or invalid parameters |
-| `403` | Forbidden — invalid session or CSRF token |
+| `400` | Bad Request — an invalid endpoint name, or missing or invalid parameters |
+| `401` | Unauthorized — sent by nginx, without valid basic-authentication credentials |
+| `403` | Forbidden — a `POST` without a valid CSRF token |
 | `404` | Not Found — unknown endpoint |
-| `405` | Method Not Allowed — wrong HTTP method |
-| `429` | Too Many Requests — rate limit exceeded (100 req/min) |
-| `500` | Internal Server Error — unexpected server failure |
-| `502` | Bad Gateway — upstream service unreachable |
+| `405` | Method Not Allowed — wrong HTTP method; the `Allow` header names the right ones |
+| `429` | Too Many Requests — more than 100 requests in a minute |
+| `500` | Internal Server Error — an unexpected failure; details go to the server's log, not the response |
