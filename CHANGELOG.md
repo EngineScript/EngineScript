@@ -8,6 +8,8 @@ Changes are organized by date, with the most recent changes listed first.
 
 ### 🐛 ADMIN CONTROL PANEL FIXES
 
+- Fixed the admin control panel showing made-up or misleading data when its API failed: "Uptime Robot not configured", "No WordPress sites are currently configured", and an invented "Ubuntu 24.04 LTS" with an endless "Loading...". Each card now shows an error, with the server's message when it sent one, and a request that gets no answer within 30 seconds ends with an error instead of loading for ever.
+- Fixed clearing a cache after the dashboard sat open for more than 24 minutes: the session had expired, and its token was refused until the page was reloaded. The dashboard now loads the new session's token and sends the request once more, so the new session cookie name needs no reload either.
 - Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
 - Installs and updates now build the control panel, TinyFileManager, and phpSysInfo beside the running copy and switch over only when the new copy is complete, so a failed download or copy keeps the working copy. Before, `es.update` emptied the control panel first, and the tool installers deleted the installed tool before downloading the new one. The admin control panel install step is recorded as done only when every part of it succeeded, so a failed part runs again on the next install.
 - phpSysInfo's `.git` directory is no longer installed into the served `/phpsysinfo/` directory.

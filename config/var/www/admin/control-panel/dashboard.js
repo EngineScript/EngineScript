@@ -446,10 +446,10 @@ class EngineScriptDashboard {
 
   async loadServiceStatus() {
     try {
-      const services = await this.api.getApiData("/api/services/status", null);
+      const services = await this.api.getApiData("/api/services/status");
 
-      if (!services) {
-        throw new Error("Failed to load service status");
+      if (!services || typeof services !== "object") {
+        throw new TypeError("Failed to load service status");
       }
 
       // Update each service
@@ -491,14 +491,18 @@ class EngineScriptDashboard {
   async loadSites() {
     try {
       this.showSkeletonSites();
-      const sites = await this.api.getApiData("/api/sites", []);
+      const sites = await this.api.getApiData("/api/sites");
       const sitesGrid = document.getElementById("sites-grid");
+
+      if (!Array.isArray(sites)) {
+        throw new TypeError("Unexpected sites data");
+      }
 
       if (sitesGrid) {
         // Clear existing content
         sitesGrid.replaceChildren();
 
-        if (Array.isArray(sites) && sites.length > 0) {
+        if (sites.length > 0) {
           sites.forEach((site) => {
             if (DashboardUtils.isValidSite(site)) {
               const siteElement = this.createSiteElement(site);
@@ -548,25 +552,30 @@ class EngineScriptDashboard {
   async loadSystemInfo() {
     try {
       this.showSkeletonSystemInfo();
-      const sysInfo = await this.api.getApiData("/api/system/info", {});
+      const sysInfo = await this.api.getApiData("/api/system/info");
       const systemInfo = document.getElementById("system-info");
 
-      if (systemInfo && typeof sysInfo === "object") {
+      if (!sysInfo || typeof sysInfo !== "object") {
+        throw new TypeError("Unexpected system information");
+      }
+
+      if (systemInfo) {
         // Clear existing content
         systemInfo.replaceChildren();
 
+        // A value the server could not read shows as "Unknown", never as a guess
         const infoItems = [
           {
             label: "OS",
-            value: DashboardUtils.sanitizeInput(sysInfo.os) || "Ubuntu 24.04 LTS"
+            value: DashboardUtils.sanitizeInput(sysInfo.os) || "Unknown"
           },
           {
             label: "Kernel",
-            value: DashboardUtils.sanitizeInput(sysInfo.kernel) || "Loading..."
+            value: DashboardUtils.sanitizeInput(sysInfo.kernel) || "Unknown"
           },
           {
             label: "Network",
-            value: DashboardUtils.sanitizeInput(sysInfo.network) || "Loading..."
+            value: DashboardUtils.sanitizeInput(sysInfo.network) || "Unknown"
           }
         ];
 
@@ -828,9 +837,17 @@ class EngineScriptDashboard {
   }
 
   async loadFileManagerStatus() {
-    const status = await this.api.getApiData("/api/tools/filemanager/status", null);
     const toolCard = document.getElementById("filemanager-tool");
     const statusElement = document.getElementById("filemanager-status");
+    let status;
+
+    try {
+      status = await this.api.getApiData("/api/tools/filemanager/status");
+    } catch (error) {
+      console.error("Failed to load file manager status:", error);
+      this.renderToolStatus(statusElement, false, "Status could not be loaded");
+      return;
+    }
 
     if (!toolCard || !statusElement || !status || typeof status !== "object") {
       this.renderToolStatus(statusElement, false, "Unavailable");
@@ -870,10 +887,18 @@ class EngineScriptDashboard {
   }
 
   async loadCacheStatus() {
-    const cacheStatus = await this.api.getApiData("/api/cache/status", null);
     const container = document.getElementById("cache-status-list");
 
     if (!container) {
+      return;
+    }
+
+    let cacheStatus;
+    try {
+      cacheStatus = await this.api.getApiData("/api/cache/status");
+    } catch (error) {
+      console.error("Failed to load cache status:", error);
+      container.replaceChildren(this.createCacheStatusItem("Cache status", "Could not be loaded"));
       return;
     }
 
@@ -991,7 +1016,7 @@ class EngineScriptDashboard {
 
   async loadUptimeSummary() {
     try {
-      const summary = await this.api.getApiData("/api/monitoring/uptime", {});
+      const summary = await this.api.getApiData("/api/monitoring/uptime");
 
       if (!summary || typeof summary !== "object") {
         this.showUptimeError();
@@ -1018,13 +1043,13 @@ class EngineScriptDashboard {
       }
     } catch (error) {
       console.error("Failed to load uptime summary:", error);
-      this.showUptimeError();
+      this.showUptimeError(error.message);
     }
   }
 
   async loadUptimeMonitors() {
     try {
-      const response = await this.api.getApiData("/api/monitoring/uptime/monitors", {});
+      const response = await this.api.getApiData("/api/monitoring/uptime/monitors");
       const monitorsContainer = document.getElementById("uptime-monitors");
 
       if (!monitorsContainer) return;
@@ -1060,7 +1085,7 @@ class EngineScriptDashboard {
       });
     } catch (error) {
       console.error("Failed to load uptime monitors:", error);
-      this.showUptimeError();
+      this.showUptimeError(error.message);
     }
   }
 

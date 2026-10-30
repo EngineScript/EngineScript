@@ -4,6 +4,13 @@
 export class DashboardAPI {
   static API_PREFIX = "/api/";
 
+  // Longer than the server's own budget (20 seconds for commands and for UptimeRobot),
+  // so the server answers first whenever it can.
+  static REQUEST_TIMEOUT_MS = 30000;
+
+  // The API's answer when the CSRF token does not belong to the session (api.php)
+  static CSRF_ERROR = "Invalid or missing CSRF token";
+
   constructor() {
     this.csrfToken = null;
     this.csrfTokenPromise = null;
@@ -12,7 +19,14 @@ export class DashboardAPI {
     this.pendingRequests = new Map();
   }
 
-  async loadCsrfToken() {
+  /**
+   * Load the session's CSRF token, once; with refresh, load it again (a new session has a new one).
+   */
+  async loadCsrfToken(refresh = false) {
+    if (refresh) {
+      this.csrfToken = null;
+    }
+
     if (this.csrfToken) {
       return this.csrfToken;
     }
@@ -23,10 +37,7 @@ export class DashboardAPI {
 
     this.csrfTokenPromise = (async () => {
       try {
-        const response = await fetch("/api/csrf-token", {
-          method: "GET",
-          credentials: "include"
-        });
+        const response = await this.request("/api/csrf-token", { method: "GET" });
         if (response.ok) {
           const data = await response.json();
           this.csrfToken = data.csrf_token || null;
@@ -60,6 +71,32 @@ export class DashboardAPI {
   }
 
   /**
+   * fetch() with the session cookie and a time limit. A request that runs out of time
+   * rejects with an error that says so.
+   *
+   * @param {string} endpoint - The API endpoint
+   * @param {RequestInit} options - fetch() options
+   * @returns {Promise<Response>} The response
+   */
+  async request(endpoint, options) {
+    const signal = AbortSignal.timeout(DashboardAPI.REQUEST_TIMEOUT_MS);
+    try {
+      return await fetch(endpoint, {
+        ...options,
+        credentials: "include",
+        signal
+      });
+    } catch (error) {
+      // Only the time limit aborts this signal. WebKit rejects with its own AbortError
+      // rather than the signal's TimeoutError, so the signal is checked, not the error.
+      if (signal.aborted) {
+        throw new Error(`The server did not answer within ${DashboardAPI.REQUEST_TIMEOUT_MS / 1000} seconds`, { cause: error });
+      }
+      throw error;
+    }
+  }
+
+  /**
    * If a request to the same endpoint is already in-flight, return the existing promise
    * This prevents duplicate network requests when multiple components need the same data
    *
@@ -83,35 +120,29 @@ export class DashboardAPI {
     return requestPromise;
   }
 
-  async getApiData(endpoint, fallback) {
+  /**
+   * GET an API endpoint and return its JSON. Any failure (an invalid endpoint, a network
+   * error, a timeout, an error status, or invalid JSON) rejects, with the API's own error
+   * message when it sent one, so each page can show an error instead of empty data.
+   *
+   * @param {string} endpoint - The API endpoint
+   * @returns {Promise<*>} The decoded JSON
+   */
+  async getApiData(endpoint) {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
-      console.error("Invalid API endpoint:", endpoint);
-      return fallback;
+      throw new Error(`Invalid API endpoint: ${endpoint}`);
     }
-    try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return fallback;
-      }
-
-      // Use request deduplication for all GET requests
-      // GET requests change nothing, so they carry no CSRF token.
-      return await this.deduplicateRequest(endpoint, async () => {
-        const response = await fetch(endpoint, {
-          method: "GET",
-          credentials: "include"
-        });
-
-        if (!response.ok) {
-          throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
-        }
-
-        return this.parseJsonResponse(response);
-      });
-    } catch (error) {
-      console.error("API request failed:", error);
-      return fallback;
+    if (typeof fetch === "undefined" || this.isOperaMini()) {
+      throw new Error("This browser cannot load the dashboard's data");
     }
+
+    // Use request deduplication for all GET requests
+    // GET requests change nothing, so they carry no CSRF token.
+    return this.deduplicateRequest(endpoint, async () => {
+      const response = await this.request(endpoint, { method: "GET" });
+      return this.readPayload(endpoint, response);
+    });
   }
 
   async postApiData(endpoint, data = {}) {
@@ -125,33 +156,66 @@ export class DashboardAPI {
         return { error: "Fetch not supported" };
       }
 
-      if (!this.csrfToken) {
-        await this.loadCsrfToken();
+      let response = await this.post(endpoint, data);
+
+      // The session ended (for example after the page sat idle) and its token with it: the
+      // server refused the request before acting on it, so load the new session's token and
+      // send it once more. Nothing else is retried, a network failure least of all.
+      if (response.status === 403 && (await this.errorOf(response)) === DashboardAPI.CSRF_ERROR) {
+        await this.loadCsrfToken(true);
+        response = await this.post(endpoint, data);
       }
 
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      if (this.csrfToken) {
-        headers["X-CSRF-Token"] = this.csrfToken;
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify(data)
-      });
-
-      const payload = await this.parseJsonResponse(response);
-      if (!response.ok) {
-        throw new Error(payload?.error || `API ${endpoint} returned ${response.status}: ${response.statusText}`);
-      }
-
-      return payload;
+      return await this.readPayload(endpoint, response);
     } catch (error) {
       console.error(`Error posting to ${endpoint}:`, error);
       return { error: error.message };
+    }
+  }
+
+  /**
+   * Send one POST with the session's CSRF token, loading the token first if needed.
+   */
+  async post(endpoint, data) {
+    if (!this.csrfToken) {
+      await this.loadCsrfToken();
+    }
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.csrfToken) {
+      headers["X-CSRF-Token"] = this.csrfToken;
+    }
+
+    return this.request(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * The JSON of a successful response; for an error status, a rejection with the API's own
+   * error message, or the status when the body is not the API's JSON (nginx's error pages).
+   */
+  async readPayload(endpoint, response) {
+    if (!response.ok) {
+      throw new Error((await this.errorOf(response)) || `API ${endpoint} returned ${response.status}: ${response.statusText}`);
+    }
+
+    return this.parseJsonResponse(response);
+  }
+
+  /**
+   * The "error" field of an error response's JSON, or null. Reads a clone, so the body stays readable.
+   */
+  async errorOf(response) {
+    try {
+      const payload = await response.clone().json();
+      return typeof payload?.error === "string" ? payload.error : null;
+    } catch {
+      return null;
     }
   }
 
