@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>EngineScript Admin Dashboard</title>
+    <!-- Content Security Policy: the page's own scripts, styles, images, and API; Font Awesome's
+         stylesheet and fonts from cdnjs; nothing inline. frame-ancestors cannot be set in a meta
+         element: nginx sends X-Frame-Options: DENY. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
     <link rel="icon" type="image/png" href="favicon.png">
 
     <!-- External Dependencies -->
+    <!-- Before the stylesheet and not deferred, so it sees the stylesheet fail -->
+    <script src="fontawesome-check.js?v={ES_DASHBOARD_VER}" data-cfasync="false"></script>
     <!-- NOTE: {FONTAWESOME_VER} is a placeholder replaced during installation with the desired Font Awesome version (e.g. 6.5.1). -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/{FONTAWESOME_VER}/css/all.min.css" rel="stylesheet" crossorigin="anonymous" id="fontawesome-css">
-    <script defer src="fontawesome-check.js?v={ES_DASHBOARD_VER}" data-cfasync="false"></script>
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="dashboard.css?v={ES_DASHBOARD_VER}">
