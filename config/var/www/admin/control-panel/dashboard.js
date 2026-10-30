@@ -107,7 +107,7 @@ class EngineScriptDashboard {
         if (!navItem) return;
 
         e.preventDefault();
-        const page = DashboardUtils.sanitizeInput(navItem.dataset.page);
+        const page = navItem.dataset.page;
         if (this.state.isValidPage(page)) {
           this.navigateToPage(page);
           // Close mobile menu after navigation
@@ -308,14 +308,6 @@ class EngineScriptDashboard {
   setupKeyboardShortcuts() {
     // Bind handler to maintain 'this' context and enable removal if needed
     this.keyboardShortcutHandler = (event) => {
-      // Don't trigger shortcuts when typing in inputs
-      const tagName = event.target.tagName;
-      if (tagName === "INPUT"
-        || tagName === "TEXTAREA"
-        || event.target.isContentEditable) {
-        return;
-      }
-
       // ESC - Close the mobile menu (closeMobileMenu does nothing when it is closed)
       if (event.key === "Escape") {
         this.closeMobileMenu();
@@ -324,25 +316,13 @@ class EngineScriptDashboard {
 
       // F5 and Ctrl+R stay the browser's reload. Arrows and digits act only while focus is in
       // the navigation, so they keep their usual meaning everywhere else on the page.
-      if (!(event.target instanceof Element) || !event.target.closest(".sidebar-nav")) {
-        return;
-      }
-
-      // Arrow keys - Navigate between pages
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      const page = event.target instanceof Element && event.target.closest(".sidebar-nav")
+        ? this.pageForNavKey(event)
+        : null;
+      if (page) {
         event.preventDefault();
-        this.navigateWithKeys(event.key === "ArrowRight");
+        this.navigateToPage(page);
         this.focusActiveNavItem();
-        return;
-      }
-
-      // Number keys - Quick page navigation using the cached pages array
-      if (event.key >= "1" && event.key <= String(this.keyboardNavPages.length) && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-        const pageIndex = Number.parseInt(event.key, 10) - 1;
-        if (pageIndex < this.keyboardNavPages.length) {
-          this.navigateToPage(this.keyboardNavPages[pageIndex]);
-          this.focusActiveNavItem();
-        }
       }
     };
 
@@ -350,27 +330,27 @@ class EngineScriptDashboard {
   }
 
   /**
+   * The page a key in the navigation leads to: the next or previous page for the arrows,
+   * the nth page for the digits 1 to 4; null for any other key
+   */
+  pageForNavKey(event) {
+    const pages = this.keyboardNavPages;
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      const current = pages.indexOf(this.state.getCurrentPage());
+      return pages[(current + step + pages.length) % pages.length];
+    }
+
+    const modified = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey;
+    return modified ? null : pages[Number(event.key) - 1] ?? null;
+  }
+
+  /**
    * Move focus to the active page's navigation link, so keyboard navigation continues from there
    */
   focusActiveNavItem() {
     document.querySelector(".nav-item.active a")?.focus();
-  }
-
-  navigateWithKeys(forward) {
-    // Use cached pages array instead of creating new array on each call
-    const currentIndex = this.keyboardNavPages.indexOf(this.state.getCurrentPage());
-
-    if (currentIndex === -1) return;
-
-    const pagesLength = this.keyboardNavPages.length;
-    let nextIndex;
-    if (forward) {
-      nextIndex = (currentIndex + 1) % pagesLength;
-    } else {
-      nextIndex = (currentIndex - 1 + pagesLength) % pagesLength;
-    }
-
-    this.navigateToPage(this.keyboardNavPages[nextIndex]);
   }
 
   startClock() {
@@ -580,15 +560,15 @@ class EngineScriptDashboard {
         const infoItems = [
           {
             label: "OS",
-            value: DashboardUtils.sanitizeInput(sysInfo.os) || "Unknown"
+            value: sysInfo.os || "Unknown"
           },
           {
             label: "Kernel",
-            value: DashboardUtils.sanitizeInput(sysInfo.kernel) || "Unknown"
+            value: sysInfo.kernel || "Unknown"
           },
           {
             label: "Network",
-            value: DashboardUtils.sanitizeInput(sysInfo.network) || "Unknown"
+            value: sysInfo.network || "Unknown"
           }
         ];
 
@@ -696,10 +676,10 @@ class EngineScriptDashboard {
   // Empty state helpers
   createEmptyState(type, icon, title, message, actionText = null, actionCallback = null) {
     const emptyState = document.createElement("div");
-    emptyState.className = `empty-state ${DashboardUtils.sanitizeInput(type)}`;
+    emptyState.className = `empty-state ${type}`;
 
     const iconEl = document.createElement("i");
-    iconEl.className = `fas fa-${DashboardUtils.sanitizeInput(icon)} empty-state-icon`;
+    iconEl.className = `fas fa-${icon} empty-state-icon`;
     emptyState.append(iconEl);
 
     const titleEl = document.createElement("h3");
@@ -776,7 +756,7 @@ class EngineScriptDashboard {
   }
 
   createSiteElement(site) {
-    const siteDiv = this.createSiteCardStructure(DashboardUtils.sanitizeInput(site.domain));
+    const siteDiv = this.createSiteCardStructure(site.domain);
 
     // Site info
     const infoDiv = document.createElement("div");
@@ -786,13 +766,13 @@ class EngineScriptDashboard {
     const wpLabel = document.createElement("strong");
     wpLabel.textContent = "WordPress: ";
     wpInfo.append(wpLabel);
-    wpInfo.append(document.createTextNode(DashboardUtils.sanitizeInput(site.wp_version) || "Unknown"));
+    wpInfo.append(document.createTextNode(site.wp_version || "Unknown"));
 
     const sslInfo = document.createElement("p");
     const sslLabel = document.createElement("strong");
     sslLabel.textContent = "SSL: ";
     sslInfo.append(sslLabel);
-    sslInfo.append(document.createTextNode(DashboardUtils.sanitizeInput(site.ssl_status) || "Unknown"));
+    sslInfo.append(document.createTextNode(site.ssl_status || "Unknown"));
 
     infoDiv.append(wpInfo);
     infoDiv.append(sslInfo);
@@ -833,14 +813,6 @@ class EngineScriptDashboard {
   }
 
   // Cleanup method
-  destroy() {
-    if (this.liveRegionAnnouncementTimer) {
-      clearTimeout(this.liveRegionAnnouncementTimer);
-      this.liveRegionAnnouncementTimer = null;
-    }
-    this.state.clearRefreshTimer();
-  }
-
   // Tools management methods
   async loadToolsData() {
     await Promise.allSettled([
@@ -862,26 +834,33 @@ class EngineScriptDashboard {
       return;
     }
 
-    if (!toolCard || !statusElement || !status || typeof status !== "object") {
+    const available = Boolean(status?.available && status.config_exists);
+    toolCard?.classList.toggle("tool-unavailable", !available);
+
+    if (!available) {
       this.renderToolStatus(statusElement, false, "Unavailable");
-      toolCard?.classList.add("tool-unavailable");
       return;
     }
 
-    const available = Boolean(status.available && status.config_exists);
-    const version = DashboardUtils.sanitizeInput(status.version || "Unknown");
-    const label = available ? `Available${version !== "Unknown" ? `, v${version}` : ""}` : "Unavailable";
+    const version = status.version && status.version !== "Unknown" ? `, v${status.version}` : "";
+    this.renderToolStatus(statusElement, true, `Available${version}`);
+    this.useToolUrl(toolCard, status.url);
+  }
 
-    if (available && typeof status.url === "string") {
-      try {
-        toolCard.href = DashboardUtils.sanitizeUrl(new URL(status.url, globalThis.location.origin).href, toolCard.href);
-      } catch {
-        // Keep the static fallback href already present in the template.
-      }
+  /**
+   * Point a tool card at the URL the API reports, when it is an http(s) URL; otherwise the
+   * card keeps the link in the page.
+   */
+  useToolUrl(toolCard, url) {
+    if (!toolCard || typeof url !== "string") {
+      return;
     }
 
-    toolCard.classList.toggle("tool-unavailable", !available);
-    this.renderToolStatus(statusElement, available, label);
+    try {
+      toolCard.href = DashboardUtils.sanitizeUrl(new URL(url, globalThis.location.origin).href, toolCard.href);
+    } catch {
+      // Keep the static fallback href already present in the template.
+    }
   }
 
   renderToolStatus(statusElement, isOnline, text) {
@@ -894,7 +873,7 @@ class EngineScriptDashboard {
 
     const statusText = document.createElement("span");
     statusText.className = "status-text";
-    statusText.textContent = DashboardUtils.sanitizeInput(text);
+    statusText.textContent = text;
 
     statusElement.replaceChildren(indicator, statusText);
   }
@@ -939,7 +918,7 @@ class EngineScriptDashboard {
 
     const detailElement = document.createElement("span");
     detailElement.className = "cache-detail";
-    detailElement.textContent = DashboardUtils.sanitizeInput(detail);
+    detailElement.textContent = detail;
 
     item.append(nameElement);
     item.append(detailElement);
@@ -1127,7 +1106,7 @@ class EngineScriptDashboard {
     infoDiv.className = "monitor-info";
 
     const nameH4 = document.createElement("h4");
-    nameH4.textContent = DashboardUtils.sanitizeInput(monitor.name);
+    nameH4.textContent = monitor.name ?? "";
 
     const urlP = document.createElement("p");
     urlP.className = "monitor-url";
@@ -1136,31 +1115,27 @@ class EngineScriptDashboard {
     infoDiv.append(nameH4);
     infoDiv.append(urlP);
 
-    // API returns uptime_day: the last day's uptime, or null without data
-    const uptimeRatio = Number(monitor.uptime_day ?? 0);
-    const hasStats = Number.isFinite(uptimeRatio) && uptimeRatio > 0;
+    // API returns uptime_day: the last day's uptime in percent (0 included), or null without data
+    const uptime = monitor.uptime_day;
 
-    if (hasStats) {
+    if (typeof uptime === "number" && Number.isFinite(uptime)) {
       const statsDiv = document.createElement("div");
       statsDiv.className = "monitor-stats";
 
-      if (uptimeRatio > 0) {
-        const uptimeStatDiv = document.createElement("div");
-        uptimeStatDiv.className = "stat";
+      const uptimeStatDiv = document.createElement("div");
+      uptimeStatDiv.className = "stat";
 
-        const uptimeValue = document.createElement("span");
-        uptimeValue.className = "stat-value";
-        uptimeValue.textContent = `${DashboardUtils.sanitizeNumeric(uptimeRatio, "0")}%`;
+      const uptimeValue = document.createElement("span");
+      uptimeValue.className = "stat-value";
+      uptimeValue.textContent = `${uptime}%`;
 
-        const uptimeLabel = document.createElement("span");
-        uptimeLabel.className = "stat-label";
-        uptimeLabel.textContent = "Uptime";
+      const uptimeLabel = document.createElement("span");
+      uptimeLabel.className = "stat-label";
+      uptimeLabel.textContent = "Uptime";
 
-        uptimeStatDiv.append(uptimeValue);
-        uptimeStatDiv.append(uptimeLabel);
-        statsDiv.append(uptimeStatDiv);
-      }
-
+      uptimeStatDiv.append(uptimeValue);
+      uptimeStatDiv.append(uptimeLabel);
+      statsDiv.append(uptimeStatDiv);
       monitorDiv.append(statsDiv);
     }
 
@@ -1170,7 +1145,7 @@ class EngineScriptDashboard {
     const statusText = document.createElement("span");
     statusText.className = "status-text";
     // API returns 'status_text' for the text version
-    statusText.textContent = DashboardUtils.sanitizeInput(monitor.status_text || "Unknown");
+    statusText.textContent = monitor.status_text || "Unknown";
 
     statusTextDiv.append(statusText);
 
@@ -1192,88 +1167,37 @@ class EngineScriptDashboard {
   }
 
   showUptimeNotConfigured() {
+    // The instructions are a <template> in index.html
     const monitorsContainer = document.getElementById("uptime-monitors");
-    if (monitorsContainer) {
-      // Clear existing content
-      monitorsContainer.replaceChildren();
-
-      // Create status div
-      const statusDiv = document.createElement("div");
-      statusDiv.className = "uptime-status";
-
-      // Create title
-      const titleP = document.createElement("p");
-      const titleStrong = document.createElement("strong");
-      titleStrong.textContent = "Uptime Robot not configured";
-      titleP.append(titleStrong);
-
-      // Create instructions
-      const instrP = document.createElement("p");
-      instrP.textContent = "To enable website monitoring:";
-
-      // Create ordered list
-      const ol = document.createElement("ol");
-
-      // Create list items
-      const li1 = document.createElement("li");
-      li1.textContent = "Create a free account at ";
-      const link = document.createElement("a");
-      link.href = "https://uptimerobot.com/";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "UptimeRobot.com";
-      li1.append(link);
-
-      const li2 = document.createElement("li");
-      li2.textContent = "Get your API key from Settings > API Settings";
-
-      const li3 = document.createElement("li");
-      li3.textContent = "Configure it using: ";
-      const code1 = document.createElement("code");
-      code1.textContent = "sudo nano /etc/enginescript/uptimerobot.conf";
-      li3.append(code1);
-
-      const li4 = document.createElement("li");
-      li4.textContent = "Add: ";
-      const code2 = document.createElement("code");
-      code2.textContent = "api_key=your_api_key_here";
-      li4.append(code2);
-
-      ol.append(li1);
-      ol.append(li2);
-      ol.append(li3);
-      ol.append(li4);
-
-      statusDiv.append(titleP);
-      statusDiv.append(instrP);
-      statusDiv.append(ol);
-
-      monitorsContainer.append(statusDiv);
+    const template = document.getElementById("uptime-not-configured");
+    if (monitorsContainer && template) {
+      monitorsContainer.replaceChildren(template.content.cloneNode(true));
     }
-
-    // Reset summary stats
-    DashboardUtils.setTextContent("total-monitors", "--");
-    DashboardUtils.setTextContent("up-monitors", "--");
-    DashboardUtils.setTextContent("down-monitors", 0);
+    this.resetUptimeCounts();
   }
 
   showUptimeError(errorMessage = "") {
     const monitorsContainer = document.getElementById("uptime-monitors");
     if (monitorsContainer) {
-      monitorsContainer.replaceChildren();
       const statusDiv = document.createElement("div");
       statusDiv.className = "uptime-status";
 
       const message = document.createElement("p");
-      const safeErrorMessage = DashboardUtils.sanitizeInput(errorMessage);
-      message.textContent = safeErrorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
+      message.textContent = errorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
 
       statusDiv.append(message);
-      monitorsContainer.append(statusDiv);
+      monitorsContainer.replaceChildren(statusDiv);
     }
-    DashboardUtils.setTextContent("total-monitors", "--");
-    DashboardUtils.setTextContent("up-monitors", "--");
-    DashboardUtils.setTextContent("down-monitors", "--");
+    this.resetUptimeCounts();
+  }
+
+  /**
+   * Show "--" in the three uptime counters, when there are no counts to show
+   */
+  resetUptimeCounts() {
+    for (const id of ["total-monitors", "up-monitors", "down-monitors"]) {
+      DashboardUtils.setTextContent(id, "--");
+    }
   }
 
   /**
@@ -1293,8 +1217,6 @@ class EngineScriptDashboard {
       document.body.append(this.liveRegion);
     }
 
-    const safeMessage = DashboardUtils.sanitizeInput(message);
-
     // Clear pending announcement to avoid duplicate reads from rapid updates.
     if (this.liveRegionAnnouncementTimer) {
       clearTimeout(this.liveRegionAnnouncementTimer);
@@ -1305,7 +1227,7 @@ class EngineScriptDashboard {
     this.liveRegion.textContent = "";
     this.liveRegionAnnouncementTimer = setTimeout(() => {
       if (this.liveRegion) {
-        this.liveRegion.textContent = safeMessage;
+        this.liveRegion.textContent = message;
       }
     }, 100);
   }
@@ -1316,12 +1238,5 @@ document.addEventListener("DOMContentLoaded", () => {
   // Only initialize if not already initialized
   if (!globalThis.engineScriptDashboard) {
     globalThis.engineScriptDashboard = new EngineScriptDashboard();
-  }
-});
-
-// Handle page unload
-window.addEventListener("beforeunload", () => {
-  if (globalThis.engineScriptDashboard) {
-    globalThis.engineScriptDashboard.destroy();
   }
 });

@@ -170,6 +170,19 @@
                                     <p>Loading uptime monitoring data...</p>
                                 </div>
                             </div>
+                            <!-- Shown in #uptime-monitors when UptimeRobot has no API key -->
+                            <template id="uptime-not-configured">
+                                <div class="uptime-status">
+                                    <p><strong>Uptime Robot not configured</strong></p>
+                                    <p>To enable website monitoring:</p>
+                                    <ol>
+                                        <li>Create a free account at <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer">UptimeRobot.com</a></li>
+                                        <li>Get your API key from Settings &gt; API Settings</li>
+                                        <li>Configure it using: <code>sudo nano /etc/enginescript/uptimerobot.conf</code></li>
+                                        <li>Add: <code>api_key=your_api_key_here</code></li>
+                                    </ol>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>

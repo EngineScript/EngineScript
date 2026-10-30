@@ -56,18 +56,8 @@ export class DashboardAPI {
     return this.csrfTokenPromise;
   }
 
-  getCsrfToken() {
-    return this.csrfToken;
-  }
-
   isValidEndpoint(endpoint) {
     return typeof endpoint === "string" && endpoint.startsWith(DashboardAPI.API_PREFIX);
-  }
-
-  isOperaMini() {
-    return (
-      Object.prototype.toString.call(globalThis.operamini) === "[object OperaMini]"
-    );
   }
 
   /**
@@ -133,9 +123,6 @@ export class DashboardAPI {
     if (!this.isValidEndpoint(endpoint)) {
       throw new Error(`Invalid API endpoint: ${endpoint}`);
     }
-    if (typeof fetch === "undefined" || this.isOperaMini()) {
-      throw new Error("This browser cannot load the dashboard's data");
-    }
 
     // Use request deduplication for all GET requests
     // GET requests change nothing, so they carry no CSRF token.
@@ -152,10 +139,6 @@ export class DashboardAPI {
       return { error: "Invalid endpoint" };
     }
     try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: "Fetch not supported" };
-      }
-
       let response = await this.post(endpoint, data);
 
       // The session ended (for example after the page sat idle) and its token with it: the

@@ -1,58 +1,8 @@
 // EngineScript Admin Dashboard - Utilities Module
-// Input sanitization, validation, and UI helpers
+// URL validation and UI helpers. Every value reaches the page through textContent, which
+// never parses markup, so text needs no sanitizing; a URL does, because it becomes a link.
 
 export class DashboardUtils {
-  static MAX_DASHBOARD_METRIC = 999999;
-
-  static sanitizeInput(input) {
-    if (typeof input !== "string") {
-      return String(input ?? "");
-    }
-
-    // Control character removal and length limiting
-    // XSS prevention is handled by using textContent for all DOM output
-    return String(input)
-      // eslint-disable-next-line no-control-regex
-      .replaceAll(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove all control characters
-      .replaceAll(/\s+/g, " ") // Normalize whitespace
-      .trim()
-      .slice(0, 1000); // Limit length
-  }
-
-  static sanitizeNumeric(input, fallback = "0") {
-    const str = String(input ?? "").trim();
-
-    // Build a well-formed numeric string: optional leading '-', digits, optional '.' and more digits.
-    const match = str.match(/^(-)?(\d+)?(?:\.(\d+))?/);
-    if (!match) {
-      return fallback;
-    }
-
-    const sign = match[1] || "";
-    const intPart = match[2] || "";
-    const fracPart = match[3] || "";
-
-    // Require at least one digit overall
-    if (!intPart && !fracPart) {
-      return fallback;
-    }
-
-    const normalized = sign + (intPart || "0") + (fracPart ? `.${fracPart}` : "");
-    const parsed = Number.parseFloat(normalized);
-
-    // Check if it's a valid number and within reasonable bounds
-    if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
-      return fallback;
-    }
-
-    // Reasonable bounds for dashboard metrics
-    if (parsed < 0 || parsed > DashboardUtils.MAX_DASHBOARD_METRIC) {
-      return fallback;
-    }
-
-    return String(parsed);
-  }
-
   static sanitizeUrl(input, fallback = "") {
     if (typeof input !== "string") {
       return fallback;
@@ -105,10 +55,9 @@ export class DashboardUtils {
   showNotification(message, type = "info") {
     const allowedTypes = new Set(["success", "error", "info", "warning"]);
     const notificationType = allowedTypes.has(type) ? type : "info";
-    const sanitizedMessage = DashboardUtils.sanitizeInput(message) || "Dashboard notification";
     const notification = document.createElement("div");
     notification.className = `notification-toast notification-${notificationType}`;
-    notification.textContent = sanitizedMessage;
+    notification.textContent = message || "Dashboard notification";
 
     document.body.append(notification);
 

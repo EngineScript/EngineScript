@@ -11,6 +11,7 @@ Changes are organized by date, with the most recent changes listed first.
 - Fixed the admin control panel showing made-up or misleading data when its API failed: "Uptime Robot not configured", "No WordPress sites are currently configured", and an invented "Ubuntu 24.04 LTS" with an endless "Loading...". Each card now shows an error, with the server's message when it sent one, and a request that gets no answer within 30 seconds ends with an error instead of loading for ever.
 - Fixed the admin control panel's keyboard use: F5 and Ctrl+R reload the page again (the dashboard had taken them over); the arrow and number keys switch pages only while focus is in the navigation, instead of anywhere on the page; Escape no longer moves focus when the mobile menu is closed; and focus stays on a cache button after the clear. Fixed the mobile menu's focus trap, which failed with an error ("focusableElements.at is not a function").
 - The admin control panel meets WCAG 2.2 AA contrast in both themes: the light theme's green and grey are darker, and the dark theme's buttons use dark text on green. The UptimeRobot link is underlined, the mobile menu button reports whether the menu is open to screen readers, and screen-reader announcements no longer show on the page.
+- Fixed the admin control panel's uptime card: with UptimeRobot not configured, the "Offline" counter showed 0 beside "--" for the others; all three now show "--". A monitor with 0% uptime over the last day shows 0% instead of no figure.
 - Removed the admin control panel's static "Server Online" label, which never checked the server. Service versions read "Unknown" or "Not Found" instead of "vUnknown" and "vNot Found".
 - Fixed clearing a cache after the dashboard sat open for more than 24 minutes: the session had expired, and its token was refused until the page was reloaded. The dashboard now loads the new session's token and sends the request once more, so the new session cookie name needs no reload either.
 - Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
@@ -35,6 +36,7 @@ Changes are organized by date, with the most recent changes listed first.
 - The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
 - Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
 - Removed the cron job that deleted the control panel's API cache every minute; cache entries expire on their own. EngineScript updates remove the job from existing servers.
+- Simplified the dashboard's script: it drops unused code (an Opera Mini fallback, an unused token accessor, refresh limits nothing read, the cleanup on page unload) and the text sanitizing the page never needed, since every value is set as text, never as HTML. Links from the API are still checked to be http or https.
 - The dashboard's version in its asset URLs now includes a hash of its files, so browsers load the new files after any update, even two on the same day.
 
 ## 2026-10-29

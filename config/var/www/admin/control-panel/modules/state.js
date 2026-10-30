@@ -6,10 +6,6 @@ export class DashboardState {
     this.currentPage = "overview";
     this.refreshInterval = 300000; // 5 minutes
     this.refreshTimer = null;
-
-    // Security configurations
-    this.maxRefreshInterval = 300000; // 5 minutes max
-    this.minRefreshInterval = 5000; // 5 seconds min
     this.allowedPages = ["overview", "sites", "system", "tools"];
   }
 
@@ -30,13 +26,6 @@ export class DashboardState {
       clearInterval(this.refreshTimer);
     }
     this.refreshTimer = timer;
-  }
-
-  clearRefreshTimer() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
-    }
   }
 
   isValidPage(page) {
