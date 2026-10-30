@@ -11,6 +11,7 @@ Changes are organized by date, with the most recent changes listed first.
 - Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
 - Installs and updates now build the control panel, TinyFileManager, and phpSysInfo beside the running copy and switch over only when the new copy is complete, so a failed download or copy keeps the working copy. Before, `es.update` emptied the control panel first, and the tool installers deleted the installed tool before downloading the new one. The admin control panel install step is recorded as done only when every part of it succeeded, so a failed part runs again on the next install.
 - phpSysInfo's `.git` directory is no longer installed into the served `/phpsysinfo/` directory.
+- Fixed TinyFileManager answering "Credentials not configured" since the install options file became readable by root only (2026-10-21). Installs and `es.update` now write its login, the username and a hash of the password, to `/var/lib/enginescript/admin/tinyfilemanager-auth.php`, which the web server can read; TinyFileManager no longer reads the install options. After changing the File Manager password with `es.config`, run `es.update`.
 
 ### 🔒 ADMIN SUBDOMAIN
 

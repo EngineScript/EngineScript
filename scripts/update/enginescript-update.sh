@@ -118,6 +118,12 @@ fi
 print_last_errors
 debug_pause "Admin Control Panel Update"
 
+# Tiny File Manager is installed once; its EngineScript configuration follows each update
+if [[ -d "${TOOLS_DIR}/tinyfilemanager" ]]; then
+    cp -f /usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php "${TOOLS_DIR}/tinyfilemanager/config.php" 2>> /tmp/enginescript_install_errors.log
+    print_last_errors
+fi
+
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
 /usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log

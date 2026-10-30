@@ -5,40 +5,30 @@
  * Dynamic configuration using EngineScript credentials
  */
 
-// Load credentials from EngineScript install options
-$credentials_file = '/home/EngineScript/enginescript-install-options.txt';
-$fm_username = null;
-$fm_password = null;
+declare(strict_types=1);
 
-if (file_exists($credentials_file)) { // codacy:ignore - file_exists() required for configuration file checking in standalone service
-    $content = (string) file_get_contents($credentials_file); // codacy:ignore - file_get_contents() required for configuration reading in standalone service
-
-    // Extract FILEMANAGER_USERNAME
-    if (preg_match('/FILEMANAGER_USERNAME="([^"]*)"/', $content, $matches)) {
-        $extracted_username = trim($matches[1]);
-        if (!empty($extracted_username) && $extracted_username !== 'PLACEHOLDER') {
-            $fm_username = $extracted_username;
-        }
-    }
-
-    // Extract FILEMANAGER_PASSWORD
-    if (preg_match('/FILEMANAGER_PASSWORD="([^"]*)"/', $content, $matches)) {
-        $extracted_password = trim($matches[1]);
-        if (!empty($extracted_password) && $extracted_password !== 'PLACEHOLDER') {
-            $fm_password = $extracted_password;
-        }
-    }
-}
+// The login: written by update-config-files.sh (which es.update runs) from FILEMANAGER_USERNAME
+// and FILEMANAGER_PASSWORD in the install options. It holds a hash of the password, so the web
+// server never reads the install options file.
+$es_fm_login_file = '/var/lib/enginescript/admin/tinyfilemanager-auth.php';
+$es_fm_login = is_readable($es_fm_login_file) ? require $es_fm_login_file : null;
 
 // Security check - fail if credentials are not properly configured
-if (empty($fm_username) || empty($fm_password)) {
+if (
+    !is_array($es_fm_login)
+    || !isset($es_fm_login['username'], $es_fm_login['password_hash'])
+    || !is_string($es_fm_login['username'])
+    || !is_string($es_fm_login['password_hash'])
+    || $es_fm_login['username'] === ''
+    || $es_fm_login['password_hash'] === ''
+) {
     http_response_code(503);
-    die('File Manager Error: Credentials not configured. Please run "es.config" to set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD.'); // codacy:ignore - die() required for secure failure in standalone service
+    die('File Manager Error: Credentials not configured. Set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD with "es.config", then run "es.update".');
 }
 
-// Generate authentication array with hashed password
+// Authentication array: username => password hash
 $auth_users = [
-    $fm_username => password_hash($fm_password, PASSWORD_DEFAULT),
+    $es_fm_login['username'] => $es_fm_login['password_hash'],
 ];
 
 // Set as non-global auth
