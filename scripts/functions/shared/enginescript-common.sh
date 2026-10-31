@@ -742,26 +742,52 @@ function validate_url() {
 
 
 # ----------------------------------------------------------------
+# Run a command as www-data
+#
+# Site files belong to www-data, so a hacked plugin can change them. Anything that runs those
+# files (WP-CLI loads wp-config.php and every plugin) or parses them (image tools) must run as
+# www-data on a schedule: as root, it would hand the plugin the whole server.
+# Usage: run_as_www_data <command> [arguments]
+function run_as_www_data() {
+    runuser -u www-data -- "$@"
+}
+
+
+# ----------------------------------------------------------------
+# Give a folder to www-data, with directories at 755 and files at 644
+#
+# www-data can swap any file in the folder for a symlink while find runs, and chmod follows
+# symlinks. Run as root, chmod would then change a file outside the folder, such as a root-only
+# one, so it runs as www-data, after the chown: chown -R itself does not follow symlinks.
+# Usage: set_www_data_tree <folder>
+function set_www_data_tree() {
+    local dir="$1"
+
+    chown -R www-data:www-data "${dir}"
+    # find stops on a working directory www-data cannot read, such as /root
+    (
+        cd / || exit 1
+        run_as_www_data find "${dir}" -type d -exec chmod 0755 {} +
+        run_as_www_data find "${dir}" -type f -exec chmod 0644 {} +
+    )
+}
+
+
+# ----------------------------------------------------------------
 # Set permissions for EngineScript frontend directories and files
 function set_enginescript_frontend_permissions() {
     # Set permissions for /var/www/admin/control-panel (dashboard)
     if [ -d "/var/www/admin/control-panel" ]; then
-        find /var/www/admin/control-panel -type d -print0 | sudo xargs -0 chmod 0755
-        find /var/www/admin/control-panel -type f -print0 | sudo xargs -0 chmod 0644
-        chown -R www-data:www-data /var/www/admin/control-panel
+        set_www_data_tree /var/www/admin/control-panel
     fi
 
     # Set permissions for /var/www/admin/tools (phpMyAdmin, TinyFileManager, etc.)
     if [ -d "/var/www/admin/tools" ]; then
-        find /var/www/admin/tools -type d -print0 | sudo xargs -0 chmod 0755
-        find /var/www/admin/tools -type f -print0 | sudo xargs -0 chmod 0644
-        chown -R www-data:www-data /var/www/admin/tools
+        set_www_data_tree /var/www/admin/tools
     fi
 
     # Set permissions for /etc/enginescript
-    find /etc/enginescript -type d -print0 | sudo xargs -0 chmod 0755
-    find /etc/enginescript -type f -print0 | sudo xargs -0 chmod 0644
-    chown -R www-data:www-data /etc/enginescript
+    set_www_data_tree /etc/enginescript
 
     # Ensure API cache directory has correct owner and permissions
     if [ -d "/var/cache/enginescript/api" ]; then
@@ -1548,25 +1574,96 @@ function resolve_backup_settings() {
 
 
 # ----------------------------------------------------------------
-# Install the backup scheduler cron job
+# Print the cron jobs EngineScript schedules, one per line, for the current install options
 #
-# enginescript-backup.sh runs every hour and reads the backup frequencies from the install
-# options, so changing a setting needs no cron change. Older installs had a separate cron job
-# per backup script; those are replaced. Safe to run again.
-function install_backup_cron() {
-    local scheduler="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
-    local legacy='daily-database-backup\.sh|hourly-database-backup\.sh|weekly-wp-content-backup\.sh'
-    local current
+# Jobs run through run-job.sh, which logs them to /var/log/EngineScript. Two do not: the backup
+# scheduler logs for itself, and the API cache sweep runs every minute with nothing to report.
+function enginescript_cron_jobs() {
+    local scripts="/usr/local/bin/enginescript/scripts"
+    local run="bash ${scripts}/functions/cron/run-job.sh"
+
+    # Tool updates, permissions, security scans, and the EngineScript update, in that order
+    echo "52 5 * * * ${run} functions/cron/daily-maintenance.sh"
+
+    # WordPress Maintenance
+    echo "*/15 * * * * ${run} functions/cron/wp-cron.sh"
+
+    # Backup Tasks: one job every hour; enginescript-backup.sh reads the BACKUP_* frequencies
+    echo "5 * * * * cd ${scripts}/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
+
+    # System Maintenance
+    echo "7 * * * * ${run} functions/cron/cleanup-cron.sh"
+
+    # API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
+    echo "* * * * * cd ${scripts}/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
+
+    if [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]]; then
+        echo "37 5 * * 0 ${run} functions/cron/optimize-images.sh"
+    fi
+
+    # Configuration Backups
+    echo "47 6 * * * ${run} functions/backup/nginx-backup.sh"
+    echo "48 6 * * * ${run} functions/backup/php-backup.sh"
+
+    # Cloudflare Updates
+    echo "49 5 1 * * ${run} install/nginx/nginx-cloudflare-origin-cert.sh"
+    echo "50 5 1 * * ${run} install/nginx/nginx-cloudflare-ip-updater.sh"
+    echo "51 5 1 * * ${run} functions/cron/ufw-cloudflare-cron.sh"
+}
+
+
+# ----------------------------------------------------------------
+# Make root's crontab match enginescript_cron_jobs
+#
+# Every active line that runs something under /usr/local/bin/enginescript is EngineScript's and
+# is replaced, so a job that was removed, renamed, or turned off in the install options leaves
+# existing servers too. Other lines, such as acme.sh's, are kept. Safe to run again.
+function install_enginescript_cron() {
+    local current kept new
 
     current="$(crontab -l 2> /dev/null)" || current=""
-    if ! grep -qE "${legacy}" <<< "${current}" && grep -qxF "${scheduler}" <<< "${current}"; then
+    kept="$(grep -vE '^[^#]*/usr/local/bin/enginescript/' <<< "${current}" | sed '/^$/d')"
+    new="$(enginescript_cron_jobs)"
+    if [[ -n "${kept}" ]]; then
+        new="${kept}"$'\n'"${new}"
+    fi
+    if [[ "${new}" == "${current}" ]]; then
         return 0
     fi
-    echo "Installing the backup scheduler cron job (replaces the separate backup jobs)..."
-    {
-        grep -vE "${legacy}" <<< "${current}" | grep -vxF "${scheduler}" | sed '/^$/d'
-        echo "${scheduler}"
-    } | crontab -
+    echo "Updating EngineScript's cron jobs..."
+    printf '%s\n' "${new}" | crontab -
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for /var/log/EngineScript
+#
+# Root writes logs here, so the folder must belong to root: www-data could otherwise replace a
+# log with a symlink, and root would write to the link's target (CVE-2016-1247). The control
+# panel runs as www-data and only appends to its two log files, which stay www-data's.
+function set_enginescript_log_permissions() {
+    local log_dir="/var/log/EngineScript" panel_log
+
+    if [[ ! -d "${log_dir}" ]]; then
+        return 0
+    fi
+    chown root:root "${log_dir}"
+    chmod 755 "${log_dir}"
+    # A link left there before the folder changed hands
+    find "${log_dir}" -mindepth 1 -maxdepth 1 -type l -delete
+    for panel_log in enginescript-api.log enginescript-api-security.log; do
+        touch "${log_dir}/${panel_log}"
+        chown www-data:www-data "${log_dir}/${panel_log}"
+        chmod 644 "${log_dir}/${panel_log}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Install the logrotate rule for scheduled jobs' logs
+function install_enginescript_logrotate() {
+    cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
+    chmod 644 /etc/logrotate.d/enginescript
 }
 
 
@@ -2177,6 +2274,21 @@ function git_clone_fresh() {
 
     clean_directory "${dest_path}"
     git clone "$@" "${repo_url}" "${dest_path}"
+}
+
+
+# ----------------------------------------------------------------
+# Send a note to the admin through Pushbullet, when a token is set
+# The token goes in on standard input: command-line arguments are visible to every user.
+# Usage: notify_admin "Title" "Message"
+function notify_admin() {
+    local title="$1" message="$2"
+
+    if [[ -z "${PUSHBULLET_TOKEN:-}" || "${PUSHBULLET_TOKEN}" == "PLACEHOLDER" ]]; then
+        return 0
+    fi
+    printf 'user = "%s:"\n' "${PUSHBULLET_TOKEN}" | curl -fsS --proto '=https' --max-time 30 -K - -o /dev/null \
+        https://api.pushbullet.com/v2/pushes -d type=note --data-urlencode "title=${title}" --data-urlencode "body=${message}"
 }
 
 

@@ -132,7 +132,7 @@ backup_databases() {
     mkdir -p "${dir}"
     file="${dir}/${site}-database.sql.gz"
     tmp="${dir}/.${site}-database.sql.gz.partial"
-    if (set -o pipefail; wp db export - --path="${site_root}" --allow-root --single-transaction --quick --add-drop-table 2>> "${LOG}" | gzip > "${tmp}"); then
+    if (set -o pipefail; cd / && run_as_www_data wp db export - --path="${site_root}" --single-transaction --quick --add-drop-table 2>> "${LOG}" | gzip > "${tmp}"); then
       mv -f "${tmp}" "${file}"
       log "Database backup (${kind}): ${site}, $(du -h "${file}" | cut -f1)"
       s3_upload "${file}" "${site}/backups/database/${kind}/${stamp}/${site}-database.sql.gz"

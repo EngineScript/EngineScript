@@ -87,7 +87,6 @@ echo ""
 # --------------------------------------------------------
 # Updating files from previous versions
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/emergency-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Auto-Upgrades"
 
@@ -190,14 +189,10 @@ if [[ -f "$SITES_FILE" ]]; then
         
         # Set permissions for both plugins (only if they exist)
         if [[ -d "$WP_PLUGIN_DIR/enginescript-site-exporter" ]]; then
-          chown -R www-data:www-data "$WP_PLUGIN_DIR/enginescript-site-exporter"
-          find "$WP_PLUGIN_DIR/enginescript-site-exporter" -type d -exec chmod 755 {} \;
-          find "$WP_PLUGIN_DIR/enginescript-site-exporter" -type f -exec chmod 644 {} \;
+          set_www_data_tree "$WP_PLUGIN_DIR/enginescript-site-exporter"
         fi
         if [[ -d "$WP_PLUGIN_DIR/enginescript-site-optimizer" ]]; then
-          chown -R www-data:www-data "$WP_PLUGIN_DIR/enginescript-site-optimizer"
-          find "$WP_PLUGIN_DIR/enginescript-site-optimizer" -type d -exec chmod 755 {} \;
-          find "$WP_PLUGIN_DIR/enginescript-site-optimizer" -type f -exec chmod 644 {} \;
+          set_www_data_tree "$WP_PLUGIN_DIR/enginescript-site-optimizer"
         fi
       else
         echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."

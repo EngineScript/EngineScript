@@ -18,12 +18,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Removes stuck lock files (older than 6 hours)
-# Credit SlickStack for the idea.
-find /tmp -maxdepth 1 -name '*.lock' -mmin +360 -delete 2>/dev/null
-
 # Remove PHP session files older than 6 hours
 find /var/cache/php-sessions -type f -mmin +360 -delete > /dev/null 2>&1
 
-# Clean any leftover files in /tmp older than 6 hours
-find /tmp -type f -mmin +360 -delete > /dev/null 2>&1
+# Remove EngineScript's own leftover temporary files older than 6 hours. systemd-tmpfiles clears
+# the rest of /tmp after 30 days; the services' private temp folders and other programs' files
+# are not ours to touch.
+find /tmp -maxdepth 1 -type f \( -name 'enginescript*' -o -name '*_db_import.sql' \
+  -o -name 'analyze_all_tables.*' -o -name 'cloudflare-ipv[46]' -o -name 'tinyfilemanager-*' \) \
+  -mmin +360 -delete > /dev/null 2>&1

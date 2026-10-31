@@ -9,5 +9,5 @@
 
 # Runs the wp-content backup with enginescript-backup.sh.
 # Older installs have a cron job for this script; EngineScript updates replace those jobs with
-# the backup scheduler (install_backup_cron), which reads the backup frequencies each hour.
+# the backup scheduler (install_enginescript_cron), which reads the backup frequencies each hour.
 exec bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh files

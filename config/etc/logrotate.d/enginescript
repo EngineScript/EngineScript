@@ -1,13 +1,10 @@
-/var/log/EngineScript/*.log {
+# Scheduled jobs' logs only. Install, update, and vhost logs in this folder are kept whole.
+/var/log/EngineScript/cron-*.log /var/log/EngineScript/enginescript-backup.log {
     monthly
     missingok
     rotate 6
     compress
     delaycompress
     notifempty
-    create 0644 root root
-    sharedscripts
-
-    postrotate
-    endscript
+    create 0600 root root
 }
