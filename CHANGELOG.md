@@ -4,6 +4,26 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-31
+
+### 🔒 CRON JOB SECURITY FIXES
+
+- Scheduled jobs no longer run site code as root. WP-Cron every 15 minutes and the hourly database backup ran WP-CLI as root, which runs `wp-config.php` and, for WP-Cron, every plugin on the site, so a hacked plugin could take over the server. They now run as `www-data`, as do the daily checksum check and the optional image optimization.
+- Fixed a race in the daily permission reset: `chmod` ran as root over files `www-data` can swap for symlinks, so a hacked plugin could make a root-only file readable. It now runs as `www-data`, for sites, the admin tools, `/etc/enginescript`, and the EngineScript plugins.
+- `/var/log/EngineScript` now belongs to root. It belonged to `www-data`, which could replace a log with a symlink so that root wrote to the link's target. The control panel's two log files stay `www-data`'s.
+
+### 🕒 CRON JOB CHANGES
+
+- The daily jobs now run one after another from 5:52: WP-CLI and Wordfence CLI updates, permissions, the two security scans, then the EngineScript update. They used to start a minute apart and could overlap.
+- The PHP-in-uploads scan and the WordPress core checksum check now run on every server, not only on servers with a Pushbullet token. The token only adds a note when they find something.
+- Cron jobs now log to `/var/log/EngineScript/cron-<job>.log`, with their exit status, and a job is skipped if its previous run is still going. They used to discard all output. These logs and `enginescript-backup.log` are rotated monthly, keeping 6; install, update, and vhost logs are still kept whole.
+- EngineScript updates now rewrite EngineScript's cron jobs to match the current list and install options, so removed jobs leave existing servers. Lines under `/usr/local/bin/enginescript` that were edited by hand are replaced; other lines are kept.
+- WP-Cron has a 15-minute limit per site, so one stuck event no longer holds up the other sites.
+- The hourly `/tmp` cleanup now removes only EngineScript's own temporary files. It used to delete every file older than 6 hours, including inside the services' private temp folders.
+- The image optimization job strips Exif data from `wp-content/uploads` only, not from theme and plugin images.
+- Removed the hourly emergency update job, its `ENGINESCRIPT_AUTO_EMERGENCY_UPDATES` option, and `emergency-auto-upgrade.sh`. The script was empty, and it could only ever run the copy already on the server, which changes once a day, so it could not fix anything sooner than the daily update. The option can stay in existing options files; nothing reads it.
+- Removed two scripts that nothing ran: `compression-cron.sh` and `emergency-auto-upgrade-cron.sh`.
+
 ## 2026-10-29
 
 ### 🐛 SITE CREATION FIXES

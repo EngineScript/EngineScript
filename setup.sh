@@ -206,10 +206,10 @@ touch "/var/log/EngineScript/enginescript-api-security.log"
 # Set proper permissions for EngineScript logs
 chown -R www-data:www-data "/var/log/EngineScript"
 chmod -R 644 "/var/log/EngineScript"/*.log
+set_enginescript_log_permissions
 
-# Logrotate - EngineScript Logs (DISABLED - preserves install logs)
-# cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"
-# find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
+# Logrotate - scheduled jobs' logs only; install logs are kept whole
+install_enginescript_logrotate
 
 # Return to /usr/src
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }

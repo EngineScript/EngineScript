@@ -38,9 +38,6 @@ INSTALL_ADMINER=0
 # Disable auto-updates in CI environment
 ENGINESCRIPT_AUTO_UPDATE=0
 
-# EngineScript Emergency Updates (Disabled for CI)
-# Disable emergency updates in CI environment
-ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0
 
 ############################
 # Expanded Server Features #

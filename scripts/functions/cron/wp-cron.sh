@@ -24,9 +24,21 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Include config
 source /home/EngineScript/sites-list/sites.sh
 
+STATUS=0
+
 for i in "${SITES[@]}"
 do
-	cd "/var/www/sites/$i/html"
+	if ! cd "/var/www/sites/$i/html"; then
+		STATUS=1
+		continue
+	fi
+
 	#php -q wp-cron.php >/dev/null 2>&1
-	wp cron event run --due-now --allow-root
+	# The time limit keeps one stuck event from holding up the other sites
+	if ! run_as_www_data timeout --kill-after=1m 15m wp cron event run --due-now --quiet; then
+		echo "WP-Cron failed or timed out for $i"
+		STATUS=1
+	fi
 done
+
+exit "${STATUS}"

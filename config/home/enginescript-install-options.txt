@@ -131,11 +131,6 @@ INSTALL_DIGITALOCEAN_METRICS_AGENT=0
 # Adds a cron job that pulls the latest EngineScript release and updates your installation to that version.
 ENGINESCRIPT_AUTO_UPDATE=1
 
-# EngineScript Emergency Updates (Recommended)
-# Recommended if you allow EngineScript to auto-update. If a live change breaks servers, this emergency-only script will attempt a self-heal.
-# This script runs hourly, but will not contain any code unless there is a code issue that requires emergency measures.
-ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
-
 # EngineScript Test Mode
 # When enabled, install and update scripts will use the update-software-versions branch instead of the master branch.
 # This allows testing of experimental features and software version updates before they are released to production.
@@ -212,7 +207,8 @@ CF_GLOBAL_API_KEY="PLACEHOLDER"
 CF_ACCOUNT_EMAIL="PLACEHOLDER"
 
 ## Pushbullet (Optional) ##
-# This is used by the checksum and uploads-directory PHP file scan cron jobs.
+# The daily checksum and uploads-directory PHP file scans always run and log to /var/log/EngineScript.
+# With a token, they also send you a note when they find something.
 # Create your token at https://www.pushbullet.com/#settings/account
 PUSHBULLET_TOKEN="PLACEHOLDER"
 
