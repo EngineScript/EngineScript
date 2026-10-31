@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-10-31
+
+### 🔒 NGINX SECURITY
+
+- Nginx accepts HTTPS connections only from Cloudflare again (`ssl_verify_client on`), so nobody who finds a server's IP address can skip Cloudflare's firewall. **Before your next Nginx update:** every domain on the server needs Authenticated Origin Pulls on in Cloudflare (SSL/TLS > Origin Server) and its DNS records proxied, or the site answers every request with a 400 error. Answering yes at the Cloudflare prompt turns this on; answering no now prints this reminder. Testing a site through a hosts file, or any request from the server to its own domain that does not go through Cloudflare, gets the same 400.
+- Fixed `NGINX_BLOCK_UNSAFE_FILES=1`: its `sed` commands failed, so no rule was switched on and sensitive files stayed reachable. The option now blocks `.env`, `.log`, `.ini`, `.bak`, `wp-config.php` copies, `composer.json`, and similar files. It stays off by default.
+- The `Strict-Transport-Security` header no longer has `includeSubDomains`: visitors' browsers would have refused plain HTTP on every subdomain of a site, including subdomains that EngineScript does not manage, such as an email provider's tracking links.
+
 ## 2026-10-29
 
 ### 🐛 SITE CREATION FIXES
