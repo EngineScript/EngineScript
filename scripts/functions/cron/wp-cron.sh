@@ -35,7 +35,7 @@ do
 
 	#php -q wp-cron.php >/dev/null 2>&1
 	# The time limit keeps one stuck event from holding up the other sites
-	if ! run_as_www_data timeout --kill-after=1m 15m wp cron event run --due-now --quiet; then
+	if ! run_as_www_data timeout --kill-after=1m 15m wp cron event run --due-now; then
 		echo "WP-Cron failed or timed out for $i"
 		STATUS=1
 	fi
