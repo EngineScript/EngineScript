@@ -68,7 +68,7 @@ concurrency:
 jobs:
   node:
     name: Lint and test (Node 24)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
@@ -110,7 +110,7 @@ jobs:
 
   composer:
     name: PHP static analysis (PHP 8.3)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -149,7 +149,7 @@ jobs:
 
   python:
     name: Repository scripts and workflows (Python 3.12)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
