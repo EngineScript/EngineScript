@@ -26,16 +26,18 @@ source /home/EngineScript/sites-list/sites.sh
 
 for i in "${SITES[@]}"
 do
+  UPLOADS="/var/www/sites/${i}/html/wp-content/uploads"
+  if [[ ! -d "${UPLOADS}" ]]; then
+    continue
+  fi
   echo "Optimizing images for ${i}. This will take a while..."
-    cd "/var/www/sites/${i}/html"
 
     # zImageCompress
     # This script will attempt to perform a lossless optimization on images found within your web-facing directories.
     # The -n option makes the script optimize only files that are new since the last run.
-    /usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p "/var/www/sites/${i}/html/wp-content/uploads" -n -q
+    run_as_www_data /usr/local/bin/zimageoptimizer/zImageOptimizer.sh -p "${UPLOADS}" -n -q
 
     # Exiftool
     # Strips Exif data from images
-    exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg "/var/www/sites/${i}/html/wp-content"
-
+    run_as_www_data exiftool -recurse -overwrite_original -EXIF= -ext jpg -ext jpeg "${UPLOADS}"
 done

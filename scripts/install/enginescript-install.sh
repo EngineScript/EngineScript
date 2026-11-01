@@ -116,11 +116,6 @@ if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
       [Yy]* )
         sed -i 's/^ENGINESCRIPT_AUTO_UPDATE=0/ENGINESCRIPT_AUTO_UPDATE=1/' /home/EngineScript/enginescript-install-options.txt
         ENGINESCRIPT_AUTO_UPDATE=1
-        if grep -q '^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0' /home/EngineScript/enginescript-install-options.txt; then
-          sed -i 's/^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0/ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1/' /home/EngineScript/enginescript-install-options.txt
-          ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
-          echo -e "\nEmergency auto updates have also been enabled.\n"
-        fi
         echo -e "\nAutomatic updates have been enabled.\n"
         sleep 2
         break

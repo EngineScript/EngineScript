@@ -41,8 +41,13 @@ print_last_errors
 migrate_php_upload_progress 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
-# Backups: one scheduler cron job in place of the separate backup jobs
-install_backup_cron 2>> /tmp/enginescript_install_errors.log
+# Logs: root owns the log folder, and scheduled jobs' logs are rotated
+set_enginescript_log_permissions 2>> /tmp/enginescript_install_errors.log
+install_enginescript_logrotate 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
+# Cron: replace EngineScript's jobs with the current list
+install_enginescript_cron 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
 # Redis: 128 databases, and every site on its own database number

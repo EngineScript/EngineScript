@@ -23,7 +23,6 @@ echo -e "${BOLD}\n\n--------------------\nConfiguration Review\n----------------
 echo -e "\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-\nEnginescript Install Options\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n"
 echo "ADMIN_SUBDOMAIN = ${ADMIN_SUBDOMAIN}"
 echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
-echo "ENGINESCRIPT_AUTO_EMERGENCY_UPDATES = ${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}"
 echo "ENGINESCRIPT_AUTO_UPDATE = $ENGINESCRIPT_AUTO_UPDATE"
 echo "INSTALL_ADMINER = $INSTALL_ADMINER"
 echo "INSTALL_EXPANDED_PHP = ${INSTALL_EXPANDED_PHP}"

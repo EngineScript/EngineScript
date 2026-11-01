@@ -3,7 +3,7 @@
 # EngineScript CI Test: Backup Settings and Scheduler Cron Job
 #----------------------------------------------------------------------------------
 # resolve_backup_settings must read the BACKUP_* options and translate the per-type switches
-# of older options files; install_backup_cron must replace the separate backup cron jobs of
+# of older options files; install_enginescript_cron must replace the separate backup cron jobs of
 # older installs with one scheduler job. crontab is replaced with a stand-in that keeps the
 # table in a file.
 
@@ -100,44 +100,56 @@ check_settings "Settings can be turned off" \
   "off/30 off/4 off/30 s3=1/1/90"
 
 echo "======================================================="
-echo "Backup Scheduler Cron Job Tests"
+echo "EngineScript Cron Job Tests"
 echo "======================================================="
 
 SCHEDULER="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
-cat > "${FAKE_CRONTAB}" << 'EOF'
+ACME='54 3,9,15,21 * * * "/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" > /dev/null'
+AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
+cat > "${FAKE_CRONTAB}" << EOF
+1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; bash emergency-auto-upgrade.sh >/dev/null 2>&1
 */15 * * * * cd /usr/local/bin/enginescript/scripts/functions/cron; bash wp-cron.sh >/dev/null 2>&1
 0 1 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash daily-database-backup.sh >/dev/null 2>&1
 5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash hourly-database-backup.sh >/dev/null 2>&1
 10 1 * * 0 cd /usr/local/bin/enginescript/scripts/functions/backup; bash weekly-wp-content-backup.sh >/dev/null 2>&1
-47 6 * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash nginx-backup.sh >/dev/null 2>&1
+37 5 * * 0 cd /usr/local/bin/enginescript/scripts/functions/cron; bash optimize-images.sh >/dev/null 2>&1
+55 5 * * * cd /usr/local/bin/enginescript/scripts/update; bash enginescript-update.sh >/dev/null 2>&1
+${ACME}
+# 30 2 * * * /usr/local/bin/enginescript/scripts/custom.sh
 EOF
-install_backup_cron > /dev/null
-if grep -qE 'daily-database-backup|hourly-database-backup|weekly-wp-content-backup' "${FAKE_CRONTAB}"; then
-  fail "Old backup jobs are still in the crontab"
+install_enginescript_cron > /dev/null
+if grep -qE 'emergency-auto-upgrade|daily-database-backup|hourly-database-backup|weekly-wp-content-backup|; bash enginescript-update' "${FAKE_CRONTAB}"; then
+  fail "Old jobs are still in the crontab"
 else
-  pass "Old backup jobs removed"
+  pass "Old jobs removed"
 fi
-if [[ "$(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")" == "1" ]]; then
-  pass "Scheduler job added once"
+if grep -q 'optimize-images' "${FAKE_CRONTAB}"; then
+  fail "A job turned off in the options is still in the crontab"
+else
+  pass "A job turned off in the options is removed"
+fi
+if [[ "$(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")" == "1" ]] && [[ "$(grep -c 'wp-cron\.sh' "${FAKE_CRONTAB}")" == "1" ]]; then
+  pass "Current jobs added once"
 else
   fail "Scheduler job count: $(grep -cxF "${SCHEDULER}" "${FAKE_CRONTAB}")"
 fi
-if grep -q 'wp-cron.sh' "${FAKE_CRONTAB}" && grep -q 'nginx-backup.sh' "${FAKE_CRONTAB}"; then
-  pass "Other cron jobs kept"
+if grep -qxF "${ACME}" "${FAKE_CRONTAB}" && grep -qF '# 30 2 * * * /usr/local' "${FAKE_CRONTAB}"; then
+  pass "Other cron jobs and comments kept"
 else
   fail "Other cron jobs were removed"
 fi
 cp "${FAKE_CRONTAB}" "${FAKE_BIN}/before.txt"
-output="$(install_backup_cron)"
+output="$(install_enginescript_cron)"
 if [[ -z "${output}" ]] && cmp -s "${FAKE_CRONTAB}" "${FAKE_BIN}/before.txt"; then
   pass "Second run changes nothing"
 else
   fail "Second run changed the crontab or printed '${output}'"
 fi
 : > "${FAKE_CRONTAB}"
-install_backup_cron > /dev/null
-if [[ "$(cat "${FAKE_CRONTAB}")" == "${SCHEDULER}" ]]; then
-  pass "Empty crontab gets the scheduler job"
+AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=1
+install_enginescript_cron > /dev/null
+if [[ "$(cat "${FAKE_CRONTAB}")" == "$(enginescript_cron_jobs)" ]] && grep -q 'optimize-images' "${FAKE_CRONTAB}"; then
+  pass "Empty crontab gets the current jobs"
 else
   fail "Empty crontab: '$(cat "${FAKE_CRONTAB}")'"
 fi

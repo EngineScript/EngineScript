@@ -26,22 +26,18 @@ source /home/EngineScript/sites-list/sites.sh
 
 for i in "${SITES[@]}"
 do
-	cd "/var/www/sites/$i/html"
+	if [[ ! -d "/var/www/sites/$i/html" ]]; then
+		continue
+	fi
 
-	# Directories
-	find . -type d -print0 | sudo xargs -0 chmod 0755
-
-	# Files
-	find . -type f -print0 | sudo xargs -0 chmod 0644
+	# Ownership, directories, and files
+	set_www_data_tree "/var/www/sites/$i/html"
 
 	# wp-config.php
-	chmod 600 wp-config.php
+	run_as_www_data chmod 600 "/var/www/sites/$i/html/wp-config.php"
 
-	# Ownership
-	chown -R www-data:www-data ./*
-
-  # Make wp-cron executable
-  chmod +x wp-cron.php
+	# Make wp-cron executable
+	run_as_www_data chmod +x "/var/www/sites/$i/html/wp-cron.php"
 done
 
 # Assign Nginx Permissions
@@ -55,6 +51,9 @@ set_enginescript_home_permissions
 
 # Assign Redis Permissions
 set_redis_permissions
+
+# /var/log/EngineScript belongs to root, because root writes logs there
+set_enginescript_log_permissions
 
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*

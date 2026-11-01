@@ -229,13 +229,11 @@ debug_print "| Option | Value |" "| Option | Value |"
 debug_print "|--------|--------|" "|--------|--------|"
 debug_print "Admin Subdomain | ${ADMIN_SUBDOMAIN}" "| Admin Subdomain | \`${ADMIN_SUBDOMAIN}\` |"
 debug_print "Auto Image Optimization | ${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" "| Auto Image Optimization | \`${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}\` |"
-debug_print "Auto Emergency Updates | ${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" "| Auto Emergency Updates | \`${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}\` |"
 debug_print "Auto Update | ${ENGINESCRIPT_AUTO_UPDATE}" "| Auto Update | \`${ENGINESCRIPT_AUTO_UPDATE}\` |"
 debug_print "Install Adminer | ${INSTALL_ADMINER}" "| Install Adminer | \`${INSTALL_ADMINER}\` |"
 debug_print "Expanded PHP | ${INSTALL_EXPANDED_PHP}" "| Expanded PHP | \`${INSTALL_EXPANDED_PHP}\` |"
 debug_print "HTTP/3 | ${INSTALL_HTTP3}" "| HTTP/3 | \`${INSTALL_HTTP3}\` |"
 debug_print "phpMyAdmin | ${INSTALL_PHPMYADMIN}" "| phpMyAdmin | \`${INSTALL_PHPMYADMIN}\` |"
-debug_print "Auto Emergency | ${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}" "| Auto Emergency | \`${ENGINESCRIPT_AUTO_EMERGENCY_UPDATES}\` |"
 debug_print "Show Header | ${SHOW_ENGINESCRIPT_HEADER}" "| Show Header | \`${SHOW_ENGINESCRIPT_HEADER}\` |"
 
 # Backup Settings
