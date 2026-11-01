@@ -2,6 +2,6 @@
 # Renovate keeps the versions current.
 actionlint-py==1.7.12.25
 mypy==2.4.0
-ruff==0.17.2
+ruff==0.17.3
 yamllint==1.38.0
 zizmor==1.31.1

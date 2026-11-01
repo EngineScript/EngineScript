@@ -205,6 +205,10 @@ configure_cloudflare_settings() {
       echo ""
       echo "Skipping Cloudflare configuration."
       echo ""
+      echo "${BOLD}Before this site can answer:${NORMAL} turn on Authenticated Origin Pulls for ${DOMAIN} in"
+      echo "Cloudflare (SSL/TLS > Origin Server) and keep its DNS records proxied. This server only"
+      echo "accepts connections from Cloudflare, so every other request gets a 400 error."
+      echo ""
       CF_CHOICE="n"
   fi
 
