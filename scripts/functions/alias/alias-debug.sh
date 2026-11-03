@@ -227,14 +227,10 @@ debug_print "\n## Configuration Review\n" "\n## Configuration Review\n"
 debug_print "### EngineScript Install Options\n" "### EngineScript Install Options\n"
 debug_print "| Option | Value |" "| Option | Value |"
 debug_print "|--------|--------|" "|--------|--------|"
-debug_print "Admin Subdomain | ${ADMIN_SUBDOMAIN}" "| Admin Subdomain | \`${ADMIN_SUBDOMAIN}\` |"
-debug_print "Auto Image Optimization | ${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" "| Auto Image Optimization | \`${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}\` |"
-debug_print "Auto Update | ${ENGINESCRIPT_AUTO_UPDATE}" "| Auto Update | \`${ENGINESCRIPT_AUTO_UPDATE}\` |"
-debug_print "Install Adminer | ${INSTALL_ADMINER}" "| Install Adminer | \`${INSTALL_ADMINER}\` |"
-debug_print "Expanded PHP | ${INSTALL_EXPANDED_PHP}" "| Expanded PHP | \`${INSTALL_EXPANDED_PHP}\` |"
-debug_print "HTTP/3 | ${INSTALL_HTTP3}" "| HTTP/3 | \`${INSTALL_HTTP3}\` |"
-debug_print "phpMyAdmin | ${INSTALL_PHPMYADMIN}" "| phpMyAdmin | \`${INSTALL_PHPMYADMIN}\` |"
-debug_print "Show Header | ${SHOW_ENGINESCRIPT_HEADER}" "| Show Header | \`${SHOW_ENGINESCRIPT_HEADER}\` |"
+# Settings only: this report is meant for GitHub issues, so it never shows credentials
+for setting_name in "${ENGINESCRIPT_SETTING_NAMES[@]}"; do
+    debug_print "${setting_name} | ${!setting_name}" "| ${setting_name} | \`${!setting_name}\` |"
+done
 
 # Backup Settings
 debug_print "\n### Backup Configuration\n" "\n### Backup Configuration\n"

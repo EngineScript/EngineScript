@@ -54,7 +54,10 @@ CPU_INFO="$(lscpu)"
 echo "CPU Model: $(awk -F: '/^Model name:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' <<< "${CPU_INFO}")"
 echo "CPU Threads: $(nproc)"
 echo "Threads per Core: $(awk -F: '/^Thread\(s\) per core:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' <<< "${CPU_INFO}")"
-echo "L3 Cache: $(awk -F: '/^L3 cache:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' <<< "${CPU_INFO}")"
+# Virtual CPUs often report no L3 cache to lscpu
+L3_CACHE="$(awk -F: '/^L3 cache:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' <<< "${CPU_INFO}")"
+[[ -n "${L3_CACHE}" ]] || L3_CACHE="$(cat /sys/devices/system/cpu/cpu0/cache/index3/size 2> /dev/null)"
+echo "L3 Cache: ${L3_CACHE:-not reported by this CPU}"
 
 # Hash bucket sizes follow the CPU's cache line size (64 bytes on most CPUs, 128 on some)
 CACHE_LINE_SIZE="$(cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size 2> /dev/null)"

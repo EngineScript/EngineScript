@@ -61,38 +61,6 @@ echo ""
 echo "Then, select a valid TLD from the provided list."
 echo ""
 
-# Prompt for domain name
-# IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
-# They are fully valid under DNS and ICANN rules, and EngineScript must support them.
-#
-# INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
-#   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
-#
-# The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
-# single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
-# required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
-# "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
-# reject every single-character label and break installs for legitimate one-letter domains.
-#
-# Rules enforced by this regex:
-#   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
-#   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
-#   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
-#
-# This is intentional behavior. Do not "fix" it to require at least two characters.
-while true; do
-  read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-  if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
-    echo "You entered: ${DOMAIN_NAME}"
-    break
-  else
-    echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed. Hyphens cannot be at the start or end."
-  fi
-done
-
-# Prompt for TLD
-echo ""
-echo "Select a valid TLD from the list below:"
 VALID_TLDS=(
     # Common gTLDs
     "com" "net" "org" "info" "biz" "name" "pro" "int"
@@ -110,23 +78,66 @@ VALID_TLDS=(
     # Common multi-part public suffixes
     "co.uk" "co.jp" "com.au" "co.nz" "com.sg" "com.my" "com.br" "com.mx" "co.za" "com.tr" "com.hk"
 )
-select TLD in "${VALID_TLDS[@]}"; do
-  if [[ -n "$TLD" ]]; then
-    echo "You selected: ${TLD}"
+
+# Ask for the domain until the user confirms it: a typo would otherwise go on to Cloudflare,
+# the certificate, and the database
+while true; do
+  # Prompt for domain name
+  # IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
+  # They are fully valid under DNS and ICANN rules, and EngineScript must support them.
+  #
+  # INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
+  #   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+  #
+  # The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
+  # single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
+  # required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
+  # "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
+  # reject every single-character label and break installs for legitimate one-letter domains.
+  #
+  # Rules enforced by this regex:
+  #   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
+  #   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
+  #   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
+  #
+  # This is intentional behavior. Do not "fix" it to require at least two characters.
+  while true; do
+    read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
+    if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+      echo "You entered: ${DOMAIN_NAME}"
+      break
+    else
+      echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed. Hyphens cannot be at the start or end."
+    fi
+  done
+
+  # Prompt for TLD
+  echo ""
+  echo "Select a valid TLD from the list below:"
+  select TLD in "${VALID_TLDS[@]}"; do
+    if [[ -n "$TLD" ]]; then
+      echo "You selected: ${TLD}"
+      break
+    else
+      echo "Invalid selection. Please choose a valid TLD from the list."
+    fi
+  done
+
+  # Combine domain name and TLD
+  DOMAIN="${DOMAIN_NAME}.${TLD}"
+  echo ""
+  echo "Full domain: ${BOLD}${DOMAIN}${NORMAL}"
+  if prompt_yes_no "Is ${DOMAIN} the correct domain? Answer n to enter it again."; then
     break
-  else
-    echo "Invalid selection. Please choose a valid TLD from the list."
   fi
+  echo ""
+  echo "Enter the domain again."
+  echo ""
 done
 
-# Combine domain name and TLD
-DOMAIN="${DOMAIN_NAME}.${TLD}"
-echo ""
-echo "Full domain: ${DOMAIN}"
-sleep 2
-
 # Verify if the domain is already configured
-if grep -Fxq "${DOMAIN}" /home/EngineScript/sites-list/sites.sh; then
+# sites.sh lists each domain in quotes, one per line
+if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
   echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
 else
@@ -170,6 +181,10 @@ sleep 1
 # Set Cloudflare settings for the domain using the Cloudflare API
 configure_cloudflare_settings "${DOMAIN}"
 
+# Create domain log directories and files. Before the vhost: Nginx cannot open a log in a missing
+# directory, so its configuration test, and the reload after the certificate is installed, would fail.
+create_domain_logs "${DOMAIN}"
+
 # Create nginx vhost configuration files
 create_nginx_vhost "${DOMAIN}"
 
@@ -185,9 +200,6 @@ create_backup_directories "${DOMAIN}"
 # Site Root
 mkdir -p "/var/www/sites/${DOMAIN}/html"
 cd "/var/www/sites/${DOMAIN}/html"
-
-# Create domain log directories and files
-create_domain_logs "${DOMAIN}"
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
@@ -313,6 +325,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Install EngineScript custom plugins if enabled
   install_enginescript_custom_plugins "${DOMAIN}"
 
+  # WP-CLI set permalink structure for FastCGI cache, before the rewrite rules are flushed below
+  wp option update permalink_structure '/%category%/%postname%/' --allow-root
+
   # Clear WordPress caches, transients, and rewrite rules
   clear_wordpress_caches
 
@@ -323,11 +338,6 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   else
     echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
   fi
-
-  # WP-CLI set permalink structure for FastCGI cache
-  wp option get permalink_structure --allow-root
-  wp option update permalink_structure '/%category%/%postname%/' --allow-root
-  flush_wordpress_rewrites
 
   # Setting Permissions Again
   # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
