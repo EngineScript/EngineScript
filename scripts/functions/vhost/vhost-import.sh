@@ -472,12 +472,8 @@ done
 # Derive DOMAIN from the final SITE_URL (after any user corrections)
 DOMAIN="${SITE_URL}"
 
-
-# Cloudflare API Settings
-# Set Cloudflare settings for the domain using the Cloudflare API
-configure_cloudflare_settings "${DOMAIN}"
-
-# Verify if the extracted domain is already configured
+# Verify if the extracted domain is already configured. Before anything else changes: the
+# Cloudflare step below can point the domain's A record at this server.
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
   echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} (extracted from wp-config.php) is already configured in EngineScript.\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
   rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
@@ -485,6 +481,10 @@ if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
 else
   echo "${BOLD}Pre-import Check: Passed${NORMAL}"
 fi
+
+# Cloudflare API Settings
+# Set Cloudflare settings for the domain using the Cloudflare API
+configure_cloudflare_settings "${DOMAIN}"
 
 # Canonical URL used for import/search-replace workflows: the site's URLs move from
 # ORIGINAL_SITE_URL (http or https) to it.
@@ -496,6 +496,10 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "Starting domain import for ${DOMAIN} from combined ZIP ${COMBINED_ARCHIVE_FILE} at $(date)"
 
 # Continue the installation
+# Create domain log directories and files. Before the vhost: Nginx cannot open a log in a missing
+# directory, so its configuration test, and the reload after the certificate is installed, would fail.
+create_domain_logs "${DOMAIN}"
+
 # Create nginx vhost configuration files
 create_nginx_vhost "${DOMAIN}"
 
@@ -536,9 +540,6 @@ create_backup_directories "${SITE_URL}"
 # Site Root
 mkdir -p "/var/www/sites/${SITE_URL}/html"
 TARGET_WP_PATH="/var/www/sites/${SITE_URL}/html"
-
-# Create domain log directories and files
-create_domain_logs "${SITE_URL}"
 
 # --- Import WordPress Files ---
 echo "Copying WordPress files from ${WP_FILES_SOURCE_PATH} to ${TARGET_WP_PATH}..." # Use the determined source path

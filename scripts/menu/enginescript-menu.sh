@@ -65,7 +65,7 @@ while true
     echo "es.help    - Display EngineScript commands and locations"
     echo "es.menu    - Open EngineScript menu"
     echo "es.restart - Restart Nginx and PHP-FPM"
-    echo "es.update  - Update and upgrade your server using APT"
+    echo "es.update  - Update EngineScript"
     echo ""
     echo "---------------------------------------------------------------"
     echo ""

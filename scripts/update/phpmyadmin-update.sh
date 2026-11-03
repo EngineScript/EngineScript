@@ -27,7 +27,7 @@ rm -rf /var/www/admin/tools/phpmyadmin
 
 # Download phpMyAdmin
 safe_wget "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" 2>> /tmp/enginescript_install_errors.log
-unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d /usr/src 2>> /tmp/enginescript_install_errors.log
+unzip -q -o "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d /usr/src 2>> /tmp/enginescript_install_errors.log
 mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" /var/www/admin/tools/phpmyadmin
 mkdir -p /var/www/admin/tools/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
@@ -38,8 +38,7 @@ debug_pause "phpMyAdmin Download and Extract"
 mv /usr/src/config.inc.php /var/www/admin/tools/phpmyadmin/config.inc.php
 
 # Post-Install Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh 2>> /tmp/enginescript_install_errors.log
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "phpMyAdmin Cleanup"
 

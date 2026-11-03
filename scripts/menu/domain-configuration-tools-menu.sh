@@ -22,7 +22,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 while true
   do
     clear
-    echo -e "Server Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Domain Configuration Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '

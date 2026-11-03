@@ -12,27 +12,53 @@
 
 
 # Debug pause function
-# Prompts the user to continue if DEBUG_INSTALL is set and not 0/empty
+# With DEBUG_INSTALL=1, waits after a step until the user presses Enter, or types 'exit' to stop.
+# It talks to the terminal directly: the install and update scripts send stderr to the error log,
+# a cron job sends stdout to its log, and stdin can be a file a loop is reading. With no terminal,
+# as in cron, it does not pause.
 function debug_pause() {
-    if [[ "${DEBUG_INSTALL}" == "1" ]]; then
-        local last_step=${1:-"Unknown step"}
-        while true; do
-            echo -e "\n[DEBUG] Completed step: ${last_step}"
-            echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
-            echo -e "Some displayed text may contain only general information. Logged output does not always indicate an error."
-            echo -e "\nIf you encountered errors above, you can copy the error text for a GitHub bug report."
-            echo -e "For more server details, run: es.debug"
-            read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
-            if [[ -z "$user_input" ]]; then
-                break
-            elif [[ "$user_input" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
-                echo -e "\nExiting install script as requested."
-                exit 1
-            else
-                echo "Please press Enter to continue or type 'exit' to stop."
-            fi
-        done
+    if [[ "${DEBUG_INSTALL}" != "1" ]]; then
+        return 0
     fi
+
+    local last_step="${1:-Unknown step}"
+    local user_input
+
+    if ! { : > /dev/tty; } 2> /dev/null; then
+        echo "[DEBUG] Completed step: ${last_step} (no terminal, so not pausing)"
+        return 0
+    fi
+
+    {
+        echo ""
+        echo "[DEBUG] Completed step: ${last_step}"
+        echo "[DEBUG] Press Enter to continue, or type 'exit' to stop."
+        echo "Some displayed text may contain only general information. Logged output does not always indicate an error."
+        echo ""
+        echo "If you encountered errors above, you can copy the error text for a GitHub bug report."
+        echo "For more server details, run: es.debug"
+    } > /dev/tty
+
+    while true; do
+        printf '%s' "[DEBUG] Continue or exit? (Enter/exit): " > /dev/tty
+        # The end of input (Ctrl+D, or the terminal closing) continues, as Enter does
+        if ! IFS= read -r user_input < /dev/tty; then
+            echo "" 2> /dev/null > /dev/tty
+            return 0
+        fi
+        if [[ -z "${user_input}" ]]; then
+            return 0
+        elif [[ "${user_input}" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
+            echo "Stopping as requested." > /dev/tty
+            # The pause often runs in a script that another script started, where exit alone would
+            # end only that script and its caller would carry on. An interrupt to the process group
+            # stops every script of the run, as Ctrl+C does.
+            kill -INT 0
+            exit 1
+        else
+            echo "Please press Enter to continue or type 'exit' to stop." > /dev/tty
+        fi
+    done
 }
 
 
@@ -220,10 +246,11 @@ function flush_wordpress_cache() {
 
 
 # ----------------------------------------------------------------
-# Flush WordPress rewrite rules (single site)
+# Flush WordPress rewrite rules (single site). Not --hard: that only writes .htaccess, which Nginx
+# does not read, and warns that it cannot.
 function flush_wordpress_rewrites() {
     echo "Flushing WordPress rewrite rules"
-    wp rewrite flush --hard --allow-root || {
+    wp rewrite flush --allow-root || {
         echo "Error: Failed to flush WordPress rewrite rules."
     }
 }
@@ -2238,6 +2265,92 @@ function download_and_extract() {
         echo "Error: Failed to extract ${output_file}"
         return 1
     }
+}
+
+
+# ----------------------------------------------------------------
+# Remove Apache and the PHP versions EngineScript no longer supports (7.0 to 8.0), old source
+# downloads in /usr/src, and apt's cached and no longer needed packages. The package names are
+# apt regular expressions, so apt lists every package it checks; that list is not shown.
+function run_enginescript_cleanup() {
+    apt-get remove -y -qq 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' > /dev/null
+    rm -rf /usr/src/*.tar.gz*
+    apt-get clean
+    apt-get autoremove --purge -y
+    apt-get autoclean -y
+}
+
+
+# ----------------------------------------------------------------
+# The options in enginescript-install-options.txt, in the file's order. Each option belongs to
+# one of these two lists or to the backup lines of print_install_settings;
+# scripts/ci/test-config-review.sh checks this against the template.
+ENGINESCRIPT_SETTING_NAMES=(
+    "DEBUG_INSTALL"
+    "ADMIN_SUBDOMAIN"
+    "INSTALL_PHPMYADMIN"
+    "INSTALL_ADMINER"
+    "HIGH_SECURITY_SSL"
+    "INSTALL_HTTP3"
+    "INSTALL_EXPANDED_PHP"
+    "PHP_VERSION_OVERRIDE"
+    "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
+    "INSTALL_ENGINESCRIPT_PLUGINS"
+    "INSTALL_EXTRA_WP_PLUGINS"
+    "SHOW_ENGINESCRIPT_HEADER"
+    "NGINX_BLOCK_UNSAFE_FILES"
+    "ZLIB_IMPLEMENTATION"
+    "INSTALL_DIGITALOCEAN_REMOTE_CONSOLE"
+    "INSTALL_DIGITALOCEAN_METRICS_AGENT"
+    "ENGINESCRIPT_AUTO_UPDATE"
+    "TEST_MODE"
+)
+ENGINESCRIPT_CREDENTIAL_NAMES=(
+    "S3_BUCKET_NAME"
+    "CF_GLOBAL_API_KEY"
+    "CF_ACCOUNT_EMAIL"
+    "PUSHBULLET_TOKEN"
+    "UBUNTU_PRO_TOKEN"
+    "UPTIMEROBOT_API_KEY"
+    "WPSCANAPI"
+    "WP_ADMIN_EMAIL"
+    "WP_ADMIN_USERNAME"
+    "WP_ADMIN_PASSWORD"
+    "WP_RECOVERY_EMAIL"
+    "ADMIN_CONTROL_PANEL_USERNAME"
+    "ADMIN_CONTROL_PANEL_PASSWORD"
+    "MARIADB_ADMIN_PASSWORD"
+    "PHPMYADMIN_USERNAME"
+    "PHPMYADMIN_PASSWORD"
+    "FILEMANAGER_USERNAME"
+    "FILEMANAGER_PASSWORD"
+)
+
+
+# ----------------------------------------------------------------
+# Print the install options that are settings, not credentials, as "NAME = value" lines
+function print_install_settings() {
+    local name
+
+    for name in "${ENGINESCRIPT_SETTING_NAMES[@]}"; do
+        echo "${name} = ${!name}"
+    done
+    resolve_backup_settings
+    echo "BACKUP_DATABASE_FREQUENCY = ${BACKUP_DATABASE_FREQUENCY} (keep ${BACKUP_DATABASE_KEEP_DAYS} days)"
+    echo "BACKUP_FILES_FREQUENCY = ${BACKUP_FILES_FREQUENCY} (keep ${BACKUP_FILES_KEEP_COPIES} copies)"
+    echo "BACKUP_CONFIG_FREQUENCY = ${BACKUP_CONFIG_FREQUENCY} (keep ${BACKUP_CONFIG_KEEP_DAYS} days)"
+    echo "BACKUP_S3 = ${BACKUP_S3} (include configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})"
+}
+
+
+# ----------------------------------------------------------------
+# Print the credential options as "NAME = value" lines
+function print_install_credentials() {
+    local name
+
+    for name in "${ENGINESCRIPT_CREDENTIAL_NAMES[@]}"; do
+        echo "${name} = ${!name}"
+    done
 }
 
 

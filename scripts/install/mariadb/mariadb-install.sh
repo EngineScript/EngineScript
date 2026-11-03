@@ -56,7 +56,7 @@ debug_pause "MariaDB Installation"
 apt upgrade -y 2>> /tmp/enginescript_install_errors.log
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh 2>> /tmp/enginescript_install_errors.log
+run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "System Update and Cleanup"
 

@@ -1,0 +1,47 @@
+name: Test Configuration Review
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'config/home/enginescript-install-options.txt'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/enginescript-install.sh'
+      - 'scripts/functions/alias/alias-server-info.sh'
+      - 'scripts/functions/alias/alias-debug.sh'
+      - 'scripts/ci/test-config-review.sh'
+      - '.github/workflows/test-config-review.yml'
+  pull_request:
+    paths:
+      - 'config/home/enginescript-install-options.txt'
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/install/enginescript-install.sh'
+      - 'scripts/functions/alias/alias-server-info.sh'
+      - 'scripts/functions/alias/alias-debug.sh'
+      - 'scripts/ci/test-config-review.sh'
+      - '.github/workflows/test-config-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-config-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run configuration review tests
+        run: |
+          bash -n scripts/ci/test-config-review.sh
+          bash scripts/ci/test-config-review.sh

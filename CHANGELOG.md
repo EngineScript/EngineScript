@@ -4,6 +4,45 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-03
+
+### 🐛 DEBUG MODE FIXES
+
+- The debug mode prompt now shows on screen. In every step run from another script (each step of the Nginx, PHP, MariaDB, tools, and control panel installs, and of the updates) it went to the error log instead, so the install waited for Enter with no prompt and looked stuck.
+- Typing `exit` at a debug prompt now stops the whole install or update. In a step run from another script it stopped only that script, and the install went on.
+- The debug prompt now reads the keyboard, not the script's input, and does not pause when there is no terminal, as in cron.
+- Debug mode no longer builds OpenSSL's test programs in the Nginx compile. Nothing ran them, and they made the compile slower.
+
+### 🐛 INSTALL FIXES
+
+- Fixed the WP-CLI step failing on new servers. It pinned the `wp-cli/doctor-command` package to 2.3.1, which does not work with the WP-CLI nightly (3.0) that EngineScript installs, and a package that failed stopped the step. Both WP-CLI packages now use `@stable`, the newest release that works with the installed WP-CLI, and a package that cannot be installed or updated is reported without stopping the install or the daily update. The daily update moves servers still pinned to doctor-command 2.3.1 to `@stable`.
+- The WP-CLI download is checked before it replaces `/usr/local/bin/wp`, so a failed download no longer leaves a broken `wp` in place.
+- `setup.sh` now stops on a server where `es.install` has already completed a step. Running it again deleted and cloned EngineScript, and purged every PHP 8 package, PHP-FPM included. To finish an install, run `es.install`; it continues with the steps not done yet.
+- On a virtual machine (any VPS), setup installs the `linux-virtual-hwe-24.04` kernel package instead of `linux-generic-hwe-24.04`. Both install the same kernel and modules; the virtual one leaves out about 1 GB of hardware firmware, the CPU microcode, and the power and USB daemons, which a VM does not use. Physical servers keep the generic package. Existing servers keep the kernel package they have.
+- The acme.sh install is tried up to three times when a download fails, and stops with an error instead of going on without acme.sh.
+- The AWS CLI install no longer stops to ask about replacing files when it runs again, and updates an existing AWS CLI instead of failing.
+- The configuration review at the start of `es.install` now shows every option of the options file. It left out 14 of the 45, among them `HIGH_SECURITY_SSL`, `NGINX_BLOCK_UNSAFE_FILES`, `INSTALL_HTTP3`, `PHP_VERSION_OVERRIDE`, `TEST_MODE`, and `UBUNTU_PRO_TOKEN`, and showed `WORDFENCE_CLI_TOKEN`, which is not an option. `es.info` and `es.debug` now show every setting too (never the credentials).
+- The Google Cloud repository key download now fails on an error and uses HTTPS only, and running the step again no longer adds the repository twice.
+- The Cloudflare IP updater counted one range too few of each kind (the ranges themselves were all used), and now lists the downloaded ranges only in debug mode.
+- The GCC step no longer prints an error on new servers, and the Nginx tuning step shows "not reported" when a virtual CPU reports no L3 cache.
+- Setup skips the kernel when it runs in a container, which uses its host's kernel.
+- `jq` is now installed with the other dependencies. Several scripts use it, and it was only there because some providers' Ubuntu images include it.
+
+### 🐛 SITE CREATION FIXES
+
+- Fixed the Nginx reload failing ("Job for nginx.service failed") when a new or imported site's certificate was installed. The site's log directory was created after its vhost, and Nginx cannot open a log in a missing directory, so the reload was refused until the services were restarted at the end of the setup.
+- The Cloudflare step now prints one line per DNS record and setting, marked ✓, or ✗ with Cloudflare's error message, and a summary, instead of the raw API responses. It warns when Authenticated Origin Pulls could not be turned on, since the site then answers every request with a 400 error.
+- WordPress rewrite rules are flushed once, after the permalink structure is set, and without `--hard`, which only tries to write an `.htaccess` file that Nginx does not use. The two warnings this printed during site setup are gone.
+- Creating a domain now asks you to confirm it (for example, "Is wordpresstesting.com the correct domain?") before anything is changed. Answering no asks for the domain and TLD again, so a typo no longer goes on to Cloudflare, the certificate, and the database. Importing already showed the site's URL for confirmation or correction.
+- Importing a domain that is already installed now stops before the Cloudflare step. The check ran after it, so the import could point the existing site's A record at this server and only then stop.
+- Creating a domain that is already installed now stops at the pre-installation check. The check looked for the domain without the quotes `sites.sh` stores it in, so it never found it, and the install went ahead over the existing site.
+- The main menu describes `es.update` correctly, and the Domain Configuration, Database, EngineScript, and Backup menus no longer show another menu's title or exit option.
+
+### 🧹 INSTALL CLEANUP
+
+- The cleanup that ran after many install and update steps is one shared function, `run_enginescript_cleanup`. `php-clean.sh` and `enginescript-cleanup.sh` are removed: the first repeated the second's package removal, and every step that ran it ran both.
+- Quieter install log: the package removal no longer lists the thousands of packages it checks, phpMyAdmin and the AWS CLI unzip silently, the AWS CLI and Google key downloads no longer show a progress meter in the error log, and WPScan's gems install without building their documentation, which also makes that step faster.
+
 ## 2026-10-31
 
 ### 🔒 CRON JOB SECURITY FIXES

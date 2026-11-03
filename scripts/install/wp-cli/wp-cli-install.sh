@@ -29,9 +29,15 @@ fi
 # which leaves WordPress 7 without some of its core files (wp-cli/core-command#336). Return to the
 # stable build (wp-cli.phar here, --stable in wp-cli-update.sh) once a release includes the fix.
 cd /usr/local/src || { echo "Error: Failed to change directory to /usr/local/src" >&2; exit 1; }
-curl -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli-nightly.phar
+# Only a download that runs replaces /usr/local/bin/wp
+if ! curl -fsSL --proto '=https' --retry 3 -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli-nightly.phar \
+    || ! php wp-cli.phar cli version --allow-root > /dev/null; then
+    rm -f wp-cli.phar
+    echo "Error: Failed to download WP-CLI." >&2
+    exit 1
+fi
 chmod +x wp-cli.phar
-sudo mv wp-cli.phar /usr/local/bin/wp
+mv wp-cli.phar /usr/local/bin/wp
 WP_CLI_BIN="/usr/local/bin/wp"
 
 configure_wp_cli_package_fetching() {
@@ -85,12 +91,14 @@ configure_wp_cli_package_fetching() {
     export "GIT_CONFIG_VALUE_${next_git_config}=ssh://git@github.com/"
 }
 
+# The packages add commands; WP-CLI works without them, so a package that fails to install (for
+# example one not yet updated for a new WP-CLI) is reported and the install goes on.
 install_wp_cli_package() {
     local package="$1"
 
     if ! "${WP_CLI_BIN}" package install "${package}" --allow-root; then
-        echo "Error: Failed to install WP-CLI package ${package}." >&2
-        exit 1
+        echo "Warning: Failed to install WP-CLI package ${package}. WP-CLI works without it; install it later with: wp package install ${package} --allow-root" >&2
+        return 1
     fi
 }
 
@@ -102,9 +110,10 @@ chown -R www-data:www-data ~/.wp-cli/cache
 chmod 775 ~/.wp-cli/cache
 
 # Install WP-CLI Extensions
+# @stable lets Composer pick the newest release that works with the installed WP-CLI.
 configure_wp_cli_package_fetching
 install_wp_cli_package "pantheon-systems/wp_launch_check:@stable"
-install_wp_cli_package "wp-cli/doctor-command:2.3.1"
+install_wp_cli_package "wp-cli/doctor-command:@stable"
 
 echo ""
 echo ""

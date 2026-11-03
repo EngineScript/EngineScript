@@ -28,4 +28,4 @@ print_install_banner "WPScan"
 # No need for more verbose error messaging
 # We do not use --user-install so that wpscan has better access to the wordpress filesystem.
 # Always install the latest release of WPScan. No need to track the version installed or implement logging.
-gem install wpscan || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
+gem install wpscan --no-document || { echo "Error: Failed to install WPScan via gem. For troubleshooting, rerun with 'gem install wpscan --verbose' and consult the official RubyGems or WPScan documentation." >&2; exit 1; }
