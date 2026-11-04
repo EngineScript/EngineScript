@@ -38,6 +38,8 @@ show_database_sizes() {
   for site in "${SITES[@]}"; do
     db="$(sed -n 's/^DB="\([A-Za-z0-9_]*\)"$/\1/p' "/home/EngineScript/mysql-credentials/${site}.txt" 2> /dev/null)"
     [[ -n "${db}" ]] && site_of["${db}"]="${site}"
+    db="$(sed -n 's/^DB="\([A-Za-z0-9_]*\)"$/\1/p' "/home/EngineScript/staging-credentials/staging.${site}.txt" 2> /dev/null)"
+    [[ -n "${db}" ]] && site_of["${db}"]="staging.${site}"
   done
   echo ""
   echo "Databases, largest first (Free is space inside the tables that OPTIMIZE TABLE could give back):"
@@ -75,6 +77,7 @@ while true
       "MariaDB-Check Database Optimizer"
       "MySQLreport"
       "MySQLtuner"
+      "Reset a Site's Database Password"
       "Exit Database Tools"
     )
     select secopt in "${secoptions[@]}"
@@ -111,6 +114,17 @@ while true
           ;;
         "MySQLtuner")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
+          break
+          ;;
+        "Reset a Site's Database Password")
+          if select_site; then
+            echo "This gives ${SELECTED_SITE}'s database user a new random password and updates wp-config.php."
+            echo "The site may show a database error for about a second while the password changes."
+            if prompt_yes_no "Reset the database password of ${SELECTED_SITE}?" "n"; then
+              bash /usr/local/bin/enginescript/scripts/functions/vhost/vhost-db-password.sh "${SELECTED_SITE}"
+            fi
+          fi
+          pause
           break
           ;;
         "Exit Database Tools")

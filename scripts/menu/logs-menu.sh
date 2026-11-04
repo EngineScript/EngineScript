@@ -55,6 +55,45 @@ show_cron_log() {
   done
 }
 
+# Ask which log to follow, and show its new lines as they are written until Ctrl+C
+follow_log() {
+  local choice file
+  local names=("MariaDB error log" "Nginx error log" "PHP error log" "Redis log" "Syslog" "Backup log"
+    "SSH login bans (fail2ban)" "A domain's Nginx error log" "A domain's WordPress error log" "Cancel")
+  local files=(/var/log/mysql/mysql-error.log /var/log/nginx/nginx.error.log "/var/log/php${PHP_VER}-fpm.log"
+    /var/log/redis/redis-server.log /var/log/syslog /var/log/EngineScript/enginescript-backup.log /var/log/fail2ban.log)
+  local PS3="Which log? "
+  select choice in "${names[@]}"; do
+    case "${choice}" in
+      "Cancel") return ;;
+      "A domain's Nginx error log")
+        select_site || return
+        file="/var/log/domains/${SELECTED_SITE}/${SELECTED_SITE}-nginx-error.log"
+        ;;
+      "A domain's WordPress error log")
+        select_site || return
+        file="/var/log/domains/${SELECTED_SITE}/${SELECTED_SITE}-wp-error.log"
+        ;;
+      "") echo "Invalid option."; continue ;;
+      *) file="${files[REPLY - 1]}" ;;
+    esac
+    break
+  done
+  [[ -n "${file}" ]] || return
+  clear
+  echo "${BOLD}Following ${file}. Press Ctrl+C to stop.${NORMAL}" | boxes -a c -d shell -p a1l2
+  if [[ ! -f "${file}" ]]; then
+    echo "${file} has not been written yet."
+    echo ""
+    read -n 1 -s -r -p "Press any key to continue"
+    return
+  fi
+  # Ctrl+C stops tail and comes back here instead of closing the menu
+  trap ':' INT
+  tail -F -n 20 "${file}"
+  trap - INT
+}
+
 # The warnings and suggestions of the last Lynis audit (Server Tools > Security Audit)
 show_lynis_report() {
   local report=/var/log/lynis-report.dat
@@ -102,6 +141,7 @@ while true
       "Security Audit Report (Lynis)"
       "EngineScript Install Error Log"
       "API Error Log"
+      "Follow a Log Live"
       "Exit Server Logs"
     )
     select secopt in "${secoptions[@]}"
@@ -165,6 +205,10 @@ while true
           ;;
         "API Error Log")
           show_log "EngineScript API error log" /var/log/EngineScript/enginescript-api.log
+          break
+          ;;
+        "Follow a Log Live")
+          follow_log
           break
           ;;
         "Exit Server Logs")
