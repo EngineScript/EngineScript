@@ -163,14 +163,13 @@ while true
           break
           ;;
         "Update WordPress, Plugins, and Themes (All Domains)")
-          if confirm "Back up every site's database first (recommended)?" y; then
-            if ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh database-daily; then
-              echo ""
-              echo "The backup had errors (see /var/log/EngineScript/enginescript-backup.log)."
-              if ! confirm "Update anyway?"; then
-                pause
-                break
-              fi
+          if confirm "Back up every site's database first (recommended)?" y \
+            && ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh database-daily; then
+            echo ""
+            echo "The backup had errors (see /var/log/EngineScript/enginescript-backup.log)."
+            if ! confirm "Update anyway?"; then
+              pause
+              break
             fi
           fi
           for_each_site update_wordpress
