@@ -24,9 +24,11 @@ clear
 return_to_src
 
 # Install Amazon AWS Client
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo /usr/src/aws/install
+# -o and --update let the step run again over an earlier download and install
+curl -fsSL --proto '=https' --retry 3 "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    || { echo "Error: Failed to download the AWS CLI." >&2; exit 1; }
+unzip -q -o awscliv2.zip
+sudo /usr/src/aws/install --update
 aws --version
 
 # Configuration

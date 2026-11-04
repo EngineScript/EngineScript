@@ -17,8 +17,23 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 #----------------------------------------------------------------------------------
 # Start Main Script
+#
+# Runs the daily jobs one after another, so they cannot overlap: the update replaces the scripts
+# and modes that permissions.sh is working on. Each job has its own log; one failing does not
+# stop the rest. The update goes last, since it replaces this script too.
 
-# Cleanup
+RUN="bash /usr/local/bin/enginescript/scripts/functions/cron/run-job.sh"
 
-# Remove Apache and old PHP installations
-apt-get remove 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' -y -qq >/dev/null 2>&1
+# Tool Updates
+${RUN} update/wp-cli-update.sh
+${RUN} update/wordfence-cli-update.sh
+
+# Permissions and Security
+${RUN} functions/cron/permissions.sh
+${RUN} functions/cron/uploads-php-scan.sh
+${RUN} functions/cron/checksums.sh
+
+# EngineScript Update
+if [[ "${ENGINESCRIPT_AUTO_UPDATE}" == "1" ]]; then
+  ${RUN} update/enginescript-update.sh
+fi

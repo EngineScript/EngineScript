@@ -22,7 +22,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 while true
   do
     clear
-    echo -e "Server Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Database Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
@@ -32,7 +32,7 @@ while true
       "MariaDB-Check Database Optimizer"
       "MySQLreport"
       "MySQLtuner"
-      "Exit Server Tools"
+      "Exit Database Tools"
     )
     select secopt in "${secoptions[@]}"
     do
@@ -65,7 +65,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/server-tools/mysqltuner.sh
           break
           ;;
-        "Exit Server Tools")
+        "Exit Database Tools")
           exit
           ;;
         *) echo "Invalid option.";;

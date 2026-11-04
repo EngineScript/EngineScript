@@ -12,27 +12,53 @@
 
 
 # Debug pause function
-# Prompts the user to continue if DEBUG_INSTALL is set and not 0/empty
+# With DEBUG_INSTALL=1, waits after a step until the user presses Enter, or types 'exit' to stop.
+# It talks to the terminal directly: the install and update scripts send stderr to the error log,
+# a cron job sends stdout to its log, and stdin can be a file a loop is reading. With no terminal,
+# as in cron, it does not pause.
 function debug_pause() {
-    if [[ "${DEBUG_INSTALL}" == "1" ]]; then
-        local last_step=${1:-"Unknown step"}
-        while true; do
-            echo -e "\n[DEBUG] Completed step: ${last_step}"
-            echo -e "[DEBUG] Press Enter to continue, or type 'exit' to stop the install."
-            echo -e "Some displayed text may contain only general information. Logged output does not always indicate an error."
-            echo -e "\nIf you encountered errors above, you can copy the error text for a GitHub bug report."
-            echo -e "For more server details, run: es.debug"
-            read -p "[DEBUG] Continue or exit? (Enter/exit): " user_input
-            if [[ -z "$user_input" ]]; then
-                break
-            elif [[ "$user_input" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
-                echo -e "\nExiting install script as requested."
-                exit 1
-            else
-                echo "Please press Enter to continue or type 'exit' to stop."
-            fi
-        done
+    if [[ "${DEBUG_INSTALL}" != "1" ]]; then
+        return 0
     fi
+
+    local last_step="${1:-Unknown step}"
+    local user_input
+
+    if ! { : > /dev/tty; } 2> /dev/null; then
+        echo "[DEBUG] Completed step: ${last_step} (no terminal, so not pausing)"
+        return 0
+    fi
+
+    {
+        echo ""
+        echo "[DEBUG] Completed step: ${last_step}"
+        echo "[DEBUG] Press Enter to continue, or type 'exit' to stop."
+        echo "Some displayed text may contain only general information. Logged output does not always indicate an error."
+        echo ""
+        echo "If you encountered errors above, you can copy the error text for a GitHub bug report."
+        echo "For more server details, run: es.debug"
+    } > /dev/tty
+
+    while true; do
+        printf '%s' "[DEBUG] Continue or exit? (Enter/exit): " > /dev/tty
+        # The end of input (Ctrl+D, or the terminal closing) continues, as Enter does
+        if ! IFS= read -r user_input < /dev/tty; then
+            echo "" 2> /dev/null > /dev/tty
+            return 0
+        fi
+        if [[ -z "${user_input}" ]]; then
+            return 0
+        elif [[ "${user_input}" =~ ^[Ee][Xx][Ii][Tt]$ ]]; then
+            echo "Stopping as requested." > /dev/tty
+            # The pause often runs in a script that another script started, where exit alone would
+            # end only that script and its caller would carry on. An interrupt to the process group
+            # stops every script of the run, as Ctrl+C does.
+            kill -INT 0
+            exit 1
+        else
+            echo "Please press Enter to continue or type 'exit' to stop." > /dev/tty
+        fi
+    done
 }
 
 
@@ -220,10 +246,11 @@ function flush_wordpress_cache() {
 
 
 # ----------------------------------------------------------------
-# Flush WordPress rewrite rules (single site)
+# Flush WordPress rewrite rules (single site). Not --hard: that only writes .htaccess, which Nginx
+# does not read, and warns that it cannot.
 function flush_wordpress_rewrites() {
     echo "Flushing WordPress rewrite rules"
-    wp rewrite flush --hard --allow-root || {
+    wp rewrite flush --allow-root || {
         echo "Error: Failed to flush WordPress rewrite rules."
     }
 }
@@ -742,26 +769,52 @@ function validate_url() {
 
 
 # ----------------------------------------------------------------
+# Run a command as www-data
+#
+# Site files belong to www-data, so a hacked plugin can change them. Anything that runs those
+# files (WP-CLI loads wp-config.php and every plugin) or parses them (image tools) must run as
+# www-data on a schedule: as root, it would hand the plugin the whole server.
+# Usage: run_as_www_data <command> [arguments]
+function run_as_www_data() {
+    runuser -u www-data -- "$@"
+}
+
+
+# ----------------------------------------------------------------
+# Give a folder to www-data, with directories at 755 and files at 644
+#
+# www-data can swap any file in the folder for a symlink while find runs, and chmod follows
+# symlinks. Run as root, chmod would then change a file outside the folder, such as a root-only
+# one, so it runs as www-data, after the chown: chown -R itself does not follow symlinks.
+# Usage: set_www_data_tree <folder>
+function set_www_data_tree() {
+    local dir="$1"
+
+    chown -R www-data:www-data "${dir}"
+    # find stops on a working directory www-data cannot read, such as /root
+    (
+        cd / || exit 1
+        run_as_www_data find "${dir}" -type d -exec chmod 0755 {} +
+        run_as_www_data find "${dir}" -type f -exec chmod 0644 {} +
+    )
+}
+
+
+# ----------------------------------------------------------------
 # Set permissions for EngineScript frontend directories and files
 function set_enginescript_frontend_permissions() {
     # Set permissions for /var/www/admin/control-panel (dashboard)
     if [ -d "/var/www/admin/control-panel" ]; then
-        find /var/www/admin/control-panel -type d -print0 | sudo xargs -0 chmod 0755
-        find /var/www/admin/control-panel -type f -print0 | sudo xargs -0 chmod 0644
-        chown -R www-data:www-data /var/www/admin/control-panel
+        set_www_data_tree /var/www/admin/control-panel
     fi
 
     # Set permissions for /var/www/admin/tools (phpMyAdmin, TinyFileManager, etc.)
     if [ -d "/var/www/admin/tools" ]; then
-        find /var/www/admin/tools -type d -print0 | sudo xargs -0 chmod 0755
-        find /var/www/admin/tools -type f -print0 | sudo xargs -0 chmod 0644
-        chown -R www-data:www-data /var/www/admin/tools
+        set_www_data_tree /var/www/admin/tools
     fi
 
     # Set permissions for /etc/enginescript
-    find /etc/enginescript -type d -print0 | sudo xargs -0 chmod 0755
-    find /etc/enginescript -type f -print0 | sudo xargs -0 chmod 0644
-    chown -R www-data:www-data /etc/enginescript
+    set_www_data_tree /etc/enginescript
 
     # Ensure API cache directory has correct owner and permissions
     if [ -d "/var/cache/enginescript/api" ]; then
@@ -1595,25 +1648,96 @@ function resolve_backup_settings() {
 
 
 # ----------------------------------------------------------------
-# Install the backup scheduler cron job
+# Print the cron jobs EngineScript schedules, one per line, for the current install options
 #
-# enginescript-backup.sh runs every hour and reads the backup frequencies from the install
-# options, so changing a setting needs no cron change. Older installs had a separate cron job
-# per backup script; those are replaced. Safe to run again.
-function install_backup_cron() {
-    local scheduler="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
-    local legacy='daily-database-backup\.sh|hourly-database-backup\.sh|weekly-wp-content-backup\.sh'
-    local current
+# Jobs run through run-job.sh, which logs them to /var/log/EngineScript. Two do not: the backup
+# scheduler logs for itself, and the API cache sweep runs every minute with nothing to report.
+function enginescript_cron_jobs() {
+    local scripts="/usr/local/bin/enginescript/scripts"
+    local run="bash ${scripts}/functions/cron/run-job.sh"
+
+    # Tool updates, permissions, security scans, and the EngineScript update, in that order
+    echo "52 5 * * * ${run} functions/cron/daily-maintenance.sh"
+
+    # WordPress Maintenance
+    echo "*/15 * * * * ${run} functions/cron/wp-cron.sh"
+
+    # Backup Tasks: one job every hour; enginescript-backup.sh reads the BACKUP_* frequencies
+    echo "5 * * * * cd ${scripts}/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
+
+    # System Maintenance
+    echo "7 * * * * ${run} functions/cron/cleanup-cron.sh"
+
+    # API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
+    echo "* * * * * cd ${scripts}/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
+
+    if [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]]; then
+        echo "37 5 * * 0 ${run} functions/cron/optimize-images.sh"
+    fi
+
+    # Configuration Backups
+    echo "47 6 * * * ${run} functions/backup/nginx-backup.sh"
+    echo "48 6 * * * ${run} functions/backup/php-backup.sh"
+
+    # Cloudflare Updates
+    echo "49 5 1 * * ${run} install/nginx/nginx-cloudflare-origin-cert.sh"
+    echo "50 5 1 * * ${run} install/nginx/nginx-cloudflare-ip-updater.sh"
+    echo "51 5 1 * * ${run} functions/cron/ufw-cloudflare-cron.sh"
+}
+
+
+# ----------------------------------------------------------------
+# Make root's crontab match enginescript_cron_jobs
+#
+# Every active line that runs something under /usr/local/bin/enginescript is EngineScript's and
+# is replaced, so a job that was removed, renamed, or turned off in the install options leaves
+# existing servers too. Other lines, such as acme.sh's, are kept. Safe to run again.
+function install_enginescript_cron() {
+    local current kept new
 
     current="$(crontab -l 2> /dev/null)" || current=""
-    if ! grep -qE "${legacy}" <<< "${current}" && grep -qxF "${scheduler}" <<< "${current}"; then
+    kept="$(grep -vE '^[^#]*/usr/local/bin/enginescript/' <<< "${current}" | sed '/^$/d')"
+    new="$(enginescript_cron_jobs)"
+    if [[ -n "${kept}" ]]; then
+        new="${kept}"$'\n'"${new}"
+    fi
+    if [[ "${new}" == "${current}" ]]; then
         return 0
     fi
-    echo "Installing the backup scheduler cron job (replaces the separate backup jobs)..."
-    {
-        grep -vE "${legacy}" <<< "${current}" | grep -vxF "${scheduler}" | sed '/^$/d'
-        echo "${scheduler}"
-    } | crontab -
+    echo "Updating EngineScript's cron jobs..."
+    printf '%s\n' "${new}" | crontab -
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for /var/log/EngineScript
+#
+# Root writes logs here, so the folder must belong to root: www-data could otherwise replace a
+# log with a symlink, and root would write to the link's target (CVE-2016-1247). The control
+# panel runs as www-data and only appends to its two log files, which stay www-data's.
+function set_enginescript_log_permissions() {
+    local log_dir="/var/log/EngineScript" panel_log
+
+    if [[ ! -d "${log_dir}" ]]; then
+        return 0
+    fi
+    chown root:root "${log_dir}"
+    chmod 755 "${log_dir}"
+    # A link left there before the folder changed hands
+    find "${log_dir}" -mindepth 1 -maxdepth 1 -type l -delete
+    for panel_log in enginescript-api.log enginescript-api-security.log; do
+        touch "${log_dir}/${panel_log}"
+        chown www-data:www-data "${log_dir}/${panel_log}"
+        chmod 644 "${log_dir}/${panel_log}"
+    done
+}
+
+
+# ----------------------------------------------------------------
+# Install the logrotate rule for scheduled jobs' logs
+function install_enginescript_logrotate() {
+    cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
+    chmod 644 /etc/logrotate.d/enginescript
 }
 
 
@@ -2232,6 +2356,92 @@ function download_and_extract() {
 
 
 # ----------------------------------------------------------------
+# Remove Apache and the PHP versions EngineScript no longer supports (7.0 to 8.0), old source
+# downloads in /usr/src, and apt's cached and no longer needed packages. The package names are
+# apt regular expressions, so apt lists every package it checks; that list is not shown.
+function run_enginescript_cleanup() {
+    apt-get remove -y -qq 'apache2.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' > /dev/null
+    rm -rf /usr/src/*.tar.gz*
+    apt-get clean
+    apt-get autoremove --purge -y
+    apt-get autoclean -y
+}
+
+
+# ----------------------------------------------------------------
+# The options in enginescript-install-options.txt, in the file's order. Each option belongs to
+# one of these two lists or to the backup lines of print_install_settings;
+# scripts/ci/test-config-review.sh checks this against the template.
+ENGINESCRIPT_SETTING_NAMES=(
+    "DEBUG_INSTALL"
+    "ADMIN_SUBDOMAIN"
+    "INSTALL_PHPMYADMIN"
+    "INSTALL_ADMINER"
+    "HIGH_SECURITY_SSL"
+    "INSTALL_HTTP3"
+    "INSTALL_EXPANDED_PHP"
+    "PHP_VERSION_OVERRIDE"
+    "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
+    "INSTALL_ENGINESCRIPT_PLUGINS"
+    "INSTALL_EXTRA_WP_PLUGINS"
+    "SHOW_ENGINESCRIPT_HEADER"
+    "NGINX_BLOCK_UNSAFE_FILES"
+    "ZLIB_IMPLEMENTATION"
+    "INSTALL_DIGITALOCEAN_REMOTE_CONSOLE"
+    "INSTALL_DIGITALOCEAN_METRICS_AGENT"
+    "ENGINESCRIPT_AUTO_UPDATE"
+    "TEST_MODE"
+)
+ENGINESCRIPT_CREDENTIAL_NAMES=(
+    "S3_BUCKET_NAME"
+    "CF_GLOBAL_API_KEY"
+    "CF_ACCOUNT_EMAIL"
+    "PUSHBULLET_TOKEN"
+    "UBUNTU_PRO_TOKEN"
+    "UPTIMEROBOT_API_KEY"
+    "WPSCANAPI"
+    "WP_ADMIN_EMAIL"
+    "WP_ADMIN_USERNAME"
+    "WP_ADMIN_PASSWORD"
+    "WP_RECOVERY_EMAIL"
+    "ADMIN_CONTROL_PANEL_USERNAME"
+    "ADMIN_CONTROL_PANEL_PASSWORD"
+    "MARIADB_ADMIN_PASSWORD"
+    "PHPMYADMIN_USERNAME"
+    "PHPMYADMIN_PASSWORD"
+    "FILEMANAGER_USERNAME"
+    "FILEMANAGER_PASSWORD"
+)
+
+
+# ----------------------------------------------------------------
+# Print the install options that are settings, not credentials, as "NAME = value" lines
+function print_install_settings() {
+    local name
+
+    for name in "${ENGINESCRIPT_SETTING_NAMES[@]}"; do
+        echo "${name} = ${!name}"
+    done
+    resolve_backup_settings
+    echo "BACKUP_DATABASE_FREQUENCY = ${BACKUP_DATABASE_FREQUENCY} (keep ${BACKUP_DATABASE_KEEP_DAYS} days)"
+    echo "BACKUP_FILES_FREQUENCY = ${BACKUP_FILES_FREQUENCY} (keep ${BACKUP_FILES_KEEP_COPIES} copies)"
+    echo "BACKUP_CONFIG_FREQUENCY = ${BACKUP_CONFIG_FREQUENCY} (keep ${BACKUP_CONFIG_KEEP_DAYS} days)"
+    echo "BACKUP_S3 = ${BACKUP_S3} (include configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})"
+}
+
+
+# ----------------------------------------------------------------
+# Print the credential options as "NAME = value" lines
+function print_install_credentials() {
+    local name
+
+    for name in "${ENGINESCRIPT_CREDENTIAL_NAMES[@]}"; do
+        echo "${name} = ${!name}"
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Print a formatted installation completion banner
 # Usage: print_install_banner "Tool Name" [sleep_seconds]
 function print_install_banner() {
@@ -2264,6 +2474,21 @@ function git_clone_fresh() {
 
     clean_directory "${dest_path}"
     git clone "$@" "${repo_url}" "${dest_path}"
+}
+
+
+# ----------------------------------------------------------------
+# Send a note to the admin through Pushbullet, when a token is set
+# The token goes in on standard input: command-line arguments are visible to every user.
+# Usage: notify_admin "Title" "Message"
+function notify_admin() {
+    local title="$1" message="$2"
+
+    if [[ -z "${PUSHBULLET_TOKEN:-}" || "${PUSHBULLET_TOKEN}" == "PLACEHOLDER" ]]; then
+        return 0
+    fi
+    printf 'user = "%s:"\n' "${PUSHBULLET_TOKEN}" | curl -fsS --proto '=https' --max-time 30 -K - -o /dev/null \
+        https://api.pushbullet.com/v2/pushes -d type=note --data-urlencode "title=${title}" --data-urlencode "body=${message}"
 }
 
 

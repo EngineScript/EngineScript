@@ -26,9 +26,10 @@ fi
 
 # GCC
 
-# Remove previous GCC alternatives
-update-alternatives --remove-all gcc
-echo "Ignore the error above on fresh installs."
+# Remove previous GCC alternatives (a fresh server has none)
+if update-alternatives --query gcc > /dev/null 2>&1; then
+    update-alternatives --remove-all gcc
+fi
 
 UBUNTU_VERSION="$(lsb_release -sr)"
 if [[ "${UBUNTU_VERSION}" == "24.04" ]];

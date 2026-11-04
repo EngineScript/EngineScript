@@ -30,9 +30,8 @@ ERRORS=()
 
 for i in "${SITES[@]}"
 do
-    cd "/var/www/sites/$i/html"
     # Verify checksums
-    if ! wp core verify-checksums --allow-root; then
+    if ! cd "/var/www/sites/$i/html" || ! run_as_www_data wp core verify-checksums; then
         ERRORS+=(
             "$i"
         )
@@ -40,8 +39,7 @@ do
 done
 
 if [[ ${#ERRORS[@]} -gt 0 ]]; then
-    curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
-        -d type=note \
-        -d "title=Server: $IP_ADDRESS" \
-        -d "body=Checksums verification failed for the following sites: ${ERRORS[*]}"
+    echo "Checksums verification failed for the following sites: ${ERRORS[*]}"
+    notify_admin "Server: $IP_ADDRESS" "Checksums verification failed for the following sites: ${ERRORS[*]}"
+    exit 1
 fi

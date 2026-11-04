@@ -22,14 +22,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 cp -a /usr/local/bin/enginescript/config/etc/nginx/. /etc/nginx/
 sed -i "s|SEDPHPVER|${PHP_VER}|g" /etc/nginx/globals/php-fpm.conf /etc/nginx/globals/php-fpm-admin.conf
 
-# Enable unsafe file blocking if configured
+# Enable unsafe file blocking if configured. Each rule is found by the start of its commented-out
+# line; % is the delimiter because the rules contain | and #.
 if [[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" ]]; then
-    sed -i 's|^  #\("~\*\\.\(?:asc\|  \1|' /etc/nginx/globals/map-cache.conf
-    sed -i 's|^  #\("~\*(Gemfile\|  \1|' /etc/nginx/globals/map-cache.conf
-    sed -i 's|^  #\("~\*(changelog\|  \1|' /etc/nginx/globals/map-cache.conf
-    sed -i 's|^  #\("~\*gems\\.\|  \1|' /etc/nginx/globals/map-cache.conf
-    sed -i 's|^  #\("~\*/wp-content/updraft/\|  \1|' /etc/nginx/globals/map-cache.conf
-    sed -i 's|^  #\("~\*/wp-content/uploads/\.\*\\.\|  \1|' /etc/nginx/globals/map-cache.conf
+    sed -i \
+        -e 's%^  #\("~\*\\\.(?:asc\)%  \1%' \
+        -e 's%^  #\("~\*(Gemfile\)%  \1%' \
+        -e 's%^  #\("~\*(changelog\)%  \1%' \
+        -e 's%^  #\("~\*gems\\\.\)%  \1%' \
+        -e 's%^  #\("~\*/wp-content/updraft/\)%  \1%' \
+        -e 's%^  #\("~\*/wp-content/uploads/\.\*\\\.\)%  \1%' \
+        /etc/nginx/globals/map-cache.conf
 fi
 
 # Bring existing site and admin vhost files up to date with template changes

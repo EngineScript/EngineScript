@@ -36,7 +36,7 @@ mkdir -p /var/www/admin/tools
 
 # Download phpMyAdmin
 safe_wget "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
-unzip "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
+unzip -q -o "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
 mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" "/var/www/admin/tools/phpmyadmin"
 mkdir -p /var/www/admin/tools/phpmyadmin/tmp
 chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
@@ -56,7 +56,7 @@ sudo mariadb -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '$
 sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
 
 # Post-Install Cleanup
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+run_enginescript_cleanup
 
 print_install_banner "phpMyAdmin"
 

@@ -9,6 +9,7 @@
 
 # EngineScript Variables
 source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
+source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
 
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
@@ -90,16 +91,19 @@ validateIPv4
 validateIPv6
 echo "✓ IP validation completed successfully"
 
-# Count downloaded IPs for verification
-IPV4_COUNT=$(wc -l < "$TEMP_FILE_IPV4")
-IPV6_COUNT=$(wc -l < "$TEMP_FILE_IPV6")
+# Count downloaded IPs for verification. Cloudflare's lists end without a newline, which wc -l
+# does not count, so this counts the non-empty lines, as the loops below read them.
+IPV4_COUNT=$(grep -c . "$TEMP_FILE_IPV4")
+IPV6_COUNT=$(grep -c . "$TEMP_FILE_IPV6")
 echo "Downloaded $IPV4_COUNT IPv4 ranges and $IPV6_COUNT IPv6 ranges"
 
-# Debug: Show what was actually downloaded
-echo "Debug: IPv4 ranges downloaded:"
-cat "$TEMP_FILE_IPV4"
-echo "Debug: IPv6 ranges downloaded:"
-cat "$TEMP_FILE_IPV6"
+# In debug mode, show what was downloaded (sed ends the last line)
+if [[ "${DEBUG_INSTALL:-0}" == "1" ]]; then
+	echo "Debug: IPv4 ranges downloaded:"
+	sed -n p "$TEMP_FILE_IPV4"
+	echo "Debug: IPv6 ranges downloaded:"
+	sed -n p "$TEMP_FILE_IPV6"
+fi
 
 # Generate the new config in a staging file next to the live one,
 # so a failed run never leaves a partly written cloudflare.conf in place

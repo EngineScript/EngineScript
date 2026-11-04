@@ -46,18 +46,12 @@ echo "------------------------------------------------"
 CC_OPT_FLAGS="$ARCH_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat --param=ssp-buffer-size=4"
 LD_OPT_FLAGS="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG"
 
-# Set OpenSSL test flag based on debug mode
-if [[ "${DEBUG_INSTALL}" == "1" ]]; then
-  OPENSSL_TESTS_FLAG=""
-else
-  OPENSSL_TESTS_FLAG="no-tests"
-fi
-
 # OpenSSL's deprecated functions stay in the build: Nginx still calls some (it defines
 # OPENSSL_SUPPRESS_DEPRECATED for them), and no-deprecated removed X509_check_host and
 # X509_check_ip once OpenSSL 4.1 deprecated them. Nginx links OpenSSL statically, so functions it
 # does not call never reach the binary. SSLv3 is gone from OpenSSL 4, so no-ssl3-method is not set.
-OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-psk no-srp no-tls1-method no-tls1_1-method no-weak-ssl-ciphers $OPENSSL_TESTS_FLAG"
+# OpenSSL's tests are never run here, so they are not built, in debug mode or not.
+OPENSSL_OPT_FLAGS="enable-ec_nistp_64_gcc_128 enable-ktls no-psk no-srp no-tls1-method no-tls1_1-method no-weak-ssl-ciphers no-tests"
 
 # Determine zlib implementation flags for nginx configure
 ZLIB_CC_EXTRA=""

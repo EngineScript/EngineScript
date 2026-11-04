@@ -87,11 +87,22 @@ configure_wp_cli_package_fetching
 # The nightly build until a WP-CLI release keeps WordPress 7's long core paths intact on
 # "wp core download" (see wp-cli-install.sh). The nightly is WP-CLI 3, whose "package update"
 # takes --no-interaction instead of --yes; it runs after "cli update", so on the nightly.
-# The intent is to fail when either command fails
-if ! "${WP_CLI_BIN}" cli update --nightly --allow-root --yes 2>> /tmp/enginescript_install_errors.log \
-    || ! "${WP_CLI_BIN}" package update --allow-root --no-interaction 2>> /tmp/enginescript_install_errors.log; then
+if ! "${WP_CLI_BIN}" cli update --nightly --allow-root --yes 2>> /tmp/enginescript_install_errors.log; then
     echo "WP-CLI update failed. See /tmp/enginescript_install_errors.log for details." >&2
     exit 1
+fi
+
+# Older installs pinned doctor-command to 2.3.1, which "package update" never moves past.
+# Installing it again with @stable lifts the pin, as the install now does.
+WP_CLI_PACKAGES_JSON="$("${WP_CLI_BIN}" package path --allow-root 2> /dev/null)/composer.json"
+if grep -qE '"wp-cli\\?/doctor-command"[[:space:]]*:[[:space:]]*"[0-9]' "${WP_CLI_PACKAGES_JSON}" 2> /dev/null; then
+    "${WP_CLI_BIN}" package install "wp-cli/doctor-command:@stable" --allow-root 2>> /tmp/enginescript_install_errors.log \
+        || echo "Warning: Failed to move WP-CLI package wp-cli/doctor-command to @stable." >&2
+fi
+
+# The packages add commands; WP-CLI works without them, so a package update failure is only reported
+if ! "${WP_CLI_BIN}" package update --allow-root --no-interaction 2>> /tmp/enginescript_install_errors.log; then
+    echo "Warning: Updating the WP-CLI packages failed; WP-CLI itself is up to date. See /tmp/enginescript_install_errors.log for details." >&2
 fi
 set_install_state "WP_CLI" "1"
 print_last_errors

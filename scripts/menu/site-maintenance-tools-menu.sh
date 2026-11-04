@@ -32,7 +32,7 @@ while true
       "Fix Permissions (All Domains)"
       "Optimize Images (All Domains)"
       "SSL Capabilities Test (Single Domain)"
-      "Exit Server Tools"
+      "Exit Site Maintenance Tools"
     )
     select secopt in "${secoptions[@]}"
     do
@@ -90,7 +90,7 @@ while true
           echo ""
           break
           ;;
-        "Exit Server Tools")
+        "Exit Site Maintenance Tools")
           exit
           ;;
         *) echo "Invalid option.";;

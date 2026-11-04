@@ -74,35 +74,9 @@ detect_server_location
 auto_detect_digitalocean
 
 echo -e "${BOLD}\nEngineScript Install Options:${NORMAL}"
-echo "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION = $AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
-echo "ENGINESCRIPT_AUTO_UPDATE = $ENGINESCRIPT_AUTO_UPDATE"
-echo "ADMIN_SUBDOMAIN = $ADMIN_SUBDOMAIN"
-echo "INSTALL_ADMINER = $INSTALL_ADMINER"
-echo "INSTALL_PHPMYADMIN = $INSTALL_PHPMYADMIN"
-echo "SHOW_ENGINESCRIPT_HEADER = $SHOW_ENGINESCRIPT_HEADER"
-resolve_backup_settings
-echo "BACKUP_DATABASE_FREQUENCY = ${BACKUP_DATABASE_FREQUENCY} (keep ${BACKUP_DATABASE_KEEP_DAYS} days)"
-echo "BACKUP_FILES_FREQUENCY = ${BACKUP_FILES_FREQUENCY} (keep ${BACKUP_FILES_KEEP_COPIES} copies)"
-echo "BACKUP_CONFIG_FREQUENCY = ${BACKUP_CONFIG_FREQUENCY} (keep ${BACKUP_CONFIG_KEEP_DAYS} days)"
-echo "BACKUP_S3 = ${BACKUP_S3} (include configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})"
+print_install_settings
 echo -e "${BOLD}\nUser Credentials:${NORMAL}"
-echo "S3_BUCKET_NAME = $S3_BUCKET_NAME"
-echo "CF_GLOBAL_API_KEY = $CF_GLOBAL_API_KEY"
-echo "CF_ACCOUNT_EMAIL = $CF_ACCOUNT_EMAIL"
-echo "ADMIN_CONTROL_PANEL_USERNAME = $ADMIN_CONTROL_PANEL_USERNAME"
-echo "ADMIN_CONTROL_PANEL_PASSWORD = $ADMIN_CONTROL_PANEL_PASSWORD"
-echo "MARIADB_ADMIN_PASSWORD = $MARIADB_ADMIN_PASSWORD"
-echo "PHPMYADMIN_USERNAME = $PHPMYADMIN_USERNAME"
-echo "PHPMYADMIN_PASSWORD = $PHPMYADMIN_PASSWORD"
-echo "FILEMANAGER_USERNAME = $FILEMANAGER_USERNAME"
-echo "FILEMANAGER_PASSWORD = $FILEMANAGER_PASSWORD"
-echo "UPTIMEROBOT_API_KEY = $UPTIMEROBOT_API_KEY"
-echo "WP_ADMIN_EMAIL = $WP_ADMIN_EMAIL"
-echo "WP_ADMIN_USERNAME = $WP_ADMIN_USERNAME"
-echo "WP_ADMIN_PASSWORD = $WP_ADMIN_PASSWORD"
-echo "PUSHBULLET_TOKEN = $PUSHBULLET_TOKEN"
-echo "WORDFENCE_CLI_TOKEN = $WORDFENCE_CLI_TOKEN"
-echo "WPSCANAPI = $WPSCANAPI"
+print_install_credentials
 echo -e "\n"
 sleep 5
 
@@ -116,11 +90,6 @@ if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
       [Yy]* )
         sed -i 's/^ENGINESCRIPT_AUTO_UPDATE=0/ENGINESCRIPT_AUTO_UPDATE=1/' /home/EngineScript/enginescript-install-options.txt
         ENGINESCRIPT_AUTO_UPDATE=1
-        if grep -q '^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0' /home/EngineScript/enginescript-install-options.txt; then
-          sed -i 's/^ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=0/ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1/' /home/EngineScript/enginescript-install-options.txt
-          ENGINESCRIPT_AUTO_EMERGENCY_UPDATES=1
-          echo -e "\nEmergency auto updates have also been enabled.\n"
-        fi
         echo -e "\nAutomatic updates have been enabled.\n"
         sleep 2
         break
@@ -261,8 +230,7 @@ run_install_step "WP_CLI" "/usr/local/bin/enginescript/scripts/install/wp-cli/wp
 run_install_step "TOOLS" "/usr/local/bin/enginescript/scripts/install/tools/tools-install.sh" "Tools"
 
 # Cleanup
-/usr/local/bin/enginescript/scripts/functions/php-clean.sh
-/usr/local/bin/enginescript/scripts/functions/enginescript-cleanup.sh
+run_enginescript_cleanup
 
 # --------------------------------------------------------
 # Final Installation Completion Verification

@@ -74,6 +74,7 @@ packages=(
     "imagemagick"
     "inotify-tools"
     "jpegoptim"
+    "jq"
     "ktls-utils"
     "libpam-cgfs"
     "libatomic-ops-dev"

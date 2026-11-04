@@ -48,6 +48,21 @@ else
   echo "Current Ubuntu version: $UBUNTU_VERSION"
 fi
 
+# setup.sh is for a new server: it deletes and clones EngineScript again and purges every Apache
+# and PHP 7 and 8 package, PHP-FPM included. Once es.install has completed any step, stop: es.install
+# carries on with the steps not done yet, and es.update updates EngineScript. ALIAS is set by
+# setup.sh itself; install-log.txt is where installs before May 2026 kept the same flags.
+for install_state in /etc/enginescript/install-state.conf /var/log/EngineScript/install-log.txt; do
+  if [[ -f "${install_state}" ]] && grep -E '^[A-Z_]+=1$' "${install_state}" | grep -qv '^ALIAS='; then
+    echo "ALERT:"
+    echo "EngineScript is already installed on this server (see ${install_state})."
+    echo "setup.sh is only for a new server, and running it again would remove PHP."
+    echo "To finish an install, run: es.install"
+    echo "To update EngineScript, run: es.update"
+    exit 1
+  fi
+done
+
 #----------------------------------------------------------------------------
 # Start Main Script
 
@@ -206,10 +221,10 @@ touch "/var/log/EngineScript/enginescript-api-security.log"
 # Set proper permissions for EngineScript logs
 chown -R www-data:www-data "/var/log/EngineScript"
 chmod -R 644 "/var/log/EngineScript"/*.log
+set_enginescript_log_permissions
 
-# Logrotate - EngineScript Logs (DISABLED - preserves install logs)
-# cp -rf "/usr/local/bin/enginescript/config/etc/logrotate.d/enginescript" "/etc/logrotate.d/enginescript"
-# find /etc/logrotate.d -type f -print0 | sudo xargs -0 chmod 0644
+# Logrotate - scheduled jobs' logs only; install logs are kept whole
+install_enginescript_logrotate
 
 # Return to /usr/src
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
@@ -253,9 +268,21 @@ run-parts --test /etc/update-motd.d/
 run-parts /etc/update-motd.d/
 
 # HWE kernel. Ubuntu's package name keeps the dot (linux-generic-hwe-24.04); the new kernel is
-# used from the reboot at the end of setup.
-if ! apt install --install-recommends "linux-generic-hwe-${UBUNTU_VERSION}" -y; then
-  echo "Warning: Could not install the HWE kernel (linux-generic-hwe-${UBUNTU_VERSION}). The server keeps its current kernel." >&2
+# used from the reboot at the end of setup. Both flavours install the same kernel and modules; on
+# a virtual machine the virtual one leaves out the hardware firmware (about 1 GB), the CPU
+# microcode, and the power and USB daemons, which the host takes care of. A container runs on its
+# host's kernel, so it gets none.
+if systemd-detect-virt --container --quiet; then
+  echo "Running in a container ($(systemd-detect-virt --container)): skipping the kernel, which the host provides."
+else
+  if systemd-detect-virt --vm --quiet; then
+    HWE_KERNEL="linux-virtual-hwe-${UBUNTU_VERSION}"
+  else
+    HWE_KERNEL="linux-generic-hwe-${UBUNTU_VERSION}"
+  fi
+  if ! apt install --install-recommends "${HWE_KERNEL}" -y; then
+    echo "Warning: Could not install the HWE kernel (${HWE_KERNEL}). The server keeps its current kernel." >&2
+  fi
 fi
 
 # Update and upgrade

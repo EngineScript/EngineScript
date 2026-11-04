@@ -58,7 +58,6 @@ php:
       - any-glob-to-any-file: config/etc/php/**/*
       - any-glob-to-any-file: scripts/install/php/**/*
       - any-glob-to-any-file: scripts/update/php-*-update.sh
-      - any-glob-to-any-file: scripts/functions/php-clean.sh
 
 # WordPress plugins
 wordpress-plugins:

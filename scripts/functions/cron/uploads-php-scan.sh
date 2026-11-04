@@ -26,32 +26,24 @@ source /home/EngineScript/sites-list/sites.sh
 source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
 
 # Store sites with errors
-ERRORS=""
+ERRORS=()
 
 for i in "${SITES[@]}"
 do
-        cd "/var/www/sites/$i/html"
-        # Verify checksums
-        cd "/var/www/sites/$i/html/wp-content/uploads"
+        cd "/var/www/sites/$i/html/wp-content/uploads" || continue
         numFiles=$(find . -name '*.php' \
                 ! -path './sucuri/*' \
                 ! -path './wp-migrate-db/*' \
                 | wc -l)
-
         if [[ "$numFiles" -gt 0 ]]; then
-                ERRORS="$ERRORS $i"
+                ERRORS+=(
+                        "$i"
+                )
         fi
-
-        cd "/var/www/sites/$i/html"
 done
 
-# Trim leading space if ERRORS is not empty
-ERRORS="${ERRORS##*( )}"
-
-if [[ -n "$ERRORS" ]]; then
-        # Use multiple -d options for clarity and proper quoting
-        curl -u "$PUSHBULLET_TOKEN": https://api.pushbullet.com/v2/pushes \
-                -d type=note \
-                -d "title=Server: $IP_ADDRESS" \
-                -d "body=Found PHP in the uploads directory for the following sites: $ERRORS"
+if [[ ${#ERRORS[@]} -gt 0 ]]; then
+        echo "Found PHP in the uploads directory for the following sites: ${ERRORS[*]}"
+        notify_admin "Server: $IP_ADDRESS" "Found PHP in the uploads directory for the following sites: ${ERRORS[*]}"
+        exit 1
 fi

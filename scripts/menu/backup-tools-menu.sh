@@ -22,13 +22,13 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 while true
   do
     clear
-    echo -e "Site Maintenance Tools" | boxes -a c -d shell -p a1l2
+    echo -e "Backup Tools" | boxes -a c -d shell -p a1l2
     echo ""
     echo ""
     PS3='Please enter your choice: '
     secoptions=(
       "Backup (All Domains)"
-      "Exit Server Tools"
+      "Exit Backup Tools"
     )
     select secopt in "${secoptions[@]}"
     do
@@ -44,7 +44,7 @@ while true
           echo ""
           break
           ;;
-        "Exit Server Tools")
+        "Exit Backup Tools")
           exit
           ;;
         *) echo "Invalid option.";;
