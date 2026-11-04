@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Standard-library regression fixtures for the repository's automation scripts.
+"""Standard-library regression fixtures for the repository's automation scripts."""
 
-All mutation is confined to a temporary fixture repository on the runner.
-"""
+# All mutation is confined to a temporary fixture repository on the runner.
 
 from __future__ import annotations
 

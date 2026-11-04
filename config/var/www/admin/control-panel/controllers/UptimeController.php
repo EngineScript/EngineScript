@@ -209,7 +209,7 @@ final class UptimeController extends BaseController
         $downCount = 0;
         $paused = 0;
 
-        foreach (array_map([$this, 'monitorStatus'], $monitors) as $status) {
+        foreach (array_map($this->monitorStatus(...), $monitors) as $status) {
             switch ($status) {
                 case self::STATUS_UP:
                     ++$upCount;
@@ -257,7 +257,7 @@ final class UptimeController extends BaseController
      */
     private function formatMonitors(array $monitors): array
     {
-        $formatted = array_values(array_map([$this, 'formatMonitor'], $monitors));
+        $formatted = array_values(array_map($this->formatMonitor(...), $monitors));
 
         return [
             'enabled' => true,

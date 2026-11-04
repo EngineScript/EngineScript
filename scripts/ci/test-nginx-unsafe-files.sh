@@ -22,6 +22,7 @@ fail() {
 }
 
 # The option's block from nginx-misc.sh, pointed at the copy
+# shellcheck disable=SC2016  # the pattern matches the literal ${NGINX_BLOCK_UNSAFE_FILES} in the script
 sed -n '/^if \[\[ "${NGINX_BLOCK_UNSAFE_FILES}" == "1" \]\]; then$/,/^fi$/p' "${MISC}" \
   | sed "s|/etc/nginx/globals/map-cache.conf|${WORK}/map-cache.conf|" > "${WORK}/block.sh"
 [[ -s "${WORK}/block.sh" ]] || {
