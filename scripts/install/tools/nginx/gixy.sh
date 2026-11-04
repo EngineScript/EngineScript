@@ -20,10 +20,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # GIXY-NEXT (maintained fork of Gixy)
 # https://github.com/MegaManSec/Gixy-Next
-# Uses pipx to install in an isolated virtual environment (PEP 668 compliance)
-apt install -y pipx
-pipx install gixy-next
-pipx ensurepath
+# Uses pipx to install in an isolated virtual environment (PEP 668 compliance). It goes to
+# /opt/pipx with the command in /usr/local/bin, so every shell and the Server Tools menu find
+# it (pipx's default, ~/.local/bin, is not on every shell's PATH). --force installs the latest
+# release over an earlier one, so running this again updates it.
+apt install -qy pipx
+PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install --force gixy-next
 
 echo ""
 echo ""

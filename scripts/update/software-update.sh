@@ -31,10 +31,25 @@ fi
 print_last_errors
 debug_pause "Adminer"
 
+# Install or update fail2ban (servers installed before it was added get it here)
+/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "fail2ban"
+
+# Install or update Gixy-Next
+/usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Gixy-Next"
+
 # Update liburing
 /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "liburing"
+
+# Install or update Lynis
+/usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Lynis"
 
 # Update MYSQLTuner
 /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh 2>> /tmp/enginescript_install_errors.log
