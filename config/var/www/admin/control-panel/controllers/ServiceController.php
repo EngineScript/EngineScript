@@ -19,6 +19,10 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
  *
  * Provides status information for server services.
  *
+ * SystemCommand is a static wrapper by design: tests swap its command runner with
+ * SystemCommand::useRunner().
+ * @SuppressWarnings("PHPMD.StaticAccess")
+ *
  * @psalm-api
  */
 final class ServiceController extends BaseController

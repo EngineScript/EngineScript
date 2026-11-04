@@ -65,7 +65,7 @@ final class SystemProcessRunner implements CommandRunner
         [$descriptors, $pipeIndex] = $this->buildPipeSpec($captureStderr);
 
         // An argv array is run without a shell on Linux.
-        // nosemgrep: php.lang.security.exec-use.exec-use
+        // nosemgrep: php.lang.security.exec-use.exec-use, php_exec_rule-exec-use
         $process = proc_open($command, $descriptors, $pipes);
         if (!is_resource($process)) {
             return false;

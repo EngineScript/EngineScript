@@ -24,6 +24,9 @@ require_once __DIR__ . '/Session.php';
  * The controller classes must be loaded before dispatch; api.php loads them.
  * Unknown paths answer 404; a method a route does not allow answers 405 with
  * an Allow header. GET routes also answer HEAD.
+ *
+ * The router builds every controller from the route table, so it depends on each of them.
+ * @SuppressWarnings("PHPMD.CouplingBetweenObjects")
  */
 final readonly class Router
 {
@@ -45,8 +48,9 @@ final readonly class Router
     {
         $route = $this->route($path);
 
+        // Not logged here: the path comes from the request, and the admin vhost's access log
+        // already records the URL of every request
         if ($route === null) {
-            error_log('API 404 - Path not matched: ' . $path);
             $this->response->notFound('Endpoint not found');
             return;
         }

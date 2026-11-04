@@ -71,6 +71,9 @@ export class DashboardAPI {
   async request(endpoint, options) {
     const signal = AbortSignal.timeout(DashboardAPI.REQUEST_TIMEOUT_MS);
     try {
+      // Callers pass only API paths, checked against API_PREFIX by isApiEndpoint(). The rule's
+      // ID differs between rule packs, so the suppression names none.
+      // nosemgrep
       return await fetch(endpoint, {
         ...options,
         credentials: "include",

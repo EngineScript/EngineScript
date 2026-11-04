@@ -123,9 +123,10 @@ abstract class BaseController
     {
         if ($hit) {
             $this->response->cached($data, self::CACHE_TTL);
-        } else {
-            $this->response->success($data, self::CACHE_TTL);
+            return;
         }
+
+        $this->response->success($data, self::CACHE_TTL);
     }
 
     /**
@@ -198,6 +199,8 @@ abstract class BaseController
         }
 
         if (!rename($tempFile, $cache_file)) {
+            // The temporary file this method created: a random name in the cache directory
+            // nosemgrep: php.lang.security.unlink-use.unlink-use
             unlink($tempFile);
         }
     }

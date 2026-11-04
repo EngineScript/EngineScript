@@ -19,6 +19,10 @@ require_once __DIR__ . '/../classes/SystemCommand.php';
  *
  * Provides cache clearing functionality for various caching systems.
  *
+ * SystemCommand is a static wrapper by design: tests swap its command runner with
+ * SystemCommand::useRunner().
+ * @SuppressWarnings("PHPMD.StaticAccess")
+ *
  * @psalm-api
  */
 final class CacheController extends BaseController
