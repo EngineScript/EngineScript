@@ -6,7 +6,8 @@ updates:
     directory: "/"
     target-branch: "master"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "UTC"
     # Set custom labels on pull requests
@@ -31,7 +32,8 @@ updates:
     directory: "/"
     target-branch: "master"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "UTC"
     # Set custom labels on pull requests
@@ -66,7 +68,8 @@ updates:
     directory: "/"
     target-branch: "master"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "UTC"
     # Set custom labels on pull requests
@@ -91,7 +94,8 @@ updates:
     directory: "/.github"
     target-branch: "master"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "UTC"
     # Set custom labels on pull requests
