@@ -289,7 +289,7 @@ configure_wp_config() {
     return 1
   fi
   # Its own Redis key prefix and database, so the copy never reads or flushes the live site's cache
-  wp_staging config set WP_REDIS_PREFIX "es_$(printf '%s' "${STAGING}" | sha1sum | cut -c1-12)" --type=constant --quiet || return 1
+  wp_staging config set WP_REDIS_PREFIX "es_$(printf '%s' "${STAGING}" | sha256sum | cut -c1-12)" --type=constant --quiet || return 1
   assign_site_redis_database "${wp_config}" > /dev/null || log "Warning: The staging copy shares Redis database 0 (its keys still have their own prefix)."
   wp_staging config set WP_ENVIRONMENT_TYPE staging --type=constant --quiet || return 1
   log "Set up wp-config.php for the staging copy."

@@ -119,7 +119,7 @@ while true
         "Reset a Site's Database Password")
           if select_site; then
             echo "This gives ${SELECTED_SITE}'s database user a new random password and updates wp-config.php."
-            echo "The site may show a database error for about a second while the password changes."
+            echo "For about a second while the password changes, the site cannot reach its database."
             if prompt_yes_no "Reset the database password of ${SELECTED_SITE}?" "n"; then
               bash /usr/local/bin/enginescript/scripts/functions/vhost/vhost-db-password.sh "${SELECTED_SITE}"
             fi
