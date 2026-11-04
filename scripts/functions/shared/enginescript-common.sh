@@ -1668,9 +1668,6 @@ function enginescript_cron_jobs() {
     # System Maintenance
     echo "7 * * * * ${run} functions/cron/cleanup-cron.sh"
 
-    # API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
-    echo "* * * * * cd ${scripts}/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
-
     if [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]]; then
         echo "37 5 * * 0 ${run} functions/cron/optimize-images.sh"
     fi
@@ -1738,23 +1735,6 @@ function set_enginescript_log_permissions() {
 function install_enginescript_logrotate() {
     cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
     chmod 644 /etc/logrotate.d/enginescript
-}
-
-
-# ----------------------------------------------------------------
-# Remove the control panel's API cache sweep cron job
-#
-# The job deleted the panel's API cache files every minute. Cache entries expire on their own
-# after 60 seconds (BaseController::CACHE_TTL), so the job and its script were removed. Safe to
-# run again.
-function remove_api_cache_sweep_cron() {
-    local current
-
-    current="$(crontab -l 2> /dev/null)" || return 0
-    if grep -qF 'sweep-api-cache.sh' <<< "${current}"; then
-        echo "Removing the API cache sweep cron job..."
-        grep -vF 'sweep-api-cache.sh' <<< "${current}" | crontab -
-    fi
 }
 
 
