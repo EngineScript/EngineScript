@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-Verify the files under the panel's deployed directories against a tracked allowlist.
+"""Verify the files under the panel's deployed directories against a tracked allowlist."""
 
-The installer copies config/var/www/admin/control-panel/ into the web root with
-`cp -a`, and copies two named files from config/var/www/admin/tools/ into the
-tools it installs. Every file in those directories is served, so nothing else
-may live there: no test, fixture, development file, archive, or executable.
-"""
+# The installer copies config/var/www/admin/control-panel/ into the web root with
+# `cp -a`, and copies two named files from config/var/www/admin/tools/ into the
+# tools it installs. Every file in those directories is served, so nothing else
+# may live there: no test, fixture, development file, archive, or executable.
 
 from __future__ import annotations
 
