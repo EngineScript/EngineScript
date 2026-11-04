@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Verify the files under the panel's deployed directories against a tracked allowlist.
+"""
+Verify the files under the panel's deployed directories against a tracked allowlist.
 
 The installer copies config/var/www/admin/control-panel/ into the web root with
 `cp -a`, and copies two named files from config/var/www/admin/tools/ into the

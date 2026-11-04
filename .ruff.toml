@@ -7,9 +7,10 @@ target-version = "py312"
 [lint]
 select = ["ALL"]
 ignore = [
-    # Two pairs of docstring rules contradict each other; D211 and D212 are the ones kept.
+    # Two pairs of docstring rules contradict each other; D211 and D213 are the ones kept.
+    # D213 (the summary starts on the line after the opening quotes) is the one Codacy checks.
     "D203",
-    "D213",
+    "D212",
     # These two conflict with the formatter.
     "COM812",
     "ISC001",
