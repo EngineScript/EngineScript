@@ -13,6 +13,7 @@ Changes are organized by date, with the most recent changes listed first.
   - **Lynis** audits the server's security and gives it a hardening score.
   - **Gixy-Next** checks the Nginx configuration for security mistakes. Its install script was never run; it now is, and installs the `gixy` command in `/usr/local/bin`.
 - The Server Tools menu adds: Disk Usage (ncdu), Firewall Status (UFW), Live Resource Monitor (htop), Network Traffic (vnstat), Nginx Configuration Security Check (Gixy-Next), Security Audit (Lynis), Service Status, and SSH Login Bans (fail2ban). An entry whose tool is not installed yet says how to install it.
+- The Server Tools menu also adds, all with software already on the server: Cron Jobs and Last Runs (EngineScript's jobs, and how each one's last run ended), Failed Services and Recent Errors, Login History (SSH), Nginx Configuration Test and Reload (reloads only when the test passes), Open Ports and Listening Services, Pending Updates and Reboot Check (including services still running replaced libraries), and SSL Certificate Expiry (each site's certificate and the Cloudflare origin pull certificate, with the days left).
 
 ## 2026-11-03
 
