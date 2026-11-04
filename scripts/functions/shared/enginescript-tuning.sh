@@ -256,15 +256,16 @@ function tuning_set_value() {
 # innodb_io_capacity as half the measured rate, between 200 and 20000. Run while MariaDB is
 # stopped and no sites are serving (the MariaDB install step), or on request.
 function tuning_benchmark_disk() {
-    local dir="${1:-/var/lib/mysql}" file json iops capacity
+    local dir="${1:-/var/lib/mysql}" file iops capacity
     [[ -d "${dir}" ]] || dir=/var/lib
     file="${dir}/.enginescript-fio-test"
-    json="$(mktemp)"
     echo "Measuring the database disk's write rate (30 seconds)..."
-    fio --name=es-write --filename="${file}" --size=256M --bs=16k --rw=randwrite --direct=1 \
-        --ioengine=libaio --iodepth=32 --time_based --runtime=30 --output-format=json --output="${json}" > /dev/null 2>&1
-    iops="$(jq -r '.jobs[0].write.iops // 0' "${json}" 2> /dev/null | cut -d. -f1)"
-    rm -f "${file}" "${json}"
+    # fio's terse output (version 3) has the write IOPS in field 49; it needs no JSON parser,
+    # which servers installed before jq was a dependency do not have
+    iops="$(fio --name=es-write --filename="${file}" --size=256M --bs=16k --rw=randwrite --direct=1 \
+        --ioengine=libaio --iodepth=32 --time_based --runtime=30 --output-format=terse 2> /dev/null \
+        | awk -F';' 'NR == 1 { print int($49) }')"
+    rm -f "${file}"
     if ! [[ "${iops}" =~ ^[0-9]+$ ]] || (( iops == 0 )); then
         echo "Warning: The disk benchmark failed; using innodb_io_capacity 200 (MariaDB's default)." >&2
         iops=400

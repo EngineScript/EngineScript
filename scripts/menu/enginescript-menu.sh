@@ -80,6 +80,7 @@ while true
       "Database Tools"
       "Security Tools"
       "Server Tools"
+      "Performance Tools"
       "EngineScript Tools"
       "View Server Logs"
       "Update Software"
@@ -110,6 +111,10 @@ while true
           ;;
         "Server Tools")
           /usr/local/bin/enginescript/scripts/menu/server-tools-menu.sh
+          break
+          ;;
+        "Performance Tools")
+          /usr/local/bin/enginescript/scripts/menu/performance-tools-menu.sh
           break
           ;;
         "EngineScript Tools")

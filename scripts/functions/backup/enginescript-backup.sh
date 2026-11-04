@@ -28,6 +28,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #   now              back up everything immediately (es.backup)
 #   database-hourly | database-daily | files | config
 #                    one backup type immediately
+#   site <domain>    one site's database (as a daily backup) and wp-content, immediately
 #
 # Layout (the same keys under s3://<bucket>/ when BACKUP_S3=1):
 #   /home/EngineScript/site-backups/<site>/database/hourly/<YYYY-MM-DD-HH>/<site>-database.sql.gz
@@ -306,8 +307,17 @@ case "${MODE}" in
   config)
     backup_config
     ;;
+  site)
+    if [[ -z "${2:-}" ]] || ! printf '%s\n' "${SITES[@]}" | grep -qxF -- "$2"; then
+      echo "Usage: $0 site <domain>, where <domain> is in /home/EngineScript/sites-list/sites.sh" >&2
+      exit 2
+    fi
+    SITES=("$2")
+    backup_databases daily
+    backup_files
+    ;;
   *)
-    echo "Usage: $0 scheduled|now|database-hourly|database-daily|files|config" >&2
+    echo "Usage: $0 scheduled|now|database-hourly|database-daily|files|config|site <domain>" >&2
     exit 2
     ;;
 esac

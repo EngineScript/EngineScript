@@ -18,6 +18,65 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Show the last 30 lines of a log, or say it has not been written yet
+# Usage: show_log <name> <file>
+show_log() {
+  clear
+  echo "${BOLD}Showing last 30 lines of $1.${NORMAL}" | boxes -a c -d shell -p a1l2
+  if [[ -f "$2" ]]; then
+    tail -n30 "$2"
+  else
+    echo "$2 has not been written yet."
+  fi
+  echo ""
+  read -n 1 -s -r -p "Press any key to continue"
+}
+
+# Ask which cron job's log to show (run-job.sh writes one per job)
+show_cron_log() {
+  local log job jobs=()
+  for log in /var/log/EngineScript/cron-*.log; do
+    [[ -f "${log}" ]] || continue
+    job="${log##*/cron-}"
+    jobs+=("${job%.log}")
+  done
+  if [[ "${#jobs[@]}" -eq 0 ]]; then
+    show_log "the cron job logs" /var/log/EngineScript/cron-JOB.log
+    return
+  fi
+  local PS3="Choose a job: "
+  select job in "${jobs[@]}" "Cancel"; do
+    [[ "${job}" == "Cancel" ]] && return
+    if [[ -n "${job}" ]]; then
+      show_log "the ${job} cron job's log" "/var/log/EngineScript/cron-${job}.log"
+      return
+    fi
+    echo "Invalid option."
+  done
+}
+
+# The warnings and suggestions of the last Lynis audit (Server Tools > Security Audit)
+show_lynis_report() {
+  local report=/var/log/lynis-report.dat
+  clear
+  echo "${BOLD}Showing the last Lynis security audit.${NORMAL}" | boxes -a c -d shell -p a1l2
+  if [[ ! -f "${report}" ]]; then
+    echo "There is no Lynis report yet. Run one with: es.menu > Server Tools > Security Audit (Lynis)"
+  else
+    echo "Finished $(sed -n 's/^report_datetime_end=//p' "${report}"); hardening index $(sed -n 's/^hardening_index=//p' "${report}") of 100."
+    echo ""
+    echo "Warnings:"
+    awk -F'|' '/^warning\[\]=/ { sub(/^warning\[\]=/, "", $1); print "  " $1 ": " $2; n++ } END { if (!n) print "  none" }' "${report}"
+    echo ""
+    echo "Suggestions:"
+    awk -F'|' '/^suggestion\[\]=/ { sub(/^suggestion\[\]=/, "", $1); print "  " $1 ": " $2; n++ } END { if (!n) print "  none" }' "${report}"
+    echo ""
+    echo "The full log of the audit is in /var/log/lynis.log."
+  fi
+  echo ""
+  read -n 1 -s -r -p "Press any key to continue"
+}
+
 # Main Menu
 while true
   do
@@ -34,6 +93,13 @@ while true
       "PHP"
       "Redis"
       "Syslog"
+      "Backup Log"
+      "Cron Job Logs"
+      "Domain Create Log"
+      "Domain Import Log"
+      "Domain Remove Log"
+      "SSH Login Bans (fail2ban)"
+      "Security Audit Report (Lynis)"
       "EngineScript Install Error Log"
       "API Error Log"
       "Exit Server Logs"
@@ -46,45 +112,59 @@ while true
           break
           ;;
         "MariaDB")
-          clear
-          echo "${BOLD}Showing last 30 lines of MariaDB error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/mysql/mysql-error.log && read -n 1 -s -r -p "Press any key to continue"
+          show_log "MariaDB error log" /var/log/mysql/mysql-error.log
           break
           ;;
         "Nginx")
-          clear
-          echo "${BOLD}Showing last 30 lines of Nginx error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/nginx/nginx.error.log && read -n 1 -s -r -p "Press any key to continue"
+          show_log "Nginx error log" /var/log/nginx/nginx.error.log
           break
           ;;
         "PHP")
-          clear
-          echo "${BOLD}Showing last 30 lines of PHP error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 "/var/log/php${PHP_VER}-fpm.log" && read -n 1 -s -r -p "Press any key to continue"
+          show_log "PHP error log" "/var/log/php${PHP_VER}-fpm.log"
           break
           ;;
         "Redis")
-          clear
-          echo "${BOLD}Showing last 30 lines of Redis error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/redis/redis-server.log && read -n 1 -s -r -p "Press any key to continue"
+          show_log "Redis error log" /var/log/redis/redis-server.log
           break
           ;;
         "Syslog")
-          clear
-          echo "${BOLD}Showing last 30 lines of Syslog.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/syslog && read -n 1 -s -r -p "Press any key to continue"
+          show_log "Syslog" /var/log/syslog
+          break
+          ;;
+        "Backup Log")
+          show_log "the backup log" /var/log/EngineScript/enginescript-backup.log
+          break
+          ;;
+        "Cron Job Logs")
+          show_cron_log
+          break
+          ;;
+        "Domain Create Log")
+          show_log "the domain create log" /var/log/EngineScript/vhost-install.log
+          break
+          ;;
+        "Domain Import Log")
+          show_log "the domain import log" /var/log/EngineScript/vhost-import.log
+          break
+          ;;
+        "Domain Remove Log")
+          show_log "the domain remove log" /var/log/EngineScript/vhost-remove.log
+          break
+          ;;
+        "SSH Login Bans (fail2ban)")
+          show_log "the fail2ban log" /var/log/fail2ban.log
+          break
+          ;;
+        "Security Audit Report (Lynis)")
+          show_lynis_report
           break
           ;;
         "EngineScript Install Error Log")
-          clear
-          echo "${BOLD}Showing last 30 lines of EngineScript install-error-log.log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/EngineScript/install-error-log.log && read -n 1 -s -r -p "Press any key to continue"
+          show_log "EngineScript install-error-log.log" /var/log/EngineScript/install-error-log.log
           break
           ;;
         "API Error Log")
-          clear
-          echo "${BOLD}Showing last 30 lines of EngineScript API error log.${NORMAL}" | boxes -a c -d shell -p a1l2
-          tail -n30 /var/log/EngineScript/enginescript-api.log && read -n 1 -s -r -p "Press any key to continue"
+          show_log "EngineScript API error log" /var/log/EngineScript/enginescript-api.log
           break
           ;;
         "Exit Server Logs")

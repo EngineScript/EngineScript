@@ -30,11 +30,8 @@ ERRORS=()
 
 for i in "${SITES[@]}"
 do
-        cd "/var/www/sites/$i/html/wp-content/uploads" || continue
-        numFiles=$(find . -name '*.php' \
-                ! -path './sucuri/*' \
-                ! -path './wp-migrate-db/*' \
-                | wc -l)
+        [[ -d "/var/www/sites/$i/html/wp-content/uploads" ]] || continue
+        numFiles=$(find_php_in_uploads "/var/www/sites/$i/html/wp-content/uploads" | wc -l)
         if [[ "$numFiles" -gt 0 ]]; then
                 ERRORS+=(
                         "$i"

@@ -6,6 +6,32 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-04
 
+### 🧰 MENU ADDITIONS
+
+- New **Performance Tools** menu in `es.menu`:
+  - Disk I/O Monitor (iotop), which shows the processes reading or writing the disk now.
+  - Disk Speed Benchmark (fio), which measures sequential and random reads and writes in about 40 seconds.
+  - Live Resource Monitor (htop) and Network Traffic (vnstat), moved here from Server Tools.
+  - View Tuning Plan, which shows the memory, worker, and cache sizes EngineScript chose for this server and marks the values overridden in `/etc/enginescript/tuning-overrides.conf`.
+- **Backup Tools** adds:
+  - Backup One Domain, which backs up one site's database, `wp-config.php`, and `wp-content` now. It is also available as `enginescript-backup.sh site <domain>`.
+  - List Backups, which shows each site's newest backups and how many copies are kept.
+  - Test S3 Connection, which checks the AWS credentials and that backups can list and write to the bucket.
+- **Site Maintenance Tools** adds:
+  - Update WordPress, Plugins, and Themes (All Domains), which also updates translations and the database, and offers to back up every database first.
+  - Run WP-Cron Now (All Domains).
+  - Clean Up Databases (All Domains), which deletes expired transients and, if you confirm, post revisions.
+- **Domain Configuration Tools** adds List Domains, and Re-issue a Domain's Certificate, which gets a new certificate with the same domains and settings the site was created with.
+- **Database Tools** adds Database Size per Site, with each site's largest tables.
+- **Security Tools**:
+  - Adds Verify WordPress Core Files (All Domains), the daily checksum check on demand.
+  - Find PHP Files in Uploads Folders now checks every site and lists the files it finds.
+  - The daily uploads scan now also finds `.phtml`, `.phar`, and `.php5`-style files.
+  - Removed the PHP Malware Finder entry, which did nothing.
+- **View Server Logs** adds the backup log, each cron job's log, the domain create, import, and remove logs, the fail2ban log, and the warnings and suggestions of the last Lynis audit. A log that has not been written yet now says so.
+- **EngineScript Tools** adds Show Install State (which install steps are done) and Show Latest Changes (the newest section of this changelog).
+- Fixed: on servers installed before 2026-11-03, Update Software > Re-tune Services could not read its disk benchmark result, because those servers do not have `jq`. It then set MariaDB's `innodb_io_capacity` to 200 instead of the measured value. The benchmark no longer needs `jq`.
+
 ### 🧰 SERVER TOOLS
 
 - New servers get three more tools, and existing servers get them from `es.menu` > Update Software > Update Server Tools:
