@@ -24,34 +24,38 @@ if [[ "${ADMIN_CONTROL_PANEL}" = 1 ]]; then
     exit 0
 fi
 
+# Set to 1 by any step that fails. The panel is recorded as installed only when every step
+# succeeded, so a failed step runs again on the next install.
+INSTALL_FAILED=0
+
 # Admin Control Panel
-/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "Admin Control Panel"
 
 # Install phpinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "phpinfo"
 
 # Install phpSysinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "phpSysinfo"
 
 # Install Tiny File Manager
-/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "Tiny File Manager"
 
 # Install UptimeRobot API
-/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "UptimeRobot API"
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
 print_last_errors
 debug_pause "Admin Control Panel Configuration"
 
@@ -60,5 +64,10 @@ set_enginescript_frontend_permissions
 
 # Return to /usr/src
 return_to_src
+
+if [[ "${INSTALL_FAILED}" == "1" ]]; then
+    echo "Error: An Admin Control Panel step failed (see the errors above). It will run again on the next install." >&2
+    exit 1
+fi
 
 set_install_state "ADMIN_CONTROL_PANEL" "1"

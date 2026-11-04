@@ -1,13 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * EngineScript Admin Dashboard - Session Wrapper
  *
- * Encapsulates all access to the $_SESSION superglobal so that no other class
- * touches the superglobal directly.  Centralizing the access here satisfies
- * PHPMD's SuperGlobals rule, improves testability (controllers receive the
- * instance they use), and provides a single place to add future session
- * hardening (e.g. regeneration, encryption, or a custom session handler).
+ * The one class that touches $_SESSION, so controllers receive the session as
+ * a dependency.
  *
  * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
@@ -16,66 +15,40 @@
 final class Session
 {
     /**
-     * Retrieve a value from the session.
-     *
-     * This is the single, intentional access point for $_SESSION in the entire
-     * dashboard.  The @SuppressWarnings annotation suppresses PHPMD's Superglobals
-     * rule here by design — all other classes must go through this method.
+     * The value stored under a key, or $default when absent.
      *
      * @SuppressWarnings("PHPMD.Superglobals")
-     *
-     * @param string $key     Session key to look up.
-     * @param mixed  $default Value returned when the key is absent or the
-     *                        session has not been started.
-     * @return mixed The stored value, or $default.
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        // If the session has not been started, honor the documented contract and
-        // return the default value without touching $_SESSION.
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            return $default;
-        }
-
-        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
+        // PHP retains this request's data after session_write_close().
         return $_SESSION[$key] ?? $default;
     }
 
     /**
-     * Determine whether a key exists in the active session.
+     * Whether a key exists in this request's session data.
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      */
     public function has(string $key): bool
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            return false;
-        }
-
-        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
         return isset($_SESSION) && array_key_exists($key, $_SESSION);
     }
 
     /**
-     * Store a value in the session.
-     *
-     * This is the single, intentional write-access point for $_SESSION in the
-     * entire dashboard.  All other classes must go through this method.
+     * Store a value; does nothing once the session is closed.
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      *
-     * @param string $key   Session key to set.
-     * @param bool|string|array<mixed> $value Value to store.
+     * @param bool|string|array<mixed> $value
      */
     public function set(string $key, bool|string|array $value): void
     {
-        // If the session has not been started, silently do nothing to avoid
-        // triggering warnings from accessing $_SESSION prematurely.
+        // Writes require an active session; closed snapshots remain read-only.
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return;
         }
 
-        // codacy:ignore - Direct $_SESSION access is intentionally centralized here; no other class should access $_SESSION
         $_SESSION[$key] = $value;
     }
 }

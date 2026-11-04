@@ -46,7 +46,8 @@ set_enginescript_log_permissions 2>> /tmp/enginescript_install_errors.log
 install_enginescript_logrotate 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
-# Cron: replace EngineScript's jobs with the current list
+# Cron: replace EngineScript's jobs with the current list. Jobs no longer on it, such as the
+# control panel's API cache sweep, are removed.
 install_enginescript_cron 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 

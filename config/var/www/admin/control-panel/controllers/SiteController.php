@@ -9,6 +9,8 @@
  * @version 1.0.0
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/BaseController.php';
 
 /**
@@ -21,21 +23,15 @@ require_once __DIR__ . '/BaseController.php';
 final class SiteController extends BaseController
 {
     /**
-     * API endpoint paths
-     */
-    private const ENDPOINT_LIST = '/sites';
-    private const ENDPOINT_COUNT = '/sites/count';
-
-    /**
      * Nginx sites-enabled directory
      */
-    private const NGINX_SITES_PATH = '/etc/nginx/sites-enabled';
+    private const string NGINX_SITES_PATH = '/etc/nginx/sites-enabled';
 
     /**
      * Get all WordPress sites
      *
      * Scans nginx configuration to find WordPress installations.
-     * Returns domain, status, WordPress version, and SSL status.
+     * Returns domain, WordPress version, and SSL status.
      *
      * Endpoint: GET /sites
      *
@@ -45,65 +41,13 @@ final class SiteController extends BaseController
     public function getSites(): void
     {
         try {
-            // Check cache first
-            $cached = $this->getCached(self::ENDPOINT_LIST);
-            if ($cached !== null) {
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_LIST));
-                return;
-            }
-
-            $sites = $this->getWordPressSites();
-            $result = $this->sanitizeOutput($sites);
-
-            // Cache the result
-            $this->setCached(self::ENDPOINT_LIST, $result);
-            $this->response->success($result, $this->getTtl(self::ENDPOINT_LIST));
+            $this->response->success($this->getWordPressSites());
         } catch (Throwable $e) {
-            $this->logSecurityEvent('Sites error', $e->getMessage());
+            $this->securityLogger->write('Sites error', $e->getMessage());
             $this->response->serverError('Unable to retrieve sites');
         }
     }
 
-    /**
-     * Get count of WordPress sites
-     *
-     * Returns total number of WordPress sites.
-     *
-     * Endpoint: GET /sites/count
-     *
-     * @return void Outputs JSON response
-     * @psalm-api
-     */
-    public function getSitesCount(): void
-    {
-        try {
-            // Check count cache first
-            $cached = $this->getCached(self::ENDPOINT_COUNT);
-            if ($cached !== null) {
-                $this->response->cached($cached, $this->getTtl(self::ENDPOINT_COUNT));
-                return;
-            }
-
-            // Reuse /sites cache if available to avoid redundant full enumeration
-            $sitesCached = $this->getCached(self::ENDPOINT_LIST);
-            if ($sitesCached !== null) {
-                $result = ['count' => count($sitesCached)];
-                $this->setCached(self::ENDPOINT_COUNT, $result);
-                $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
-                return;
-            }
-
-            $sites = $this->getWordPressSites();
-            $result = ['count' => count($sites)];
-
-            // Cache the result
-            $this->setCached(self::ENDPOINT_COUNT, $result);
-            $this->response->success($result, $this->getTtl(self::ENDPOINT_COUNT));
-        } catch (Throwable $e) {
-            $this->logSecurityEvent('Sites count error', $e->getMessage());
-            $this->response->serverError('Unable to retrieve sites count');
-        }
-    }
 
     /**
      * Get all WordPress sites from nginx configuration
@@ -115,12 +59,11 @@ final class SiteController extends BaseController
         $sites = [];
 
         try {
-            $real_path = $this->validateNginxSitesPath(self::NGINX_SITES_PATH);
-            if ($real_path === false) {
+            if (!is_dir(self::NGINX_SITES_PATH)) {
                 return $sites;
             }
 
-            $valid_files = $this->scanNginxConfigs($real_path);
+            $valid_files = $this->scanNginxConfigs(self::NGINX_SITES_PATH);
             if ($valid_files === false) {
                 return $sites;
             }
@@ -132,35 +75,10 @@ final class SiteController extends BaseController
                 }
             }
         } catch (Throwable $e) {
-            $this->logSecurityEvent('WordPress sites enumeration error', $e->getMessage());
+            $this->securityLogger->write('WordPress sites enumeration error', $e->getMessage());
         }
 
         return $sites;
-    }
-
-    /**
-     * Validate nginx sites-enabled path
-     *
-     * Ensures the path is exactly what we expect for security.
-     *
-     * @param string $nginx_sites_path Path to validate
-     * @return string|false Real path or false if invalid
-     */
-    private function validateNginxSitesPath($nginx_sites_path)
-    {
-        // codacy:ignore - realpath() required for path normalization and validation to prevent directory traversal
-        $real_path = realpath($nginx_sites_path);
-        if ($real_path !== '/etc/nginx/sites-enabled') {
-            $this->logSecurityEvent('Nginx sites path traversal attempt', $nginx_sites_path);
-            return false;
-        }
-
-        // codacy:ignore - is_dir() required for directory validation in standalone API
-        if (!is_dir($real_path)) {
-            return false;
-        }
-
-        return $real_path;
     }
 
     /**
@@ -169,9 +87,8 @@ final class SiteController extends BaseController
      * @param string $real_path Directory path
      * @return list<string>|false Array of valid config paths or false on error
      */
-    private function scanNginxConfigs($real_path): array|false
+    private function scanNginxConfigs(string $real_path): array|false
     {
-        // codacy:ignore - scandir() required for directory listing in standalone API
         $files = scandir($real_path);
         if ($files === false) {
             return false;
@@ -179,32 +96,24 @@ final class SiteController extends BaseController
 
         $valid_files = [];
         foreach ($files as $file) {
-            if ($file === '.' || $file === '..' || $file === 'default') {
+            if (in_array($file, ['.', '..', 'default'], true)) {
                 continue;
             }
 
             // Validate filename to prevent traversal
             if (!preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
-                $this->logSecurityEvent('Suspicious nginx config filename', $file);
+                $this->securityLogger->write('Suspicious nginx config filename', $file);
                 continue;
             }
 
             $config_path = $real_path . '/' . $file;
-            if (!is_file($config_path) || !is_readable($config_path)) { // codacy:ignore - file validation required for config scanning
+            if (!is_file($config_path) || !is_readable($config_path)) {
                 continue;
             }
 
-            // codacy:ignore - realpath() required for path validation in standalone API
-            $config_real_path = realpath($config_path);
-
-            // Ensure the file is within the expected directory
-            if (!is_string($config_real_path)) {
-                $this->logSecurityEvent('Config file path traversal attempt', $config_path);
-                continue;
-            }
-
-            if (!str_starts_with($config_real_path, $real_path . '/')) {
-                $this->logSecurityEvent('Config file path traversal attempt', $config_path);
+            $config_real_path = $this->resolveInside($config_path, $real_path);
+            if ($config_real_path === null) {
+                $this->securityLogger->write('Config file path traversal attempt', $config_path);
                 continue;
             }
 
@@ -222,7 +131,6 @@ final class SiteController extends BaseController
      */
     private function processNginxConfig($config_real_path): ?array
     {
-        // codacy:ignore - file_get_contents() required for configuration reading in standalone API
         $config_content = file_get_contents($config_real_path);
         if ($config_content === false || !$this->isWordPressConfig($config_content)) {
             return null;
@@ -238,7 +146,6 @@ final class SiteController extends BaseController
 
         return [
             'domain' => $domain,
-            'status' => 'online',
             'wp_version' => $wp_version,
             'ssl_status' => str_contains($config_content, 'ssl_certificate') ? 'Enabled' : 'Unknown',
         ];
@@ -263,7 +170,7 @@ final class SiteController extends BaseController
             return '';
         }
 
-        return htmlspecialchars($primary_domain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return $primary_domain;
     }
 
     private function extractDocumentRoot(string $config_content): string
@@ -277,7 +184,6 @@ final class SiteController extends BaseController
             return '';
         }
 
-        // codacy:ignore - realpath() required for path validation in standalone API
         $realDocumentRoot = realpath($document_root);
 
         return is_string($realDocumentRoot) ? $realDocumentRoot : '';
@@ -289,7 +195,7 @@ final class SiteController extends BaseController
      * @param string $document_root Document root path
      * @return string WordPress version or 'Unknown'
      */
-    private function getWordPressVersion($document_root)
+    private function getWordPressVersion(string $document_root): string
     {
         try {
             $real_version_file = $this->validateWordPressPath($document_root);
@@ -299,7 +205,7 @@ final class SiteController extends BaseController
 
             return $this->parseWordPressVersion($real_version_file);
         } catch (Throwable $e) {
-            $this->logSecurityEvent('WordPress version detection error', $e->getMessage());
+            $this->securityLogger->write('WordPress version detection error', $e->getMessage());
             return 'Unknown';
         }
     }
@@ -310,35 +216,30 @@ final class SiteController extends BaseController
      * @param string $document_root Document root to validate
      * @return string|false Path to version.php or false if invalid
      */
-    private function validateWordPressPath($document_root)
+    private function validateWordPressPath(string $document_root): false|string
     {
-        // codacy:ignore - is_dir() required for directory validation in standalone API
-        if (empty($document_root) || !is_dir($document_root)) {
+        // extractDocumentRoot() has resolved the root already.
+        if ($document_root === '') {
             return false;
         }
 
-        // Check for wp-includes/version.php file
-        $version_file = $document_root . '/wp-includes/version.php';
-        // codacy:ignore - realpath() required for path validation in standalone API
-        $real_version_file = realpath($version_file);
-
-        // Ensure the file exists and is within the expected directory structure
-        // codacy:ignore - realpath() required for path validation in standalone API
-        $realDocumentRoot = realpath($document_root);
-        if (!is_string($real_version_file) || !is_string($realDocumentRoot)) {
+        $real_version_file = $this->resolveInside($document_root . '/wp-includes/version.php', $document_root);
+        if ($real_version_file === null) {
             return false;
         }
 
-        if (!str_starts_with($real_version_file, $realDocumentRoot . '/')) {
-            return false;
-        }
+        return is_readable($real_version_file) ? $real_version_file : false;
+    }
 
-        // codacy:ignore - file_exists() and is_readable() required for version file checking in standalone API
-        if (file_exists($real_version_file) && is_readable($real_version_file)) {
-            return $real_version_file;
-        }
+    /**
+     * The path with links resolved, if it exists and stays inside the directory;
+     * the one containment check of each file the controller reads
+     */
+    private function resolveInside(string $path, string $directory): ?string
+    {
+        $resolved = realpath($path);
 
-        return false;
+        return is_string($resolved) && str_starts_with($resolved, $directory . '/') ? $resolved : null;
     }
 
     /**
@@ -347,9 +248,8 @@ final class SiteController extends BaseController
      * @param string $real_version_file Path to version.php
      * @return string Version string or 'Unknown'
      */
-    private function parseWordPressVersion($real_version_file)
+    private function parseWordPressVersion(string $real_version_file): string
     {
-        // codacy:ignore - file_get_contents() required for version reading in standalone API
         $content = file_get_contents($real_version_file);
         if ($content === false) {
             return 'Unknown';
@@ -357,11 +257,7 @@ final class SiteController extends BaseController
 
         // Look for the WordPress version variable
         if (preg_match('/\$wp_version\s*=\s*[\'"]([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/', $content, $matches)) {
-            $version = $matches[1];
-            // Validate version format
-            if (preg_match('/^[0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?$/', $version)) {
-                return htmlspecialchars($version, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            }
+            return $matches[1];
         }
 
         return 'Unknown';

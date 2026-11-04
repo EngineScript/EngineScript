@@ -1069,6 +1069,53 @@ function migrate_nginx_vhosts() {
             sed -i '/^[[:space:]]*server_name admin\./a\  add_header_inherit on;' "${file_path}"
         fi
 
+        # 2026-10: admin vhosts drop the "/services" rewrite. Nothing calls it: the control
+        # panel reaches the same endpoint as /api/services/status.
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]] && grep -q '^  location /services {$' "${file_path}"; then
+            # Delete the comment, the block, and the blank line after the block.
+            sed -i -e '/^  # Direct service endpoints (legacy support)$/d' \
+                -e '/^  location \/services {$/,/^  }$/{/^  }$/!d;N;s/^  }\n//;/^$/d}' "${file_path}"
+        fi
+
+        # 2026-10: admin vhosts run only the control panel's api.php. Its other PHP files
+        # (classes and controllers) answer 404 instead of running.
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]] && grep -q '^  # PHP processing for control panel root$' "${file_path}"; then
+            # Replace the comment and the block after it, up to the block's closing brace.
+            sed -i '/^  # PHP processing for control panel root$/,/^  }$/c\
+  # Control panel API: the only PHP file in the control panel that runs\
+  location = /api.php {\
+    include /etc/nginx/globals/php-fpm-admin.conf;\
+  }\
+\
+  # Other PHP files in the control panel (classes and controllers that api.php\
+  # loads) are not entry points: answer 404 rather than run or serve them.\
+  location ~ \\.php$ {\
+    return 404;\
+  }' "${file_path}"
+        fi
+
+        # 2026-10: admin vhosts pass PHP through php-fpm-admin.conf (no FastCGI cache, no
+        # WordPress cookie handling, no fallback to /index.php) instead of the sites' php-fpm.conf.
+        # That file comes with an Nginx install or update: until then, keep (or put back)
+        # php-fpm.conf, or a site created in between would make nginx -t fail.
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]]; then
+            if [[ -f /etc/nginx/globals/php-fpm-admin.conf ]]; then
+                if grep -q 'include /etc/nginx/globals/php-fpm\.conf;' "${file_path}"; then
+                    sed -i 's|include /etc/nginx/globals/php-fpm\.conf;|include /etc/nginx/globals/php-fpm-admin.conf;|' "${file_path}"
+                fi
+            elif grep -q 'include /etc/nginx/globals/php-fpm-admin\.conf;' "${file_path}"; then
+                sed -i 's|include /etc/nginx/globals/php-fpm-admin\.conf;|include /etc/nginx/globals/php-fpm.conf;|' "${file_path}"
+            fi
+        fi
+
+        # 2026-10: admin vhosts answer unknown paths with 404 instead of the dashboard page.
+        # shellcheck disable=SC2016 # $uri is an Nginx variable, matched literally
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]] && grep -qx '    try_files $uri $uri/ /index.html;' "${file_path}"; then
+            sed -i -e '/^  # EngineScript Control Panel - Default Location (Landing Page)$/a\
+  # The dashboard has no client-side routes, so an unknown path answers 404.' \
+                -e 's|^    try_files \$uri \$uri/ /index\.html;$|    try_files $uri $uri/ =404;|' "${file_path}"
+        fi
+
         # 2026-10: site vhosts log failed requests (status 400 and up) to their own log instead of
         # no access log at all. The $es_failed_request map is in nginx.conf, which only an Nginx
         # install or update replaces: until then, keep (or put back) "access_log off;", or a site
@@ -1620,9 +1667,6 @@ function enginescript_cron_jobs() {
 
     # System Maintenance
     echo "7 * * * * ${run} functions/cron/cleanup-cron.sh"
-
-    # API cache sweep - triggers API which runs sweepCache() (rate-limited in PHP)
-    echo "* * * * * cd ${scripts}/functions/cron; bash sweep-api-cache.sh >/dev/null 2>&1"
 
     if [[ "${AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION}" == "1" ]]; then
         echo "37 5 * * 0 ${run} functions/cron/optimize-images.sh"
@@ -2246,6 +2290,29 @@ function clean_directory() {
     if [[ -d "${dir_path}" ]]; then
         rm -rf "${dir_path}"
     fi
+}
+
+
+# ----------------------------------------------------------------
+# Replace a directory with a complete new copy: the old one is moved aside, the new one renamed
+# into its place, and the old one removed. If the rename fails, the old one is put back. Both
+# must be on the same filesystem, so the renames are instant. Returns 1 on failure.
+# Usage: replace_directory "/var/www/admin/.control-panel-new.abc123" "/var/www/admin/control-panel"
+function replace_directory() {
+    local new_dir="$1"
+    local target_dir="$2"
+    local old_dir="${new_dir}.old"
+
+    if [[ -e "${target_dir}" ]]; then
+        mv -T "${target_dir}" "${old_dir}" || return 1
+    fi
+    if ! mv -T "${new_dir}" "${target_dir}"; then
+        if [[ -e "${old_dir}" ]]; then
+            mv -T "${old_dir}" "${target_dir}"
+        fi
+        return 1
+    fi
+    rm -rf "${old_dir}"
 }
 
 

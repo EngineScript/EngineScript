@@ -73,6 +73,45 @@ Changes are organized by date, with the most recent changes listed first.
 - Fixed `NGINX_BLOCK_UNSAFE_FILES=1`: its `sed` commands failed, so no rule was switched on and sensitive files stayed reachable. The option now blocks `.env`, `.log`, `.ini`, `.bak`, `wp-config.php` copies, `composer.json`, and similar files. It stays off by default.
 - The `Strict-Transport-Security` header no longer has `includeSubDomains`: visitors' browsers would have refused plain HTTP on every subdomain of a site, including subdomains that EngineScript does not manage, such as an email provider's tracking links.
 
+## 2026-10-30
+
+### 🐛 ADMIN CONTROL PANEL FIXES
+
+- Fixed the admin control panel showing made-up or misleading data when its API failed: "Uptime Robot not configured", "No WordPress sites are currently configured", and an invented "Ubuntu 24.04 LTS" with an endless "Loading...". Each card now shows an error, with the server's message when it sent one, and a request that gets no answer within 30 seconds ends with an error instead of loading for ever.
+- Fixed the admin control panel's keyboard use: F5 and Ctrl+R reload the page again (the dashboard had taken them over); the arrow and number keys switch pages only while focus is in the navigation, instead of anywhere on the page; Escape no longer moves focus when the mobile menu is closed; and focus stays on a cache button after the clear. Fixed the mobile menu's focus trap, which failed with an error ("focusableElements.at is not a function").
+- The admin control panel meets WCAG 2.2 AA contrast in both themes: the light theme's green and grey are darker, and the dark theme's buttons use dark text on green. The UptimeRobot link is underlined, the mobile menu button reports whether the menu is open to screen readers, and screen-reader announcements no longer show on the page.
+- Fixed the admin control panel's warning that Font Awesome failed to load, which showed only in Firefox: the check now runs before the stylesheet and catches its failure in every browser, and a stylesheet it cannot read no longer counts as loaded.
+- The admin control panel's page has a Content Security Policy: only its own scripts, styles, images, and API, plus Font Awesome's stylesheet and fonts from cdnjs, and no inline code.
+- The admin control panel's Tools page shows the Adminer card only when Adminer is installed (it is optional and off by default), instead of a link that led nowhere. The new `GET /api/tools/status` reports it.
+- Fixed the admin control panel's uptime card: with UptimeRobot not configured, the "Offline" counter showed 0 beside "--" for the others; all three now show "--". A monitor with 0% uptime over the last day shows 0% instead of no figure.
+- Removed the admin control panel's static "Server Online" label, which never checked the server. Service versions read "Unknown" or "Not Found" instead of "vUnknown" and "vNot Found".
+- Fixed clearing a cache after the dashboard sat open for more than 24 minutes: the session had expired, and its token was refused until the page was reloaded. The dashboard now loads the new session's token and sends the request once more, so the new session cookie name needs no reload either.
+- Fixed the admin control panel's pages and cache buttons failing in the browser ("is not a function"): the dashboard called its helper functions through an object that does not have them.
+- Installs and updates now build the control panel, TinyFileManager, and phpSysInfo beside the running copy and switch over only when the new copy is complete, so a failed download or copy keeps the working copy. Before, `es.update` emptied the control panel first, and the tool installers deleted the installed tool before downloading the new one. The admin control panel install step is recorded as done only when every part of it succeeded, so a failed part runs again on the next install.
+- phpSysInfo's `.git` directory is no longer installed into the served `/phpsysinfo/` directory.
+- Fixed TinyFileManager answering "Credentials not configured" since the install options file became readable by root only (2026-10-21). Installs and `es.update` now write its login, the username and a hash of the password, to `/var/lib/enginescript/admin/tinyfilemanager-auth.json`, which the web server can read; TinyFileManager no longer reads the install options. After changing the File Manager password with `es.config`, run `es.update`.
+- Fixed a changed admin control panel password not taking effect when the password script ran again: it added a second line, and Nginx kept using the first. The script now replaces the file.
+
+### 🔒 ADMIN SUBDOMAIN
+
+- The admin subdomain runs only the control panel's `api.php`. Its other PHP files (the classes and controllers) answer 404 instead of running; the admin tools are unchanged.
+- The admin subdomain's PHP has its own settings, `globals/php-fpm-admin.conf`, instead of the WordPress sites' `php-fpm.conf`: no FastCGI page cache, no WooCommerce cookie handling, and no fallback to `/index.php` (a missing PHP file answers 404 instead of 500). The API's `Cache-Control: no-store` is no longer replaced by the expires map. `php-update.sh` moves it to the new PHP version along with the sites.
+- Unknown paths on the admin subdomain answer 404 instead of the dashboard page, and the unused `/services` rewrite is removed.
+- Existing admin vhosts get these changes at the next Nginx install or update (`migrate_nginx_vhosts`).
+
+### 🔧 ADMIN CONTROL PANEL
+
+- The overview loads with three ordinary requests instead of one combined `POST /api/batch`; `/api/batch` and `/api/sites/count` are removed. `docs/api.md` describes the API as it is.
+- UptimeRobot moved to its v3 API: every monitor is listed (in pages), each monitor's uptime over the last day is shown for accounts with up to 8 monitors, UptimeRobot's request limit is respected (at most one fetch a minute), and only the fields the dashboard shows are kept.
+- API responses are no longer kept by the browser (`Cache-Control: no-store`), and one browser's requests no longer wait for each other. The session cookie is now `__Host-esp_session`: reload an open dashboard once after updating.
+- The API sends data as it is instead of HTML-escaped (the dashboard inserts it as text), sends no CORS headers (the dashboard never needed them), answers `OPTIONS` with 405, and caches only the UptimeRobot answer. Status commands answer in about 2 ms instead of 50 ms each.
+- The control panel needs PHP 8.3 or newer, the oldest version EngineScript supports.
+- Removed the old `filemanager.php` redirect and the unused `reset-filemanager-password.sh`.
+- Removed the cron job that deleted the control panel's API cache every minute; cache entries expire on their own. EngineScript updates remove the job from existing servers.
+- Updated Font Awesome, the admin control panel's icons, from 7.0.1 to 7.3.1. The software version check had held it at 7.0.x while cdnjs, which serves it, could not publish new releases; it now reads the version from cdnjs, offers any newer stable release (no beta or release candidate) once cdnjs serves its stylesheet, and warns when cdnjs falls behind Font Awesome's own releases.
+- Simplified the dashboard's script: it drops unused code (an Opera Mini fallback, an unused token accessor, refresh limits nothing read, the cleanup on page unload) and the text sanitizing the page never needed, since every value is set as text, never as HTML. Links from the API are still checked to be http or https.
+- The dashboard's version in its asset URLs now includes a hash of its files, so browsers load the new files after any update, even two on the same day.
+
 ## 2026-10-29
 
 ### 🐛 SITE CREATION FIXES
@@ -171,9 +210,10 @@ Changes are organized by date, with the most recent changes listed first.
 - During installs and updates, the Cloudflare IP updater only replaces its file instead of reloading Nginx with a half-updated configuration.
 - New `migrate_nginx_vhosts` function: brings existing site and admin vhost files up to date with template changes on every Nginx install and update, and when a site is created.
 
-### 🔧 NGINX SERVICE AND CERTIFICATE RENEWALS
+### 🔧 NGINX SERVICE, CACHE BUTTON, AND CERTIFICATE RENEWALS
 
 - Updated the Nginx systemd unit: `systemctl reload nginx` now tests the configuration first and reports a failure instead of Nginx silently keeping its old configuration; Nginx restarts itself after a crash (`Restart=on-failure`); and basic hardening is on (`NoNewPrivileges`, `ProtectSystem=full`, `ProtectHome`, `PrivateDevices`, kernel and control-group protection). Removed the `sleep 0.1` start workaround and the obsolete `syslog.target`. Nginx updates now install the current unit (and roll it back with the rest of the update on failure).
+- Fixed the admin control panel's "clear FastCGI cache" button and cache size, which used `/var/cache/enginescript/fcgi` instead of the Nginx cache in `/var/cache/nginx`.
 - Certificates now reload Nginx after each renewal (`acme.sh --reloadcmd "systemctl reload nginx"`). Before, Nginx kept serving the old certificate until something else reloaded it. EngineScript updates add the reload command to existing sites' certificates.
 
 ### 🔒 NGINX FILE PERMISSIONS

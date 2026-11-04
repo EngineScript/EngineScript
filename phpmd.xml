@@ -34,15 +34,15 @@
     -->
     <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
         <properties>
-            <!-- SiteController::scanNginxConfigs() and UptimeController::calculateOverallStatus() measure 11. -->
+            <!-- UptimeController::calculateOverallStatus() measures 11. -->
             <property name="reportLevel" value="11"/>
         </properties>
     </rule>
 
     <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
         <properties>
-            <!-- SiteController measures 58. -->
-            <property name="maximum" value="58"/>
+            <!-- UptimeRobotAPI measures 48. -->
+            <property name="maximum" value="48"/>
         </properties>
     </rule>
 

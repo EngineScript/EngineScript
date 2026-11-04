@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * EngineScript Admin Dashboard - Instance API Response Handler
  *
@@ -11,15 +13,15 @@
  */
 final class ApiResponder
 {
-    public const HTTP_OK = 200;
-    public const HTTP_BAD_REQUEST = 400;
-    public const HTTP_FORBIDDEN = 403;
-    public const HTTP_NOT_FOUND = 404;
-    public const HTTP_METHOD_NOT_ALLOWED = 405;
-    public const HTTP_TOO_MANY_REQUESTS = 429;
-    public const HTTP_INTERNAL_ERROR = 500;
+    public const int HTTP_OK = 200;
+    public const int HTTP_BAD_REQUEST = 400;
+    public const int HTTP_FORBIDDEN = 403;
+    public const int HTTP_NOT_FOUND = 404;
+    public const int HTTP_METHOD_NOT_ALLOWED = 405;
+    public const int HTTP_TOO_MANY_REQUESTS = 429;
+    public const int HTTP_INTERNAL_ERROR = 500;
 
-    private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
+    private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR;
 
     public function badRequest(string $message = 'Bad request'): void
     {
@@ -48,28 +50,17 @@ final class ApiResponder
 
     public function success(mixed $data, ?int $ttl = null): void
     {
-        if ($ttl !== null && $ttl > 0) {
-            // codacy:ignore - header() required for cache control in standalone API
-            header('X-Cache: MISS');
-            header('Cache-Control: private, max-age=' . $ttl);
-        }
-
-        $this->sendJson($data);
+        $this->sendJson($data, $ttl);
     }
 
     public function cached(mixed $data, int $ttl): void
     {
-        // codacy:ignore - header() required for cache headers in standalone API
-        header('X-Cache: HIT');
-        header('Cache-Control: private, max-age=' . $ttl);
-
-        $this->sendJson($data);
+        $this->sendJson($data, $ttl, 'HIT');
     }
 
     public function error(string $message, int $code = self::HTTP_INTERNAL_ERROR): void
     {
         http_response_code($code);
-        header('Cache-Control: no-store');
 
         $this->sendJson(['error' => $message]);
     }
@@ -80,7 +71,7 @@ final class ApiResponder
     public function methodNotAllowed(string|array $allowedMethod): void
     {
         $allowedMethods = is_array($allowedMethod) ? $allowedMethod : [$allowedMethod];
-        $allowedMethods = array_values(array_unique(array_map('strtoupper', $allowedMethods)));
+        $allowedMethods = array_values(array_unique(array_map(strtoupper(...), $allowedMethods)));
         $allowedMethods = array_values(array_filter(
             $allowedMethods,
             static fn(string $method): bool => preg_match('/^[A-Z]+$/', $method) === 1
@@ -91,14 +82,18 @@ final class ApiResponder
         $this->error('Method not allowed. Use ' . $allowHeader . '.', self::HTTP_METHOD_NOT_ALLOWED);
     }
 
-    private function sendJson(mixed $data): void
+    private function sendJson(mixed $data, ?int $ttl = null, ?string $cacheStatus = null): void
     {
+        header('Cache-Control: no-store');
+        // A server-cache lifetime controls diagnostics, never browser storage.
+        if ($cacheStatus !== null || ($ttl !== null && $ttl > 0)) {
+            header('X-Cache: ' . ($cacheStatus ?? 'MISS'));
+        }
+
         try {
-            // codacy:ignore - echo required for JSON API response in standalone API
             echo json_encode($data, self::JSON_FLAGS);
         } catch (JsonException) {
             http_response_code(self::HTTP_INTERNAL_ERROR);
-            // codacy:ignore - echo required for JSON API response in standalone API
             echo '{"error":"Failed to encode JSON response"}';
         }
     }

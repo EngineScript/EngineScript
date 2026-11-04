@@ -309,19 +309,25 @@ jobs:
           fi
 
 
-          # Font Awesome (restricted to 7.0.x releases)
-          echo "::debug::Fetching Font Awesome 7.0.x version..."
-          FONTAWESOME_API_RESPONSE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases)
-          echo "::debug::Font Awesome API Response: $FONTAWESOME_API_RESPONSE"
+          # Font Awesome: the control panel loads it from cdnjs, so the version comes from cdnjs,
+          # which lists only what it serves. Stable releases only: x.y.z, no beta or release candidate.
+          echo "::debug::Fetching Font Awesome versions from cdnjs..."
+          FONTAWESOME_CDNJS_RESPONSE=$(curl -s https://api.cdnjs.com/libraries/font-awesome?fields=versions)
+          LATEST_FONTAWESOME=$(echo "$FONTAWESOME_CDNJS_RESPONSE" | jq -r '.versions[]? // empty' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          echo "::debug::Latest stable Font Awesome on cdnjs: '$LATEST_FONTAWESOME'"
 
-          # Filter for 7.0.x releases only, get the latest one
-          LATEST_FONTAWESOME=$(echo "$FONTAWESOME_API_RESPONSE" | jq -r '[.[] | select(.tag_name | test("^7\\.0\\.[0-9]+$")) | .tag_name] | first // empty' | sed 's/[^0-9\.]//g')
-          echo "::debug::Parsed Font Awesome 7.0.x version: '$LATEST_FONTAWESOME'"
-
-          if [[ -n "$LATEST_FONTAWESOME" && "$LATEST_FONTAWESOME" != "null" ]]; then
+          # Adopt it only when cdnjs serves the stylesheet the panel loads (a frozen or partial
+          # cdnjs must not move the panel to a URL that does not answer)
+          if [[ -n "$LATEST_FONTAWESOME" ]] && curl -sfI --max-time 30 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${LATEST_FONTAWESOME}/css/all.min.css" > /dev/null; then
             check_version "FONTAWESOME_VER" "$LATEST_FONTAWESOME"
           else
-            echo "::warning::Failed to fetch Font Awesome 7.0.x version, keeping current version"
+            echo "::warning::Failed to find a Font Awesome release that cdnjs serves, keeping current version"
+          fi
+
+          # Font Awesome's own latest stable release: a warning when cdnjs falls behind it
+          FONTAWESOME_RELEASE=$(curl -s https://api.github.com/repos/FortAwesome/Font-Awesome/releases | jq -r '[.[] | select(.prerelease == false and .draft == false) | .tag_name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))] | first // empty')
+          if [[ -n "$FONTAWESOME_RELEASE" && -n "$LATEST_FONTAWESOME" ]] && version_gt "$FONTAWESOME_RELEASE" "$LATEST_FONTAWESOME"; then
+            echo "::warning::Font Awesome ${FONTAWESOME_RELEASE} is released, but cdnjs serves only ${LATEST_FONTAWESOME}; the control panel stays on what cdnjs serves"
           fi
 
           # TinyFileManager

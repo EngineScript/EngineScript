@@ -3,7 +3,13 @@
 
 export class DashboardAPI {
   static API_PREFIX = "/api/";
-  static MAX_BATCH_SIZE = 10;
+
+  // Longer than the server's own budget (20 seconds for commands and for UptimeRobot),
+  // so the server answers first whenever it can.
+  static REQUEST_TIMEOUT_MS = 30000;
+
+  // The API's answer when the CSRF token does not belong to the session (api.php)
+  static CSRF_ERROR = "Invalid or missing CSRF token";
 
   constructor() {
     this.csrfToken = null;
@@ -13,7 +19,14 @@ export class DashboardAPI {
     this.pendingRequests = new Map();
   }
 
-  async loadCsrfToken() {
+  /**
+   * Load the session's CSRF token, once; with refresh, load it again (a new session has a new one).
+   */
+  async loadCsrfToken(refresh = false) {
+    if (refresh) {
+      this.csrfToken = null;
+    }
+
     if (this.csrfToken) {
       return this.csrfToken;
     }
@@ -23,11 +36,8 @@ export class DashboardAPI {
     }
 
     this.csrfTokenPromise = (async () => {
-      try { // codacy:ignore - Try/catch required for CSRF token loading
-        const response = await fetch("/api/csrf-token", {
-          method: "GET",
-          credentials: "include"
-        });
+      try {
+        const response = await this.request("/api/csrf-token", { method: "GET" });
         if (response.ok) {
           const data = await response.json();
           this.csrfToken = data.csrf_token || null;
@@ -46,18 +56,37 @@ export class DashboardAPI {
     return this.csrfTokenPromise;
   }
 
-  getCsrfToken() {
-    return this.csrfToken;
-  }
-
   isValidEndpoint(endpoint) {
     return typeof endpoint === "string" && endpoint.startsWith(DashboardAPI.API_PREFIX);
   }
 
-  isOperaMini() {
-    return (
-      Object.prototype.toString.call(globalThis.operamini) === "[object OperaMini]"
-    );
+  /**
+   * fetch() with the session cookie and a time limit. A request that runs out of time
+   * rejects with an error that says so.
+   *
+   * @param {string} endpoint - The API endpoint
+   * @param {RequestInit} options - fetch() options
+   * @returns {Promise<Response>} The response
+   */
+  async request(endpoint, options) {
+    const signal = AbortSignal.timeout(DashboardAPI.REQUEST_TIMEOUT_MS);
+    try {
+      // Callers pass only API paths, checked against API_PREFIX by isApiEndpoint(). The rule's
+      // ID differs between rule packs, so the suppression names none.
+      // nosemgrep
+      return await fetch(endpoint, {
+        ...options,
+        credentials: "include",
+        signal
+      });
+    } catch (error) {
+      // Only the time limit aborts this signal. WebKit rejects with its own AbortError
+      // rather than the signal's TimeoutError, so the signal is checked, not the error.
+      if (signal.aborted) {
+        throw new Error(`The server did not answer within ${DashboardAPI.REQUEST_TIMEOUT_MS / 1000} seconds`, { cause: error });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -84,148 +113,95 @@ export class DashboardAPI {
     return requestPromise;
   }
 
-  async getApiData(endpoint, fallback) {
+  /**
+   * GET an API endpoint and return its JSON. Any failure (an invalid endpoint, a network
+   * error, a timeout, an error status, or invalid JSON) rejects, with the API's own error
+   * message when it sent one, so each page can show an error instead of empty data.
+   *
+   * @param {string} endpoint - The API endpoint
+   * @returns {Promise<*>} The decoded JSON
+   */
+  async getApiData(endpoint) {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
-      console.error("Invalid API endpoint:", endpoint);
-      return fallback;
+      throw new Error(`Invalid API endpoint: ${endpoint}`);
     }
-    try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return fallback;
-      }
 
-      // Use request deduplication for all GET requests
-      const data = await this.deduplicateRequest(endpoint, async () => {
-        const headers = {};
-        if (this.csrfToken) {
-          headers["X-CSRF-Token"] = this.csrfToken;
-        }
-
-        // codacy:ignore - SSRF mitigated: endpoint validated above to start with '/api/'
-        const response = await fetch(endpoint, {
-          method: "GET",
-          headers,
-          credentials: "include"
-        });
-
-        if (!response.ok) {
-          throw new Error(`API ${endpoint} returned ${response.status}: ${response.statusText}`);
-        }
-
-        return this.parseJsonResponse(response);
-      });
-
-      // Handle endpoint-specific response format differences.
-      if (endpoint.includes("/sites/count") && data.count !== undefined) {
-        return data.count.toString();
-      }
-
-      return data;
-    } catch (error) {
-      console.error("API request failed:", error);
-      return fallback;
-    }
+    // Use request deduplication for all GET requests
+    // GET requests change nothing, so they carry no CSRF token.
+    return this.deduplicateRequest(endpoint, async () => {
+      const response = await this.request(endpoint, { method: "GET" });
+      return this.readPayload(endpoint, response);
+    });
   }
 
   async postApiData(endpoint, data = {}) {
     // Validate endpoint is a relative API path to prevent SSRF
     if (!this.isValidEndpoint(endpoint)) {
       console.error("Invalid API endpoint:", endpoint);
-      return { error: "Invalid endpoint" }; // codacy:ignore - Object literal return
+      return { error: "Invalid endpoint" };
     }
     try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: "Fetch not supported" }; // codacy:ignore - Object literal return
+      let response = await this.post(endpoint, data);
+
+      // The session ended (for example after the page sat idle) and its token with it: the
+      // server refused the request before acting on it, so load the new session's token and
+      // send it once more. Nothing else is retried, a network failure least of all.
+      if (response.status === 403 && (await this.errorOf(response)) === DashboardAPI.CSRF_ERROR) {
+        await this.loadCsrfToken(true);
+        response = await this.post(endpoint, data);
       }
 
-      if (!this.csrfToken) {
-        await this.loadCsrfToken();
-      }
-
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      if (this.csrfToken) {
-        headers["X-CSRF-Token"] = this.csrfToken;
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify(data)
-      });
-
-      const payload = await this.parseJsonResponse(response);
-      if (!response.ok) {
-        throw new Error(payload?.error || `API ${endpoint} returned ${response.status}: ${response.statusText}`);
-      }
-
-      return payload;
+      return await this.readPayload(endpoint, response);
     } catch (error) {
       console.error(`Error posting to ${endpoint}:`, error);
-      return { error: error.message }; // codacy:ignore - Object literal return
+      return { error: error.message };
     }
   }
 
   /**
-   * Batch multiple API requests into a single call
-   * Reduces network round-trips and improves performance
-   *
-   * @param {string[]} endpoints - Array of API endpoints to fetch. If more than
-   *   the maximum batch size are provided, only the first `maxBatchSize`
-   *   endpoints are sent in the request.
-   * @returns {Promise<Object>} Object with results keyed by endpoint
-   *
-   * @example
-   * const data = await api.batchRequest(['/system/info', '/services/status']);
-   * console.log(data.results['/system/info']);
+   * Send one POST with the session's CSRF token, loading the token first if needed.
    */
-  async batchRequest(endpoints) {
+  async post(endpoint, data) {
+    if (!this.csrfToken) {
+      await this.loadCsrfToken();
+    }
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.csrfToken) {
+      headers["X-CSRF-Token"] = this.csrfToken;
+    }
+
+    return this.request(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * The JSON of a successful response; for an error status, a rejection with the API's own
+   * error message, or the status when the body is not the API's JSON (nginx's error pages).
+   */
+  async readPayload(endpoint, response) {
+    if (!response.ok) {
+      throw new Error((await this.errorOf(response)) || `API ${endpoint} returned ${response.status}: ${response.statusText}`);
+    }
+
+    return this.parseJsonResponse(response);
+  }
+
+  /**
+   * The "error" field of an error response's JSON, or null. Reads a clone, so the body stays readable.
+   */
+  async errorOf(response) {
     try {
-      if (typeof fetch === "undefined" || this.isOperaMini()) {
-        return { error: "Fetch not supported", results: {}, errors: {} }; // codacy:ignore - Object literal return
-      }
-
-      if (!this.csrfToken) {
-        await this.loadCsrfToken();
-      }
-
-      if (!Array.isArray(endpoints) || endpoints.length === 0) {
-        return { error: "No endpoints provided", results: {}, errors: {} }; // codacy:ignore - Object literal return
-      }
-
-      // Limit batch size client-side to match server limit
-      let limitedEndpoints = endpoints;
-      if (endpoints.length > DashboardAPI.MAX_BATCH_SIZE) {
-        console.warn(`Batch size ${endpoints.length} exceeds max ${DashboardAPI.MAX_BATCH_SIZE}, truncating`);
-        limitedEndpoints = endpoints.slice(0, DashboardAPI.MAX_BATCH_SIZE);
-      }
-
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      if (this.csrfToken) {
-        headers["X-CSRF-Token"] = this.csrfToken;
-      }
-
-      const response = await fetch("/api/batch", {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ requests: limitedEndpoints })
-      });
-
-      const payload = await this.parseJsonResponse(response);
-      if (!response.ok) {
-        throw new Error(payload?.error || `Batch API returned ${response.status}: ${response.statusText}`);
-      }
-
-      return payload;
-    } catch (error) {
-      console.error("Batch API request failed:", error);
-      return { error: error.message, results: {}, errors: {} }; // codacy:ignore - Object literal return
+      const payload = await response.clone().json();
+      return typeof payload?.error === "string" ? payload.error : null;
+    } catch {
+      return null;
     }
   }
 
