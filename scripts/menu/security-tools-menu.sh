@@ -56,24 +56,49 @@ show_php_in_uploads() {
   done
 }
 
+# Recent logins, and failed SSH logins over the last week
+show_logins() {
+  echo ""
+  echo "Recent logins:"
+  print_or_none "$(last -n 15 -w 2> /dev/null | sed '/^$/d; /^wtmp begins/d')"
+  echo ""
+  echo "Failed SSH logins in the last 7 days (the latest 20):"
+  print_or_none "$(journalctl -u ssh -u sshd --since '7 days ago' --no-pager -q 2> /dev/null | grep -E 'Failed password|Invalid user|authentication failure' | tail -n 20)"
+}
+
+# Every socket that accepts connections; UFW decides which of them are reachable from outside
+show_open_ports() {
+  echo ""
+  echo "Listening sockets (UFW decides which are reachable from outside: see Firewall Status):"
+  ss -tulpn
+}
+
 # Main Menu
+site_options=(
+  "Find PHP Files in Uploads Folders (All Domains)"
+  "Verify WordPress Core Files (All Domains)"
+  "Wordfence CLI Malware Scan"
+  "Wordfence CLI Remediate Infected Files (After Malware Scan)"
+  "Wordfence CLI Vulnerability Scan"
+  "WPScan Vulnerability Scan"
+)
+server_options=(
+  "Firewall Status (UFW)"
+  "Login History (SSH)"
+  "Nginx Configuration Security Check (Gixy-Next)"
+  "Open Ports and Listening Services"
+  "Security Audit (Lynis)"
+  "SSH Login Bans (fail2ban)"
+)
 while true
   do
     clear
     echo -e "Security Tools" | boxes -a c -d shell -p a1l2
     echo ""
+    echo "Options 1-${#site_options[@]} scan the WordPress sites; options $(( ${#site_options[@]} + 1 ))-$(( ${#site_options[@]} + ${#server_options[@]} )) check the server."
     echo ""
     PS3='Please enter your choice: '
-    secoptions=(
-      "Find PHP Files in Uploads Folders (All Domains)"
-      "Verify WordPress Core Files (All Domains)"
-      "Wordfence CLI Malware Scan"
-      "Wordfence CLI Remediate Infected Files (After Malware Scan)"
-      "Wordfence CLI Vulnerability Scan"
-      "WP-CLI Doctor"
-      "WPScan Vulnerability Scan"
-      "Exit Security Tools"
-    )
+    secoptions=("${site_options[@]}" "${server_options[@]}" "Exit Security Tools")
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
@@ -100,12 +125,42 @@ while true
           /usr/local/bin/enginescript/scripts/functions/security/wordfence-cli-vuln-scan.sh
           break
           ;;
-        "WP-CLI Doctor")
-          /usr/local/bin/enginescript/scripts/functions/security/wp-cli-doctor.sh
-          break
-          ;;
         "WPScan Vulnerability Scan")
           /usr/local/bin/enginescript/scripts/functions/security/wpscan.sh
+          break
+          ;;
+        "Firewall Status (UFW)")
+          run_tool ufw ufw status verbose
+          pause
+          break
+          ;;
+        "Login History (SSH)")
+          show_logins
+          pause
+          break
+          ;;
+        "Nginx Configuration Security Check (Gixy-Next)")
+          run_tool gixy gixy /etc/nginx/nginx.conf
+          pause
+          break
+          ;;
+        "Open Ports and Listening Services")
+          show_open_ports
+          pause
+          break
+          ;;
+        "Security Audit (Lynis)")
+          echo "The audit takes a minute or two; the full report is saved in /var/log/lynis-report.dat."
+          run_tool lynis lynis audit system --quick
+          pause
+          break
+          ;;
+        "SSH Login Bans (fail2ban)")
+          if run_tool fail2ban-client fail2ban-client status sshd; then
+            echo ""
+            echo "To lift a ban: fail2ban-client set sshd unbanip <address>"
+          fi
+          pause
           break
           ;;
         #"Linux Malware Detect (server scanner)")
