@@ -26,6 +26,35 @@ pause() {
   echo ""
 }
 
+# One certificate's expiry date and the days left
+show_certificate() {
+  local label="$1" cert="$2" end
+  if ! end="$(openssl x509 -enddate -noout -in "${cert}" 2> /dev/null)"; then
+    printf '  %-44s no certificate at %s\n' "${label}" "${cert}"
+    return
+  fi
+  end="${end#notAfter=}"
+  printf '  %-44s expires %s (%s days)\n' "${label}" "$(date -d "${end}" '+%Y-%m-%d')" \
+    "$(( ($(date -d "${end}" +%s) - $(date +%s)) / 86400 ))"
+}
+
+# The certificate of every site, and the Cloudflare certificate that origin pulls are checked with
+show_certificates() {
+  local SITES=() site
+  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+    # shellcheck source=/dev/null
+    source /home/EngineScript/sites-list/sites.sh
+  fi
+  echo ""
+  echo "Site certificates (acme.sh renews them on its own before they expire):"
+  [[ "${#SITES[@]}" -eq 0 ]] && echo "  No sites yet."
+  for site in "${SITES[@]}"; do
+    show_certificate "${site}" "/etc/nginx/ssl/${site}/fullchain.pem"
+  done
+  echo ""
+  show_certificate "Cloudflare origin pull CA" /etc/nginx/ssl/cloudflare/origin-pull-ca.pem
+}
+
 # Get a new certificate for one site now, even if the current one is far from expiring.
 # --renew reuses what acme.sh saved when the site was created: the domains (site, admin., and *.),
 # the CA, the Cloudflare DNS check, the key type, the install paths, and the Nginx reload.
@@ -99,6 +128,8 @@ while true
       "Export Domain"
       "List Domains"
       "Re-issue a Domain's Certificate"
+      "SSL Capabilities Test (Single Domain)"
+      "SSL Certificate Expiry"
       "Staging Copy of a Domain (Create, Refresh, Delete)"
       "Remove Domain (DANGER)"
       "Exit Domain Configuration Tools"
@@ -120,6 +151,16 @@ while true
           ;;
         "List Domains")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-sites.sh
+          pause
+          break
+          ;;
+        "SSL Capabilities Test (Single Domain)")
+          /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
+          pause
+          break
+          ;;
+        "SSL Certificate Expiry")
+          show_certificates
           pause
           break
           ;;

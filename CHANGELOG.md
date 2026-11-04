@@ -6,6 +6,22 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-04
 
+### 🗂️ MENU REORGANIZATION
+
+- Entries that were in two menus are now in one:
+  - Backup (All Domains) is in Backup Tools only.
+  - List Domains is in Domain Configuration Tools only; it replaces List Sites in Server Tools.
+  - Display Server Info is in Server Tools only.
+  - Update EngineScript is in Update Software only.
+- Moved entries:
+  - **Re-tune Services:** Update Software → Performance Tools, next to View Tuning Plan.
+  - **Pending Updates and Reboot Check:** Server Tools → Update Software, as its first entry.
+  - **SSL Certificate Expiry:** Server Tools → Domain Configuration Tools, next to Re-issue a Domain's Certificate.
+  - **SSL Capabilities Test:** Site Maintenance Tools → Domain Configuration Tools, next to Re-issue a Domain's Certificate.
+  - **Server security checks:** Firewall Status, Login History, Nginx Configuration Security Check, Open Ports and Listening Services, Security Audit (Lynis), and SSH Login Bans move from Server Tools → Security Tools. That menu now lists its WordPress site scans first and its server checks after them, and says which numbers are which.
+  - **WP-CLI Doctor:** Security Tools → Site Maintenance Tools, as WP-CLI Doctor (Site Health Check), since it mostly checks site health.
+- Server Tools keeps: Cron Jobs and Last Runs, Disk Usage, Display Server Info, Failed Services and Recent Errors, Nginx Configuration Test and Reload, Restart Services, and Service Status.
+
 ### 🧪 STAGING COPIES
 
 - New in Domain Configuration Tools: **Staging Copy of a Domain (Create, Refresh, Delete)**. It copies a WordPress site's files and database to `https://staging.<domain>`, where changes can be tried without touching the live site.

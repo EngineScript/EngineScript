@@ -78,30 +78,18 @@ while true
     echo ""
     PS3='Please enter your choice: '
     secoptions=(
-      "Backup (All Domains)"
       "Clean Up Databases (All Domains)"
       "Clear Caches (All Domains)"
       "Fix Permissions (All Domains)"
       "Optimize Images (All Domains)"
       "Run WP-Cron Now (All Domains)"
-      "SSL Capabilities Test (Single Domain)"
       "Update WordPress, Plugins, and Themes (All Domains)"
+      "WP-CLI Doctor (Site Health Check)"
       "Exit Site Maintenance Tools"
     )
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Backup (All Domains)")
-          echo "Backing up all domains..."
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
-          echo ""
-          echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
-          break
-          ;;
         "Clean Up Databases (All Domains)")
           echo "This deletes every site's expired transients. It can also delete every post revision"
           echo "(the saved earlier versions of posts and pages); those cannot be restored afterwards."
@@ -153,15 +141,6 @@ while true
           pause
           break
           ;;
-        "SSL Capabilities Test (Single Domain)")
-          /usr/local/bin/enginescript/scripts/functions/server-tools/testssl.sh
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
-          break
-          ;;
         "Update WordPress, Plugins, and Themes (All Domains)")
           if confirm "Back up every site's database first (recommended)?" y \
             && ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh database-daily; then
@@ -174,6 +153,10 @@ while true
           fi
           for_each_site update_wordpress
           pause
+          break
+          ;;
+        "WP-CLI Doctor (Site Health Check)")
+          /usr/local/bin/enginescript/scripts/functions/security/wp-cli-doctor.sh
           break
           ;;
         "Exit Site Maintenance Tools")

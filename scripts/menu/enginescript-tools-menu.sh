@@ -76,11 +76,9 @@ while true
     echo ""
     PS3='Please enter your choice: '
     secoptions=(
-      "Display Server Info"
       "Run EngineScript Debug Report"
       "Show Install State"
       "Show Latest Changes (Changelog)"
-      "Update EngineScript"
       "View/Edit EngineScript Install Configuration File"
       "View/Edit EngineScript Variables File"
       "Exit EngineScript Tools"
@@ -88,16 +86,6 @@ while true
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Display Server Info")
-          /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
-          echo ""
-          echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
-          break
-          ;;
         "Run EngineScript Debug Report")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh
           echo ""
@@ -116,10 +104,6 @@ while true
         "Show Latest Changes (Changelog)")
           show_latest_changes
           pause
-          break
-          ;;
-        "Update EngineScript")
-          /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
           break
           ;;
         "View/Edit EngineScript Install Configuration File")

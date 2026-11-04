@@ -852,6 +852,32 @@ function find_php_in_uploads() {
 
 
 # ----------------------------------------------------------------
+# Run a tool from a menu, or say how to install it: servers set up before a tool was added get
+# it from Update Software > Update Server Tools
+# Usage: run_tool <tool> <command> [arguments]
+function run_tool() {
+    local tool="$1"
+    shift
+    if ! command -v "${tool}" > /dev/null 2>&1; then
+        echo "${tool} is not installed. Install it with: es.menu > Update Software > Update Server Tools"
+        return 1
+    fi
+    "$@"
+}
+
+
+# ----------------------------------------------------------------
+# Print text indented by two spaces, or "none" when it is empty (for the menus' reports)
+function print_or_none() {
+    if [[ -n "$1" ]]; then
+        printf '  %s\n' "${1//$'\n'/$'\n'  }"
+    else
+        echo "  none"
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Give a folder to www-data, with directories at 755 and files at 644
 #
 # www-data can swap any file in the folder for a symlink while find runs, and chmod follows

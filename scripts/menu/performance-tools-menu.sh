@@ -26,18 +26,6 @@ pause() {
   echo ""
 }
 
-# Run a tool, or say how to install it: servers set up before a tool was added get it from
-# Update Software > Update Server Tools
-run_tool() {
-  local tool="$1"
-  shift
-  if ! command -v "${tool}" > /dev/null 2>&1; then
-    echo "${tool} is not installed. Install it with: es.menu > Update Software > Update Server Tools"
-    return 1
-  fi
-  "$@"
-}
-
 # The processes reading or writing the disk now. Ubuntu's kernel leaves I/O accounting off, so
 # turn it on while iotop runs and put the old setting back afterwards.
 show_disk_io() {
@@ -100,7 +88,7 @@ show_tuning_plan() {
   local -A override=()
   echo ""
   if [[ ! -r "${conf}" ]]; then
-    echo "There is no tuning plan yet (${conf}). Create one with: es.menu > Update Software > Re-tune Services"
+    echo "There is no tuning plan yet (${conf}). Create one with: es.menu > Performance Tools > Re-tune Services"
     return 1
   fi
   while IFS='=' read -r key value; do
@@ -118,11 +106,11 @@ show_tuning_plan() {
   done < <(tuning_read_file "${conf}")
   echo ""
   if [[ -e /etc/enginescript/tuning.pending ]]; then
-    echo "The last re-tune did not finish: run es.menu > Update Software > Re-tune Services again."
+    echo "The last re-tune did not finish: run es.menu > Performance Tools > Re-tune Services again."
   elif tuning_needs_replan; then
-    echo "The server's memory or CPU count changed since this plan was written: run es.menu > Update Software > Re-tune Services."
+    echo "The server's memory or CPU count changed since this plan was written: run es.menu > Performance Tools > Re-tune Services."
   fi
-  echo "To change a value, add KEY=value to ${overrides}, then run es.menu > Update Software > Re-tune Services."
+  echo "To change a value, add KEY=value to ${overrides}, then run es.menu > Performance Tools > Re-tune Services."
 }
 
 # Main Menu
@@ -138,6 +126,7 @@ while true
       "Disk Speed Benchmark (fio)"
       "Live Resource Monitor (htop)"
       "Network Traffic (vnstat)"
+      "Re-tune Services (memory, workers, caches)"
       "View Tuning Plan"
       "Exit Performance Tools"
     )
@@ -160,6 +149,11 @@ while true
         "Network Traffic (vnstat)")
           run_tool vnstat vnstat
           pause
+          break
+          ;;
+        "Re-tune Services (memory, workers, caches)")
+          # Also measures the database disk again (30 seconds of disk load)
+          /usr/local/bin/enginescript/scripts/update/retune-services.sh --benchmark
           break
           ;;
         "View Tuning Plan")

@@ -18,6 +18,30 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Package updates waiting, a pending reboot, and services still running replaced libraries
+show_pending_updates() {
+  local stamp=/var/lib/apt/periodic/update-success-stamp
+  [[ -f "${stamp}" ]] || stamp=/var/cache/apt/pkgcache.bin
+  echo ""
+  echo "Package updates waiting (as of the last package list refresh, $(date -r "${stamp}" '+%Y-%m-%d %H:%M' 2> /dev/null)):"
+  print_or_none "$(apt list --upgradable 2> /dev/null | tail -n +2)"
+  echo ""
+  if [[ -f /var/run/reboot-required ]]; then
+    echo "A reboot is needed, for:"
+    print_or_none "$(cat /var/run/reboot-required.pkgs 2> /dev/null)"
+  else
+    echo "No reboot is needed."
+  fi
+  if command -v needrestart > /dev/null 2>&1; then
+    echo ""
+    echo "Services still running replaced libraries (restart them to load the update):"
+    print_or_none "$(needrestart -b -r l 2> /dev/null | sed -n 's/^NEEDRESTART-SVC: //p')"
+  fi
+  echo ""
+  read -n 1 -s -r -p "Press any key to continue"
+  echo ""
+}
+
 # Main Menu
 while true
   do
@@ -28,6 +52,7 @@ while true
 
     PS3='Please enter your choice: '
     options=(
+      "Pending Updates and Reboot Check"
       "Update EngineScript"
       "Update Kernel (experimental)"
       "Update MariaDB"
@@ -36,7 +61,6 @@ while true
       "Update PHP"
       "Switch PHP Version"
       "Update Server Tools"
-      "Re-tune Services (memory, workers, caches)"
       "Update Ubuntu Distribution (apt full-upgrade)"
       "Update Ubuntu Software (apt upgrade)"
       "Exit Update Software Menu"
@@ -44,6 +68,10 @@ while true
     select opt in "${options[@]}"
     do
       case $opt in
+        "Pending Updates and Reboot Check")
+          show_pending_updates
+          break
+          ;;
         "Update EngineScript")
           /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
           break
@@ -124,11 +152,6 @@ while true
           ;;
         "Update Server Tools")
           /usr/local/bin/enginescript/scripts/update/software-update.sh
-          break
-          ;;
-        "Re-tune Services (memory, workers, caches)")
-          # Also measures the database disk again (30 seconds of disk load)
-          /usr/local/bin/enginescript/scripts/update/retune-services.sh --benchmark
           break
           ;;
         "Update Ubuntu Distribution (apt full-upgrade)")

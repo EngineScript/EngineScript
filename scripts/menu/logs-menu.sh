@@ -94,13 +94,13 @@ follow_log() {
   trap - INT
 }
 
-# The warnings and suggestions of the last Lynis audit (Server Tools > Security Audit)
+# The warnings and suggestions of the last Lynis audit (Security Tools > Security Audit)
 show_lynis_report() {
   local report=/var/log/lynis-report.dat
   clear
   echo "${BOLD}Showing the last Lynis security audit.${NORMAL}" | boxes -a c -d shell -p a1l2
   if [[ ! -f "${report}" ]]; then
-    echo "There is no Lynis report yet. Run one with: es.menu > Server Tools > Security Audit (Lynis)"
+    echo "There is no Lynis report yet. Run one with: es.menu > Security Tools > Security Audit (Lynis)"
   else
     echo "Finished $(sed -n 's/^report_datetime_end=//p' "${report}"); hardening index $(sed -n 's/^hardening_index=//p' "${report}") of 100."
     echo ""
