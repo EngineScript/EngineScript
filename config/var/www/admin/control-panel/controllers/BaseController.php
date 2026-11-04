@@ -310,7 +310,7 @@ abstract class BaseController
      */
     protected function sanitizeOutput(array $data): array
     {
-        return array_map([$this, 'sanitizeValue'], $data);
+        return array_map($this->sanitizeValue(...), $data);
     }
 
     /**
@@ -319,7 +319,7 @@ abstract class BaseController
     private function sanitizeValue(mixed $data): mixed
     {
         if (is_array($data)) {
-            return array_map([$this, 'sanitizeValue'], $data);
+            return array_map($this->sanitizeValue(...), $data);
         }
 
         if (is_string($data)) {
