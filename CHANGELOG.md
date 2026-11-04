@@ -6,6 +6,24 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-04
 
+### 🧪 STAGING COPIES
+
+- New in Domain Configuration Tools: **Staging Copy of a Domain (Create, Refresh, Delete)**. It copies a WordPress site's files and database to `https://staging.<domain>`, where changes can be tried without touching the live site.
+  - The copy asks for the admin control panel's username and password, sends no email, tells search engines not to index it, and does not use the page cache.
+  - It has its own database and user (credentials in `/home/EngineScript/staging-credentials/`) and its own Redis cache. It uses the live site's certificate, which already covers `*.<domain>`.
+  - Backups, cron jobs, and the all-domain tools skip it.
+  - A proxied Cloudflare CNAME record, `staging` → the domain, is added when the copy is created and deleted with it. An existing `staging` record that EngineScript did not add is never replaced.
+  - Refresh replaces the copy's files and database with a new copy of the live site.
+  - Removing a domain also removes its staging copy.
+  - Copying a staging site back to the live site is planned for later.
+
+### 🧰 MORE MENU ADDITIONS
+
+- Database Tools adds **Reset a Site's Database Password**. It gives the site's database user a new random password and puts it in `wp-config.php` and the site's credentials file. If any step fails, the old password goes back and the site keeps working.
+- Backup Tools adds **Check the Latest Backups (All Domains)**. It reads back each site's newest database and files backups and the newest configuration backup. A database backup must also end with the line the dump tool writes when it finishes, so a backup that was cut short is caught.
+- View Server Logs adds **Follow a Log Live**. Pick a log, see new lines as they are written, and press Ctrl+C to go back to the menu.
+- Database Size per Site names staging copies' databases.
+
 ### 🧰 MENU ADDITIONS
 
 - New **Performance Tools** menu in `es.menu`:

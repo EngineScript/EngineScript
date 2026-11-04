@@ -89,6 +89,13 @@ LOG_FILE="/var/log/EngineScript/vhost-remove.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "Starting domain removal for ${DOMAIN} at $(date)"
 
+# Remove the site's staging copy first: it uses the site's certificate, which goes below
+if [[ -f "/etc/nginx/sites-enabled/staging.${DOMAIN}.conf" || -d "/var/www/sites/staging.${DOMAIN}" \
+    || -f "/home/EngineScript/staging-credentials/staging.${DOMAIN}.txt" ]]; then
+  echo "Removing the staging copy of ${DOMAIN}..."
+  bash /usr/local/bin/enginescript/scripts/functions/vhost/vhost-staging.sh delete "${DOMAIN}"
+fi
+
 # Remove domain from site list
 # Check for the domain enclosed in quotes, matching the format in sites.sh
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh

@@ -47,6 +47,44 @@ reissue_certificate() {
   echo "Done! The certificate for ${site} now expires $(date -d "${end#notAfter=}" '+%Y-%m-%d' 2> /dev/null)."
 }
 
+# Create a staging copy of one site at staging.<domain>, or refresh or delete the one it has
+manage_staging_copy() {
+  local site="$1" choice script=/usr/local/bin/enginescript/scripts/functions/vhost/vhost-staging.sh
+  echo ""
+  if [[ ! -f "/home/EngineScript/staging-credentials/staging.${site}.txt" && ! -d "/var/www/sites/staging.${site}" ]]; then
+    echo "This copies ${site}'s files and database to https://staging.${site}. The copy asks for the"
+    echo "admin control panel's username and password, sends no email, is hidden from search engines,"
+    echo "and is skipped by backups and cron jobs."
+    if prompt_yes_no "Create the staging copy?" "n"; then
+      bash "${script}" create "${site}"
+    fi
+    return
+  fi
+  echo "${site} has a staging copy at https://staging.${site}."
+  local PS3="What would you like to do? "
+  select choice in "Refresh it from the live site" "Delete it" "Cancel"; do
+    case "${choice}" in
+      "Refresh it from the live site")
+        echo "Refreshing replaces the staging copy's files and database: changes made there are lost."
+        if prompt_yes_no "Refresh staging.${site}?" "n"; then
+          bash "${script}" refresh "${site}"
+        fi
+        return
+        ;;
+      "Delete it")
+        if prompt_yes_no "Delete staging.${site}, with its files and database?" "n"; then
+          bash "${script}" delete "${site}"
+        fi
+        return
+        ;;
+      "Cancel")
+        return
+        ;;
+      *) echo "Invalid option.";;
+    esac
+  done
+}
+
 # Main Menu
 while true
   do
@@ -61,6 +99,7 @@ while true
       "Export Domain"
       "List Domains"
       "Re-issue a Domain's Certificate"
+      "Staging Copy of a Domain (Create, Refresh, Delete)"
       "Remove Domain (DANGER)"
       "Exit Domain Configuration Tools"
     )
@@ -87,6 +126,13 @@ while true
         "Re-issue a Domain's Certificate")
           if select_site; then
             reissue_certificate "${SELECTED_SITE}"
+          fi
+          pause
+          break
+          ;;
+        "Staging Copy of a Domain (Create, Refresh, Delete)")
+          if select_site; then
+            manage_staging_copy "${SELECTED_SITE}"
           fi
           pause
           break

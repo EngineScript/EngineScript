@@ -71,6 +71,86 @@ show_backups() {
   echo "Each backup run is logged in /var/log/EngineScript/enginescript-backup.log."
 }
 
+# How old a backup folder is, from its name (YYYY-MM-DD or YYYY-MM-DD-HH)
+backup_age() {
+  local days
+  days=$(( ($(date -d "$(date +%Y-%m-%d)" +%s) - $(date -d "${1:0:10}" +%s)) / 86400 ))
+  case "${days}" in
+    0) echo "today" ;;
+    1) echo "1 day old" ;;
+    *) echo "${days} days old" ;;
+  esac
+}
+
+# Read a backup file back: a database dump must also end with the line mariadb-dump writes
+# when it finishes, so a dump cut short (a full disk, a stopped backup) is caught
+check_backup_file() {
+  local last
+  case "$1" in
+    *.tar.gz)
+      tar -tzf "$1" > /dev/null 2>&1
+      ;;
+    *-database.sql.gz)
+      last="$(set -o pipefail; zcat "$1" 2> /dev/null | tail -n 1)" || return 1
+      [[ "${last}" == "-- Dump completed"* ]]
+      ;;
+    *)
+      gzip -t "$1" 2> /dev/null
+      ;;
+  esac
+}
+
+# Check every file in the newest dated folder of a backup folder
+# Usage: check_newest_backup <label> <folder>
+check_newest_backup() {
+  local label="$1" dir="$2" newest file files=0 result="OK"
+  newest="$(find "${dir}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2> /dev/null | sort | tail -n 1)"
+  if [[ -z "${newest}" ]]; then
+    printf '    %-22s %s\n' "${label}" "none"
+    return
+  fi
+  for file in "${dir}/${newest}"/*.gz; do
+    [[ -f "${file}" ]] || continue
+    files=$((files + 1))
+    if ! check_backup_file "${file}"; then
+      result="FAILED: ${file##*/} is damaged or incomplete"
+      break
+    fi
+  done
+  (( files == 0 )) && result="FAILED: the folder has no backup files"
+  [[ "${result}" == "OK" ]] || BACKUP_PROBLEMS=$((BACKUP_PROBLEMS + 1))
+  printf '    %-22s %-14s %-14s %s\n' "${label}" "${newest}" "($(backup_age "${newest}"))" "${result}"
+}
+
+# Read back the newest backup of each kind for every site, and EngineScript's configuration backup
+check_latest_backups() {
+  local SITES=() site base
+  BACKUP_PROBLEMS=0
+  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+    # shellcheck source=/dev/null
+    source /home/EngineScript/sites-list/sites.sh
+  fi
+  echo ""
+  echo "Reading back the newest backups. Each archive is read in full, which takes a while for large sites."
+  for site in "${SITES[@]}"; do
+    base="/home/EngineScript/site-backups/${site}"
+    echo ""
+    echo "  ${site}"
+    check_newest_backup "Database (daily)" "${base}/database/daily"
+    check_newest_backup "Database (hourly)" "${base}/database/hourly"
+    check_newest_backup "Files (wp-content)" "${base}/files"
+  done
+  echo ""
+  check_newest_backup "EngineScript config" /home/EngineScript/config-backups/enginescript
+  echo ""
+  if [[ "${BACKUP_PROBLEMS}" -eq 0 ]]; then
+    echo "Every backup checked reads back correctly."
+  else
+    echo "${BACKUP_PROBLEMS} backup(s) failed the check (marked FAILED above). Make a new one with Backup One Domain,"
+    echo "and see /var/log/EngineScript/enginescript-backup.log for why the last run went wrong."
+  fi
+}
+
 # Check the AWS credentials, then list, write, and delete a small test file in the bucket
 test_s3() {
   local key test_file
@@ -131,6 +211,7 @@ while true
     secoptions=(
       "Backup (All Domains)"
       "Backup One Domain"
+      "Check the Latest Backups (All Domains)"
       "List Backups"
       "Test S3 Connection"
       "Exit Backup Tools"
@@ -160,6 +241,11 @@ while true
               echo "The backup had errors: see /var/log/EngineScript/enginescript-backup.log"
             fi
           fi
+          pause
+          break
+          ;;
+        "Check the Latest Backups (All Domains)")
+          check_latest_backups
           pause
           break
           ;;
