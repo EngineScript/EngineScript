@@ -781,6 +781,77 @@ function run_as_www_data() {
 
 
 # ----------------------------------------------------------------
+# Ask which of the server's sites to use, from /home/EngineScript/sites-list/sites.sh
+# Sets SELECTED_SITE. Returns 1 when there are no sites, on Cancel, or at the end of input.
+function select_site() {
+    local SITES=() site
+    SELECTED_SITE=""
+    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+        # shellcheck source=/dev/null
+        source /home/EngineScript/sites-list/sites.sh
+    fi
+    if [[ "${#SITES[@]}" -eq 0 ]]; then
+        echo "There are no sites on this server yet."
+        return 1
+    fi
+    local PS3="Choose a site: "
+    select site in "${SITES[@]}" "Cancel"; do
+        if [[ "${site}" == "Cancel" ]]; then
+            return 1
+        fi
+        if [[ -n "${site}" ]]; then
+            # shellcheck disable=SC2034 # read by the caller
+            SELECTED_SITE="${site}"
+            return 0
+        fi
+        echo "Invalid option."
+    done
+    return 1
+}
+
+
+# ----------------------------------------------------------------
+# Run a command or function in every site's WordPress folder. It runs as root: run WP-CLI
+# through run_as_www_data. Prints each site's name before its output, and the sites where the
+# command failed. Returns 1 when it failed for any site.
+# Usage: for_each_site <command> [arguments]
+function for_each_site() {
+    local SITES=() site failed=()
+    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+        # shellcheck source=/dev/null
+        source /home/EngineScript/sites-list/sites.sh
+    fi
+    if [[ "${#SITES[@]}" -eq 0 ]]; then
+        echo "There are no sites on this server yet."
+        return 0
+    fi
+    for site in "${SITES[@]}"; do
+        echo ""
+        echo "${BOLD}${site}${NORMAL}"
+        if ! (cd "/var/www/sites/${site}/html" && "$@"); then
+            failed+=("${site}")
+        fi
+    done
+    echo ""
+    if [[ "${#failed[@]}" -gt 0 ]]; then
+        echo "Failed for: ${failed[*]}"
+        return 1
+    fi
+    echo "Done for all ${#SITES[@]} site(s)."
+}
+
+
+# ----------------------------------------------------------------
+# List the PHP files in a site's uploads folder, which should hold only media: PHP there is a
+# common sign of a break-in. The folders Sucuri and WP Migrate DB keep their own PHP in are skipped.
+# Usage: find_php_in_uploads <uploads folder>
+function find_php_in_uploads() {
+    find "$1" \( -path "$1/sucuri" -o -path "$1/wp-migrate-db" \) -prune -o -type f \
+        \( -iname '*.php' -o -iname '*.php[0-9]' -o -iname '*.phtml' -o -iname '*.phar' \) -print
+}
+
+
+# ----------------------------------------------------------------
 # Give a folder to www-data, with directories at 755 and files at 644
 #
 # www-data can swap any file in the folder for a symlink while find runs, and chmod follows

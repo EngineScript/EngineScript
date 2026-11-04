@@ -174,9 +174,7 @@ while true
       "Failed Services and Recent Errors"
       "Firewall Status (UFW)"
       "List Sites"
-      "Live Resource Monitor (htop)"
       "Login History (SSH)"
-      "Network Traffic (vnstat)"
       "Nginx Configuration Security Check (Gixy-Next)"
       "Nginx Configuration Test and Reload"
       "Open Ports and Listening Services"
@@ -223,17 +221,8 @@ while true
           pause
           break
           ;;
-        "Live Resource Monitor (htop)")
-          run_tool htop htop
-          break
-          ;;
         "Login History (SSH)")
           show_logins
-          pause
-          break
-          ;;
-        "Network Traffic (vnstat)")
-          run_tool vnstat vnstat
           pause
           break
           ;;

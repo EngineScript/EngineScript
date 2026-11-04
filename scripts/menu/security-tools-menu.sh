@@ -18,6 +18,44 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Wait for a key before the menu redraws
+pause() {
+  echo ""
+  read -n 1 -s -r -p "Press any key to continue"
+  echo ""
+  echo ""
+}
+
+# The PHP files in every site's uploads folder (the daily scan only reports which sites have any)
+show_php_in_uploads() {
+  local SITES=() site uploads found
+  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
+    # shellcheck source=/dev/null
+    source /home/EngineScript/sites-list/sites.sh
+  fi
+  if [[ "${#SITES[@]}" -eq 0 ]]; then
+    echo "There are no sites on this server yet."
+    return
+  fi
+  echo "PHP files in an uploads folder can be a sign of a break-in. Not every one is harmful (some"
+  echo "plugins keep PHP there), so look into each before deleting anything."
+  for site in "${SITES[@]}"; do
+    uploads="/var/www/sites/${site}/html/wp-content/uploads"
+    echo ""
+    echo "${BOLD}${site}${NORMAL}"
+    if [[ ! -d "${uploads}" ]]; then
+      echo "  No uploads folder."
+      continue
+    fi
+    found="$(find_php_in_uploads "${uploads}")"
+    if [[ -n "${found}" ]]; then
+      printf '  %s\n' "${found//$'\n'/$'\n'  }"
+    else
+      echo "  None found."
+    fi
+  done
+}
+
 # Main Menu
 while true
   do
@@ -27,8 +65,8 @@ while true
     echo ""
     PS3='Please enter your choice: '
     secoptions=(
-      "Find PHP Files in Uploads Directory"
-      "PHP Malware Finder"
+      "Find PHP Files in Uploads Folders (All Domains)"
+      "Verify WordPress Core Files (All Domains)"
       "Wordfence CLI Malware Scan"
       "Wordfence CLI Remediate Infected Files (After Malware Scan)"
       "Wordfence CLI Vulnerability Scan"
@@ -39,8 +77,15 @@ while true
     select secopt in "${secoptions[@]}"
     do
       case $secopt in
-        "Find PHP Files in Uploads Directory")
-          /usr/local/bin/enginescript/scripts/functions/security/find-php-in-uploads.sh
+        "Find PHP Files in Uploads Folders (All Domains)")
+          show_php_in_uploads
+          pause
+          break
+          ;;
+        "Verify WordPress Core Files (All Domains)")
+          echo "Comparing every site's WordPress core files with the checksums WordPress.org publishes..."
+          for_each_site run_as_www_data wp core verify-checksums
+          pause
           break
           ;;
         "Wordfence CLI Malware Scan")
