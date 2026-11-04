@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-04
+
+### 🧰 SERVER TOOLS
+
+- New servers get three more tools, and existing servers get them from `es.menu` > Update Software > Update Server Tools:
+  - **fail2ban** bans an address for an hour after 5 failed SSH logins within 10 minutes. Only the SSH jail is on; the settings are in `/etc/fail2ban/jail.d/enginescript.conf`, and your own changes go in `/etc/fail2ban/jail.local`.
+  - **Lynis** audits the server's security and gives it a hardening score.
+  - **Gixy-Next** checks the Nginx configuration for security mistakes. Its install script was never run; it now is, and installs the `gixy` command in `/usr/local/bin`.
+- The Server Tools menu adds: Disk Usage (ncdu), Firewall Status (UFW), Live Resource Monitor (htop), Network Traffic (vnstat), Nginx Configuration Security Check (Gixy-Next), Security Audit (Lynis), Service Status, and SSH Login Bans (fail2ban). An entry whose tool is not installed yet says how to install it.
+
 ## 2026-11-03
 
 ### 🐛 DEBUG MODE FIXES

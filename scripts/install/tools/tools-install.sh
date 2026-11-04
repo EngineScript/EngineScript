@@ -67,6 +67,10 @@ debug_pause "MYSQLTuner"
 # Nginx Tools
 #------------------------------------------------
 
+# Gixy-Next: Nginx configuration security checker
+/usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Gixy-Next"
 
 #------------------------------------------------
 # PHP Tools
@@ -85,6 +89,16 @@ debug_pause "MYSQLTuner"
 
 # Maldet
 #/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
+
+# fail2ban: bans addresses after repeated failed SSH logins
+/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "fail2ban"
+
+# Lynis: security audit
+/usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+debug_pause "Lynis"
 
 # Wordfence CLI Malware Scanner
 /usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh 2>> /tmp/enginescript_install_errors.log
