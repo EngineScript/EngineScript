@@ -38,6 +38,10 @@ Changes are organized by date, with the most recent changes listed first.
 - Creating a domain that is already installed now stops at the pre-installation check. The check looked for the domain without the quotes `sites.sh` stores it in, so it never found it, and the install went ahead over the existing site.
 - The main menu describes `es.update` correctly, and the Domain Configuration, Database, EngineScript, and Backup menus no longer show another menu's title or exit option.
 
+### 🐛 MENU FIXES
+
+- Fixed the main menu's "Server Tools" option, which failed: it ran a menu that did not exist. It now opens a Server Tools menu with Display Server Info, List Sites, and Restart Services (Nginx, PHP-FPM, Redis), the commands `es.info`, `es.sites`, and `es.restart`; the last two were in no menu before.
+
 ### 🧹 INSTALL CLEANUP
 
 - The cleanup that ran after many install and update steps is one shared function, `run_enginescript_cleanup`. `php-clean.sh` and `enginescript-cleanup.sh` are removed: the first repeated the second's package removal, and every step that ran it ran both.
