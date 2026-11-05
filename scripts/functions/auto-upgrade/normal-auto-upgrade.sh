@@ -14,86 +14,46 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
-# Verify EngineScript installation is complete before proceeding
-verify_installation_completion
-
 #----------------------------------------------------------------------------------
 # Start Main Script
 #
-# Brings existing servers up to date with changes in this version. The updater
-# (enginescript-update.sh) starts this script as a new process after fetching the new version,
-# so it always runs the new code, even when the updater that started it is the previous
-# version. Every step must be safe to run again on an already-updated server.
+# One-time upgrades: bring a server installed by an earlier version up to the current setup.
+# Each runs once per server and is recorded in /var/lib/enginescript/upgrades-done.conf when it
+# succeeds (run_once); one that fails runs again on the next update, so each must still be safe
+# to run again. New installs record them all as done (--record-all) without running them.
+#
+# The updater (enginescript-update.sh) starts this script as a new process after fetching the
+# new version, so it always runs the new code. Settings that follow every EngineScript change
+# (cron jobs, logrotate, kernel settings) are in sync-server-config.sh instead.
 
-# Certificates of existing sites: reload Nginx after each renewal
-migrate_acme_reload_commands 2>> /tmp/enginescript_install_errors.log
-print_last_errors
+ONE_TIME_UPGRADES=(
+  # Certificates of existing sites: reload Nginx after each renewal
+  migrate_acme_reload_commands
+  # PHP-FPM log: move existing installs back to the package default, which logrotate covers
+  migrate_php_fpm_log_path
+  # PHP: igbinary installed by name (Redis Object Cache's serializer), not only as a dependency
+  ensure_php_igbinary
+  # PHP: turn off session upload progress (security; WordPress does not use it)
+  migrate_php_upload_progress
+  # Redis: 128 databases, and every site on its own database number
+  migrate_redis_databases
+  # Redis: cache flushes free memory in the background
+  migrate_redis_lazy_user_flush
+  # Kernel Samepage Merging: nothing on these servers can use it
+  disable_ksm
+)
 
-# PPAs skipped at install time because they had no packages for this Ubuntu release yet (such as
-# Canonical's server backports on 26.04 at first): add each one once it has them
-add_missing_ppas 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP-FPM log: move existing installs back to the package default, which logrotate covers
-migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP: igbinary installed by name (Redis Object Cache's serializer), not only as a dependency
-ensure_php_igbinary 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# PHP: turn off session upload progress (security; WordPress does not use it)
-migrate_php_upload_progress 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Logs: root owns the log folder, and scheduled jobs' logs are rotated
-set_enginescript_log_permissions 2>> /tmp/enginescript_install_errors.log
-install_enginescript_logrotate 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Cron: replace EngineScript's jobs with the current list. Jobs no longer on it, such as the
-# control panel's API cache sweep, are removed.
-install_enginescript_cron 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Redis: 128 databases, and every site on its own database number
-migrate_redis_databases 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Redis: cache flushes free memory in the background
-migrate_redis_lazy_user_flush 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Kernel settings: the audited sysctl file, applied live (a reboot completes the rest)
-install_enginescript_sysctl 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Kernel Samepage Merging: nothing on these servers can use it
-disable_ksm 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-
-# Transparent Huge Pages: switched off before the services start
-if [[ -f /etc/systemd/system/disable-thp.service ]]; then
-  cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
-  chmod 644 /etc/systemd/system/disable-thp.service
-  systemctl daemon-reload
+if [[ "${1:-}" == "--record-all" ]]; then
+  for upgrade in "${ONE_TIME_UPGRADES[@]}"; do
+    record_upgrade_done "${upgrade}"
+  done
+  exit 0
 fi
 
-# Shared tuning plan: re-tune PHP-FPM, Redis, MariaDB, and Nginx when the server has no plan
-# yet, the plan format changed, RAM or the CPU count changed (a resized droplet), or the last
-# re-tune did not finish
-if tuning_needs_replan; then
-  echo "Re-tuning services for this server's RAM and CPUs..."
-  /usr/local/bin/enginescript/scripts/update/retune-services.sh 2>> /tmp/enginescript_install_errors.log
+# Verify EngineScript installation is complete before proceeding
+verify_installation_completion
+
+for upgrade in "${ONE_TIME_UPGRADES[@]}"; do
+  run_once "${upgrade}" 2>> /tmp/enginescript_install_errors.log
   print_last_errors
-fi
-
-# Warn when the installed PHP version is no longer supported
-INSTALLED_PHP_VER="$(get_installed_php_version)"
-if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then
-  echo ""
-  echo "WARNING: PHP ${INSTALLED_PHP_VER} is no longer supported by EngineScript (supported: ${SUPPORTED_PHP_VERSIONS[*]})."
-  echo "Switch to a supported version with: es.menu > Update Software > Switch PHP Version"
-  echo ""
-fi
-
+done

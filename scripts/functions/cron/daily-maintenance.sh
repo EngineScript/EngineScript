@@ -33,7 +33,15 @@ ${RUN} functions/cron/permissions.sh
 ${RUN} functions/cron/uploads-php-scan.sh
 ${RUN} functions/cron/checksums.sh
 
-# EngineScript Update
+# Shared tuning plan: re-tune PHP-FPM, Redis, MariaDB, and Nginx when RAM or the CPU count
+# changed (a resized droplet), the server has no plan yet, or the last re-tune did not finish.
+# Not on an unfinished install: the cron jobs are in place before the services are.
+if check_installation_completion "true" > /dev/null 2>&1 && tuning_needs_replan; then
+  ${RUN} update/retune-services.sh
+fi
+
+# EngineScript Update (--scheduled: the server settings are synced only when it fetched a new
+# version)
 if [[ "${ENGINESCRIPT_AUTO_UPDATE}" == "1" ]]; then
-  ${RUN} update/enginescript-update.sh
+  ${RUN} update/enginescript-update.sh --scheduled
 fi

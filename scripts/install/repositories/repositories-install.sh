@@ -42,13 +42,13 @@ fi
 
 # PPAs: Canonical's server backports, MaxMind (GeoIP), Git, Hurl, and deadsnakes (Python); the
 # list is ENGINESCRIPT_PPAS in enginescript-common.sh. A PPA with no packages for this Ubuntu
-# release yet would leave apt with a source it cannot read, so it is skipped now, and every
-# EngineScript update tries it again (add_missing_ppas in normal-auto-upgrade.sh).
+# release yet would leave apt with a source it cannot read, so it is skipped now, and the weekly
+# maintenance job tries it again (add_missing_ppas in weekly-maintenance.sh).
 for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
   if ppa_has_release "${ppa}"; then
     retry_add_ppa "${ppa}"
   else
-    echo "Skipping ${ppa} for now: it has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}) yet. Each EngineScript update tries it again."
+    echo "Skipping ${ppa} for now: it has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}) yet. The weekly maintenance job tries it again."
   fi
 done
 

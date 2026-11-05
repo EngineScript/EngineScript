@@ -22,8 +22,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # (enginescript-tuning.sh) and applies it to PHP-FPM, Redis, MariaDB, and Nginx without
 # restarting a service. Each service's new configuration is tested first and kept only if it
 # passes. Settings that need a restart (MariaDB's Aria cache and log buffer) take effect at the
-# service's next restart. Run from the update menu, and by EngineScript updates when the plan
-# is out of date (RAM or CPU count changed, or a new plan version).
+# service's next restart. Run from the update menu, and when the plan is out of date: by the
+# daily maintenance job (RAM or CPU count changed) and by EngineScript updates (a new plan
+# version).
 #
 # --benchmark: measure the database disk's write rate again (30 seconds of disk load while
 # sites keep serving), for innodb_io_capacity. Without it, the saved result is reused.
@@ -37,7 +38,7 @@ if ! tuning_write_plan; then
 fi
 tuning_load
 
-# Kept until every service has taken the plan, so the next EngineScript update tries again
+# Kept until every service has taken the plan, so the daily maintenance job tries again
 TUNING_PENDING="${ES_TUNING_PENDING:-/etc/enginescript/tuning.pending}"
 touch "${TUNING_PENDING}"
 
@@ -85,7 +86,7 @@ apply_nginx_tuning || RETUNE_FAILED=1
 print_last_errors
 if [[ "${RETUNE_FAILED}" == "1" ]]; then
   echo "Re-tuning finished with errors (above); the services that failed kept their previous configuration." >&2
-  echo "The next EngineScript update tries again." >&2
+  echo "The daily maintenance job tries again tomorrow." >&2
   exit 1
 fi
 rm -f "${TUNING_PENDING}"

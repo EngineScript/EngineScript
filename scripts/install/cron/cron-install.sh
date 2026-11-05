@@ -25,6 +25,9 @@ fi
 
 install_enginescript_cron
 
+# Rotate the scheduled jobs' logs (/var/log/EngineScript/cron-*.log)
+install_enginescript_logrotate
+
 # Mark the installation as complete
 set_install_state "CRON" "1"
 echo "Cron completed successfully. Script done."

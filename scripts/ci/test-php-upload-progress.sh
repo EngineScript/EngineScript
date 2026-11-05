@@ -4,7 +4,8 @@
 #----------------------------------------------------------------------------------
 # migrate_php_upload_progress must set session.upload_progress.enabled = Off in each PHP
 # version's PHP-FPM php.ini, whatever form the setting has, keep the previous file when
-# php-fpm -t fails, reload only running PHP-FPM services, and change nothing on a second run.
+# php-fpm -t fails (and return failure, so run_once tries it again), reload only running PHP-FPM
+# services, and change nothing on a second run.
 # php.ini files live in a temporary /etc/php; php-fpmX.Y and systemctl are stand-ins that
 # record their calls.
 
@@ -151,7 +152,9 @@ echo "php-fpm -t fails"
 reset
 add_version 8.3
 add_version 8.4
-FPM_TEST_FAILS=8.3 FPM_ACTIVE="php8.3-fpm php8.4-fpm" migrate_php_upload_progress > /dev/null 2> "${WORK}/err.log"
+status=0
+FPM_TEST_FAILS=8.3 FPM_ACTIVE="php8.3-fpm php8.4-fpm" migrate_php_upload_progress > /dev/null 2> "${WORK}/err.log" || status=$?
+check "fails, so the update tries again" "${status}" "1"
 if cmp -s "${OLD_INI}" "${ES_PHP_ETC}/8.3/fpm/php.ini"; then
   pass "8.3: previous php.ini kept"
 else
