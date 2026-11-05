@@ -60,7 +60,8 @@ show_php_in_uploads() {
 show_logins() {
   echo ""
   echo "Recent logins:"
-  print_or_none "$(last -n 15 -w 2> /dev/null | sed '/^$/d; /^wtmp begins/d')"
+  # "last" comes from util-linux on Ubuntu 24.04 and from wtmpdb on 26.04 (installed with the dependencies)
+  print_or_none "$(last -n 15 -w 2> /dev/null | sed '/^$/d; /^wtmp begins/d; /^wtmpdb begins/d')"
   echo ""
   echo "Failed SSH logins in the last 7 days (the latest 20):"
   print_or_none "$(journalctl -u ssh -u sshd --since '7 days ago' --no-pager -q 2> /dev/null | grep -E 'Failed password|Invalid user|authentication failure' | tail -n 20)"

@@ -29,6 +29,11 @@ verify_installation_completion
 migrate_acme_reload_commands 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 
+# PPAs skipped at install time because they had no packages for this Ubuntu release yet (such as
+# Canonical's server backports on 26.04 at first): add each one once it has them
+add_missing_ppas 2>> /tmp/enginescript_install_errors.log
+print_last_errors
+
 # PHP-FPM log: move existing installs back to the package default, which logrotate covers
 migrate_php_fpm_log_path 2>> /tmp/enginescript_install_errors.log
 print_last_errors

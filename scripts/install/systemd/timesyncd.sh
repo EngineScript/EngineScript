@@ -24,13 +24,22 @@ if [[ "${NTP}" = 1 ]]; then
     exit 0
 fi
 
-# Network Time Protocol (NTP)
-cp -rf /usr/local/bin/enginescript/config/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
-chmod 644 /etc/systemd/timesyncd.conf
-timedatectl set-ntp true
-systemctl restart systemd-timedated
-systemctl restart systemd-timesyncd
-#systemctl status systemd-timesyncd
+# Network Time Protocol (NTP). Ubuntu 26.04 keeps time with chrony (with NTS, authenticated time)
+# instead of systemd-timesyncd: where chrony is installed, it stays in charge. Otherwise (Ubuntu
+# 24.04) systemd-timesyncd syncs with Cloudflare's and Ubuntu's time servers.
+if dpkg-query -W -f='${Status}' chrony 2> /dev/null | grep -q 'ok installed'; then
+  echo "chrony keeps the time on this server; leaving it as it is."
+  systemctl enable --now chrony 2> /dev/null || true
+else
+  if ! dpkg-query -W -f='${Status}' systemd-timesyncd 2> /dev/null | grep -q 'ok installed'; then
+    apt install -qy systemd-timesyncd
+  fi
+  cp -rf /usr/local/bin/enginescript/config/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
+  chmod 644 /etc/systemd/timesyncd.conf
+  timedatectl set-ntp true
+  systemctl restart systemd-timedated
+  systemctl restart systemd-timesyncd
+fi
 
 # Mark the installation as complete
 set_install_state "NTP" "1"

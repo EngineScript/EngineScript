@@ -36,8 +36,9 @@ CPU_COUNT="2"
 DT="$(date +"%m-%d-%y")"
 IP_ADDRESS="127.0.0.1"
 UBUNTU_TYPE="Ubuntu"
-UBUNTU_CODENAME="noble"
-UBUNTU_VERSION="24.04"
+# The build test runs on Ubuntu 24.04 and 26.04: read the runner's release (a file read, no delay)
+UBUNTU_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+UBUNTU_VERSION="$(. /etc/os-release && echo "${VERSION_ID}")"
 
 # Random Characters (CI Static Values)
 RAND_CHAR2="ab"

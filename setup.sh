@@ -25,28 +25,24 @@ if [[ "${BIT_TYPE}" != 'x86_64' ]];
     exit 1
 fi
 
-# Check if the server is running Ubuntu
-LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
+# Check that the server runs a supported Ubuntu LTS release. /etc/os-release is on every Ubuntu
+# server; lsb_release is not installed on a minimal one.
+SUPPORTED_UBUNTU_VERSIONS=("24.04" "26.04")
+LINUX_TYPE="$(. /etc/os-release 2> /dev/null && echo "${NAME:-unknown}")"
+UBUNTU_VERSION="$(. /etc/os-release 2> /dev/null && echo "${VERSION_ID:-unknown}")"
 
-if [[ "$LINUX_TYPE" != "Ubuntu" ]]; then
-  echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04."
+if [[ "$(. /etc/os-release 2> /dev/null && echo "${ID:-}")" != "ubuntu" ]]; then
+  echo "EngineScript does not support ${LINUX_TYPE}. Please use Ubuntu 24.04 LTS or 26.04 LTS."
   exit 1
-else
-  echo "Detected Linux type: $LINUX_TYPE"
 fi
+echo "Detected Linux type: ${LINUX_TYPE}"
 
-# Check if Ubuntu is 24.04 LTS Release. If not, exit.
-UBUNTU_VERSION="$(lsb_release -sr)"
-UBUNTU_VERSION_INT="$(tr -d '.' <<<"$UBUNTU_VERSION")"
-NOBLE_INT=2404
-
-if (( UBUNTU_VERSION_INT != NOBLE_INT )); then
+if [[ " ${SUPPORTED_UBUNTU_VERSIONS[*]} " != *" ${UBUNTU_VERSION} "* ]]; then
   echo "ALERT:"
-  echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. We recommend using Ubuntu 24.04 LTS."
+  echo "EngineScript does not support Ubuntu ${UBUNTU_VERSION}. Please use Ubuntu 24.04 LTS or 26.04 LTS."
   exit 1
-else
-  echo "Current Ubuntu version: $UBUNTU_VERSION"
 fi
+echo "Current Ubuntu version: ${UBUNTU_VERSION}"
 
 # setup.sh is for a new server: it deletes and clones EngineScript again and purges every Apache
 # and PHP 7 and 8 package, PHP-FPM included. Once es.install has completed any step, stop: es.install

@@ -1,0 +1,5 @@
+self-hosted-runner:
+  # GitHub's ubuntu-26.04 runners (generally available since 2026-09-17) are newer than the
+  # hosted-runner labels actionlint 1.7.12 knows. Remove this once actionlint lists them.
+  labels:
+    - ubuntu-26.04

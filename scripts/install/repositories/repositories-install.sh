@@ -40,26 +40,29 @@ if [[ "${REPOS}" = 1 ]]; then
     exit 0
 fi
 
-# Canonical Server Team Backports
-retry_add_ppa ppa:canonical-server/server-backports
+# PPAs: Canonical's server backports, MaxMind (GeoIP), Git, Hurl, and deadsnakes (Python); the
+# list is ENGINESCRIPT_PPAS in enginescript-common.sh. A PPA with no packages for this Ubuntu
+# release yet would leave apt with a source it cannot read, so it is skipped now, and every
+# EngineScript update tries it again (add_missing_ppas in normal-auto-upgrade.sh).
+for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
+  if ppa_has_release "${ppa}"; then
+    retry_add_ppa "${ppa}"
+  else
+    echo "Skipping ${ppa} for now: it has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}) yet. Each EngineScript update tries it again."
+  fi
+done
 
 # Docker
 curl -fsSL --proto '=https' https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list
 
 # ElasticSearch
 curl -fsSL --proto '=https' https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
 
-# GeoIP
-retry_add_ppa ppa:maxmind/ppa
-
-# Git
-retry_add_ppa ppa:git-core/ppa
-
 # GoAccess
 curl -fsSL --proto '=https' https://deb.goaccess.io/gnugpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/goaccess.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-architecture)] https://deb.goaccess.io/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/goaccess.list
+echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-architecture)] https://deb.goaccess.io/ ${UBUNTU_CODENAME} main" | sudo tee /etc/apt/sources.list.d/goaccess.list
 
 # Google gcloud CLI
 curl -fsSL --proto '=https' https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/cloud.google.gpg
@@ -68,9 +71,6 @@ echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.clou
 # Grafana
 curl -fsSL --proto '=https' https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg >/dev/null
 echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
-
-# Hurl
-retry_add_ppa ppa:lepapareil/hurl
 
 # Kernel Updates
 # may be temporary
@@ -82,7 +82,7 @@ install_php_repository() {
   local ubuntu_codename
   local sury_keyring_deb="/tmp/debsuryorg-archive-keyring.deb"
 
-  ubuntu_codename="$(lsb_release -cs)"
+  ubuntu_codename="${UBUNTU_CODENAME}"
 
   # Disable legacy or stale PHP sources when migrating an existing install.
   find /etc/apt/sources.list.d/ -type f \( -name '*.list' -o -name '*.sources' \) \
@@ -111,13 +111,10 @@ install_php_repository() {
 }
 install_php_repository
 
-# Python
-retry_add_ppa ppa:deadsnakes/ppa
-
 # Redis
 #add-apt-repository -yn ppa:redislabs/redis
 curl -fsSL --proto '=https' https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb ${UBUNTU_CODENAME} main" | sudo tee /etc/apt/sources.list.d/redis.list
 
 # Rob Savoury Backports
 #add-apt-repository -yn ppa:savoury1/backports
@@ -141,12 +138,6 @@ retry_add_ppa universe
 # Yarn
 curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/yarn-archive-keyring.gpg >/dev/null
 echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-
-# Version Specific Repositories
-UBUNTU_VERSION="$(lsb_release -sr)"
-if [[ "${UBUNTU_VERSION}" == "24.04" ]]; then
-  echo "Skipping repos that don't support Ubuntu Noble 24.04"
-fi
 
 # Mark the installation as complete
 set_install_state "REPOS" "1"

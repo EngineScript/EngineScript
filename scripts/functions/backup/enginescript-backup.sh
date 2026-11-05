@@ -153,7 +153,8 @@ backup_databases() {
     else
       # Hourly backups are kept for 2 days
       prune_folders_older_than "${SITE_BACKUPS}/${site}/database/hourly" 2880
-      s3_prune "${site}/backups/database/hourly/" "$(date -d "${TODAY} ${HOUR}:00 -48 hours" +%Y-%m-%d-%H)"
+      # "48 hours ago": GNU date reads "-48 hours" after a time as a time zone and fails
+      s3_prune "${site}/backups/database/hourly/" "$(date -d "${TODAY} ${HOUR}:00 48 hours ago" +%Y-%m-%d-%H)"
     fi
   done
 }

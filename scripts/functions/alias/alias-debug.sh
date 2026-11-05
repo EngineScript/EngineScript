@@ -69,17 +69,21 @@ get_server_info() {
         debug_print "WARNING: Failed to retrieve IP address." "WARNING: Failed to retrieve IP address."
     fi
     
-    if ! UBUNTU_TYPE=$(lsb_release -i 2>/dev/null | cut -f2); then
+    # The release, from /etc/os-release (lsb_release is not on every server)
+    UBUNTU_TYPE="$(. /etc/os-release 2>/dev/null && echo "${NAME:-}")"
+    if [[ -z "${UBUNTU_TYPE}" ]]; then
         UBUNTU_TYPE="unknown"
         debug_print "WARNING: Failed to retrieve Ubuntu type." "WARNING: Failed to retrieve Ubuntu type."
     fi
-    
-    if ! UBUNTU_VERSION=$(lsb_release -r 2>/dev/null | cut -f2); then
+
+    UBUNTU_VERSION="$(. /etc/os-release 2>/dev/null && echo "${VERSION_ID:-}")"
+    if [[ -z "${UBUNTU_VERSION}" ]]; then
         UBUNTU_VERSION="unknown"
         debug_print "WARNING: Failed to retrieve Ubuntu version." "WARNING: Failed to retrieve Ubuntu version."
     fi
-    
-    if ! UBUNTU_CODENAME=$(lsb_release -c 2>/dev/null | cut -f2); then
+
+    UBUNTU_CODENAME="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
+    if [[ -z "${UBUNTU_CODENAME}" ]]; then
         UBUNTU_CODENAME="unknown"
         debug_print "WARNING: Failed to retrieve Ubuntu codename." "WARNING: Failed to retrieve Ubuntu codename."
     fi

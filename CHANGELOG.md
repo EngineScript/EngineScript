@@ -6,6 +6,29 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-04
 
+### 🐧 UBUNTU 26.04 SUPPORT
+
+- EngineScript now installs on Ubuntu 26.04 LTS as well as 24.04 LTS. Choose either release when you create the server.
+- `setup.sh` accepts both releases. EngineScript reads the release from `/etc/os-release` instead of `lsb_release`, which a minimal server may not have.
+- Packages:
+  - The dependency step installs the packages whose names differ between the releases:
+    - **24.04** keeps `libpcre3`, `libpcre3-dev`, and `libxml2`.
+    - **26.04** gets `libxml2-16` (the renamed libxml2 library) and `wtmpdb`, which provides the `last` command used by Security Tools > Login History.
+    - PCRE 1 is not on 26.04. Nginx uses PCRE2, which EngineScript compiles from source.
+  - GCC: Ubuntu 24.04 gets GCC 13 and 14 and compiles with 14, as before. Ubuntu 26.04 gets GCC 15 and 16 and compiles with 16.
+  - Time sync: on 26.04, where Ubuntu keeps the time with chrony, chrony stays in charge. On 24.04 EngineScript configures systemd-timesyncd as before.
+- Repositories:
+  - Every repository EngineScript adds has packages for 26.04: Docker, GoAccess, PHP (Sury), Redis, MariaDB 11.8, and the PPAs.
+  - The exception is Canonical's server backports PPA. A PPA with no packages for the server's release yet is skipped at install time, and each EngineScript update tries it again, so the server gets it once it does.
+- CI:
+  - The Nginx build test runs on both Ubuntu 24.04 and 26.04.
+  - The other CI tests run on Ubuntu 26.04.
+
+### 🐛 FIXES
+
+- Hourly database backups were never removed from S3 when `BACKUP_S3_KEEP_DAYS` was set. The cutoff date used a form (`05:00 -48 hours`) that GNU `date` on Ubuntu 24.04 rejects, so that S3 cleanup step failed every hour.
+- Domain export (`vhost-export.sh`) now leaves out the contents of WordPress's working folders `wp-content/cache`, `upgrade`, and `temp`, as the Site Exporter plugin does, so both exports hold the same files.
+
 ### 🗂️ MENU REORGANIZATION
 
 - Entries that were in two menus are now in one:
