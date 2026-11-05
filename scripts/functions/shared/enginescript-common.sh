@@ -988,7 +988,7 @@ ENGINESCRIPT_PPAS=(
 # True when a PPA publishes packages for this server's Ubuntu release (its codename's InRelease)
 function ppa_has_release() {
     local code
-    code="$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 20 \
+    code="$(curl -s -o /dev/null -w '%{http_code}' -L --proto '=https' --proto-redir '=https' --max-time 20 \
         "https://ppa.launchpadcontent.net/${1#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease")"
     [[ "${code}" == "200" ]]
 }
