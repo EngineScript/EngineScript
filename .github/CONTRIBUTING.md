@@ -43,7 +43,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 1. Set up a test environment:
 
-- Ubuntu 24.04 LTS server
+- Ubuntu 24.04 LTS or 26.04 LTS server
 
 ## Pull Request Process
 

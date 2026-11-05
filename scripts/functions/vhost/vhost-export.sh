@@ -143,11 +143,14 @@ fi
 
 # Archive the contents of the html directory with immediate error checking.
 # Leave out what the EngineScript Site Exporter plugin leaves out, so both exports carry the same
-# files: version-control data, macOS metadata, and Apache and per-directory PHP settings (a
-# .user.ini holds settings for the old server, such as paths, that PHP-FPM here would apply).
+# files: version-control data, macOS metadata, Apache and per-directory PHP settings (a
+# .user.ini holds settings for the old server, such as paths, that PHP-FPM here would apply),
+# and the contents of WordPress's working folders wp-content/cache, upgrade, and temp (the
+# folders themselves are kept).
 if ! tar -zcf "${FILES_EXPORT_PATH}" --ignore-case \
     --exclude='.git' --exclude='.svn' --exclude='.hg' --exclude='.DS_Store' \
     --exclude='.htaccess' --exclude='.user.ini' \
+    --exclude='./wp-content/cache/*' --exclude='./wp-content/upgrade/*' --exclude='./wp-content/temp/*' \
     -C html .; then
     echo "ERROR: Failed to create site files archive for ${SELECTED_SITE}"
     rm -rf "${EXPORT_STAGING_DIR}"

@@ -974,6 +974,55 @@ function set_nginx_permissions() {
 
 
 # ----------------------------------------------------------------
+# The PPAs EngineScript adds (repositories-install.sh). A new Ubuntu LTS release takes a PPA's
+# owner some time: a PPA with no packages for this release yet is skipped at install time, and
+# add_missing_ppas adds it on a later update once it has them.
+ENGINESCRIPT_PPAS=(
+    "ppa:canonical-server/server-backports"
+    "ppa:maxmind/ppa"
+    "ppa:git-core/ppa"
+    "ppa:lepapareil/hurl"
+    "ppa:deadsnakes/ppa"
+)
+
+# True when a PPA publishes packages for this server's Ubuntu release (its codename's InRelease)
+function ppa_has_release() {
+    local code
+    code="$(curl -s -o /dev/null -w '%{http_code}' -L --proto '=https' --proto-redir '=https' --max-time 20 \
+        "https://ppa.launchpadcontent.net/${1#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease")"
+    [[ "${code}" == "200" ]]
+}
+
+# True when a PPA is already one of apt's sources
+function ppa_is_added() {
+    grep -rqsF "/${1#ppa:}/ubuntu" /etc/apt/sources.list.d/
+}
+
+# Add each of EngineScript's PPAs that is not a source yet and now has packages for this
+# release, then refresh apt's package lists once. Safe to run on every update.
+function add_missing_ppas() {
+    local ppa added=0
+    for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
+        ppa_is_added "${ppa}" && continue
+        if ! ppa_has_release "${ppa}"; then
+            echo "${ppa} still has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}); trying again on the next update."
+            continue
+        fi
+        if add-apt-repository -yn "${ppa}"; then
+            echo "Added ${ppa}: it now has packages for Ubuntu ${UBUNTU_VERSION}."
+            added=1
+        else
+            echo "Warning: Could not add ${ppa}; trying again on the next update." >&2
+        fi
+    done
+    if [[ "${added}" -eq 1 ]]; then
+        apt-get update -qq
+    fi
+    return 0
+}
+
+
+# ----------------------------------------------------------------
 # Give existing sites' certificates a reload command.
 #
 # Sites created before acme.sh was given --reloadcmd renew their certificates without

@@ -27,7 +27,9 @@ fi
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
-# Define the packages to install
+# Define the packages to install. The packages below exist on every supported Ubuntu release;
+# the ones whose name differs between releases are added after the list. One missing package
+# stops the whole install.
 packages=(
     "advancecomp"
     "apt-listchanges"
@@ -108,8 +110,6 @@ packages=(
     "libopts25-dev"
     "libpam0g-dev"
     "libpcre2-dev"
-    "libpcre3"
-    "libpcre3-dev"
     "libperl-dev"
     "librabbitmq4"
     "libreadline-dev"
@@ -118,7 +118,6 @@ packages=(
     "libssl-dev"
     "libtidy-dev"
     "libtool"
-    "libxml2"
     "libxml2-dev"
     "libxslt1-dev"
     "lm-sensors"
@@ -164,6 +163,17 @@ packages=(
     "zlib1g-dev"
     "zstd"
 )
+
+# Packages whose name depends on the release:
+# - libxml2: Ubuntu 26.04 renamed the runtime library libxml2-16 (libxml2.so.16, a new ABI)
+# - libpcre3 (PCRE 1): no longer maintained upstream since 2021, and removed from Ubuntu 26.04.
+#   Its successor, PCRE2, is libpcre2-dev above, and Nginx compiles PCRE2 from source.
+# - wtmpdb: Ubuntu 26.04 records logins with wtmpdb, which provides the "last" command (on 24.04
+#   util-linux provides it); Security Tools > Login History uses it
+case "${UBUNTU_VERSION}" in
+  24.04) packages+=("libpcre3" "libpcre3-dev" "libxml2") ;;
+  26.04) packages+=("libxml2-16" "wtmpdb") ;;
+esac
 
 # Install the packages with error checking
 apt install -qy "${packages[@]}" || {

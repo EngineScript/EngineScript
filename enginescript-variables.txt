@@ -40,9 +40,11 @@ BIT_TYPE="$(uname -m)"
 CPU_COUNT="$(nproc --all)"
 DT="$(date +"%m-%d-%y")"
 IP_ADDRESS="$(ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')"
-UBUNTU_TYPE="$(lsb_release -si)"
-UBUNTU_CODENAME="$(lsb_release -sc)"
-UBUNTU_VERSION="$(lsb_release -sr)"
+# The release, from /etc/os-release: "Ubuntu", the codename ("noble" for 24.04, "resolute" for
+# 26.04), and the version ("24.04" or "26.04")
+UBUNTU_TYPE="$(. /etc/os-release && echo "${NAME}")"
+UBUNTU_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+UBUNTU_VERSION="$(. /etc/os-release && echo "${VERSION_ID}")"
 
 # Random Characters
 RAND_CHAR2="$(openssl rand -base64 6 | tr -dc 'a-zA-Z0-9' | head -c 2)"

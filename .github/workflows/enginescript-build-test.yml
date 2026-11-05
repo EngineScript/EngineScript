@@ -32,9 +32,16 @@ permissions:
 
 jobs:
   nginx-build-test:
-    name: Nginx Build Test
-    runs-on: ubuntu-24.04
+    name: Nginx Build Test (${{ matrix.ubuntu }})
+    # EngineScript supports Ubuntu 24.04 and 26.04: build on both
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.ubuntu }}
     timeout-minutes: 120
+    env:
+      RUNNER_IMAGE: ${{ matrix.ubuntu }}
 
     steps:
       - name: Checkout Repository
@@ -89,7 +96,7 @@ jobs:
 
           # Initialize main CI log with timestamp
           echo "EngineScript Nginx CI Build Started: $(date)" | sudo tee /tmp/ci-logs/ci-main.log
-          echo "Build environment: Ubuntu $(lsb_release -rs)" | sudo tee -a /tmp/ci-logs/ci-main.log
+          echo "Build environment: Ubuntu $(. /etc/os-release && echo "${VERSION_ID}")" | sudo tee -a /tmp/ci-logs/ci-main.log
 
           echo "✅ Nginx build environment setup completed with proper permissions"
 
@@ -122,13 +129,20 @@ jobs:
           echo "✅ Detected 64-bit architecture: $BIT_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
 
           # Check Ubuntu version
-          LINUX_TYPE=$(lsb_release -i | cut -d':' -f 2 | tr -d '[:space:]')
-          UBUNTU_VERSION="$(lsb_release -sr)"
+          LINUX_TYPE="$(. /etc/os-release && echo "${NAME}")"
+          UBUNTU_VERSION="$(. /etc/os-release && echo "${VERSION_ID}")"
 
           if [ "$LINUX_TYPE" != "Ubuntu" ]; then
-            echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04" | sudo tee -a /tmp/ci-logs/setup.log
+            echo "EngineScript does not support $LINUX_TYPE. Please use Ubuntu 24.04 or 26.04" | sudo tee -a /tmp/ci-logs/setup.log
             exit 1
           fi
+          case "$UBUNTU_VERSION" in
+            24.04|26.04) ;;
+            *)
+              echo "EngineScript does not support Ubuntu $UBUNTU_VERSION. Please use Ubuntu 24.04 or 26.04" | sudo tee -a /tmp/ci-logs/setup.log
+              exit 1
+              ;;
+          esac
           echo "✅ Detected Linux Type: $LINUX_TYPE" | sudo tee -a /tmp/ci-logs/setup.log
           echo "✅ Current Ubuntu Version: $UBUNTU_VERSION" | sudo tee -a /tmp/ci-logs/setup.log
 
@@ -632,7 +646,7 @@ jobs:
 
           # Create comprehensive test summary
           cat > /tmp/ci-logs/test-summary.md << EOF
-          # EngineScript Nginx Build Test Results
+          # EngineScript Nginx Build Test Results (${RUNNER_IMAGE})
 
           ## 🎯 Overall Status
           **$OVERALL_STATUS**
@@ -644,7 +658,7 @@ jobs:
           | **Nginx** | $NGINX_STATUS | $([ -f /usr/sbin/nginx ] && /usr/sbin/nginx -v 2>&1 | head -1 | cut -d' ' -f3 | cut -d'/' -f2 || echo "Not installed") | $([ -f /etc/nginx/nginx.conf ] && echo "✅ Present" || echo "❌ Missing") |
 
           ## 📊 Build Environment
-          - **OS**: Ubuntu $(lsb_release -rs)
+          - **OS**: Ubuntu $(. /etc/os-release && echo "${VERSION_ID} (${VERSION_CODENAME})")
           - **Architecture**: $(uname -m)
           - **Kernel**: $(uname -r)
           - **Available Memory**: $(free -h | grep '^Mem:' | awk '{print $7}')
@@ -652,7 +666,7 @@ jobs:
           - **Build Time**: $(date)
           - **Workflow**: ${WORKFLOW_NAME}
           - **Run ID**: ${{ github.run_id }}
-          - **CI Environment**: GitHub Actions Ubuntu 24.04
+          - **CI Environment**: GitHub Actions ${RUNNER_IMAGE}
 
           ## 📁 Log Files Generated
           $(ls -la /tmp/ci-logs/ 2>/dev/null | grep -E '\.log$' | wc -l) log files created:
@@ -685,7 +699,7 @@ jobs:
           # Create simple status for PR comment
           if [ "$OVERALL_STATUS" = "✅ SUCCESS" ]; then
             cat > /tmp/ci-logs/pr-comment.md << EOF
-          🎉 **EngineScript Nginx Build Test PASSED** 🎉
+          🎉 **EngineScript Nginx Build Test PASSED (${RUNNER_IMAGE})** 🎉
 
           Nginx core component built successfully:
           - Nginx: $NGINX_STATUS
@@ -694,7 +708,7 @@ jobs:
           EOF
           else
             cat > /tmp/ci-logs/pr-comment.md << EOF
-          ⚠️ **EngineScript Nginx Build Test FAILED** ⚠️
+          ⚠️ **EngineScript Nginx Build Test FAILED (${RUNNER_IMAGE})** ⚠️
 
           Component status:
           - Nginx: $NGINX_STATUS
@@ -852,7 +866,8 @@ jobs:
             const branch = context.ref.replace('refs/heads/', '');
 
             // Create comprehensive issue title and body
-            const issueTitle = `🚨 CI Build Failure: Nginx Build Test Failed on ${new Date().toISOString().split('T')[0]}`;
+            const runnerImage = process.env.RUNNER_IMAGE;
+            const issueTitle = `🚨 CI Build Failure: Nginx Build Test Failed (${runnerImage}) on ${new Date().toISOString().split('T')[0]}`;
 
             const issueBody = `## 🔥 Automated CI Failure Report
 
@@ -863,7 +878,7 @@ jobs:
             - **Run ID**: [${context.runId}](${runUrl})
             - **Branch**: \`${branch}\`
             - **Commit**: \`${commitSha}\`
-            - **Ubuntu Version**: Ubuntu 24.04
+            - **Runner**: ${runnerImage}
             - **Failure Time**: ${new Date().toISOString()}
             - **Trigger**: ${context.eventName}
 
@@ -920,7 +935,7 @@ jobs:
             ### 🔍 Immediate Actions Required
             1. **Review Nginx build logs** for compilation errors
             2. **Check dependency installation** for missing packages
-            3. **Verify Ubuntu 24.04 compatibility** for all components
+            3. **Verify compatibility with this Ubuntu release (${runnerImage})** for all components
             4. **Test locally** with the same commit to reproduce the issue
             5. **Update CI workflow** if environment changes are needed
 
@@ -1009,9 +1024,11 @@ jobs:
                 issue_number: context.issue.number,
               });
 
+              // One comment per Ubuntu release in the build matrix
               const botComment = comments.find(comment =>
                 comment.user.type === 'Bot' &&
-                comment.body.includes('EngineScript') && comment.body.includes('Build Test')
+                comment.body.includes('EngineScript') && comment.body.includes('Build Test') &&
+                comment.body.includes(`(${process.env.RUNNER_IMAGE})`)
               );
 
               if (botComment) {
@@ -1040,7 +1057,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: nginx-build-logs-ubuntu-24.04
+          name: nginx-build-logs-${{ matrix.ubuntu }}
           path: |
             /tmp/ci-logs/*
             /var/log/EngineScript/

@@ -31,16 +31,27 @@ if update-alternatives --query gcc > /dev/null 2>&1; then
     update-alternatives --remove-all gcc
 fi
 
-UBUNTU_VERSION="$(lsb_release -sr)"
-if [[ "${UBUNTU_VERSION}" == "24.04" ]];
-  then
-    # Install GCC for Ubuntu 24.04
-    apt install g++-13 gcc-13 g++-14 gcc-14 -y
+# Each release's default GCC and the next version; the newer one compiles (Nginx, OpenSSL)
+case "${UBUNTU_VERSION}" in
+  24.04) GCC_VERSIONS=(14 13) ;;
+  26.04) GCC_VERSIONS=(16 15) ;;
+  *)
+    echo "Error: No GCC versions are set for Ubuntu ${UBUNTU_VERSION}." >&2
+    exit 1
+    ;;
+esac
 
-    # Create new GCC alternatives
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100 --slave /usr/bin/g++ g++ /usr/bin/g++-14 --slave /usr/bin/gcov gcov /usr/bin/gcov-14
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 90 --slave /usr/bin/g++ g++ /usr/bin/g++-13 --slave /usr/bin/gcov gcov /usr/bin/gcov-13
-fi
+for version in "${GCC_VERSIONS[@]}"; do
+  apt install "g++-${version}" "gcc-${version}" -y || { echo "Error: Could not install GCC ${version}." >&2; exit 1; }
+done
+
+# Create new GCC alternatives: the first version gets the higher priority
+priority=100
+for version in "${GCC_VERSIONS[@]}"; do
+  update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${version}" "${priority}" \
+    --slave /usr/bin/g++ g++ "/usr/bin/g++-${version}" --slave /usr/bin/gcov gcov "/usr/bin/gcov-${version}"
+  priority=$((priority - 10))
+done
 
 # Mark the installation as complete
 set_install_state "GCC" "1"

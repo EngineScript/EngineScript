@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b8b03bc4beba44a7aee2f879029b2e95)](https://app.codacy.com/gh/EngineScript/EngineScript/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![GPL License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Nginx Mainline](https://img.shields.io/badge/Nginx-Mainline-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![MariaDB](https://img.shields.io/badge/MariaDB-11.8-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
@@ -26,7 +26,7 @@ EngineScript Release Stage: **Beta**
 Run EngineScript as the root user on a fresh VPS. Setup removes existing Apache, Nginx, PHP, and MySQL installations. Existing services **will** break if you run this script on a VPS that already has software configured.
 
 - **A Newly Created VPS** *([DigitalOcean](https://m.do.co/c/e57cc8492285) droplet recommended)*
-- **Ubuntu 24.04 (64-bit)**
+- **Ubuntu 24.04 or 26.04 LTS (64-bit)** *(choose either when you create the server)*
 - **2 GB RAM**
 - **Cloudflare** *(Free or Paid)*
 
