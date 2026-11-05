@@ -1,0 +1,41 @@
+name: Test One-Time Upgrades
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/functions/auto-upgrade/normal-auto-upgrade.sh'
+      - 'scripts/ci/test-one-time-upgrades.sh'
+      - '.github/workflows/test-one-time-upgrades.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-common.sh'
+      - 'scripts/functions/auto-upgrade/normal-auto-upgrade.sh'
+      - 'scripts/ci/test-one-time-upgrades.sh'
+      - '.github/workflows/test-one-time-upgrades.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-one-time-upgrades:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run one-time upgrade tests
+        run: |
+          bash -n scripts/ci/test-one-time-upgrades.sh
+          bash scripts/ci/test-one-time-upgrades.sh

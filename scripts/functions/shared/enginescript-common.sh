@@ -976,7 +976,7 @@ function set_nginx_permissions() {
 # ----------------------------------------------------------------
 # The PPAs EngineScript adds (repositories-install.sh). A new Ubuntu LTS release takes a PPA's
 # owner some time: a PPA with no packages for this release yet is skipped at install time, and
-# add_missing_ppas adds it on a later update once it has them.
+# add_missing_ppas (weekly-maintenance.sh) adds it once it has them.
 ENGINESCRIPT_PPAS=(
     "ppa:canonical-server/server-backports"
     "ppa:maxmind/ppa"
@@ -999,26 +999,62 @@ function ppa_is_added() {
 }
 
 # Add each of EngineScript's PPAs that is not a source yet and now has packages for this
-# release, then refresh apt's package lists once. Safe to run on every update.
+# release, then refresh apt's package lists once. Safe to run again.
 function add_missing_ppas() {
     local ppa added=0
     for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
         ppa_is_added "${ppa}" && continue
         if ! ppa_has_release "${ppa}"; then
-            echo "${ppa} still has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}); trying again on the next update."
+            echo "${ppa} still has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}); trying again next week."
             continue
         fi
         if add-apt-repository -yn "${ppa}"; then
             echo "Added ${ppa}: it now has packages for Ubuntu ${UBUNTU_VERSION}."
             added=1
         else
-            echo "Warning: Could not add ${ppa}; trying again on the next update." >&2
+            echo "Warning: Could not add ${ppa}; trying again next week." >&2
         fi
     done
     if [[ "${added}" -eq 1 ]]; then
         apt-get update -qq
     fi
     return 0
+}
+
+
+# ----------------------------------------------------------------
+# One-time upgrades (normal-auto-upgrade.sh)
+#
+# Each one-time upgrade is a function that brings an existing server up to the current setup.
+# Its name is recorded in upgrades-done.conf when it succeeds, and it never runs again on that
+# server; one that fails is tried again on the next update. New installs record every one-time
+# upgrade as done, since they start with the current setup. The record is in /var/lib/enginescript,
+# which only root can write to (unlike /etc/enginescript, which the web server user owns).
+
+# True when the one-time upgrade has already run on this server
+function upgrade_is_done() {
+    grep -qxF "$1" "${ENGINESCRIPT_UPGRADES_DONE_FILE:-/var/lib/enginescript/upgrades-done.conf}" 2> /dev/null
+}
+
+# Record a one-time upgrade as done
+function record_upgrade_done() {
+    local done_file="${ENGINESCRIPT_UPGRADES_DONE_FILE:-/var/lib/enginescript/upgrades-done.conf}"
+    upgrade_is_done "$1" && return 0
+    mkdir -p "$(dirname "${done_file}")" || return 1
+    echo "$1" >> "${done_file}" || return 1
+    chmod 644 "${done_file}"
+}
+
+# Usage: run_once <function>
+# Run a one-time upgrade unless it has already run, and record it when it succeeds
+function run_once() {
+    upgrade_is_done "$1" && return 0
+    if "$1"; then
+        record_upgrade_done "$1"
+    else
+        echo "Error: $1 did not finish; it runs again on the next EngineScript update." >&2
+        return 1
+    fi
 }
 
 
@@ -1032,7 +1068,7 @@ function add_missing_ppas() {
 function migrate_acme_reload_commands() {
     local acme="/root/.acme.sh/acme.sh"
     local sites_file="/home/EngineScript/sites-list/sites.sh"
-    local domain domain_conf
+    local domain domain_conf failures=0
 
     if [[ ! -x "${acme}" || ! -f "${sites_file}" ]]; then
         return 0
@@ -1057,9 +1093,10 @@ function migrate_acme_reload_commands() {
             --fullchain-file "/etc/nginx/ssl/${domain}/fullchain.pem" \
             --ca-file "/etc/nginx/ssl/${domain}/ca.pem" \
             --reloadcmd "systemctl reload nginx" \
-            || echo "Warning: Could not add a certificate reload command for ${domain}." >&2
+            || { echo "Warning: Could not add a certificate reload command for ${domain}." >&2; failures=1; }
         secure_nginx_ssl_directory "/etc/nginx/ssl/${domain}"
     done
+    return "${failures}"
 }
 
 
@@ -1675,7 +1712,7 @@ function flush_site_redis_cache() {
 # a number with another site. The first site (in directory order) keeps a shared number; the
 # others move to free numbers, which only empties their object cache.
 function migrate_redis_databases() {
-    local count number wp_config
+    local count number wp_config failures=0
     local -a moves=()
     local -A taken=()
 
@@ -1699,8 +1736,9 @@ function migrate_redis_databases() {
 
     for wp_config in "${moves[@]}"; do
         echo "Moving a site that shared its Redis database (or used one out of range) to a free one:"
-        assign_site_redis_database "${wp_config}"
+        assign_site_redis_database "${wp_config}" || failures=1
     done
+    return "${failures}"
 }
 
 # Existing servers: FLUSHDB and FLUSHALL (the Redis Object Cache plugin's and the control panel's
@@ -1804,6 +1842,9 @@ function enginescript_cron_jobs() {
 
     # Tool updates, permissions, security scans, and the EngineScript update, in that order
     echo "52 5 * * * ${run} functions/cron/daily-maintenance.sh"
+
+    # Weekly checks, such as PPAs that had no packages for this Ubuntu release at install time
+    echo "22 4 * * 1 ${run} functions/cron/weekly-maintenance.sh"
 
     # WordPress Maintenance
     echo "*/15 * * * * ${run} functions/cron/wp-cron.sh"
@@ -1909,7 +1950,7 @@ function set_enginescript_home_permissions() {
 # rotates it with its own logrotate file. This changes only the error_log line of existing
 # installs, tests the configuration, and reloads PHP-FPM.
 function migrate_php_fpm_log_path() {
-    local conf ver old_log
+    local conf ver old_log failures=0
     for conf in /etc/php/*/fpm/php-fpm.conf; do
         [[ -f "${conf}" ]] || continue
         ver="$(basename "$(dirname "$(dirname "${conf}")")")"
@@ -1922,6 +1963,7 @@ function migrate_php_fpm_log_path() {
         if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
             echo "Error: php-fpm${ver} -t failed; kept the previous PHP-FPM log setting." >&2
             mv -f "${conf}.pre-log-migration" "${conf}"
+            failures=1
             continue
         fi
         rm -f "${conf}.pre-log-migration"
@@ -1934,6 +1976,7 @@ function migrate_php_fpm_log_path() {
             mv -f "${old_log}" "${old_log}.old"
         fi
     done
+    return "${failures}"
 }
 
 
@@ -1994,7 +2037,7 @@ function disable_ksm() {
 # php-redis ever stopped requiring it. Installing it by name marks it manually installed, and
 # adds it where it is missing (then PHP-FPM reloads to load the extension).
 function ensure_php_igbinary() {
-    local ver
+    local ver failures=0
     while IFS= read -r ver; do
         [[ -n "${ver}" ]] || continue
         if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
@@ -2008,8 +2051,10 @@ function ensure_php_igbinary() {
             fi
         else
             echo "Error: Installing php${ver}-igbinary failed." >&2
+            failures=1
         fi
     done < <(get_installed_php_versions)
+    return "${failures}"
 }
 
 
@@ -2022,7 +2067,7 @@ function ensure_php_igbinary() {
 # session.upload_progress.enabled = Off in each installed version's PHP-FPM php.ini, tests the
 # configuration, and reloads PHP-FPM. ES_PHP_ETC overrides /etc/php (for tests).
 function migrate_php_upload_progress() {
-    local ini ver
+    local ini ver failures=0
     for ini in "${ES_PHP_ETC:-/etc/php}"/*/fpm/php.ini; do
         [[ -f "${ini}" ]] || continue
         grep -qiE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=[[:space:]]*"?(off|0|false|no)"?[[:space:]]*$' "${ini}" && continue
@@ -2043,6 +2088,7 @@ function migrate_php_upload_progress() {
         if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
             echo "Error: php-fpm${ver} -t failed; kept the previous php.ini." >&2
             mv -f "${ini}.pre-upload-progress" "${ini}"
+            failures=1
             continue
         fi
         rm -f "${ini}.pre-upload-progress"
@@ -2052,6 +2098,7 @@ function migrate_php_upload_progress() {
             systemctl reload "php${ver}-fpm"
         fi
     done
+    return "${failures}"
 }
 
 

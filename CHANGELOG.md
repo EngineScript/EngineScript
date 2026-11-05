@@ -4,6 +4,24 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-05
+
+### 🔄 UPDATE STEPS REORGANIZED
+
+The steps that bring an existing server up to date are now split by how often they need to run:
+
+- **One-time upgrades** (`normal-auto-upgrade.sh`):
+  - The changes for servers installed by earlier versions run once per server. These are the certificate reload commands, the PHP-FPM log path, igbinary, PHP's session upload progress, the Redis databases and lazy flush, and turning off KSM.
+  - Each is recorded in `/var/lib/enginescript/upgrades-done.conf` when it succeeds and doesn't run again. One that fails runs again on the next update.
+  - New installs record them all as done, since they already have the current setup.
+- **Server settings sync** (new `sync-server-config.sh`):
+  - EngineScript's cron jobs, logrotate rule, log folder permissions, kernel settings, and Transparent Huge Pages unit are copied to the server when an update brings a new version of EngineScript.
+  - A manual update always syncs them. A scheduled update that found nothing new skips them.
+- **Weekly job** (new `weekly-maintenance.sh`, Mondays at 04:22): PPAs that had no packages for the server's Ubuntu release at install time, such as Canonical's server backports on 26.04, are now retried weekly instead of on every update.
+- **Re-tuning:** the daily maintenance job now checks every day whether the server's RAM or CPU count changed and re-tunes the services if so. Before, only an EngineScript update checked, so servers with automatic updates off were re-tuned only when someone ran an update.
+- **PHP warning:** the warning about an unsupported PHP version now shows at the end of every EngineScript update.
+- **Logrotate on new installs:** new installs set up the logrotate rule for the scheduled jobs' logs. Before, they got it only with their first EngineScript update.
+
 ## 2026-11-04
 
 ### 🐧 UBUNTU 26.04 SUPPORT

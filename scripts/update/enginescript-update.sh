@@ -21,6 +21,17 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Return to /usr/src
 return_to_src
 
+# --fetched: this copy was started by the previous step, after fetching the new version
+# --scheduled: started by the daily maintenance job rather than by hand
+FETCHED=0
+SCHEDULED=0
+for arg in "$@"; do
+    case "${arg}" in
+        --fetched) FETCHED=1 ;;
+        --scheduled) SCHEDULED=1 ;;
+    esac
+done
+
 # --------------------------------------------------------
 # Update EngineScript
 
@@ -34,7 +45,7 @@ fi
 # Copy EngineScript, then run the new copy of this script for the rest of the update (--fetched).
 # Bash keeps running the text of the file it started with, and the shared functions sourced
 # above are the old ones, so without the restart an update would run the previous version's steps.
-if [[ "${1:-}" != "--fetched" ]]; then
+if [[ "${FETCHED}" != "1" ]]; then
     if [[ "${TEST_MODE}" == "1" ]]; then
         echo "TEST_MODE enabled: Updating from development branch (update-software-versions)"
     else
@@ -60,7 +71,7 @@ if [[ "${1:-}" != "--fetched" ]]; then
     # Make shell scripts executable
     find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
 
-    exec bash /usr/local/bin/enginescript/scripts/update/enginescript-update.sh --fetched
+    exec bash /usr/local/bin/enginescript/scripts/update/enginescript-update.sh --fetched "$@"
 fi
 
 echo ""
@@ -85,10 +96,20 @@ echo ""
 
 
 # --------------------------------------------------------
-# Updating files from previous versions
+# One-time upgrades for servers installed by earlier versions (each runs once per server)
 /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "Auto-Upgrades"
+
+# Server settings that follow EngineScript's files (cron jobs, logrotate, kernel settings).
+# A scheduled update syncs them only when it fetched a new version; a manual update always does.
+if [[ "${SCHEDULED}" == "1" ]]; then
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh 2>> /tmp/enginescript_install_errors.log
+else
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh --force 2>> /tmp/enginescript_install_errors.log
+fi
+print_last_errors
+debug_pause "Server Settings Sync"
 
 
 # --------------------------------------------------------
@@ -200,6 +221,15 @@ else
 fi
 print_last_errors
 debug_pause "EngineScript Plugins Update"
+
+# Warn when the installed PHP version is no longer supported
+INSTALLED_PHP_VER="$(get_installed_php_version)"
+if [[ -n "${INSTALLED_PHP_VER}" ]] && ! printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | grep -qxF "${INSTALLED_PHP_VER}"; then
+  echo ""
+  echo "WARNING: PHP ${INSTALLED_PHP_VER} is no longer supported by EngineScript (supported: ${SUPPORTED_PHP_VERSIONS[*]})."
+  echo "Switch to a supported version with: es.menu > Update Software > Switch PHP Version"
+  echo ""
+fi
 
 echo ""
 echo ""

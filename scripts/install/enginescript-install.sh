@@ -242,6 +242,10 @@ echo ""
 
 # Verify all components completed successfully
 if check_installation_completion "true"; then
+    # A new server already has the current setup, so the one-time upgrades for servers installed
+    # by earlier versions never need to run here
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh --record-all
+
     echo "🎉 SUCCESS: EngineScript installation completed successfully!"
     echo "🎉 All required core components have been installed and verified."
     echo ""
