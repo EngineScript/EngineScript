@@ -183,7 +183,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |NGINX PATCH: Dynamic TLS Records|Latest|<https://github.com/nginx-modules/ngx_http_tls_dyn_size>|
 |OPENSSL|4.1.0|<https://www.openssl.org/source/>|
 |PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
-|ZLIB|1.3.2|<https://github.com/madler/zlib>|
+|ZLIB|1.4|<https://github.com/madler/zlib>|
 |**Application Server**|||
 |PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
@@ -191,7 +191,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||
-|Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
+|Font Awesome|7.3.1|<https://github.com/FortAwesome/Font-Awesome>|
 |TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
 |**Database Management**|||
 |ADMINER|||
