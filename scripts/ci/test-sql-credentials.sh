@@ -9,13 +9,15 @@
 # CI Test: SQL Credential Creation
 # Tests the database credential generation, validation, and SQL execution
 # functions used by vhost-install.sh and vhost-import.sh. It also checks the
-# vhost import/export source for the canonical single-archive format contract.
+# import and site archive builder source for the canonical single-archive format
+# contract.
 #
 # This script sources the shared enginescript-db-credentials.sh library and
 # calls the exact same functions that production uses, so any change to
 # the credential logic is automatically tested. Archive contract checks are
-# intentionally source-level because vhost-import.sh and vhost-export.sh are
-# interactive production scripts that require a real WordPress site.
+# intentionally source-level because vhost-import.sh is an interactive
+# production script that requires a real WordPress site; test-site-archive.sh
+# builds real archives.
 #----------------------------------------------------------------------------------
 
 set -euo pipefail
@@ -311,15 +313,17 @@ echo ""
 
 IMPORT_SCRIPT="${REPO_ROOT}/scripts/functions/vhost/vhost-import.sh"
 EXPORT_SCRIPT="${REPO_ROOT}/scripts/functions/vhost/vhost-export.sh"
+ARCHIVE_LIB="${REPO_ROOT}/scripts/functions/shared/enginescript-site-archive.sh"
 
-assert_file_contains "${EXPORT_SCRIPT}" 'manifest\.txt' "vhost-export documents manifest.txt in the bundle"
-assert_file_contains "${EXPORT_SCRIPT}" 'database/<site>_db_<timestamp>\.sql\.gz' "vhost-export documents database/<site>_db_<timestamp>.sql.gz"
-assert_file_contains "${EXPORT_SCRIPT}" 'files/<site>_files_<timestamp>\.tar\.gz' "vhost-export documents files/<site>_files_<timestamp>.tar.gz"
-assert_file_contains "${EXPORT_SCRIPT}" 'zip -0 -r -q "\$\{COMBINED_EXPORT_PATH\}" \.' "vhost-export stores the already-compressed payloads in the outer ZIP"
-assert_file_contains "${EXPORT_SCRIPT}" 'format=enginescript-site-archive' "vhost-export writes the EngineScript archive format marker"
-assert_file_contains "${EXPORT_SCRIPT}" 'version=1' "vhost-export writes archive version 1"
-assert_file_contains "${EXPORT_SCRIPT}" 'database_path=database/\$\{DB_EXPORT_FILENAME\}\.gz' "vhost-export writes the canonical database manifest path"
-assert_file_contains "${EXPORT_SCRIPT}" 'files_archive_path=files/\$\{FILES_EXPORT_FILENAME\}' "vhost-export writes the canonical files manifest path"
+assert_file_contains "${EXPORT_SCRIPT}" 'build_site_archive "\$\{SELECTED_SITE\}"' "vhost-export builds its archive with the shared site archive builder"
+assert_file_contains "${ARCHIVE_LIB}" 'manifest\.txt' "the site archive builder documents manifest.txt in the bundle"
+assert_file_contains "${ARCHIVE_LIB}" 'database/<site>_db_<timestamp>\.sql\.gz' "the site archive builder documents database/<site>_db_<timestamp>.sql.gz"
+assert_file_contains "${ARCHIVE_LIB}" 'files/<site>_files_<timestamp>\.tar\.gz' "the site archive builder documents files/<site>_files_<timestamp>.tar.gz"
+assert_file_contains "${ARCHIVE_LIB}" 'zip -0 -r -q' "the site archive builder stores the already-compressed payloads in the outer ZIP"
+assert_file_contains "${ARCHIVE_LIB}" 'format=enginescript-site-archive' "the site archive builder writes the EngineScript archive format marker"
+assert_file_contains "${ARCHIVE_LIB}" 'version=1' "the site archive builder writes archive version 1"
+assert_file_contains "${ARCHIVE_LIB}" 'database_path=database/\$\{db_name\}' "the site archive builder writes the canonical database manifest path"
+assert_file_contains "${ARCHIVE_LIB}" 'files_archive_path=files/\$\{files_name\}' "the site archive builder writes the canonical files manifest path"
 
 assert_file_contains "${IMPORT_SCRIPT}" 'MANIFEST_PATH="\$\{WP_EXTRACTED_PATH\}/manifest\.txt"' "vhost-import requires manifest.txt at the archive root"
 assert_file_contains "${IMPORT_SCRIPT}" 'format=enginescript-site-archive' "vhost-import validates the EngineScript archive format marker"

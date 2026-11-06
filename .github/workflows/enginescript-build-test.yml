@@ -204,7 +204,7 @@ jobs:
           sudo mkdir -p "/home/EngineScript/sites-list"
           sudo mkdir -p "/home/EngineScript/temp/site-export"
           sudo mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
-          sudo mkdir -p "/home/EngineScript/temp/site-import/root-directory"
+          sudo mkdir -p "/home/EngineScript/temp/site-import"
           echo "✅ EngineScript directories created" | sudo tee -a /tmp/ci-logs/setup.log
 
           # Set directory and file permissions

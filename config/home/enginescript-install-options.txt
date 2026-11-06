@@ -159,7 +159,10 @@ BACKUP_DATABASE_FREQUENCY="hourly"
 # Days to keep the daily database backups
 BACKUP_DATABASE_KEEP_DAYS=30
 
-## Site Files (wp-content: themes, plugins, uploads) ##
+## Site Files ##
+# Each files backup is a site archive: the whole site (WordPress, themes, plugins, uploads) and a
+# database dump, in the format Enginescript's Import Domain reads, so it can set the site up on any
+# EngineScript server.
 # off | daily | weekly
 BACKUP_FILES_FREQUENCY="weekly"
 # Number of files backups to keep

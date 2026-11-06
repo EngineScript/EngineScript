@@ -7,7 +7,7 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# Runs the wp-content backup with enginescript-backup.sh.
+# Runs the files backup (site archives) with enginescript-backup.sh.
 # Older installs have a cron job for this script; EngineScript updates replace those jobs with
 # the backup scheduler (install_enginescript_cron), which reads the backup frequencies each hour.
 exec bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh files
