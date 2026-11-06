@@ -14,11 +14,15 @@ source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Fai
 # Source shared functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
 
+# Source the site archive builder
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 #
-# Backs up every site's database, wp-config.php, and wp-content, and EngineScript's own
+# Backs up every site's database and wp-config.php, makes a site archive of every site (its files
+# and database, in the format Import Domain reads), and backs up EngineScript's own
 # configuration; keeps them for the configured time; and optionally copies them to Amazon S3.
 # Settings: the BACKUP_* options in /home/EngineScript/enginescript-install-options.txt.
 #
@@ -28,13 +32,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #   now              back up everything immediately (es.backup)
 #   database-hourly | database-daily | files | config
 #                    one backup type immediately
-#   site <domain>    one site's database (as a daily backup) and wp-content, immediately
+#   site <domain>    one site's database (as a daily backup) and site archive, immediately
 #
 # Layout (the same keys under s3://<bucket>/ when BACKUP_S3=1):
 #   /home/EngineScript/site-backups/<site>/database/hourly/<YYYY-MM-DD-HH>/<site>-database.sql.gz
 #   /home/EngineScript/site-backups/<site>/database/daily/<YYYY-MM-DD>/<site>-database.sql.gz
 #                                                              and <site>-wp-config.php.gz
-#   /home/EngineScript/site-backups/<site>/files/<YYYY-MM-DD>/<site>-wp-content.tar.gz
+#   /home/EngineScript/site-backups/<site>/files/<YYYY-MM-DD>/<site>-site-archive.zip
+#       (enginescript-site-archive.sh; older versions wrote <site>-wp-content.tar.gz here)
 #   /home/EngineScript/config-backups/enginescript/<YYYY-MM-DD>/enginescript-config.tar.gz
 #   S3 keys: <site>/backups/database/..., <site>/backups/files/..., enginescript-config/<date>/...
 #
@@ -159,31 +164,25 @@ backup_databases() {
   done
 }
 
+# Each site's files and database as one site archive, which Import Domain can restore on any
+# EngineScript server
 backup_files() {
-  local site site_root dir tmp file rc
+  local site site_root dir file
   for site in "${SITES[@]}"; do
     site_root="/var/www/sites/${site}/html"
-    if [[ ! -d "${site_root}/wp-content" ]]; then
-      log "Skipping the files backup of ${site}: no ${site_root}/wp-content"
+    if [[ ! -f "${site_root}/wp-config.php" ]]; then
+      log "Skipping the files backup of ${site}: no WordPress in ${site_root}"
       continue
     fi
     dir="${SITE_BACKUPS}/${site}/files/${TODAY}"
-    mkdir -p "${dir}"
-    file="${dir}/${site}-wp-content.tar.gz"
-    tmp="${dir}/.${site}-wp-content.tar.gz.partial"
-    tar -C "${site_root}" -czf "${tmp}" wp-content 2>> "${LOG}"
-    rc=$?
-    # GNU tar exits with 1 when a file changed while it was read; the archive is still usable
-    if [[ "${rc}" -le 1 ]]; then
-      mv -f "${tmp}" "${file}"
-      [[ "${rc}" -eq 1 ]] && log "Note: files changed while ${site}'s wp-content was archived."
-      log "Files backup: ${site}, $(du -h "${file}" | cut -f1)"
-      s3_upload "${file}" "${site}/backups/files/${TODAY}/${site}-wp-content.tar.gz"
+    file="${dir}/${site}-site-archive.zip"
+    if build_site_archive "${site}" "${file}" 2>> "${LOG}"; then
+      log "Files backup (site archive): ${site}, $(du -h "${file}" | cut -f1)"
+      s3_upload "${file}" "${site}/backups/files/${TODAY}/${site}-site-archive.zip"
     else
-      rm -f "${tmp}"
       # Removed only if empty: an earlier run today may have saved an archive here
       rmdir "${dir}" 2> /dev/null
-      record_failure "Files backup failed: ${site} (tar exit ${rc})"
+      record_failure "Files backup failed: ${site} (the reason is logged above)"
     fi
     prune_file_backups "${site}"
     s3_prune "${site}/backups/files/" "$(days_ago "${BACKUP_S3_KEEP_DAYS:-0}")"
@@ -191,8 +190,9 @@ backup_files() {
 }
 
 # Keeps a site's newest BACKUP_FILES_KEEP_COPIES files backups. Only dated folders that hold a
-# finished archive count as copies; folders without one (left by a failed or interrupted run)
-# are removed, so failed runs never push good backups out.
+# finished archive (a site archive, or the wp-content archive older versions made) count as
+# copies; folders without one (left by a failed or interrupted run) are removed, so failed runs
+# never push good backups out.
 # Usage: prune_file_backups <site>
 prune_file_backups() {
   local site="$1" base name excess i
@@ -200,7 +200,7 @@ prune_file_backups() {
   base="${SITE_BACKUPS}/${site}/files"
   [[ -d "${base}" ]] || return 0
   while IFS= read -r name; do
-    if [[ -f "${base}/${name}/${site}-wp-content.tar.gz" ]]; then
+    if [[ -f "${base}/${name}/${site}-site-archive.zip" || -f "${base}/${name}/${site}-wp-content.tar.gz" ]]; then
       complete+=("${name}")
     else
       rm -rf "${base:?}/${name}"

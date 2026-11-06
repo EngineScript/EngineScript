@@ -2030,6 +2030,21 @@ function disable_ksm() {
 
 
 # ----------------------------------------------------------------
+# Remove the import folders older versions created
+#
+# Import Domain reads one site archive placed directly in /home/EngineScript/temp/site-import.
+# The database-file and root-directory folders inside it belonged to an import format that is
+# gone. They are removed only when empty, so nothing left in them is lost.
+function remove_old_import_folders() {
+    local folder
+    for folder in database-file root-directory; do
+        rmdir "/home/EngineScript/temp/site-import/${folder}" 2> /dev/null
+    done
+    return 0
+}
+
+
+# ----------------------------------------------------------------
 # Install igbinary explicitly for every installed PHP version
 #
 # Redis Object Cache serializes with it (WP_REDIS_IGBINARY). Existing servers only have it as a

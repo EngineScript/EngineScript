@@ -161,8 +161,7 @@ mkdir -p "/home/EngineScript/site-backups"
 mkdir -p "/home/EngineScript/sites-list"
 mkdir -p "/home/EngineScript/temp/site-export"
 mkdir -p "/home/EngineScript/temp/site-import-completed-backups"
-mkdir -p "/home/EngineScript/temp/site-import/database-file"
-mkdir -p "/home/EngineScript/temp/site-import/root-directory"
+mkdir -p "/home/EngineScript/temp/site-import"
 
 # Create /etc/enginescript directory if it doesn't exist
 if [[ ! -d "/etc/enginescript" ]]; then

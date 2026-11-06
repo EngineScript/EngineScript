@@ -41,6 +41,8 @@ ONE_TIME_UPGRADES=(
   migrate_redis_lazy_user_flush
   # Kernel Samepage Merging: nothing on these servers can use it
   disable_ksm
+  # Import: the empty folders of the old import format
+  remove_old_import_folders
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

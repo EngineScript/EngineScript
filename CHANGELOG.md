@@ -4,6 +4,32 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-06
+
+### 📦 FILES BACKUPS ARE NOW IMPORTABLE SITE ARCHIVES
+
+- **Files backups:**
+  - The scheduled files backup (`BACKUP_FILES_FREQUENCY`, weekly by default) now makes a site archive of each site, in the same format as Export Domain: the whole site (WordPress, themes, plugins, uploads, and files such as `robots.txt`) and a database dump in one ZIP.
+  - Import Domain sets a site up from it on any EngineScript server, so a backup copied from Amazon S3 can bring a site back on a new server.
+  - Before, this backup held only `wp-content`, which could not be imported.
+  - The archives are in the same place as before, as `site-backups/<site>/files/<date>/<site>-site-archive.zip`, and on S3 under `<site>/backups/files/<date>/`.
+  - Like the exports, they leave out version-control folders, `.htaccess`, `.user.ini`, and the contents of `wp-content/cache`, `upgrade`, and `temp`.
+  - `BACKUP_FILES_KEEP_COPIES` counts the new archives and the older wp-content backups together, so the older ones age out as before.
+- **Database backups:** the hourly and daily database backups are unchanged.
+- **Disk space:** each archive also holds the database, and while one is written it needs free space for about twice its size. The backup checks for room first and logs a failure instead of filling the disk.
+- **Backup Tools:** Check the Latest Backups reads a site archive back: its manifest, the database dump to its last line, and the files archive. List Backups explains how to import one.
+- **Export Domain:**
+  - It builds its archive with the same code as the backups.
+  - The database is now exported as `www-data` instead of root, so the site's own code never runs as root. The export is also made in one transaction, so a site in use still gives a consistent dump.
+  - The archive can now be read by root only, because it holds `wp-config.php` and the database. A copy downloaded or moved to another server belongs to whoever copies it, and Import Domain reads it as root, so moving it to another server works as before. If you download exports over SFTP as a user other than root, copy the file first with `sudo`.
+  - A failed export no longer leaves its staging folder behind.
+- **Wordfence CLI remediation:**
+  - The backup made before a remediation is now a site archive, which Import Domain can restore. Its database export also runs as `www-data` now.
+  - If the backup fails, the remediation does not start.
+- **Import folders:**
+  - New installs no longer create `temp/site-import/database-file` and `temp/site-import/root-directory`, which belonged to an import format that is gone.
+  - Existing servers remove them, if empty, with their next EngineScript update.
+
 ## 2026-11-05
 
 ### 🔄 UPDATE STEPS REORGANIZED

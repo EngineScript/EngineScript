@@ -242,7 +242,7 @@ resolve_backup_settings
 debug_print "| Backup | Setting |" "| Backup | Setting |"
 debug_print "|--------|---------|" "|--------|---------|"
 debug_print "Databases | ${BACKUP_DATABASE_FREQUENCY}, keep ${BACKUP_DATABASE_KEEP_DAYS} days" "| Databases | \`${BACKUP_DATABASE_FREQUENCY}\`, keep ${BACKUP_DATABASE_KEEP_DAYS} days |"
-debug_print "Files (wp-content) | ${BACKUP_FILES_FREQUENCY}, keep ${BACKUP_FILES_KEEP_COPIES} copies" "| Files (wp-content) | \`${BACKUP_FILES_FREQUENCY}\`, keep ${BACKUP_FILES_KEEP_COPIES} copies |"
+debug_print "Files (site archive) | ${BACKUP_FILES_FREQUENCY}, keep ${BACKUP_FILES_KEEP_COPIES} copies" "| Files (site archive) | \`${BACKUP_FILES_FREQUENCY}\`, keep ${BACKUP_FILES_KEEP_COPIES} copies |"
 debug_print "EngineScript configuration | ${BACKUP_CONFIG_FREQUENCY}, keep ${BACKUP_CONFIG_KEEP_DAYS} days" "| EngineScript configuration | \`${BACKUP_CONFIG_FREQUENCY}\`, keep ${BACKUP_CONFIG_KEEP_DAYS} days |"
 debug_print "Amazon S3 | ${BACKUP_S3} (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})" "| Amazon S3 | \`${BACKUP_S3}\` (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted}) |"
 

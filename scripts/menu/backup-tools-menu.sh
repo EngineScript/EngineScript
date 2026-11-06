@@ -58,10 +58,13 @@ show_backups() {
     echo "  ${site} (${size:-0} in all)"
     printf '    %-20s %s\n' "Database (daily)" "$(latest_backup "${base}/database/daily")"
     printf '    %-20s %s\n' "Database (hourly)" "$(latest_backup "${base}/database/hourly")"
-    printf '    %-20s %s\n' "Files (wp-content)" "$(latest_backup "${base}/files")"
+    printf '    %-20s %s\n' "Files (site archive)" "$(latest_backup "${base}/files")"
   done
   echo ""
   printf '  %-22s %s\n' "EngineScript config" "$(latest_backup /home/EngineScript/config-backups/enginescript)"
+  echo ""
+  echo "A site archive (files/<date>/<site>-site-archive.zip) holds the site's files and database."
+  echo "Import Domain (Domain Configuration Tools) sets the site up from it on any EngineScript server."
   echo ""
   if [[ "${BACKUP_S3}" == "1" ]]; then
     echo "Copies go to Amazon S3: s3://${S3_BUCKET_NAME}/"
@@ -83,7 +86,8 @@ backup_age() {
 }
 
 # Read a backup file back: a database dump must also end with the line mariadb-dump writes
-# when it finishes, so a dump cut short (a full disk, a stopped backup) is caught
+# when it finishes, so a dump cut short (a full disk, a stopped backup) is caught. A site
+# archive must name its format and hold a complete dump and a readable files archive.
 check_backup_file() {
   local last
   case "$1" in
@@ -93,6 +97,12 @@ check_backup_file() {
     *-database.sql.gz)
       last="$(set -o pipefail; zcat "$1" 2> /dev/null | tail -n 1)" || return 1
       [[ "${last}" == "-- Dump completed"* ]]
+      ;;
+    *-site-archive.zip)
+      unzip -p "$1" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
+      last="$(set -o pipefail; unzip -p "$1" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
+      [[ "${last}" == "-- Dump completed"* ]] || return 1
+      (set -o pipefail; unzip -p "$1" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
       ;;
     *)
       gzip -t "$1" 2> /dev/null
@@ -109,7 +119,7 @@ check_newest_backup() {
     printf '    %-22s %s\n' "${label}" "none"
     return
   fi
-  for file in "${dir}/${newest}"/*.gz; do
+  for file in "${dir}/${newest}"/*.gz "${dir}/${newest}"/*.zip; do
     [[ -f "${file}" ]] || continue
     files=$((files + 1))
     if ! check_backup_file "${file}"; then
@@ -138,7 +148,7 @@ check_latest_backups() {
     echo "  ${site}"
     check_newest_backup "Database (daily)" "${base}/database/daily"
     check_newest_backup "Database (hourly)" "${base}/database/hourly"
-    check_newest_backup "Files (wp-content)" "${base}/files"
+    check_newest_backup "Files (site archive)" "${base}/files"
   done
   echo ""
   check_newest_backup "EngineScript config" /home/EngineScript/config-backups/enginescript
@@ -232,7 +242,7 @@ while true
           ;;
         "Backup One Domain")
           if select_site; then
-            echo "Backing up ${SELECTED_SITE}'s database, wp-config.php, and wp-content..."
+            echo "Backing up ${SELECTED_SITE}'s database and wp-config.php, and making its site archive..."
             if bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh site "${SELECTED_SITE}"; then
               echo ""
               echo "Done!"

@@ -1,0 +1,43 @@
+name: Test Site Archive
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'scripts/functions/shared/enginescript-site-archive.sh'
+      - 'scripts/ci/test-site-archive.sh'
+      - '.github/workflows/test-site-archive.yml'
+  pull_request:
+    paths:
+      - 'scripts/functions/shared/enginescript-site-archive.sh'
+      - 'scripts/ci/test-site-archive.sh'
+      - '.github/workflows/test-site-archive.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-site-archive:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install zip
+        run: |
+          command -v zip > /dev/null || { sudo apt-get update && sudo apt-get install -y zip unzip; }
+
+      - name: Run site archive tests
+        run: |
+          bash -n scripts/ci/test-site-archive.sh
+          bash scripts/ci/test-site-archive.sh
