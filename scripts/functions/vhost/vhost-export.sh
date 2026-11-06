@@ -74,7 +74,7 @@ COMBINED_EXPORT_PATH="${SITE_EXPORT_DIR}/${COMBINED_EXPORT_FILENAME}"
 
 echo "Exporting ${SELECTED_SITE}'s database and files..."
 if ! build_site_archive "${SELECTED_SITE}" "${COMBINED_EXPORT_PATH}"; then
-    echo "ERROR: The export of ${SELECTED_SITE} failed (see the message above)."
+    echo "ERROR: The export of ${SELECTED_SITE} failed (see the message above)." >&2
     exit 1
 fi
 echo "Combined archive created at ${COMBINED_EXPORT_PATH}"

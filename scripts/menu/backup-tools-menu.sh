@@ -89,23 +89,23 @@ backup_age() {
 # when it finishes, so a dump cut short (a full disk, a stopped backup) is caught. A site
 # archive must name its format and hold a complete dump and a readable files archive.
 check_backup_file() {
-  local last
-  case "$1" in
+  local file="$1" last
+  case "${file}" in
     *.tar.gz)
-      tar -tzf "$1" > /dev/null 2>&1
+      tar -tzf "${file}" > /dev/null 2>&1
       ;;
     *-database.sql.gz)
-      last="$(set -o pipefail; zcat "$1" 2> /dev/null | tail -n 1)" || return 1
+      last="$(set -o pipefail; zcat "${file}" 2> /dev/null | tail -n 1)" || return 1
       [[ "${last}" == "-- Dump completed"* ]]
       ;;
     *-site-archive.zip)
-      unzip -p "$1" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
-      last="$(set -o pipefail; unzip -p "$1" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
+      unzip -p "${file}" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
+      last="$(set -o pipefail; unzip -p "${file}" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
       [[ "${last}" == "-- Dump completed"* ]] || return 1
-      (set -o pipefail; unzip -p "$1" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
+      (set -o pipefail; unzip -p "${file}" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
       ;;
     *)
-      gzip -t "$1" 2> /dev/null
+      gzip -t "${file}" 2> /dev/null
       ;;
   esac
 }

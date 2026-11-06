@@ -31,10 +31,11 @@ fail() {
 
 # Usage: check "<description>" "<actual>" "<expected>"
 check() {
-  if [[ "$2" == "$3" ]]; then
-    pass "$1"
+  local description="$1" actual="$2" expected="$3"
+  if [[ "${actual}" == "${expected}" ]]; then
+    pass "${description}"
   else
-    fail "$1 (expected '$3', got '$2')"
+    fail "${description} (expected '${expected}', got '${actual}')"
   fi
 }
 
@@ -73,6 +74,10 @@ run_as_www_data() {
     eval)
       # A carriage return in a value must not reach the manifest
       printf 'https://example.com\r\nhttps://example.com\nwp_\n'
+      ;;
+    *)
+      echo "Unexpected WP-CLI command in the test: $*" >&2
+      return 1
       ;;
   esac
 }
@@ -149,33 +154,22 @@ done
 echo "A failed database export"
 WP_FAIL=1
 OUT2="${WORK}/out2/${SITE}-site-archive.zip"
-if build_site_archive "${SITE}" "${OUT2}" 2> /dev/null; then
-  fail "it fails"
-else
-  pass "it fails"
-fi
-check "it leaves nothing behind" "$(find "${WORK}/out2" -mindepth 1 | wc -l | tr -d ' ')" "0"
+lacks "the build stops when the dump fails" build_site_archive "${SITE}" "${OUT2}" 2> /dev/null
+check "the failed dump leaves nothing behind" "$(find "${WORK}/out2" -mindepth 1 | wc -l | tr -d ' ')" "0"
 WP_FAIL=0
 
 echo "Too little free space"
+# shellcheck disable=SC2329  # called by build_site_archive
 site_archive_free_kb() { echo 0; }
-if build_site_archive "${SITE}" "${OUT2}" 2> "${WORK}/stderr.txt"; then
-  fail "it fails"
-else
-  pass "it fails"
-fi
+lacks "the build stops when space is short" build_site_archive "${SITE}" "${OUT2}" 2> "${WORK}/stderr.txt"
 holds "it says why" grep -q "Not enough free space" "${WORK}/stderr.txt"
-check "it leaves nothing behind" "$(find "${WORK}/out2" -mindepth 1 | wc -l | tr -d ' ')" "0"
+check "the short space leaves nothing behind" "$(find "${WORK}/out2" -mindepth 1 | wc -l | tr -d ' ')" "0"
 unset -f site_archive_free_kb
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-site-archive.sh"
 
 echo "A folder without WordPress"
 mkdir -p "${SITE_ARCHIVE_SITES_ROOT}/empty.example/html"
-if build_site_archive "empty.example" "${WORK}/out3/empty.zip" 2> /dev/null; then
-  fail "it fails"
-else
-  pass "it fails"
-fi
+lacks "the build stops without wp-config.php" build_site_archive "empty.example" "${WORK}/out3/empty.zip" 2> /dev/null
 lacks "no archive is written" test -e "${WORK}/out3/empty.zip"
 
 echo ""

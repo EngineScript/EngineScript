@@ -38,7 +38,8 @@ SITE_ARCHIVE_TAR_EXCLUDES=(
 # Free space, in KB, on the filesystem that holds a folder
 # Usage: site_archive_free_kb <folder>
 function site_archive_free_kb() {
-    df -Pk "$1" | awk 'NR == 2 {print $4}'
+    local folder="$1"
+    df -Pk "${folder}" | awk 'NR == 2 {print $4}'
 }
 
 # ----------------------------------------------------------------
