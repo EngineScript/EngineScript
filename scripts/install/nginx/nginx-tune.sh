@@ -24,27 +24,6 @@ fi
 sed -i "s|SEDNGINXCACHEZONE|$(tuning_get NGINX_CACHE_ZONE_MB)|g" /etc/nginx/nginx.conf
 sed -i "s|SEDNGINXCACHEMAX|$(tuning_get NGINX_CACHE_MAX_MB)|g" /etc/nginx/nginx.conf
 
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGIBUFFERS|8 32k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGIBUFFERS|16 32k|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGIBUSYBUFFERS|128k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGIBUSYBUFFERS|256k|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGITEMPFILEWRITESIZE|128k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGITEMPFILEWRITESIZE|256k|g" /etc/nginx/nginx.conf
-fi
-
 # CPU information (for the install log)
 CPU_INFO="$(lscpu)"
 echo "CPU Model: $(awk -F: '/^Model name:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' <<< "${CPU_INFO}")"
