@@ -59,7 +59,8 @@ while true
       "Analyze All Tables & Databases"
       "Database Size per Site"
       "MariaDB Diagnostic & Recovery"
-      "MariaDB-Check Database Optimizer"
+      "Check & Repair All Tables"
+      "Optimize All Tables (rebuilds every table)"
       "MySQLreport"
       "MySQLtuner"
       "Reset a Site's Database Password"
@@ -82,8 +83,18 @@ while true
           pause
           break
           ;;
-        "MariaDB-Check Database Optimizer")
+        "Check & Repair All Tables")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh
+          break
+          ;;
+        "Optimize All Tables (rebuilds every table)")
+          echo "This checks and analyzes every table, then rebuilds each one (OPTIMIZE TABLE)."
+          echo "Rebuilding copies every table and its indexes: on large sites it takes a long time,"
+          echo "uses heavy disk I/O, and briefly locks each table, so sites can slow down while it runs."
+          echo "It rarely gains much; run it after deleting a lot of data, at a quiet time."
+          if prompt_yes_no "Optimize all tables now?" "n"; then
+            /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh --optimize
+          fi
           break
           ;;
         "MySQLreport")

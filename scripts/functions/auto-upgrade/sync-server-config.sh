@@ -10,8 +10,8 @@
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
-# Verify EngineScript installation is complete before proceeding
-verify_installation_completion
+# EngineScript must be fully installed (es.update has checked already)
+require_installation_complete "The server settings sync"
 
 #----------------------------------------------------------------------------------
 # Start Main Script

@@ -53,8 +53,8 @@ if [[ "${1:-}" == "--record-all" ]]; then
   exit 0
 fi
 
-# Verify EngineScript installation is complete before proceeding
-verify_installation_completion
+# EngineScript must be fully installed (es.update has checked already)
+require_installation_complete "The one-time upgrades"
 
 for upgrade in "${ONE_TIME_UPGRADES[@]}"; do
   run_once "${upgrade}" 2>> "${ES_STEP_ERROR_LOG}"

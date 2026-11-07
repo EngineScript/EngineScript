@@ -1541,10 +1541,28 @@ function verify_installation_completion() {
     if check_installation_completion; then
         echo "✅ Installation verification passed. Proceeding with $script_name..."
         echo ""
+        # The steps this script starts (one-time upgrades, settings sync) skip their own check
+        export ES_INSTALL_VERIFIED=1
         return 0
     else
         echo ""
         echo "$script_name cannot proceed until all components are properly installed."
+        exit 1
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Stop unless EngineScript is fully installed, for the steps es.update runs after its own
+# verification (verify_installation_completion sets ES_INSTALL_VERIFIED). Run on their own, they
+# check quietly: only the missing steps are printed.
+# Usage: require_installation_complete "<script name>"
+function require_installation_complete() {
+    if [[ "${ES_INSTALL_VERIFIED:-0}" == "1" ]]; then
+        return 0
+    fi
+    if ! check_installation_completion "true"; then
+        echo "${1:-This script} cannot proceed until all components are properly installed (run es.install)." >&2
         exit 1
     fi
 }

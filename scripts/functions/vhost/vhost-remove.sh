@@ -29,7 +29,8 @@ echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo "|   Domain Removal                                    |"
 echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
 echo ""
-echo -e "WARNING: This script will remove a site from your installation.\n\n${BOLD}This removal is irreversible and everything will be destroyed, including backups.${NORMAL}\nPlease be 100% sure of your choice before continuing with this process.\n\n"
+echo -e "WARNING: This script will remove a site from your installation.\n\n${BOLD}This removal is irreversible: the site's files, database, and settings are destroyed.${NORMAL}
+You choose below whether its local backups go too.\nPlease be 100% sure of your choice before continuing with this process.\n\n"
 sleep 1
 
 # Domain selection: a site on the server's list, or a domain typed in, for a site that was only
@@ -60,10 +61,26 @@ done
 # Confirm the exact domain before anything is removed
 echo ""
 echo "Domain to remove: ${BOLD}${DOMAIN}${NORMAL}"
-if ! prompt_yes_no "Remove ${DOMAIN} and everything that belongs to it, including its backups?" "n" 300; then
+if ! prompt_yes_no "Remove ${DOMAIN} and everything that belongs to it?" "n" 300; then
   echo "Exiting domain removal script."
   exit 0
 fi
+
+# The site's local backups: delete them too (the default), or keep them. They include site
+# archives, which Import Domain can set the site up from again. Copies on Amazon S3 are never
+# touched here.
+BACKUP_DIR="/home/EngineScript/site-backups/${DOMAIN}"
+REMOVE_SITE_KEEP_BACKUPS=0
+if [[ -d "${BACKUP_DIR}" ]]; then
+  echo ""
+  echo "${DOMAIN} has local backups in ${BACKUP_DIR} ($(du -sh "${BACKUP_DIR}" 2> /dev/null | cut -f1))."
+  echo "They include site archives that Import Domain can set the site up from again."
+  echo "Copies on Amazon S3, if any, are not touched either way."
+  if ! prompt_yes_no "Delete these local backups too? Answer n to keep them." "y" 300; then
+    REMOVE_SITE_KEEP_BACKUPS=1
+  fi
+fi
+export REMOVE_SITE_KEEP_BACKUPS
 
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-remove.log"
@@ -77,6 +94,10 @@ echo ""
 echo "----------------------------------------------------------"
 echo "Domain removal completed for ${DOMAIN}."
 echo "Please verify that all associated files, directories, and configurations have been removed."
+if [[ "${REMOVE_SITE_KEEP_BACKUPS}" == "1" ]]; then
+  echo "The site's local backups were kept: ${BACKUP_DIR}/"
+  echo "To set the site up again from one, copy its site archive into /home/EngineScript/temp/site-import and run Import Domain."
+fi
 if [[ -d "/home/EngineScript/temp/site-export/${DOMAIN}" ]]; then
   echo "Site exports made with Export Domain were kept: /home/EngineScript/temp/site-export/${DOMAIN}/"
 fi

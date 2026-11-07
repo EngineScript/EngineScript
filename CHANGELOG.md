@@ -32,6 +32,14 @@ Changes are organized by date, with the most recent changes listed first.
 - **Nginx:** the install and the update now build Nginx with the same script, and write its configuration with the same script, so the two can no longer drift apart.
 - **Random credentials:** passwords, database names and users, table prefixes, and phpMyAdmin's secrets are made when they are needed, instead of six random strings every time any script started. Each one now always has its full length; a short one was rare but possible.
 
+### 🗄️ DATABASE CHECK, REMOVE DOMAIN, AND UPDATES
+
+- **Database Tools:**
+  - "MariaDB-Check Database Optimizer" is now "Check & Repair All Tables". It checks every table, repairs any that need it, and updates the index statistics. It no longer rebuilds every table each time it runs. On InnoDB, which every site uses, a rebuild copies each table and its indexes, which slows sites down while it runs and rarely frees much space.
+  - Rebuilding is its own choice, "Optimize All Tables (rebuilds every table)", which explains the cost and asks before it starts.
+- **Remove Domain:** when the site has local backups, it asks whether to delete them too (the default) or keep them. Kept backups include the site archives that Import Domain can set the site up from again, and the summary says where they are. Copies on Amazon S3 are never touched.
+- **EngineScript update:** the installation check runs once per update. Before, the one-time upgrades and the settings sync each ran it again, so one update printed the same check three times. Run on their own, they still check, quietly.
+
 ### 🧹 SCRIPT CLEANUP
 
 - **Shared functions:** the prompts, permissions, Cloudflare, and tuning functions are in their own files, which `enginescript-common.sh` loads. The one-time upgrades are loaded only by the updater.
