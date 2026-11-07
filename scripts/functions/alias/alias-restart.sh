@@ -20,12 +20,20 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 echo -e "\nRestarting Services\n\n"
 
-# Clear system caches before restarting
-clear_all_system_caches
+# Restart Nginx and PHP-FPM. The caches stay (es.cache clears them). Redis is only started when it
+# is not running: restarting a working Redis would show Redis Object Cache's error page on every
+# site while it starts, and empty every site's object cache.
 
-# Restart services
-restart_service "nginx"
+# Test first: Nginx does not start again with a configuration that fails its test
+if nginx -t; then
+  restart_service "nginx"
+else
+  echo "Error: nginx -t failed, so Nginx was not restarted and keeps running. Fix the errors above first." >&2
+fi
 restart_php_fpm
-restart_service "redis-server"
+if ! systemctl is-active --quiet redis-server; then
+  echo "Redis is not running; starting it."
+  systemctl start redis-server || echo "Error: Redis did not start. Check with: systemctl status redis-server" >&2
+fi
 
-echo "All services restarted successfully."
+echo "Done."

@@ -191,6 +191,45 @@ function initialize_install_state_file() {
 
 
 # ----------------------------------------------------------------
+# Delete one site's pages from the Nginx FastCGI cache; every other site keeps its pages.
+# Each cache file holds its key ("KEY: httpsGETexample.com/...", fastcgi_cache_key in
+# globals/php-fpm.conf). Used when a site is removed or set up, so a domain that is set up again
+# does not serve the cached pages of the site it had before. Pages cached for www.<domain>, the
+# address of an imported site that kept www, go too.
+# Usage: clear_site_nginx_cache <domain>
+function clear_site_nginx_cache() {
+    local domain="$1"
+    local cache_dir="${ES_NGINX_CACHE_DIR:-/var/cache/nginx}"
+
+    if [[ -z "${domain}" || ! -d "${cache_dir}" ]]; then
+        return 0
+    fi
+    grep -rlaZ -E "^KEY: [a-z]+[A-Z]+(www\\.)?${domain//./\\.}/" "${cache_dir}" 2> /dev/null | xargs -0 -r rm -f
+}
+
+
+# ----------------------------------------------------------------
+# Reload Nginx (after nginx -t) and PHP-FPM, after a site's vhost was added or removed. Redis
+# keeps running and every other site keeps its caches: Redis Object Cache shows an error page on
+# every site while Redis is unreachable. Returns 1 when Nginx was not reloaded.
+# Usage: reload_web_services
+function reload_web_services() {
+    echo "Reloading Nginx and PHP-FPM..."
+    if ! nginx -t > /dev/null 2>&1; then
+        echo "Error: nginx -t failed; Nginx was not reloaded. Check with: nginx -t" >&2
+        return 1
+    fi
+    if ! systemctl reload nginx; then
+        echo "Error: Nginx could not be reloaded. Check with: systemctl status nginx" >&2
+        return 1
+    fi
+    if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+        systemctl reload "php${PHP_VER}-fpm"
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Clear Nginx cache directory
 function clear_nginx_cache() {
     echo "Clearing Nginx FastCGI cache"
@@ -216,12 +255,19 @@ function clear_nginx_cache() {
 
 
 # ----------------------------------------------------------------
-# Clear PHP OPcache directory
+# Clear PHP OPcache. It is kept in PHP-FPM's memory, so a reload clears it; requests in progress
+# finish first. php.ini leaves the file cache in /var/cache/opcache off; the folder is emptied
+# in case it was turned on.
 function clear_opcache() {
     echo "Clearing PHP OPcache"
     rm -rf /var/cache/opcache/* || {
-        echo "Error: Failed to clear PHP OPcache."
+        echo "Error: Failed to clear the OPcache file cache."
     }
+    if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+        systemctl reload "php${PHP_VER}-fpm" || {
+            echo "Error: Failed to reload PHP-FPM, so OPcache was not cleared."
+        }
+    fi
 }
 
 
@@ -737,6 +783,18 @@ function validate_domain() {
     else
         return 1
     fi
+}
+
+
+# ----------------------------------------------------------------
+# Full site domain validation: lowercase labels separated by dots (example.com, blog.example.co.uk),
+# each 1 to 63 characters without a leading or trailing hyphen, ending in a TLD that starts
+# with a letter (xn-- TLDs included)
+function validate_site_domain() {
+    local domain="$1"
+    local label="[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
+
+    [[ ${#domain} -le 253 && "${domain}" =~ ^(${label}\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$ ]]
 }
 
 
@@ -2453,6 +2511,9 @@ function validate_not_placeholder() {
 
 # ----------------------------------------------------------------
 # Run an idempotent install step: skip if already completed, otherwise execute
+# A step that fails stops the install: later steps depend on earlier ones (PHP on MariaDB's
+# repository, Nginx on PCRE and zlib), and the step's flag is not set, so es.install runs it
+# again next time.
 # Usage: run_install_step "FLAG_NAME" "/path/to/script.sh" "Step Description"
 function run_install_step() {
     local flag_name="$1"
@@ -2462,8 +2523,13 @@ function run_install_step() {
 
     if [[ "${flag_value}" = 1 ]]; then
         echo "${flag_name} script has already run."
-    else
-        "${script_path}" 2>> /tmp/enginescript_install_errors.log
+    elif ! "${script_path}" 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        echo "" >&2
+        echo "${BOLD}Install step failed: ${step_desc}${NORMAL}" >&2
+        echo "The install stopped here. The errors are in /var/log/EngineScript/install-error-log.log." >&2
+        echo "Fix the problem, then run es.install again: it carries on from this step." >&2
+        exit 1
     fi
     print_last_errors
     debug_pause "${step_desc}"
@@ -2677,6 +2743,23 @@ function notify_admin() {
     fi
     printf 'user = "%s:"\n' "${PUSHBULLET_TOKEN}" | curl -fsS --proto '=https' --max-time 30 -K - -o /dev/null \
         https://api.pushbullet.com/v2/pushes -d type=note --data-urlencode "title=${title}" --data-urlencode "body=${message}"
+}
+
+
+# ----------------------------------------------------------------
+# Run curl with the Cloudflare account's email and Global API key (CF_ACCOUNT_EMAIL,
+# CF_GLOBAL_API_KEY) as headers. They go in on standard input (-K -), as in notify_admin:
+# command-line arguments are visible to every user, and the key controls the whole account.
+# Usage: cloudflare_curl <curl arguments>
+function cloudflare_curl() {
+    local email="${CF_ACCOUNT_EMAIL:-}" key="${CF_GLOBAL_API_KEY:-}"
+
+    # Quoted values in a curl config file take backslash escapes
+    email="${email//\\/\\\\}"
+    email="${email//\"/\\\"}"
+    key="${key//\\/\\\\}"
+    key="${key//\"/\\\"}"
+    printf 'header = "X-Auth-Email: %s"\nheader = "X-Auth-Key: %s"\n' "${email}" "${key}" | curl -K - "$@"
 }
 
 

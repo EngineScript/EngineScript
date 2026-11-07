@@ -58,7 +58,11 @@ sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${PHP_VER}-fpm"
 /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
 
 # Update PHP config
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The PHP configuration could not be applied. Stopping the PHP install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "PHP Configuration"
 

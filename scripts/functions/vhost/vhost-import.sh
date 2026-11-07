@@ -20,6 +20,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-
 # Source shared database credential functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh" >&2; exit 1; }
 
+# Source the site archive functions (manifest values and site addresses)
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -351,38 +354,98 @@ if ! WP_FILES_SOURCE_PATH="$(find_wordpress_files_source_path "${WP_FILES_EXTRAC
 fi
 echo "PASSED: Archive extracted. WordPress source path set to: ${WP_FILES_SOURCE_PATH}"
 
-# --- Extract Table Prefix from Database File ---
-echo "Extracting table prefix from database file: ${DB_SOURCE_PATH}"
-PREFIX=$(extract_prefix_from_db "$DB_SOURCE_PATH")
-if [[ -z "$PREFIX" ]]; then
-    echo "FAILED: Could not automatically determine table prefix from database file: ${DB_SOURCE_PATH}"
-    echo "Please ensure the database dump contains standard WordPress tables like 'wp_options'/'yourprefix_options' or 'wp_users'/'yourprefix_users'."
-    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Clean up
-    exit 1 # Exit if DB extraction fails
+# --- Table Prefix ---
+# The manifest's table_prefix is the site's $table_prefix (EngineScript's exports and the Site
+# Exporter plugin write it). Archives without it: taken from the table names in the dump.
+PREFIX="$(site_archive_manifest_value "${MANIFEST_PATH}" table_prefix)"
+if [[ "${PREFIX}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "PASSED: Table prefix from manifest.txt: ${PREFIX}"
+else
+    echo "Extracting table prefix from database file: ${DB_SOURCE_PATH}"
+    PREFIX=$(extract_prefix_from_db "$DB_SOURCE_PATH")
+    if [[ -z "$PREFIX" ]]; then
+        echo "FAILED: Could not automatically determine table prefix from database file: ${DB_SOURCE_PATH}"
+        echo "Please ensure the database dump contains standard WordPress tables like 'wp_options'/'yourprefix_options' or 'wp_users'/'yourprefix_users'."
+        rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}" # Clean up
+        exit 1 # Exit if DB extraction fails
+    fi
+    echo "PASSED: Determined table prefix from database: ${PREFIX}"
 fi
-echo "PASSED: Determined table prefix from database: ${PREFIX}"
 # --- End Prefix Extraction ---
 
 
-# --- Extract Information from wp-config.php ---
-echo "Extracting site information from wp-config.php..."
+# --- Site Address ---
+# The manifest's home_url is the address WordPress stores in its home option (WP_HOME when
+# wp-config.php defines it): the address the site's content uses. Archives without it: WP_HOME
+# or WP_SITEURL in wp-config.php.
 WP_CONFIG_PATH="${WP_FILES_SOURCE_PATH}/wp-config.php" # Use the determined source path
-
-# Extract WP_HOME or WP_SITEURL
-SITE_URL_RAW=$(extract_define 'WP_HOME')
+SITE_URL_RAW="$(site_archive_manifest_value "${MANIFEST_PATH}" home_url)"
+SITE_URL_SOURCE="manifest.txt (home_url)"
+if [[ -z "$SITE_URL_RAW" ]]; then
+    SITE_URL_RAW=$(extract_define 'WP_HOME')
+    SITE_URL_SOURCE="wp-config.php (WP_HOME)"
+fi
 if [[ -z "$SITE_URL_RAW" ]]; then
     SITE_URL_RAW=$(extract_define 'WP_SITEURL')
+    SITE_URL_SOURCE="wp-config.php (WP_SITEURL)"
 fi
 
 if [[ -z "$SITE_URL_RAW" ]]; then
-    echo "FAILED: Could not extract WP_HOME or WP_SITEURL from wp-config.php."
+    echo "FAILED: The archive does not say the site's address: manifest.txt has no home_url, and wp-config.php defines neither WP_HOME nor WP_SITEURL."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
     exit 1
 fi
 
-# Extract domain from URL (remove http(s):// and potential trailing slash)
-SITE_URL=$(echo "$SITE_URL_RAW" | sed -E 's#^https?://##; s#/$##') # Use the clean domain extracted from URL
-# The domain the site's content refers to; the URLs are moved to the new domain if it changes below
-ORIGINAL_SITE_URL="${SITE_URL}"
+# The WordPress address (siteurl), which shows WordPress kept in its own folder
+WP_ADDRESS_RAW="$(site_archive_manifest_value "${MANIFEST_PATH}" site_url)"
+if [[ -z "$WP_ADDRESS_RAW" ]]; then
+    WP_ADDRESS_RAW=$(extract_define 'WP_SITEURL')
+fi
+echo "Site address from ${SITE_URL_SOURCE}: ${SITE_URL_RAW}"
+
+# EngineScript serves each site, and WordPress, at the root of its domain. A site in a subfolder
+# (example.com/blog), or with WordPress in its own folder (example.com/wp), is not imported: its
+# links, and for /wp the index.php that loads WordPress, would not work at the root.
+if site_address_has_path "${SITE_URL_RAW}" || { [[ -n "${WP_ADDRESS_RAW}" ]] && site_address_has_path "${WP_ADDRESS_RAW}"; }; then
+    echo "FAILED: EngineScript only hosts sites at the root of their domain, such as https://example.com."
+    echo "  Site address:      ${SITE_URL_RAW}"
+    echo "  WordPress address: ${WP_ADDRESS_RAW:-(not in the archive)}"
+    echo "Sites in a subfolder (such as /blog), and sites that keep WordPress in its own folder (such as /wp),"
+    echo "cannot be imported. Nothing was changed."
+    rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
+    exit 1
+fi
+
+# The address the site's URLs start with; they are moved to the new address below
+ORIGINAL_SITE_URL="$(site_address_without_scheme "${SITE_URL_RAW}")"
+# The domain the site is served at (the host, without www.); it can be changed below
+SITE_URL="$(site_address_domain "${SITE_URL_RAW}")"
+# The host in the site's new address: the domain, or www.<domain> when the import keeps www
+SITE_HOST="${SITE_URL}"
+ORIGINAL_USES_WWW=0
+if site_address_uses_www "${SITE_URL_RAW}"; then
+    ORIGINAL_USES_WWW=1
+fi
+
+# EngineScript serves sites at the bare domain, and WordPress redirects www.<domain> to it. A site
+# that used www can move there (the default) or keep www.<domain> as its address.
+choose_site_host() {
+    SITE_HOST="${SITE_URL}"
+    if (( ORIGINAL_USES_WWW == 0 )); then
+        return 0
+    fi
+    echo ""
+    echo "The site's address used www (${SITE_URL_RAW})."
+    echo "EngineScript serves sites at the bare domain, such as https://${SITE_URL}; www.${SITE_URL} then redirects to it."
+    if ! prompt_yes_no "Move the site to https://${SITE_URL}? Answer n to keep https://www.${SITE_URL}." "y" 300; then
+        SITE_HOST="www.${SITE_URL}"
+    fi
+}
+choose_site_host
+
+if ! validate_site_domain "${SITE_URL}"; then
+    echo "Warning: '${SITE_URL}' is not a domain this server can serve. Choose [C] Change below to enter the domain."
+fi
 
 # Extract DB Charset (optional, for reference)
 DB_CHARSET=$(extract_define 'DB_CHARSET')
@@ -391,10 +454,6 @@ if [[ -z "$DB_CHARSET" ]]; then
     DB_CHARSET="utf8mb4" # Default if not found
 fi
 
-echo "Extracted Information:"
-echo "  Domain (SITE_URL): ${SITE_URL}"
-echo "  Table Prefix (PREFIX): ${PREFIX}" # Already extracted from DB
-echo "  DB Charset: ${DB_CHARSET}"
 sleep 1 # Short pause
 
 # --- Confirmation and Correction Step ---
@@ -403,14 +462,20 @@ while true; do
   echo "-------------------------------------------------------"
   echo "${BOLD}Extracted Site Information:${NORMAL}"
   echo "-------------------------------------------------------"
-  echo "  Site URL:   ${SITE_URL}"
-  echo "  DB Prefix:  ${PREFIX}"
-  echo "  DB Charset: ${DB_CHARSET}"
+  echo "  Domain:      ${SITE_URL}"
+  echo "  New address: https://${SITE_HOST}"
+  echo "  Old URLs:    ${ORIGINAL_SITE_URL}"
+  echo "  DB Prefix:   ${PREFIX}"
+  echo "  DB Charset:  ${DB_CHARSET}"
   echo "-------------------------------------------------------"
   echo ""
   read -p "Are these details correct? ([Y] Yes / [C] Change / [E] Exit): " confirm_details
   case $confirm_details in
     [Yy]* )
+      if ! validate_site_domain "${SITE_URL}"; then
+          echo "'${SITE_URL}' is not a domain this server can serve. Choose [C] Change to enter the domain."
+          continue
+      fi
       echo "Details confirmed."
       sleep 1
       break # Exit the confirmation loop and proceed
@@ -418,23 +483,27 @@ while true; do
     [Cc]* )
       echo "Please enter the correct values:"
       
-      # Site URL input with validation. Takes https://example.com or example.com, and keeps the
-      # domain: EngineScript serves each site at the root of its own domain.
+      # Domain input with validation. Takes https://example.com or example.com, and keeps the
+      # domain: EngineScript serves each site at the root of its own domain, and a leading www.
+      # is dropped (the www question below decides it). The old URLs stay those of the archive,
+      # so they move to the new domain.
       while true; do
-          new_site_url=$(prompt_input "Enter correct Site URL" "${SITE_URL}" 300) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
-          if [[ -n "$new_site_url" ]]; then
-              [[ "$new_site_url" =~ ^https?:// ]] || new_site_url="https://${new_site_url}"
-              new_site_url="${new_site_url%/}"
-              if validate_url "$new_site_url" && [[ ! "$new_site_url" =~ ^https?://[^/]+/ ]]; then
-                  SITE_URL=$(echo "$new_site_url" | sed -E 's#^https?://##')
-                  break
-              else
-                  echo "Invalid URL format. Please use format: https://example.com or example.com (no path)"
-              fi
-          else
+          new_site_url=$(prompt_input "Enter correct domain" "${SITE_URL}" 300) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
+          if [[ -z "$new_site_url" ]]; then
               break  # Keep existing value
           fi
+          if site_address_has_path "${new_site_url}"; then
+              echo "Enter the domain without a path, for example example.com."
+              continue
+          fi
+          new_site_url="$(site_address_domain "${new_site_url}")"
+          if validate_site_domain "${new_site_url}"; then
+              SITE_URL="${new_site_url}"
+              break
+          fi
+          echo "Invalid domain. Please use format: example.com or https://example.com (no path)"
       done
+      choose_site_host
 
       # DB Prefix input with validation
       new_prefix=$(prompt_input "Enter correct DB Prefix" "${PREFIX}" 300 "^[a-zA-Z0-9_]+$" true) || { rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"; exit 1; }
@@ -475,7 +544,7 @@ DOMAIN="${SITE_URL}"
 # Verify if the extracted domain is already configured. Before anything else changes: the
 # Cloudflare step below can point the domain's A record at this server.
 if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
-  echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} (extracted from wp-config.php) is already configured in EngineScript.\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
+  echo -e "\n\n${BOLD}Pre-import Check: Failed${NORMAL}\n\nDomain ${DOMAIN} is already configured in EngineScript.\n\nIf you want to replace it, please remove the existing domain first using the ${BOLD}es.menu${NORMAL} command.\n\n"
   rm -rf "${WP_EXTRACTED_PATH}" "${WP_FILES_EXTRACTED_PATH}"
   exit 1
 else
@@ -488,7 +557,7 @@ configure_cloudflare_settings "${DOMAIN}"
 
 # Canonical URL used for import/search-replace workflows: the site's URLs move from
 # ORIGINAL_SITE_URL (http or https) to it.
-NEW_URL="https://${SITE_URL}" # Assume https for consistency
+NEW_URL="https://${SITE_HOST}" # Assume https for consistency
 
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-import.log"
@@ -515,7 +584,7 @@ echo "System Date: $(date)"
 
 # Domain Creation Variables (Generate *new* secure credentials for this server)
 source /usr/local/bin/enginescript/enginescript-variables.txt
-generate_import_db_name "${DOMAIN}" || exit 1
+generate_db_name "${DOMAIN}" || exit 1
 DB="${ES_DB_NAME}"
 USR="${RAND_CHAR16}"
 PSWD="${RAND_CHAR32}"
@@ -556,8 +625,10 @@ create_extra_wp_dirs "${SITE_URL}"
 # --- Create wp-config.php ---
 echo "Creating new wp-config.php with EngineScript settings..."
 cp -rf "/usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php" "${TARGET_WP_PATH}/wp-config.php"
-# Use *new* DB credentials and *original* prefix
+# Use *new* DB credentials and *original* prefix. The addresses (https://SEDURL) take the site's
+# host, www.<domain> when the import keeps www; the log and file paths keep the domain.
 sed -i \
+    -e "s|https://SEDURL|https://${SITE_HOST}|g" \
     -e "s|SEDWPDB|${DB}|g" \
     -e "s|SEDWPUSER|${USR}|g" \
     -e "s|SEDWPPASS|${PSWD}|g" \
@@ -575,33 +646,17 @@ fetch_wp_salts "${TARGET_WP_PATH}/wp-config.php"
 # Configure wp-config.php settings
 configure_wpconfig_settings "${SITE_URL}" "${TARGET_WP_PATH}/wp-config.php"
 
-# Create robots.txt file
-create_robots_txt "${SITE_URL}" "${TARGET_WP_PATH}"
+# Create robots.txt file (its Host and Sitemap lines name the site's host)
+create_robots_txt "${SITE_HOST}" "${TARGET_WP_PATH}"
 
 # --- Import Database ---
 echo "Importing database from ${DB_SOURCE_PATH}..." # DB_SOURCE_PATH is already set
 cd "${TARGET_WP_PATH}" # WP-CLI needs to be in the WP root
 
-# Handle compressed DB (using DB_SOURCE_PATH)
-IMPORT_FILE_PATH="${DB_SOURCE_PATH}"
-if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then
-    echo "Decompressing database..."
-    IMPORT_FILE_PATH="/tmp/${DOMAIN}_db_import.sql"
-    gunzip -c "${DB_SOURCE_PATH}" > "${IMPORT_FILE_PATH}"
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to decompress database file. Exiting."
-        exit 1
-    fi
-fi
-
-# Import the database using WP-CLI
-wp db import "${IMPORT_FILE_PATH}" --allow-root
-if [[ $? -ne 0 ]]; then
+# Import the database using WP-CLI. The dump (database/*.sql.gz, checked above) is decompressed
+# into the import, with no uncompressed copy on disk for other users to read.
+if ! (set -o pipefail; gunzip -c "${DB_SOURCE_PATH}" | wp db import - --allow-root); then
     echo "Failed to import database. Please check the database file and credentials. Exiting."
-    # Clean up temp file if created
-    if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then
-        rm -f "${IMPORT_FILE_PATH}"
-    fi
     exit 1
 fi
 echo "Database imported successfully."
@@ -611,29 +666,35 @@ if ! convert_myisam_tables_to_innodb "${DB}"; then
     echo "Some tables stay MyISAM (see the warnings above). The site works, but those tables lack InnoDB's crash safety and row locking."
 fi
 
-# Clean up temp file if created
-if [[ "${DB_SOURCE_PATH}" == *.gz ]]; then
-    rm -f "${IMPORT_FILE_PATH}"
-fi
-
 # --- Post Import Tasks ---
 
 # Search and Replace URLs
 echo "Running search-replace for URL consistency in the database..."
 echo "Ensuring URL is '${NEW_URL}' (the export's URLs were for ${ORIGINAL_SITE_URL})"
-HTTPS_ORIGINAL_URL="https://${ORIGINAL_SITE_URL}"
-HTTP_ORIGINAL_URL="http://${ORIGINAL_SITE_URL}"
 
 run_url_search_replace_if_present() {
-    local original_url="$1"
+    local original_url="$1" new_url="$2"
 
+    # Nothing to move when the address stays the same
+    if [[ "${original_url}" == "${new_url}" ]]; then
+        return 0
+    fi
     # Run search-replace directly; --report-changed-only will emit output only for changed rows.
-    wp search-replace "${original_url}" "${NEW_URL}" --all-tables --report-changed-only --allow-root
+    wp search-replace "${original_url}" "${new_url}" --all-tables --report-changed-only --allow-root
     return
 }
 
-run_url_search_replace_if_present "${HTTP_ORIGINAL_URL}"
-run_url_search_replace_if_present "${HTTPS_ORIGINAL_URL}"
+# The URLs as written in HTML and serialized data, and as escaped in JSON (page builders store
+# https:\/\/example.com), from http and https
+for url_scheme in http https; do
+    run_url_search_replace_if_present "${url_scheme}://${ORIGINAL_SITE_URL}" "${NEW_URL}"
+    run_url_search_replace_if_present "${url_scheme}:\\/\\/${ORIGINAL_SITE_URL}" "https:\\/\\/${SITE_HOST}"
+done
+
+# The stored addresses. wp-config.php defines WP_HOME and WP_SITEURL as the new address, so this
+# keeps the database in step with it, also when the old WordPress address used another host.
+wp option update home "${NEW_URL}" --skip-plugins --skip-themes --allow-root
+wp option update siteurl "${NEW_URL}" --skip-plugins --skip-themes --allow-root
 
 # Flush Cache and Rewrite Rules
 clear_wordpress_caches
@@ -670,16 +731,14 @@ fi
 
 # Final File Permissions
 echo "Setting final file permissions..."
-# Set ownership first
-chown -R www-data:www-data "${TARGET_WP_PATH}"
-# Set directory and file permissions
-find "${TARGET_WP_PATH}" -type d -print0 | sudo xargs -0 chmod 0755
-find "${TARGET_WP_PATH}" -type f -print0 | sudo xargs -0 chmod 0644
+# Ownership, then directory and file permissions. As www-data, as in the daily permissions job:
+# the imported files can include links, and a root chmod would follow them outside the site.
+set_www_data_tree "${TARGET_WP_PATH}"
 # Secure specific files
-chmod 600 "${TARGET_WP_PATH}/wp-config.php"
+run_as_www_data chmod 600 "${TARGET_WP_PATH}/wp-config.php"
 # Ensure wp-cron is executable if it exists
 if [[ -f "${TARGET_WP_PATH}/wp-cron.php" ]]; then
-    chmod +x "${TARGET_WP_PATH}/wp-cron.php"
+    run_as_www_data chmod +x "${TARGET_WP_PATH}/wp-cron.php"
 fi
 
 clear
@@ -690,8 +749,11 @@ perform_site_backup "${SITE_URL}"
 # Display final credentials summary
 display_credentials_summary "${SITE_URL}" "${DB}" "${PREFIX}" "${USR}" "${PSWD}"
 
-# Restart Services
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
+# Load the new site: delete any cached pages a previous site on this domain left, and reload
+# Nginx and PHP-FPM. Every other site keeps its caches, and Redis keeps running: Redis Object
+# Cache shows an error page on every site while Redis is unreachable.
+clear_site_nginx_cache "${DOMAIN}"
+reload_web_services
 
 echo ""
 echo "============================================================="
@@ -699,7 +761,7 @@ echo ""
 echo "        Domain import completed for ${SITE_URL}."
 echo ""
 echo "        Your domain should be available now at:"
-echo "        https://${SITE_URL}"
+echo "        ${NEW_URL}"
 echo ""
 echo "        ${BOLD}ACTION REQUIRED:${NORMAL}"
 echo "        Please open your web browser and thoroughly verify the site functionality."
@@ -717,7 +779,7 @@ echo ""
 
 # --- Site Verification Step ---
 echo ""
-if prompt_yes_no "Is the imported site at https://${SITE_URL} working correctly?" "n" 600; then
+if prompt_yes_no "Is the imported site at ${NEW_URL} working correctly?" "n" 600; then
     echo "Great! Proceeding with cleanup..."
     # Move import files to completed-backups directory
     BACKUP_DIR="/home/EngineScript/temp/site-import-completed-backups"

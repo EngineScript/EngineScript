@@ -40,14 +40,23 @@ if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.co
   echo "Error: Could not download MariaDB's repository setup script. MariaDB was not installed." >&2
   exit 1
 fi
-sudo bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log; then
+  rm -f "${REPO_SETUP}"
+  print_last_errors
+  echo "Error: MariaDB's repository setup failed. MariaDB was not installed." >&2
+  exit 1
+fi
 rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
 # Install MariaDB
 apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
-sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log
+if ! DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The MariaDB packages could not be installed. Stopping the MariaDB install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "MariaDB Installation"
 

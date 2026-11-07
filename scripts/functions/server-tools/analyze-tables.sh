@@ -18,28 +18,19 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-RUN_SQL=/tmp/analyze_all_tables.sql
-RUN_LOG=/tmp/analyze_all_tables.log
-
-MYSQL_HOST=localhost
-MYSQL_USER=root
-MYSQL_AUTH="-u${MYSQL_USER} -p${MARIADB_ADMIN_PASSWORD}"
-
-SQL="SELECT CONCAT('ANALYZE LOCAL TABLE \`',table_schema,'\`.\`',table_name,'\`;')"
-SQL="${SQL} FROM information_schema.tables WHERE table_schema NOT IN"
-SQL="${SQL} ('information_schema','performance_schema','mysql','sys','innodb')"
-SQL="${SQL} AND engine IS NOT NULL"
-
-# Create SQL Commands to run ANALYZE TABLE
-mariadb "${MYSQL_AUTH}" -ANe"${SQL}" > "${RUN_SQL}"
-
-# Execute ANALYZE TABLE Commands
-mariadb "${MYSQL_AUTH}" --table < "${RUN_SQL}" > "${RUN_LOG}" 2>&1
+# Update the index statistics of every table, which the query planner uses to choose indexes.
+# root logs in over the Unix socket, so no password is needed. --skip-write-binlog keeps the
+# statements out of the binary log (ANALYZE LOCAL TABLE). --silent shows only problems.
+echo "Analyzing all tables..."
+if mariadb-check --analyze --all-databases --skip-write-binlog --silent; then
+  echo ""
+  echo "${BOLD}Done${NORMAL}: every table was analyzed."
+else
+  echo ""
+  echo "${BOLD}Done, with errors${NORMAL}: see the messages above."
+fi
 
 # Ask user to acknowledge that the scan has completed before moving on
-echo ""
-echo "${BOLD}Done${NORMAL}"
-echo "Analyze Table Log: /tmp/analyze_all_tables.log"
 echo ""
 read -n 1 -s -r -p "Press any key to continue"
 echo ""

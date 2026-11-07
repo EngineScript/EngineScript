@@ -226,13 +226,11 @@ configure_cloudflare_settings() {
     cf_api() {
       local label="$1" method="$2" path="$3" body="${4:-}" response message
       local args=(-s --max-time 30 -X "${method}" "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}${path}"
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}"
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}"
         -H "Content-Type: application/json")
       if [[ -n "${body}" ]]; then
         args+=(--data "${body}")
       fi
-      response="$(curl "${args[@]}")"
+      response="$(cloudflare_curl "${args[@]}")"
       if grep -Eq '"success"[[:space:]]*:[[:space:]]*true' <<< "${response}"; then
         echo "  ✓ ${label}"
         return 0
@@ -245,9 +243,7 @@ configure_cloudflare_settings() {
 
     get_cf_zone_id() {
       local CF_DOMAIN="$1"
-      curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${CF_DOMAIN}&status=active" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      cloudflare_curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${CF_DOMAIN}&status=active" \
         -H "Content-Type: application/json" | \
         grep -o '"id":"[a-zA-Z0-9]*"' | head -n1 | cut -d'"' -f4
     }
@@ -316,9 +312,7 @@ configure_cloudflare_settings() {
       echo "✓ Server IP detected: ${SERVER_IP}"
       
       # Check if A record exists and matches server IP
-      A_RECORD_INFO=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=A&name=${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      A_RECORD_INFO=$(cloudflare_curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=A&name=${DOMAIN}" \
         -H "Content-Type: application/json")
       
       A_RECORD_ID=$(echo "$A_RECORD_INFO" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
@@ -338,9 +332,7 @@ configure_cloudflare_settings() {
       fi
 
       # Check if admin subdomain already exists (the first record, if there are several)
-      ADMIN_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=admin.${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      ADMIN_RECORD_ID=$(cloudflare_curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=admin.${DOMAIN}" \
         -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | head -n 1 | cut -d'"' -f4)
 
       ADMIN_RECORD="{\"comment\": \"Admin Control Panel\", \"content\": \"${DOMAIN}\", \"name\": \"admin\", \"proxied\": true, \"ttl\": 1, \"type\": \"CNAME\"}"
@@ -353,9 +345,7 @@ configure_cloudflare_settings() {
       fi
 
       # Check if www subdomain already exists (the first record, if there are several)
-      WWW_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=www.${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+      WWW_RECORD_ID=$(cloudflare_curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=www.${DOMAIN}" \
         -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | head -n 1 | cut -d'"' -f4)
 
       WWW_RECORD="{\"comment\": \"WWW Redirect\", \"content\": \"${DOMAIN}\", \"name\": \"www\", \"proxied\": true, \"ttl\": 1, \"type\": \"CNAME\"}"
@@ -680,20 +670,20 @@ display_credentials_summary() {
   echo "${BOLD}DB Password:${NORMAL}       ${PSWD}"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "MySQL Root and Domain login credentials backed up to:"
-  echo "/home/EngineScript/mysql-credentials/${SITE_URL}"
+  echo "The site's database credentials are saved in:"
+  echo "/home/EngineScript/mysql-credentials/${SITE_URL}.txt"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "Origin Certificate and Private Key have been backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
+  echo "Database and wp-config.php backups, and full site archives:"
+  echo "/home/EngineScript/site-backups/${SITE_URL}/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "Domain Vhost .conf file backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/nginx"
+  echo "SSL certificate and private key (EngineScript configuration backup):"
+  echo "/home/EngineScript/config-backups/enginescript/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "WordPress wp-config.php file backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
+  echo "Nginx configuration, including the site's vhost (daily):"
+  echo "/home/EngineScript/config-backups/nginx/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
 

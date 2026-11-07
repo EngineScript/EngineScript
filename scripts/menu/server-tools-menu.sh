@@ -85,7 +85,7 @@ while true
       "Display Server Info"
       "Failed Services and Recent Errors"
       "Nginx Configuration Test and Reload"
-      "Restart Services (Nginx, PHP-FPM, Redis)"
+      "Restart Services (Nginx, PHP-FPM)"
       "Service Status"
       "Exit Server Tools"
     )
@@ -119,7 +119,7 @@ while true
           pause
           break
           ;;
-        "Restart Services (Nginx, PHP-FPM, Redis)")
+        "Restart Services (Nginx, PHP-FPM)")
           /usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
           pause
           break

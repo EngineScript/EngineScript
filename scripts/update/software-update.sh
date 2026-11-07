@@ -41,8 +41,9 @@ debug_pause "fail2ban"
 print_last_errors
 debug_pause "Gixy-Next"
 
-# Update liburing
-/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
+# Update liburing. Its install script skips once the install has marked it complete;
+# ES_REFRESH_SOURCES=1 makes it build the version in enginescript-variables.txt.
+ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
 print_last_errors
 debug_pause "liburing"
 
@@ -82,10 +83,7 @@ debug_pause "WP-Scan"
 print_last_errors
 debug_pause "zImageOptimizer"
 
-# Update Zlib
-/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Zlib"
+# zlib is compiled into Nginx, so the Nginx update fetches its current version
 
 # Cleanup
 run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
@@ -99,15 +97,16 @@ echo "${BOLD}EngineScript has been updated.${NORMAL}"
 echo ""
 echo "This update includes:"
 echo "  - Adminer (if enabled)"
+echo "  - fail2ban"
+echo "  - Gixy-Next"
 echo "  - liburing"
+echo "  - Lynis"
 echo "  - MYSQLTuner"
-echo "  - PHP Malware Finder"
 echo "  - phpMyAdmin (if enabled)"
 echo "  - WP-CLI"
 echo "    - WP-CLI Packages"
 echo "  - WP-Scan"
 echo "  - zImageOptimizer"
-echo "  - zlib"
 echo ""
 echo "============================================================="
 echo ""

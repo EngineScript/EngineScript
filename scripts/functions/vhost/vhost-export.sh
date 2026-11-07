@@ -72,6 +72,20 @@ EXPORT_TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 COMBINED_EXPORT_FILENAME="${SELECTED_SITE}_enginescript_site_export_${EXPORT_TIMESTAMP}.zip"
 COMBINED_EXPORT_PATH="${SITE_EXPORT_DIR}/${COMBINED_EXPORT_FILENAME}"
 
+# EngineScript serves each site, and WordPress, at the root of its domain. A site whose address,
+# or WordPress address, was changed to a subfolder cannot be imported, so it is not exported.
+mapfile -t SITE_INFO < <(site_archive_site_info "${SITE_ARCHIVE_SITES_ROOT}/${SELECTED_SITE}/html")
+for address in "${SITE_INFO[@]:0:2}"; do
+    if [[ -n "${address}" ]] && site_address_has_path "${address}"; then
+        echo "ERROR: ${SELECTED_SITE} is not at the root of its domain:" >&2
+        echo "  Site address:      ${SITE_INFO[0]}" >&2
+        echo "  WordPress address: ${SITE_INFO[1]:-}" >&2
+        echo "EngineScript only exports and imports sites at the root of their domain, such as https://${SELECTED_SITE}." >&2
+        echo "Remove the path from WP_HOME and WP_SITEURL in ${SITE_ARCHIVE_SITES_ROOT}/${SELECTED_SITE}/html/wp-config.php, then export again. Nothing was exported." >&2
+        exit 1
+    fi
+done
+
 echo "Exporting ${SELECTED_SITE}'s database and files..."
 if ! build_site_archive "${SELECTED_SITE}" "${COMBINED_EXPORT_PATH}"; then
     echo "ERROR: The export of ${SELECTED_SITE} failed (see the message above)." >&2

@@ -20,6 +20,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 # These patches will change based on release. Don't assume they will work with a release other than the version they are intended for.
 
-# Patch Nginx
-cd "/usr/src/nginx-${NGINX_VER}"
-patch -p1 < /usr/local/bin/enginescript/patches/nginx/nginx_dyn_tls.patch
+# Patch Nginx. --forward --batch: never ask a question (patch would read the answer from the
+# terminal); a patch that does not apply fails instead, and the build stops.
+cd "/usr/src/nginx-${NGINX_VER}" || { echo "Error: Failed to change to /usr/src/nginx-${NGINX_VER}" >&2; exit 1; }
+if ! patch -p1 --forward --batch < /usr/local/bin/enginescript/patches/nginx/nginx_dyn_tls.patch; then
+  echo "Error: nginx_dyn_tls.patch does not apply to Nginx ${NGINX_VER}; the patch needs updating for this version." >&2
+  exit 1
+fi

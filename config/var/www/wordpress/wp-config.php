@@ -111,7 +111,7 @@ define( 'DISABLE_NAG_NOTICES', true );
 //define( 'THE_SEO_FRAMEWORK_HEADLESS', true );
 
 /* Contact Form 7 */
-//define( 'WPCF7_UPLOADS_TMP_DIR', '/var/www/sites/SEDURL/wp-content/uploads/wpcf7_uploads' );
+//define( 'WPCF7_UPLOADS_TMP_DIR', '/var/www/sites/SEDURL/html/wp-content/uploads/wpcf7_uploads' );
 
 /* Gravity Forms */
 //define( 'GF_LICENSE_KEY', 'PLACEHOLDER_KEY' );

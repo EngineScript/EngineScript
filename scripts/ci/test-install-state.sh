@@ -209,6 +209,79 @@ assert_installation_completion_passes "check_installation_completion backfills a
 assert_state_value "ADMIN_CONTROL_PANEL" "1"
 assert_state_value "PHPMYADMIN" "1"
 
+# run_install_step: a failed step stops the install; a completed step is skipped
+# shellcheck disable=SC2034 # read by debug_pause
+DEBUG_INSTALL=0
+STEP_DIR="${TEST_ASSET_DIR}/steps"
+mkdir -p "${STEP_DIR}"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${STEP_DIR}/succeeds.sh"
+printf '#!/usr/bin/env bash\nexit 1\n' > "${STEP_DIR}/fails.sh"
+chmod +x "${STEP_DIR}/succeeds.sh" "${STEP_DIR}/fails.sh"
+
+if (run_install_step "TEST_STEP_SUCCEEDS" "${STEP_DIR}/succeeds.sh" "Succeeding step"; echo "continued") > "${STEP_DIR}/out" 2>&1 \
+    && grep -qx "continued" "${STEP_DIR}/out"; then
+  pass "run_install_step continues after a step that succeeds"
+else
+  fail "run_install_step did not continue after a step that succeeds"
+fi
+
+if (run_install_step "TEST_STEP_FAILS" "${STEP_DIR}/fails.sh" "Failing step"; echo "continued") > "${STEP_DIR}/out" 2>&1; then
+  fail "run_install_step returned success after a step that failed"
+elif grep -qx "continued" "${STEP_DIR}/out"; then
+  fail "run_install_step carried on after a step that failed"
+else
+  pass "run_install_step stops the install when a step fails"
+fi
+
+# shellcheck disable=SC2034 # read by run_install_step through ${!flag_name}
+TEST_STEP_DONE=1
+if (run_install_step "TEST_STEP_DONE" "${STEP_DIR}/fails.sh" "Completed step") > /dev/null 2>&1; then
+  pass "run_install_step skips a step that is already complete"
+else
+  fail "run_install_step ran a step that is already complete"
+fi
+
+# clear_site_nginx_cache: one site's pages go, on both of its names; other sites keep theirs
+CACHE_DIR="${STEP_DIR}/nginx-cache"
+mkdir -p "${CACHE_DIR}/a/1" "${CACHE_DIR}/b/2"
+printf 'header\nKEY: httpsGETexample.com/about/\n' > "${CACHE_DIR}/a/1/bare"
+printf 'header\nKEY: httpsGETwww.example.com/\n' > "${CACHE_DIR}/a/1/www"
+printf 'header\nKEY: httpsGETstaging.example.com/\n' > "${CACHE_DIR}/b/2/staging"
+printf 'header\nKEY: httpsGETexample.com.au/\n' > "${CACHE_DIR}/b/2/other-tld"
+printf 'header\nKEY: httpsGETexampleXcom/\n' > "${CACHE_DIR}/b/2/dot-literal"
+ES_NGINX_CACHE_DIR="${CACHE_DIR}" clear_site_nginx_cache "example.com"
+CACHE_LEFT="$(cd "${CACHE_DIR}" && find . -type f -printf '%f\n' | sort | tr '\n' ' ')"
+if [[ "${CACHE_LEFT}" == "dot-literal other-tld staging " ]]; then
+  pass "clear_site_nginx_cache removes the domain's and www.<domain>'s pages only"
+else
+  fail "clear_site_nginx_cache left '${CACHE_LEFT}' (expected 'dot-literal other-tld staging ')"
+fi
+
+# cloudflare_curl: the email and key reach curl on standard input, never on its command line
+# shellcheck disable=SC2329  # called by cloudflare_curl
+curl() {
+  printf '%s\n' "$@" > "${STEP_DIR}/curl-args"
+  cat > "${STEP_DIR}/curl-config"
+}
+CF_ACCOUNT_EMAIL='admin@example.com' CF_GLOBAL_API_KEY='not-a-real-key"\x' \
+  cloudflare_curl -s -X GET "https://api.cloudflare.com/client/v4/zones" -H "Content-Type: application/json"
+unset -f curl
+if ! grep -q "not-a-real-key\|admin@example.com" "${STEP_DIR}/curl-args" \
+    && grep -Fxq -- "-K" "${STEP_DIR}/curl-args" \
+    && grep -Fxq "https://api.cloudflare.com/client/v4/zones" "${STEP_DIR}/curl-args"; then
+  pass "cloudflare_curl keeps the Cloudflare credentials off curl's command line"
+else
+  fail "cloudflare_curl put the credentials on curl's command line, or dropped the arguments"
+fi
+# shellcheck disable=SC1003  # the expected backslash escapes, not a quote
+CF_EXPECTED_CONFIG='header = "X-Auth-Email: admin@example.com"
+header = "X-Auth-Key: not-a-real-key\"\\x"'
+if [[ "$(cat "${STEP_DIR}/curl-config")" == "${CF_EXPECTED_CONFIG}" ]]; then
+  pass "cloudflare_curl passes the headers as an escaped curl config"
+else
+  fail "cloudflare_curl passed this config: $(cat "${STEP_DIR}/curl-config")"
+fi
+
 echo ""
 echo "======================================================="
 echo "  RESULTS: ${TESTS_PASSED} passed, ${TESTS_FAILED} failed"

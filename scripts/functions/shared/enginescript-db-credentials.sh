@@ -33,11 +33,10 @@ MULTIPART_PUBLIC_SUFFIXES=(
   "co.uk" "org.uk" "gov.uk" "ac.uk"
   "com.au" "net.au" "org.au"
   "co.nz" "org.nz"
+  "co.jp"
   "com.br" "com.sg" "com.my" "com.mx"
   "co.za" "com.tr" "com.hk"
 )
-MULTIPART_SUFFIX_CASE_PATTERN="$(printf '%s|' "${MULTIPART_PUBLIC_SUFFIXES[@]}")"
-MULTIPART_SUFFIX_CASE_PATTERN="${MULTIPART_SUFFIX_CASE_PATTERN%|}"
 
 
 #----------------------------------------------------------------------------------
@@ -70,21 +69,24 @@ validate_db_identifier() {
 
 
 #----------------------------------------------------------------------------------
-# Generate a database name using the vhost-install method.
-# Parses the domain, generates a hash, constructs the name with random suffix,
-# enforces the 64-char MariaDB identifier limit.
+# Generate the database name for a new or imported site.
+# The domain without its public suffix, with every character other than a letter or digit
+# turned into "_" (and "db_" in front when it starts with a digit), then a hash of the full
+# domain and a random suffix. Enforces the 64-char MariaDB identifier limit.
+#   example.com      -> example_<hash>_<rand>
+#   my-site.co.uk    -> my_site_<hash>_<rand>
+#   1password.com    -> db_1password_<hash>_<rand>
+#   blog.example.com -> blog_example_<hash>_<rand>
 #
 # Arguments:
 #   $1 - DOMAIN (e.g. "wordpresstesting.com" or "example.co.uk")
 #
-# Requires: RAND_CHAR4 (call generate_random_credentials first)
+# Requires: RAND_CHAR4 (set via enginescript-variables.txt)
 # Sets:     ES_DB_NAME (the constructed database name)
 #----------------------------------------------------------------------------------
-generate_install_db_name() {
+generate_db_name() {
   local DOMAIN="$1"
-  local domain_input="${DOMAIN}"
-  local domain_without_tld
-  local domain_parts
+  local domain_without_tld="${DOMAIN%.*}"
   local public_suffix
   local domain_hash
   local db_name_suffix
@@ -92,18 +94,20 @@ generate_install_db_name() {
   local expected_db_name_suffix_len=14
   local max_domain_without_tld_len
 
-  IFS='.' read -r -a domain_parts <<< "${domain_input}"
-  domain_without_tld="${domain_input%.*}"
-  if (( ${#domain_parts[@]} >= 3 )); then
-    public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
-    case "${public_suffix}" in
-      ${MULTIPART_SUFFIX_CASE_PATTERN})
-      domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
-        ;;
-    esac
+  for public_suffix in "${MULTIPART_PUBLIC_SUFFIXES[@]}"; do
+    if [[ "${DOMAIN}" == *".${public_suffix}" ]]; then
+      domain_without_tld="${DOMAIN%".${public_suffix}"}"
+      break
+    fi
+  done
+
+  # Hyphens and the dots of a subdomain are not allowed in the identifier; neither is a leading digit
+  domain_without_tld="${domain_without_tld//[^A-Za-z0-9]/_}"
+  if [[ ! "${domain_without_tld}" =~ ^[A-Za-z] ]]; then
+    domain_without_tld="db_${domain_without_tld}"
   fi
 
-  # RAND_CHAR4 is a random string (length 4) set by generate_random_credentials.
+  # RAND_CHAR4 is a random string (length 4) from enginescript-variables.txt.
   # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
   # Include a stable hash of the full domain to avoid collisions when truncation occurs.
   domain_hash="$(printf '%s' "${DOMAIN}" | sha256sum | awk '{print $1}' | cut -c1-8)"
@@ -124,28 +128,6 @@ generate_install_db_name() {
   fi
   ES_DB_NAME="${domain_without_tld}${db_name_suffix}"
 
-  # Validate DB identifier before writing credentials file or interpolating into SQL
-  validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
-}
-
-
-#----------------------------------------------------------------------------------
-# Generate a database name using the vhost-import method.
-# Strips the top-level domain and appends a 4-character random suffix.
-#
-# Arguments:
-#   $1 - DOMAIN (e.g. "importtest.com")
-#
-# Requires: RAND_CHAR4 (set via enginescript-variables.txt)
-# Sets:     ES_DB_NAME (the constructed database name)
-#----------------------------------------------------------------------------------
-generate_import_db_name() {
-  local DOMAIN="$1"
-  local domain_base="${DOMAIN}"
-  local SANDOMAIN="${domain_base%.*}"
-  
-  ES_DB_NAME="${SANDOMAIN}_${RAND_CHAR4}"
-  
   # Validate DB identifier before writing credentials file or interpolating into SQL
   validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
 }

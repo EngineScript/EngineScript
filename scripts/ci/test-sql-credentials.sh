@@ -103,14 +103,38 @@ fi
 
 # --- Step 2: Generate install DB name ---
 echo ""
-echo "Step 2: generate_install_db_name"
+echo "Step 2: generate_db_name"
+
+# Every domain Create Domain and Import Domain accept must give a valid database name:
+# hyphens, a leading digit, multi-part suffixes, subdomains, and names past the 64-char limit
+LONG_LABEL="$(printf 'a%.0s' {1..63})"
+while IFS='|' read -r test_domain expected_base; do
+  if generate_db_name "${test_domain}" && [[ ${#ES_DB_NAME} -le 64 ]] \
+      && [[ "${ES_DB_NAME}" =~ ^${expected_base}_[0-9a-f]{8}_${RAND_CHAR4}$ ]]; then
+    pass "generate_db_name ${test_domain}: '${ES_DB_NAME}'"
+  else
+    fail "generate_db_name ${test_domain}: got '${ES_DB_NAME:-}' (expected ${expected_base}_<hash>_${RAND_CHAR4}, at most 64 characters)"
+  fi
+done << EOF
+wordpresstesting.com|wordpresstesting
+my-site.com|my_site
+1password.com|db_1password
+example.co.uk|example
+my-shop.com.au|my_shop
+example.co.jp|example
+blog.example.com|blog_example
+blog.example.co.uk|blog_example
+x.io|x
+${LONG_LABEL}.${LONG_LABEL}.com|a{50}
+EOF
+
 INSTALL_DOMAIN="wordpresstesting.com"
-generate_install_db_name "${INSTALL_DOMAIN}" || { fail "generate_install_db_name returned non-zero"; }
+generate_db_name "${INSTALL_DOMAIN}" || { fail "generate_db_name returned non-zero"; }
 
 if [[ -n "${ES_DB_NAME:-}" ]]; then
   pass "ES_DB_NAME is set: '${ES_DB_NAME}'"
 else
-  fail "ES_DB_NAME is empty after generate_install_db_name"
+  fail "ES_DB_NAME is empty after generate_db_name"
 fi
 
 if [[ ${#ES_DB_NAME} -le 64 ]]; then
@@ -208,11 +232,11 @@ fi
 
 # --- Step 2: Domain name construction (import method) ---
 echo ""
-echo "Step 2: generate_import_db_name"
+echo "Step 2: generate_db_name"
 IMPORT_DOMAIN="importtest.com"
 DB_CHARSET="utf8mb4"
 
-generate_import_db_name "${IMPORT_DOMAIN}" || { fail "generate_import_db_name returned non-zero"; }
+generate_db_name "${IMPORT_DOMAIN}" || { fail "generate_db_name returned non-zero"; }
 DB="${ES_DB_NAME}"
 USR="${RAND_CHAR16}"
 PSWD="${RAND_CHAR32}"
@@ -220,7 +244,7 @@ GENERATED_IMPORT_DB="${DB}"
 GENERATED_IMPORT_USR="${USR}"
 GENERATED_IMPORT_PSWD="${PSWD}"
 
-if [[ -n "${DB}" && "${DB}" == "importtest_${RAND_CHAR4}" ]]; then
+if [[ -n "${DB}" && "${DB}" =~ ^importtest_[0-9a-f]{8}_${RAND_CHAR4}$ ]]; then
   pass "Import DB constructed and assigned like vhost-import.sh: '${DB}'"
 else
   fail "Import DB construction unexpected: '${DB}'"

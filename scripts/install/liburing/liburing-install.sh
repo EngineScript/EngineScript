@@ -19,7 +19,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Start Main Script
 
 source /etc/enginescript/install-state.conf
-if [[ "${LIBURING}" = 1 ]]; then
+# ES_REFRESH_SOURCES=1 (from software-update.sh): build the current version even after the install
+if [[ "${LIBURING}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
     echo "LIBURING script has already run"
     exit 0
 fi
@@ -28,14 +29,14 @@ fi
 return_to_src
 
 # Official liburing Download
-download_and_extract "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" "/usr/src/liburing-${LIBURING_VER}.tar.gz"
-cd "/usr/src/liburing-liburing-${LIBURING_VER}"
+download_and_extract "https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VER}.tar.gz" "/usr/src/liburing-${LIBURING_VER}.tar.gz" || { echo "Error: Failed to download/extract liburing." >&2; exit 1; }
+cd "/usr/src/liburing-liburing-${LIBURING_VER}" || { echo "Error: Failed to change to /usr/src/liburing-liburing-${LIBURING_VER}" >&2; exit 1; }
 
 # Compile liburing
-make -j"${CPU_COUNT}"
+make -j"${CPU_COUNT}" || { echo "Error: Failed to compile liburing." >&2; exit 1; }
 
 # Install liburing
-make install
+make install || { echo "Error: Failed to install liburing." >&2; exit 1; }
 
 # Old Method
 #rm -rf /usr/src/liburing

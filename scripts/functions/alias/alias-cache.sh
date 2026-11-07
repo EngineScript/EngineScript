@@ -23,12 +23,9 @@ echo -e "\nClearing Caches\n\n"
 # Clear all caches, transients, and rewrites for all sites
 clear_all_wordpress_caches
 
-# Clear system caches (Nginx, OPcache, Redis)
+# Clear system caches (Nginx, OPcache, Redis). No restart is needed: the FastCGI cache files are
+# deleted, OPcache is cleared by reloading PHP-FPM, and Redis is emptied while it runs. A Redis
+# restart would show Redis Object Cache's error page on every site while it starts.
 clear_all_system_caches
 
-# Restart services
-restart_service "nginx"
-restart_php_fpm
-restart_service "redis-server"
-
-echo "All caches cleared and services restarted successfully."
+echo "All caches cleared."

@@ -53,9 +53,18 @@ if [[ "${FETCHED}" != "1" ]]; then
     fi
     cd /usr/local/bin/enginescript || { echo "Error: Failed to change to /usr/local/bin/enginescript" >&2; exit 1; }
     echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
-    git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-    git checkout -f "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log
-    git reset --hard FETCH_HEAD 2>> /tmp/enginescript_install_errors.log
+    # Stop when the fetch fails: FETCH_HEAD would still name the previous fetch, which may be the
+    # other branch if TEST_MODE changed since. After a successful fetch it names the new commit.
+    if ! git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        echo "Error: Could not fetch the ${ENGINESCRIPT_BRANCH} branch from GitHub. EngineScript was not updated." >&2
+        exit 1
+    fi
+    if ! git checkout -f -B "${ENGINESCRIPT_BRANCH}" FETCH_HEAD 2>> /tmp/enginescript_install_errors.log; then
+        print_last_errors
+        echo "Error: Could not switch EngineScript to the fetched ${ENGINESCRIPT_BRANCH} branch. EngineScript was not updated." >&2
+        exit 1
+    fi
     print_last_errors
     debug_pause "EngineScript Git Pull"
 

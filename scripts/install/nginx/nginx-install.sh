@@ -25,27 +25,47 @@ if [[ "${NGINX}" = 1 ]]; then
 fi
 
 # Nginx Source Downloads
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The Nginx source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Nginx Source Downloads"
 
 # Brotli
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The Brotli module build failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Brotli"
 
 # Retrieve Latest zlib
-/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The zlib source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "zlib"
 
 # Retrieve Latest PCRE2
-/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The PCRE2 source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "PCRE2"
 
 # Patch Nginx
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: Patching Nginx failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Patch Nginx"
 

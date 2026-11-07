@@ -134,12 +134,20 @@ fi
 # 2. Download and compile while the running Nginx keeps serving
 
 # Nginx Source Downloads
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The Nginx source download failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Nginx Source Downloads"
 
 # Retrieve Latest Brotli
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The Brotli module build failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Brotli"
 
@@ -148,22 +156,38 @@ debug_pause "Brotli"
 # the versions in enginescript-variables.txt, which may be newer than the ones the server has.
 
 # Retrieve Latest OpenSSL
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
+if ! ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The OpenSSL source download failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "OpenSSL"
 
 # Retrieve Latest zlib
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
+if ! ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The zlib source download failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "zlib"
 
 # Retrieve Latest PCRE2
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
+if ! ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: The PCRE2 source download failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "PCRE2"
 
 # Patch Nginx
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log; then
+  print_last_errors
+  echo "Error: Patching Nginx failed. The update stopped; Nginx is still running the previous version." >&2
+  exit 1
+fi
 print_last_errors
 debug_pause "Patch Nginx"
 

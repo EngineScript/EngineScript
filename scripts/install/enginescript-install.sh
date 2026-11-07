@@ -259,14 +259,17 @@ if check_installation_completion "true"; then
     echo "✅ System optimization and tools"
     echo ""
 else
+    # No reboot: it would clear the list of missing steps above, and the install is not done
     echo "⚠️  WARNING: Installation verification detected some incomplete components."
     echo "⚠️  This may indicate errors during installation that need attention."
     echo ""
     echo "RECOMMENDATION:"
     echo "1. Review /var/log/EngineScript/install-error-log.log for any errors"
-    echo "2. Use 'es.debug' command after reboot to generate a diagnostic report"
-    echo "3. Consider re-running the installation script to complete missing components"
+    echo "2. Use the 'es.debug' command to generate a diagnostic report"
+    echo "3. Run 'es.install' again to complete the missing components"
     echo ""
+    echo "The server was not rebooted; it reboots when an install completes."
+    exit 1
 fi
 
 echo "============================================================="

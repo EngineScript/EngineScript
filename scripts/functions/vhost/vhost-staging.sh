@@ -91,13 +91,11 @@ cf_enabled() {
 # Usage: cf_call <METHOD> <path after /client/v4> [JSON body]
 cf_call() {
   local args=(-s --max-time 30 -X "$1" "https://api.cloudflare.com/client/v4$2"
-    -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}"
-    -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}"
     -H "Content-Type: application/json")
   if [[ -n "${3:-}" ]]; then
     args+=(--data "$3")
   fi
-  curl "${args[@]}"
+  cloudflare_curl "${args[@]}"
 }
 
 cf_succeeded() {
@@ -279,7 +277,9 @@ copy_files() {
 # Point the copied wp-config.php at the staging database, URL, logs, and Redis keys
 configure_wp_config() {
   local wp_config="${STAGING_ROOT}/wp-config.php" live="${DOMAIN//./\\.}"
-  sed -i -e "s|//${live}|//${STAGING}|g" \
+  # www.<domain> first: the address of a site that kept www when it was imported
+  sed -i -e "s|//www\\.${live}|//${STAGING}|g" \
+         -e "s|//${live}|//${STAGING}|g" \
          -e "s|/var/www/sites/${live}/|/var/www/sites/${STAGING}/|g" \
          -e "s|/var/log/domains/${live}/${live}-|/var/log/domains/${STAGING}/${STAGING}-|g" "${wp_config}"
   if ! set_wp_config_string "${wp_config}" DB_NAME "${STAGING_DB}" \
@@ -303,9 +303,15 @@ copy_database() {
     return 1
   fi
   log "Copied the database ${LIVE_DB} to ${STAGING_DB}."
-  # The URL as written in HTML and serialized data, the URL as escaped in JSON, and the file path
-  for from in "//${DOMAIN}" "\\/\\/${DOMAIN}" "/var/www/sites/${DOMAIN}/"; do
-    to="${from/${DOMAIN}/${STAGING}}"
+  # The URL as written in HTML and serialized data, the URL as escaped in JSON, and the file path.
+  # www.<domain> first, the address of a site that kept www when it was imported: it moves to the
+  # staging domain too, not to www.<staging domain>, which the certificate does not cover.
+  for from in "//www.${DOMAIN}" "\\/\\/www.${DOMAIN}" "//${DOMAIN}" "\\/\\/${DOMAIN}" "/var/www/sites/${DOMAIN}/"; do
+    if [[ "${from}" == *"www.${DOMAIN}" ]]; then
+      to="${from%"www.${DOMAIN}"}${STAGING}"
+    else
+      to="${from/${DOMAIN}/${STAGING}}"
+    fi
     wp_staging search-replace "${from}" "${to}" --all-tables-with-prefix --skip-columns=guid --report-changed-only || return 1
   done
 }

@@ -33,7 +33,7 @@ clean_directory "/usr/src/zlib-${ZLIB_VER}"
 if [[ -f "/usr/src/zlib-${ZLIB_VER}.tar.gz" ]]; then
   rm -f "/usr/src/zlib-${ZLIB_VER}.tar.gz"
 fi
-download_and_extract "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz" "/usr/src/zlib-${ZLIB_VER}.tar.gz"
+download_and_extract "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_VER}.tar.gz" "/usr/src/zlib-${ZLIB_VER}.tar.gz" || { echo "Error: Failed to download/extract zlib." >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-ng" ]]; then
     rm -f "/usr/src/zlib-ng-${ZLIB_NG_VER}.tar.gz"
   fi
 
-  download_and_extract "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_NG_VER}.tar.gz" "/usr/src/zlib-ng-${ZLIB_NG_VER}.tar.gz"
+  download_and_extract "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_NG_VER}.tar.gz" "/usr/src/zlib-ng-${ZLIB_NG_VER}.tar.gz" || { echo "Error: Failed to download/extract zlib-ng." >&2; exit 1; }
 
   # Create a configure wrapper
   #
@@ -63,8 +63,8 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-ng" ]]; then
   #
   # Solution: rename the real configure and create a wrapper that always
   # passes --zlib-compat.
-  cd "/usr/src/zlib-ng-${ZLIB_NG_VER}"
-  mv configure configure.zlib-ng
+  cd "/usr/src/zlib-ng-${ZLIB_NG_VER}" || { echo "Error: Failed to change to /usr/src/zlib-ng-${ZLIB_NG_VER}" >&2; exit 1; }
+  mv configure configure.zlib-ng || { echo "Error: zlib-ng has no configure script to wrap." >&2; exit 1; }
   cat > configure << 'WRAPPER'
 #!/bin/sh
 exec "$(dirname "$0")/configure.zlib-ng" --zlib-compat "$@"
@@ -97,7 +97,7 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   if ! command -v cargo >/dev/null 2>&1; then
     echo "Installing Rust toolchain (required for zlib-rs)..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source "$HOME/.cargo/env"
+    source "$HOME/.cargo/env" || { echo "Error: The Rust toolchain was not installed." >&2; exit 1; }
   fi
 
   echo "Rust version: $(rustc --version)"
@@ -107,13 +107,15 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   return_to_src
 
   clean_directory "/usr/src/zlib-rs"
-  git clone --branch "${ZLIB_RS_VER}" --depth 1 https://github.com/trifectatechfoundation/zlib-rs.git /usr/src/zlib-rs
+  git clone --branch "${ZLIB_RS_VER}" --depth 1 https://github.com/trifectatechfoundation/zlib-rs.git /usr/src/zlib-rs \
+    || { echo "Error: Failed to clone zlib-rs ${ZLIB_RS_VER}." >&2; exit 1; }
 
-  cd /usr/src/zlib-rs/libz-rs-sys-cdylib
+  cd /usr/src/zlib-rs/libz-rs-sys-cdylib || { echo "Error: Failed to change to /usr/src/zlib-rs/libz-rs-sys-cdylib" >&2; exit 1; }
 
   # Build for a fixed CPU level (see get_x86_64_level in enginescript-common.sh)
   RUSTFLAGS="-Ctarget-cpu=$(get_x86_64_level) -Cllvm-args=-enable-dfa-jump-thread" \
-    cargo build --release --features c-allocator
+    cargo build --release --features c-allocator \
+    || { echo "Error: Failed to build zlib-rs." >&2; exit 1; }
 
   echo "zlib-rs library built successfully"
 
@@ -121,9 +123,12 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   rm -rf "${ZLIB_RS_PREFIX}"
   mkdir -p "${ZLIB_RS_PREFIX}/lib" "${ZLIB_RS_PREFIX}/include"
 
-  cp /usr/src/zlib-rs/target/release/libz_rs.a "${ZLIB_RS_PREFIX}/lib/libz.a"
-  cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zlib.h "${ZLIB_RS_PREFIX}/include/"
-  cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zconf.h "${ZLIB_RS_PREFIX}/include/"
+  if ! cp /usr/src/zlib-rs/target/release/libz_rs.a "${ZLIB_RS_PREFIX}/lib/libz.a" \
+    || ! cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zlib.h "${ZLIB_RS_PREFIX}/include/" \
+    || ! cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zconf.h "${ZLIB_RS_PREFIX}/include/"; then
+    echo "Error: Failed to install zlib-rs to ${ZLIB_RS_PREFIX}." >&2
+    exit 1
+  fi
 
   echo "zlib-rs ${ZLIB_RS_VER} installed to ${ZLIB_RS_PREFIX}"
 fi

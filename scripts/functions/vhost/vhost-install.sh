@@ -37,8 +37,43 @@ MIN_WP_ADMIN_PASSWORD_LENGTH=12
 # Note: The following functions and constants are now defined in enginescript-db-credentials.sh:
 #   - escape_sql_string_literal()
 #   - validate_db_identifier()
-#   - MULTIPART_PUBLIC_SUFFIXES / MULTIPART_SUFFIX_CASE_PATTERN
+#   - MULTIPART_PUBLIC_SUFFIXES / generate_db_name()
 #   - DB_USER_MIN_LENGTH / DB_USER_MAX_LENGTH
+
+# Check the WordPress admin settings from the install options file. Runs before anything is
+# created, so a setting that fails stops the script before Cloudflare, the vhost, the certificate,
+# and the database are set up.
+validate_wp_admin_settings() {
+  if [[ -z "${WP_ADMIN_USERNAME}" || -z "${WP_ADMIN_PASSWORD}" || -z "${WP_ADMIN_EMAIL}" ]]; then
+    echo "Error: WP admin credentials must not be empty (WP_ADMIN_USERNAME, WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL)." >&2
+    return 1
+  fi
+
+  # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
+  if [[ ${#WP_ADMIN_USERNAME} -lt ${MIN_WP_ADMIN_USERNAME_LENGTH} || ${#WP_ADMIN_USERNAME} -gt ${MAX_WP_ADMIN_USERNAME_LENGTH} ]]; then
+    echo "Error: WP_ADMIN_USERNAME must be between ${MIN_WP_ADMIN_USERNAME_LENGTH} and ${MAX_WP_ADMIN_USERNAME_LENGTH} characters long." >&2
+    return 1
+  fi
+  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    echo "Error: WP_ADMIN_USERNAME is invalid. Use letters, numbers, underscore, dot, or hyphen, and start with a letter or number." >&2
+    return 1
+  fi
+
+  if ! validate_email "${WP_ADMIN_EMAIL}"; then
+    echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
+    return 1
+  fi
+
+  # Password: minimum complexity requirements
+  if [[ ${#WP_ADMIN_PASSWORD} -lt ${MIN_WP_ADMIN_PASSWORD_LENGTH} ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
+    echo "Error: WP_ADMIN_PASSWORD must be at least ${MIN_WP_ADMIN_PASSWORD_LENGTH} characters and include uppercase, lowercase, number, and special character." >&2
+    return 1
+  fi
+}
 
 # Check if services are running
 check_required_services
@@ -167,6 +202,10 @@ echo ""
 # Keep WORDPRESS_PROMPT_TIMEOUT variable for this prompt.
 if prompt_yes_no "Would you like to install WordPress on this domain?" "y" "${WORDPRESS_PROMPT_TIMEOUT}"; then
   INSTALL_WORDPRESS="1"
+  if ! validate_wp_admin_settings; then
+    echo "Fix the setting in /home/EngineScript/enginescript-install-options.txt (es.config), then run Create Domain again. Nothing was changed." >&2
+    exit 1
+  fi
   echo "WordPress will be installed on ${DOMAIN}."
 else
   INSTALL_WORDPRESS="0"
@@ -211,8 +250,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   source /usr/local/bin/enginescript/enginescript-variables.txt
   PREFIX="${RAND_CHAR2}"
 
-  # Generate the database name using the install method (domain parsing, hash, suffix)
-  generate_install_db_name "${DOMAIN}" || exit 1
+  # Generate the database name (domain without its suffix, hash, random suffix)
+  generate_db_name "${DOMAIN}" || exit 1
   database_name="${ES_DB_NAME}"
   database_user="${RAND_CHAR16}"
   database_password="${RAND_CHAR32}"
@@ -258,12 +297,11 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Create robots.txt file
   create_robots_txt "${DOMAIN}" "/var/www/sites/${DOMAIN}/html"
 
-  # WP File Permissions
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
-  chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
-  chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  # WP File Permissions. As www-data, as in the daily permissions job: the site can change its
+  # files, and a link it plants would lead a root chmod outside the site.
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
+  run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
+  run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
 
   # WP-CLI Finalizing Install
   clear
@@ -271,44 +309,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   echo "Finalizing ${DOMAIN} Install:"
   echo "============================================="
 
-  # WP-CLI Install WordPress
+  # WP-CLI Install WordPress (the admin settings were checked before anything was created)
   cd "/var/www/sites/${DOMAIN}/html"
-
-  # Validate WordPress admin credentials before install
-  if [[ -z "${WP_ADMIN_USERNAME}" || -z "${WP_ADMIN_PASSWORD}" || -z "${WP_ADMIN_EMAIL}" ]]; then
-      echo "Error: WP admin credentials must not be empty (WP_ADMIN_USERNAME, WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL)." >&2
-      exit 1
-  fi
-
-  # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
-  # Use explicit length checks for clarity and maintainability, then validate allowed characters.
-  if [[ ${#WP_ADMIN_USERNAME} -lt ${MIN_WP_ADMIN_USERNAME_LENGTH} || ${#WP_ADMIN_USERNAME} -gt ${MAX_WP_ADMIN_USERNAME_LENGTH} ]]; then
-      echo "Error: WP_ADMIN_USERNAME must be between ${MIN_WP_ADMIN_USERNAME_LENGTH} and ${MAX_WP_ADMIN_USERNAME_LENGTH} characters long." >&2
-      exit 1
-  fi
-
-  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
-      echo "Error: WP_ADMIN_USERNAME is invalid. Use letters, numbers, underscore, dot, or hyphen, and start with a letter or number." >&2
-      exit 1
-  fi
-
-  # Email: basic format validation (practical, non-RFC-complete).
-  # Accepts common addresses like a@example.com and user.name+tag@example.co.uk.
-  EMAIL_REGEX='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
-  if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
-      echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
-      exit 1
-  fi
-
-  # Password: minimum complexity requirements
-  if [[ ${#WP_ADMIN_PASSWORD} -lt ${MIN_WP_ADMIN_PASSWORD_LENGTH} ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
-      echo "Error: WP_ADMIN_PASSWORD must be at least ${MIN_WP_ADMIN_PASSWORD_LENGTH} characters and include uppercase, lowercase, number, and special character." >&2
-      exit 1
-  fi
 
   wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
 
@@ -343,11 +345,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
   # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
   cd "/var/www/sites/${DOMAIN}"
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
-  chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
+  run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
+  run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
 
   clear
 
@@ -368,10 +368,8 @@ else
   cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${DOMAIN}/html/index.html"
   sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/var/www/sites/${DOMAIN}/html/index.html"
 
-  # Set file permissions
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
+  # Set file permissions (as www-data, see above)
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
 
   # Back up EngineScript's configuration, which holds the site's certificate and key (acme.sh)
   if ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh config; then
@@ -399,8 +397,11 @@ else
   sleep 3
 fi
 
-# Restart Services
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
+# Load the new site: delete any cached pages a previous site on this domain left, and reload
+# Nginx and PHP-FPM. Every other site keeps its caches, and Redis keeps running: Redis Object
+# Cache shows an error page on every site while Redis is unreachable.
+clear_site_nginx_cache "${DOMAIN}"
+reload_web_services
 
 echo ""
 echo "============================================================="

@@ -6,6 +6,47 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-06
 
+### 🔒 SITE TOOLS SECURITY FIXES
+
+- **Import Domain:** the database is now decompressed straight into the import. Before, it was unpacked to `/tmp/<domain>_db_import.sql`, which every user on the server, `www-data` included, could read for the length of the import, and which stayed behind when the import stopped.
+- **Cloudflare API key:** Create Domain, Import Domain, and Staging now give curl the Cloudflare account email and Global API key on standard input. They were on curl's command line, where any user on the server, `www-data` included, could read them with `ps` while a call ran.
+- **Create Domain and Import Domain:** the site's file permissions are now set as `www-data`, as the daily permissions job does. Root ran `chmod` over files the site can change, so a link planted by a hacked plugin could make root change a file outside the site.
+
+### 🐛 SITE TOOLS, INSTALL, AND UPDATE FIXES
+
+- **Create Domain and Import Domain:**
+  - Domains with a hyphen (`my-site.com`), a leading digit (`1password.com`), or a two-part ending (`example.co.uk`, `example.com.au`) no longer fail when the database is created. Before, the script stopped after Cloudflare, the vhost, and the certificate were already set up.
+  - Both now name the database the same way: the domain without its ending, with hyphens and dots turned into `_`, then a short hash and a random suffix (`my_site_6849d8a7_Ab3d`). Existing sites keep their database names.
+  - The summary at the end now names the credentials file with its `.txt` and points to the backup folders that exist today.
+  - When they finish, they reload Nginx and PHP-FPM instead of running `es.restart`. Before, setting up a site emptied every other site's caches (Redis, FastCGI, OPcache) and restarted Redis, so every site briefly showed Redis Object Cache's error page. Only cached pages left by an earlier site on the same domain are deleted.
+- **Create Domain:** the WordPress admin username, password, and email from the install options are checked right after you choose to install WordPress, before anything is created. Before, a weak password stopped the script after Cloudflare, the vhost, the certificate, and the database were set up.
+- **Import Domain:**
+  - The site's address and table prefix now come from the archive's `manifest.txt` (`home_url` and `table_prefix`), which EngineScript's exports and backups and the EngineScript Site Exporter plugin write. Before, the address came only from `WP_HOME` or `WP_SITEURL` in `wp-config.php`, which most sites do not define, so most imports from other hosts stopped. Archives without these lines still use `wp-config.php` and the table names in the dump.
+  - A site at `www.example.com` can now move to `example.com`, EngineScript's standard (the default), or keep `www.example.com` as its address. Either way both names are served, and WordPress redirects the other name to the site's address. The domain is checked before anything is created, and it can still be changed at the confirmation step.
+  - A site in a folder (`example.com/blog`), or with WordPress in its own folder (`example.com/wp`), is refused before anything is created. EngineScript only hosts sites at the root of their domain.
+  - URLs written as escaped JSON (`https:\/\/example.com`), which page builders store, are now moved to the new address too. After the URLs are moved, the stored `home` and `siteurl` addresses are set to the new address.
+- **Export Domain:** a site whose address was changed to a folder is refused with an error instead of exported, since Import Domain would refuse it.
+- **Staging:** a staging copy of a site that kept `www` now points to the staging domain. Before, its links and its `WP_HOME` kept `www.<domain>`, so it sent visitors to the live site.
+- **es.restart and es.cache:**
+  - `es.restart` (and Server Tools > Restart Services) now does what `es.help` says: it restarts Nginx and PHP-FPM. It no longer empties every cache or restarts Redis. Redis is started only when it is not running, and Nginx is not restarted when its configuration fails `nginx -t`.
+  - `es.cache` still clears every site's caches, but no longer restarts Nginx, PHP-FPM, and Redis afterwards. It reloads PHP-FPM, which is what clears OPcache; before, its OPcache step only emptied a file cache that is turned off.
+  - Neither command restarts a working Redis anymore, which showed Redis Object Cache's error page on every site while Redis started.
+- **Update Server Tools:** liburing is now updated to the version in `enginescript-variables.txt`; before, the step stopped at "already run". The zlib step was removed: zlib is built into Nginx, and the Nginx update fetches it. The closing list now names fail2ban, Gixy-Next, and Lynis, and no longer names PHP Malware Finder.
+- **Remove Domain:**
+  - You now choose the domain from the server's list of sites instead of typing a name and picking an ending from a short list, which left out endings such as `com.au` and `co.nz`. A domain that is not on the list (a site that was only partly set up) can still be typed in.
+  - It asks you to confirm the exact domain before removing anything.
+  - It now removes the site's certificate from acme.sh. Before, acme.sh kept renewing it and installed it again into `/etc/nginx/ssl/<domain>/`.
+  - It also removes the admin subdomain's logs and the site's cached pages. Exports made with Export Domain are kept, and the summary says where.
+- **Analyze Tables:** it now works. It could not log in to MariaDB before, so it analyzed nothing. It now runs `mariadb-check` as root over the local socket, with no password on the command line, and shows only problems.
+- **EngineScript update:** if fetching the new version from GitHub fails, the update now stops with an error instead of carrying on with the copy from the previous fetch.
+- **Nginx install and update:** a failed source download, Brotli build, or patch now stops the build. Before, only a failed compile did, so Nginx could be built without its patch. An update that stops this way leaves the running Nginx untouched. A patch that does not apply to a new Nginx version now fails instead of waiting for an answer at the terminal.
+- **Install:**
+  - An install step that fails now stops the install, with the step's name and where the errors are. Run `es.install` again after fixing the problem: it carries on from that step. Before, the install carried on, and later steps could fail because of the first one.
+  - PCRE2, zlib, liburing, PHP, and MariaDB no longer mark themselves complete after a failed download, build, repository setup, or configuration.
+  - When the final check finds steps that are not complete, the server is no longer rebooted, so the list of missing steps stays on screen.
+- **Import Domain instructions:** the highlighted and underlined text now shows; the colors it used were never defined.
+- **wp-config.php template:** the commented-out Contact Form 7 setting (`WPCF7_UPLOADS_TMP_DIR`) now points to the site's `html/wp-content/uploads/wpcf7_uploads` folder. It left out `html`, so uncommenting it gave a folder that does not exist. Existing sites keep their copy of the line; add `html/` to the path before uncommenting it there.
+
 ### 📦 FILES BACKUPS ARE NOW IMPORTABLE SITE ARCHIVES
 
 - **Files backups:**
