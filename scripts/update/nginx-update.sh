@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -217,12 +213,8 @@ debug_pause "Create Directories"
 print_last_errors
 debug_pause "Misc Nginx Stuff"
 
-# Tune Nginx
+# Tune Nginx (also syncs the HTTP/3 directives of nginx.conf and the vhosts with INSTALL_HTTP3)
 /usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh 2>> /tmp/enginescript_install_errors.log
-
-# Re-sync HTTP/3 directives after rebuild so existing vhosts match INSTALL_HTTP3.
-sync_nginx_http3_config 2>> /tmp/enginescript_install_errors.log
-
 print_last_errors
 debug_pause "Tune Nginx"
 
@@ -238,12 +230,6 @@ if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
   else
     echo ""
 fi
-
-# Remove .default Files
-rm -rf /etc/nginx/{*.default,*.dpkg-dist}
-
-# Remove debug symbols
-strip -s /usr/sbin/nginx*
 
 # Assign Nginx Permissions
 set_nginx_permissions

@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source shared vhost functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
@@ -57,7 +53,8 @@ build_default_url_validation_regex() {
   return 0
 }
 
-readonly DEFAULT_URL_VALIDATION_REGEX="$(build_default_url_validation_regex)"
+DEFAULT_URL_VALIDATION_REGEX="$(build_default_url_validation_regex)"
+readonly DEFAULT_URL_VALIDATION_REGEX
 URL_VALIDATION_REGEX="${URL_VALIDATION_REGEX:-$DEFAULT_URL_VALIDATION_REGEX}"
 
 # Validate ZIP archive entries to prevent path traversal (Zip Slip)
@@ -651,7 +648,7 @@ create_robots_txt "${SITE_HOST}" "${TARGET_WP_PATH}"
 
 # --- Import Database ---
 echo "Importing database from ${DB_SOURCE_PATH}..." # DB_SOURCE_PATH is already set
-cd "${TARGET_WP_PATH}" # WP-CLI needs to be in the WP root
+cd "${TARGET_WP_PATH}" || { echo "Error: Failed to change to ${TARGET_WP_PATH}" >&2; exit 1; } # WP-CLI needs to be in the WP root
 
 # Import the database using WP-CLI. The dump (database/*.sql.gz, checked above) is decompressed
 # into the import, with no uncompressed copy on disk for other users to read.

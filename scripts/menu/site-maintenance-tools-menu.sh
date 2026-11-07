@@ -7,36 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
-
-# Ask a yes/no question; true for yes. Usage: confirm <question> [default y|n]
-confirm() {
-  local answer
-  if [[ "${2:-n}" == "y" ]]; then
-    read -r -p "$1 [Y/n] " answer
-    [[ ! "${answer}" =~ ^[Nn] ]]
-  else
-    read -r -p "$1 [y/N] " answer
-    [[ "${answer}" =~ ^[Yy] ]]
-  fi
-}
 
 # Update one site's WordPress core, database, plugins, themes, and translations (for_each_site).
 # Every step runs even if one fails, so one broken plugin does not hold up the rest.
@@ -94,7 +70,7 @@ while true
           echo "This deletes every site's expired transients. It can also delete every post revision"
           echo "(the saved earlier versions of posts and pages); those cannot be restored afterwards."
           CLEAN_REVISIONS=0
-          confirm "Delete post revisions too?" && CLEAN_REVISIONS=1
+          prompt_yes_no "Delete post revisions too?" n && CLEAN_REVISIONS=1
           for_each_site clean_up_database
           pause
           break
@@ -104,10 +80,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh
           echo ""
           echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "Fix Permissions (All Domains)")
@@ -115,10 +88,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/cron/permissions.sh
           echo ""
           echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "Optimize Images (All Domains)")
@@ -126,10 +96,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh
           echo ""
           echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "Run WP-Cron Now (All Domains)")
@@ -142,11 +109,11 @@ while true
           break
           ;;
         "Update WordPress, Plugins, and Themes (All Domains)")
-          if confirm "Back up every site's database first (recommended)?" y \
+          if prompt_yes_no "Back up every site's database first (recommended)?" y \
             && ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh database-daily; then
             echo ""
             echo "The backup had errors (see /var/log/EngineScript/enginescript-backup.log)."
-            if ! confirm "Update anyway?"; then
+            if ! prompt_yes_no "Update anyway?" n; then
               pause
               break
             fi

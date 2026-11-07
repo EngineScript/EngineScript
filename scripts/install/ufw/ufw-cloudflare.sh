@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -56,13 +52,11 @@ while IFS= read -r cfip; do
   if [[ -z "$cfip" ]]; then
     continue
   fi
-  # Add rules, redirecting output to /dev/null as before
-  ufw allow proto tcp from "$cfip" comment 'Cloudflare IP (TCP)' > /dev/null 2>&1
-  ufw allow proto udp from "$cfip" comment 'Cloudflare IP (UDP)' > /dev/null 2>&1
-  # Check exit status of ufw command (optional, but good for debugging)
-   if [[ $? -ne 0 ]]; then
-     echo "Warning: Failed to add rule for $cfip"
-   fi
+  # Add the TCP and UDP rules; warn when either fails
+  if ! ufw allow proto tcp from "$cfip" comment 'Cloudflare IP (TCP)' > /dev/null 2>&1 \
+      || ! ufw allow proto udp from "$cfip" comment 'Cloudflare IP (UDP)' > /dev/null 2>&1; then
+    echo "Warning: Failed to add rule for $cfip"
+  fi
 done <<< "$cloudflare_ips"
 
 echo "Reloading UFW rules..."

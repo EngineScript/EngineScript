@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 # Helper function for retrying add-apt-repository up to 3 times with 5s delay
@@ -53,29 +49,24 @@ for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
 done
 
 # Docker
-curl -fsSL --proto '=https' https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list
+curl -fsSL --proto '=https' https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list
 
 # ElasticSearch
-curl -fsSL --proto '=https' https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+curl -fsSL --proto '=https' https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-7.x.list
 
 # GoAccess
-curl -fsSL --proto '=https' https://deb.goaccess.io/gnugpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/goaccess.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-architecture)] https://deb.goaccess.io/ ${UBUNTU_CODENAME} main" | sudo tee /etc/apt/sources.list.d/goaccess.list
+curl -fsSL --proto '=https' https://deb.goaccess.io/gnugpg.key | gpg --dearmor | tee /usr/share/keyrings/goaccess.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/goaccess.gpg arch=$(dpkg --print-architecture)] https://deb.goaccess.io/ ${UBUNTU_CODENAME} main" | tee /etc/apt/sources.list.d/goaccess.list
 
 # Google gcloud CLI
-curl -fsSL --proto '=https' https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/cloud.google.gpg
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+curl -fsSL --proto '=https' https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor --yes -o /usr/share/keyrings/cloud.google.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list
 
 # Grafana
-curl -fsSL --proto '=https' https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg >/dev/null
-echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
-
-# Kernel Updates
-# may be temporary
-#add-apt-repository -yn ppa:tuxinvader/lts-mainline
-#add-apt-repository -yn ppa:tuxinvader/lts-mainline-longterm
+curl -fsSL --proto '=https' https://apt.grafana.com/gpg.key | gpg --dearmor | tee /etc/apt/keyrings/grafana.gpg >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee /etc/apt/sources.list.d/grafana.list
 
 # PHP
 install_php_repository() {
@@ -86,7 +77,7 @@ install_php_repository() {
 
   # Disable legacy or stale PHP sources when migrating an existing install.
   find /etc/apt/sources.list.d/ -type f \( -name '*.list' -o -name '*.sources' \) \
-    -exec grep -lE 'ondrej/php|ppa\.launchpad(content)?\.net/ondrej/php|packages\.sury\.org/php' {} \; \
+    -exec grep -lE 'ondrej/php|ppa\.launchpad(content)?\.net/ondrej/php|packages\.sury\.org/php' {} + \
     | while IFS= read -r apt_source; do
         mv "${apt_source}" "${apt_source}.save"
       done
@@ -107,37 +98,20 @@ install_php_repository() {
     exit 1
   fi
 
-  echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ ${ubuntu_codename} main" | sudo tee /etc/apt/sources.list.d/php.list
+  echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ ${ubuntu_codename} main" | tee /etc/apt/sources.list.d/php.list
 }
 install_php_repository
 
 # Redis
-#add-apt-repository -yn ppa:redislabs/redis
-curl -fsSL --proto '=https' https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb ${UBUNTU_CODENAME} main" | sudo tee /etc/apt/sources.list.d/redis.list
-
-# Rob Savoury Backports
-#add-apt-repository -yn ppa:savoury1/backports
-#add-apt-repository -yn ppa:savoury1/build-tools
-#add-apt-repository -yn ppa:savoury1/curl34
-#add-apt-repository -yn ppa:savoury1/encryption
-#add-apt-repository -yn ppa:savoury1/ffmpeg4
-#add-apt-repository -yn ppa:savoury1/fonts
-#add-apt-repository -yn ppa:savoury1/gpg
-#add-apt-repository -yn ppa:savoury1/graphics
-#add-apt-repository -yn ppa:savoury1/multimedia
-#add-apt-repository -yn ppa:savoury1/python
-#add-apt-repository -yn ppa:savoury1/utilities
+curl -fsSL --proto '=https' https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb ${UBUNTU_CODENAME} main" | tee /etc/apt/sources.list.d/redis.list
 
 # Universe
 retry_add_ppa universe
 
-# Utilities
-#add-apt-repository -yn ppa:sergey-dryabzhinsky/packages
-
 # Yarn
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/yarn-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+curl -fsSL --proto '=https' https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /etc/apt/keyrings/yarn-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
 # Mark the installation as complete
 set_install_state "REPOS" "1"

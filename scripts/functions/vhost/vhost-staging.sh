@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source shared database credential functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh" >&2; exit 1; }
@@ -164,7 +160,7 @@ delete_dns_record() {
 # Checks
 
 check_live_site() {
-  [[ "${DOMAIN}" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || die "Not a domain: ${DOMAIN}"
+  validate_site_domain "${DOMAIN}" || die "Not a domain: ${DOMAIN}"
   grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh 2> /dev/null \
     || die "${DOMAIN} is not a site on this server (/home/EngineScript/sites-list/sites.sh)."
   [[ -f "${LIVE_ROOT}/wp-config.php" ]] || die "${DOMAIN} has no WordPress (${LIVE_ROOT}/wp-config.php)."
@@ -408,7 +404,7 @@ refresh_staging() {
 }
 
 delete_staging() {
-  [[ "${DOMAIN}" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || die "Not a domain: ${DOMAIN}"
+  validate_site_domain "${DOMAIN}" || die "Not a domain: ${DOMAIN}"
   staging_exists || die "${DOMAIN} has no staging copy."
   log "Deleting the staging copy of ${DOMAIN}..."
   flush_site_redis_cache "${STAGING_ROOT}/wp-config.php"

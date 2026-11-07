@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -51,7 +47,7 @@ print_last_errors
 debug_pause "MariaDB Repository"
 
 # Install MariaDB
-apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
+apt-get update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
 if ! DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y 2>> /tmp/enginescript_install_errors.log; then
   print_last_errors
   echo "Error: The MariaDB packages could not be installed. Stopping the MariaDB install; see /var/log/EngineScript/install-error-log.log." >&2
@@ -62,7 +58,7 @@ debug_pause "MariaDB Installation"
 
 # Update
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
-apt upgrade -y 2>> /tmp/enginescript_install_errors.log
+apt-get upgrade -y 2>> /tmp/enginescript_install_errors.log
 
 # Cleanup
 run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
@@ -80,7 +76,7 @@ if ! systemctl is-active --quiet mariadb; then
 fi
 MARIADB_READY=0
 for _ in $(seq 1 15); do
-  if sudo mariadb --protocol=socket -e "SELECT 1" > /dev/null 2>&1; then
+  if mariadb --protocol=socket -e "SELECT 1" > /dev/null 2>&1; then
     MARIADB_READY=1
     break
   fi
@@ -93,7 +89,7 @@ fi
 
 # Keep local sudo/socket automation working while enabling the configured root password.
 SQL_ESCAPED_MARIADB_ADMIN_PASSWORD="$(escape_mariadb_sql_string_literal "${MARIADB_ADMIN_PASSWORD}")"
-if ! sudo mariadb --protocol=socket << EOFMYSQLROOTAUTH
+if ! mariadb --protocol=socket << EOFMYSQLROOTAUTH
 ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket OR mysql_native_password USING PASSWORD('${SQL_ESCAPED_MARIADB_ADMIN_PASSWORD}');
 EOFMYSQLROOTAUTH
 then
@@ -102,7 +98,7 @@ then
 fi
 
 # Manually Perform Secure Installation
-if ! sudo mariadb --protocol=socket << EOFMYSQLSECURE
+if ! mariadb --protocol=socket << EOFMYSQLSECURE
 DELETE FROM mysql.global_priv WHERE User='';
 DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
@@ -113,19 +109,6 @@ then
   echo "Error: The MariaDB secure-installation step failed." >&2
   exit 1
 fi
-
-# Old MariaDB Secure Method
-# MySQL Secure Installation Automated
-#mariadb_secure_installation <<EOF
-
-#y
-#${MARIADB_ADMIN_PASSWORD}
-#${MARIADB_ADMIN_PASSWORD}
-#y
-#y
-#y
-#y
-#EOF
 
 # Copy MariaDB Config
 systemctl stop mariadb.service

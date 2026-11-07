@@ -6,8 +6,9 @@
 # GitHub:       https://github.com/Enginescript/EngineScript
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
-# Shared Virtual Host Functions
-# This file contains common functions used by both vhost-install.sh and vhost-import.sh
+# Shared Functions
+# Common functions for every EngineScript script: install steps and state, prompts and
+# validation, services, caches, permissions, sites, and logging.
 #----------------------------------------------------------------------------------
 
 
@@ -78,7 +79,7 @@ function print_last_errors() {
         echo -e "If you encounter errors and want to submit a GitHub issue, please run: es.debug"
     fi
     # Always clear the temp log for the next step
-    > /tmp/enginescript_install_errors.log
+    : > /tmp/enginescript_install_errors.log
 }
 
 
@@ -629,6 +630,16 @@ function newly_failing_sites() {
 
 
 # ----------------------------------------------------------------
+# Wait for a key, so a tool's output stays on screen before the menu redraws
+function pause() {
+    echo ""
+    read -n 1 -s -r -p "Press any key to continue"
+    echo ""
+    echo ""
+}
+
+
+# ----------------------------------------------------------------
 # Enhanced input validation functions
 # Prompts user with timeout and exit options for basic continuation
 function prompt_continue() {
@@ -773,16 +784,17 @@ function prompt_input() {
 
 
 # ----------------------------------------------------------------
-# Domain name validation function
-function validate_domain() {
-    local domain="$1"
-    local domain_regex="^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
-    
-    if [[ "$domain" =~ $domain_regex ]]; then
-        return 0
-    else
-        return 1
-    fi
+# One label of a domain name (the "example" in example.com): 1 to 63 lowercase letters, digits,
+# and hyphens, not starting or ending with a hyphen (RFC 952 / RFC 1123).
+#
+# IMPORTANT: Single-character labels (e.g., 'x' in 'x.com', 'a' in 'a.io') MUST pass. They are
+# fully valid under DNS and ICANN rules, and EngineScript must support them. The optional group
+# `([a-z0-9-]{0,61}[a-z0-9])?` makes everything after the first character optional, so a single
+# character matches on its own; the group still stops a leading or trailing hyphen ("-bad",
+# "bad-"). Do not "fix" this to require at least two characters.
+# Usage: validate_domain_label <label>
+function validate_domain_label() {
+    [[ "$1" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]]
 }
 
 
@@ -805,20 +817,6 @@ function validate_email() {
     local email_regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     
     if [[ "$email" =~ $email_regex ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# URL validation function
-function validate_url() {
-    local url="$1"
-    local url_regex="^https?://[a-zA-Z0-9.-]+[a-zA-Z0-9](/.*)?$"
-    
-    if [[ "$url" =~ $url_regex ]]; then
         return 0
     else
         return 1
@@ -972,10 +970,25 @@ function set_enginescript_frontend_permissions() {
     set_www_data_tree /etc/enginescript
 
     # Ensure API cache directory has correct owner and permissions
-    if [ -d "/var/cache/enginescript/api" ]; then
-        chown -R www-data:www-data /var/cache/enginescript/api
-        chmod -R 775 /var/cache/enginescript/api
+    set_api_cache_permissions
+}
+
+
+# ----------------------------------------------------------------
+# The control panel's API cache (/var/cache/enginescript/api), which PHP writes as www-data:
+# folders 775, files 664 (not executable). chmod runs as www-data, as in set_www_data_tree.
+function set_api_cache_permissions() {
+    local dir="/var/cache/enginescript/api"
+
+    if [[ ! -d "${dir}" ]]; then
+        return 0
     fi
+    chown -R www-data:www-data "${dir}"
+    (
+        cd / || exit 1
+        run_as_www_data find "${dir}" -type d -exec chmod 775 {} +
+        run_as_www_data find "${dir}" -type f -exec chmod 664 {} +
+    )
 }
 
 
@@ -1566,7 +1579,7 @@ function set_running_oom_score_adj() {
 # innodb_open_files take effect at MariaDB's next restart. The previous file is kept as
 # /etc/mysql/my.cnf.enginescript-previous.
 function apply_mariadb_tuning() {
-    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement failed=0
+    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement refused=0
 
     [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
     cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
@@ -1610,11 +1623,11 @@ function apply_mariadb_tuning() {
         "SET GLOBAL innodb_buffer_pool_size = $(( $(tuning_get MARIADB_BUFFER_POOL_MB) * 1048576 ))"; do
         if ! mariadb -e "${statement}" 2>> /tmp/enginescript_install_errors.log; then
             echo "Warning: MariaDB refused \"${statement}\"; it applies at MariaDB's next restart." >&2
-            failed=1
+            refused=1
         fi
     done
     set_running_oom_score_adj mariadbd -600
-    if (( failed == 0 )); then
+    if (( refused == 0 )); then
         echo "MariaDB: applied the tuning plan (buffer pool $(tuning_get MARIADB_BUFFER_POOL_MB) MB) without a restart."
     else
         echo "MariaDB: installed the tuning plan; the settings above apply at MariaDB's next restart."
@@ -2099,6 +2112,26 @@ function remove_old_import_folders() {
         rmdir "/home/EngineScript/temp/site-import/${folder}" 2> /dev/null
     done
     return 0
+}
+
+
+# ----------------------------------------------------------------
+# Remove the variables and install options lines from the site list
+#
+# The site list template of older versions loaded enginescript-variables.txt and the install
+# options itself, so every script that read the list loaded them again partway through and drew
+# new random values. The list now holds only SITES; its domains stay as they are.
+function remove_site_list_variable_sources() {
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    sed -i \
+        -e '/^# EngineScript Variables$/d' \
+        -e '\|^source /usr/local/bin/enginescript/enginescript-variables.txt|d' \
+        -e '\|^source /home/EngineScript/enginescript-install-options.txt|d' \
+        "${sites_file}"
 }
 
 
@@ -2598,10 +2631,7 @@ function download_and_extract() {
     local output_file="$2"
     local extract_dir="${3:-$(dirname "${output_file}")}"
 
-    curl -fsSL --proto '=https' -o "${output_file}" "${url}" || {
-        echo "Error: Failed to download ${url}"
-        return 1
-    }
+    download_file "${url}" "${output_file}" || return 1
     tar -xzf "${output_file}" -C "${extract_dir}" || {
         echo "Error: Failed to extract ${output_file}"
         return 1
@@ -2764,9 +2794,9 @@ function cloudflare_curl() {
 
 
 # ----------------------------------------------------------------
-# Download a file over HTTPS (redirects to plain HTTP are refused)
-# Usage: safe_wget "URL" "/destination/path"
-function safe_wget() {
+# Download a file over HTTPS with curl (redirects to plain HTTP are refused)
+# Usage: download_file "URL" "/destination/path"
+function download_file() {
     local url="$1"
     local dest="$2"
 

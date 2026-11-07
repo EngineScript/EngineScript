@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -37,9 +33,7 @@ show_pending_updates() {
     echo "Services still running replaced libraries (restart them to load the update):"
     print_or_none "$(needrestart -b -r l 2> /dev/null | sed -n 's/^NEEDRESTART-SVC: //p')"
   fi
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
+  pause
 }
 
 # Main Menu
@@ -57,12 +51,11 @@ while true
       "Update Kernel (experimental)"
       "Update MariaDB"
       "Update Nginx"
-      "Update OpenSSL"
       "Update PHP"
       "Switch PHP Version"
       "Update Server Tools"
-      "Update Ubuntu Distribution (apt full-upgrade)"
-      "Update Ubuntu Software (apt upgrade)"
+      "Update Ubuntu Distribution (apt-get dist-upgrade)"
+      "Update Ubuntu Software (apt-get upgrade)"
       "Exit Update Software Menu"
     )
     select opt in "${options[@]}"
@@ -86,12 +79,6 @@ while true
           ;;
         "Update Nginx")
           /usr/local/bin/enginescript/scripts/update/nginx-update.sh
-          break
-          ;;
-        "Update OpenSSL")
-          echo "Currently disabled as it's not needed."
-          sleep 5
-          #/usr/local/bin/enginescript/scripts/update/openssl-update.sh
           break
           ;;
         "Update PHP")
@@ -154,12 +141,12 @@ while true
           /usr/local/bin/enginescript/scripts/update/software-update.sh
           break
           ;;
-        "Update Ubuntu Distribution (apt full-upgrade)")
+        "Update Ubuntu Distribution (apt-get dist-upgrade)")
           # Keep EngineScript's configuration files (see enginescript-apt-update.sh)
-          apt full-upgrade -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
+          apt-get dist-upgrade -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
           break
           ;;
-        "Update Ubuntu Software (apt upgrade)")
+        "Update Ubuntu Software (apt-get upgrade)")
           /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
           break
           ;;

@@ -7,11 +7,13 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 SUPPORTED_PHP_VERSIONS=(
   "8.3"
   "8.4"
   "8.5"
 )
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 PHP_VERSION_OVERRIDE=""
 
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
@@ -173,7 +175,9 @@ assert_state_value "TOOLS" "1"
 assert_single_state_line "WP_CLI"
 
 complete_install_state
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_PHPMYADMIN=1
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
 assert_installation_completion_passes "check_installation_completion passes with all required flags complete"
 
@@ -184,15 +188,18 @@ set_install_state "ADMIN_CONTROL_PANEL" "1"
 set_install_state "PHPMYADMIN" "0"
 assert_installation_completion_fails "check_installation_completion fails when enabled PHPMYADMIN is incomplete"
 
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_PHPMYADMIN=0
 assert_installation_completion_passes "check_installation_completion ignores PHPMYADMIN when disabled"
 
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_PHPMYADMIN=1
 set_install_state "PHPMYADMIN" "1"
 set_install_state "WP_CLI" "0"
 assert_installation_completion_fails "check_installation_completion fails when WP_CLI is incomplete"
 
 set_install_state "WP_CLI" "1"
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=1
 assert_installation_completion_fails "check_installation_completion requires DO_CONSOLE when enabled"
 
@@ -200,6 +207,7 @@ set_install_state "DO_CONSOLE" "1"
 assert_installation_completion_passes "check_installation_completion passes when optional DO_CONSOLE is complete"
 
 complete_install_state
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
 set_install_state "ADMIN_CONTROL_PANEL" "0"
 set_install_state "PHPMYADMIN" "0"

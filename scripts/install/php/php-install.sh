@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -34,7 +30,7 @@ debug_pause "System Update"
 mapfile -t php_packages < <(get_php_packages_array "${PHP_VER}")
 
 # Install the packages with error checking
-apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
+apt-get install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
@@ -43,7 +39,7 @@ if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
     mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${PHP_VER}")
 
     # Install the packages with error checking
-    apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
+    apt-get install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
       echo "Error: Unable to install one or more packages. Exiting..."
       exit 1
     }

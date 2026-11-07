@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -119,7 +115,7 @@ rollback_switch() {
     if [[ "${NEW_WAS_INSTALLED}" == "0" ]]; then
         systemctl stop "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
         systemctl disable "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
-        apt purge -y "php${NEW_PHP_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+        apt-get purge -y "php${NEW_PHP_VER}*" 2>> /tmp/enginescript_install_errors.log || true
         rm -rf "/etc/php/${NEW_PHP_VER}"
     fi
     rm -f /etc/apt/preferences.d/php*-block
@@ -161,7 +157,7 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     if [[ "${INSTALL_EXPANDED_PHP}" == "1" ]]; then
         mapfile -t -O "${#php_packages[@]}" php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
     fi
-    if ! apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log; then
+    if ! apt-get install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log; then
         print_last_errors
         rollback_switch "Unable to install the PHP ${NEW_PHP_VER} packages."
     fi
@@ -260,7 +256,7 @@ for OLD_VER in "${OLD_PHP_VERS[@]}"; do
     echo "Removing PHP ${OLD_VER}..."
     systemctl stop "php${OLD_VER}-fpm" 2> /dev/null || true
     systemctl disable "php${OLD_VER}-fpm" 2> /dev/null || true
-    apt purge -y "php${OLD_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+    apt-get purge -y "php${OLD_VER}*" 2>> /tmp/enginescript_install_errors.log || true
     rm -rf "/etc/php/${OLD_VER}"
     rm -f "/etc/logrotate.d/php${OLD_VER}-fpm"
 

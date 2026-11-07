@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -68,17 +64,8 @@ if [[ "${FETCHED}" != "1" ]]; then
     print_last_errors
     debug_pause "EngineScript Git Pull"
 
-    # Convert line endings
-    dos2unix /usr/local/bin/enginescript/*
-
-    # Set directory and file permissions to 755
-    find /usr/local/bin/enginescript \( -type d -o -type f \) -exec chmod 755 {} \;
-
-    # Set ownership
-    chown -R root:root /usr/local/bin/enginescript
-
-    # Make shell scripts executable
-    find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+    # The checkout has LF line ends (.gitattributes) and executable scripts (their mode in git);
+    # the daily permissions job puts them back if something changes them
 
     exec bash /usr/local/bin/enginescript/scripts/update/enginescript-update.sh --fetched "$@"
 fi

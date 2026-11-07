@@ -7,33 +7,24 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-cd /var/www/sites
 printf "Please select the site you want to scan for vulnerabilities:\n"
-select d in *; do test -n "$d" && break; echo ">>> Invalid selection."; done
+select_site || exit 0
 echo "WPScan"
 
 # Run WPScan
 if [[ "${WPSCANAPI}" == "PLACEHOLDER" ]]
   then
-    wpscan --url "$d"
+    wpscan --url "${SELECTED_SITE}"
   else
-    wpscan --url "$d" --api-token "${WPSCANAPI}"
+    wpscan --url "${SELECTED_SITE}" --api-token "${WPSCANAPI}"
 fi
 
 # Ask user to acknowledge that the scan has completed before moving on
-echo ""
-echo ""
-read -n 1 -s -r -p "Press any key to continue"
-echo ""
-echo ""
+pause

@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -28,8 +24,7 @@ show_log() {
   else
     echo "$2 has not been written yet."
   fi
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
+  pause
 }
 
 # Ask which cron job's log to show (run-job.sh writes one per job)
@@ -84,8 +79,7 @@ follow_log() {
   echo "${BOLD}Following ${file}. Press Ctrl+C to stop.${NORMAL}" | boxes -a c -d shell -p a1l2
   if [[ ! -f "${file}" ]]; then
     echo "${file} has not been written yet."
-    echo ""
-    read -n 1 -s -r -p "Press any key to continue"
+    pause
     return
   fi
   # Ctrl+C stops tail and comes back here instead of closing the menu
@@ -112,8 +106,7 @@ show_lynis_report() {
     echo ""
     echo "The full log of the audit is in /var/log/lynis.log."
   fi
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
+  pause
 }
 
 # Main Menu

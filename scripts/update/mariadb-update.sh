@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -157,12 +153,12 @@ if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.co
   exit 1
 fi
 rm -f /etc/apt/sources.list.d/mariadb.list
-sudo bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
 rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
-apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
+apt-get update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
 if ! sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log; then
   print_last_errors
   echo "Error: The MariaDB package upgrade failed. The configuration was not changed." >&2

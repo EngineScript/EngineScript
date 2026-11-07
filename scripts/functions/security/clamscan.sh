@@ -7,23 +7,15 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
 echo "ClamAV is running. The scan may take a long time; stand by for results."
-sudo clamscan --infected --recursive --leave-temps --scan-archive=no --exclude-dir="^/sys" --exclude-dir="^/tmp" --exclude-dir="^/root/.wp-cli/packages/vendor/pantheon-systems/" --exclude-dir="^/usr/local/maldetect" --exclude-dir="^var/lib/clamav" --exclude-dir="^/usr/local/src" /
+clamscan --infected --recursive --leave-temps --scan-archive=no --exclude-dir="^/sys" --exclude-dir="^/tmp" --exclude-dir="^/root/.wp-cli/packages/vendor/pantheon-systems/" --exclude-dir="^/usr/local/maldetect" --exclude-dir="^var/lib/clamav" --exclude-dir="^/usr/local/src" /
 
 # Ask user to acknowledge that the scan has completed before moving on
-echo ""
-echo ""
-read -n 1 -s -r -p "Press any key to continue"
-echo ""
-echo ""
+pause

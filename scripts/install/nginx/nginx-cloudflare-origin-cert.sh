@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -21,4 +17,4 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/set-up/
 
 # Retrieve Cloudflare Origin Certificate
-safe_wget "https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem" "/etc/nginx/ssl/cloudflare/origin-pull-ca.pem"
+download_file "https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem" "/etc/nginx/ssl/cloudflare/origin-pull-ca.pem"

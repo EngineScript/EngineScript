@@ -5,12 +5,14 @@
 # cf_api must print one line per Cloudflare call: a check mark when the answer says
 # "success": true (compact or pretty-printed), and otherwise a cross with Cloudflare's error
 # message, counting the failure in CF_FAILED. No settings call may bypass it. The function is
-# taken from enginescript-shared-vhost.sh and run against a curl stand-in.
+# taken from enginescript-shared-vhost.sh, with cloudflare_curl from enginescript-common.sh, and
+# run against a curl stand-in.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 VHOST="${REPO_ROOT}/scripts/functions/shared/enginescript-shared-vhost.sh"
+COMMON="${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 FAILED=0
@@ -28,11 +30,20 @@ sed -n '/^    cf_api() {$/,/^    }$/p' "${VHOST}" > "${WORK}/cf-api.sh"
 }
 # shellcheck disable=SC1091
 source "${WORK}/cf-api.sh"
+# cf_api passes the credentials through cloudflare_curl
+sed -n '/^function cloudflare_curl() {$/,/^}$/p' "${COMMON}" > "${WORK}/cloudflare-curl.sh"
+[[ -s "${WORK}/cloudflare-curl.sh" ]] || {
+  echo "FAIL  cloudflare_curl was not found in enginescript-common.sh"
+  exit 1
+}
+# shellcheck disable=SC1091
+source "${WORK}/cloudflare-curl.sh"
 
-# curl stand-in: prints CF_RESPONSE and keeps its arguments
-# shellcheck disable=SC2329  # called by cf_api
+# curl stand-in: prints CF_RESPONSE, and keeps its arguments and the config it reads from stdin
+# shellcheck disable=SC2329  # called by cloudflare_curl
 curl() {
   printf '%s\n' "$@" > "${WORK}/curl-args"
+  cat > "${WORK}/curl-config"
   printf '%s' "${CF_RESPONSE}"
 }
 # Read by cf_api
@@ -98,6 +109,22 @@ if grep -qx 'https://api.cloudflare.com/client/v4/zones/zone123/settings/ipv6' "
   pass "the call goes to the zone's path with the body"
 else
   fail "curl was called with: $(tr '\n' ' ' < "${WORK}/curl-args")"
+fi
+
+if ! grep -q 'key\|user@example.com' "${WORK}/curl-args" \
+  && grep -qx 'header = "X-Auth-Key: key"' "${WORK}/curl-config" \
+  && grep -qx 'header = "X-Auth-Email: user@example.com"' "${WORK}/curl-config"; then
+  pass "the email and key reach curl on stdin, not on its command line"
+else
+  fail "the credentials were not passed on stdin only"
+fi
+
+# No Cloudflare call puts the key on curl's command line
+key_args="$(grep -nE 'X-Auth-(Key|Email):' "${VHOST}" "${REPO_ROOT}/scripts/functions/vhost/vhost-staging.sh" || true)"
+if [[ -z "${key_args}" ]]; then
+  pass "no Cloudflare call passes the key as an argument"
+else
+  fail "Cloudflare credentials on a command line: ${key_args}"
 fi
 
 # Every settings change goes through cf_api, so none prints raw JSON or fails unseen

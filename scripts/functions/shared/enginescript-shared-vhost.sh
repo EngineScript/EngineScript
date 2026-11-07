@@ -16,51 +16,19 @@
 #----------------------------------------------------------------------------------
 
 
-# Check if required services are running
+# Check if required services are running (stops the script when one is not)
 check_required_services() {
   echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 
-  # Database Service Check (MariaDB or MySQL)
-  MARIADB_STATUS="$(systemctl is-active mariadb)"
-  MYSQL_STATUS="$(systemctl is-active mysql)"
-
-  if [[ "${MARIADB_STATUS}" != "active" && "${MYSQL_STATUS}" != "active" ]]; then
-    echo "FAILED: Neither MariaDB nor MySQL is running. Please diagnose this issue before proceeding."
-    exit 1
-  fi
-
-  if [[ "${MARIADB_STATUS}" == "active" ]]; then
-    echo "PASSED: MariaDB is running."
-  elif [[ "${MYSQL_STATUS}" == "active" ]]; then
-    echo "PASSED: MySQL is running."
-  fi
-
-  # Nginx Service Check
-  STATUS="$(systemctl is-active nginx)"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: Nginx is running."
+  # MariaDB, or MySQL where a server runs that instead
+  if ! systemctl is-active --quiet mariadb && systemctl is-active --quiet mysql; then
+    verify_service_running "mysql" "MySQL"
   else
-    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
-    exit 1
+    verify_service_running "mariadb" "MariaDB"
   fi
-
-  # PHP Service Check
-  STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: PHP ${PHP_VER} is running."
-  else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
-    exit 1
-  fi
-
-  # Redis Service Check
-  STATUS="$(systemctl is-active redis)"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: Redis is running."
-  else
-    echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
-    exit 1
-  fi
+  verify_service_running "nginx" "Nginx"
+  verify_service_running "php${PHP_VER}-fpm" "PHP ${PHP_VER}"
+  verify_service_running "redis" "Redis"
 }
 
 

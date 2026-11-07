@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -44,6 +40,8 @@ echo "------------------------------------------------"
 # Define compiler and linker flags as variables for easier maintenance
 # Nginx's build already treats compiler warnings as errors (-Werror); no warnings are suppressed.
 CC_OPT_FLAGS="$ARCH_FLAGS -DTCP_FASTOPEN=23 -O3 -fcode-hoisting -flto=auto -fPIC -fstack-protector-strong $LD_FLAG -Werror=format-security -Wformat --param=ssp-buffer-size=4"
+# -Wl,-s strips the binary when it is linked (no symbol table; nothing is built with -g), so
+# make install installs a stripped Nginx: the only strip step, for both install and update
 LD_OPT_FLAGS="-Wl,-z,relro -Wl,-z,now -Wl,-s -fPIC -flto=auto $LD_FLAG"
 
 # OpenSSL's deprecated functions stay in the build: Nginx still calls some (it defines
@@ -144,7 +142,6 @@ fi
 ./configure "${CONFIGURE_ARGS[@]}" || { echo "Error: Nginx configure failed." >&2; exit 1; }
 
 make -j"${CPU_COUNT}" || { echo "Error: Nginx build failed." >&2; exit 1; }
-find "/usr/src/nginx-${NGINX_VER}" | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
 
 # make install renames the running binary to nginx.old before copying the new one, so a
 # running Nginx keeps serving. The caller (install or update script) restarts it.
@@ -152,9 +149,6 @@ make install || { echo "Error: Nginx install (make install) failed." >&2; exit 1
 
 # Remove .default Files
 rm -rf /etc/nginx/{*.default,*.dpkg-dist}
-
-# Remove debug symbols
-strip -s /usr/sbin/nginx*
 
 checksec --format=json --file="/usr/sbin/nginx" --extended | jq -r
 

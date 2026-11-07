@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -55,13 +51,9 @@ if [[ -f "/usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager
     cp /usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php "${TFM_NEW}/" || fail_tfm_install "Failed to copy the Tiny File Manager configuration"
 fi
 
-# Set proper permissions
-find "${TFM_NEW}" -type f -name "*.php" -exec chmod 644 {} \;
-find "${TFM_NEW}" -type f -name "*.md" -exec chmod 644 {} \;
-find "${TFM_NEW}" -type f -name "*.txt" -exec chmod 644 {} \;
-find "${TFM_NEW}" -type d -exec chmod 755 {} \;
-
-# Swap the new copy in, then clean up
+# Swap the new copy in, then clean up. Its permissions are set below, as www-data
+# (set_enginescript_frontend_permissions): a root chmod here, in a folder www-data owns, could
+# be led outside it by a link.
 replace_directory "${TFM_NEW}" "${TFM_DIR}" || fail_tfm_install "Failed to move the new copy into ${TFM_DIR}"
 rm -rf "${STAGING_DIR:?}"
 

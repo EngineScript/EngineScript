@@ -7,24 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
 
 # Each database's size and the site it belongs to (from /home/EngineScript/mysql-credentials),
 # then each site's largest tables
@@ -94,9 +82,7 @@ while true
           ;;
         "MariaDB Diagnostic & Recovery")
           /usr/local/bin/enginescript/scripts/functions/mariadb-diagnostic.sh
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
+          pause
           break
           ;;
         "MariaDB-Check Database Optimizer")
@@ -105,11 +91,7 @@ while true
           ;;
         "MySQLreport")
           mysqlreport
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "MySQLtuner")

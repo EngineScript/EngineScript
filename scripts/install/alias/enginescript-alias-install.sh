@@ -42,6 +42,7 @@ install_shell_command() {
   chown root:root "${command_path}"
 }
 
+install_exec_command "enginescript" "/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 install_exec_command "es.backup" "/usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh"
 install_exec_command "es.cache" "/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
 install_exec_command "es.config" "nano" "/home/EngineScript/enginescript-install-options.txt"
@@ -65,6 +66,7 @@ install_shell_command "ng.stop" 'set -e
 nginx -t -c /etc/nginx/nginx.conf
 exec systemctl stop nginx "$@"'
 
+# The commands above replace the .bashrc aliases older installs added: remove those
 touch /root/.bashrc
 tmp_bashrc="$(mktemp)"
 trap 'rm -f "${tmp_bashrc}"' EXIT
@@ -92,26 +94,3 @@ sed \
 cat "${tmp_bashrc}" > /root/.bashrc
 rm -f "${tmp_bashrc}"
 trap - EXIT
-
-cat <<EOT >> /root/.bashrc
-# EngineScript command aliases
-alias enginescript="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
-alias es.backup="/usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh"
-alias es.cache="/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
-alias es.config="nano /home/EngineScript/enginescript-install-options.txt"
-alias es.debug="/usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh"
-alias es.help="/usr/local/bin/enginescript/scripts/functions/alias/alias-help.sh"
-alias es.images="/usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh"
-alias es.info="/usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh"
-alias es.install="/usr/local/bin/enginescript/scripts/install/enginescript-install.sh"
-alias es.menu="/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
-alias es.permissions="/usr/local/bin/enginescript/scripts/functions/cron/permissions.sh"
-alias es.restart="/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh"
-alias es.sites="/usr/local/bin/enginescript/scripts/functions/alias/alias-sites.sh"
-alias es.update="/usr/local/bin/enginescript/scripts/update/enginescript-update.sh"
-alias es.variables="nano /usr/local/bin/enginescript/enginescript-variables.txt"
-alias ng.reload="ng.test && systemctl reload nginx"
-alias ng.stop="ng.test && systemctl stop nginx"
-alias ng.test="nginx -t -c /etc/nginx/nginx.conf"
-# End EngineScript command aliases
-EOT

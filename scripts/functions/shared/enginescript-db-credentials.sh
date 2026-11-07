@@ -27,8 +27,25 @@ ALLOWED_DB_CHARSETS=(
   "latin1"
 )
 
-# Shared multi-part public suffixes for domain parsing logic.
-# Keep this aligned with supported multi-part entries in VALID_TLDS.
+# Domain endings, in one place. Create Domain offers COMMON_TLDS and MULTIPART_PUBLIC_SUFFIXES as
+# its list of endings, and generate_db_name strips a multi-part suffix whole (example.co.uk gives
+# "example", not "example_co").
+# shellcheck disable=SC2034  # read by vhost-install.sh
+COMMON_TLDS=(
+  # Common gTLDs
+  "com" "net" "org" "info" "biz" "name" "pro" "int"
+
+  # Popular gTLDs
+  "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
+  "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
+  "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
+
+  # Country-code TLDs (ccTLDs)
+  "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
+  "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
+  "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
+)
+
 MULTIPART_PUBLIC_SUFFIXES=(
   "co.uk" "org.uk" "gov.uk" "ac.uk"
   "com.au" "net.au" "org.au"
@@ -191,6 +208,7 @@ validate_import_credentials() {
           return 1
           ;;
   esac
+  # shellcheck disable=SC2034  # read by the caller, as ES_DB_CHARSET_VALIDATED is
   ES_DB_COLLATION="${ES_DB_CHARSET_VALIDATED}_unicode_ci"
 
   if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
@@ -238,6 +256,7 @@ write_credentials_file() {
   echo "PSWD=\"${database_password}\"" >> "${credentials_file}"
   echo "" >> "${credentials_file}"
 
+  # shellcheck source=/dev/null
   source "${credentials_file}"
 }
 
@@ -261,19 +280,19 @@ execute_install_sql() {
   local SQL_ESCAPED_PSWD
 
   printf -v create_db_sql "CREATE DATABASE \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;" "${DB}"
-  if ! sudo mariadb -e "${create_db_sql}"; then
+  if ! mariadb -e "${create_db_sql}"; then
     echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
     return 1
   fi
 
   SQL_ESCAPED_PSWD="$(escape_sql_string_literal "${PSWD}")"
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
+  if ! mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+  if ! mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi
@@ -300,7 +319,7 @@ convert_myisam_tables_to_innodb() {
 
   validate_db_identifier "${db}" "${db}" || return 1
 
-  mapfile -t tables < <(sudo mariadb -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db}' AND ENGINE = 'MyISAM' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;")
+  mapfile -t tables < <(mariadb -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db}' AND ENGINE = 'MyISAM' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;")
   if [[ ${#tables[@]} -eq 0 ]]; then
     return 0
   fi
@@ -308,7 +327,7 @@ convert_myisam_tables_to_innodb() {
   echo "Converting ${#tables[@]} MyISAM table(s) in '${db}' to InnoDB..."
   for table in "${tables[@]}"; do
     # Table names come from the server; double any backtick for the quoted identifier
-    if sudo mariadb -e "ALTER TABLE \`${db}\`.\`${table//\`/\`\`}\` ENGINE=InnoDB;"; then
+    if mariadb -e "ALTER TABLE \`${db}\`.\`${table//\`/\`\`}\` ENGINE=InnoDB;"; then
       converted=$((converted + 1))
     else
       echo "Warning: Could not convert table '${table}' to InnoDB; it stays MyISAM." >&2
@@ -340,17 +359,17 @@ execute_import_sql() {
   local DB_COLLATION="$5"
 
   # Use validated charset
-  if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};"; then
+  if ! mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};"; then
     echo "Error: Failed to create database '${DB}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+  if ! mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+  if ! mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi

@@ -1,0 +1,95 @@
+---
+name: Script Checks
+
+# ShellCheck on every shell script, and the script tests in scripts/ci that need no services.
+# test-sql-credentials.sh needs MariaDB and has its own workflow.
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'setup.sh'
+      - 'enginescript-variables.txt'
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/script-checks.yml'
+  pull_request:
+    paths:
+      - 'setup.sh'
+      - 'enginescript-variables.txt'
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/script-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install ShellCheck
+        run: |
+          command -v shellcheck > /dev/null || { sudo apt-get update && sudo apt-get install -y shellcheck; }
+          shellcheck --version
+
+      - name: Run ShellCheck (warnings and errors)
+        run: |
+          # One file at a time: checked together, ShellCheck leaves out some files' warnings.
+          # xargs runs every file and fails when any of them has a finding.
+          git ls-files -z '*.sh' | xargs -0 -n 1 shellcheck --severity=warning
+
+  tests:
+    name: test-${{ matrix.test }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - backup-settings
+          - cloudflare-api
+          - config-review
+          - debug-pause
+          - install-state
+          - nginx-unsafe-files
+          - one-time-upgrades
+          - php-package-lists
+          - php-upload-progress
+          - php-version
+          - redis-config
+          - site-archive
+          - tuning-plan
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install zip
+        if: matrix.test == 'site-archive'
+        run: |
+          command -v zip > /dev/null || { sudo apt-get update && sudo apt-get install -y zip unzip; }
+
+      - name: Run test-${{ matrix.test }}.sh
+        env:
+          TEST_NAME: ${{ matrix.test }}
+        run: |
+          bash -n "scripts/ci/test-${TEST_NAME}.sh"
+          bash "scripts/ci/test-${TEST_NAME}.sh"

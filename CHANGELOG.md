@@ -6,11 +6,40 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-06
 
+### 🧹 SCRIPT CLEANUP
+
+- **Site pickers:** WP-CLI Doctor, WPScan, the three Wordfence CLI tools, testssl.sh, Domain Logs, and Export Domain now list the server's sites with a Cancel option. They listed every folder in `/var/www/sites`, staging copies included.
+- **Create Domain:**
+  - The list of endings adds `org.uk`, `gov.uk`, `ac.uk`, `net.au`, `org.au`, and `org.nz`, the endings the database names already handled.
+  - A last entry, "Other (type the ending)", takes any ending that is not listed, such as `travel` or `co.in`.
+  - Domain names longer than 63 characters are refused, as DNS requires.
+- **Site list:** `/home/EngineScript/sites-list/sites.sh` now holds only the list of sites. Its template also loaded `enginescript-variables.txt` and the install options, so every script that read the list loaded them a second time, partway through, and drew new random values. An update removes those lines from existing lists once; the sites stay.
+- **Commands:** `es.*`, `ng.*`, and the new `enginescript` (the menu) are commands in `/usr/local/bin`. The matching aliases in root's `.bashrc` are removed when EngineScript updates; they ran the same scripts.
+- **Nginx:**
+  - The binary is stripped once, when it is linked. The build also stripped it twice more after `make install`, and the update a third time. That strip also changed `nginx.old`, the previous binary kept for a rollback.
+  - The update no longer syncs the HTTP/3 settings twice.
+- **Scripts:**
+  - Scripts are executable in git, so setup, the install, and updates no longer reset every file's mode and line ends. The daily permissions job still does, in case something on the server changes them.
+  - Scripts load their settings and shared functions from one file, `scripts/functions/shared/enginescript-env.sh`.
+  - Package commands use `apt-get` instead of `apt`, whose output is not meant for scripts; the Update menu entries now say `apt-get`.
+  - The control panel's API cache files are no longer executable (664).
+  - The Cloudflare IPv6 check in the Nginx real-IP updater is a plain address-range check; the old one only worked by accident.
+  - The firewall is turned on with `ufw --force enable`.
+  - A Cloudflare firewall rule that fails to add now always shows its warning. Before, only a failed UDP rule did.
+- **Removed:**
+  - The disabled Update OpenSSL menu item and its script. Nginx builds its own OpenSSL.
+  - Unused scripts: `ngxtop.sh`, `opcache-gui.sh`, `alias-mysql-pass.sh`, and `alias-virus-scan.sh`.
+  - The old backup scripts (`daily-database-backup.sh`, `hourly-database-backup.sh`, and `weekly-wp-content-backup.sh`). The backup scheduler replaced their cron jobs, and every update rewrites old crontab lines.
+  - Commented-out old code in the MariaDB, repository, and liburing installers, and unused variables in the backup and variables files.
+
 ### 🔒 SITE TOOLS SECURITY FIXES
 
 - **Import Domain:** the database is now decompressed straight into the import. Before, it was unpacked to `/tmp/<domain>_db_import.sql`, which every user on the server, `www-data` included, could read for the length of the import, and which stayed behind when the import stopped.
 - **Cloudflare API key:** Create Domain, Import Domain, and Staging now give curl the Cloudflare account email and Global API key on standard input. They were on curl's command line, where any user on the server, `www-data` included, could read them with `ps` while a call ran.
 - **Create Domain and Import Domain:** the site's file permissions are now set as `www-data`, as the daily permissions job does. Root ran `chmod` over files the site can change, so a link planted by a hacked plugin could make root change a file outside the site.
+- **Adminer and Tiny File Manager:** their installers no longer run `chmod` as root in folders `www-data` owns. Adminer's permissions are set as `www-data`, and Tiny File Manager's are set by the admin tools permission step, which already runs as `www-data`.
+- **WP-CLI install:** no longer creates `/tmp/wp-cli-phar`, which nothing used. It made the folder `www-data`'s, then ran `chmod` on it as root; `/tmp` is open to every user, so a link planted at that name could have led the `chmod` elsewhere.
+- **Yarn repository key:** downloaded over HTTPS only, and the download fails on an HTTP error instead of passing an error page to `gpg`, as every other key download already did.
 
 ### 🐛 SITE TOOLS, INSTALL, AND UPDATE FIXES
 

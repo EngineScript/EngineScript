@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source shared vhost functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
@@ -93,56 +89,26 @@ sleep 1
 echo "For the domain name, enter only the domain portion (e.g., 'wordpresstesting')."
 echo "Note: lowercase text only, no spaces or special characters. Do not include https:// or www."
 echo ""
-echo "Then, select a valid TLD from the provided list."
+echo "Then, select a valid TLD from the provided list, or choose to type one that is not listed."
 echo ""
 
-VALID_TLDS=(
-    # Common gTLDs
-    "com" "net" "org" "info" "biz" "name" "pro" "int"
-
-    # Popular gTLDs
-    "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
-    "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
-    "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
-
-    # Country-code TLDs (ccTLDs)
-    "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
-    "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
-    "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
-
-    # Common multi-part public suffixes
-    "co.uk" "co.jp" "com.au" "co.nz" "com.sg" "com.my" "com.br" "com.mx" "co.za" "com.tr" "com.hk"
-)
+# The endings to choose from (enginescript-db-credentials.sh, next to the database name generator),
+# and a last entry for typing any other ending
+OTHER_TLD_CHOICE="Other (type the ending)"
+VALID_TLDS=("${COMMON_TLDS[@]}" "${MULTIPART_PUBLIC_SUFFIXES[@]}" "${OTHER_TLD_CHOICE}")
 
 # Ask for the domain until the user confirms it: a typo would otherwise go on to Cloudflare,
 # the certificate, and the database
 while true; do
-  # Prompt for domain name
-  # IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
-  # They are fully valid under DNS and ICANN rules, and EngineScript must support them.
-  #
-  # INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
-  #   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
-  #
-  # The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
-  # single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
-  # required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
-  # "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
-  # reject every single-character label and break installs for legitimate one-letter domains.
-  #
-  # Rules enforced by this regex:
-  #   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
-  #   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
-  #   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
-  #
-  # This is intentional behavior. Do not "fix" it to require at least two characters.
+  # Prompt for domain name. Single-character names (x.com, a.io) are valid and must be accepted:
+  # see validate_domain_label in enginescript-common.sh.
   while true; do
     read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-    if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+    if validate_domain_label "$DOMAIN_NAME"; then
       echo "You entered: ${DOMAIN_NAME}"
       break
     else
-      echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed. Hyphens cannot be at the start or end."
+      echo "Invalid domain name. Use 1 to 63 lowercase letters, numbers, and hyphens. Hyphens cannot be at the start or end."
     fi
   done
 
@@ -157,6 +123,19 @@ while true; do
       echo "Invalid selection. Please choose a valid TLD from the list."
     fi
   done
+
+  # Any other ending, such as travel or co.in: checked as part of the full domain
+  if [[ "${TLD}" == "${OTHER_TLD_CHOICE}" ]]; then
+    while true; do
+      read -p "Enter the ending without a leading dot (e.g., 'travel' or 'co.in'): " TLD
+      TLD="${TLD,,}"
+      TLD="${TLD#.}"
+      if validate_site_domain "${DOMAIN_NAME}.${TLD}"; then
+        break
+      fi
+      echo "Invalid ending. Use lowercase letters, numbers, hyphens, and dots between parts; the last part starts with a letter."
+    done
+  fi
 
   # Combine domain name and TLD
   DOMAIN="${DOMAIN_NAME}.${TLD}"
@@ -238,7 +217,7 @@ create_backup_directories "${DOMAIN}"
 
 # Site Root
 mkdir -p "/var/www/sites/${DOMAIN}/html"
-cd "/var/www/sites/${DOMAIN}/html"
+cd "/var/www/sites/${DOMAIN}/html" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}/html" >&2; exit 1; }
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
@@ -310,7 +289,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   echo "============================================="
 
   # WP-CLI Install WordPress (the admin settings were checked before anything was created)
-  cd "/var/www/sites/${DOMAIN}/html"
+  cd "/var/www/sites/${DOMAIN}/html" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}/html" >&2; exit 1; }
 
   wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
 
@@ -344,7 +323,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Setting Permissions Again
   # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
   # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
-  cd "/var/www/sites/${DOMAIN}"
+  cd "/var/www/sites/${DOMAIN}" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}" >&2; exit 1; }
   set_www_data_tree "/var/www/sites/${DOMAIN}"
   run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
   run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"

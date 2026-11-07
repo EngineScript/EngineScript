@@ -23,24 +23,8 @@ fi
 # In-case you uploaded the options file using a basic Windows text editor
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
-# Convert line endings
-dos2unix /usr/local/bin/enginescript/*
-
-# Set directory and file permissions to 755
-find /usr/local/bin/enginescript -exec chmod 755 {} \;
-
-# Set ownership
-chown -R root:root /usr/local/bin/enginescript
-
-# Make shell scripts executable
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
-
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Reboot Warning
 echo -e "\nATTENTION:\n\nThe server needs to reboot at the end of this script.\nEnter the es.menu command after rebooting to continue.\n\nThe script will continue in 5 seconds..." | boxes -a c -d shell -p a1l2

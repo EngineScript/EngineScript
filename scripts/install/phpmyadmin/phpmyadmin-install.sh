@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -35,7 +31,7 @@ fi
 mkdir -p /var/www/admin/tools
 
 # Download phpMyAdmin
-safe_wget "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
+download_file "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
 unzip -q -o "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
 mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" "/var/www/admin/tools/phpmyadmin"
 mkdir -p /var/www/admin/tools/phpmyadmin/tmp
@@ -45,15 +41,15 @@ chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
 sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/tools/phpmyadmin/config.sample.inc.php > /var/www/admin/tools/phpmyadmin/config.inc.php
 
 # phpMyAdmin Control User (server)
-sed -i "s|'pma'|'phpmyadmin_controlusr_$RAND_CHAR8'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | sudo mariadb -e "CREATE USER 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
-sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | sudo mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost'; FLUSH PRIVILEGES;"
+sed -i "s|'pma'|'phpmyadmin_controlusr_$RAND_CHAR8'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "CREATE USER 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
+sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Create phpMyAdmin Tables
-sudo cat /var/www/admin/tools/phpmyadmin/sql/create_tables.sql | mariadb
+mariadb < /var/www/admin/tools/phpmyadmin/sql/create_tables.sql
 
 # User Login Credentials
-sudo mariadb -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
-sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
+mariadb -e "CREATE USER ${PHPMYADMIN_USERNAME}@'localhost' IDENTIFIED BY '${PHPMYADMIN_PASSWORD}';"
+mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; FLUSH PRIVILEGES;"
 
 # Post-Install Cleanup
 run_enginescript_cleanup

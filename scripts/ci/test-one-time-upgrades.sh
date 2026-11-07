@@ -78,6 +78,35 @@ for upgrade in "${upgrades[@]}"; do
 done
 check "no upgrade is listed twice" "$(printf '%s\n' "${upgrades[@]}" | sort | uniq -d | wc -l | tr -d ' ')" "0"
 
+echo "remove_site_list_variable_sources"
+# A site list from the old template, with two sites added
+cat > "${WORK}/sites.sh" << 'EOF'
+#!/usr/bin/env bash
+# EngineScript Variables
+source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
+source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
+
+# Tasks to be performed on the following sites
+SITES=(
+"example.com"
+"example.co.uk"
+)
+EOF
+ES_SITES_LIST="${WORK}/sites.sh" remove_site_list_variable_sources
+check "the variables and install options lines are gone" "$(grep -c 'enginescript-variables.txt\|enginescript-install-options.txt\|# EngineScript Variables' "${WORK}/sites.sh")" "0"
+SITES=()
+# shellcheck source=/dev/null
+source "${WORK}/sites.sh"
+check "the sites stay" "${SITES[*]}" "example.com example.co.uk"
+ES_SITES_LIST="${WORK}/sites.sh" remove_site_list_variable_sources
+check "running it again changes nothing" "$(grep -c '"example' "${WORK}/sites.sh")" "2"
+ES_SITES_LIST="${WORK}/missing.sh" remove_site_list_variable_sources
+check "a server without a site list is fine" "$?" "0"
+SITES=()
+# shellcheck source=/dev/null
+source "${REPO_ROOT}/scripts/functions/cron/sites.sh"
+check "the template only sets an empty SITES" "${#SITES[@]}:$(grep -c '^source' "${REPO_ROOT}/scripts/functions/cron/sites.sh")" "0:0"
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]

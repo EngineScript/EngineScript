@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -24,7 +20,6 @@ set -o pipefail
 DEBUG_FILE="/tmp/enginescript-debug-$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "unknown").md"
 
 # ANSI color codes
-BOLD="\e[1m"
 NORMAL="\e[0m"
 GREEN="\e[32m"
 YELLOW="\e[33m"
@@ -52,16 +47,6 @@ get_server_info() {
     if ! BIT_TYPE=$(getconf LONG_BIT 2>/dev/null); then
         BIT_TYPE="unknown"
         debug_print "WARNING: Failed to retrieve system architecture." "WARNING: Failed to retrieve system architecture."
-    fi
-    
-    if ! CPU_COUNT=$(nproc 2>/dev/null); then
-        CPU_COUNT="unknown"
-        debug_print "WARNING: Failed to retrieve CPU count." "WARNING: Failed to retrieve CPU count."
-    fi
-    
-    if ! SERVER_MEMORY_TOTAL_100=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}'); then
-        SERVER_MEMORY_TOTAL_100="unknown"
-        debug_print "WARNING: Failed to retrieve total memory." "WARNING: Failed to retrieve total memory."
     fi
     
     if ! IP_ADDRESS=$(hostname -I 2>/dev/null | awk '{print $1}'); then
@@ -97,11 +82,6 @@ get_server_info() {
     if ! CPU_CORES=$(nproc 2>/dev/null); then
         CPU_CORES="unknown"
         debug_print "WARNING: Failed to retrieve CPU core count." "WARNING: Failed to retrieve CPU core count."
-    fi
-    
-    if ! CPU_FREQ=$(lscpu 2>/dev/null | grep -E "^CPU MHz:" | cut -d":" -f2 | xargs); then
-        CPU_FREQ="unknown"
-        debug_print "WARNING: Failed to retrieve CPU frequency." "WARNING: Failed to retrieve CPU frequency."
     fi
     
     # Memory Info with error checking
@@ -151,17 +131,6 @@ get_server_info() {
         debug_print "WARNING: Failed to retrieve root disk percentage." "WARNING: Failed to retrieve root disk percentage."
     fi
     
-    # Load Average with error checking
-    if ! LOAD_AVG=$(uptime 2>/dev/null | awk -F'load average:' '{print $2}' | xargs); then
-        LOAD_AVG="unknown"
-        debug_print "WARNING: Failed to retrieve load average." "WARNING: Failed to retrieve load average."
-    fi
-    
-    # Network Info with error checking
-    if ! NETWORK_INFO=$(ip -4 addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1'); then
-        NETWORK_INFO="unknown"
-        debug_print "WARNING: Failed to retrieve network information." "WARNING: Failed to retrieve network information."
-    fi
 }
 
 # Start debug report

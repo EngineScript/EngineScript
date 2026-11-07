@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -32,7 +28,7 @@ if dpkg-query -W -f='${Status}' chrony 2> /dev/null | grep -q 'ok installed'; th
   systemctl enable --now chrony 2> /dev/null || true
 else
   if ! dpkg-query -W -f='${Status}' systemd-timesyncd 2> /dev/null | grep -q 'ok installed'; then
-    apt install -qy systemd-timesyncd
+    apt-get install -qy systemd-timesyncd
   fi
   cp -rf /usr/local/bin/enginescript/config/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
   chmod 644 /etc/systemd/timesyncd.conf
