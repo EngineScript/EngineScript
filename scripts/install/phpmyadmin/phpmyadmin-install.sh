@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${PHPMYADMIN}" = 1 ]]; then
-    echo "PHPMYADMIN script has already run"
-    exit 0
-fi
-
 if [[ "${INSTALL_PHPMYADMIN}" != "1" ]]; then
     echo "Skipping phpMyAdmin install"
     exit 0
@@ -27,22 +21,21 @@ fi
 
 # phpMyAdmin
 
-# Create tools directory if it doesn't exist
-mkdir -p /var/www/admin/tools
-
-# Download phpMyAdmin
-download_file "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
-unzip -q -o "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d "/usr/src"
-mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" "/var/www/admin/tools/phpmyadmin"
-mkdir -p /var/www/admin/tools/phpmyadmin/tmp
+# Download and unpack phpMyAdmin beside any copy already there, then swap it in
+install_beside /var/www/admin/tools/phpmyadmin "phpMyAdmin" build_phpmyadmin || exit 1
 chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
 
+# Random values: the cookie encryption secret, and the control user's name and password
+BLOWFISH_SECRET="$(es_random 32)"
+CONTROL_USER_SUFFIX="$(es_random 8)"
+CONTROL_USER_PASSWORD="$(es_random 24)"
+
 # phpMyAdmin Cookie Encryption
-sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '$RAND_CHAR32'|" /var/www/admin/tools/phpmyadmin/config.sample.inc.php > /var/www/admin/tools/phpmyadmin/config.inc.php
+sed -e "s|cfg\['blowfish_secret'\] = ''|cfg\['blowfish_secret'\] = '${BLOWFISH_SECRET}'|" /var/www/admin/tools/phpmyadmin/config.sample.inc.php > /var/www/admin/tools/phpmyadmin/config.inc.php
 
 # phpMyAdmin Control User (server)
-sed -i "s|'pma'|'phpmyadmin_controlusr_$RAND_CHAR8'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "CREATE USER 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost' IDENTIFIED BY '${RAND_CHAR24}';"
-sed -i "s|'pmapass'|'$RAND_CHAR24'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${RAND_CHAR8}'@'localhost'; FLUSH PRIVILEGES;"
+sed -i "s|'pma'|'phpmyadmin_controlusr_${CONTROL_USER_SUFFIX}'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "CREATE USER 'phpmyadmin_controlusr_${CONTROL_USER_SUFFIX}'@'localhost' IDENTIFIED BY '${CONTROL_USER_PASSWORD}';"
+sed -i "s|'pmapass'|'${CONTROL_USER_PASSWORD}'|g" /var/www/admin/tools/phpmyadmin/config.inc.php | mariadb -e "GRANT ALL PRIVILEGES ON phpmyadmin.* TO 'phpmyadmin_controlusr_${CONTROL_USER_SUFFIX}'@'localhost'; FLUSH PRIVILEGES;"
 
 # Create phpMyAdmin Tables
 mariadb < /var/www/admin/tools/phpmyadmin/sql/create_tables.sql
@@ -55,5 +48,3 @@ mariadb -e "GRANT ALL PRIVILEGES ON *.* TO ${PHPMYADMIN_USERNAME}@'localhost'; F
 run_enginescript_cleanup
 
 print_install_banner "phpMyAdmin"
-
-set_install_state "PHPMYADMIN" "1"

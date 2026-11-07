@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${SFL}" = 1 ]]; then
-    echo "SFL script has already run"
-    exit 0
-fi
-
 # Function to update file limits
 update_file_limits() {
     local limit_value=$1
@@ -66,6 +60,4 @@ update_file_limits 60556
 
 echo "File limits updated successfully."
 
-# Mark the installation as complete
-set_install_state "SFL" "1"
 echo "Raising System File Limits completed successfully. Script done."

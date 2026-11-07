@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${UBUNTU_PRO}" = 1 ]]; then
-    echo "UBUNTU_PRO script has already run"
-    exit 0
-fi
-
 echo ""
 echo "============================================="
 echo "           Ubuntu Pro Setup"
@@ -73,6 +67,4 @@ echo "       Ubuntu Pro Setup Complete"
 echo "============================================="
 echo ""
 
-# Mark the installation as complete
-set_install_state "UBUNTU_PRO" "1"
 echo "Ubuntu Pro Setup completed successfully. Script done."

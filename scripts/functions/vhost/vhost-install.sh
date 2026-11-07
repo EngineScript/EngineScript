@@ -20,6 +20,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-cred
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# One site change at a time: two at once would race on the site list and Redis numbers
+acquire_lock "sites" || exit 1
+
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
 
@@ -150,13 +153,19 @@ while true; do
 done
 
 # Verify if the domain is already configured
-# sites.sh lists each domain in quotes, one per line
-if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
+if es_site_exists "${DOMAIN}"; then
   echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
-else
-  echo "${BOLD}Pre-installation Check: Passed${NORMAL}"
 fi
+LEFTOVERS="$(site_leftovers "${DOMAIN}")"
+if [[ -n "${LEFTOVERS}" ]]; then
+  echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is not on the site list, but parts of a site are already on this server:\n${LEFTOVERS}\n\nRemove them first: es.menu > Domain Configuration > Remove Domain, then choose to type the domain.\n" >&2
+  exit 1
+fi
+echo "${BOLD}Pre-installation Check: Passed${NORMAL}"
+
+# A step that fails from here on removes what this run set up (remove_site)
+trap 'site_rollback_on_exit $?' EXIT
 
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-install.log"
@@ -201,39 +210,40 @@ configure_cloudflare_settings "${DOMAIN}"
 
 # Create domain log directories and files. Before the vhost: Nginx cannot open a log in a missing
 # directory, so its configuration test, and the reload after the certificate is installed, would fail.
-create_domain_logs "${DOMAIN}"
+arm_site_rollback "${DOMAIN}"
+create_domain_logs "${DOMAIN}" || die "Could not create the log files for ${DOMAIN}."
 
 # Create nginx vhost configuration files
-create_nginx_vhost "${DOMAIN}"
+create_nginx_vhost "${DOMAIN}" || die "Could not create the Nginx configuration for ${DOMAIN}."
 
 # Create and install SSL certificates
-create_ssl_certificate "${DOMAIN}"
+create_ssl_certificate "${DOMAIN}" || die "Could not get a certificate for ${DOMAIN}."
 
 # Print date for logs
 echo "System Date: $(date)"
 
 # Create backup directories
-create_backup_directories "${DOMAIN}"
+create_backup_directories "${DOMAIN}" || die "Could not create the backup folders for ${DOMAIN}."
 
-# Site Root
-mkdir -p "/var/www/sites/${DOMAIN}/html"
-cd "/var/www/sites/${DOMAIN}/html" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}/html" >&2; exit 1; }
+# Site Root, owned by www-data, which runs WP-CLI on the site (wp_site)
+WP_SITE_ROOT="/var/www/sites/${DOMAIN}/html"
+mkdir -p "${WP_SITE_ROOT}" && chown www-data:www-data "/var/www/sites/${DOMAIN}" "${WP_SITE_ROOT}" \
+  || die "Could not create ${WP_SITE_ROOT}."
+cd "${WP_SITE_ROOT}" || die "Failed to change to ${WP_SITE_ROOT}"
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
   # WordPress Installation Path
   #----------------------------------------------------------------------------------
 
-  # Domain Creation Variables
-  # Generate random credential strings using main variables file
-  source /usr/local/bin/enginescript/enginescript-variables.txt
-  PREFIX="${RAND_CHAR2}"
+  # Domain Creation Variables: a random table prefix, database user, and password
+  PREFIX="$(es_random 2)"
 
   # Generate the database name (domain without its suffix, hash, random suffix)
   generate_db_name "${DOMAIN}" || exit 1
   database_name="${ES_DB_NAME}"
-  database_user="${RAND_CHAR16}"
-  database_password="${RAND_CHAR32}"
+  database_user="$(es_random 16)"
+  database_password="$(es_random 32)"
 
   # Validate generated credentials before writing any sensitive data to disk.
   validate_install_credentials "${database_user}" "${database_password}" "${DOMAIN}" || exit 1
@@ -247,7 +257,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   execute_install_sql "${DB}" "${USR}" "${PSWD}" "${DOMAIN}" || exit 1
 
   # Download WordPress using WP-CLI
-  wp core download --allow-root
+  wp_site core download || die "WP-CLI could not download WordPress."
   # Hello Dolly ships as a single file. WP-CLI cannot delete plugins before wp-config.php
   # exists, so the file is removed directly.
   rm -f "/var/www/sites/${DOMAIN}/html/wp-content/plugins/hello.php"
@@ -257,7 +267,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   create_extra_wp_dirs "${DOMAIN}"
 
   # Create wp-config.php
-  cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${DOMAIN}/html/wp-config.php" \
+    || die "Could not create wp-config.php."
   sed -i "s|SEDWPDB|${DB}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
   sed -i "s|SEDWPUSER|${USR}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
   sed -i "s|SEDWPPASS|${PSWD}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
@@ -276,8 +287,9 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Create robots.txt file
   create_robots_txt "${DOMAIN}" "/var/www/sites/${DOMAIN}/html"
 
-  # WP File Permissions. As www-data, as in the daily permissions job: the site can change its
-  # files, and a link it plants would lead a root chmod outside the site.
+  # WP File Permissions, before WP-CLI runs as www-data. chmod runs as www-data, as in the daily
+  # permissions job: the site can change its files, and a link it plants would lead a root chmod
+  # outside the site.
   set_www_data_tree "/var/www/sites/${DOMAIN}"
   run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
   run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
@@ -289,9 +301,10 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   echo "============================================="
 
   # WP-CLI Install WordPress (the admin settings were checked before anything was created)
-  cd "/var/www/sites/${DOMAIN}/html" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}/html" >&2; exit 1; }
+  cd "${WP_SITE_ROOT}" || die "Failed to change to ${WP_SITE_ROOT}"
 
-  wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
+  wp_site core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email \
+    || die "WP-CLI could not install WordPress."
 
   # Install and activate required WordPress plugins
   install_required_wp_plugins
@@ -304,26 +317,24 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Install EngineScript custom plugins if enabled
-  install_enginescript_custom_plugins "${DOMAIN}"
+  install_enginescript_plugins "${DOMAIN}" || echo "Warning: The EngineScript plugins were not fully installed; es.update installs them again." >&2
 
   # WP-CLI set permalink structure for FastCGI cache, before the rewrite rules are flushed below
-  wp option update permalink_structure '/%category%/%postname%/' --allow-root
+  wp_site option update permalink_structure '/%category%/%postname%/'
 
   # Clear WordPress caches, transients, and rewrite rules
   clear_wordpress_caches
 
   # Enable Redis Cache via WP-CLI
-  if wp plugin is-active redis-cache --allow-root; then
+  if wp_site plugin is-active redis-cache; then
     echo "Enabling Redis object cache..."
-    wp redis enable --allow-root
+    wp_site redis enable
   else
     echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
   fi
 
-  # Setting Permissions Again
-  # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
-  # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
-  cd "/var/www/sites/${DOMAIN}" || { echo "Error: Failed to change to /var/www/sites/${DOMAIN}" >&2; exit 1; }
+  # Setting Permissions Again, for the files the EngineScript plugins and root-run steps added
+  cd "/var/www/sites/${DOMAIN}" || die "Failed to change to /var/www/sites/${DOMAIN}"
   set_www_data_tree "/var/www/sites/${DOMAIN}"
   run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
   run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
@@ -344,7 +355,8 @@ else
   echo "Installing placeholder page for ${DOMAIN}..."
 
   # Install placeholder page
-  cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${DOMAIN}/html/index.html"
+  cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${DOMAIN}/html/index.html" \
+    || die "Could not install the placeholder page."
   sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/var/www/sites/${DOMAIN}/html/index.html"
 
   # Set file permissions (as www-data, see above)
@@ -375,6 +387,9 @@ else
   echo ""
   sleep 3
 fi
+
+# The site is set up: nothing below rolls it back
+disarm_site_rollback
 
 # Load the new site: delete any cached pages a previous site on this domain left, and reload
 # Nginx and PHP-FPM. Every other site keeps its caches, and Redis keeps running: Redis Object

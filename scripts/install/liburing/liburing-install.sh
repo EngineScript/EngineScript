@@ -14,13 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-# ES_REFRESH_SOURCES=1 (from software-update.sh): build the current version even after the install
-if [[ "${LIBURING}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
-    echo "LIBURING script has already run"
-    exit 0
-fi
-
 # Return to /usr/src
 return_to_src
 
@@ -37,6 +30,4 @@ make install || { echo "Error: Failed to install liburing." >&2; exit 1; }
 # Return to /usr/src
 return_to_src
 
-# Mark the installation as complete
-set_install_state "LIBURING" "1"
 echo "liburing completed successfully. Script done."

@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${DEPENDS}" = 1 ]]; then
-    echo "DEPENDS script has already run"
-    exit 0
-fi
-
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
@@ -180,6 +174,4 @@ apt-get install -qy "${packages[@]}" || {
 # Nano
 update-alternatives --set editor /bin/nano
 
-# Mark the installation as complete
-set_install_state "DEPENDS" "1"
 echo "Install Dependencies completed successfully. Script done."

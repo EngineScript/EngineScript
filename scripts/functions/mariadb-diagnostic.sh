@@ -52,7 +52,8 @@ echo ""
 # Check memory variables
 echo "Memory calculations:"
 echo "Total RAM: ${SERVER_MEMORY_TOTAL_100}MB"
-echo "45% RAM: ${SERVER_MEMORY_TOTAL_45}MB (for InnoDB buffer pool)"
+tuning_load 2> /dev/null
+echo "InnoDB buffer pool (tuning plan, /etc/enginescript/tuning.conf): $(tuning_get MARIADB_BUFFER_POOL_MB)MB"
 echo "80% RAM: ${SERVER_MEMORY_TOTAL_80}MB (for comparison checks)"
 echo ""
 

@@ -19,10 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 show_database_sizes() {
   local SITES=() site db size free tables table
   local -A site_of=()
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   for site in "${SITES[@]}"; do
     db="$(sed -n 's/^DB="\([A-Za-z0-9_]*\)"$/\1/p' "/home/EngineScript/mysql-credentials/${site}.txt" 2> /dev/null)"
     [[ -n "${db}" ]] && site_of["${db}"]="${site}"

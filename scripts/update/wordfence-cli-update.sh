@@ -18,8 +18,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 # Update Wordfence CLI
 
-download_file "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb" 2>> /tmp/enginescript_install_errors.log
-if apt-get install /usr/src/wordfence.deb -y 2>> /tmp/enginescript_install_errors.log; then
+download_file "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb" 2>> "${ES_STEP_ERROR_LOG}"
+if apt-get install /usr/src/wordfence.deb -y 2>> "${ES_STEP_ERROR_LOG}"; then
     echo "Wordfence CLI update completed successfully."
 else
     echo "Wordfence CLI update failed. Please check the output above for details." >&2

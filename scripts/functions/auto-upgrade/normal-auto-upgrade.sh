@@ -10,6 +10,9 @@
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
+# The one-time upgrades
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-upgrades.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-upgrades.sh" >&2; exit 1; }
+
 #----------------------------------------------------------------------------------
 # Start Main Script
 #
@@ -54,6 +57,6 @@ fi
 verify_installation_completion
 
 for upgrade in "${ONE_TIME_UPGRADES[@]}"; do
-  run_once "${upgrade}" 2>> /tmp/enginescript_install_errors.log
+  run_once "${upgrade}" 2>> "${ES_STEP_ERROR_LOG}"
   print_last_errors
 done

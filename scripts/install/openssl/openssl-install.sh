@@ -14,19 +14,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-# ES_REFRESH_SOURCES=1 (from nginx-update.sh): fetch the current version even after the install
-if [[ "${OPENSSL}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
-    echo "OPENSSL script has already run"
-    exit 0
-fi
-
 # Return to /usr/src
 return_to_src
 
 # Download and extract OpenSSL
 download_and_extract "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VER}/openssl-${OPENSSL_VER}.tar.gz" "/usr/src/openssl-${OPENSSL_VER}.tar.gz" || { echo "Error: Failed to download/extract OpenSSL."; exit 1; }
 
-# Mark the installation as complete
-set_install_state "OPENSSL" "1"
 echo "OpenSSL completed successfully. Script done."

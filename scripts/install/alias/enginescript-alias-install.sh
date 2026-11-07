@@ -12,9 +12,11 @@ set -euo pipefail
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# Usage: install_exec_command <name> <command> [arguments]. The command goes in /usr/local/bin, or
+# in COMMAND_DIR when it is set.
 install_exec_command() {
   local command_name="$1"
-  local command_path="/usr/local/bin/${command_name}"
+  local command_path="${COMMAND_DIR:-/usr/local/bin}/${command_name}"
   shift
 
   {
@@ -42,7 +44,9 @@ install_shell_command() {
   chown root:root "${command_path}"
 }
 
-install_exec_command "enginescript" "/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
+# enginescript opens the menu, as es.menu does. It is in /usr/local/sbin (on root's PATH):
+# /usr/local/bin/enginescript is EngineScript's own folder.
+COMMAND_DIR=/usr/local/sbin install_exec_command "enginescript" "/usr/local/bin/enginescript/scripts/menu/enginescript-menu.sh"
 install_exec_command "es.backup" "/usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh"
 install_exec_command "es.cache" "/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
 install_exec_command "es.config" "nano" "/home/EngineScript/enginescript-install-options.txt"

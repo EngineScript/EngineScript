@@ -61,7 +61,7 @@ roll_back() {
   exit 1
 }
 
-if [[ -z "${DOMAIN}" ]] || ! grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh 2> /dev/null; then
+if [[ -z "${DOMAIN}" ]] || ! es_site_exists "${DOMAIN}"; then
   echo "Usage: $0 <domain>, where <domain> is in /home/EngineScript/sites-list/sites.sh" >&2
   exit 2
 fi
@@ -82,7 +82,7 @@ if ! password_works "${PSWD}"; then
   exit 1
 fi
 
-NEW_PASSWORD="${RAND_CHAR32}"
+NEW_PASSWORD="$(es_random 32)"
 validate_install_credentials "${USR}" "${NEW_PASSWORD}" "${DOMAIN}" || exit 1
 
 if ! cp -p "${WP_CONFIG}" "${WP_CONFIG_BACKUP}" || ! cp -p "${CREDENTIALS}" "${CREDENTIALS_BACKUP}"; then

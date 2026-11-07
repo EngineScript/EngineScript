@@ -16,27 +16,18 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 # phpMyAdmin
 
-# Store existing config file
-rm -f /usr/src/config.inc.php 2>/dev/null || true
-mv /var/www/admin/tools/phpmyadmin/config.inc.php /usr/src/config.inc.php
-rm -rf /var/www/admin/tools/phpmyadmin
-
-# Download phpMyAdmin
-download_file "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" 2>> /tmp/enginescript_install_errors.log
-unzip -q -o "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip" -d /usr/src 2>> /tmp/enginescript_install_errors.log
-mv "/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages" /var/www/admin/tools/phpmyadmin
-mkdir -p /var/www/admin/tools/phpmyadmin/tmp
+# The new version is downloaded and unpacked beside the installed one, with its config.inc.php,
+# and swapped in only when complete: a failed download leaves the installed phpMyAdmin working.
+if [[ ! -f /var/www/admin/tools/phpmyadmin/config.inc.php ]]; then
+    echo "Error: /var/www/admin/tools/phpmyadmin/config.inc.php is missing, so phpMyAdmin was not updated." >&2
+    exit 1
+fi
+run_step "phpMyAdmin Download and Extract" install_beside /var/www/admin/tools/phpmyadmin "phpMyAdmin" build_phpmyadmin \
+    || { echo "Error: phpMyAdmin was not updated; the installed version still works. See /var/log/EngineScript/install-error-log.log." >&2; exit 1; }
 chown -R www-data:www-data /var/www/admin/tools/phpmyadmin
-print_last_errors
-debug_pause "phpMyAdmin Download and Extract"
-
-# Return existing config file
-mv /usr/src/config.inc.php /var/www/admin/tools/phpmyadmin/config.inc.php
 
 # Post-Install Cleanup
-run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "phpMyAdmin Cleanup"
+run_step "phpMyAdmin Cleanup" run_enginescript_cleanup
 
 echo ""
 echo ""

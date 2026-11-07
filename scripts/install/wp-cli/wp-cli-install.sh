@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${WP_CLI}" = 1 ]]; then
-    echo "WP_CLI script has already run"
-    exit 0
-fi
-
 # WP-CLI
 # The nightly build: WP-CLI 2.12.0's "wp core download" cuts paths over 100 characters short,
 # which leaves WordPress 7 without some of its core files (wp-cli/core-command#336). Return to the
@@ -121,6 +115,5 @@ echo "============================================================="
 echo ""
 echo ""
 
-set_install_state "WP_CLI" "1"
 
 sleep 5

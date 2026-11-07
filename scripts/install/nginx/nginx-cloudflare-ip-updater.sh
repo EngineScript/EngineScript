@@ -22,85 +22,26 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Modified: EngineScript - https://enginescript.com
 #
 
-# Cloudflare URLs for IP ranges
-CLOUDFLARE_IPSV4="https://www.cloudflare.com/ips-v4"
-CLOUDFLARE_IPSV6="https://www.cloudflare.com/ips-v6"
-
 # Nginx config file that contains Cloudflare's IP ranges
 CLOUDFLARE_NGINX_CONFIG="/etc/nginx/globals/cloudflare.conf"
 
-# Temporary file location
-TEMP_FILE_IPV4="/tmp/cloudflare-ipv4"
-TEMP_FILE_IPV6="/tmp/cloudflare-ipv6"
-
-# Validate IPv4 CIDR addresses
-validateIPv4() {
-	regex="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$"
-	while IFS= read -r ip || [[ -n "$ip" ]]
-	do
-		# Skip empty lines
-		[[ -z "$ip" ]] && continue
-		if [[ ! "$ip" =~ $regex ]]; then
-			echo "FAILED. Reason: Invalid IPv4 address [$ip]"
-			exit 1
-		fi
-	done < "$TEMP_FILE_IPV4"
-}
-
-# Validate IPv6 CIDR addresses
-validateIPv6() {
-	# An IPv6 range: 3 to 8 colon-separated groups of up to four hex digits (:: leaves groups empty),
-	# then /0 to /128. Enough to keep anything but an address range out of the Nginx config.
-	regex="^[0-9A-Fa-f]{0,4}(:[0-9A-Fa-f]{0,4}){2,7}/([0-9]|[1-9][0-9]|1[01][0-9]|12[0-8])$"
-	while IFS= read -r ip || [[ -n "$ip" ]]
-	do
-		# Skip empty lines
-		[[ -z "$ip" ]] && continue
-		if [[ ! "$ip" =~ $regex ]]; then
-			echo "FAILED. Reason: Invalid IPv6 address [$ip]"
-			exit 1
-		fi
-	done < "$TEMP_FILE_IPV6"
-}
-
-# Download the files from Cloudflare
-if [[ -f /usr/bin/curl ]];
-then
-	# IPv4
-	HTTP_STATUS=$(curl -sw '%{http_code}' -o /tmp/cloudflare-ipv4 $CLOUDFLARE_IPSV4)
-	if [[ "$HTTP_STATUS" -ne 200 ]]; then
-		echo "FAILED. Reason: unable to download IPv4 list [Status code: $HTTP_STATUS]"
-		exit 1
-	fi
-	# IPv6
-	HTTP_STATUS=$(curl -sw '%{http_code}' -o $TEMP_FILE_IPV6 $CLOUDFLARE_IPSV6)
-	if [[ "$HTTP_STATUS" -ne 200 ]]; then
-		echo "FAILED. Reason: unable to download IPv6 list [Status code: $HTTP_STATUS]"
-		exit 1
-	fi
-else
-	echo "FAILED. Reason: curl wasn't found on this system."
+# Download and check the ranges (cf_ip_ranges: every line must be an address range)
+if ! IPV4_RANGES="$(cf_ip_ranges v4)" || ! IPV6_RANGES="$(cf_ip_ranges v6)"; then
+	echo "FAILED. Reason: Cloudflare's IP ranges could not be downloaded or are not valid; ${CLOUDFLARE_NGINX_CONFIG} was left as it was."
 	exit 1
 fi
-
-# Validate IP addresses
-echo "Validating downloaded IP addresses..."
-validateIPv4
-validateIPv6
 echo "✓ IP validation completed successfully"
 
-# Count downloaded IPs for verification. Cloudflare's lists end without a newline, which wc -l
-# does not count, so this counts the non-empty lines, as the loops below read them.
-IPV4_COUNT=$(grep -c . "$TEMP_FILE_IPV4")
-IPV6_COUNT=$(grep -c . "$TEMP_FILE_IPV6")
+IPV4_COUNT=$(grep -c . <<< "$IPV4_RANGES")
+IPV6_COUNT=$(grep -c . <<< "$IPV6_RANGES")
 echo "Downloaded $IPV4_COUNT IPv4 ranges and $IPV6_COUNT IPv6 ranges"
 
-# In debug mode, show what was downloaded (sed ends the last line)
+# In debug mode, show what was downloaded
 if [[ "${DEBUG_INSTALL:-0}" == "1" ]]; then
 	echo "Debug: IPv4 ranges downloaded:"
-	sed -n p "$TEMP_FILE_IPV4"
+	echo "$IPV4_RANGES"
 	echo "Debug: IPv6 ranges downloaded:"
-	sed -n p "$TEMP_FILE_IPV6"
+	echo "$IPV6_RANGES"
 fi
 
 # Generate the new config in a staging file next to the live one,
@@ -112,31 +53,22 @@ echo "# Cloudflare IP addresses" > "$CLOUDFLARE_NGINX_CONFIG_NEW"
 echo "# > IPv4" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 IPV4_PROCESSED=0
-while IFS= read -r ip || [[ -n "$ip" ]]
-do
-	# Skip empty lines
-	[[ -z "$ip" ]] && continue
+while IFS= read -r ip; do
 	echo "set_real_ip_from $ip;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 	((IPV4_PROCESSED++))
-done< "$TEMP_FILE_IPV4"
+done <<< "$IPV4_RANGES"
 
 echo "# > IPv6" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 IPV6_PROCESSED=0
-while IFS= read -r ip || [[ -n "$ip" ]]
-do
-	# Skip empty lines
-	[[ -z "$ip" ]] && continue
+while IFS= read -r ip; do
 	echo "set_real_ip_from $ip;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 	((IPV6_PROCESSED++))
-done < "$TEMP_FILE_IPV6"
+done <<< "$IPV6_RANGES"
 
 echo "real_ip_header CF-Connecting-IP;" >> "$CLOUDFLARE_NGINX_CONFIG_NEW"
 
 echo "Processed $IPV4_PROCESSED IPv4 ranges and $IPV6_PROCESSED IPv6 ranges into config file"
-
-# Clean-up temporary files
-rm $TEMP_FILE_IPV4 $TEMP_FILE_IPV6
 
 # Swap the new file in, keeping the previous one for rollback
 if [[ -f "$CLOUDFLARE_NGINX_CONFIG" ]]; then

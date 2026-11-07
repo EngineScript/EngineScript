@@ -17,8 +17,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------
 # Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
-# Include config
-source /home/EngineScript/sites-list/sites.sh
+# The server's sites
+es_sites
 
 STATUS=0
 

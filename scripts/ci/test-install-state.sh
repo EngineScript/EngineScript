@@ -119,15 +119,12 @@ expected_flags=(
   "CRON"
   "ACME"
   "GCC"
-  "OPENSSL"
   "SWAP"
   "KERNEL_TWEAKS"
   "THP"
   "SFL"
   "NTP"
   "DO_CONSOLE"
-  "PCRE"
-  "ZLIB"
   "LIBURING"
   "UFW"
   "MARIADB"
@@ -226,11 +223,20 @@ printf '#!/usr/bin/env bash\nexit 0\n' > "${STEP_DIR}/succeeds.sh"
 printf '#!/usr/bin/env bash\nexit 1\n' > "${STEP_DIR}/fails.sh"
 chmod +x "${STEP_DIR}/succeeds.sh" "${STEP_DIR}/fails.sh"
 
+# The step's errors go to the step error log (run_step)
+ES_STEP_ERROR_LOG="${STEP_DIR}/step-errors.log"
+
 if (run_install_step "TEST_STEP_SUCCEEDS" "${STEP_DIR}/succeeds.sh" "Succeeding step"; echo "continued") > "${STEP_DIR}/out" 2>&1 \
     && grep -qx "continued" "${STEP_DIR}/out"; then
   pass "run_install_step continues after a step that succeeds"
 else
   fail "run_install_step did not continue after a step that succeeds"
+fi
+assert_state_value "TEST_STEP_SUCCEEDS" "1"
+if (run_install_step "TEST_STEP_SUCCEEDS_TOO" "${STEP_DIR}/succeeds.sh" "Succeeding step"; [[ "${TEST_STEP_SUCCEEDS_TOO:-}" == "1" ]]) > /dev/null 2>&1; then
+  pass "run_install_step sets the flag in the running install too, so a later check sees it"
+else
+  fail "run_install_step left the flag unset in the running install"
 fi
 
 if (run_install_step "TEST_STEP_FAILS" "${STEP_DIR}/fails.sh" "Failing step"; echo "continued") > "${STEP_DIR}/out" 2>&1; then
@@ -240,6 +246,110 @@ elif grep -qx "continued" "${STEP_DIR}/out"; then
 else
   pass "run_install_step stops the install when a step fails"
 fi
+if grep -q "^TEST_STEP_FAILS=1$" "${ENGINESCRIPT_INSTALL_STATE_FILE}"; then
+  fail "run_install_step set the flag of a step that failed"
+else
+  pass "run_install_step leaves the flag of a failed step unset, so es.install runs it again"
+fi
+
+# run_step: the command's errors go to the step log and on to the install error log, and its
+# exit status comes back
+printf '#!/usr/bin/env bash\necho "step stderr" >&2\nexit 3\n' > "${STEP_DIR}/noisy.sh"
+chmod +x "${STEP_DIR}/noisy.sh"
+set +e
+run_step "Noisy step" "${STEP_DIR}/noisy.sh" 2> /dev/null
+STEP_STATUS=$?
+set -e
+if [[ "${STEP_STATUS}" -eq 3 ]]; then
+  pass "run_step returns the command's exit status"
+else
+  fail "run_step returned ${STEP_STATUS}, expected 3"
+fi
+if [[ ! -s "${ES_STEP_ERROR_LOG}" ]]; then
+  pass "run_step empties the step log for the next step"
+else
+  fail "run_step left errors in the step log"
+fi
+
+# The site list helpers (es_sites, es_site_add, es_site_remove)
+ES_SITES_LIST="${STEP_DIR}/sites.sh"
+printf '# The server sites\nSITES=(\n)\n' > "${ES_SITES_LIST}"
+es_site_add "example.com"
+es_site_add "my-site.co.uk"
+es_site_add "example.com"
+SITES=()
+es_sites
+if [[ "${SITES[*]}" == "my-site.co.uk example.com" ]]; then
+  pass "es_site_add adds each domain once, and es_sites reads them back"
+else
+  fail "es_sites read '${SITES[*]}'"
+fi
+if es_site_exists "example.com" && ! es_site_exists "example.co" && ! es_site_exists "exampleXcom"; then
+  pass "es_site_exists matches the exact domain only"
+else
+  fail "es_site_exists matched the wrong domains"
+fi
+if ! es_site_add 'bad"domain' 2> /dev/null && ! es_site_add 'a b.com' 2> /dev/null; then
+  pass "es_site_add refuses a name that is not a domain"
+else
+  fail "es_site_add accepted a name that is not a domain"
+fi
+es_site_add "examplexcom"
+es_site_remove "example.com"
+SITES=()
+es_sites
+if ! es_site_exists "example.com" && es_site_exists "my-site.co.uk" && grep -q 'examplexcom' "${ES_SITES_LIST}"; then
+  pass "es_site_remove removes the exact domain only (a dot is not a wildcard)"
+else
+  fail "es_site_remove: the list is now '$(tr '\n' ' ' < "${ES_SITES_LIST}")'"
+fi
+if (ES_SITES_LIST="${STEP_DIR}/missing.sh"; es_sites; [[ "${#SITES[@]}" -eq 0 ]]); then
+  pass "es_sites gives an empty list when there is no site list"
+else
+  fail "es_sites without a site list"
+fi
+
+# install_beside: a build that succeeds replaces the folder; one that fails leaves it as it was
+TOOL_DIR="${STEP_DIR}/tools/demo"
+mkdir -p "${TOOL_DIR}"
+echo "old" > "${TOOL_DIR}/index.php"
+echo "stale" > "${TOOL_DIR}/removed-file.php"
+# shellcheck disable=SC2329  # called by install_beside
+build_ok() { echo "new" > "$1/index.php"; }
+# shellcheck disable=SC2329
+build_fails() { echo "partial" > "$1/index.php"; return 1; }
+if ! install_beside "${TOOL_DIR}" "Demo" build_fails 2> /dev/null && grep -qx "old" "${TOOL_DIR}/index.php" \
+    && [[ -z "$(find "${STEP_DIR}/tools" -mindepth 1 -maxdepth 1 -name '.*')" ]]; then
+  pass "install_beside keeps the installed copy, and no staging folder, when the build fails"
+else
+  fail "install_beside changed the installed copy, or left a staging folder, after a failed build"
+fi
+if install_beside "${TOOL_DIR}" "Demo" build_ok && grep -qx "new" "${TOOL_DIR}/index.php" \
+    && [[ ! -e "${TOOL_DIR}/removed-file.php" && -z "$(find "${STEP_DIR}/tools" -mindepth 1 -maxdepth 1 -name '.*')" ]]; then
+  pass "install_beside swaps in the new copy, without files the new version no longer has"
+else
+  fail "install_beside did not swap in the new copy cleanly"
+fi
+if install_beside "${STEP_DIR}/tools/fresh" "Fresh" build_ok && grep -qx "new" "${STEP_DIR}/tools/fresh/index.php"; then
+  pass "install_beside also installs where there was nothing yet"
+else
+  fail "install_beside failed on a first install"
+fi
+
+# acquire_lock: a second holder is refused, the holder's own child processes are not
+# shellcheck disable=SC2034  # read by acquire_lock
+ES_LOCK_DIR="${STEP_DIR}"
+if (acquire_lock "test" && ! (unset ES_LOCK_HELD_test; acquire_lock "test") 2> /dev/null && bash -c 'source "$1"; acquire_lock test' _ "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"); then
+  pass "acquire_lock refuses a second run, and lets a script the holder starts through"
+else
+  fail "acquire_lock did not refuse a second run, or blocked the holder's own child"
+fi
+if (acquire_lock "test"); then
+  pass "acquire_lock is free again once its holder has exited"
+else
+  fail "acquire_lock stayed held after its holder exited"
+fi
+unset ES_LOCK_DIR
 
 # shellcheck disable=SC2034 # read by run_install_step through ${!flag_name}
 TEST_STEP_DONE=1

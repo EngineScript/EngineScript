@@ -46,14 +46,6 @@ UBUNTU_TYPE="$(. /etc/os-release && echo "${NAME}")"
 UBUNTU_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
 UBUNTU_VERSION="$(. /etc/os-release && echo "${VERSION_ID}")"
 
-# Random Characters
-RAND_CHAR2="$(openssl rand -base64 6 | tr -dc 'a-zA-Z0-9' | head -c 2)"
-RAND_CHAR4="$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 4)"
-RAND_CHAR8="$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 8)"
-RAND_CHAR16="$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 16)"
-RAND_CHAR24="$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 24)"
-RAND_CHAR32="$(openssl rand -base64 64 | tr -dc 'a-zA-Z0-9_' | head -c 32)"
-
 # Server Memory Calculations
 SERVER_MEMORY_TOTAL_80="$(free -m | awk 'NR==2{printf "%d", $2*0.80 }')"
 SERVER_MEMORY_TOTAL_100="$(free -m | awk 'NR==2{printf "%d", $2*1 }')"

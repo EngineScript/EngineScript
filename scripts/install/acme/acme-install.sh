@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${ACME}" = 1 ]]; then
-    echo "ACME script has already run"
-    exit 0
-fi
-
 # ACME.sh Install
 # The latest acme.sh, from get.acme.sh, which downloads acme.sh itself from GitHub. Either download
 # can fail, so the install is tried up to three times.
@@ -49,6 +43,4 @@ export CF_Email="${CF_ACCOUNT_EMAIL}"
 
 /root/.acme.sh/acme.sh --upgrade --auto-upgrade
 
-# Mark the installation as complete
-set_install_state "ACME" "1"
 echo "ACME.sh completed successfully. Script done."

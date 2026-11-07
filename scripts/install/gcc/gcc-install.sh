@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${GCC}" = 1 ]]; then
-    echo "GCC script has already run"
-    exit 0
-fi
-
 # GCC
 
 # Remove previous GCC alternatives (a fresh server has none)
@@ -49,6 +43,4 @@ for version in "${GCC_VERSIONS[@]}"; do
   priority=$((priority - 10))
 done
 
-# Mark the installation as complete
-set_install_state "GCC" "1"
 echo "GCC completed successfully. Script done."

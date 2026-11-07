@@ -34,23 +34,23 @@ fi
 failed=0
 
 # Logs: root owns the log folder, and scheduled jobs' logs are rotated
-set_enginescript_log_permissions 2>> /tmp/enginescript_install_errors.log || failed=1
-install_enginescript_logrotate 2>> /tmp/enginescript_install_errors.log || failed=1
+set_enginescript_log_permissions 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+install_enginescript_logrotate 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
 # Cron: replace EngineScript's jobs with the current list. Jobs no longer on it are removed.
-install_enginescript_cron 2>> /tmp/enginescript_install_errors.log || failed=1
+install_enginescript_cron 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
 # Kernel settings: the audited sysctl file, applied live (a reboot completes the rest)
-install_enginescript_sysctl 2>> /tmp/enginescript_install_errors.log || failed=1
+install_enginescript_sysctl 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
 # Transparent Huge Pages: switched off before the services start
 if [[ -f /etc/systemd/system/disable-thp.service ]]; then
   { cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service \
     && chmod 644 /etc/systemd/system/disable-thp.service \
-    && systemctl daemon-reload; } 2>> /tmp/enginescript_install_errors.log || failed=1
+    && systemctl daemon-reload; } 2>> "${ES_STEP_ERROR_LOG}" || failed=1
   print_last_errors
 fi
 
@@ -59,7 +59,7 @@ fi
 # retune-services.sh keeps its own retry marker, so it does not hold back the synced version.
 if tuning_needs_replan; then
   echo "Re-tuning services for this server's RAM and CPUs..."
-  /usr/local/bin/enginescript/scripts/update/retune-services.sh 2>> /tmp/enginescript_install_errors.log
+  /usr/local/bin/enginescript/scripts/update/retune-services.sh 2>> "${ES_STEP_ERROR_LOG}"
   print_last_errors
 fi
 

@@ -17,33 +17,13 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Add UFW Rules for Cloudflare
 # Credit: https://github.com/Paul-Reed/cloudflare-ufw
 
-# Fetch Cloudflare IP ranges with retry logic
-max_retries=3
-retry_delay=10
-retry_count=0
-cloudflare_ips=""
-
-while [[ $retry_count -lt $max_retries ]]; do
-  echo "Fetching Cloudflare IP ranges... (Attempt $((retry_count+1))/$max_retries)"
-  cloudflare_ips_v4=$(curl -s https://www.cloudflare.com/ips-v4)
-  cloudflare_ips_v6=$(curl -s https://www.cloudflare.com/ips-v6)
-  cloudflare_ips=$(echo "$cloudflare_ips_v4"; echo "$cloudflare_ips_v6")
-  if [[ -n "$cloudflare_ips_v4" ]] && [[ -n "$cloudflare_ips_v6" ]]; then
-    break
-  fi
-  retry_count=$((retry_count+1))
-  if [[ $retry_count -lt $max_retries ]]; then
-    echo "Failed to fetch Cloudflare IP ranges. Retrying in $retry_delay seconds..."
-    sleep $retry_delay
-  fi
-
-done
-
-# Check if IPs were fetched
-if [[ -z "$cloudflare_ips_v4" ]] || [[ -z "$cloudflare_ips_v6" ]]; then
-  echo "${BOLD}ERROR:${NORMAL} Failed to fetch Cloudflare IP ranges after $max_retries attempts. Please check network connectivity and Cloudflare status."
+# Download and check Cloudflare's IP ranges (cf_ip_ranges retries, and returns 1 when the
+# download fails or any line is not an address range, so nothing else becomes a firewall rule)
+if ! cloudflare_ips_v4="$(cf_ip_ranges v4)" || ! cloudflare_ips_v6="$(cf_ip_ranges v6)"; then
+  echo "${BOLD}ERROR:${NORMAL} Could not get Cloudflare's IP ranges. Please check network connectivity and Cloudflare status." >&2
   exit 1
 fi
+cloudflare_ips="$(printf '%s\n%s\n' "${cloudflare_ips_v4}" "${cloudflare_ips_v6}")"
 
 echo "Adding UFW rules for Cloudflare IPs (TCP & UDP)..."
 # Allow all TCP and UDP traffic from Cloudflare IPs (no ports restriction)

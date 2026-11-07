@@ -14,43 +14,31 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Create tools directory if it doesn't exist
-mkdir -p /var/www/admin/tools
-
-# phpSysinfo
 PSI_DIR="/var/www/admin/tools/phpsysinfo"
 
-# The new copy is cloned into a staging directory and replaces the installed copy only once it
-# is complete, so a failed clone leaves the installed copy in place.
-STAGING_DIR="$(mktemp -d /var/www/admin/.phpsysinfo-new.XXXXXX)" || { echo "Error: Failed to create a staging directory in /var/www/admin" >&2; exit 1; }
-PSI_NEW="${STAGING_DIR}/phpsysinfo"
+# Clone phpSysInfo into <staging folder>, with EngineScript's configuration (install_beside swaps
+# it in when this succeeds, so a failed clone leaves the installed copy in place)
+build_phpsysinfo() {
+    local dir="$1"
+    git clone --depth 1 "https://github.com/phpsysinfo/phpsysinfo.git" "${dir}" \
+        || { echo "Error: Failed to clone phpSysInfo from GitHub" >&2; return 1; }
+    if [[ ! -f "${dir}/index.php" ]]; then
+        echo "Error: The phpSysInfo clone has no index.php" >&2
+        return 1
+    fi
 
-# Remove the staging directory and stop; the installed copy is not changed
-function fail_psi_install() {
-    rm -rf "${STAGING_DIR:?}"
-    echo "Error: $1" >&2
-    echo "phpSysInfo was not changed." >&2
-    exit 1
+    # The repository's own files (.git, .github and the like) are not served
+    find "${dir}" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
+
+    # EngineScript's configuration template, stored in config/var/www/admin/tools/ to mirror the
+    # install location
+    cp -f /usr/local/bin/enginescript/config/var/www/admin/tools/phpsysinfo/phpsysinfo.ini "${dir}/phpsysinfo.ini" \
+        || { echo "Error: Failed to copy the phpSysInfo configuration" >&2; return 1; }
+    sed -i "s|SEDPHPVER|${PHP_VER}|g" "${dir}/phpsysinfo.ini" \
+        || { echo "Error: Failed to set the PHP version in the phpSysInfo configuration" >&2; return 1; }
 }
 
-# Clone the phpSysinfo repository
-git clone --depth 1 "https://github.com/phpsysinfo/phpsysinfo.git" "${PSI_NEW}" || fail_psi_install "Failed to clone phpSysInfo from GitHub"
-if [[ ! -f "${PSI_NEW}/index.php" ]]; then
-    fail_psi_install "The phpSysInfo clone has no index.php"
-fi
-
-# The repository's own files (.git, .github and the like) are not served
-find "${PSI_NEW}" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
-
-# Copy EngineScript phpSysinfo configuration template
-# Config templates are stored in /config/var/www/admin/tools/ to mirror the install location
-cp -f /usr/local/bin/enginescript/config/var/www/admin/tools/phpsysinfo/phpsysinfo.ini "${PSI_NEW}/phpsysinfo.ini" || fail_psi_install "Failed to copy the phpSysInfo configuration"
-sed -i "s|SEDPHPVER|${PHP_VER}|g" "${PSI_NEW}/phpsysinfo.ini" || fail_psi_install "Failed to set the PHP version in the phpSysInfo configuration"
-
-# Swap the new copy in, then clean up
-chmod 755 "${PSI_NEW}"
-replace_directory "${PSI_NEW}" "${PSI_DIR}" || fail_psi_install "Failed to move the new copy into ${PSI_DIR}"
-rm -rf "${STAGING_DIR:?}"
+install_beside "${PSI_DIR}" "phpSysInfo" build_phpsysinfo || exit 1
 
 # Set permissions for the EngineScript frontend
 set_enginescript_frontend_permissions

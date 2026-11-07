@@ -17,10 +17,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # The PHP files in every site's uploads folder (the daily scan only reports which sites have any)
 show_php_in_uploads() {
   local SITES=() site uploads found
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   if [[ "${#SITES[@]}" -eq 0 ]]; then
     echo "There are no sites on this server yet."
     return

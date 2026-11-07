@@ -29,10 +29,7 @@ show_certificate() {
 # The certificate of every site, and the Cloudflare certificate that origin pulls are checked with
 show_certificates() {
   local SITES=() site
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Site certificates (acme.sh renews them on its own before they expire):"
   [[ "${#SITES[@]}" -eq 0 ]] && echo "  No sites yet."

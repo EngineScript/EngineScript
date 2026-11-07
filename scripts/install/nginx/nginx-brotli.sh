@@ -19,8 +19,8 @@ return_to_src
 
 # Brotli
 
-# Clone fresh ngx_brotli
-git_clone_fresh "https://github.com/google/ngx_brotli.git" "/usr/src/ngx_brotli" --recurse-submodules --remote-submodules \
+# Clone fresh ngx_brotli (master). Its Brotli library is the commit ngx_brotli pins as a submodule.
+git_clone_fresh "https://github.com/google/ngx_brotli.git" "/usr/src/ngx_brotli" --recurse-submodules \
   || { echo "Error: Failed to clone ngx_brotli." >&2; exit 1; }
 cd /usr/src/ngx_brotli || { echo "Error: Failed to change to /usr/src/ngx_brotli" >&2; exit 1; }
 git submodule update --init || { echo "Error: Failed to fetch the Brotli library for ngx_brotli." >&2; exit 1; }

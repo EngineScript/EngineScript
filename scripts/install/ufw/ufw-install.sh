@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${UFW}" = 1 ]]; then
-    echo "UFW script has already run"
-    exit 0
-fi
-
 # Set UFW Global Rules
 /usr/local/bin/enginescript/scripts/install/ufw/ufw-rules.sh
 
@@ -29,6 +23,4 @@ fi
 # Enable UFW
 ufw --force enable
 
-# Mark the installation as complete
-set_install_state "UFW" "1"
 echo "UFW completed successfully. Script done."

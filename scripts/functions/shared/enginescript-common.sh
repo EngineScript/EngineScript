@@ -7,9 +7,62 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 # Shared Functions
-# Common functions for every EngineScript script: install steps and state, prompts and
-# validation, services, caches, permissions, sites, and logging.
+# Common functions for every EngineScript script: install steps and state, services, caches,
+# sites, and logging. Prompts, permissions, Cloudflare, and the tuning appliers are in their
+# own files, loaded below.
 #----------------------------------------------------------------------------------
+
+
+# The parts of the shared functions, each in its own file next to this one. The one-time
+# upgrades (enginescript-upgrades.sh) are loaded only by normal-auto-upgrade.sh.
+# shellcheck source=scripts/functions/shared/enginescript-cloudflare.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-cloudflare.sh" || return 1
+# shellcheck source=scripts/functions/shared/enginescript-prompts.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-prompts.sh" || return 1
+# shellcheck source=scripts/functions/shared/enginescript-permissions.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-permissions.sh" || return 1
+# shellcheck source=scripts/functions/shared/enginescript-tuning-apply.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-tuning-apply.sh" || return 1
+
+
+# The errors of the install or update step that is running. print_last_errors adds them to
+# /var/log/EngineScript/install-error-log.log and empties this file for the next step.
+ES_STEP_ERROR_LOG="/var/log/EngineScript/step-errors.log"
+
+
+# ----------------------------------------------------------------
+# Messages: log prints, warn and die print to stderr, and die stops the script. Scripts with a
+# log file of their own (backup, staging) define their own log and die.
+function log() {
+    echo "$*"
+}
+
+function warn() {
+    echo "Warning: $*" >&2
+}
+
+function die() {
+    echo "Error: $*" >&2
+    exit 1
+}
+
+
+# ----------------------------------------------------------------
+# Run one install or update step. Its errors go to the step error log, print_last_errors then
+# adds them to the install error log (and shows them in debug mode), and debug mode pauses after
+# a step that succeeded. Returns the command's exit status, so a caller can add "|| die".
+# Usage: run_step "<label>" <command> [arguments]
+function run_step() {
+    local label="$1" status=0
+    shift
+    mkdir -p "$(dirname "${ES_STEP_ERROR_LOG}")"
+    "$@" 2>> "${ES_STEP_ERROR_LOG}" || status=$?
+    print_last_errors
+    if [[ "${status}" -eq 0 ]]; then
+        debug_pause "${label}"
+    fi
+    return "${status}"
+}
 
 
 # Debug pause function
@@ -67,19 +120,21 @@ function debug_pause() {
 # Print errors from the last script section if any
 function print_last_errors() {
     # Always append errors to persistent log if any
-    if [[ -s /tmp/enginescript_install_errors.log ]]; then
-        cat /tmp/enginescript_install_errors.log >> /var/log/EngineScript/install-error-log.log
+    if [[ -s "${ES_STEP_ERROR_LOG}" ]]; then
+        cat "${ES_STEP_ERROR_LOG}" >> /var/log/EngineScript/install-error-log.log
     fi
     # Only show errors to user if debug mode is enabled
-    if [[ "${DEBUG_INSTALL}" == "1" ]] && [[ -s /tmp/enginescript_install_errors.log ]]; then
+    if [[ "${DEBUG_INSTALL}" == "1" ]] && [[ -s "${ES_STEP_ERROR_LOG}" ]]; then
         echo -e "\n\n===============================================================\n"
         echo -e "${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
-        cat /tmp/enginescript_install_errors.log
+        cat "${ES_STEP_ERROR_LOG}"
         echo -e "${BOLD}[END OF ERRORS]${NORMAL}\n\n"
         echo -e "If you encounter errors and want to submit a GitHub issue, please run: es.debug"
     fi
-    # Always clear the temp log for the next step
-    : > /tmp/enginescript_install_errors.log
+    # Always clear the step log for the next step
+    if [[ -e "${ES_STEP_ERROR_LOG}" ]]; then
+        : > "${ES_STEP_ERROR_LOG}"
+    fi
 }
 
 
@@ -137,7 +192,9 @@ function set_install_state() {
 
 
 # ----------------------------------------------------------------
-# Ensure install-state.conf contains every install flag with a 0/1 value.
+# Ensure install-state.conf contains every install flag with a 0/1 value. Flags of steps that no
+# longer exist (OPENSSL, PCRE, ZLIB: the Nginx build fetches those sources) stay in older files,
+# unused.
 function initialize_install_state_file() {
     local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
     local install_state_flags=(
@@ -150,15 +207,12 @@ function initialize_install_state_file() {
         "CRON"
         "ACME"
         "GCC"
-        "OPENSSL"
         "SWAP"
         "KERNEL_TWEAKS"
         "THP"
         "SFL"
         "NTP"
         "DO_CONSOLE"
-        "PCRE"
-        "ZLIB"
         "LIBURING"
         "UFW"
         "MARIADB"
@@ -286,7 +340,7 @@ function clear_redis_cache() {
 # Flush WordPress cache (single site)
 function flush_wordpress_cache() {
     echo "Flushing WordPress cache"
-    wp cache flush --allow-root || {
+    run_as_www_data wp cache flush || {
         echo "Error: Failed to flush WordPress cache."
     }
 }
@@ -297,7 +351,7 @@ function flush_wordpress_cache() {
 # does not read, and warns that it cannot.
 function flush_wordpress_rewrites() {
     echo "Flushing WordPress rewrite rules"
-    wp rewrite flush --allow-root || {
+    run_as_www_data wp rewrite flush || {
         echo "Error: Failed to flush WordPress rewrite rules."
     }
 }
@@ -307,7 +361,7 @@ function flush_wordpress_rewrites() {
 # Delete WordPress transients (single site)
 function clear_wordpress_transients() {
     echo "Deleting WordPress Transients"
-    wp transient delete --all --allow-root || {
+    run_as_www_data wp transient delete --all || {
         echo "Error: Failed to delete WordPress transients."
     }
 }
@@ -317,7 +371,7 @@ function clear_wordpress_transients() {
 # Purge Nginx cache for a single site using Nginx Helper plugin
 function purge_nginx_helper_cache() {
     echo "Purging Nginx Cache via Nginx Helper Plugin"
-    wp nginx-helper purge-all --allow-root || {
+    run_as_www_data wp nginx-helper purge-all || {
         echo "Error: Failed to purge Nginx cache via plugin."
     }
 }
@@ -353,62 +407,9 @@ function clear_wordpress_caches() {
 
 
 # ----------------------------------------------------------------
-# Clear WordPress transients for all sites
-function clear_all_transients() {
-    # Source sites list
-    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-        source /home/EngineScript/sites-list/sites.sh
-        for site in "${SITES[@]}"; do
-            echo "Deleting ${site} Transients"
-            cd "/var/www/sites/$site/html" || {
-                echo "Error: Failed to change directory to /var/www/sites/$site/html"
-                continue
-            }
-            clear_wordpress_transients
-        done
-    else
-        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Purge Nginx cache for all sites using Nginx Helper plugin
-function purge_all_nginx_helper_caches() {
-    # Source sites list
-    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-        source /home/EngineScript/sites-list/sites.sh
-        for site in "${SITES[@]}"; do
-            echo "Purging Nginx Cache for ${site}"
-            cd "/var/www/sites/$site/html" || {
-                echo "Error: Failed to change directory to /var/www/sites/$site/html"
-                continue
-            }
-            purge_nginx_helper_cache
-        done
-    else
-        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
-    fi
-}
-
-
-# ----------------------------------------------------------------
 # Clear WordPress caches for all sites (cache + rewrites)
 function clear_all_wordpress_caches() {
-    # Source sites list
-    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-        source /home/EngineScript/sites-list/sites.sh
-        for site in "${SITES[@]}"; do
-            echo "Clearing WordPress caches for ${site}"
-            cd "/var/www/sites/$site/html" || {
-                echo "Error: Failed to change directory to /var/www/sites/$site/html"
-                continue
-            }
-            clear_wordpress_caches
-        done
-    else
-        echo "Error: Sites list not found at /home/EngineScript/sites-list/sites.sh"
-    fi
+    for_each_site clear_wordpress_caches
 }
 
 
@@ -563,15 +564,8 @@ function php_fpm_answers() {
 # nothing when every site answers or there are no sites. Callers compare the result with a list
 # taken before a change, so a site that was already failing does not count against the change.
 function get_sites_without_php() {
-    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
-    local site code
-
-    if [[ ! -f "${sites_file}" ]]; then
-        return 0
-    fi
-    local SITES=()
-    # shellcheck source=/dev/null
-    source "${sites_file}"
+    local SITES=() site code
+    es_sites
 
     for site in "${SITES[@]}"; do
         code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 20 \
@@ -586,27 +580,20 @@ function get_sites_without_php() {
 # ----------------------------------------------------------------
 # Print the WordPress sites on this server that cannot reach their database, one per line
 #
-# Runs a query with each site's own credentials from wp-config.php (WP-CLI), so it checks the
-# account WordPress uses. Sites without wp-config.php (no WordPress) are skipped. Prints nothing
+# Runs a query with each site's own credentials from wp-config.php (WP-CLI, as www-data, so the
+# site's wp-config.php never runs as root), so it checks the account WordPress uses. Sites without wp-config.php (no WordPress) are skipped. Prints nothing
 # when every site reaches its database or there are no sites. Callers compare the result with a
 # list taken before a change, as with get_sites_without_php.
 function get_sites_without_database() {
-    local sites_file="/home/EngineScript/sites-list/sites.sh"
-    local site site_root
-
-    if [[ ! -f "${sites_file}" ]]; then
-        return 0
-    fi
-    local SITES=()
-    # shellcheck source=/dev/null
-    source "${sites_file}"
+    local SITES=() site site_root
+    es_sites
 
     for site in "${SITES[@]}"; do
         site_root="/var/www/sites/${site}/html"
         if [[ ! -f "${site_root}/wp-config.php" ]]; then
             continue
         fi
-        if ! timeout 60 wp db query "SELECT 1" --path="${site_root}" --allow-root --skip-plugins --skip-themes > /dev/null 2>&1; then
+        if ! (cd "${site_root}" && timeout 60 runuser -u www-data -- wp db query "SELECT 1" --skip-plugins --skip-themes) > /dev/null 2>&1; then
             echo "${site}"
         fi
     done
@@ -630,222 +617,127 @@ function newly_failing_sites() {
 
 
 # ----------------------------------------------------------------
-# Wait for a key, so a tool's output stays on screen before the menu redraws
-function pause() {
-    echo ""
-    read -n 1 -s -r -p "Press any key to continue"
-    echo ""
-    echo ""
-}
-
-
-# ----------------------------------------------------------------
-# Enhanced input validation functions
-# Prompts user with timeout and exit options for basic continuation
-function prompt_continue() {
-    local prompt_text="${1:-Press [Enter] to continue or type 'exit' to abort}"
-    local timeout_seconds="${2:-300}"  # 5 minute default timeout
-    
-    while true; do
-        echo -e "\n${prompt_text}"
-        if read -t "${timeout_seconds}" -p "> " user_input; then
-            case "${user_input,,}" in  # Convert to lowercase
-                ""|"y"|"yes"|"continue")
-                    return 0
-                    ;;
-                "exit"|"quit"|"abort"|"stop")
-                    echo -e "\nExiting script as requested."
-                    exit 1
-                    ;;
-                *)
-                    echo "Invalid input. Please press Enter to continue or type 'exit' to abort."
-                    ;;
-            esac
-        else
-            echo -e "\nTimeout reached (${timeout_seconds}s). Exiting script."
-            exit 1
-        fi
-    done
-}
-
-
-# ----------------------------------------------------------------
-# Prompts user for yes/no confirmation with validation and timeout
-function prompt_yes_no() {
-    local prompt_text="$1"
-    local default_value="${2:-""}"  # Optional default (y/n)
-    local timeout_seconds="${3:-300}"  # 5 minute default timeout
-    
-    local prompt_suffix=""
-    if [[ -n "$default_value" ]]; then
-        case "${default_value,,}" in
-            "y"|"yes") prompt_suffix=" [Y/n/exit]" ;;
-            "n"|"no") prompt_suffix=" [y/N/exit]" ;;
-        esac
-    else
-        prompt_suffix=" [y/n/exit]"
-    fi
-    
-    while true; do
-        echo -e "\n${prompt_text}${prompt_suffix}"
-        if read -t "${timeout_seconds}" -p "> " user_input; then
-            # Use default if empty input and default is set
-            if [[ -z "$user_input" && -n "$default_value" ]]; then
-                user_input="$default_value"
-            fi
-            
-            case "${user_input,,}" in
-                "y"|"yes")
-                    return 0  # True/Yes
-                    ;;
-                "n"|"no") 
-                    return 1  # False/No
-                    ;;
-                "exit"|"quit"|"abort"|"stop")
-                    echo -e "\nExiting script as requested."
-                    exit 1
-                    ;;
-                "")
-                    if [[ -z "$default_value" ]]; then
-                        echo "Please enter 'y' for yes, 'n' for no, or 'exit' to abort."
-                    else
-                        echo "Please enter 'y', 'n', or 'exit'."
-                    fi
-                    ;;
-                *)
-                    echo "Invalid input. Please enter 'y' for yes, 'n' for no, or 'exit' to abort."
-                    ;;
-            esac
-        else
-            echo -e "\nTimeout reached (${timeout_seconds}s). Exiting script."
-            exit 1
-        fi
-    done
-}
-
-
-# ----------------------------------------------------------------
-# Prompts user for text input with validation and timeout.
-# Prints only the answer on stdout, so callers capture it with $(...); messages go to stderr.
-# Inside $(...), the exit on "exit" or a timeout ends only that subshell: callers check the status.
-function prompt_input() {
-    local prompt_text="$1"
-    local default_value="${2:-""}"
-    local timeout_seconds="${3:-300}"  # 5 minute default timeout
-    local validation_pattern="${4:-""}"  # Optional regex pattern
-    local allow_empty="${5:-false}"  # Whether to allow empty input
-    
-    local prompt_suffix=""
-    if [[ -n "$default_value" ]]; then
-        prompt_suffix=" [${default_value}]"
-    fi
-    
-    while true; do
-        echo -e "\n${prompt_text}${prompt_suffix}" >&2
-        echo "Type 'exit' to abort the script." >&2
-        if read -t "${timeout_seconds}" -p "> " user_input; then
-            case "${user_input,,}" in
-                "exit"|"quit"|"abort"|"stop")
-                    echo -e "\nExiting script as requested." >&2
-                    exit 1
-                    ;;
-                "")
-                    if [[ -n "$default_value" ]]; then
-                        echo "$default_value"
-                        return 0
-                    elif [[ "$allow_empty" == "true" ]]; then
-                        echo ""
-                        return 0
-                    else
-                        echo "Input cannot be empty. Please enter a value or type 'exit' to abort." >&2
-                    fi
-                    ;;
-                *)
-                    # Validate against pattern if provided
-                    if [[ -n "$validation_pattern" ]]; then
-                        if [[ "$user_input" =~ $validation_pattern ]]; then
-                            echo "$user_input"
-                            return 0
-                        else
-                            echo "Invalid input format. Please try again or type 'exit' to abort." >&2
-                        fi
-                    else
-                        echo "$user_input"
-                        return 0
-                    fi
-                    ;;
-            esac
-        else
-            echo -e "\nTimeout reached (${timeout_seconds}s). Exiting script." >&2
-            exit 1
-        fi
-    done
-}
-
-
-# ----------------------------------------------------------------
-# One label of a domain name (the "example" in example.com): 1 to 63 lowercase letters, digits,
-# and hyphens, not starting or ending with a hyphen (RFC 952 / RFC 1123).
-#
-# IMPORTANT: Single-character labels (e.g., 'x' in 'x.com', 'a' in 'a.io') MUST pass. They are
-# fully valid under DNS and ICANN rules, and EngineScript must support them. The optional group
-# `([a-z0-9-]{0,61}[a-z0-9])?` makes everything after the first character optional, so a single
-# character matches on its own; the group still stops a leading or trailing hyphen ("-bad",
-# "bad-"). Do not "fix" this to require at least two characters.
-# Usage: validate_domain_label <label>
-function validate_domain_label() {
-    [[ "$1" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]]
-}
-
-
-# ----------------------------------------------------------------
-# Full site domain validation: lowercase labels separated by dots (example.com, blog.example.co.uk),
-# each 1 to 63 characters without a leading or trailing hyphen, ending in a TLD that starts
-# with a letter (xn-- TLDs included)
-function validate_site_domain() {
-    local domain="$1"
-    local label="[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
-
-    [[ ${#domain} -le 253 && "${domain}" =~ ^(${label}\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$ ]]
-}
-
-
-# ----------------------------------------------------------------
-# Email validation function
-function validate_email() {
-    local email="$1"
-    local email_regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    
-    if [[ "$email" =~ $email_regex ]]; then
-        return 0
-    else
+# Print a random string of letters and digits, for passwords, database names and users, and
+# table prefixes. Made when asked, from openssl's random bytes; base64 output also has + / =,
+# which are dropped, so it reads more bytes until the string is long enough.
+# Usage: es_random <length>
+function es_random() {
+    local length="$1" out=""
+    if [[ ! "${length}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Error: es_random needs a length, not '${length}'." >&2
         return 1
     fi
+    while (( ${#out} < length )); do
+        out+="$(openssl rand -base64 $(( length * 2 )) | tr -dc 'a-zA-Z0-9')"
+    done
+    printf '%s\n' "${out:0:length}"
 }
 
 
 # ----------------------------------------------------------------
-# Run a command as www-data
-#
-# Site files belong to www-data, so a hacked plugin can change them. Anything that runs those
-# files (WP-CLI loads wp-config.php and every plugin) or parses them (image tools) must run as
-# www-data on a schedule: as root, it would hand the plugin the whole server.
-# Usage: run_as_www_data <command> [arguments]
-function run_as_www_data() {
-    runuser -u www-data -- "$@"
+# Hold a named lock until the script exits, so two runs cannot change the same things at once:
+#   update: es.update and the Nginx, PHP, and MariaDB updates
+#   sites:  Create, Import, and Remove Domain, and staging copies (site list, Redis numbers)
+# The lock file is in /run, which only root can write to. Scripts this one starts inherit the
+# lock, so an update that runs another update does not wait for itself. ES_LOCK_DIR overrides
+# the folder (for tests). Returns 1, with a message, when another run holds the lock.
+# Usage: acquire_lock <name> [seconds to wait, default 0]
+function acquire_lock() {
+    local name="$1" wait="${2:-0}" held_var lock_fd
+    local lock_file="${ES_LOCK_DIR:-/run}/enginescript-${name}.lock"
+    held_var="ES_LOCK_HELD_${name//[^A-Za-z0-9]/_}"
+
+    if [[ "${!held_var:-}" == "1" ]]; then
+        return 0
+    fi
+    exec {lock_fd}> "${lock_file}" || { echo "Error: Failed to open ${lock_file}" >&2; return 1; }
+    if ! flock -w "${wait}" "${lock_fd}"; then
+        exec {lock_fd}>&-
+        echo "Error: Another EngineScript task is running (it holds ${lock_file}). Try again when it has finished." >&2
+        return 1
+    fi
+    export "${held_var}=1"
 }
 
 
 # ----------------------------------------------------------------
-# Ask which of the server's sites to use, from /home/EngineScript/sites-list/sites.sh
+# The server's site list, /home/EngineScript/sites-list/sites.sh (ES_SITES_LIST overrides the path
+# for tests). It sets SITES, with each domain in quotes on its own line.
+
+# Load the site list into SITES; SITES is empty when there is no list yet. Declare
+# "local SITES=()" first to keep SITES out of the caller's own variables.
+function es_sites() {
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+    SITES=()
+    if [[ -f "${sites_file}" ]]; then
+        # shellcheck source=/dev/null
+        source "${sites_file}"
+    fi
+}
+
+# Return 0 when the domain is on the site list
+function es_site_exists() {
+    local SITES=() site
+    es_sites
+    for site in "${SITES[@]}"; do
+        if [[ "${site}" == "$1" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Add a domain to the site list, once. The list is created from its template when missing.
+# Callers that change the list hold the "sites" lock (acquire_lock).
+function es_site_add() {
+    local domain="$1"
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+
+    if [[ ! "${domain}" =~ ^[a-z0-9.-]+$ ]]; then
+        echo "Error: Invalid domain '${domain}' for the site list." >&2
+        return 1
+    fi
+    if es_site_exists "${domain}"; then
+        return 0
+    fi
+    if [[ ! -f "${sites_file}" ]]; then
+        mkdir -p "$(dirname "${sites_file}")" \
+            && cp /usr/local/bin/enginescript/scripts/functions/cron/sites.sh "${sites_file}" \
+            || { echo "Error: Failed to create the site list at ${sites_file}" >&2; return 1; }
+    fi
+    if ! grep -q '^SITES=(' "${sites_file}"; then
+        echo "Error: ${sites_file} has no SITES=( line, so ${domain} was not added." >&2
+        return 1
+    fi
+    sed -i "/^SITES=(/a \"${domain}\"" "${sites_file}" \
+        || { echo "Error: Failed to add ${domain} to ${sites_file}" >&2; return 1; }
+}
+
+# Remove a domain from the site list. Only the line that holds exactly the quoted domain goes.
+# Callers that change the list hold the "sites" lock (acquire_lock).
+function es_site_remove() {
+    local domain="$1"
+    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+
+    if [[ ! "${domain}" =~ ^[a-z0-9.-]+$ ]]; then
+        echo "Error: Invalid domain '${domain}' for the site list." >&2
+        return 1
+    fi
+    if [[ ! -f "${sites_file}" ]]; then
+        return 0
+    fi
+    sed -i "/^[[:space:]]*\"${domain//./\\.}\"[[:space:]]*$/d" "${sites_file}" \
+        || { echo "Error: Failed to remove ${domain} from ${sites_file}" >&2; return 1; }
+}
+
+
+# ----------------------------------------------------------------
+# Ask which of the server's sites to use, from the site list (es_sites)
 # Sets SELECTED_SITE. Returns 1 when there are no sites, on Cancel, or at the end of input.
 function select_site() {
     local SITES=() site
     SELECTED_SITE=""
-    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-        # shellcheck source=/dev/null
-        source /home/EngineScript/sites-list/sites.sh
-    fi
+    es_sites
     if [[ "${#SITES[@]}" -eq 0 ]]; then
         echo "There are no sites on this server yet."
         return 1
@@ -873,10 +765,7 @@ function select_site() {
 # Usage: for_each_site <command> [arguments]
 function for_each_site() {
     local SITES=() site failed=()
-    if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-        # shellcheck source=/dev/null
-        source /home/EngineScript/sites-list/sites.sh
-    fi
+    es_sites
     if [[ "${#SITES[@]}" -eq 0 ]]; then
         echo "There are no sites on this server yet."
         return 0
@@ -894,6 +783,62 @@ function for_each_site() {
         return 1
     fi
     echo "Done for all ${#SITES[@]} site(s)."
+}
+
+
+# ----------------------------------------------------------------
+# Install or update EngineScript's own plugins (Site Exporter and Site Optimizer, at the versions
+# in enginescript-variables.txt) in one or more sites, when INSTALL_ENGINESCRIPT_PLUGINS=1. Each
+# zip is downloaded and checked once. It is extracted beside the plugin's folder, which is then
+# swapped in, so a failed download or extract leaves the site's current copy untouched. Returns
+# 1 when a plugin failed for any site.
+# Usage: install_enginescript_plugins <domain> [domain...]
+function install_enginescript_plugins() {
+    local zip_dir domain plugins_dir entry slug version zip new_dir plugin_failed=0
+    local plugins=("enginescript-site-exporter ${ES_SE_PLUGIN_VER}" "enginescript-site-optimizer ${ES_SO_PLUGIN_VER}")
+
+    if [[ "${INSTALL_ENGINESCRIPT_PLUGINS:-0}" != "1" ]]; then
+        echo "Skipping the EngineScript plugins (INSTALL_ENGINESCRIPT_PLUGINS is not 1)."
+        return 0
+    fi
+    zip_dir="$(mktemp -d /tmp/enginescript-plugins.XXXXXX)" || return 1
+
+    for entry in "${plugins[@]}"; do
+        slug="${entry% *}"
+        version="${entry#* }"
+        zip="${zip_dir}/${slug}-${version}.zip"
+        if ! curl -fsSL --proto '=https' --retry 3 -o "${zip}" \
+                "https://github.com/EngineScript/${slug}/releases/download/v${version}/${slug}-${version}.zip" \
+            || ! unzip -tq "${zip}" > /dev/null; then
+            rm -f "${zip}"
+            echo "Error: Failed to download ${slug} ${version}; the sites keep their current copy." >&2
+            plugin_failed=1
+            continue
+        fi
+
+        for domain in "$@"; do
+            plugins_dir="/var/www/sites/${domain}/html/wp-content/plugins"
+            if [[ ! -d "${plugins_dir}" ]]; then
+                echo "Warning: ${plugins_dir} does not exist; skipping ${slug} for ${domain}." >&2
+                continue
+            fi
+            # A dot folder: WordPress does not load plugins from it
+            new_dir="$(mktemp -d "${plugins_dir}/.${slug}-new.XXXXXX")" || { plugin_failed=1; continue; }
+            if ! unzip -q "${zip}" -d "${new_dir}" || [[ ! -d "${new_dir}/${slug}" ]] \
+                || ! replace_directory "${new_dir}/${slug}" "${plugins_dir}/${slug}"; then
+                echo "Error: ${slug} ${version} could not be installed for ${domain}; it keeps its current copy." >&2
+                rm -rf "${new_dir}"
+                plugin_failed=1
+                continue
+            fi
+            rm -rf "${new_dir}"
+            set_www_data_tree "${plugins_dir}/${slug}"
+            echo "${slug} ${version} installed for ${domain}."
+        done
+    done
+
+    rm -rf "${zip_dir}"
+    return "${plugin_failed}"
 }
 
 
@@ -930,117 +875,6 @@ function print_or_none() {
     else
         echo "  none"
     fi
-}
-
-
-# ----------------------------------------------------------------
-# Give a folder to www-data, with directories at 755 and files at 644
-#
-# www-data can swap any file in the folder for a symlink while find runs, and chmod follows
-# symlinks. Run as root, chmod would then change a file outside the folder, such as a root-only
-# one, so it runs as www-data, after the chown: chown -R itself does not follow symlinks.
-# Usage: set_www_data_tree <folder>
-function set_www_data_tree() {
-    local dir="$1"
-
-    chown -R www-data:www-data "${dir}"
-    # find stops on a working directory www-data cannot read, such as /root
-    (
-        cd / || exit 1
-        run_as_www_data find "${dir}" -type d -exec chmod 0755 {} +
-        run_as_www_data find "${dir}" -type f -exec chmod 0644 {} +
-    )
-}
-
-
-# ----------------------------------------------------------------
-# Set permissions for EngineScript frontend directories and files
-function set_enginescript_frontend_permissions() {
-    # Set permissions for /var/www/admin/control-panel (dashboard)
-    if [ -d "/var/www/admin/control-panel" ]; then
-        set_www_data_tree /var/www/admin/control-panel
-    fi
-
-    # Set permissions for /var/www/admin/tools (phpMyAdmin, TinyFileManager, etc.)
-    if [ -d "/var/www/admin/tools" ]; then
-        set_www_data_tree /var/www/admin/tools
-    fi
-
-    # Set permissions for /etc/enginescript
-    set_www_data_tree /etc/enginescript
-
-    # Ensure API cache directory has correct owner and permissions
-    set_api_cache_permissions
-}
-
-
-# ----------------------------------------------------------------
-# The control panel's API cache (/var/cache/enginescript/api), which PHP writes as www-data:
-# folders 775, files 664 (not executable). chmod runs as www-data, as in set_www_data_tree.
-function set_api_cache_permissions() {
-    local dir="/var/cache/enginescript/api"
-
-    if [[ ! -d "${dir}" ]]; then
-        return 0
-    fi
-    chown -R www-data:www-data "${dir}"
-    (
-        cd / || exit 1
-        run_as_www_data find "${dir}" -type d -exec chmod 775 {} +
-        run_as_www_data find "${dir}" -type f -exec chmod 664 {} +
-    )
-}
-
-
-# ----------------------------------------------------------------
-# Set permissions for Nginx directories and files
-#
-# The Nginx configuration belongs to root. The Nginx master process runs as root and loads
-# it (including any load_module line), so it must not be writable by www-data, the user PHP
-# and the Nginx worker processes run as. TLS private keys are readable by root only.
-function set_nginx_permissions() {
-    # Configuration: root-owned, directories 755, files 644
-    if [[ -d /etc/nginx ]]; then
-        chown -R root:root /etc/nginx
-        find /etc/nginx -type d -exec chmod 755 {} +
-        find /etc/nginx -type f -exec chmod 644 {} +
-    fi
-
-    # TLS certificates and keys: only root needs them (the master process reads them)
-    if [[ -d /etc/nginx/ssl ]]; then
-        find /etc/nginx/ssl -type d -exec chmod 700 {} +
-        find /etc/nginx/ssl -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
-    fi
-
-    # Admin basic-auth password file: the worker processes (www-data) read it on each request
-    if [[ -d /etc/nginx/restricted-access ]]; then
-        chown -R root:www-data /etc/nginx/restricted-access
-        chmod 750 /etc/nginx/restricted-access
-        find /etc/nginx/restricted-access -type f -exec chmod 640 {} +
-    fi
-
-    # Modules are loaded by the master process as root
-    if [[ -d /usr/lib/nginx/modules ]]; then
-        chown -R root:root /usr/lib/nginx/modules
-    fi
-
-    # Runtime directories the worker processes and PHP write to
-    chown -R www-data:www-data /var/cache/nginx
-    chown -R www-data:www-data /var/lib/nginx
-    chown -R www-data:www-data /var/www
-    chmod 775 /var/cache/nginx
-
-    # Logs: the directories belong to root, so www-data cannot replace a log file with a
-    # symlink that the root master process would then open and chown (CVE-2016-1247). The
-    # log files stay owned by www-data: the worker processes reopen them after rotation, and
-    # PHP writes the WordPress debug log in each site's directory.
-    local log_dir
-    for log_dir in /var/log/nginx /var/log/domains; do
-        if [[ -d "${log_dir}" ]]; then
-            find "${log_dir}" -type d -exec chown root:root {} + -exec chmod 755 {} +
-            find "${log_dir}" -type f -exec chown www-data:adm {} + -exec chmod 640 {} +
-        fi
-    done
 }
 
 
@@ -1090,100 +924,6 @@ function add_missing_ppas() {
         apt-get update -qq
     fi
     return 0
-}
-
-
-# ----------------------------------------------------------------
-# One-time upgrades (normal-auto-upgrade.sh)
-#
-# Each one-time upgrade is a function that brings an existing server up to the current setup.
-# Its name is recorded in upgrades-done.conf when it succeeds, and it never runs again on that
-# server; one that fails is tried again on the next update. New installs record every one-time
-# upgrade as done, since they start with the current setup. The record is in /var/lib/enginescript,
-# which only root can write to (unlike /etc/enginescript, which the web server user owns).
-
-# True when the one-time upgrade has already run on this server
-function upgrade_is_done() {
-    grep -qxF "$1" "${ENGINESCRIPT_UPGRADES_DONE_FILE:-/var/lib/enginescript/upgrades-done.conf}" 2> /dev/null
-}
-
-# Record a one-time upgrade as done
-function record_upgrade_done() {
-    local done_file="${ENGINESCRIPT_UPGRADES_DONE_FILE:-/var/lib/enginescript/upgrades-done.conf}"
-    upgrade_is_done "$1" && return 0
-    mkdir -p "$(dirname "${done_file}")" || return 1
-    echo "$1" >> "${done_file}" || return 1
-    chmod 644 "${done_file}"
-}
-
-# Usage: run_once <function>
-# Run a one-time upgrade unless it has already run, and record it when it succeeds
-function run_once() {
-    upgrade_is_done "$1" && return 0
-    if "$1"; then
-        record_upgrade_done "$1"
-    else
-        echo "Error: $1 did not finish; it runs again on the next EngineScript update." >&2
-        return 1
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Give existing sites' certificates a reload command.
-#
-# Sites created before acme.sh was given --reloadcmd renew their certificates without
-# reloading Nginx, which keeps serving the old certificate until something else reloads it.
-# Re-running --install-cert with the same paths saves the reload command for future renewals
-# (and reloads Nginx once). Sites that already have a reload command are left alone.
-function migrate_acme_reload_commands() {
-    local acme="/root/.acme.sh/acme.sh"
-    local sites_file="/home/EngineScript/sites-list/sites.sh"
-    local domain domain_conf failures=0
-
-    if [[ ! -x "${acme}" || ! -f "${sites_file}" ]]; then
-        return 0
-    fi
-
-    local SITES=()
-    # shellcheck source=/dev/null
-    source "${sites_file}"
-
-    for domain in "${SITES[@]}"; do
-        domain_conf="/root/.acme.sh/${domain}_ecc/${domain}.conf"
-        if [[ ! -f "${domain_conf}" || ! -d "/etc/nginx/ssl/${domain}" ]]; then
-            continue
-        fi
-        if grep -q "^Le_ReloadCmd='..*'" "${domain_conf}"; then
-            continue
-        fi
-        echo "Adding a certificate reload command for ${domain}..."
-        "${acme}" --install-cert -d "${domain}" --ecc \
-            --cert-file "/etc/nginx/ssl/${domain}/cert.pem" \
-            --key-file "/etc/nginx/ssl/${domain}/key.pem" \
-            --fullchain-file "/etc/nginx/ssl/${domain}/fullchain.pem" \
-            --ca-file "/etc/nginx/ssl/${domain}/ca.pem" \
-            --reloadcmd "systemctl reload nginx" \
-            || { echo "Warning: Could not add a certificate reload command for ${domain}." >&2; failures=1; }
-        secure_nginx_ssl_directory "/etc/nginx/ssl/${domain}"
-    done
-    return "${failures}"
-}
-
-
-# ----------------------------------------------------------------
-# Restrict one site's TLS directory to root (used right after a certificate is installed)
-function secure_nginx_ssl_directory() {
-    local ssl_dir="$1"
-
-    if [[ ! -d "${ssl_dir}" ]]; then
-        return 0
-    fi
-
-    chown -R root:root "${ssl_dir}"
-    chmod 700 "${ssl_dir}"
-    find "${ssl_dir}" -type f -exec chmod 644 {} +
-    find "${ssl_dir}" -type f \( -name '*.key' -o -name 'key.pem' \) -exec chmod 600 {} +
 }
 
 
@@ -1394,296 +1134,6 @@ function migrate_nginx_vhosts() {
 
 
 # ----------------------------------------------------------------
-# Set permissions for PHP directories and files
-#
-# The PHP-FPM master process runs as root and loads the configuration and every extension it
-# lists, so /etc/php must not be writable by www-data, the user the PHP workers run as.
-function set_php_permissions() {
-    # Configuration: root-owned, directories 755, files 644
-    if [[ -d /etc/php ]]; then
-        chown -R root:root /etc/php
-        find /etc/php -type d -exec chmod 755 {} +
-        find /etc/php -type f -exec chmod 644 {} +
-    fi
-
-    # Older installs logged to /var/log/php (see migrate_php_fpm_log_path). The FPM master
-    # writes its log as root, so a root-owned directory keeps www-data from replacing the log
-    # with a symlink.
-    if [[ -d /var/log/php ]]; then
-        chown root:root /var/log/php
-        chmod 755 /var/log/php
-        find /var/log/php -type f -exec chown root:adm {} + -exec chmod 640 {} +
-    fi
-
-    chmod 775 /var/cache/opcache
-    chmod 775 /var/cache/php-sessions
-    chmod 775 /var/cache/wsdlcache
-    chown -R www-data:www-data /var/cache/opcache
-    chown -R www-data:www-data /var/cache/php-sessions
-    chown -R www-data:www-data /var/cache/wsdlcache
-}
-
-
-# ----------------------------------------------------------------
-# Set permissions for Redis directories and files
-#
-# www-data is in the redis group so PHP can use Redis's socket. The socket needs nothing here:
-# Redis creates it from unixsocketperm (770) on every start, in /run/redis, which systemd
-# creates. The configuration and its directory are root-owned so neither www-data nor Redis
-# itself can change or replace it (CONFIG REWRITE renames a new file over it), and the data and
-# log files are not writable by the redis group. Redis's unit creates files with UMask 0007
-# (group-writable), so this also runs from the daily permissions cron.
-function set_redis_permissions() {
-    if [[ -d /etc/redis ]]; then
-        chown -R root:redis /etc/redis
-        chmod u=rwx,g=rxs,o= /etc/redis
-        find /etc/redis -mindepth 1 -type d -exec chmod 750 {} +
-        find /etc/redis -type f -exec chmod 640 {} +
-    fi
-    if [[ -d /var/lib/redis ]]; then
-        chown redis:redis /var/lib/redis
-        chmod 750 /var/lib/redis
-        find /var/lib/redis -mindepth 1 -type d -exec chmod 750 {} +
-        find /var/lib/redis -type f -exec chown redis:redis {} + -exec chmod 640 {} +
-    fi
-    if [[ -d /var/log/redis ]]; then
-        chown redis:adm /var/log/redis
-        chmod u=rwx,g=rxs,o= /var/log/redis
-        find /var/log/redis -type f -exec chown redis:adm {} + -exec chmod 640 {} +
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Redis systemd override: if memory runs out, the kernel's OOM killer picks a PHP-FPM worker
-# (replaced at once) before Redis (-300), and Redis before MariaDB (-600). Losing Redis shows
-# Redis Object Cache's error page on every site until it restarts.
-function install_redis_service_override() {
-    mkdir -p /etc/systemd/system/redis-server.service.d
-    cat > /etc/systemd/system/redis-server.service.d/enginescript.conf << 'EOF'
-[Service]
-OOMScoreAdjust=-300
-EOF
-    systemctl daemon-reload
-}
-
-
-# ----------------------------------------------------------------
-# Load a redis.conf in a throwaway Redis (own socket, no TCP, temporary directory) and stop it.
-# Returns 0 when it answered PING. Its output and log go to the file given as the second argument
-# (Redis prints configuration errors on stderr, not in its log).
-function test_redis_conf() {
-    local candidate="$1" output="$2" test_dir test_pid ok=1
-
-    test_dir="$(mktemp -d)"
-    chown redis:redis "${test_dir}"
-    chmod 644 "${candidate}"
-    # The root-owned output file is opened by this shell on purpose; Redis only writes to it
-    # shellcheck disable=SC2024
-    sudo -u redis redis-server "${candidate}" --port 0 --unixsocket "${test_dir}/test.sock" --daemonize no \
-        --supervised no --logfile "${test_dir}/test.log" --dir "${test_dir}" --pidfile "${test_dir}/test.pid" > "${output}" 2>&1 &
-    test_pid=$!
-    for _ in $(seq 1 20); do
-        if [[ "$(redis-cli -s "${test_dir}/test.sock" PING 2> /dev/null)" == "PONG" ]]; then ok=0; break; fi
-        kill -0 "${test_pid}" 2> /dev/null || break
-        sleep 0.25
-    done
-    redis-cli -s "${test_dir}/test.sock" SHUTDOWN NOSAVE > /dev/null 2>&1
-    wait "${test_pid}" 2> /dev/null
-    cat "${test_dir}/test.log" >> "${output}" 2> /dev/null
-    rm -rf "${test_dir}"
-    return "${ok}"
-}
-
-
-# ----------------------------------------------------------------
-# Apply the shared tuning plan to an installed Redis without restarting it
-#
-# Rebuilds /etc/redis/redis.conf from the repo template with the plan's maxmemory, keeping the
-# server's current "databases" count (it doubles when every number is taken). The new file is
-# loaded by a throwaway Redis on a temporary socket first; if that fails, nothing changes.
-# maxmemory and activedefrag are applied to the running Redis with CONFIG SET; settings that
-# need a restart (io-threads) take effect at Redis's next restart. Redis Object Cache shows an
-# error page on every site while Redis is down, so this never restarts it.
-function apply_redis_tuning() {
-    local conf=/etc/redis/redis.conf template=/usr/local/bin/enginescript/config/etc/redis/redis.conf
-    local sock=/run/redis/redis-server.sock candidate test_output databases maxmemory defrag=yes
-
-    [[ -f "${conf}" && -f "${template}" ]] || return 0
-    tuning_load
-    maxmemory="$(tuning_get REDIS_MAXMEMORY_MB)"
-    [[ -n "${maxmemory}" ]] || { echo "Error: No Redis maxmemory in the tuning plan." >&2; return 1; }
-    databases="$(awk '$1 == "databases" {print $2; exit}' "${conf}")"
-    [[ "${databases}" =~ ^[0-9]+$ ]] && (( databases > REDIS_MIN_DATABASES )) || databases="${REDIS_MIN_DATABASES}"
-
-    candidate="$(mktemp)"
-    test_output="$(mktemp)"
-    sed -e "s|SEDREDISMAXMEM|${maxmemory}|g" -e "s|^databases .*|databases ${databases}|" "${template}" > "${candidate}"
-    if cmp -s "${candidate}" "${conf}"; then
-        rm -f "${candidate}" "${test_output}"
-        return 0
-    fi
-
-    if ! test_redis_conf "${candidate}" "${test_output}"; then
-        # Ubuntu's own Redis package is built without the jemalloc that active defragmentation
-        # needs and refuses "activedefrag yes"; keep the rest of the plan on those servers
-        if grep -q 'Active defragmentation cannot be enabled' "${test_output}"; then
-            sed -i 's|^activedefrag yes$|activedefrag no|' "${candidate}"
-            defrag=no
-            if cmp -s "${candidate}" "${conf}"; then
-                rm -f "${candidate}" "${test_output}"
-                return 0
-            fi
-        fi
-        if [[ "${defrag}" == "yes" ]] || ! test_redis_conf "${candidate}" "${test_output}"; then
-            echo "Error: The new redis.conf did not load in a test instance; kept the current one." >&2
-            tail -5 "${test_output}" >&2
-            rm -f "${candidate}" "${test_output}"
-            return 1
-        fi
-    fi
-    rm -f "${test_output}"
-
-    cp -p "${conf}" "${conf}.bak"
-    mv -f "${candidate}" "${conf}"
-    set_redis_permissions
-    if [[ -S "${sock}" ]]; then
-        redis-cli -s "${sock}" CONFIG SET maxmemory "${maxmemory}mb" > /dev/null
-        redis-cli -s "${sock}" CONFIG SET activedefrag "${defrag}" > /dev/null
-    fi
-    echo "Redis: applied the tuning plan (maxmemory ${maxmemory} MB) without a restart."
-    if [[ "${defrag}" == "no" ]]; then
-        echo "Redis: this Redis cannot run active defragmentation (Ubuntu's own package), so it stays off."
-        echo "       EngineScript installs Redis from packages.redis.io, which supports it."
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Set the OOM killer priority of a running service's processes (its systemd override applies
-# from its next start). Usage: set_running_oom_score_adj <process name> <score>
-function set_running_oom_score_adj() {
-    local pid
-    for pid in $(pgrep -x "$1"); do
-        echo "$2" > "/proc/${pid}/oom_score_adj" 2> /dev/null || true
-    done
-}
-
-
-# ----------------------------------------------------------------
-# Apply the shared tuning plan to an installed MariaDB without restarting it
-#
-# Builds the new my.cnf from the repo template in a staging file (mariadb-tune.sh), checks it
-# with mariadbd --help --verbose, installs it, and applies every setting MariaDB can change while
-# running with SET GLOBAL. aria_pagecache_buffer_size, innodb_log_buffer_size, and
-# innodb_open_files take effect at MariaDB's next restart. The previous file is kept as
-# /etc/mysql/my.cnf.enginescript-previous.
-function apply_mariadb_tuning() {
-    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement refused=0
-
-    [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
-    cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
-    install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
-    if ! /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${staged}" 2>> /tmp/enginescript_install_errors.log; then
-        echo "Error: Tuning the new MariaDB configuration failed; kept the current one." >&2
-        rm -f "${staged}"
-        return 1
-    fi
-    check="$(mariadbd --defaults-file="${staged}" --help --verbose 2>&1 > /dev/null)"
-    rc=$?
-    if [[ "${rc}" -ne 0 ]] || grep -q '\[ERROR\]' <<< "${check}"; then
-        echo "Error: The new MariaDB configuration failed its check; kept the current one:" >&2
-        grep -E '\[(ERROR|Warning)\]' <<< "${check}" | head -5 >&2
-        rm -f "${staged}"
-        return 1
-    fi
-    if cmp -s "${staged}" /etc/mysql/my.cnf; then
-        rm -f "${staged}"
-        return 0
-    fi
-
-    # cp writes through /etc/mysql/my.cnf, the MariaDB packages' link to mariadb.cnf
-    cp -fL /etc/mysql/my.cnf /etc/mysql/my.cnf.enginescript-previous
-    cp -f "${staged}" /etc/mysql/my.cnf
-    rm -f "${staged}"
-
-    tuning_load
-    io_max=$(( $(tuning_get MARIADB_IO_CAPACITY) * 2 ))
-    (( io_max < 2000 )) && io_max=2000
-    for statement in \
-        "SET GLOBAL max_connections = $(tuning_get MARIADB_MAX_CONNECTIONS)" \
-        "SET GLOBAL tmp_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
-        "SET GLOBAL max_heap_table_size = $(( $(tuning_get MARIADB_TMP_TABLE_MB) * 1048576 ))" \
-        "SET GLOBAL table_open_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
-        "SET GLOBAL table_definition_cache = $(tuning_get MARIADB_TABLE_CACHE)" \
-        "SET GLOBAL innodb_io_capacity_max = ${io_max}" \
-        "SET GLOBAL innodb_io_capacity = $(tuning_get MARIADB_IO_CAPACITY)" \
-        "SET GLOBAL innodb_flush_neighbors = 0" \
-        "SET GLOBAL innodb_log_file_size = $(( $(tuning_get MARIADB_LOG_FILE_MB) * 1048576 ))" \
-        "SET GLOBAL innodb_buffer_pool_size = $(( $(tuning_get MARIADB_BUFFER_POOL_MB) * 1048576 ))"; do
-        if ! mariadb -e "${statement}" 2>> /tmp/enginescript_install_errors.log; then
-            echo "Warning: MariaDB refused \"${statement}\"; it applies at MariaDB's next restart." >&2
-            refused=1
-        fi
-    done
-    set_running_oom_score_adj mariadbd -600
-    if (( refused == 0 )); then
-        echo "MariaDB: applied the tuning plan (buffer pool $(tuning_get MARIADB_BUFFER_POOL_MB) MB) without a restart."
-    else
-        echo "MariaDB: installed the tuning plan; the settings above apply at MariaDB's next restart."
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Apply the shared tuning plan's Nginx values to the running nginx.conf
-#
-# Patches the FastCGI cache index and disk limit, and the October 2026 tuning (cache inactive
-# 3h with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
-# worker_rlimit_nofile 16384), tests with nginx -t, and reloads; the previous file is restored if
-# the test or the reload fails. Other template changes arrive with the next Nginx update.
-function apply_nginx_tuning() {
-    local conf=/etc/nginx/nginx.conf backup
-
-    [[ -f "${conf}" ]] && command -v nginx > /dev/null 2>&1 || return 0
-    tuning_load
-    backup="$(mktemp)"
-    cp -p "${conf}" "${backup}"
-    sed -i -E \
-        -e "s|keys_zone=EngineScriptWP:[0-9]+m|keys_zone=EngineScriptWP:$(tuning_get NGINX_CACHE_ZONE_MB)m|" \
-        -e "s|(fastcgi_cache_path [^;]*) inactive=[0-9]+[a-z]|\1 inactive=3h|" \
-        -e "s|(fastcgi_cache_path [^;]*) max_size=[0-9]+m|\1 max_size=$(tuning_get NGINX_CACHE_MAX_MB)m|" \
-        -e "/fastcgi_cache_path/{/min_free=/!s| use_temp_path=| min_free=1g use_temp_path=|}" \
-        -e "s|^([[:space:]]*)keepalive_timeout [0-9]+s?;|\1keepalive_timeout 900s;|" \
-        -e "s|^([[:space:]]*)open_file_cache_errors on;|\1open_file_cache_errors off;|" \
-        -e "s|^([[:space:]]*)worker_connections [0-9]+;|\1worker_connections 4096;|" \
-        -e "s|^worker_rlimit_nofile [0-9]+;|worker_rlimit_nofile 16384;|" \
-        "${conf}"
-    if cmp -s "${conf}" "${backup}"; then
-        rm -f "${backup}"
-        return 0
-    fi
-    if ! nginx -t > /dev/null 2>&1; then
-        cp -p "${backup}" "${conf}"
-        echo "Error: nginx -t failed with the tuned nginx.conf; restored the previous one." >&2
-        nginx -t 2>&1 | tail -3 >&2
-        rm -f "${backup}"
-        return 1
-    fi
-    # A stopped Nginx reads the new file when it starts. If the reload fails, the previous file
-    # is restored, so the next re-tune applies the plan again instead of finding nothing to change.
-    if systemctl is-active --quiet nginx && ! systemctl reload nginx; then
-        cp -p "${backup}" "${conf}"
-        echo "Error: Nginx did not reload with the tuned nginx.conf; restored the previous one." >&2
-        rm -f "${backup}"
-        return 1
-    fi
-    echo "Nginx: applied the tuning plan (cache index $(tuning_get NGINX_CACHE_ZONE_MB) MB, cache limit $(tuning_get NGINX_CACHE_MAX_MB) MB)."
-    rm -f "${backup}"
-}
-
-
-# ----------------------------------------------------------------
 # Redis database numbers of the sites
 #
 # Each site uses its own Redis database (WP_REDIS_DATABASE in its wp-config.php), so the Redis
@@ -1691,6 +1141,7 @@ function apply_nginx_tuning() {
 # redis.conf sets how many exist (128; each costs about 6 KB). A new site gets the lowest number
 # no other site uses, so removing a site frees its number. ES_REDIS_CONF and ES_SITES_ROOT
 # override the paths (for tests).
+# shellcheck disable=SC2034  # also read by migrate_redis_databases (enginescript-upgrades.sh)
 REDIS_MIN_DATABASES=128
 
 # Print the number of databases redis.conf sets
@@ -1776,61 +1227,6 @@ function flush_site_redis_cache() {
     pattern="${salt}${table_prefix}:*"
     "${cli[@]}" -n "${number}" --scan --pattern "${pattern}" | xargs -r -n 500 "${cli[@]}" -n "${number}" UNLINK > /dev/null
     echo "Deleted the site's Redis keys (${pattern}) from database ${number}."
-}
-
-# Existing servers: at least REDIS_MIN_DATABASES databases, and every site on its own number.
-# Earlier versions numbered sites by the site count, so a site added after a removal could share
-# a number with another site. The first site (in directory order) keeps a shared number; the
-# others move to free numbers, which only empties their object cache.
-function migrate_redis_databases() {
-    local count number wp_config failures=0
-    local -a moves=()
-    local -A taken=()
-
-    [[ -f "${ES_REDIS_CONF:-/etc/redis/redis.conf}" ]] || return 0
-    count="$(get_redis_database_count)"
-    [[ "${count}" =~ ^[0-9]+$ ]] || return 0
-
-    if (( count < REDIS_MIN_DATABASES )); then
-        echo "Raising the number of Redis databases from ${count} to ${REDIS_MIN_DATABASES}..."
-        set_redis_database_count "${REDIS_MIN_DATABASES}"
-        count="${REDIS_MIN_DATABASES}"
-    fi
-
-    while read -r number wp_config; do
-        if (( number < count )) && [[ -z "${taken[${number}]:-}" ]]; then
-            taken["${number}"]=1
-        else
-            moves+=("${wp_config}")
-        fi
-    done < <(list_site_redis_databases)
-
-    for wp_config in "${moves[@]}"; do
-        echo "Moving a site that shared its Redis database (or used one out of range) to a free one:"
-        assign_site_redis_database "${wp_config}" || failures=1
-    done
-    return "${failures}"
-}
-
-# Existing servers: FLUSHDB and FLUSHALL (the Redis Object Cache plugin's and the control panel's
-# cache buttons) free memory in the background instead of blocking Redis for every site
-# (lazyfree-lazy-user-flush). Added after lazyfree-lazy-user-del unless the file already sets
-# it, and applied to the running Redis, which can change it without a restart.
-function migrate_redis_lazy_user_flush() {
-    local redis_conf="${ES_REDIS_CONF:-/etc/redis/redis.conf}"
-
-    [[ -f "${redis_conf}" ]] || return 0
-    grep -q '^lazyfree-lazy-user-flush[[:space:]]' "${redis_conf}" && return 0
-
-    echo "Redis: freeing memory in the background on cache flushes (lazyfree-lazy-user-flush)..."
-    if grep -q '^lazyfree-lazy-user-del[[:space:]]' "${redis_conf}"; then
-        sed -i '/^lazyfree-lazy-user-del[[:space:]]/a lazyfree-lazy-user-flush yes' "${redis_conf}"
-    else
-        echo "lazyfree-lazy-user-flush yes" >> "${redis_conf}"
-    fi
-    if [[ "$(redis-cli -s /run/redis/redis-server.sock CONFIG SET lazyfree-lazy-user-flush yes 2> /dev/null)" != "OK" ]]; then
-        echo "Redis is not running; the setting applies when it starts."
-    fi
 }
 
 
@@ -1965,89 +1361,10 @@ function install_enginescript_cron() {
 
 
 # ----------------------------------------------------------------
-# Set permissions for /var/log/EngineScript
-#
-# Root writes logs here, so the folder must belong to root: www-data could otherwise replace a
-# log with a symlink, and root would write to the link's target (CVE-2016-1247). The control
-# panel runs as www-data and only appends to its two log files, which stay www-data's.
-function set_enginescript_log_permissions() {
-    local log_dir="/var/log/EngineScript" panel_log
-
-    if [[ ! -d "${log_dir}" ]]; then
-        return 0
-    fi
-    chown root:root "${log_dir}"
-    chmod 755 "${log_dir}"
-    # A link left there before the folder changed hands
-    find "${log_dir}" -mindepth 1 -maxdepth 1 -type l -delete
-    for panel_log in enginescript-api.log enginescript-api-security.log; do
-        touch "${log_dir}/${panel_log}"
-        chown www-data:www-data "${log_dir}/${panel_log}"
-        chmod 644 "${log_dir}/${panel_log}"
-    done
-}
-
-
-# ----------------------------------------------------------------
 # Install the logrotate rule for scheduled jobs' logs
 function install_enginescript_logrotate() {
     cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
     chmod 644 /etc/logrotate.d/enginescript
-}
-
-
-# ----------------------------------------------------------------
-# Set permissions for /home/EngineScript
-#
-# It holds the install options (the MariaDB root password, the Cloudflare API key, admin
-# passwords), database and configuration backups (including TLS private keys), and site
-# database credentials. Only root uses it, so nothing else may read it.
-function set_enginescript_home_permissions() {
-    if [[ -d /home/EngineScript ]]; then
-        chown root:root /home/EngineScript
-        chmod 700 /home/EngineScript
-    fi
-    if [[ -f /home/EngineScript/enginescript-install-options.txt ]]; then
-        chmod 600 /home/EngineScript/enginescript-install-options.txt
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Move the PHP-FPM log back to the package default
-#
-# EngineScript used to set error_log = /var/log/php/phpX.Y-fpm.log, which no logrotate file
-# covers, so the log grew without limit. The PHP package logs to /var/log/phpX.Y-fpm.log and
-# rotates it with its own logrotate file. This changes only the error_log line of existing
-# installs, tests the configuration, and reloads PHP-FPM.
-function migrate_php_fpm_log_path() {
-    local conf ver old_log failures=0
-    for conf in /etc/php/*/fpm/php-fpm.conf; do
-        [[ -f "${conf}" ]] || continue
-        ver="$(basename "$(dirname "$(dirname "${conf}")")")"
-        old_log="/var/log/php/php${ver}-fpm.log"
-        grep -q "^error_log = ${old_log}$" "${conf}" || continue
-
-        echo "Moving the PHP ${ver} FPM log to /var/log/php${ver}-fpm.log..."
-        cp -p "${conf}" "${conf}.pre-log-migration"
-        sed -i "s|^error_log = ${old_log}$|error_log = /var/log/php${ver}-fpm.log|" "${conf}"
-        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
-            echo "Error: php-fpm${ver} -t failed; kept the previous PHP-FPM log setting." >&2
-            mv -f "${conf}.pre-log-migration" "${conf}"
-            failures=1
-            continue
-        fi
-        rm -f "${conf}.pre-log-migration"
-
-        # A reload (graceful restart) rereads php-fpm.conf and opens the new log
-        if systemctl is-active --quiet "php${ver}-fpm"; then
-            systemctl reload "php${ver}-fpm"
-        fi
-        if [[ -f "${old_log}" ]]; then
-            mv -f "${old_log}" "${old_log}.old"
-        fi
-    done
-    return "${failures}"
 }
 
 
@@ -2077,134 +1394,7 @@ function install_enginescript_sysctl() {
     sysctl -w net.ipv4.tcp_ecn=2 > /dev/null 2>&1
     sysctl -w net.core.rmem_default=212992 net.core.wmem_default=212992 > /dev/null 2>&1
 
-    sysctl --system > /dev/null 2>> /tmp/enginescript_install_errors.log || true
-}
-
-
-# ----------------------------------------------------------------
-# Turn off Kernel Samepage Merging on servers that installed it
-#
-# EngineScript installed ksmtuned for Netdata, which marks its memory mergeable. Netdata is no
-# longer installed, and Nginx, PHP-FPM, MariaDB, and Redis never mark memory mergeable (tested:
-# no "mg" regions), so KSM had nothing to merge and only cost CPU when ksmtuned started it.
-function disable_ksm() {
-    local unit
-    for unit in ksmtuned.service ksm.service; do
-        if systemctl list-unit-files "${unit}" 2> /dev/null | grep -q "^${unit}"; then
-            systemctl disable --now "${unit}" > /dev/null 2>&1
-        fi
-    done
-    if [[ -w /sys/kernel/mm/ksm/run ]] && [[ "$(cat /sys/kernel/mm/ksm/run)" != "0" ]]; then
-        echo 0 > /sys/kernel/mm/ksm/run
-    fi
-}
-
-
-# ----------------------------------------------------------------
-# Remove the import folders older versions created
-#
-# Import Domain reads one site archive placed directly in /home/EngineScript/temp/site-import.
-# The database-file and root-directory folders inside it belonged to an import format that is
-# gone. They are removed only when empty, so nothing left in them is lost.
-function remove_old_import_folders() {
-    local folder
-    for folder in database-file root-directory; do
-        rmdir "/home/EngineScript/temp/site-import/${folder}" 2> /dev/null
-    done
-    return 0
-}
-
-
-# ----------------------------------------------------------------
-# Remove the variables and install options lines from the site list
-#
-# The site list template of older versions loaded enginescript-variables.txt and the install
-# options itself, so every script that read the list loaded them again partway through and drew
-# new random values. The list now holds only SITES; its domains stay as they are.
-function remove_site_list_variable_sources() {
-    local sites_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
-
-    if [[ ! -f "${sites_file}" ]]; then
-        return 0
-    fi
-    sed -i \
-        -e '/^# EngineScript Variables$/d' \
-        -e '\|^source /usr/local/bin/enginescript/enginescript-variables.txt|d' \
-        -e '\|^source /home/EngineScript/enginescript-install-options.txt|d' \
-        "${sites_file}"
-}
-
-
-# ----------------------------------------------------------------
-# Install igbinary explicitly for every installed PHP version
-#
-# Redis Object Cache serializes with it (WP_REDIS_IGBINARY). Existing servers only have it as a
-# dependency of php-redis, marked automatically installed, so apt autoremove would remove it if
-# php-redis ever stopped requiring it. Installing it by name marks it manually installed, and
-# adds it where it is missing (then PHP-FPM reloads to load the extension).
-function ensure_php_igbinary() {
-    local ver failures=0
-    while IFS= read -r ver; do
-        [[ -n "${ver}" ]] || continue
-        if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
-            apt-mark manual "php${ver}-igbinary" > /dev/null
-            continue
-        fi
-        echo "Installing php${ver}-igbinary..."
-        if apt-get install -y -qq "php${ver}-igbinary" > /dev/null; then
-            if systemctl is-active --quiet "php${ver}-fpm"; then
-                systemctl reload "php${ver}-fpm"
-            fi
-        else
-            echo "Error: Installing php${ver}-igbinary failed." >&2
-            failures=1
-        fi
-    done < <(get_installed_php_versions)
-    return "${failures}"
-}
-
-
-# ----------------------------------------------------------------
-# Turn off PHP's session upload progress on existing installs
-#
-# session.upload_progress writes data from any upload request into a PHP session file, a known
-# step in attacks that include session files, and WordPress does not use it. php.ini from the
-# repo only reaches a server on a PHP install or version switch, so this sets
-# session.upload_progress.enabled = Off in each installed version's PHP-FPM php.ini, tests the
-# configuration, and reloads PHP-FPM. ES_PHP_ETC overrides /etc/php (for tests).
-function migrate_php_upload_progress() {
-    local ini ver failures=0
-    for ini in "${ES_PHP_ETC:-/etc/php}"/*/fpm/php.ini; do
-        [[ -f "${ini}" ]] || continue
-        grep -qiE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=[[:space:]]*"?(off|0|false|no)"?[[:space:]]*$' "${ini}" && continue
-        ver="$(basename "$(dirname "$(dirname "${ini}")")")"
-
-        echo "Turning off session upload progress for PHP ${ver}..."
-        cp -p "${ini}" "${ini}.pre-upload-progress"
-        if grep -qE '^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
-            sed -i -E 's/^[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/session.upload_progress.enabled = Off/' "${ini}"
-        elif grep -qE '^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=' "${ini}"; then
-            sed -i -E '0,/^;[[:space:]]*session\.upload_progress\.enabled[[:space:]]*=.*/s//session.upload_progress.enabled = Off/' "${ini}"
-        elif grep -q '^\[Session\]' "${ini}"; then
-            sed -i '/^\[Session\]/a session.upload_progress.enabled = Off' "${ini}"
-        else
-            echo "session.upload_progress.enabled = Off" >> "${ini}"
-        fi
-
-        if ! "php-fpm${ver}" -t > /dev/null 2>&1; then
-            echo "Error: php-fpm${ver} -t failed; kept the previous php.ini." >&2
-            mv -f "${ini}.pre-upload-progress" "${ini}"
-            failures=1
-            continue
-        fi
-        rm -f "${ini}.pre-upload-progress"
-
-        # A reload (graceful restart) starts new workers with the changed php.ini
-        if systemctl is-active --quiet "php${ver}-fpm"; then
-            systemctl reload "php${ver}-fpm"
-        fi
-    done
-    return "${failures}"
+    sysctl --system > /dev/null 2>> "${ES_STEP_ERROR_LOG}" || true
 }
 
 
@@ -2238,7 +1428,6 @@ function check_installation_completion() {
         "CRON|Cron"
         "ACME|ACME.sh"
         "GCC|GCC"
-        "OPENSSL|OpenSSL"
         "SWAP|Swap"
         "KERNEL_TWEAKS|Kernel Tweaks"
         "THP|Transparent Huge Pages"
@@ -2251,8 +1440,6 @@ function check_installation_completion() {
     fi
 
     installation_steps+=(
-        "PCRE|PCRE"
-        "ZLIB|zlib"
         "LIBURING|liburing"
         "UFW|UFW"
         "MARIADB|MariaDB"
@@ -2543,10 +1730,11 @@ function validate_not_placeholder() {
 
 
 # ----------------------------------------------------------------
-# Run an idempotent install step: skip if already completed, otherwise execute
+# Run one install step once. A step whose flag is 1 in install-state.conf is skipped; otherwise
+# its script runs, and its flag is set when the script exits 0. The scripts themselves neither
+# check nor set their flag: they exit non-zero when they fail.
 # A step that fails stops the install: later steps depend on earlier ones (PHP on MariaDB's
-# repository, Nginx on PCRE and zlib), and the step's flag is not set, so es.install runs it
-# again next time.
+# repository, Nginx on GCC), and the step's flag is not set, so es.install runs it again next time.
 # Usage: run_install_step "FLAG_NAME" "/path/to/script.sh" "Step Description"
 function run_install_step() {
     local flag_name="$1"
@@ -2556,16 +1744,17 @@ function run_install_step() {
 
     if [[ "${flag_value}" = 1 ]]; then
         echo "${flag_name} script has already run."
-    elif ! "${script_path}" 2>> /tmp/enginescript_install_errors.log; then
-        print_last_errors
+        return 0
+    fi
+    if ! run_step "${step_desc}" "${script_path}"; then
         echo "" >&2
         echo "${BOLD}Install step failed: ${step_desc}${NORMAL}" >&2
         echo "The install stopped here. The errors are in /var/log/EngineScript/install-error-log.log." >&2
         echo "Fix the problem, then run es.install again: it carries on from this step." >&2
         exit 1
     fi
-    print_last_errors
-    debug_pause "${step_desc}"
+    set_install_state "${flag_name}" "1" || exit 1
+    printf -v "${flag_name}" '%s' "1"
 }
 
 
@@ -2597,6 +1786,62 @@ function clean_directory() {
     if [[ -d "${dir_path}" ]]; then
         rm -rf "${dir_path}"
     fi
+}
+
+
+# ----------------------------------------------------------------
+# Install beside, then swap. The build function fills a new, empty staging folder next to the
+# target (a private dot folder in the same parent, so the swap is a rename); only when it returns
+# 0 does the staging folder replace the target (replace_directory). When it fails, the staging
+# folder is removed and the installed copy is left as it was. The build function prints its own
+# error. Returns 1 when the target was not replaced.
+# Usage: install_beside <target folder> "<name for messages>" <build function> [arguments]
+#        (called as: <build function> <staging folder> [arguments])
+function install_beside() {
+    local target="$1" label="$2" build="$3" parent new_dir
+    shift 3
+    parent="$(dirname "${target}")"
+    mkdir -p "${parent}" || { echo "Error: Failed to create ${parent}" >&2; return 1; }
+    new_dir="$(mktemp -d "${parent}/.$(basename "${target}")-new.XXXXXX")" \
+        || { echo "Error: Failed to create a staging folder in ${parent}" >&2; return 1; }
+    if ! "${build}" "${new_dir}" "$@"; then
+        rm -rf "${new_dir:?}"
+        echo "${label} was not changed." >&2
+        return 1
+    fi
+    chmod 755 "${new_dir}"
+    if ! replace_directory "${new_dir}" "${target}"; then
+        rm -rf "${new_dir:?}"
+        echo "Error: Failed to move the new copy into ${target}. ${label} was not changed." >&2
+        return 1
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# Build phpMyAdmin (PHPMYADMIN_VER) in a staging folder, for install_beside: download the release,
+# unpack it, and keep the installed copy's config.inc.php when there is one (the update).
+# Usage: install_beside /var/www/admin/tools/phpmyadmin "phpMyAdmin" build_phpmyadmin
+function build_phpmyadmin() {
+    local dir="$1" top="phpMyAdmin-${PHPMYADMIN_VER}-all-languages"
+    local zip="/usr/src/phpMyAdmin-${PHPMYADMIN_VER}-all-languages.zip"
+    local installed_config="/var/www/admin/tools/phpmyadmin/config.inc.php"
+
+    download_file "https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VER}/${top}.zip" "${zip}" >&2 || return 1
+    unzip -q -o "${zip}" -d "${dir}" || { echo "Error: Failed to unpack ${zip}" >&2; return 1; }
+    if [[ ! -f "${dir}/${top}/index.php" ]]; then
+        echo "Error: The phpMyAdmin ${PHPMYADMIN_VER} download has no ${top}/index.php" >&2
+        return 1
+    fi
+    # The release's files go straight into the folder
+    (shopt -s dotglob && mv "${dir}/${top}"/* "${dir}/") && rmdir "${dir}/${top}" \
+        || { echo "Error: Failed to unpack phpMyAdmin into ${dir}" >&2; return 1; }
+    mkdir -p "${dir}/tmp"
+    if [[ -f "${installed_config}" ]]; then
+        cp -p "${installed_config}" "${dir}/config.inc.php" \
+            || { echo "Error: Failed to keep ${installed_config}" >&2; return 1; }
+    fi
+    rm -f "${zip}"
 }
 
 
@@ -2773,23 +2018,6 @@ function notify_admin() {
     fi
     printf 'user = "%s:"\n' "${PUSHBULLET_TOKEN}" | curl -fsS --proto '=https' --max-time 30 -K - -o /dev/null \
         https://api.pushbullet.com/v2/pushes -d type=note --data-urlencode "title=${title}" --data-urlencode "body=${message}"
-}
-
-
-# ----------------------------------------------------------------
-# Run curl with the Cloudflare account's email and Global API key (CF_ACCOUNT_EMAIL,
-# CF_GLOBAL_API_KEY) as headers. They go in on standard input (-K -), as in notify_admin:
-# command-line arguments are visible to every user, and the key controls the whole account.
-# Usage: cloudflare_curl <curl arguments>
-function cloudflare_curl() {
-    local email="${CF_ACCOUNT_EMAIL:-}" key="${CF_GLOBAL_API_KEY:-}"
-
-    # Quoted values in a curl config file take backslash escapes
-    email="${email//\\/\\\\}"
-    email="${email//\"/\\\"}"
-    key="${key//\\/\\\\}"
-    key="${key//\"/\\\"}"
-    printf 'header = "X-Auth-Email: %s"\nheader = "X-Auth-Key: %s"\n' "${email}" "${key}" | curl -K - "$@"
 }
 
 

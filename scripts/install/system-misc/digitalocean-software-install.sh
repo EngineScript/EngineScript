@@ -29,12 +29,6 @@ run_downloaded_installer() {
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${DO_CONSOLE}" = 1 ]]; then
-    echo "DO_CONSOLE script has already run"
-    exit 0
-fi
-
 # Check if DigitalOcean Remote Console installation is enabled
 if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" != "1" ]]; then
     echo "DigitalOcean Remote Console installation is disabled in configuration."
@@ -96,6 +90,4 @@ else
     echo ""
 fi
 
-# Mark the installation as complete
-set_install_state "DO_CONSOLE" "1"
 echo "DigitalOcean Remote Console completed successfully. Script done."

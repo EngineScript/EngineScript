@@ -98,7 +98,7 @@ validate_db_identifier() {
 # Arguments:
 #   $1 - DOMAIN (e.g. "wordpresstesting.com" or "example.co.uk")
 #
-# Requires: RAND_CHAR4 (set via enginescript-variables.txt)
+# Requires: es_random (enginescript-common.sh)
 # Sets:     ES_DB_NAME (the constructed database name)
 #----------------------------------------------------------------------------------
 generate_db_name() {
@@ -124,7 +124,7 @@ generate_db_name() {
     domain_without_tld="db_${domain_without_tld}"
   fi
 
-  # RAND_CHAR4 is a random string (length 4) from enginescript-variables.txt.
+  # The suffix ends with 4 random letters and digits (es_random).
   # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
   # Include a stable hash of the full domain to avoid collisions when truncation occurs.
   domain_hash="$(printf '%s' "${DOMAIN}" | sha256sum | awk '{print $1}' | cut -c1-8)"
@@ -132,8 +132,8 @@ generate_db_name() {
     echo "Error: Failed to generate domain hash for database name suffix (got '${domain_hash}')." >&2
     return 1
   fi
-  db_name_suffix="_${domain_hash}_${RAND_CHAR4}"
-  # Expected: '_' (1) + domain_hash (8) + '_' (1) + RAND_CHAR4 (4) = 14 chars.
+  db_name_suffix="_${domain_hash}_$(es_random 4)"
+  # Expected: '_' (1) + domain_hash (8) + '_' (1) + random (4) = 14 chars.
   if (( ${#db_name_suffix} != expected_db_name_suffix_len )); then
     echo "Error: Invalid random suffix length for database name generation (expected ${expected_db_name_suffix_len}, got ${#db_name_suffix})." >&2
     return 1
@@ -165,7 +165,7 @@ validate_install_credentials() {
   local database_password="$2"
   local DOMAIN="$3"
 
-  # RAND_CHAR16 uses a-zA-Z0-9 only; regex matches that exact charset.
+  # es_random uses a-zA-Z0-9 only; the regex matches that exact charset.
   if [[ -z "${database_user}" || ${#database_user} -lt "${DB_USER_MIN_LENGTH}" || ${#database_user} -gt "${DB_USER_MAX_LENGTH}" || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
     echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be ${DB_USER_MIN_LENGTH}-${DB_USER_MAX_LENGTH} characters and contain only letters or numbers)." >&2
     return 1

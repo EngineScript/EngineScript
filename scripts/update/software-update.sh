@@ -20,7 +20,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Updating Adminer"
-    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> "${ES_STEP_ERROR_LOG}"
   else
     echo "Skipping Adminer update"
 fi
@@ -28,36 +28,25 @@ print_last_errors
 debug_pause "Adminer"
 
 # Install or update fail2ban (servers installed before it was added get it here)
-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "fail2ban"
+run_step "fail2ban" /usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh
 
 # Install or update Gixy-Next
-/usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Gixy-Next"
+run_step "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh
 
-# Update liburing. Its install script skips once the install has marked it complete;
-# ES_REFRESH_SOURCES=1 makes it build the version in enginescript-variables.txt.
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "liburing"
+# Update liburing to the version in enginescript-variables.txt
+run_step "liburing" /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
 
 # Install or update Lynis
-/usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Lynis"
+run_step "Lynis" /usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh
 
 # Update MYSQLTuner
-/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "MYSQLTuner"
+run_step "MYSQLTuner" /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
 # Update phpMyAdmin
 if [[ "${INSTALL_PHPMYADMIN}" == "1" ]];
   then
     echo "Updating phpMyAdmin"
-    /usr/local/bin/enginescript/scripts/update/phpmyadmin-update.sh 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/update/phpmyadmin-update.sh 2>> "${ES_STEP_ERROR_LOG}"
   else
     echo "Skipping phpMyAdmin update"
 fi
@@ -65,26 +54,18 @@ print_last_errors
 debug_pause "phpMyAdmin"
 
 # Update WP-CLI
-/usr/local/bin/enginescript/scripts/update/wp-cli-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "WP-CLI"
+run_step "WP-CLI" /usr/local/bin/enginescript/scripts/update/wp-cli-update.sh
 
 # Update WP-Scan
-gem update wpscan --no-document 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "WP-Scan"
+run_step "WP-Scan" gem update wpscan --no-document
 
 # Update zImageOptimizer
-/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "zImageOptimizer"
+run_step "zImageOptimizer" /usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
 
 # zlib is compiled into Nginx, so the Nginx update fetches its current version
 
 # Cleanup
-run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Cleanup"
+run_step "Cleanup" run_enginescript_cleanup
 
 echo ""
 echo "============================================================="

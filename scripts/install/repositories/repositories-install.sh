@@ -30,12 +30,6 @@ retry_add_ppa() {
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${REPOS}" = 1 ]]; then
-    echo "REPOS script has already run"
-    exit 0
-fi
-
 # PPAs: Canonical's server backports, MaxMind (GeoIP), Git, Hurl, and deadsnakes (Python); the
 # list is ENGINESCRIPT_PPAS in enginescript-common.sh. A PPA with no packages for this Ubuntu
 # release yet would leave apt with a source it cannot read, so it is skipped now, and the weekly
@@ -113,6 +107,4 @@ retry_add_ppa universe
 curl -fsSL --proto '=https' https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /etc/apt/keyrings/yarn-archive-keyring.gpg >/dev/null
 echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
-# Mark the installation as complete
-set_install_state "REPOS" "1"
 echo "Install Repositories completed successfully. Script done."

@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${BLOCK}" = 1 ]]; then
-    echo "BLOCK script has already run"
-    exit 0
-fi
-
 cd /etc/apt/preferences.d/ || { echo "Error: Failed to change to /etc/apt/preferences.d" >&2; exit 1; }
 
 # Block Apache2 from APT
@@ -58,6 +52,4 @@ for ver in "${block_versions[@]}"; do
     echo -e "Package: php${ver}*\nPin: release *\nPin-Priority: -1" > "php${sanitized}-block"
 done
 
-# Mark the installation as complete
-set_install_state "BLOCK" "1"
 echo "Block Unwanted Packages completed successfully. Script done."

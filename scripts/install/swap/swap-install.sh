@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${SWAP}" = 1 ]]; then
-    echo "SWAP script has already run"
-    exit 0
-fi
-
 # Function to create swap file
 create_swap_file() {
     local swap_size=$1
@@ -70,6 +64,4 @@ fi
 
 enable_swap_on_boot
 
-# Mark the installation as complete
-set_install_state "SWAP" "1"
 echo "Swap completed successfully. Script done."

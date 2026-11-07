@@ -14,13 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-# ES_REFRESH_SOURCES=1 (from nginx-update.sh): fetch the current version even after the install
-if [[ "${ZLIB}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
-    echo "ZLIB script has already run"
-    exit 0
-fi
-
 # Return to /usr/src
 return_to_src
 
@@ -132,6 +125,4 @@ fi
 # Return to /usr/src
 return_to_src
 
-# Mark the installation as complete
-set_install_state "ZLIB" "1"
 echo "zlib completed successfully. Script done."

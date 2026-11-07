@@ -32,7 +32,12 @@ fi
 # Resolve the repo root relative to this script's location (scripts/ci/)
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-# Source the shared database credential functions from the repo checkout
+# The shared functions (es_random) and the database credential functions from the repo checkout
+# shellcheck source=scripts/functions/shared/enginescript-common.sh
+source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh" || {
+  echo "Error: Failed to source enginescript-common.sh" >&2
+  exit 1
+}
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-db-credentials.sh" || {
   echo "Error: Failed to source enginescript-db-credentials.sh" >&2
   exit 1
@@ -73,32 +78,34 @@ echo "  Test 1: vhost-install.sh credential methods"
 echo "======================================================="
 echo ""
 
-# --- Step 1: Generate random characters ---
-echo "Step 1: Source enginescript-variables.txt for random credentials"
-source "${REPO_ROOT}/enginescript-variables.txt"
+# --- Step 1: Random strings, made when asked (es_random) ---
+echo "Step 1: es_random"
 
-if [[ ${#RAND_CHAR2} -eq 2 ]]; then
-  pass "RAND_CHAR2 length is 2 (got '${RAND_CHAR2}')"
+for length in 2 4 8 16 24 32; do
+  ok=1
+  # Many draws: base64 output also has + / =, and every string must still reach its length
+  for _ in $(seq 1 200); do
+    value="$(es_random "${length}")"
+    if [[ ${#value} -ne ${length} || ! "${value}" =~ ^[a-zA-Z0-9]+$ ]]; then
+      ok=0
+      break
+    fi
+  done
+  if [[ "${ok}" -eq 1 ]]; then
+    pass "es_random ${length} gives ${length} letters and digits, every time (200 draws)"
+  else
+    fail "es_random ${length} gave '${value}'"
+  fi
+done
+if [[ "$(es_random 32)" != "$(es_random 32)" ]]; then
+  pass "es_random gives a new string on each call"
 else
-  fail "RAND_CHAR2 length should be 2, got ${#RAND_CHAR2} ('${RAND_CHAR2}')"
+  fail "es_random gave the same string twice"
 fi
-
-if [[ ${#RAND_CHAR4} -eq 4 && "${RAND_CHAR4}" =~ ^[a-zA-Z0-9]+$ ]]; then
-  pass "RAND_CHAR4 length is 4, charset valid (got '${RAND_CHAR4}')"
+if ! es_random 0 > /dev/null 2>&1 && ! es_random x > /dev/null 2>&1; then
+  pass "es_random refuses a length that is not a positive number"
 else
-  fail "RAND_CHAR4 invalid: length=${#RAND_CHAR4}, value='${RAND_CHAR4}'"
-fi
-
-if [[ ${#RAND_CHAR16} -eq 16 && "${RAND_CHAR16}" =~ ^[a-zA-Z0-9]+$ ]]; then
-  pass "RAND_CHAR16 length is 16, charset valid"
-else
-  fail "RAND_CHAR16 invalid: length=${#RAND_CHAR16}"
-fi
-
-if [[ ${#RAND_CHAR32} -eq 32 && "${RAND_CHAR32}" =~ ^[a-zA-Z0-9_]+$ ]]; then
-  pass "RAND_CHAR32 length is 32, charset valid"
-else
-  fail "RAND_CHAR32 invalid: length=${#RAND_CHAR32}"
+  fail "es_random accepted a bad length"
 fi
 
 # --- Step 2: Generate install DB name ---
@@ -110,10 +117,10 @@ echo "Step 2: generate_db_name"
 LONG_LABEL="$(printf 'a%.0s' {1..63})"
 while IFS='|' read -r test_domain expected_base; do
   if generate_db_name "${test_domain}" && [[ ${#ES_DB_NAME} -le 64 ]] \
-      && [[ "${ES_DB_NAME}" =~ ^${expected_base}_[0-9a-f]{8}_${RAND_CHAR4}$ ]]; then
+      && [[ "${ES_DB_NAME}" =~ ^${expected_base}_[0-9a-f]{8}_[a-zA-Z0-9]{4}$ ]]; then
     pass "generate_db_name ${test_domain}: '${ES_DB_NAME}'"
   else
-    fail "generate_db_name ${test_domain}: got '${ES_DB_NAME:-}' (expected ${expected_base}_<hash>_${RAND_CHAR4}, at most 64 characters)"
+    fail "generate_db_name ${test_domain}: got '${ES_DB_NAME:-}' (expected ${expected_base}_<hash>_<4 random>, at most 64 characters)"
   fi
 done << EOF
 wordpresstesting.com|wordpresstesting
@@ -147,8 +154,8 @@ fi
 echo ""
 echo "Step 3: validate_install_credentials"
 database_name="${ES_DB_NAME}"
-database_user="${RAND_CHAR16}"
-database_password="${RAND_CHAR32}"
+database_user="$(es_random 16)"
+database_password="$(es_random 32)"
 
 if validate_install_credentials "${database_user}" "${database_password}" "${INSTALL_DOMAIN}"; then
   pass "validate_install_credentials accepted generated credentials"
@@ -220,16 +227,6 @@ echo "  Test 2: vhost-import.sh credential methods"
 echo "======================================================="
 echo ""
 
-# --- Step 1: Generate random characters (fresh set) ---
-echo "Step 1: Source enginescript-variables.txt for random credentials (fresh)"
-source "${REPO_ROOT}/enginescript-variables.txt"
-
-if [[ ${#RAND_CHAR4} -eq 4 && ${#RAND_CHAR16} -eq 16 && ${#RAND_CHAR32} -eq 32 ]]; then
-  pass "Fresh RAND_CHAR4/16/32 generated with correct lengths"
-else
-  fail "Fresh random credentials have incorrect lengths"
-fi
-
 # --- Step 2: Domain name construction (import method) ---
 echo ""
 echo "Step 2: generate_db_name"
@@ -238,13 +235,13 @@ DB_CHARSET="utf8mb4"
 
 generate_db_name "${IMPORT_DOMAIN}" || { fail "generate_db_name returned non-zero"; }
 DB="${ES_DB_NAME}"
-USR="${RAND_CHAR16}"
-PSWD="${RAND_CHAR32}"
+USR="$(es_random 16)"
+PSWD="$(es_random 32)"
 GENERATED_IMPORT_DB="${DB}"
 GENERATED_IMPORT_USR="${USR}"
 GENERATED_IMPORT_PSWD="${PSWD}"
 
-if [[ -n "${DB}" && "${DB}" =~ ^importtest_[0-9a-f]{8}_${RAND_CHAR4}$ ]]; then
+if [[ -n "${DB}" && "${DB}" =~ ^importtest_[0-9a-f]{8}_[a-zA-Z0-9]{4}$ ]]; then
   pass "Import DB constructed and assigned like vhost-import.sh: '${DB}'"
 else
   fail "Import DB construction unexpected: '${DB}'"

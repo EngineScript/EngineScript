@@ -134,9 +134,7 @@ run_install_step "BLOCK" "/usr/local/bin/enginescript/scripts/install/block/pack
 run_install_step "UBUNTU_PRO" "/usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh" "Ubuntu Pro Setup"
 
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Update & Upgrade"
+run_step "Update & Upgrade" /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Install Dependencies
 run_install_step "DEPENDS" "/usr/local/bin/enginescript/scripts/install/depends/depends-install.sh" "Install Dependencies"
@@ -149,9 +147,6 @@ run_install_step "ACME" "/usr/local/bin/enginescript/scripts/install/acme/acme-i
 
 # GCC
 run_install_step "GCC" "/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh" "GCC"
-
-# OpenSSL
-run_install_step "OPENSSL" "/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh" "OpenSSL"
 
 # Swap
 run_install_step "SWAP" "/usr/local/bin/enginescript/scripts/install/swap/swap-install.sh" "Swap"
@@ -173,12 +168,6 @@ if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" = "1" ]]; then
   run_install_step "DO_CONSOLE" "/usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh" "DigitalOcean Remote Console"
 fi
 
-# PCRE
-run_install_step "PCRE" "/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh" "PCRE"
-
-# zlib
-run_install_step "ZLIB" "/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh" "zlib"
-
 # liburing
 run_install_step "LIBURING" "/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh" "liburing"
 
@@ -194,7 +183,7 @@ run_install_step "PHP" "/usr/local/bin/enginescript/scripts/install/php/php-inst
 # Redis
 run_install_step "REDIS" "/usr/local/bin/enginescript/scripts/install/redis/redis-install.sh" "Redis"
 
-# Nginx
+# Nginx (the build fetches the OpenSSL, PCRE2, and zlib sources it compiles in)
 run_install_step "NGINX" "/usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh" "Nginx"
 
 # phpMyAdmin (optional)

@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${REDIS}" = 1 ]]; then
-    echo "REDIS script has already run"
-    exit 0
-fi
-
 # Install Redis (from Redis's repository, packages.redis.io, added by repositories-install.sh)
 if ! apt-get install -qy redis redis-server redis-tools; then
   echo "Error: Installing Redis failed." >&2
@@ -76,6 +70,4 @@ set_redis_permissions
 # Redis Service Check
 verify_service_running "redis" "Redis"
 
-# Mark the installation as complete
-set_install_state "REDIS" "1"
 echo "Redis completed successfully. Script done."

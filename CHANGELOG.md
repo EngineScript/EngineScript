@@ -4,6 +4,41 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-07
+
+### 🔒 SITE TOOLS SECURITY
+
+- **Create Domain and Import Domain run WP-CLI as `www-data`:** downloading and installing WordPress, importing the database, moving the URLs, and installing plugins now run as `www-data` instead of root with `--allow-root`. An imported site brings its own `wp-config.php`, plugins, and theme from another host, and that code ran as root during the import. Backups, cron jobs, and staging copies already ran WP-CLI this way.
+- **es.cache and the cache-clearing steps:** clearing a site's WordPress cache, rewrite rules, and transients, and purging the Nginx Helper cache, also run WP-CLI as `www-data` now, so clearing caches no longer runs every site's code as root.
+- **MariaDB update:** the check that every site still reaches its database runs WP-CLI as `www-data`, so the sites' `wp-config.php` files no longer run as root during the update.
+- **Cloudflare firewall rules:** the UFW rules are made only from a list in which every line is an address range, downloaded over HTTPS, as the Nginx real-IP list already was. Before, the firewall script used whatever the download returned.
+- **Install and update error log:** each step's errors now go to `/var/log/EngineScript/step-errors.log` before they are added to `install-error-log.log`. The file was `/tmp/enginescript_install_errors.log`, which any user could create first, so root's writes to it could fail.
+
+### 🏗️ SITE TOOLS, INSTALL, AND UPDATE CHANGES
+
+- **Create Domain and Import Domain:**
+  - A setup that fails partway is rolled back: everything set up for the domain is removed, as Remove Domain does, so you can fix the problem and run it again. Before, the half-set-up site stayed, and the next try stopped because the domain was already there. Cloudflare's DNS records are left as they are. Import Domain is not rolled back once the site is set up and it asks whether the site works.
+  - A domain that is not on the site list, but has parts of a site on the server (files, a vhost, database credentials, or a certificate), is refused before anything changes. Remove Domain cleans it up (choose to type the domain). This also keeps a rollback from deleting anything that was there before.
+  - A failed certificate, WordPress download, WordPress install, or file copy now stops the setup (and rolls it back). Before, the script carried on without them.
+- **One at a time:** Create Domain, Import Domain, Remove Domain, and staging copies no longer run at the same time as each other; two at once could add the same site twice or give two sites the same Redis database. EngineScript updates and the Nginx, PHP, and MariaDB updates also run one at a time. A second run stops with a message.
+- **phpMyAdmin update:** the new version is downloaded and unpacked beside the installed one, with its `config.inc.php`, and swapped in only when it is complete. Before, the update deleted phpMyAdmin first, so a failed download left the server without it.
+- **Admin tools:** Adminer, and a phpMyAdmin install run again after a failure, are also built beside the installed copy and swapped in. A failed Adminer download no longer leaves an empty or broken `index.php`. The control panel, phpSysInfo, and Tiny File Manager already worked this way; all of them now share one function.
+- **MariaDB Diagnostic:** the InnoDB buffer pool line shows the size the tuning plan sets, instead of 45% of RAM, which is not what EngineScript uses.
+- **EngineScript plugins:** Site Exporter and Site Optimizer are downloaded once per update for all sites, instead of once per site. Each is unpacked beside the plugin's folder and then swapped in. Before, the zip was unpacked over the old folder, which kept files the new version had removed, and a failed unpack could leave a mix of both versions.
+- **Install:**
+  - OpenSSL, PCRE2, and zlib are no longer separate install steps. The Nginx build fetches them, at the versions in `enginescript-variables.txt`, for both installs and updates.
+  - A failed Nginx configuration step (folders, configuration files, tuning, or the Cloudflare IP list) now stops the install.
+  - With `SHOW_ENGINESCRIPT_HEADER=1`, the header is now set before Nginx first starts. Before, it was set after, and showed only after the next reload.
+- **Nginx:** the install and the update now build Nginx with the same script, and write its configuration with the same script, so the two can no longer drift apart.
+- **Random credentials:** passwords, database names and users, table prefixes, and phpMyAdmin's secrets are made when they are needed, instead of six random strings every time any script started. Each one now always has its full length; a short one was rare but possible.
+
+### 🧹 SCRIPT CLEANUP
+
+- **Shared functions:** the prompts, permissions, Cloudflare, and tuning functions are in their own files, which `enginescript-common.sh` loads. The one-time upgrades are loaded only by the updater.
+- **Cloudflare:** Create Domain, Import Domain, Staging, the Nginx real-IP list, and the firewall rules use one set of Cloudflare functions.
+- **Install steps:** the installer records each completed step; the steps no longer check or record that themselves.
+- **Site list:** scripts read and change the list of sites through shared functions.
+
 ## 2026-11-06
 
 ### 🧹 SCRIPT CLEANUP
@@ -14,7 +49,7 @@ Changes are organized by date, with the most recent changes listed first.
   - A last entry, "Other (type the ending)", takes any ending that is not listed, such as `travel` or `co.in`.
   - Domain names longer than 63 characters are refused, as DNS requires.
 - **Site list:** `/home/EngineScript/sites-list/sites.sh` now holds only the list of sites. Its template also loaded `enginescript-variables.txt` and the install options, so every script that read the list loaded them a second time, partway through, and drew new random values. An update removes those lines from existing lists once; the sites stay.
-- **Commands:** `es.*`, `ng.*`, and the new `enginescript` (the menu) are commands in `/usr/local/bin`. The matching aliases in root's `.bashrc` are removed when EngineScript updates; they ran the same scripts.
+- **Commands:** `es.*` and `ng.*` are commands in `/usr/local/bin`, and the new `enginescript` (the menu) is in `/usr/local/sbin`, since `/usr/local/bin/enginescript` is EngineScript's own folder. The matching aliases in root's `.bashrc` are removed when EngineScript updates; they ran the same scripts.
 - **Nginx:**
   - The binary is stripped once, when it is linked. The build also stripped it twice more after `make install`, and the update a third time. That strip also changed `nginx.old`, the previous binary kept for a rollback.
   - The update no longer syncs the HTTP/3 settings twice.

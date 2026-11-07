@@ -5,7 +5,7 @@
 # run_once must run a one-time upgrade only until it succeeds, record it in
 # upgrades-done.conf (once, by its exact name), and leave a failed one unrecorded so the next
 # update tries it again. Every name in normal-auto-upgrade.sh's ONE_TIME_UPGRADES must be a
-# function in enginescript-common.sh, or the upgrade would fail on every update.
+# function in enginescript-upgrades.sh, or the upgrade would fail on every update.
 
 set -euo pipefail
 
@@ -15,6 +15,8 @@ trap 'rm -rf "${WORK}"' EXIT
 export ENGINESCRIPT_UPGRADES_DONE_FILE="${WORK}/var/lib/enginescript/upgrades-done.conf"
 
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
+# shellcheck source=scripts/functions/shared/enginescript-upgrades.sh
+source "${REPO_ROOT}/scripts/functions/shared/enginescript-upgrades.sh"
 
 TESTS_PASSED=0
 TESTS_FAILED=0

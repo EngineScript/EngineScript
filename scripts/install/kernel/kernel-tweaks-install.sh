@@ -14,15 +14,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${KERNEL_TWEAKS}" = 1 ]]; then
-    echo "KERNEL_TWEAKS script has already run"
-    exit 0
-fi
-
 # Kernel Tweaks
 install_enginescript_sysctl
 
-# Mark the installation as complete
-set_install_state "KERNEL_TWEAKS" "1"
 echo "Kernel Tweaks completed successfully. Script done."

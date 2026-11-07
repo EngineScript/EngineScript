@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${NTP}" = 1 ]]; then
-    echo "NTP script has already run"
-    exit 0
-fi
-
 # Network Time Protocol (NTP). Ubuntu 26.04 keeps time with chrony (with NTS, authenticated time)
 # instead of systemd-timesyncd: where chrony is installed, it stays in charge. Otherwise (Ubuntu
 # 24.04) systemd-timesyncd syncs with Cloudflare's and Ubuntu's time servers.
@@ -37,6 +31,4 @@ else
   systemctl restart systemd-timesyncd
 fi
 
-# Mark the installation as complete
-set_install_state "NTP" "1"
 echo "NTP completed successfully. Script done."

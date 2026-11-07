@@ -14,116 +14,26 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${NGINX}" = 1 ]]; then
-    echo "NGINX script has already run"
-    exit 0
-fi
+# Download, build, and install Nginx (nginx-build.sh is shared with the update)
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-build.sh || die "Building Nginx failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log."
 
-# Nginx Source Downloads
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: The Nginx source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "Nginx Source Downloads"
-
-# Brotli
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: The Brotli module build failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "Brotli"
-
-# Retrieve Latest zlib
-if ! /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: The zlib source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "zlib"
-
-# Retrieve Latest PCRE2
-if ! /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: The PCRE2 source download failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "PCRE2"
-
-# Patch Nginx
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: Patching Nginx failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "Patch Nginx"
-
-# Compile Nginx
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
-  echo "Error: Nginx failed to compile. Stopping the Nginx install; see /tmp/enginescript_install_errors.log." >&2
-  exit 1
-fi
-print_last_errors
-debug_pause "Compile Nginx"
-
-# Create Nginx Directories
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-create-directories.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Create Nginx Directories"
-
-# Misc Nginx Stuff
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Misc Nginx Stuff"
-
-# Tune Nginx FastCGI
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Tune Nginx FastCGI"
+# Write the configuration (nginx-configure.sh is shared with the update)
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-configure.sh || die "Writing the Nginx configuration failed. Stopping the Nginx install; see /var/log/EngineScript/install-error-log.log."
 
 # Backup Nginx
-/usr/local/bin/enginescript/scripts/functions/backup/nginx-backup.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Backup Nginx"
-
-# Cloudflare
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Cloudflare"
+run_step "Backup Nginx" /usr/local/bin/enginescript/scripts/functions/backup/nginx-backup.sh
 
 # SSL
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-ssl.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "SSL"
+run_step "SSL" /usr/local/bin/enginescript/scripts/install/nginx/nginx-ssl.sh
 
 # Assign Admin Password
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-admin-password.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Admin Password"
+run_step "Admin Password" /usr/local/bin/enginescript/scripts/install/nginx/nginx-admin-password.sh
 
 # Assign Permissions BEFORE nginx tries to start
 set_nginx_permissions
 
 # Install Nginx Service
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-service.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Nginx Service"
-
-# Hide EngineScript Header
-if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
-  then
-    sed -i "s|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\\.com\"|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\\.com\"|g" "/etc/nginx/globals/response-headers.conf"
-  else
-    echo ""
-fi
+run_step "Nginx Service" /usr/local/bin/enginescript/scripts/install/nginx/nginx-service.sh
 
 # Nginx Service Check
 verify_service_running "nginx" "Nginx"
@@ -131,6 +41,4 @@ verify_service_running "nginx" "Nginx"
 # Nginx Installation Completed
 print_install_banner "Nginx"
 
-# Mark the installation as complete
-set_install_state "NGINX" "1"
 echo "Nginx completed successfully. Script done."

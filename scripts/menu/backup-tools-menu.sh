@@ -32,10 +32,7 @@ latest_backup() {
 # The newest local backup of each kind, per site, and where copies go
 show_backups() {
   local SITES=() site base size
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Local backups in /home/EngineScript/site-backups (the newest of each kind):"
   [[ "${#SITES[@]}" -eq 0 ]] && echo "  No sites yet."
@@ -124,10 +121,7 @@ check_newest_backup() {
 check_latest_backups() {
   local SITES=() site base
   BACKUP_PROBLEMS=0
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Reading back the newest backups. Each archive is read in full, which takes a while for large sites."
   for site in "${SITES[@]}"; do

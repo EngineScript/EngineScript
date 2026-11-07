@@ -14,12 +14,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${MARIADB}" = 1 ]]; then
-    echo "MARIADB script has already run"
-    exit 0
-fi
-
 escape_mariadb_sql_string_literal() {
   local input="$1"
   input="${input//\\/\\\\}"
@@ -30,13 +24,13 @@ escape_mariadb_sql_string_literal() {
 # Add MariaDB repository. The setup script is saved before it runs, so a download that breaks off
 # cannot run part of it, and a failed download stops here instead of installing Ubuntu's MariaDB.
 REPO_SETUP="$(mktemp)"
-if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> /tmp/enginescript_install_errors.log; then
+if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> "${ES_STEP_ERROR_LOG}"; then
   rm -f "${REPO_SETUP}"
   print_last_errors
   echo "Error: Could not download MariaDB's repository setup script. MariaDB was not installed." >&2
   exit 1
 fi
-if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log; then
+if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"; then
   rm -f "${REPO_SETUP}"
   print_last_errors
   echo "Error: MariaDB's repository setup failed. MariaDB was not installed." >&2
@@ -47,8 +41,8 @@ print_last_errors
 debug_pause "MariaDB Repository"
 
 # Install MariaDB
-apt-get update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
-if ! DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y 2>> /tmp/enginescript_install_errors.log; then
+apt-get update --allow-releaseinfo-change -y 2>> "${ES_STEP_ERROR_LOG}"
+if ! DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y 2>> "${ES_STEP_ERROR_LOG}"; then
   print_last_errors
   echo "Error: The MariaDB packages could not be installed. Stopping the MariaDB install; see /var/log/EngineScript/install-error-log.log." >&2
   exit 1
@@ -57,13 +51,11 @@ print_last_errors
 debug_pause "MariaDB Installation"
 
 # Update
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
-apt-get upgrade -y 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> "${ES_STEP_ERROR_LOG}"
+apt-get upgrade -y 2>> "${ES_STEP_ERROR_LOG}"
 
 # Cleanup
-run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "System Update and Cleanup"
+run_step "System Update and Cleanup" run_enginescript_cleanup
 
 # New MariaDB Secure Method
 # Probably safer to do the secure installation manually, as the previous method would break if MariaDB changed anything in the order that they ask questions.
@@ -72,7 +64,7 @@ debug_pause "System Update and Cleanup"
 # starts it after the install; start it if not, and stop the install if it does not answer,
 # instead of continuing without a root password.
 if ! systemctl is-active --quiet mariadb; then
-  systemctl start mariadb 2>> /tmp/enginescript_install_errors.log
+  systemctl start mariadb 2>> "${ES_STEP_ERROR_LOG}"
 fi
 MARIADB_READY=0
 for _ in $(seq 1 15); do
@@ -126,9 +118,7 @@ chown -R mysql:adm /var/log/mysql/mariadb-slow.log
 chown -R mysql:adm /var/log/mysql/mysql.log
 
 # Tune MariaDB
-/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "MariaDB Configuration"
+run_step "MariaDB Configuration" /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh
 
 # Restart=always comes from EngineScript's systemd override (mariadb-tune.sh), which package
 # upgrades leave alone, unlike the package's own /lib/systemd/system/mariadb.service
@@ -144,6 +134,4 @@ mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=val
 
 print_install_banner "MariaDB" 2
 
-# Mark the installation as complete
-set_install_state "MARIADB" "1"
 echo "MariaDB completed successfully. Script done."

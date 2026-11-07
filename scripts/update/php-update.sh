@@ -28,13 +28,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 ROLLBACK_DIR="/home/EngineScript/config-backups/php/pre-switch"
 
+# One update at a time (the lock is shared with es.update and the other software updates)
+acquire_lock "update" || exit 1
+
 # Prompt for EngineScript Update. After it, run the new copy of this script: bash keeps running
 # the text of the file it started with, and the shared functions sourced above are the old ones.
 if [[ "${ES_ENGINESCRIPT_UPDATED:-0}" != "1" ]]; then
     if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
-        /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
-        print_last_errors
-        debug_pause "EngineScript Update"
+        run_step "EngineScript Update" /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
         ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/php-update.sh "$@"
     else
         echo "Skipping EngineScript update."
@@ -115,7 +116,7 @@ rollback_switch() {
     if [[ "${NEW_WAS_INSTALLED}" == "0" ]]; then
         systemctl stop "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
         systemctl disable "php${NEW_PHP_VER}-fpm" 2> /dev/null || true
-        apt-get purge -y "php${NEW_PHP_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+        apt-get purge -y "php${NEW_PHP_VER}*" 2>> "${ES_STEP_ERROR_LOG}" || true
         rm -rf "/etc/php/${NEW_PHP_VER}"
     fi
     rm -f /etc/apt/preferences.d/php*-block
@@ -144,7 +145,7 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
         cp -p /var/www/admin/tools/phpsysinfo/phpsysinfo.ini "${ROLLBACK_DIR}/phpsysinfo.ini"
     fi
     # Dated backup of the PHP configuration as well
-    /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> "${ES_STEP_ERROR_LOG}"
 
     # 2. Install the new version alongside the current one
     echo "Installing PHP ${NEW_PHP_VER} alongside PHP ${CURRENT_PHP_VER}..."
@@ -157,7 +158,7 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     if [[ "${INSTALL_EXPANDED_PHP}" == "1" ]]; then
         mapfile -t -O "${#php_packages[@]}" php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
     fi
-    if ! apt-get install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log; then
+    if ! apt-get install -qy "${php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "Unable to install the PHP ${NEW_PHP_VER} packages."
     fi
@@ -169,7 +170,7 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     fi
 
     # 3. Configure, test, start, and check the new version
-    if ! /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${NEW_PHP_VER}" 2>> /tmp/enginescript_install_errors.log; then
+    if ! /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${NEW_PHP_VER}" 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "Applying the EngineScript configuration to PHP ${NEW_PHP_VER} failed."
     fi
@@ -181,12 +182,12 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     mkdir -p /var/cache/wsdlcache
     set_php_permissions
 
-    if ! "php-fpm${NEW_PHP_VER}" -t 2>> /tmp/enginescript_install_errors.log; then
+    if ! "php-fpm${NEW_PHP_VER}" -t 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "The PHP ${NEW_PHP_VER} configuration failed its test (php-fpm${NEW_PHP_VER} -t)."
     fi
-    systemctl enable "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
-    systemctl restart "php${NEW_PHP_VER}-fpm" 2>> /tmp/enginescript_install_errors.log
+    systemctl enable "php${NEW_PHP_VER}-fpm" 2>> "${ES_STEP_ERROR_LOG}"
+    systemctl restart "php${NEW_PHP_VER}-fpm" 2>> "${ES_STEP_ERROR_LOG}"
     new_php_ok=0
     for _ in 1 2 3 4 5; do
         if php_fpm_answers "${NEW_PHP_VER}"; then
@@ -213,11 +214,11 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
             sed -E -i "s|(fastcgi_pass[[:space:]]+[^;]*php)[0-9]+\.[0-9]+(-fpm)|\1${NEW_PHP_VER}\2|g" "${config_file}"
         fi
     done
-    if ! /usr/sbin/nginx -t 2>> /tmp/enginescript_install_errors.log; then
+    if ! /usr/sbin/nginx -t 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "The Nginx configuration for PHP ${NEW_PHP_VER} failed its test (nginx -t)."
     fi
-    if ! systemctl reload nginx 2>> /tmp/enginescript_install_errors.log; then
+    if ! systemctl reload nginx 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "Nginx did not reload with the PHP ${NEW_PHP_VER} configuration."
     fi
@@ -256,7 +257,7 @@ for OLD_VER in "${OLD_PHP_VERS[@]}"; do
     echo "Removing PHP ${OLD_VER}..."
     systemctl stop "php${OLD_VER}-fpm" 2> /dev/null || true
     systemctl disable "php${OLD_VER}-fpm" 2> /dev/null || true
-    apt-get purge -y "php${OLD_VER}*" 2>> /tmp/enginescript_install_errors.log || true
+    apt-get purge -y "php${OLD_VER}*" 2>> "${ES_STEP_ERROR_LOG}" || true
     rm -rf "/etc/php/${OLD_VER}"
     rm -f "/etc/logrotate.d/php${OLD_VER}-fpm"
 
@@ -282,9 +283,7 @@ for ver in "${SUPPORTED_PHP_VERSIONS[@]}" "${OLD_PHP_VERS[@]}"; do
 done
 
 # Cleanup
-run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Cleanup"
+run_step "Cleanup" run_enginescript_cleanup
 
 # Display PHP version and modules
 echo -e "\n\n=-=-=-=-=-=-=-=-=-\nPHP Info\n=-=-=-=-=-=-=-=-=-\n"

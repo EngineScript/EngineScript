@@ -28,6 +28,9 @@ for arg in "$@"; do
     esac
 done
 
+# One update at a time (the lock is shared with the Nginx, PHP, and MariaDB updates)
+acquire_lock "update" || exit 1
+
 # --------------------------------------------------------
 # Update EngineScript
 
@@ -51,18 +54,12 @@ if [[ "${FETCHED}" != "1" ]]; then
     echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
     # Stop when the fetch fails: FETCH_HEAD would still name the previous fetch, which may be the
     # other branch if TEST_MODE changed since. After a successful fetch it names the new commit.
-    if ! git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> /tmp/enginescript_install_errors.log; then
+    if ! git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         echo "Error: Could not fetch the ${ENGINESCRIPT_BRANCH} branch from GitHub. EngineScript was not updated." >&2
         exit 1
     fi
-    if ! git checkout -f -B "${ENGINESCRIPT_BRANCH}" FETCH_HEAD 2>> /tmp/enginescript_install_errors.log; then
-        print_last_errors
-        echo "Error: Could not switch EngineScript to the fetched ${ENGINESCRIPT_BRANCH} branch. EngineScript was not updated." >&2
-        exit 1
-    fi
-    print_last_errors
-    debug_pause "EngineScript Git Pull"
+    run_step "EngineScript Git Pull" git checkout -f -B "${ENGINESCRIPT_BRANCH}" FETCH_HEAD || die "Could not switch EngineScript to the fetched ${ENGINESCRIPT_BRANCH} branch. EngineScript was not updated."
 
     # The checkout has LF line ends (.gitattributes) and executable scripts (their mode in git);
     # the daily permissions job puts them back if something changes them
@@ -93,16 +90,14 @@ echo ""
 
 # --------------------------------------------------------
 # One-time upgrades for servers installed by earlier versions (each runs once per server)
-/usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Auto-Upgrades"
+run_step "Auto-Upgrades" /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
 
 # Server settings that follow EngineScript's files (cron jobs, logrotate, kernel settings).
 # A scheduled update syncs them only when it fetched a new version; a manual update always does.
 if [[ "${SCHEDULED}" == "1" ]]; then
-    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh 2>> "${ES_STEP_ERROR_LOG}"
 else
-    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh --force 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh --force 2>> "${ES_STEP_ERROR_LOG}"
 fi
 print_last_errors
 debug_pause "Server Settings Sync"
@@ -130,21 +125,17 @@ fi
 # complete: files the new version no longer has go away, and a failed update leaves the
 # running panel as it was. Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer,
 # phpinfo) are stored in /var/www/admin/tools/ and are NOT affected by updates.
-/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Admin Control Panel Update"
+run_step "Admin Control Panel Update" /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
 
 # Tiny File Manager is installed once; its EngineScript configuration follows each update
 if [[ -d "${TOOLS_DIR}/tinyfilemanager" ]]; then
-    cp -f /usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php "${TOOLS_DIR}/tinyfilemanager/config.php" 2>> /tmp/enginescript_install_errors.log
+    cp -f /usr/local/bin/enginescript/config/var/www/admin/tools/tinyfilemanager/config.php "${TOOLS_DIR}/tinyfilemanager/config.php" 2>> "${ES_STEP_ERROR_LOG}"
     print_last_errors
 fi
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Config Files Update"
+run_step "Config Files Update" /usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh
 
 # Set permissions for EngineScript frontend directories
 set_enginescript_frontend_permissions
@@ -152,70 +143,11 @@ set_enginescript_frontend_permissions
 # ---------------------------------------------------------
 # Update EngineScript plugins
 
-# Update both EngineScript plugins for each site in sites.sh
-SITES_FILE="/home/EngineScript/sites-list/sites.sh"
-if [[ -f "$SITES_FILE" ]]; then
-  # shellcheck source=/home/EngineScript/sites-list/sites.sh
-  source "$SITES_FILE"
-  for SITE in "${SITES[@]}"; do
-    # Remove quotes from domain name if present
-    DOMAIN=$(echo "$SITE" | tr -d '"')
-    WP_PLUGIN_DIR="/var/www/sites/${DOMAIN}/html/wp-content/plugins"
-    if [[ -d "$WP_PLUGIN_DIR" ]]; then
-      # Only update EngineScript custom plugins if the option is enabled
-      if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
-        # Update the two custom EngineScript plugins:
-        
-        # 1. EngineScript Site Exporter plugin
-        echo "Updating EngineScript Site Exporter plugin for $DOMAIN..."
-        mkdir -p "/tmp/es-se-plugin-update"
-        if curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -o "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" 2>/dev/null; then
-          # Verify the downloaded file is a valid zip
-          if unzip -t "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" >/dev/null 2>&1; then
-            unzip -q -o "/tmp/es-se-plugin-update/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
-            echo "EngineScript Site Exporter plugin updated successfully for $DOMAIN"
-          else
-            echo "Warning: Downloaded EngineScript Site Exporter plugin file is corrupted for $DOMAIN"
-          fi
-        else
-          echo "Warning: Failed to download EngineScript Site Exporter plugin for $DOMAIN"
-        fi
-        rm -rf "/tmp/es-se-plugin-update"
-        
-        # 2. EngineScript Site Optimizer plugin
-        echo "Updating EngineScript Site Optimizer plugin for $DOMAIN..."
-        mkdir -p "/tmp/es-so-plugin-update"
-        if curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -o "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" 2>/dev/null; then
-          # Verify the downloaded file is a valid zip
-          if unzip -t "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" >/dev/null 2>&1; then
-            unzip -q -o "/tmp/es-so-plugin-update/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "$WP_PLUGIN_DIR/"
-            echo "EngineScript Site Optimizer plugin updated successfully for $DOMAIN"
-          else
-            echo "Warning: Downloaded EngineScript Site Optimizer plugin file is corrupted for $DOMAIN"
-          fi
-        else
-          echo "Warning: Failed to download EngineScript Site Optimizer plugin for $DOMAIN"
-        fi
-        rm -rf "/tmp/es-so-plugin-update"
-        
-        # Set permissions for both plugins (only if they exist)
-        if [[ -d "$WP_PLUGIN_DIR/enginescript-site-exporter" ]]; then
-          set_www_data_tree "$WP_PLUGIN_DIR/enginescript-site-exporter"
-        fi
-        if [[ -d "$WP_PLUGIN_DIR/enginescript-site-optimizer" ]]; then
-          set_www_data_tree "$WP_PLUGIN_DIR/enginescript-site-optimizer"
-        fi
-      else
-        echo "Skipping EngineScript custom plugins update for $DOMAIN (disabled in config)..."
-      fi
-    else
-      echo "Warning: Plugin directory $WP_PLUGIN_DIR does not exist for site $DOMAIN"
-    fi
-  done
-else
-  echo "Warning: SITES file $SITES_FILE not found. Skipping plugin updates for sites."
+# Both EngineScript plugins, in every site (each zip is downloaded once)
+es_sites
+if [[ "${#SITES[@]}" -gt 0 ]]; then
+  install_enginescript_plugins "${SITES[@]}" || echo "Warning: Some EngineScript plugins were not updated (see above); the sites keep their current copies." >&2
 fi
-print_last_errors
 debug_pause "EngineScript Plugins Update"
 
 # Warn when the installed PHP version is no longer supported
