@@ -155,9 +155,6 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
     rm -f "/etc/apt/preferences.d/php${NEW_PHP_VER//./}-block"
 
     mapfile -t php_packages < <(get_php_packages_array "${NEW_PHP_VER}")
-    if [[ "${INSTALL_EXPANDED_PHP}" == "1" ]]; then
-        mapfile -t -O "${#php_packages[@]}" php_packages < <(get_expanded_php_packages_array "${NEW_PHP_VER}")
-    fi
     if ! apt-get install -qy "${php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         rollback_switch "Unable to install the PHP ${NEW_PHP_VER} packages."

@@ -1930,7 +1930,6 @@ ENGINESCRIPT_SETTING_NAMES=(
     "INSTALL_ADMINER"
     "HIGH_SECURITY_SSL"
     "INSTALL_HTTP3"
-    "INSTALL_EXPANDED_PHP"
     "PHP_VERSION_OVERRIDE"
     "AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION"
     "INSTALL_ENGINESCRIPT_PLUGINS"
@@ -2115,20 +2114,6 @@ function get_php_packages_array() {
         )
     fi
 
-    printf '%s\n' "${packages[@]}"
-}
-
-
-# ----------------------------------------------------------------
-# Get the array of expanded PHP packages to install for a given PHP version
-# Usage:
-# mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "8.4")
-function get_expanded_php_packages_array() {
-    local target_ver="$1"
-    local packages=(
-        "php${target_ver}-soap"
-        "php${target_ver}-sqlite3"
-    )
     printf '%s\n' "${packages[@]}"
 }
 

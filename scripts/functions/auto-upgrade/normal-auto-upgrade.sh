@@ -44,6 +44,8 @@ ONE_TIME_UPGRADES=(
   remove_old_import_folders
   # Site list: no longer loads the variables and install options itself
   remove_site_list_variable_sources
+  # Nginx: logged-in pages keep WordPress's Cache-Control (private, no-store)
+  migrate_nginx_php_cache_control
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

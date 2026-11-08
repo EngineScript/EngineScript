@@ -306,3 +306,66 @@ function migrate_redis_lazy_user_flush() {
         echo "Redis is not running; the setting applies when it starts."
     fi
 }
+
+# ----------------------------------------------------------------
+# Keep WordPress's Cache-Control on PHP responses
+#
+# The site-wide "expires" replaced the Cache-Control that WordPress sends for logged-in pages,
+# wp-admin, wp-login.php, and REST responses ("no-cache, must-revalidate, max-age=0, no-store,
+# private") with just "no-cache", so a shared cache could store a logged-in page. The next Nginx
+# update brings the fix with the rest of the configuration; this adds it now: the
+# $es_php_expires map in map-expires.conf and "expires $es_php_expires" in php-fpm.conf. Nginx
+# reloads only when its configuration test passes; otherwise both files are put back.
+function migrate_nginx_php_cache_control() {
+    local globals="${ES_NGINX_GLOBALS:-/etc/nginx/globals}"
+    local maps="${globals}/map-expires.conf" php="${globals}/php-fpm.conf" line
+
+    [[ -f "${maps}" && -f "${php}" ]] || return 0
+    grep -q 'expires \$es_php_expires;' "${php}" && return 0
+
+    echo "Nginx: logged-in pages keep WordPress's Cache-Control (private, no-store)..."
+    cp -p "${maps}" "${maps}.pre-cache-control"
+    cp -p "${php}" "${php}.pre-cache-control"
+
+    if ! grep -q 'map \$upstream_http_cache_control \$es_php_expires' "${maps}"; then
+        cat >> "${maps}" << 'MAP'
+
+# For PHP responses (php-fpm.conf): the content-type lifetime above only when PHP sent no
+# Cache-Control of its own. WordPress sends "no-cache, must-revalidate, max-age=0, no-store,
+# private" for logged-in pages, wp-admin, wp-login.php, and REST responses, and "expires" would
+# otherwise replace it with just "no-cache".
+map $upstream_http_cache_control $es_php_expires {
+  ""                                      $expires;
+  default                                 off;
+}
+MAP
+    fi
+
+    # Before the FastCGI cache key, as in the current php-fpm.conf
+    line="$(grep -n -m 1 -e '^# FastCGI cache key$' -e '^fastcgi_cache_key ' "${php}" | cut -d: -f1)"
+    if [[ -z "${line}" ]]; then
+        echo "Error: ${php} has no fastcgi_cache_key line; left unchanged." >&2
+        mv -f "${maps}.pre-cache-control" "${maps}"
+        mv -f "${php}.pre-cache-control" "${php}"
+        return 1
+    fi
+    {
+        head -n "$((line - 1))" "${php}.pre-cache-control"
+        echo "# Keep the Cache-Control that WordPress sends (private, no-store for logged-in pages); the"
+        echo "# content-type lifetimes apply only to responses without one (map-expires.conf)"
+        echo "expires \$es_php_expires;"
+        echo ""
+        tail -n "+${line}" "${php}.pre-cache-control"
+    } > "${php}"
+
+    if ! nginx -t > /dev/null 2>&1; then
+        echo "Error: nginx -t failed; kept the previous map-expires.conf and php-fpm.conf." >&2
+        mv -f "${maps}.pre-cache-control" "${maps}"
+        mv -f "${php}.pre-cache-control" "${php}"
+        return 1
+    fi
+    rm -f "${maps}.pre-cache-control" "${php}.pre-cache-control"
+    if systemctl is-active --quiet nginx; then
+        systemctl reload nginx
+    fi
+}

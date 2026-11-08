@@ -86,7 +86,6 @@ echo ""
 
 mapfile -t php85_packages < <(get_php_packages_array "8.5")
 mapfile -t php84_packages < <(get_php_packages_array "8.4")
-mapfile -t expanded_php85_packages < <(get_expanded_php_packages_array "8.5")
 
 if [[ ${#php85_packages[@]} -eq 15 ]]; then
   pass "PHP 8.5 base package list has 15 entries"
@@ -100,15 +99,8 @@ else
   fail "PHP 8.4 base package list should have 16 entries, got ${#php84_packages[@]}"
 fi
 
-if [[ ${#expanded_php85_packages[@]} -eq 2 ]]; then
-  pass "Expanded PHP package list has 2 entries"
-else
-  fail "Expanded PHP package list should have 2 entries, got ${#expanded_php85_packages[@]}"
-fi
-
 assert_no_whitespace_items "PHP 8.5 packages are emitted one per array item" "${php85_packages[@]}"
 assert_no_whitespace_items "PHP 8.4 packages are emitted one per array item" "${php84_packages[@]}"
-assert_no_whitespace_items "Expanded PHP packages are emitted one per array item" "${expanded_php85_packages[@]}"
 
 assert_contains "PHP 8.5 includes FPM" "php8.5-fpm" "${php85_packages[@]}"
 assert_contains "PHP 8.5 includes MySQL extension" "php8.5-mysql" "${php85_packages[@]}"
@@ -116,8 +108,8 @@ assert_contains "PHP 8.5 includes igbinary (Redis Object Cache serializer)" "php
 assert_contains "PHP 8.4 includes igbinary" "php8.4-igbinary" "${php84_packages[@]}"
 assert_not_contains "PHP 8.5 omits separate opcache package" "php8.5-opcache" "${php85_packages[@]}"
 assert_contains "PHP 8.4 includes separate opcache package" "php8.4-opcache" "${php84_packages[@]}"
-assert_contains "Expanded PHP list includes SOAP" "php8.5-soap" "${expanded_php85_packages[@]}"
-assert_contains "Expanded PHP list includes SQLite" "php8.5-sqlite3" "${expanded_php85_packages[@]}"
+assert_not_contains "PHP 8.5 omits SOAP" "php8.5-soap" "${php85_packages[@]}"
+assert_not_contains "PHP 8.5 omits SQLite" "php8.5-sqlite3" "${php85_packages[@]}"
 
 echo ""
 echo "======================================================="

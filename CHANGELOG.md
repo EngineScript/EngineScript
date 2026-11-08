@@ -24,7 +24,9 @@ Changes are organized by date, with the most recent changes listed first.
 - **PHP remembers resolved file paths for 10 minutes instead of 2:** `realpath_cache_ttl = 600`. After a few minutes without visitors, the first request to a site made about twice as many file system calls with the old setting (measured). The cache uses about 100 KB of its 4 MB.
 - **MariaDB's unused query cache no longer takes memory:** `query_cache_size = 0`. The query cache was already off, but MariaDB still allocated its 1 MB buffer.
 - **Redis:** `always-show-logo` and `repl-diskless-sync` are back to Redis's defaults (no ASCII logo in the log at every start).
-- **Existing servers:** the Nginx changes arrive with the next Nginx update, the PHP changes with the next PHP update or a re-tune, the Redis changes with a re-tune, and the MariaDB changes with the next MariaDB update (or a re-tune, followed by a MariaDB restart).
+- **PHP-FPM no longer loads FFI or readline:** FFI lets PHP code call C libraries directly, and no WordPress feature uses it; readline is for typing at a terminal, which a web request never has. The PHP command line keeps both, so WP-CLI is unchanged.
+- **The Expanded PHP Extensions option is gone:** `INSTALL_EXPANDED_PHP` added SOAP and SQLite3, which WordPress does not use (it runs on MariaDB, and neither WordPress nor the Site Health check asks for SOAP). New installs and PHP version changes no longer install them. Servers that already have them keep them; the setting in an existing options file is ignored.
+- **Existing servers:** logged-in pages keep WordPress's Cache-Control with this update (a one-time upgrade adds that fix to the current Nginx configuration, tests it, and reloads Nginx). The other Nginx changes arrive with the next Nginx update, the PHP changes with the next PHP update or a re-tune, the Redis changes with a re-tune, and the MariaDB changes with the next MariaDB update (or a re-tune, followed by a MariaDB restart).
 
 ### 🔒 SITE TOOLS SECURITY
 
