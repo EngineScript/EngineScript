@@ -321,12 +321,14 @@ function migrate_nginx_php_cache_control() {
     local maps="${globals}/map-expires.conf" php="${globals}/php-fpm.conf" line
 
     [[ -f "${maps}" && -f "${php}" ]] || return 0
+    # shellcheck disable=SC2016  # Nginx variables, matched as text
     grep -q 'expires \$es_php_expires;' "${php}" && return 0
 
     echo "Nginx: logged-in pages keep WordPress's Cache-Control (private, no-store)..."
     cp -p "${maps}" "${maps}.pre-cache-control"
     cp -p "${php}" "${php}.pre-cache-control"
 
+    # shellcheck disable=SC2016  # Nginx variables, matched as text
     if ! grep -q 'map \$upstream_http_cache_control \$es_php_expires' "${maps}"; then
         cat >> "${maps}" << 'MAP'
 

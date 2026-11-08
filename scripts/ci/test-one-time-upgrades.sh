@@ -114,6 +114,7 @@ echo "migrate_nginx_php_cache_control"
 mkdir -p "${WORK}/nginx"
 old_nginx_files() {
   local globals="${REPO_ROOT}/config/etc/nginx/globals"
+  # shellcheck disable=SC2016  # an Nginx line, matched as text
   head -n "$(grep -n -x -F 'expires $expires;' "${globals}/map-expires.conf" | cut -d: -f1)" "${globals}/map-expires.conf" > "${WORK}/nginx/map-expires.conf"
   sed '/^# Keep the Cache-Control that WordPress sends/,/^$/d' "${globals}/php-fpm.conf" > "${WORK}/nginx/php-fpm.conf"
 }
