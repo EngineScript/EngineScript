@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -82,13 +78,14 @@ restore_previous_config() {
   fi
 }
 
+# One update at a time (the lock is shared with es.update and the other software updates)
+acquire_lock "update" || exit 1
+
 # Prompt for EngineScript Update. After it, run the new copy of this script: bash keeps running
 # the text of the file it started with, and the shared functions sourced above are the old ones.
 if [[ "${ES_ENGINESCRIPT_UPDATED:-0}" != "1" ]]; then
     if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
-        /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
-        print_last_errors
-        debug_pause "EngineScript Update"
+        run_step "EngineScript Update" /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
         ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/mariadb-update.sh "$@"
     else
         echo "Skipping EngineScript update."
@@ -117,7 +114,7 @@ if [[ -n "${DATADIR_KB}" && -n "${FREE_KB}" && "${FREE_KB}" -lt "${DATADIR_KB}" 
   exit 1
 fi
 
-if ! (set -o pipefail; mariadb-dump --all-databases --single-transaction --routines --events --triggers --hex-blob 2>> /tmp/enginescript_install_errors.log | gzip > "${ROLLBACK_DIR}/all-databases.sql.gz"); then
+if ! (set -o pipefail; mariadb-dump --all-databases --single-transaction --routines --events --triggers --hex-blob 2>> "${ES_STEP_ERROR_LOG}" | gzip > "${ROLLBACK_DIR}/all-databases.sql.gz"); then
   print_last_errors
   echo "Error: Could not back up the databases. The update stopped; nothing was changed." >&2
   exit 1
@@ -150,20 +147,20 @@ fi
 # MariaDB's repository setup script is saved before it runs: a download that breaks off cannot run
 # part of it, and a failed download stops here, before the repository list is removed.
 REPO_SETUP="$(mktemp)"
-if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> /tmp/enginescript_install_errors.log; then
+if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.com/MariaDB/mariadb_repo_setup 2>> "${ES_STEP_ERROR_LOG}"; then
   rm -f "${REPO_SETUP}"
   print_last_errors
   echo "Error: Could not download MariaDB's repository setup script. The update stopped; the MariaDB packages were not changed." >&2
   exit 1
 fi
 rm -f /etc/apt/sources.list.d/mariadb.list
-sudo bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> /tmp/enginescript_install_errors.log
+bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"
 rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
-apt update --allow-releaseinfo-change -y 2>> /tmp/enginescript_install_errors.log
-if ! sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y' 2>> /tmp/enginescript_install_errors.log; then
+apt-get update --allow-releaseinfo-change -y 2>> "${ES_STEP_ERROR_LOG}"
+if ! sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y' 2>> "${ES_STEP_ERROR_LOG}"; then
   print_last_errors
   echo "Error: The MariaDB package upgrade failed. The configuration was not changed." >&2
   if ! mariadb_is_serving; then
@@ -187,9 +184,7 @@ fi
 cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${STAGED_CONFIG}"
 # Directory for secure_file_priv (my.cnf); MariaDB does not start without it
 install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
-/usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${STAGED_CONFIG}" 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "MariaDB Configuration"
+run_step "MariaDB Configuration" /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${STAGED_CONFIG}"
 
 CONFIG_PROBLEM=""
 if grep -q 'SED[A-Z0-9]' "${STAGED_CONFIG}"; then
@@ -232,9 +227,7 @@ fi
 echo "PASSED: MariaDB is running with the new configuration."
 
 # MariaDB Database Upgrade (system tables for the new version)
-mariadb-upgrade --force 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "MariaDB Database Upgrade"
+run_step "MariaDB Database Upgrade" mariadb-upgrade --force
 
 set_install_state "MARIADB" "1"
 

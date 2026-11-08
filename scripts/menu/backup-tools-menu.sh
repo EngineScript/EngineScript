@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -20,14 +16,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 
 resolve_backup_settings
 AWS="/usr/local/bin/aws"
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
 
 # The newest dated folder in a backup folder, its size, and how many are kept
 latest_backup() {
@@ -44,10 +32,7 @@ latest_backup() {
 # The newest local backup of each kind, per site, and where copies go
 show_backups() {
   local SITES=() site base size
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Local backups in /home/EngineScript/site-backups (the newest of each kind):"
   [[ "${#SITES[@]}" -eq 0 ]] && echo "  No sites yet."
@@ -136,10 +121,7 @@ check_newest_backup() {
 check_latest_backups() {
   local SITES=() site base
   BACKUP_PROBLEMS=0
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Reading back the newest backups. Each archive is read in full, which takes a while for large sites."
   for site in "${SITES[@]}"; do
@@ -234,10 +216,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/alias/alias-backup.sh
           echo ""
           echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "Backup One Domain")

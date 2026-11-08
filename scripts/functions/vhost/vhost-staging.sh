@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source shared database credential functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-credentials.sh" >&2; exit 1; }
@@ -81,42 +77,17 @@ set_wp_config_string() {
 
 
 #----------------------------------------------------------------------------------
-# Cloudflare: the staging CNAME record (skipped, with a note, when the API settings are not set)
-
-cf_enabled() {
-  [[ -n "${CF_GLOBAL_API_KEY:-}" && "${CF_GLOBAL_API_KEY}" != "PLACEHOLDER" \
-    && -n "${CF_ACCOUNT_EMAIL:-}" && "${CF_ACCOUNT_EMAIL}" != "PLACEHOLDER" ]]
-}
-
-# Usage: cf_call <METHOD> <path after /client/v4> [JSON body]
-cf_call() {
-  local args=(-s --max-time 30 -X "$1" "https://api.cloudflare.com/client/v4$2"
-    -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}"
-    -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}"
-    -H "Content-Type: application/json")
-  if [[ -n "${3:-}" ]]; then
-    args+=(--data "$3")
-  fi
-  curl "${args[@]}"
-}
-
-cf_succeeded() {
-  grep -Eq '"success"[[:space:]]*:[[:space:]]*true' <<< "$1"
-}
+# Cloudflare: the staging CNAME record (skipped, with a note, when the API settings are not set).
+# The API calls are the shared ones in enginescript-cloudflare.sh.
 
 # Sets CF_ZONE_ID, and CF_RECORD_ID, CF_RECORD_TYPE, and CF_RECORD_CONTENT for staging.<domain>
 # (empty when there is no record). Returns 1 when Cloudflare cannot be asked.
 cf_find_record() {
-  local response
   CF_ZONE_ID="" CF_RECORD_ID="" CF_RECORD_TYPE="" CF_RECORD_CONTENT=""
   cf_enabled || return 1
-  CF_ZONE_ID="$(cf_call GET "/zones?name=${DOMAIN}&status=active" | grep -o '"id":"[a-zA-Z0-9]*"' | head -n 1 | cut -d'"' -f4)"
+  CF_ZONE_ID="$(cf_zone_id "${DOMAIN}")"
   [[ -n "${CF_ZONE_ID}" ]] || return 1
-  response="$(cf_call GET "/zones/${CF_ZONE_ID}/dns_records?name=${STAGING}")"
-  cf_succeeded "${response}" || return 1
-  CF_RECORD_ID="$(grep -o '"id":"[^"]*' <<< "${response}" | head -n 1 | cut -d'"' -f4)"
-  CF_RECORD_TYPE="$(grep -o '"type":"[^"]*' <<< "${response}" | head -n 1 | cut -d'"' -f4)"
-  CF_RECORD_CONTENT="$(grep -o '"content":"[^"]*' <<< "${response}" | head -n 1 | cut -d'"' -f4)"
+  cf_find_dns_record "${CF_ZONE_ID}" "${STAGING}"
 }
 
 # True when the record is the one this script adds
@@ -135,7 +106,7 @@ add_dns_record() {
     return 0
   fi
   body="{\"type\": \"CNAME\", \"name\": \"staging\", \"content\": \"${DOMAIN}\", \"proxied\": true, \"ttl\": 1, \"comment\": \"EngineScript staging copy\"}"
-  if cf_succeeded "$(cf_call POST "/zones/${CF_ZONE_ID}/dns_records" "${body}")"; then
+  if cf_succeeded "$(cf_request POST "/zones/${CF_ZONE_ID}/dns_records" "${body}")"; then
     log "Cloudflare: added the proxied CNAME record ${STAGING} -> ${DOMAIN}."
   else
     log "Warning: Cloudflare did not add the record. Add a proxied CNAME record there: ${STAGING} -> ${DOMAIN}"
@@ -154,7 +125,7 @@ delete_dns_record() {
     log "Cloudflare: left the ${STAGING} record (${CF_RECORD_TYPE} ${CF_RECORD_CONTENT}) alone: EngineScript did not add it."
     return 0
   fi
-  if cf_succeeded "$(cf_call DELETE "/zones/${CF_ZONE_ID}/dns_records/${CF_RECORD_ID}")"; then
+  if cf_succeeded "$(cf_request DELETE "/zones/${CF_ZONE_ID}/dns_records/${CF_RECORD_ID}")"; then
     log "Cloudflare: deleted the CNAME record ${STAGING}."
   else
     log "Warning: Cloudflare did not delete the ${STAGING} record; delete it in the Cloudflare dashboard."
@@ -166,8 +137,8 @@ delete_dns_record() {
 # Checks
 
 check_live_site() {
-  [[ "${DOMAIN}" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || die "Not a domain: ${DOMAIN}"
-  grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh 2> /dev/null \
+  validate_site_domain "${DOMAIN}" || die "Not a domain: ${DOMAIN}"
+  es_site_exists "${DOMAIN}" \
     || die "${DOMAIN} is not a site on this server (/home/EngineScript/sites-list/sites.sh)."
   [[ -f "${LIVE_ROOT}/wp-config.php" ]] || die "${DOMAIN} has no WordPress (${LIVE_ROOT}/wp-config.php)."
   LIVE_DB="$(read_credential "/home/EngineScript/mysql-credentials/${DOMAIN}.txt" DB)"
@@ -214,8 +185,11 @@ create_staging_database() {
     log "Error: The database ${STAGING_DB} already exists." >&2
     return 1
   fi
-  validate_install_credentials "${RAND_CHAR16}" "${RAND_CHAR32}" "${STAGING}" || return 1
-  write_credentials_file "${CREDENTIALS_DIR}" "${STAGING}" "${STAGING_DB}" "${RAND_CHAR16}" "${RAND_CHAR32}"
+  local user password
+  user="$(es_random 16)"
+  password="$(es_random 32)" # nosemgrep: codacy.bash.security.hard-coded-password -- generated, not hard-coded
+  validate_install_credentials "${user}" "${password}" "${STAGING}" || return 1
+  write_credentials_file "${CREDENTIALS_DIR}" "${STAGING}" "${STAGING_DB}" "${user}" "${password}"
   load_staging_credentials || return 1
   execute_install_sql "${STAGING_DB}" "${STAGING_USER}" "${STAGING_PASSWORD}" "${STAGING}" || return 1
   log "Created the database ${STAGING_DB} and its user."
@@ -279,7 +253,9 @@ copy_files() {
 # Point the copied wp-config.php at the staging database, URL, logs, and Redis keys
 configure_wp_config() {
   local wp_config="${STAGING_ROOT}/wp-config.php" live="${DOMAIN//./\\.}"
-  sed -i -e "s|//${live}|//${STAGING}|g" \
+  # www.<domain> first: the address of a site that kept www when it was imported
+  sed -i -e "s|//www\\.${live}|//${STAGING}|g" \
+         -e "s|//${live}|//${STAGING}|g" \
          -e "s|/var/www/sites/${live}/|/var/www/sites/${STAGING}/|g" \
          -e "s|/var/log/domains/${live}/${live}-|/var/log/domains/${STAGING}/${STAGING}-|g" "${wp_config}"
   if ! set_wp_config_string "${wp_config}" DB_NAME "${STAGING_DB}" \
@@ -303,9 +279,15 @@ copy_database() {
     return 1
   fi
   log "Copied the database ${LIVE_DB} to ${STAGING_DB}."
-  # The URL as written in HTML and serialized data, the URL as escaped in JSON, and the file path
-  for from in "//${DOMAIN}" "\\/\\/${DOMAIN}" "/var/www/sites/${DOMAIN}/"; do
-    to="${from/${DOMAIN}/${STAGING}}"
+  # The URL as written in HTML and serialized data, the URL as escaped in JSON, and the file path.
+  # www.<domain> first, the address of a site that kept www when it was imported: it moves to the
+  # staging domain too, not to www.<staging domain>, which the certificate does not cover.
+  for from in "//www.${DOMAIN}" "\\/\\/www.${DOMAIN}" "//${DOMAIN}" "\\/\\/${DOMAIN}" "/var/www/sites/${DOMAIN}/"; do
+    if [[ "${from}" == *"www.${DOMAIN}" ]]; then
+      to="${from%"www.${DOMAIN}"}${STAGING}"
+    else
+      to="${from/${DOMAIN}/${STAGING}}"
+    fi
     wp_staging search-replace "${from}" "${to}" --all-tables-with-prefix --skip-columns=guid --report-changed-only || return 1
   done
 }
@@ -364,7 +346,7 @@ create_staging() {
   if staging_exists; then
     die "${STAGING} already exists. Refresh it or delete it instead."
   fi
-  if grep -Fxq "\"${STAGING}\"" /home/EngineScript/sites-list/sites.sh; then
+  if es_site_exists "${STAGING}"; then
     die "${STAGING} is already a site on this server."
   fi
   check_disk_space
@@ -402,7 +384,7 @@ refresh_staging() {
 }
 
 delete_staging() {
-  [[ "${DOMAIN}" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || die "Not a domain: ${DOMAIN}"
+  validate_site_domain "${DOMAIN}" || die "Not a domain: ${DOMAIN}"
   staging_exists || die "${DOMAIN} has no staging copy."
   log "Deleting the staging copy of ${DOMAIN}..."
   flush_site_redis_cache "${STAGING_ROOT}/wp-config.php"
@@ -424,6 +406,14 @@ delete_staging() {
   delete_dns_record
   log "Deleted the staging copy of ${DOMAIN}."
 }
+
+case "${ACTION}" in
+  create | refresh | delete)
+    # One site change at a time (Remove Domain already holds the lock when it deletes a copy)
+    acquire_lock "sites" || exit 1
+    ;;
+  *) ;; # Not an action: the usage error below
+esac
 
 case "${ACTION}" in
   create) create_staging ;;

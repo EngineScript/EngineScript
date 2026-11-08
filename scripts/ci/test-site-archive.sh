@@ -172,6 +172,31 @@ mkdir -p "${SITE_ARCHIVE_SITES_ROOT}/empty.example/html"
 lacks "the build stops without wp-config.php" build_site_archive "empty.example" "${WORK}/out3/empty.zip" 2> /dev/null
 lacks "no archive is written" test -e "${WORK}/out3/empty.zip"
 
+echo "Reading an archive (vhost-import.sh)"
+check "the import reads home_url from the manifest" "$(site_archive_manifest_value "${EXTRACT}/manifest.txt" home_url)" "https://example.com"
+check "the import reads table_prefix from the manifest" "$(site_archive_manifest_value "${EXTRACT}/manifest.txt" table_prefix)" "wp_"
+check "a missing manifest key reads as empty" "$(site_archive_manifest_value "${EXTRACT}/manifest.txt" no_such_key)" ""
+printf 'home_url=https://example.com\r\n' > "${WORK}/crlf-manifest.txt"
+check "a manifest with CRLF line ends reads without the CR" "$(site_archive_manifest_value "${WORK}/crlf-manifest.txt" home_url)" "https://example.com"
+# address|without scheme (the old URLs)|domain the site is served at|has a path|uses www
+while IFS='|' read -r address old_urls domain has_path uses_www; do
+  check "old URLs of ${address}" "$(site_address_without_scheme "${address}")" "${old_urls}"
+  check "domain of ${address}" "$(site_address_domain "${address}")" "${domain}"
+  check "${address} has a path" "$(site_address_has_path "${address}" && echo yes || echo no)" "${has_path}"
+  check "${address} uses www" "$(site_address_uses_www "${address}" && echo yes || echo no)" "${uses_www}"
+done << 'EOF'
+https://example.com|example.com|example.com|no|no
+http://example.com/|example.com|example.com|no|no
+https://www.example.co.uk|www.example.co.uk|example.co.uk|no|yes
+https://WWW.example.com/|WWW.example.com|example.com|no|yes
+https://example.com/blog/|example.com/blog|example.com|yes|no
+https://www.example.com/wp|www.example.com/wp|example.com|yes|yes
+HTTPS://Example.COM|Example.COM|example.com|no|no
+https://example.com:8443/shop|example.com:8443/shop|example.com|yes|no
+https://wwwexample.com|wwwexample.com|wwwexample.com|no|no
+example.com|example.com|example.com|no|no
+EOF
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]

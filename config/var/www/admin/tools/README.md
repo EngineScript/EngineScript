@@ -9,7 +9,6 @@ This directory contains configuration templates for admin tools that are install
 ├── control-panel/    # EngineScript Admin Dashboard (updated during es.update)
 └── tools/            # Admin tools (not affected by es.update)
     ├── adminer/
-    ├── opcache-gui/
     ├── phpinfo/
     ├── phpmyadmin/
     ├── phpsysinfo/

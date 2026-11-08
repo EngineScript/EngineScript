@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -28,7 +24,7 @@ return_to_src
 curl -fsSL --proto '=https' --retry 3 "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     || { echo "Error: Failed to download the AWS CLI." >&2; exit 1; }
 unzip -q -o awscliv2.zip
-sudo /usr/src/aws/install --update
+/usr/src/aws/install --update
 aws --version
 
 # Configuration

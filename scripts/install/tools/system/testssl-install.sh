@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -25,9 +21,9 @@ return_to_src
 git_clone_fresh "https://github.com/testssl/testssl.sh.git" "/usr/local/bin/testssl.sh"
 
 # Permissions
-find /usr/local/bin/testssl.sh -exec chmod 755 {} \;
+find /usr/local/bin/testssl.sh -exec chmod 755 {} +
 chown -R root:root /usr/local/bin/testssl.sh
-find /usr/local/bin/testssl.sh -type f -iname "*.sh" -exec chmod +x {} \;
+find /usr/local/bin/testssl.sh -type f -iname "*.sh" -exec chmod +x {} +
 
 # Return to /usr/src
 return_to_src

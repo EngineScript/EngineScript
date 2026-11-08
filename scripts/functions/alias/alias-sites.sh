@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -40,24 +36,11 @@ fi
 echo -e "\n${BOLD}WordPress Sites on this Server${NORMAL}"
 echo -e "================================\n"
 
-# Check if sites configuration file exists
-sites_config_file="/home/EngineScript/sites-list/sites.sh"
-if [[ ! -f "$sites_config_file" ]]; then
-    echo "${RED}Sites configuration file not found: $sites_config_file${NORMAL}"
-    echo "This typically means no WordPress sites have been installed yet."
-    echo ""
-    echo "To install a new WordPress site, run: ${BOLD}es.menu${NORMAL}"
-    exit 0
-fi
+# The server's sites
+sites_config_file="${ES_SITES_LIST:-/home/EngineScript/sites-list/sites.sh}"
+es_sites
 
-# Source the sites configuration
-source "$sites_config_file"
-
-# Initialize counters
-site_count=0
-
-# Check if SITES array exists and has content
-if [[ ! -v SITES ]] || [[ ${#SITES[@]} -eq 0 ]]; then
+if [[ ${#SITES[@]} -eq 0 ]]; then
     echo "${YELLOW}No WordPress sites configured on this server.${NORMAL}"
     echo "Sites are managed through: $sites_config_file"
     echo ""
@@ -65,17 +48,7 @@ if [[ ! -v SITES ]] || [[ ${#SITES[@]} -eq 0 ]]; then
     exit 0
 fi
 
-# Count configured sites
 site_count=${#SITES[@]}
-
-# Check if any sites were found
-if [[ $site_count -eq 0 ]]; then
-    echo "${YELLOW}No WordPress sites configured on this server.${NORMAL}"
-    echo "Sites are managed through: $sites_config_file"
-    echo ""
-    echo "To install a new WordPress site, run: ${BOLD}es.menu${NORMAL}"
-    exit 0
-fi
 
 # Display sites in a formatted table
 echo "${BOLD}| # | Domain | Document Root | Status |${NORMAL}"
@@ -83,9 +56,6 @@ echo "|---|--------|---------------|--------|"
 
 counter=1
 for domain in "${SITES[@]}"; do
-    # Remove quotes from domain name if present
-    domain=$(echo "$domain" | tr -d '"')
-    
     # Construct expected site path
     site_path="/var/www/sites/$domain/html"
     

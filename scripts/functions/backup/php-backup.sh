@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -21,19 +17,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.
 # Date
 NOW=$(date +%m-%d-%Y-%H)
 
-# Filenames
-DATABASE_FILE="${NOW}-database.sql";
-FULLWPFILES="${NOW}-wordpress-files.gz";
-NGINX_FILE="${NOW}-nginx-vhost.conf.gz";
-PHP_FILE="${NOW}-php.tar.gz";
-SSL_FILE="${NOW}-ssl-keys.gz";
-UPLOADS_FILE="${NOW}-uploads.tar.gz";
-VHOST_FILE="${NOW}-nginx-vhost.conf.gz";
-WPCONFIG_FILE="${NOW}-wp-config.php.gz";
-WPCONTENT_FILE="${NOW}-wp-content.gz";
+# Filename
+PHP_FILE="${NOW}-php.tar.gz"
 
 # Backup PHP Config
 tar -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" /etc/php
 
 # Remove Old PHP Backups
-find /home/EngineScript/config-backups/php -type f -mtime +30 | xargs rm -fR
+find /home/EngineScript/config-backups/php -type f -mtime +30 -delete

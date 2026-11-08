@@ -63,7 +63,7 @@ done
 # Start Main Script
 
 # Install required packages for the script
-apt update --allow-releaseinfo-change -y
+apt-get update --allow-releaseinfo-change -y
 
 core_packages=(
   "apt"
@@ -89,7 +89,7 @@ core_packages=(
   "zip"
 )
 
-apt install -qy "${core_packages[@]}" || {
+apt-get install -qy "${core_packages[@]}" || {
   echo "Error: Unable to install one or more packages. Exiting..."
   exit 1
 }
@@ -116,7 +116,7 @@ if [[ -f "/etc/needrestart/needrestart.conf" ]]; then
 fi
 
 # Upgrade software
-apt upgrade -y
+apt-get upgrade -y
 
 # Return to /usr/src
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
@@ -128,18 +128,8 @@ fi
 
 # EngineScript Git Clone (full clone to allow branch switching)
 git clone https://github.com/EngineScript/EngineScript.git -b master /usr/local/bin/enginescript
-
-# Convert line endings
-find /usr/local/bin/enginescript -type f -print0 | xargs -0 dos2unix
-
-# Set directory and file permissions to 755
-find /usr/local/bin/enginescript -exec chmod 755 {} \;
-
-# Set ownership
-chown -R root:root /usr/local/bin/enginescript
-
-# Make shell scripts executable
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
+# The clone has LF line ends (.gitattributes) and executable scripts (their mode in git). The daily
+# permissions job (cron/permissions.sh) puts line ends, modes, and ownership back if they change.
 
 # Source shared functions now that EngineScript is cloned and ready.
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || {
@@ -197,10 +187,7 @@ if [[ ! -d "/var/cache/enginescript/api" ]]; then
     echo "✓ EngineScript dashboard API cache directory created"
 fi
 # Ensure correct ownership and permissions for the API cache directory
-if [[ -d "/var/cache/enginescript/api" ]]; then
-  chown -R www-data:www-data /var/cache/enginescript/api
-  chmod -R 775 /var/cache/enginescript/api
-fi
+set_api_cache_permissions
 
 # EngineScript Logs
 # Create EngineScript logs
@@ -243,8 +230,8 @@ fi
 apt-get remove --purge 'apache2*' 'php7*' 'php8*' -y
 
 # Update & Upgrade
-apt update --allow-releaseinfo-change -y
-apt upgrade -y
+apt-get update --allow-releaseinfo-change -y
+apt-get upgrade -y
 
 # Set time zone
 dpkg-reconfigure tzdata
@@ -275,22 +262,22 @@ else
   else
     HWE_KERNEL="linux-generic-hwe-${UBUNTU_VERSION}"
   fi
-  if ! apt install --install-recommends "${HWE_KERNEL}" -y; then
+  if ! apt-get install --install-recommends "${HWE_KERNEL}" -y; then
     echo "Warning: Could not install the HWE kernel (${HWE_KERNEL}). The server keeps its current kernel." >&2
   fi
 fi
 
 # Update and upgrade
-apt update --allow-releaseinfo-change -y
-apt upgrade -y
+apt-get update --allow-releaseinfo-change -y
+apt-get upgrade -y
 
 # Remove old downloads
 rm -rf /usr/src/*.tar.gz*
 
 # Remove old packages
-apt clean -y
-apt autoremove --purge -y
-apt autoclean -y
+apt-get clean -y
+apt-get autoremove --purge -y
+apt-get autoclean -y
 
 if [[ -f "/home/EngineScript/enginescript-install-options.txt" ]]; then
   clear

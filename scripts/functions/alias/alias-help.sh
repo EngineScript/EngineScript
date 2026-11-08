@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 #----------------------------------------------------------------------------------
 
@@ -42,7 +38,7 @@ es.info         - Displays server information
 es.install      - Runs the main EngineScript install script
 es.menu         - EngineScript menu
 es.permissions  - Resets the permissions of all files in the WordPress directory (server-wide)
-es.restart      - Restarts Nginx and PHP
+es.restart      - Restarts Nginx and PHP-FPM (starts Redis if it is down)
 es.sites        - Lists all WordPress sites installed on the server
 es.update       - Updates EngineScript
 es.variables    - Opens the variable file in Nano. This file resets when EngineScript is updated

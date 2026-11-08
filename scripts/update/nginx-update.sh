@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -100,11 +96,14 @@ restore_previous_nginx() {
   echo "The failed configuration was kept in ${FAILED_CONFIG_DIR} for troubleshooting."
 }
 
+# One update at a time (the lock is shared with es.update and the other software updates)
+acquire_lock "update" || exit 1
+
 # Prompt for EngineScript Update. After it, run the new copy of this script: bash keeps running
 # the text of the file it started with, and the shared functions sourced above are the old ones.
 if [[ "${ES_ENGINESCRIPT_UPDATED:-0}" != "1" ]]; then
   if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
-    /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> /tmp/enginescript_install_errors.log
+    /usr/local/bin/enginescript/scripts/update/enginescript-update.sh 2>> "${ES_STEP_ERROR_LOG}"
     ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/nginx-update.sh "$@"
   else
     echo "Skipping EngineScript update."
@@ -129,97 +128,22 @@ if [[ -f /etc/systemd/system/nginx.service ]]; then
   cp -p /etc/systemd/system/nginx.service "${ROLLBACK_DIR}/nginx.service"
 fi
 # Dated backup as well (kept for 15 days by nginx-backup.sh)
-/usr/local/bin/enginescript/scripts/functions/backup/nginx-backup.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/backup/nginx-backup.sh 2>> "${ES_STEP_ERROR_LOG}"
 
-# 2. Download and compile while the running Nginx keeps serving
-
-# Nginx Source Downloads
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-download.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Nginx Source Downloads"
-
-# Retrieve Latest Brotli
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Brotli"
-
-# OpenSSL, zlib, and PCRE2 are compiled into Nginx from their sources in /usr/src. Their install
-# scripts skip once the install has marked them complete; ES_REFRESH_SOURCES=1 makes them fetch
-# the versions in enginescript-variables.txt, which may be newer than the ones the server has.
-
-# Retrieve Latest OpenSSL
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "OpenSSL"
-
-# Retrieve Latest zlib
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "zlib"
-
-# Retrieve Latest PCRE2
-ES_REFRESH_SOURCES=1 /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "PCRE2"
-
-# Patch Nginx
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Patch Nginx"
-
-# Compile Nginx
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh 2>> /tmp/enginescript_install_errors.log; then
-  print_last_errors
+# 2. Download and compile while the running Nginx keeps serving (nginx-build.sh is shared with
+# the install, and fetches the OpenSSL, zlib, and PCRE2 versions in enginescript-variables.txt)
+if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-build.sh; then
   # make install may have replaced the binary before failing; put the previous one back
   restore_previous_binary
-  echo "Error: Nginx failed to compile. The update stopped before changing any configuration." >&2
-  echo "Nginx is still running the previous version. See /tmp/enginescript_install_errors.log." >&2
+  echo "Error: Building Nginx failed. The update stopped before changing any configuration." >&2
+  echo "Nginx is still running the previous version. See /var/log/EngineScript/install-error-log.log." >&2
   exit 1
 fi
-print_last_errors
-debug_pause "Compile Nginx"
 
 # 3. Apply the new configuration. The running Nginx keeps its loaded configuration until the
 # restart in step 5, and scripts called here must not reload it.
 export ENGINESCRIPT_SKIP_NGINX_RELOAD=1
-
-# Create Directories
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-create-directories.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Create Directories"
-
-# Misc Nginx Stuff (copies the configuration and migrates existing vhost files)
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-misc.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Misc Nginx Stuff"
-
-# Tune Nginx
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-tune.sh 2>> /tmp/enginescript_install_errors.log
-
-# Re-sync HTTP/3 directives after rebuild so existing vhosts match INSTALL_HTTP3.
-sync_nginx_http3_config 2>> /tmp/enginescript_install_errors.log
-
-print_last_errors
-debug_pause "Tune Nginx"
-
-# Cloudflare
-/usr/local/bin/enginescript/scripts/install/nginx/nginx-cloudflare.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Cloudflare"
-
-# Hide EngineScript Header
-if [[ "${SHOW_ENGINESCRIPT_HEADER}" == "1" ]];
-  then
-    sed -i "s|#more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|more_set_headers \"X-Powered-By : EngineScript \| EngineScript\.com\"|g" /etc/nginx/globals/response-headers.conf
-  else
-    echo ""
-fi
-
-# Remove .default Files
-rm -rf /etc/nginx/{*.default,*.dpkg-dist}
-
-# Remove debug symbols
-strip -s /usr/sbin/nginx*
+/usr/local/bin/enginescript/scripts/install/nginx/nginx-configure.sh || echo "Warning: A configuration step failed (see /var/log/EngineScript/install-error-log.log); the test in step 4 checks the result." >&2
 
 # Assign Nginx Permissions
 set_nginx_permissions

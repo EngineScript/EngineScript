@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source shared vhost functions library
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-shared-vhost.sh" >&2; exit 1; }
@@ -23,6 +19,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-db-cred
 
 #----------------------------------------------------------------------------------
 # Start Main Script
+
+# One site change at a time: two at once would race on the site list and Redis numbers
+acquire_lock "sites" || exit 1
 
 # Prompt timeout settings (seconds)
 WORDPRESS_PROMPT_TIMEOUT=300
@@ -37,8 +36,43 @@ MIN_WP_ADMIN_PASSWORD_LENGTH=12
 # Note: The following functions and constants are now defined in enginescript-db-credentials.sh:
 #   - escape_sql_string_literal()
 #   - validate_db_identifier()
-#   - MULTIPART_PUBLIC_SUFFIXES / MULTIPART_SUFFIX_CASE_PATTERN
+#   - MULTIPART_PUBLIC_SUFFIXES / generate_db_name()
 #   - DB_USER_MIN_LENGTH / DB_USER_MAX_LENGTH
+
+# Check the WordPress admin settings from the install options file. Runs before anything is
+# created, so a setting that fails stops the script before Cloudflare, the vhost, the certificate,
+# and the database are set up.
+validate_wp_admin_settings() {
+  if [[ -z "${WP_ADMIN_USERNAME}" || -z "${WP_ADMIN_PASSWORD}" || -z "${WP_ADMIN_EMAIL}" ]]; then
+    echo "Error: WP admin credentials must not be empty (WP_ADMIN_USERNAME, WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL)." >&2
+    return 1
+  fi
+
+  # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
+  if [[ ${#WP_ADMIN_USERNAME} -lt ${MIN_WP_ADMIN_USERNAME_LENGTH} || ${#WP_ADMIN_USERNAME} -gt ${MAX_WP_ADMIN_USERNAME_LENGTH} ]]; then
+    echo "Error: WP_ADMIN_USERNAME must be between ${MIN_WP_ADMIN_USERNAME_LENGTH} and ${MAX_WP_ADMIN_USERNAME_LENGTH} characters long." >&2
+    return 1
+  fi
+  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    echo "Error: WP_ADMIN_USERNAME is invalid. Use letters, numbers, underscore, dot, or hyphen, and start with a letter or number." >&2
+    return 1
+  fi
+
+  if ! validate_email "${WP_ADMIN_EMAIL}"; then
+    echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
+    return 1
+  fi
+
+  # Password: minimum complexity requirements
+  if [[ ${#WP_ADMIN_PASSWORD} -lt ${MIN_WP_ADMIN_PASSWORD_LENGTH} ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
+     [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
+    echo "Error: WP_ADMIN_PASSWORD must be at least ${MIN_WP_ADMIN_PASSWORD_LENGTH} characters and include uppercase, lowercase, number, and special character." >&2
+    return 1
+  fi
+}
 
 # Check if services are running
 check_required_services
@@ -58,56 +92,26 @@ sleep 1
 echo "For the domain name, enter only the domain portion (e.g., 'wordpresstesting')."
 echo "Note: lowercase text only, no spaces or special characters. Do not include https:// or www."
 echo ""
-echo "Then, select a valid TLD from the provided list."
+echo "Then, select a valid TLD from the provided list, or choose to type one that is not listed."
 echo ""
 
-VALID_TLDS=(
-    # Common gTLDs
-    "com" "net" "org" "info" "biz" "name" "pro" "int"
-
-    # Popular gTLDs
-    "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
-    "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
-    "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
-
-    # Country-code TLDs (ccTLDs)
-    "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
-    "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
-    "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
-
-    # Common multi-part public suffixes
-    "co.uk" "co.jp" "com.au" "co.nz" "com.sg" "com.my" "com.br" "com.mx" "co.za" "com.tr" "com.hk"
-)
+# The endings to choose from (enginescript-db-credentials.sh, next to the database name generator),
+# and a last entry for typing any other ending
+OTHER_TLD_CHOICE="Other (type the ending)"
+VALID_TLDS=("${COMMON_TLDS[@]}" "${MULTIPART_PUBLIC_SUFFIXES[@]}" "${OTHER_TLD_CHOICE}")
 
 # Ask for the domain until the user confirms it: a typo would otherwise go on to Cloudflare,
 # the certificate, and the database
 while true; do
-  # Prompt for domain name
-  # IMPORTANT: Single-character domain names (e.g., 'x.com', 'a.io') MUST be accepted by this regex.
-  # They are fully valid under DNS and ICANN rules, and EngineScript must support them.
-  #
-  # INTENTIONAL DESIGN — DO NOT CHANGE THIS REGEX:
-  #   ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
-  #
-  # The optional group `([a-z0-9-]*[a-z0-9])?` makes the entire suffix optional, which means a
-  # single alphanumeric character (e.g., "x") satisfies the pattern on its own.  The group is still
-  # required for multi-character names to prevent leading or trailing hyphens (e.g., "-bad" or
-  # "bad-" would not match).  Changing this back to `^[a-z0-9][a-z0-9-]*[a-z0-9]$` would silently
-  # reject every single-character label and break installs for legitimate one-letter domains.
-  #
-  # Rules enforced by this regex:
-  #   - Minimum length: 1 character (single-char labels are valid DNS labels per RFC 1035)
-  #   - Only lowercase letters (a-z), digits (0-9), and hyphens (-) are permitted
-  #   - The label must not start or end with a hyphen (per RFC 952 / RFC 1123)
-  #
-  # This is intentional behavior. Do not "fix" it to require at least two characters.
+  # Prompt for domain name. Single-character names (x.com, a.io) are valid and must be accepted:
+  # see validate_domain_label in enginescript-common.sh.
   while true; do
     read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
-    if [[ "$DOMAIN_NAME" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+    if validate_domain_label "$DOMAIN_NAME"; then
       echo "You entered: ${DOMAIN_NAME}"
       break
     else
-      echo "Invalid domain name. Only lowercase letters, numbers, and hyphens are allowed. Hyphens cannot be at the start or end."
+      echo "Invalid domain name. Use 1 to 63 lowercase letters, numbers, and hyphens. Hyphens cannot be at the start or end."
     fi
   done
 
@@ -123,6 +127,19 @@ while true; do
     fi
   done
 
+  # Any other ending, such as travel or co.in: checked as part of the full domain
+  if [[ "${TLD}" == "${OTHER_TLD_CHOICE}" ]]; then
+    while true; do
+      read -p "Enter the ending without a leading dot (e.g., 'travel' or 'co.in'): " TLD
+      TLD="${TLD,,}"
+      TLD="${TLD#.}"
+      if validate_site_domain "${DOMAIN_NAME}.${TLD}"; then
+        break
+      fi
+      echo "Invalid ending. Use lowercase letters, numbers, hyphens, and dots between parts; the last part starts with a letter."
+    done
+  fi
+
   # Combine domain name and TLD
   DOMAIN="${DOMAIN_NAME}.${TLD}"
   echo ""
@@ -136,13 +153,19 @@ while true; do
 done
 
 # Verify if the domain is already configured
-# sites.sh lists each domain in quotes, one per line
-if grep -Fxq "\"${DOMAIN}\"" /home/EngineScript/sites-list/sites.sh; then
+if es_site_exists "${DOMAIN}"; then
   echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is already installed.${NORMAL}\n\nIf you believe this is an error, please remove the domain by using the ${BOLD}es.menu${NORMAL} command and selecting the Server & Site Tools option\n\n"
   exit 1
-else
-  echo "${BOLD}Pre-installation Check: Passed${NORMAL}"
 fi
+LEFTOVERS="$(site_leftovers "${DOMAIN}")"
+if [[ -n "${LEFTOVERS}" ]]; then
+  echo -e "\n\n${BOLD}Pre-installation Check: Failed${NORMAL}\n\n${DOMAIN} is not on the site list, but parts of a site are already on this server:\n${LEFTOVERS}\n\nRemove them first: es.menu > Domain Configuration > Remove Domain, then choose to type the domain.\n" >&2
+  exit 1
+fi
+echo "${BOLD}Pre-installation Check: Passed${NORMAL}"
+
+# A step that fails from here on removes what this run set up (remove_site)
+trap 'site_rollback_on_exit $?' EXIT
 
 # Logging
 LOG_FILE="/var/log/EngineScript/vhost-install.log"
@@ -167,6 +190,10 @@ echo ""
 # Keep WORDPRESS_PROMPT_TIMEOUT variable for this prompt.
 if prompt_yes_no "Would you like to install WordPress on this domain?" "y" "${WORDPRESS_PROMPT_TIMEOUT}"; then
   INSTALL_WORDPRESS="1"
+  if ! validate_wp_admin_settings; then
+    echo "Fix the setting in /home/EngineScript/enginescript-install-options.txt (es.config), then run Create Domain again. Nothing was changed." >&2
+    exit 1
+  fi
   echo "WordPress will be installed on ${DOMAIN}."
 else
   INSTALL_WORDPRESS="0"
@@ -183,39 +210,41 @@ configure_cloudflare_settings "${DOMAIN}"
 
 # Create domain log directories and files. Before the vhost: Nginx cannot open a log in a missing
 # directory, so its configuration test, and the reload after the certificate is installed, would fail.
-create_domain_logs "${DOMAIN}"
+arm_site_rollback "${DOMAIN}"
+create_domain_logs "${DOMAIN}" || die "Could not create the log files for ${DOMAIN}."
 
 # Create nginx vhost configuration files
-create_nginx_vhost "${DOMAIN}"
+create_nginx_vhost "${DOMAIN}" || die "Could not create the Nginx configuration for ${DOMAIN}."
 
 # Create and install SSL certificates
-create_ssl_certificate "${DOMAIN}"
+create_ssl_certificate "${DOMAIN}" || die "Could not get a certificate for ${DOMAIN}."
 
 # Print date for logs
 echo "System Date: $(date)"
 
 # Create backup directories
-create_backup_directories "${DOMAIN}"
+create_backup_directories "${DOMAIN}" || die "Could not create the backup folders for ${DOMAIN}."
 
-# Site Root
-mkdir -p "/var/www/sites/${DOMAIN}/html"
-cd "/var/www/sites/${DOMAIN}/html"
+# Site Root, owned by www-data, which runs WP-CLI on the site (wp_site)
+WP_SITE_ROOT="/var/www/sites/${DOMAIN}/html"
+if ! { mkdir -p "${WP_SITE_ROOT}" && chown www-data:www-data "/var/www/sites/${DOMAIN}" "${WP_SITE_ROOT}"; }; then
+  die "Could not create ${WP_SITE_ROOT}."
+fi
+cd "${WP_SITE_ROOT}" || die "Failed to change to ${WP_SITE_ROOT}"
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   #----------------------------------------------------------------------------------
   # WordPress Installation Path
   #----------------------------------------------------------------------------------
 
-  # Domain Creation Variables
-  # Generate random credential strings using main variables file
-  source /usr/local/bin/enginescript/enginescript-variables.txt
-  PREFIX="${RAND_CHAR2}"
+  # Domain Creation Variables: a random table prefix, database user, and password
+  PREFIX="$(es_random 2)"
 
-  # Generate the database name using the install method (domain parsing, hash, suffix)
-  generate_install_db_name "${DOMAIN}" || exit 1
+  # Generate the database name (domain without its suffix, hash, random suffix)
+  generate_db_name "${DOMAIN}" || exit 1
   database_name="${ES_DB_NAME}"
-  database_user="${RAND_CHAR16}"
-  database_password="${RAND_CHAR32}"
+  database_user="$(es_random 16)"
+  database_password="$(es_random 32)"
 
   # Validate generated credentials before writing any sensitive data to disk.
   validate_install_credentials "${database_user}" "${database_password}" "${DOMAIN}" || exit 1
@@ -229,7 +258,7 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   execute_install_sql "${DB}" "${USR}" "${PSWD}" "${DOMAIN}" || exit 1
 
   # Download WordPress using WP-CLI
-  wp core download --allow-root
+  wp_site core download || die "WP-CLI could not download WordPress."
   # Hello Dolly ships as a single file. WP-CLI cannot delete plugins before wp-config.php
   # exists, so the file is removed directly.
   rm -f "/var/www/sites/${DOMAIN}/html/wp-content/plugins/hello.php"
@@ -239,7 +268,8 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   create_extra_wp_dirs "${DOMAIN}"
 
   # Create wp-config.php
-  cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  cp -rf /usr/local/bin/enginescript/config/var/www/wordpress/wp-config.php "/var/www/sites/${DOMAIN}/html/wp-config.php" \
+    || die "Could not create wp-config.php."
   sed -i "s|SEDWPDB|${DB}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
   sed -i "s|SEDWPUSER|${USR}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
   sed -i "s|SEDWPPASS|${PSWD}|g" "/var/www/sites/${DOMAIN}/html/wp-config.php"
@@ -258,12 +288,12 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   # Create robots.txt file
   create_robots_txt "${DOMAIN}" "/var/www/sites/${DOMAIN}/html"
 
-  # WP File Permissions
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
-  chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
-  chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  # WP File Permissions, before WP-CLI runs as www-data. chmod runs as www-data, as in the daily
+  # permissions job: the site can change its files, and a link it plants would lead a root chmod
+  # outside the site.
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
+  run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
+  run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
 
   # WP-CLI Finalizing Install
   clear
@@ -271,46 +301,11 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   echo "Finalizing ${DOMAIN} Install:"
   echo "============================================="
 
-  # WP-CLI Install WordPress
-  cd "/var/www/sites/${DOMAIN}/html"
+  # WP-CLI Install WordPress (the admin settings were checked before anything was created)
+  cd "${WP_SITE_ROOT}" || die "Failed to change to ${WP_SITE_ROOT}"
 
-  # Validate WordPress admin credentials before install
-  if [[ -z "${WP_ADMIN_USERNAME}" || -z "${WP_ADMIN_PASSWORD}" || -z "${WP_ADMIN_EMAIL}" ]]; then
-      echo "Error: WP admin credentials must not be empty (WP_ADMIN_USERNAME, WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL)." >&2
-      exit 1
-  fi
-
-  # Username: 3-60 chars, must start with alphanumeric, letters/numbers/underscore/dot/hyphen
-  # Use explicit length checks for clarity and maintainability, then validate allowed characters.
-  if [[ ${#WP_ADMIN_USERNAME} -lt ${MIN_WP_ADMIN_USERNAME_LENGTH} || ${#WP_ADMIN_USERNAME} -gt ${MAX_WP_ADMIN_USERNAME_LENGTH} ]]; then
-      echo "Error: WP_ADMIN_USERNAME must be between ${MIN_WP_ADMIN_USERNAME_LENGTH} and ${MAX_WP_ADMIN_USERNAME_LENGTH} characters long." >&2
-      exit 1
-  fi
-
-  if [[ ! "${WP_ADMIN_USERNAME}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
-      echo "Error: WP_ADMIN_USERNAME is invalid. Use letters, numbers, underscore, dot, or hyphen, and start with a letter or number." >&2
-      exit 1
-  fi
-
-  # Email: basic format validation (practical, non-RFC-complete).
-  # Accepts common addresses like a@example.com and user.name+tag@example.co.uk.
-  EMAIL_REGEX='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
-  if [[ ! "${WP_ADMIN_EMAIL}" =~ ${EMAIL_REGEX} ]]; then
-      echo "Error: WP_ADMIN_EMAIL is not a valid email address format." >&2
-      exit 1
-  fi
-
-  # Password: minimum complexity requirements
-  if [[ ${#WP_ADMIN_PASSWORD} -lt ${MIN_WP_ADMIN_PASSWORD_LENGTH} ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [A-Z] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [a-z] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [0-9] ]] || \
-     [[ ! "${WP_ADMIN_PASSWORD}" =~ [^A-Za-z0-9] ]]; then
-      echo "Error: WP_ADMIN_PASSWORD must be at least ${MIN_WP_ADMIN_PASSWORD_LENGTH} characters and include uppercase, lowercase, number, and special character." >&2
-      exit 1
-  fi
-
-  wp core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email --allow-root
+  wp_site core install --admin_user="${WP_ADMIN_USERNAME}" --admin_password="${WP_ADMIN_PASSWORD}" --admin_email="${WP_ADMIN_EMAIL}" --url="https://${DOMAIN}" --title='New Site' --skip-email \
+    || die "WP-CLI could not install WordPress."
 
   # Install and activate required WordPress plugins
   install_required_wp_plugins
@@ -323,31 +318,27 @@ if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then
   fi
 
   # Install EngineScript custom plugins if enabled
-  install_enginescript_custom_plugins "${DOMAIN}"
+  install_enginescript_plugins "${DOMAIN}" || echo "Warning: The EngineScript plugins were not fully installed; es.update installs them again." >&2
 
   # WP-CLI set permalink structure for FastCGI cache, before the rewrite rules are flushed below
-  wp option update permalink_structure '/%category%/%postname%/' --allow-root
+  wp_site option update permalink_structure '/%category%/%postname%/'
 
   # Clear WordPress caches, transients, and rewrite rules
   clear_wordpress_caches
 
   # Enable Redis Cache via WP-CLI
-  if wp plugin is-active redis-cache --allow-root; then
+  if wp_site plugin is-active redis-cache; then
     echo "Enabling Redis object cache..."
-    wp redis enable --allow-root
+    wp_site redis enable
   else
     echo "Warning: Redis Cache plugin not active. Skipping 'wp redis enable'."
   fi
 
-  # Setting Permissions Again
-  # For whatever reason, using WP-CLI to install plugins with --allow-root reassigns
-  # the ownership of the /uploads, /upgrade, and plugin directories to root:root.
-  cd "/var/www/sites/${DOMAIN}"
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
-  chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
+  # Setting Permissions Again, for the files the EngineScript plugins and root-run steps added
+  cd "/var/www/sites/${DOMAIN}" || die "Failed to change to /var/www/sites/${DOMAIN}"
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
+  run_as_www_data chmod +x "/var/www/sites/${DOMAIN}/html/wp-cron.php"
+  run_as_www_data chmod 600 "/var/www/sites/${DOMAIN}/html/wp-config.php"
 
   clear
 
@@ -365,13 +356,12 @@ else
   echo "Installing placeholder page for ${DOMAIN}..."
 
   # Install placeholder page
-  cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${DOMAIN}/html/index.html"
+  cp -f /usr/local/bin/enginescript/config/var/www/placeholder/index.html "/var/www/sites/${DOMAIN}/html/index.html" \
+    || die "Could not install the placeholder page."
   sed -i "s|YOURDOMAIN|${DOMAIN}|g" "/var/www/sites/${DOMAIN}/html/index.html"
 
-  # Set file permissions
-  find "/var/www/sites/${DOMAIN}" -type d -print0 | sudo xargs -0 chmod 0755
-  find "/var/www/sites/${DOMAIN}" -type f -print0 | sudo xargs -0 chmod 0644
-  chown -R www-data:www-data "/var/www/sites/${DOMAIN}"
+  # Set file permissions (as www-data, see above)
+  set_www_data_tree "/var/www/sites/${DOMAIN}"
 
   # Back up EngineScript's configuration, which holds the site's certificate and key (acme.sh)
   if ! bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh config; then
@@ -399,8 +389,14 @@ else
   sleep 3
 fi
 
-# Restart Services
-/usr/local/bin/enginescript/scripts/functions/alias/alias-restart.sh
+# The site is set up: nothing below rolls it back
+disarm_site_rollback
+
+# Load the new site: delete any cached pages a previous site on this domain left, and reload
+# Nginx and PHP-FPM. Every other site keeps its caches, and Redis keeps running: Redis Object
+# Cache shows an error page on every site while Redis is unreachable.
+clear_site_nginx_cache "${DOMAIN}"
+reload_web_services
 
 echo ""
 echo "============================================================="

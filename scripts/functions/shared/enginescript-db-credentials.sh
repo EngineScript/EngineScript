@@ -27,17 +27,33 @@ ALLOWED_DB_CHARSETS=(
   "latin1"
 )
 
-# Shared multi-part public suffixes for domain parsing logic.
-# Keep this aligned with supported multi-part entries in VALID_TLDS.
+# Domain endings, in one place. Create Domain offers COMMON_TLDS and MULTIPART_PUBLIC_SUFFIXES as
+# its list of endings, and generate_db_name strips a multi-part suffix whole (example.co.uk gives
+# "example", not "example_co").
+# shellcheck disable=SC2034  # read by vhost-install.sh
+COMMON_TLDS=(
+  # Common gTLDs
+  "com" "net" "org" "info" "biz" "name" "pro" "int"
+
+  # Popular gTLDs
+  "io" "dev" "app" "tech" "ai" "cloud" "store" "online" "site" "xyz" "club"
+  "design" "media" "agency" "solutions" "services" "digital" "studio" "live"
+  "blog" "news" "shop" "art" "finance" "health" "law" "marketing" "software"
+
+  # Country-code TLDs (ccTLDs)
+  "us" "uk" "ca" "au" "de" "fr" "es" "it" "nl" "se" "no" "fi" "dk" "jp" "cn"
+  "in" "br" "ru" "za" "mx" "ar" "ch" "at" "be" "pl" "gr" "pt" "tr" "kr" "hk"
+  "sg" "id" "my" "th" "ph" "vn" "nz" "ie" "il" "sa" "ae" "eg" "ng" "ke" "gh"
+)
+
 MULTIPART_PUBLIC_SUFFIXES=(
   "co.uk" "org.uk" "gov.uk" "ac.uk"
   "com.au" "net.au" "org.au"
   "co.nz" "org.nz"
+  "co.jp"
   "com.br" "com.sg" "com.my" "com.mx"
   "co.za" "com.tr" "com.hk"
 )
-MULTIPART_SUFFIX_CASE_PATTERN="$(printf '%s|' "${MULTIPART_PUBLIC_SUFFIXES[@]}")"
-MULTIPART_SUFFIX_CASE_PATTERN="${MULTIPART_SUFFIX_CASE_PATTERN%|}"
 
 
 #----------------------------------------------------------------------------------
@@ -70,21 +86,24 @@ validate_db_identifier() {
 
 
 #----------------------------------------------------------------------------------
-# Generate a database name using the vhost-install method.
-# Parses the domain, generates a hash, constructs the name with random suffix,
-# enforces the 64-char MariaDB identifier limit.
+# Generate the database name for a new or imported site.
+# The domain without its public suffix, with every character other than a letter or digit
+# turned into "_" (and "db_" in front when it starts with a digit), then a hash of the full
+# domain and a random suffix. Enforces the 64-char MariaDB identifier limit.
+#   example.com      -> example_<hash>_<rand>
+#   my-site.co.uk    -> my_site_<hash>_<rand>
+#   1password.com    -> db_1password_<hash>_<rand>
+#   blog.example.com -> blog_example_<hash>_<rand>
 #
 # Arguments:
 #   $1 - DOMAIN (e.g. "wordpresstesting.com" or "example.co.uk")
 #
-# Requires: RAND_CHAR4 (call generate_random_credentials first)
+# Requires: es_random (enginescript-common.sh)
 # Sets:     ES_DB_NAME (the constructed database name)
 #----------------------------------------------------------------------------------
-generate_install_db_name() {
+generate_db_name() {
   local DOMAIN="$1"
-  local domain_input="${DOMAIN}"
-  local domain_without_tld
-  local domain_parts
+  local domain_without_tld="${DOMAIN%.*}"
   local public_suffix
   local domain_hash
   local db_name_suffix
@@ -92,18 +111,20 @@ generate_install_db_name() {
   local expected_db_name_suffix_len=14
   local max_domain_without_tld_len
 
-  IFS='.' read -r -a domain_parts <<< "${domain_input}"
-  domain_without_tld="${domain_input%.*}"
-  if (( ${#domain_parts[@]} >= 3 )); then
-    public_suffix="${domain_parts[${#domain_parts[@]}-2]}.${domain_parts[${#domain_parts[@]}-1]}"
-    case "${public_suffix}" in
-      ${MULTIPART_SUFFIX_CASE_PATTERN})
-      domain_without_tld="${domain_parts[${#domain_parts[@]}-3]}"
-        ;;
-    esac
+  for public_suffix in "${MULTIPART_PUBLIC_SUFFIXES[@]}"; do
+    if [[ "${DOMAIN}" == *".${public_suffix}" ]]; then
+      domain_without_tld="${DOMAIN%".${public_suffix}"}"
+      break
+    fi
+  done
+
+  # Hyphens and the dots of a subdomain are not allowed in the identifier; neither is a leading digit
+  domain_without_tld="${domain_without_tld//[^A-Za-z0-9]/_}"
+  if [[ ! "${domain_without_tld}" =~ ^[A-Za-z] ]]; then
+    domain_without_tld="db_${domain_without_tld}"
   fi
 
-  # RAND_CHAR4 is a random string (length 4) set by generate_random_credentials.
+  # The suffix ends with 4 random letters and digits (es_random).
   # Enforce MySQL/MariaDB identifier max length (64 chars) before concatenation.
   # Include a stable hash of the full domain to avoid collisions when truncation occurs.
   domain_hash="$(printf '%s' "${DOMAIN}" | sha256sum | awk '{print $1}' | cut -c1-8)"
@@ -111,8 +132,8 @@ generate_install_db_name() {
     echo "Error: Failed to generate domain hash for database name suffix (got '${domain_hash}')." >&2
     return 1
   fi
-  db_name_suffix="_${domain_hash}_${RAND_CHAR4}"
-  # Expected: '_' (1) + domain_hash (8) + '_' (1) + RAND_CHAR4 (4) = 14 chars.
+  db_name_suffix="_${domain_hash}_$(es_random 4)"
+  # Expected: '_' (1) + domain_hash (8) + '_' (1) + random (4) = 14 chars.
   if (( ${#db_name_suffix} != expected_db_name_suffix_len )); then
     echo "Error: Invalid random suffix length for database name generation (expected ${expected_db_name_suffix_len}, got ${#db_name_suffix})." >&2
     return 1
@@ -124,28 +145,6 @@ generate_install_db_name() {
   fi
   ES_DB_NAME="${domain_without_tld}${db_name_suffix}"
 
-  # Validate DB identifier before writing credentials file or interpolating into SQL
-  validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
-}
-
-
-#----------------------------------------------------------------------------------
-# Generate a database name using the vhost-import method.
-# Strips the top-level domain and appends a 4-character random suffix.
-#
-# Arguments:
-#   $1 - DOMAIN (e.g. "importtest.com")
-#
-# Requires: RAND_CHAR4 (set via enginescript-variables.txt)
-# Sets:     ES_DB_NAME (the constructed database name)
-#----------------------------------------------------------------------------------
-generate_import_db_name() {
-  local DOMAIN="$1"
-  local domain_base="${DOMAIN}"
-  local SANDOMAIN="${domain_base%.*}"
-  
-  ES_DB_NAME="${SANDOMAIN}_${RAND_CHAR4}"
-  
   # Validate DB identifier before writing credentials file or interpolating into SQL
   validate_db_identifier "${ES_DB_NAME}" "${DOMAIN}"
 }
@@ -166,7 +165,7 @@ validate_install_credentials() {
   local database_password="$2"
   local DOMAIN="$3"
 
-  # RAND_CHAR16 uses a-zA-Z0-9 only; regex matches that exact charset.
+  # es_random uses a-zA-Z0-9 only; the regex matches that exact charset.
   if [[ -z "${database_user}" || ${#database_user} -lt "${DB_USER_MIN_LENGTH}" || ${#database_user} -gt "${DB_USER_MAX_LENGTH}" || ! "${database_user}" =~ ^[A-Za-z0-9]+$ ]]; then
     echo "Error: Invalid generated MariaDB user '${database_user}' for domain '${DOMAIN}' (must be ${DB_USER_MIN_LENGTH}-${DB_USER_MAX_LENGTH} characters and contain only letters or numbers)." >&2
     return 1
@@ -209,6 +208,7 @@ validate_import_credentials() {
           return 1
           ;;
   esac
+  # shellcheck disable=SC2034  # read by the caller, as ES_DB_CHARSET_VALIDATED is
   ES_DB_COLLATION="${ES_DB_CHARSET_VALIDATED}_unicode_ci"
 
   if [[ ! "${DB}" =~ ^[A-Za-z0-9_]+$ ]]; then
@@ -256,6 +256,7 @@ write_credentials_file() {
   echo "PSWD=\"${database_password}\"" >> "${credentials_file}"
   echo "" >> "${credentials_file}"
 
+  # shellcheck source=/dev/null
   source "${credentials_file}"
 }
 
@@ -279,19 +280,19 @@ execute_install_sql() {
   local SQL_ESCAPED_PSWD
 
   printf -v create_db_sql "CREATE DATABASE \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;" "${DB}"
-  if ! sudo mariadb -e "${create_db_sql}"; then
+  if ! mariadb -e "${create_db_sql}"; then
     echo "Error: Failed to create database '${DB}' for domain '${DOMAIN}'." >&2
     return 1
   fi
 
   SQL_ESCAPED_PSWD="$(escape_sql_string_literal "${PSWD}")"
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
+  if ! mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${SQL_ESCAPED_PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}' for domain '${DOMAIN}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+  if ! mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi
@@ -318,7 +319,7 @@ convert_myisam_tables_to_innodb() {
 
   validate_db_identifier "${db}" "${db}" || return 1
 
-  mapfile -t tables < <(sudo mariadb -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db}' AND ENGINE = 'MyISAM' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;")
+  mapfile -t tables < <(mariadb -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${db}' AND ENGINE = 'MyISAM' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;")
   if [[ ${#tables[@]} -eq 0 ]]; then
     return 0
   fi
@@ -326,7 +327,7 @@ convert_myisam_tables_to_innodb() {
   echo "Converting ${#tables[@]} MyISAM table(s) in '${db}' to InnoDB..."
   for table in "${tables[@]}"; do
     # Table names come from the server; double any backtick for the quoted identifier
-    if sudo mariadb -e "ALTER TABLE \`${db}\`.\`${table//\`/\`\`}\` ENGINE=InnoDB;"; then
+    if mariadb -e "ALTER TABLE \`${db}\`.\`${table//\`/\`\`}\` ENGINE=InnoDB;"; then
       converted=$((converted + 1))
     else
       echo "Warning: Could not convert table '${table}' to InnoDB; it stays MyISAM." >&2
@@ -358,17 +359,17 @@ execute_import_sql() {
   local DB_COLLATION="$5"
 
   # Use validated charset
-  if ! sudo mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};"; then
+  if ! mariadb -e "CREATE DATABASE \`${DB}\` CHARACTER SET ${DB_CHARSET_VALIDATED} COLLATE ${DB_COLLATION};"; then
     echo "Error: Failed to create database '${DB}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
+  if ! mariadb -e "CREATE USER '${USR}'@'localhost' IDENTIFIED BY '${PSWD}';"; then
     echo "Error: Failed to create MariaDB user '${USR}'." >&2
     return 1
   fi
 
-  if ! sudo mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
+  if ! mariadb -e "GRANT ALL ON \`${DB}\`.* TO '${USR}'@'localhost'; FLUSH PRIVILEGES;"; then
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi

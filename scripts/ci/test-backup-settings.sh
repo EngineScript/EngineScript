@@ -105,6 +105,7 @@ echo "======================================================="
 
 SCHEDULER="5 * * * * cd /usr/local/bin/enginescript/scripts/functions/backup; bash enginescript-backup.sh scheduled >/dev/null 2>&1"
 ACME='54 3,9,15,21 * * * "/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" > /dev/null'
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0
 cat > "${FAKE_CRONTAB}" << EOF
 1 * * * * cd /usr/local/bin/enginescript/scripts/functions/auto-upgrade; bash emergency-auto-upgrade.sh >/dev/null 2>&1
@@ -146,6 +147,7 @@ else
   fail "Second run changed the crontab or printed '${output}'"
 fi
 : > "${FAKE_CRONTAB}"
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=1
 install_enginescript_cron > /dev/null
 if [[ "$(cat "${FAKE_CRONTAB}")" == "$(enginescript_cron_jobs)" ]] && grep -q 'optimize-images' "${FAKE_CRONTAB}"; then

@@ -7,22 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${DEPENDS}" = 1 ]]; then
-    echo "DEPENDS script has already run"
-    exit 0
-fi
 
 # Update & Upgrade
 /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
@@ -176,7 +166,7 @@ case "${UBUNTU_VERSION}" in
 esac
 
 # Install the packages with error checking
-apt install -qy "${packages[@]}" || {
+apt-get install -qy "${packages[@]}" || {
   echo "Error: Unable to install one or more packages. Exiting..."
   exit 1
 }
@@ -184,6 +174,4 @@ apt install -qy "${packages[@]}" || {
 # Nano
 update-alternatives --set editor /bin/nano
 
-# Mark the installation as complete
-set_install_state "DEPENDS" "1"
 echo "Install Dependencies completed successfully. Script done."

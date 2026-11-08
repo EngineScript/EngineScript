@@ -7,22 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${WP_CLI}" = 1 ]]; then
-    echo "WP_CLI script has already run"
-    exit 0
-fi
 
 # WP-CLI
 # The nightly build: WP-CLI 2.12.0's "wp core download" cuts paths over 100 characters short,
@@ -102,9 +92,6 @@ install_wp_cli_package() {
     fi
 }
 
-mkdir -p /tmp/wp-cli-phar
-chown -R www-data:www-data /tmp/wp-cli-phar
-chmod 775 /tmp/wp-cli-phar
 mkdir -p ~/.wp-cli/cache
 chown -R www-data:www-data ~/.wp-cli/cache
 chmod 775 ~/.wp-cli/cache
@@ -128,6 +115,5 @@ echo "============================================================="
 echo ""
 echo ""
 
-set_install_state "WP_CLI" "1"
 
 sleep 5

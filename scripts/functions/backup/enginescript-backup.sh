@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Source the site archive builder
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh" >&2; exit 1; }
@@ -113,11 +109,7 @@ days_ago() {
 }
 
 load_sites() {
-  SITES=()
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
 }
 
 # Usage: backup_databases hourly|daily
@@ -265,8 +257,7 @@ cleanup_old_layout() {
 }
 
 # One backup run at a time
-exec 9> /run/enginescript-backup.lock
-if ! flock -n 9; then
+if ! acquire_lock "backup" 2> /dev/null; then
   log "Another backup run is still in progress; skipping this run."
   exit 0
 fi

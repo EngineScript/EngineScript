@@ -7,30 +7,17 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-# ES_REFRESH_SOURCES=1 (from nginx-update.sh): fetch the current version even after the install
-if [[ "${PCRE}" = 1 && "${ES_REFRESH_SOURCES:-0}" != 1 ]]; then
-    echo "PCRE script has already run"
-    exit 0
-fi
-
 # Return to /usr/src
 return_to_src
 
 # PCRE
-download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz"
+download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz" || { echo "Error: Failed to download/extract PCRE2." >&2; exit 1; }
 
-# Mark the installation as complete
-set_install_state "PCRE" "1"
 echo "PCRE completed successfully. Script done."

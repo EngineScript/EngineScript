@@ -7,34 +7,22 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${PHP}" = 1 ]]; then
-    echo "PHP script has already run"
-    exit 0
-fi
-
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "System Update"
+run_step "System Update" /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Install PHP
 # Define the PHP packages to install
 mapfile -t php_packages < <(get_php_packages_array "${PHP_VER}")
 
 # Install the packages with error checking
-apt install -qy "${php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
+apt-get install -qy "${php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}" || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
@@ -43,7 +31,7 @@ if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
     mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${PHP_VER}")
 
     # Install the packages with error checking
-    apt install -qy "${expanded_php_packages[@]}" 2>> /tmp/enginescript_install_errors.log || {
+    apt-get install -qy "${expanded_php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}" || {
       echo "Error: Unable to install one or more packages. Exiting..."
       exit 1
     }
@@ -55,12 +43,10 @@ debug_pause "PHP Package Installation"
 sed -i "s|rotate 12|rotate 5|g" "/etc/logrotate.d/php${PHP_VER}-fpm"
 
 # Backup PHP config
-/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> /tmp/enginescript_install_errors.log
+/usr/local/bin/enginescript/scripts/functions/backup/php-backup.sh 2>> "${ES_STEP_ERROR_LOG}"
 
 # Update PHP config
-/usr/local/bin/enginescript/scripts/update/php-config-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "PHP Configuration"
+run_step "PHP Configuration" /usr/local/bin/enginescript/scripts/update/php-config-update.sh || die "The PHP configuration could not be applied. Stopping the PHP install; see /var/log/EngineScript/install-error-log.log."
 
 mkdir -p /var/cache/opcache
 mkdir -p /var/cache/php-sessions
@@ -78,9 +64,7 @@ verify_service_running "php${PHP_VER}-fpm" "PHP ${PHP_VER}"
 print_install_banner "PHP ${PHP_VER}"
 
 # Cleanup
-run_enginescript_cleanup 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Cleanup"
+run_step "Cleanup" run_enginescript_cleanup
 
 # References:
 # https://make.wordpress.org/hosting/handbook/server-environment/#php-extensions
@@ -96,6 +80,4 @@ debug_pause "Cleanup"
 # https://flywp.com/blog/9281/optimize-php-fpm-settings-flywp/
 # https://www.managedserver.eu/introduction-to-php-fpm-tuning/
 
-# Mark the installation as complete
-set_install_state "PHP" "1"
 echo "PHP completed successfully. Script done."

@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Allow callers such as php-update.sh to configure a newly selected target
 # version without changing the persisted default/override setting.
@@ -48,15 +44,15 @@ apply_php_tuning() {
     tuning_load
   fi
 
-  sed -i "s|pm.start_servers = .*|pm.start_servers = $(tuning_get PHP_START_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|pm.start_servers = .*|pm.start_servers = $(tuning_get PHP_START_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
 
-  sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEMEM|$(tuning_get OPCACHE_MEMORY_MB)M|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
-  sed -i "s|SEDOPCACHEMAXFILES|$(tuning_get OPCACHE_MAX_FILES)|g" "${ini}" 2>> /tmp/enginescript_install_errors.log
+  sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|SEDOPCACHEMEM|$(tuning_get OPCACHE_MEMORY_MB)M|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
+  sed -i "s|SEDOPCACHEMAXFILES|$(tuning_get OPCACHE_MAX_FILES)|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
 }
 
 # Put back the configuration files saved before this run (used when the new one fails php-fpm -t)
@@ -71,37 +67,37 @@ restore_php_configs() {
 
 # Update PHP config
 if [ -f "/etc/php/${PHP_VER}/fpm/php.ini" ]; then
-  cp -p "/etc/php/${PHP_VER}/fpm/php.ini" "/etc/php/${PHP_VER}/fpm/php.ini.bak" 2>> /tmp/enginescript_install_errors.log
+  cp -p "/etc/php/${PHP_VER}/fpm/php.ini" "/etc/php/${PHP_VER}/fpm/php.ini.bak" 2>> "${ES_STEP_ERROR_LOG}"
 fi
-if ! cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log; then
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/php.ini "/etc/php/${PHP_VER}/fpm/php.ini" 2>> "${ES_STEP_ERROR_LOG}"; then
   echo "Error: Failed to copy php.ini for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php.ini" 2>> "${ES_STEP_ERROR_LOG}"
 
 if [ -f "/etc/php/${PHP_VER}/fpm/php-fpm.conf" ]; then
-  cp -p "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/php-fpm.conf.bak" 2>> /tmp/enginescript_install_errors.log
+  cp -p "/etc/php/${PHP_VER}/fpm/php-fpm.conf" "/etc/php/${PHP_VER}/fpm/php-fpm.conf.bak" 2>> "${ES_STEP_ERROR_LOG}"
 fi
-if ! cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log; then
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/php-fpm.conf "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> "${ES_STEP_ERROR_LOG}"; then
   echo "Error: Failed to copy php-fpm.conf for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/php-fpm.conf" 2>> "${ES_STEP_ERROR_LOG}"
 
 if [ -f "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ]; then
-  cp -p "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf.bak" 2>> /tmp/enginescript_install_errors.log
+  cp -p "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf.bak" 2>> "${ES_STEP_ERROR_LOG}"
 fi
-if ! cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log; then
+if ! cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> "${ES_STEP_ERROR_LOG}"; then
   echo "Error: Failed to copy www.conf for PHP ${PHP_VER}" >&2
   exit 1
 fi
-sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> /tmp/enginescript_install_errors.log
+sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> "${ES_STEP_ERROR_LOG}"
 
 # Tune PHP Configuration
 apply_php_tuning
 
 # Test the new configuration; keep the previous one if it fails
-if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! "php-fpm${PHP_VER}" -t > /dev/null 2>> /tmp/enginescript_install_errors.log; then
+if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! "php-fpm${PHP_VER}" -t > /dev/null 2>> "${ES_STEP_ERROR_LOG}"; then
   echo "Error: php-fpm${PHP_VER} -t failed with the new configuration; restored the previous configuration files." >&2
   restore_php_configs
   print_last_errors

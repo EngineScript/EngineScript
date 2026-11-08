@@ -7,34 +7,19 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
 
 # Each database's size and the site it belongs to (from /home/EngineScript/mysql-credentials),
 # then each site's largest tables
 show_database_sizes() {
   local SITES=() site db size free tables table
   local -A site_of=()
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   for site in "${SITES[@]}"; do
     db="$(sed -n 's/^DB="\([A-Za-z0-9_]*\)"$/\1/p' "/home/EngineScript/mysql-credentials/${site}.txt" 2> /dev/null)"
     [[ -n "${db}" ]] && site_of["${db}"]="${site}"
@@ -74,7 +59,8 @@ while true
       "Analyze All Tables & Databases"
       "Database Size per Site"
       "MariaDB Diagnostic & Recovery"
-      "MariaDB-Check Database Optimizer"
+      "Check & Repair All Tables"
+      "Optimize All Tables (rebuilds every table)"
       "MySQLreport"
       "MySQLtuner"
       "Reset a Site's Database Password"
@@ -94,22 +80,26 @@ while true
           ;;
         "MariaDB Diagnostic & Recovery")
           /usr/local/bin/enginescript/scripts/functions/mariadb-diagnostic.sh
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
+          pause
           break
           ;;
-        "MariaDB-Check Database Optimizer")
+        "Check & Repair All Tables")
           /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh
+          break
+          ;;
+        "Optimize All Tables (rebuilds every table)")
+          echo "This checks and analyzes every table, then rebuilds each one (OPTIMIZE TABLE)."
+          echo "Rebuilding copies every table and its indexes: on large sites it takes a long time,"
+          echo "uses heavy disk I/O, and briefly locks each table, so sites can slow down while it runs."
+          echo "It rarely gains much; run it after deleting a lot of data, at a quiet time."
+          if prompt_yes_no "Optimize all tables now?" "n"; then
+            /usr/local/bin/enginescript/scripts/functions/server-tools/mariadbcheck.sh --optimize
+          fi
           break
           ;;
         "MySQLreport")
           mysqlreport
-          echo ""
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "MySQLtuner")

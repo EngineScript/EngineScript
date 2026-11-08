@@ -7,24 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
 
 # Which install steps are done, from /etc/enginescript/install-state.conf; es.install runs the
 # steps that are not done yet
@@ -90,10 +78,7 @@ while true
           /usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh
           echo ""
           echo "Done!"
-          echo ""
-          read -n 1 -s -r -p "Press any key to continue"
-          echo ""
-          echo ""
+          pause
           break
           ;;
         "Show Install State")

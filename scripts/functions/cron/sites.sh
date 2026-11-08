@@ -7,17 +7,14 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-
-#----------------------------------------------------------------------------------
-# Start Main Script
+# The template for /home/EngineScript/sites-list/sites.sh, the list of the server's sites. Scripts
+# source that file after loading EngineScript's settings, so it holds only the SITES array
+# (Create Domain and Import Domain add each domain on its own line).
 
 #----------------------------------------------------------------------------
 # Forked from https://github.com/A5hleyRich/simple-automated-tasks
 
 # Tasks to be performed on the following sites
+# shellcheck disable=SC2034  # read by the scripts that source the site list
 SITES=(
 )

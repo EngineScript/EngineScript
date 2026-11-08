@@ -7,27 +7,24 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Create tools directory if it doesn't exist
-mkdir -p /var/www/admin/tools
+# Download Adminer beside the installed copy, and swap it in only when the download is complete
+build_adminer() {
+    download_file "https://www.adminer.org/latest.php" "$1/index.php" >&2 || return 1
+    if ! head -c 5 "$1/index.php" | grep -q '<?php'; then
+        echo "Error: The Adminer download is not a PHP file." >&2
+        return 1
+    fi
+}
+install_beside /var/www/admin/tools/adminer "Adminer" build_adminer || exit 1
 
-# Adminer
-mkdir -p /var/www/admin/tools/adminer
-safe_wget "https://www.adminer.org/latest.php" "/var/www/admin/tools/adminer/index.php"
-
-# Set permissions
-chown -R www-data:www-data /var/www/admin/tools/adminer
-find /var/www/admin/tools/adminer -type d -exec chmod 755 {} \;
-find /var/www/admin/tools/adminer -type f -exec chmod 644 {} \;
+# Set permissions (as www-data: the folder belongs to it, so a root chmod could follow a link)
+set_www_data_tree /var/www/admin/tools/adminer
 
 print_install_banner "Adminer"

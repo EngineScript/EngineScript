@@ -16,51 +16,205 @@
 #----------------------------------------------------------------------------------
 
 
-# Check if required services are running
+# Check if required services are running (stops the script when one is not)
 check_required_services() {
   echo -e "\n\n${BOLD}Running Services Check:${NORMAL}\n"
 
-  # Database Service Check (MariaDB or MySQL)
-  MARIADB_STATUS="$(systemctl is-active mariadb)"
-  MYSQL_STATUS="$(systemctl is-active mysql)"
-
-  if [[ "${MARIADB_STATUS}" != "active" && "${MYSQL_STATUS}" != "active" ]]; then
-    echo "FAILED: Neither MariaDB nor MySQL is running. Please diagnose this issue before proceeding."
-    exit 1
-  fi
-
-  if [[ "${MARIADB_STATUS}" == "active" ]]; then
-    echo "PASSED: MariaDB is running."
-  elif [[ "${MYSQL_STATUS}" == "active" ]]; then
-    echo "PASSED: MySQL is running."
-  fi
-
-  # Nginx Service Check
-  STATUS="$(systemctl is-active nginx)"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: Nginx is running."
+  # MariaDB, or MySQL where a server runs that instead
+  if ! systemctl is-active --quiet mariadb && systemctl is-active --quiet mysql; then
+    verify_service_running "mysql" "MySQL"
   else
-    echo "FAILED: Nginx not running. Please diagnose this issue before proceeding."
-    exit 1
+    verify_service_running "mariadb" "MariaDB"
+  fi
+  verify_service_running "nginx" "Nginx"
+  verify_service_running "php${PHP_VER}-fpm" "PHP ${PHP_VER}"
+  verify_service_running "redis" "Redis"
+}
+
+
+#----------------------------------------------------------------------------------
+# WP-CLI on the site being set up (WP_SITE_ROOT), as www-data. The site's own code (wp-config.php,
+# plugins, and theme, which an import brings from another host) never runs as root.
+# Usage: wp_site <WP-CLI arguments>
+wp_site() {
+  (cd "${WP_SITE_ROOT:?}" && run_as_www_data wp "$@")
+}
+
+
+#----------------------------------------------------------------------------------
+# Print what is already on the server for a domain that is not on the site list: a site that was
+# only partly set up, or taken off the list by hand. Prints nothing when there is nothing.
+# Create Domain and Import Domain refuse such a domain (Remove Domain cleans it up), so that
+# rolling back a failed setup can never delete anything that was there before it.
+# Usage: site_leftovers <domain>
+site_leftovers() {
+  local domain="$1" path
+  for path in "/var/www/sites/${domain}" "/etc/nginx/sites-enabled/${domain}.conf" \
+      "/etc/nginx/admin/admin.${domain}.conf" "/home/EngineScript/mysql-credentials/${domain}.txt" \
+      "/etc/nginx/ssl/${domain}" "/root/.acme.sh/${domain}_ecc"; do
+    if [[ -e "${path}" ]]; then
+      echo "${path}"
+    fi
+  done
+}
+
+
+#----------------------------------------------------------------------------------
+# Roll back a failed Create Domain or Import Domain. arm_site_rollback runs just before the first
+# change on this server; from then on, the script stopping with an error removes everything set
+# up for the domain (remove_site), so the setup can simply run again. Backups that were there
+# before are kept. disarm_site_rollback runs once the site is set up.
+# The script sets: trap 'site_rollback_on_exit $?' EXIT
+SITE_ROLLBACK_DOMAIN=""
+SITE_ROLLBACK_KEEP_BACKUPS=0
+
+arm_site_rollback() {
+  SITE_ROLLBACK_DOMAIN="$1"
+  SITE_ROLLBACK_KEEP_BACKUPS=0
+  if [[ -d "/home/EngineScript/site-backups/$1" ]]; then
+    SITE_ROLLBACK_KEEP_BACKUPS=1
+  fi
+}
+
+disarm_site_rollback() {
+  SITE_ROLLBACK_DOMAIN=""
+}
+
+site_rollback_on_exit() {
+  local status="$1" domain="${SITE_ROLLBACK_DOMAIN}"
+  if [[ "${status}" -eq 0 || -z "${domain}" ]]; then
+    return 0
+  fi
+  SITE_ROLLBACK_DOMAIN=""
+  echo "" >&2
+  echo "${BOLD}Setting up ${domain} failed.${NORMAL} Removing what was set up for it, so it can be set up again..." >&2
+  cd / || true
+  REMOVE_SITE_KEEP_BACKUPS="${SITE_ROLLBACK_KEEP_BACKUPS}" remove_site "${domain}"
+  echo "" >&2
+  echo "${domain} was rolled back. Its Cloudflare DNS records were left as they are." >&2
+  echo "Fix the error shown above, then run the setup again." >&2
+}
+
+
+#----------------------------------------------------------------------------------
+# Remove a site and everything that belongs to it: its staging copy, its place on the site list,
+# its database and user, vhosts, certificate, Redis keys, files, backups (unless
+# REMOVE_SITE_KEEP_BACKUPS=1), logs, and cached pages, then reload Nginx and PHP-FPM. Each part
+# that is missing is reported and skipped, so it also cleans up a site that was only partly set
+# up. Used by Remove Domain, and by Create Domain and Import Domain to roll back a failed setup.
+# Cloudflare's DNS records are left as they are.
+# Usage: remove_site <domain>
+remove_site() {
+  local DOMAIN="$1" DB USR PSWD VHOST
+
+  # Remove the site's staging copy first: it uses the site's certificate, which goes below
+  if [[ -f "/etc/nginx/sites-enabled/staging.${DOMAIN}.conf" || -d "/var/www/sites/staging.${DOMAIN}" \
+      || -f "/home/EngineScript/staging-credentials/staging.${DOMAIN}.txt" ]]; then
+    echo "Removing the staging copy of ${DOMAIN}..."
+    bash /usr/local/bin/enginescript/scripts/functions/vhost/vhost-staging.sh delete "${DOMAIN}"
   fi
 
-  # PHP Service Check
-  STATUS="$(systemctl is-active "php${PHP_VER}-fpm")"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: PHP ${PHP_VER} is running."
+  # Remove domain from site list
+  if es_site_exists "${DOMAIN}"
+  then
+    echo -e "${BOLD}Site List Removal Check: Passed\n\n${NORMAL}Removing ${DOMAIN} from site list...\n\n"
+    es_site_remove "${DOMAIN}"
   else
-    echo "FAILED: PHP ${PHP_VER} not running. Please diagnose this issue before proceeding."
-    exit 1
+    echo -e "${BOLD}Site List Removal Check: Failed\n\n${NORMAL}${DOMAIN} was not found on the site list.\n\n"
   fi
 
-  # Redis Service Check
-  STATUS="$(systemctl is-active redis)"
-  if [[ "${STATUS}" == "active" ]]; then
-    echo "PASSED: Redis is running."
+  # Remove MySQL credentials
+  if [[ -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt" ]]
+  then
+    echo -e "${BOLD}MySQL Credentials Removal Check: Passed\n\n${NORMAL}Removing MySQL credentials for ${DOMAIN}...\n\n"
+    # shellcheck source=/dev/null
+    source "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+    if validate_db_identifier "${DB}" "${DOMAIN}"; then
+      mariadb -e "DROP DATABASE IF EXISTS \`${DB}\`;"
+    fi
+    if [[ "${USR}" =~ ^[A-Za-z0-9_]+$ ]]; then
+      mariadb -e "DROP USER IF EXISTS '${USR}'@'localhost';"
+    else
+      echo "Warning: Invalid database user name '${USR}' in /home/EngineScript/mysql-credentials/${DOMAIN}.txt; the user was not dropped." >&2
+    fi
+    rm -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
   else
-    echo "FAILED: Redis not running. Please diagnose this issue before proceeding."
-    exit 1
+    echo -e "${BOLD}MySQL Credentials Check: Failed\n\n${NORMAL}${DOMAIN} did not have MySQL credentials.\n\n"
   fi
+
+  # Remove Nginx vhosts
+  for VHOST in "/etc/nginx/sites-enabled/${DOMAIN}.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"; do
+    if [[ -f "${VHOST}" ]]; then
+      echo -e "${BOLD}Nginx Vhost Removal Check: Passed\n\n${NORMAL}Removing ${VHOST}...\n\n"
+      rm -rf "${VHOST}"
+    else
+      echo -e "${BOLD}Nginx Vhost Removal Check: Failed\n\n${NORMAL}${VHOST} did not exist.\n\n"
+    fi
+  done
+
+  # Remove the certificate from acme.sh first: its renewal job would otherwise keep renewing it and
+  # installing it into /etc/nginx/ssl/${DOMAIN}/ again
+  if [[ -d "/root/.acme.sh/${DOMAIN}_ecc" ]]; then
+    echo -e "${BOLD}acme.sh Certificate Removal Check: Passed\n\n${NORMAL}Removing ${DOMAIN} from acme.sh...\n\n"
+    /root/.acme.sh/acme.sh --remove -d "${DOMAIN}" --ecc \
+      || echo "Warning: acme.sh could not remove ${DOMAIN} from its renewal list; its folder is removed below." >&2
+    rm -rf "/root/.acme.sh/${DOMAIN}_ecc"
+  else
+    echo -e "${BOLD}acme.sh Certificate Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have an acme.sh certificate.\n\n"
+  fi
+
+  # Remove SSL certificates
+  if [[ -d "/etc/nginx/ssl/${DOMAIN}" ]];
+  then
+    echo -e "${BOLD}SSL Certificates Removal Check: Passed\n\n${NORMAL}Removing SSL certificates for ${DOMAIN}...\n\n"
+    rm -rf "/etc/nginx/ssl/${DOMAIN}"
+  else
+    echo -e "${BOLD}SSL Certificates Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have SSL Certificates.\n\n"
+  fi
+
+  # Delete the site's Redis keys (read from its wp-config.php, so before the files go)
+  flush_site_redis_cache "/var/www/sites/${DOMAIN}/html/wp-config.php"
+
+  # Remove main directory
+  if [[ -d "/var/www/sites/${DOMAIN}" ]];
+  then
+    echo -e "${BOLD}Main Directory Removal Check: Passed\n\n${NORMAL}Removing main directory for ${DOMAIN}...\n\n"
+    rm -rf "/var/www/sites/${DOMAIN}"
+  else
+    echo -e "${BOLD}Main Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a main directory.\n\n"
+  fi
+
+  # Remove backup directory (kept when REMOVE_SITE_KEEP_BACKUPS=1)
+  if [[ "${REMOVE_SITE_KEEP_BACKUPS:-0}" == "1" ]]; then
+    echo "Kept the backup directory /home/EngineScript/site-backups/${DOMAIN}."
+  elif [[ -d "/home/EngineScript/site-backups/${DOMAIN}" ]];
+  then
+    echo -e "${BOLD}Backup Directory Removal Check: Passed\n\n${NORMAL}Removing backup directory for ${DOMAIN}...\n\n"
+    rm -rf "/home/EngineScript/site-backups/${DOMAIN}"
+  else
+    echo -e "${BOLD}Backup Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a backup directory.\n\n"
+  fi
+
+  # Remove log directory
+  if [[ -d "/var/log/domains/${DOMAIN}" ]];
+  then
+    echo -e "${BOLD}Log Directory Removal Check: Passed\n\n${NORMAL}Removing log directory for ${DOMAIN}...\n\n"
+    rm -rf "/var/log/domains/${DOMAIN}"
+  else
+    echo -e "${BOLD}Log Directory Removal Check: Failed\n\n${NORMAL}${DOMAIN} did not have a log directory.\n\n"
+  fi
+  # The admin subdomain's logs, and their rotated copies, are kept beside the log directories
+  rm -f "/var/log/domains/admin.${DOMAIN}-nginx-"*.log*
+
+  # The site's Redis database number is free again: new sites take the lowest number no other
+  # site's wp-config.php uses, so nothing changes in redis.conf.
+
+  # Delete the site's cached pages, so the domain does not serve them if it is set up again
+  clear_site_nginx_cache "${DOMAIN}"
+
+  # Reload Nginx (the site's vhost is gone) and PHP-FPM (drops the site's code from OPcache).
+  # Redis keeps running; the site's keys are already deleted.
+  reload_web_services
 }
 
 
@@ -73,8 +227,7 @@ create_nginx_vhost() {
   echo "SITE_URL=\"${DOMAIN}\"" >> "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
 
   # Add Domain to Site List
-  sed -i "/SITES\=(/a\
-  \"$DOMAIN\"" /home/EngineScript/sites-list/sites.sh
+  es_site_add "${DOMAIN}" || return 1
   
   # Create Nginx Vhost File
   cp -rf "/usr/local/bin/enginescript/config/etc/nginx/sites-available/your-domain.conf" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
@@ -116,19 +269,25 @@ create_ssl_certificate() {
     SSL_KEYLENGTH="ec-384"
   fi
 
-  mkdir -p "/etc/nginx/ssl/${DOMAIN}"
+  mkdir -p "/etc/nginx/ssl/${DOMAIN}" || return 1
 
   # Issue SSL Certificate
-  /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k "${SSL_KEYLENGTH}"
+  if ! /root/.acme.sh/acme.sh --issue --force --dns dns_cf --server zerossl -d "${DOMAIN}" -d "admin.${DOMAIN}" -d "*.${DOMAIN}" -k "${SSL_KEYLENGTH}"; then
+    echo "Error: acme.sh could not issue a certificate for ${DOMAIN} (see its output above)." >&2
+    return 1
+  fi
 
   # Install SSL Certificate
   # acme.sh saves --reloadcmd and runs it after every renewal, so Nginx loads the new certificate
-  /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
-  --cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
-  --key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
-  --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
-  --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem" \
-  --reloadcmd "systemctl reload nginx"
+  if ! /root/.acme.sh/acme.sh --install-cert -d "${DOMAIN}" --ecc \
+      --cert-file "/etc/nginx/ssl/${DOMAIN}/cert.pem" \
+      --key-file "/etc/nginx/ssl/${DOMAIN}/key.pem" \
+      --fullchain-file "/etc/nginx/ssl/${DOMAIN}/fullchain.pem" \
+      --ca-file "/etc/nginx/ssl/${DOMAIN}/ca.pem" \
+      --reloadcmd "systemctl reload nginx"; then
+    echo "Error: acme.sh could not install the certificate for ${DOMAIN} in /etc/nginx/ssl/${DOMAIN}." >&2
+    return 1
+  fi
 
   # The private key is readable by root only (renewals keep these modes)
   secure_nginx_ssl_directory "/etc/nginx/ssl/${DOMAIN}"
@@ -218,41 +377,12 @@ configure_cloudflare_settings() {
     export CF_Key="${CF_GLOBAL_API_KEY}"
     export CF_Email="${CF_ACCOUNT_EMAIL}"
 
-    # Make one Cloudflare API call for the zone and print one line for it (✓, or ✗ with
-    # Cloudflare's error message) instead of the raw JSON. Failures are counted in CF_FAILED.
-    # Usage: cf_api "<what it sets>" <METHOD> <path after /zones/ZONE_ID> [JSON body]
+    # Each change prints one line (cf_apply in enginescript-cloudflare.sh); failures are counted
+    # in CF_FAILED
     CF_FAILED=0
     CF_AOP_ON=0
-    cf_api() {
-      local label="$1" method="$2" path="$3" body="${4:-}" response message
-      local args=(-s --max-time 30 -X "${method}" "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}${path}"
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}"
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}"
-        -H "Content-Type: application/json")
-      if [[ -n "${body}" ]]; then
-        args+=(--data "${body}")
-      fi
-      response="$(curl "${args[@]}")"
-      if grep -Eq '"success"[[:space:]]*:[[:space:]]*true' <<< "${response}"; then
-        echo "  ✓ ${label}"
-        return 0
-      fi
-      message="$(grep -oE '"message"[[:space:]]*:[[:space:]]*"[^"]*"' <<< "${response}" | head -n 1 | sed -E 's/^"message"[[:space:]]*:[[:space:]]*"(.*)"$/\1/')"
-      echo "  ✗ ${label}: ${message:-no answer from Cloudflare}"
-      CF_FAILED=$((CF_FAILED + 1))
-      return 1
-    }
 
-    get_cf_zone_id() {
-      local CF_DOMAIN="$1"
-      curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${CF_DOMAIN}&status=active" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
-        -H "Content-Type: application/json" | \
-        grep -o '"id":"[a-zA-Z0-9]*"' | head -n1 | cut -d'"' -f4
-    }
-
-    ZONE_ID=$(get_cf_zone_id "$DOMAIN")
+    ZONE_ID="$(cf_zone_id "${DOMAIN}")"
 
     # Check if domain exists in Cloudflare
     if [[ -z "$ZONE_ID" ]]; then
@@ -315,57 +445,25 @@ configure_cloudflare_settings() {
       
       echo "✓ Server IP detected: ${SERVER_IP}"
       
-      # Check if A record exists and matches server IP
-      A_RECORD_INFO=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=A&name=${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
-        -H "Content-Type: application/json")
-      
-      A_RECORD_ID=$(echo "$A_RECORD_INFO" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
-      A_RECORD_CONTENT=$(echo "$A_RECORD_INFO" | grep -o '"content":"[^"]*' | head -1 | cut -d'"' -f4)
-      
       echo ""
       echo "Cloudflare DNS records for ${DOMAIN}:"
       A_RECORD="{\"type\": \"A\", \"name\": \"${DOMAIN}\", \"content\": \"${SERVER_IP}\", \"ttl\": 1, \"proxied\": true}"
-      if [[ -z "$A_RECORD_ID" ]]; then
-        # A record doesn't exist, create it
-        cf_api "A record ${DOMAIN}: ${SERVER_IP} (proxied), added" POST "/dns_records" "${A_RECORD}"
-      elif [[ "$A_RECORD_CONTENT" != "$SERVER_IP" ]]; then
-        # A record exists but IP doesn't match, update it
-        cf_api "A record ${DOMAIN}: ${SERVER_IP} (proxied), was ${A_RECORD_CONTENT}" PUT "/dns_records/${A_RECORD_ID}" "${A_RECORD}"
+      if ! cf_find_dns_record "${ZONE_ID}" "${DOMAIN}" "A"; then
+        echo "  ✗ A record ${DOMAIN}: no answer from Cloudflare"
+        CF_FAILED=$((CF_FAILED + 1))
+      elif [[ -z "${CF_RECORD_ID}" ]]; then
+        cf_apply "${ZONE_ID}" "A record ${DOMAIN}: ${SERVER_IP} (proxied), added" POST "/dns_records" "${A_RECORD}"
+      elif [[ "${CF_RECORD_CONTENT}" != "${SERVER_IP}" ]]; then
+        cf_apply "${ZONE_ID}" "A record ${DOMAIN}: ${SERVER_IP} (proxied), was ${CF_RECORD_CONTENT}" PUT "/dns_records/${CF_RECORD_ID}" "${A_RECORD}"
       else
         echo "  ✓ A record ${DOMAIN}: ${SERVER_IP}, already set"
       fi
 
-      # Check if admin subdomain already exists (the first record, if there are several)
-      ADMIN_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=admin.${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
-        -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | head -n 1 | cut -d'"' -f4)
-
+      # The admin and www CNAME records (the first record of each name, if there are several)
       ADMIN_RECORD="{\"comment\": \"Admin Control Panel\", \"content\": \"${DOMAIN}\", \"name\": \"admin\", \"proxied\": true, \"ttl\": 1, \"type\": \"CNAME\"}"
-      if [[ -z "$ADMIN_RECORD_ID" ]]; then
-        # Admin subdomain does not exist, create it
-        cf_api "CNAME admin.${DOMAIN}: ${DOMAIN} (proxied), added" POST "/dns_records" "${ADMIN_RECORD}"
-      else
-        # Admin subdomain exists, update it
-        cf_api "CNAME admin.${DOMAIN}: ${DOMAIN} (proxied), updated" PUT "/dns_records/${ADMIN_RECORD_ID}" "${ADMIN_RECORD}"
-      fi
-
-      # Check if www subdomain already exists (the first record, if there are several)
-      WWW_RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=www.${DOMAIN}" \
-        -H "X-Auth-Email: ${CF_ACCOUNT_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
-        -H "Content-Type: application/json" | grep -o '"id":"[^"]*' | head -n 1 | cut -d'"' -f4)
-
+      cf_upsert_dns_record "${ZONE_ID}" "CNAME" "admin.${DOMAIN}" "CNAME admin.${DOMAIN}: ${DOMAIN} (proxied)" "${ADMIN_RECORD}"
       WWW_RECORD="{\"comment\": \"WWW Redirect\", \"content\": \"${DOMAIN}\", \"name\": \"www\", \"proxied\": true, \"ttl\": 1, \"type\": \"CNAME\"}"
-      if [[ -z "$WWW_RECORD_ID" ]]; then
-        # www subdomain does not exist, create it
-        cf_api "CNAME www.${DOMAIN}: ${DOMAIN} (proxied), added" POST "/dns_records" "${WWW_RECORD}"
-      else
-        # www subdomain exists, update it
-        cf_api "CNAME www.${DOMAIN}: ${DOMAIN} (proxied), updated" PUT "/dns_records/${WWW_RECORD_ID}" "${WWW_RECORD}"
-      fi
+      cf_upsert_dns_record "${ZONE_ID}" "CNAME" "www.${DOMAIN}" "CNAME www.${DOMAIN}: ${DOMAIN} (proxied)" "${WWW_RECORD}"
 
       echo ""
       echo "Cloudflare settings for ${DOMAIN}:"
@@ -374,85 +472,85 @@ configure_cloudflare_settings() {
       ## SSL/TLS Settings
 
       # SSL/TLS Tab: SSL/TLS Encryption Mode
-      cf_api "SSL/TLS encryption mode: Full (strict)" PATCH "/settings/ssl" '{"value":"strict"}'
+      cf_apply "${ZONE_ID}" "SSL/TLS encryption mode: Full (strict)" PATCH "/settings/ssl" '{"value":"strict"}'
 
       # Edge Certificates Section: Always Use HTTPS
-      cf_api "Always Use HTTPS: off" PATCH "/settings/always_use_https" '{"value":"off"}'
+      cf_apply "${ZONE_ID}" "Always Use HTTPS: off" PATCH "/settings/always_use_https" '{"value":"off"}'
 
       # Edge Certificates Section: Minimum TLS Version
-      cf_api "Minimum TLS Version: 1.2" PATCH "/settings/min_tls_version" '{"value":"1.2"}'
+      cf_apply "${ZONE_ID}" "Minimum TLS Version: 1.2" PATCH "/settings/min_tls_version" '{"value":"1.2"}'
 
       # Edge Certificates Section: Opportunistic Encryption
-      cf_api "Opportunistic Encryption: on" PATCH "/settings/opportunistic_encryption" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Opportunistic Encryption: on" PATCH "/settings/opportunistic_encryption" '{"value":"on"}'
 
       # Edge Certificates Section: TLS 1.3
-      cf_api "TLS 1.3: on" PATCH "/settings/tls_1_3" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "TLS 1.3: on" PATCH "/settings/tls_1_3" '{"value":"on"}'
 
       # Edge Certificates Section: Automatic HTTPS Rewrites
-      cf_api "Automatic HTTPS Rewrites: on" PATCH "/settings/automatic_https_rewrites" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Automatic HTTPS Rewrites: on" PATCH "/settings/automatic_https_rewrites" '{"value":"on"}'
 
       # Origin Server Section: Authenticated Origin Pulls (per zone)
-      cf_api "Authenticated Origin Pulls (zone): on" PUT "/origin_tls_client_auth/settings" '{"enabled": true}' && CF_AOP_ON=1
+      cf_apply "${ZONE_ID}" "Authenticated Origin Pulls (zone): on" PUT "/origin_tls_client_auth/settings" '{"enabled": true}' && CF_AOP_ON=1
         
       # Origin Server Section: Authenticated Origin Pulls
-      cf_api "Authenticated Origin Pulls (setting): on" PATCH "/settings/tls_client_auth" '{"value":"on"}' && CF_AOP_ON=1
+      cf_apply "${ZONE_ID}" "Authenticated Origin Pulls (setting): on" PATCH "/settings/tls_client_auth" '{"value":"on"}' && CF_AOP_ON=1
 
 
       ## Speed Settings
 
       # Speed Tab: Speed Brain
-      cf_api "Speed Brain: on" PATCH "/settings/speed_brain" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Speed Brain: on" PATCH "/settings/speed_brain" '{"value":"on"}'
 
       # Speed Tab: Early Hints
-      cf_api "Early Hints: on" PATCH "/settings/early_hints" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Early Hints: on" PATCH "/settings/early_hints" '{"value":"on"}'
 
       # Speed Tab: HTTP/3 (with QUIC)
-      cf_api "HTTP/3 (with QUIC): on" PATCH "/settings/http3" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "HTTP/3 (with QUIC): on" PATCH "/settings/http3" '{"value":"on"}'
 
       # Speed Tab: Enhanced HTTP/2 Prioritization
-      cf_api "Enhanced HTTP/2 Prioritization: on" PATCH "/settings/h2_prioritization" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Enhanced HTTP/2 Prioritization: on" PATCH "/settings/h2_prioritization" '{"value":"on"}'
 
       # Speed Tab: 0-RTT Connection Resumption
-      cf_api "0-RTT Connection Resumption: on" PATCH "/settings/0rtt" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "0-RTT Connection Resumption: on" PATCH "/settings/0rtt" '{"value":"on"}'
 
 
       ## Caching Settings
 
       # Caching Tab: Caching Level
-      cf_api "Caching Level: aggressive" PATCH "/settings/cache_level" '{"value":"aggressive"}'
+      cf_apply "${ZONE_ID}" "Caching Level: aggressive" PATCH "/settings/cache_level" '{"value":"aggressive"}'
 
       # Caching Tab: Browser Cache TTL (Respect Existing Headers)
-      cf_api "Browser Cache TTL: respect existing headers" PATCH "/settings/browser_cache_ttl" '{"value":0}'
+      cf_apply "${ZONE_ID}" "Browser Cache TTL: respect existing headers" PATCH "/settings/browser_cache_ttl" '{"value":0}'
 
       # Caching Tab: Always Online
-      cf_api "Always Online: on" PATCH "/settings/always_online" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Always Online: on" PATCH "/settings/always_online" '{"value":"on"}'
 
       # Tiered Cache Section: Tiered Cache Topology
-      cf_api "Tiered Cache: on" PATCH "/argo/tiered_caching" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Tiered Cache: on" PATCH "/argo/tiered_caching" '{"value":"on"}'
 
       # Tiered Cache Section: Tiered Cache Topology (Smart Tiered Caching)
-      cf_api "Smart Tiered Cache Topology: on" PATCH "/cache/tiered_cache_smart_topology_enable" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Smart Tiered Cache Topology: on" PATCH "/cache/tiered_cache_smart_topology_enable" '{"value":"on"}'
 
 
       ## Network Settings
 
       # Network Tab: IPv6 Compatibility
-      cf_api "IPv6 Compatibility: on" PATCH "/settings/ipv6" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "IPv6 Compatibility: on" PATCH "/settings/ipv6" '{"value":"on"}'
 
       # Network Tab: WebSockets
-      cf_api "WebSockets: on" PATCH "/settings/websockets" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "WebSockets: on" PATCH "/settings/websockets" '{"value":"on"}'
 
       # Network Tab: Pseudo IPv4
-      cf_api "Pseudo IPv4: add_header" PATCH "/settings/pseudo_ipv4" '{"value":"add_header"}'
+      cf_apply "${ZONE_ID}" "Pseudo IPv4: add_header" PATCH "/settings/pseudo_ipv4" '{"value":"add_header"}'
 
       # Network Tab: IP Geolocation
-      cf_api "IP Geolocation: on" PATCH "/settings/ip_geolocation" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "IP Geolocation: on" PATCH "/settings/ip_geolocation" '{"value":"on"}'
 
       # Network Tab: Network Error Logging
-      cf_api "Network Error Logging: on" PATCH "/settings/nel" '{"value": {"enabled": true} }'
+      cf_apply "${ZONE_ID}" "Network Error Logging: on" PATCH "/settings/nel" '{"value": {"enabled": true} }'
 
       # Network Tab: Onion Routing
-      cf_api "Onion Routing: on" PATCH "/settings/opportunistic_onion" '{"value":"on"}'
+      cf_apply "${ZONE_ID}" "Onion Routing: on" PATCH "/settings/opportunistic_onion" '{"value":"on"}'
 
       echo ""
       if [[ "${CF_FAILED}" -eq 0 ]]; then
@@ -499,10 +597,10 @@ install_required_wp_plugins() {
   # Install and Activate Required WordPress Plugins
   echo "Installing essential plugins..."
 
-  wp plugin install flush-opcache --allow-root --activate
-  wp plugin install mariadb-health-checks --allow-root --activate
-  wp plugin install nginx-helper --allow-root --activate
-  wp plugin install redis-cache --allow-root --activate
+  wp_site plugin install flush-opcache --activate
+  wp_site plugin install mariadb-health-checks --activate
+  wp_site plugin install nginx-helper --activate
+  wp_site plugin install redis-cache --activate
 }
 
 
@@ -511,54 +609,13 @@ install_required_wp_plugins() {
 # These plugins are optional but recommended for enhanced functionality and debugging
 install_extra_wp_plugins() {
   local SITE_URL="$1"
-  wp plugin install action-scheduler --allow-root
-  wp plugin install autodescription --allow-root
-  wp plugin install performance-lab --allow-root
-  wp plugin install php-compatibility-checker --allow-root
-  wp plugin install theme-check --allow-root
-  wp plugin install wp-crontrol --allow-root
-  wp plugin install wp-mail-smtp --allow-root
-}
-
-
-#----------------------------------------------------------------------------------
-# Install EngineScript custom plugins
-install_enginescript_custom_plugins() {
-  local SITE_URL="$1"
-  
-  if [[ "${INSTALL_ENGINESCRIPT_PLUGINS}" == "1" ]]; then
-    echo "Installing EngineScript custom plugins..."
-    
-    # 1. EngineScript Site Optimizer plugin
-    mkdir -p "/tmp/enginescript-es-so-plugin"
-    curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-optimizer/releases/download/v${ES_SO_PLUGIN_VER}/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" || {
-      echo "ERROR: Failed to download EngineScript Site Optimizer plugin (version ${ES_SO_PLUGIN_VER})."
-      rm -rf "/tmp/enginescript-es-so-plugin"
-      return 1
-    }
-    unzip -q -o "/tmp/enginescript-es-so-plugin/enginescript-site-optimizer-${ES_SO_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/" || {
-      echo "ERROR: Failed to extract EngineScript Site Optimizer plugin archive."
-      rm -rf "/tmp/enginescript-es-so-plugin"
-      return 1
-    }
-    rm -rf "/tmp/enginescript-es-so-plugin"
-
-    # 2. EngineScript Site Exporter plugin
-    mkdir -p "/tmp/enginescript-es-se-plugin"
-    curl -fsSL --proto '=https' "https://github.com/EngineScript/enginescript-site-exporter/releases/download/v${ES_SE_PLUGIN_VER}/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" || {
-      echo "ERROR: Failed to download EngineScript Site Exporter plugin (version ${ES_SE_PLUGIN_VER})."
-      rm -rf "/tmp/enginescript-es-se-plugin"
-      return 1
-    }
-    unzip -q -o "/tmp/enginescript-es-se-plugin/enginescript-site-exporter-${ES_SE_PLUGIN_VER}.zip" -d "/var/www/sites/${SITE_URL}/html/wp-content/plugins/" || {
-      echo "ERROR: Failed to extract EngineScript Site Exporter plugin archive."
-      rm -rf "/tmp/enginescript-es-se-plugin"
-      return 1
-    }
-    rm -rf "/tmp/enginescript-es-se-plugin"
-  else
-    echo "Skipping EngineScript custom plugins installation (disabled in config)..."
-  fi
+  wp_site plugin install action-scheduler
+  wp_site plugin install autodescription
+  wp_site plugin install performance-lab
+  wp_site plugin install php-compatibility-checker
+  wp_site plugin install theme-check
+  wp_site plugin install wp-crontrol
+  wp_site plugin install wp-mail-smtp
 }
 
 
@@ -680,20 +737,20 @@ display_credentials_summary() {
   echo "${BOLD}DB Password:${NORMAL}       ${PSWD}"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "MySQL Root and Domain login credentials backed up to:"
-  echo "/home/EngineScript/mysql-credentials/${SITE_URL}"
+  echo "The site's database credentials are saved in:"
+  echo "/home/EngineScript/mysql-credentials/${SITE_URL}.txt"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "Origin Certificate and Private Key have been backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/ssl-keys"
+  echo "Database and wp-config.php backups, and full site archives:"
+  echo "/home/EngineScript/site-backups/${SITE_URL}/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "Domain Vhost .conf file backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/nginx"
+  echo "SSL certificate and private key (EngineScript configuration backup):"
+  echo "/home/EngineScript/config-backups/enginescript/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
-  echo "WordPress wp-config.php file backed up to:"
-  echo "/home/EngineScript/site-backups/${SITE_URL}/wp-config"
+  echo "Nginx configuration, including the site's vhost (daily):"
+  echo "/home/EngineScript/config-backups/nginx/"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo ""
 

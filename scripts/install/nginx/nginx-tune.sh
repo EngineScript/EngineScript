@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -27,27 +23,6 @@ if [[ -z "$(tuning_get NGINX_CACHE_ZONE_MB)" ]]; then
 fi
 sed -i "s|SEDNGINXCACHEZONE|$(tuning_get NGINX_CACHE_ZONE_MB)|g" /etc/nginx/nginx.conf
 sed -i "s|SEDNGINXCACHEMAX|$(tuning_get NGINX_CACHE_MAX_MB)|g" /etc/nginx/nginx.conf
-
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGIBUFFERS|8 32k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGIBUFFERS|16 32k|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGIBUSYBUFFERS|128k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGIBUSYBUFFERS|256k|g" /etc/nginx/nginx.conf
-fi
-
-if [[ "${SERVER_MEMORY_TOTAL_100}" -lt 1400 ]];
-  then
-    sed -i "s|SEDFCGITEMPFILEWRITESIZE|128k|g" /etc/nginx/nginx.conf
-  else
-    sed -i "s|SEDFCGITEMPFILEWRITESIZE|256k|g" /etc/nginx/nginx.conf
-fi
 
 # CPU information (for the install log)
 CPU_INFO="$(lscpu)"

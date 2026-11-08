@@ -51,6 +51,8 @@ SUPPORTED_PHP_VERSIONS=(
   "8.5"
 )
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
+# shellcheck source=scripts/functions/shared/enginescript-upgrades.sh
+source "${REPO_ROOT}/scripts/functions/shared/enginescript-upgrades.sh"
 
 RESTARTS=0
 restart_service() {

@@ -42,6 +42,18 @@ function site_archive_free_kb() {
     df -Pk "${folder}" | awk 'NR == 2 {print $4}'
 }
 
+# Print a site's address (home), WordPress address (siteurl), and table prefix, one per line. The
+# options, not home_url() and site_url(): from WP-CLI, which is not on HTTPS, site_url() would
+# turn https into http. As www-data, without plugins and themes, so a broken one cannot stop it.
+# Prints nothing when WP-CLI fails.
+# Usage: site_archive_site_info <site root>
+function site_archive_site_info() {
+    local site_root="$1"
+    # shellcheck disable=SC2016  # PHP code, not shell
+    (cd / && run_as_www_data wp eval --path="${site_root}" --skip-plugins --skip-themes \
+        'echo get_option("home"), "\n", get_option("siteurl"), "\n", $GLOBALS["table_prefix"], "\n";' 2> /dev/null)
+}
+
 # ----------------------------------------------------------------
 # Build a site archive
 #
@@ -105,13 +117,8 @@ function build_site_archive() (
         echo "Note: files changed while ${site}'s files were archived." >&2
     fi
 
-    # The addresses and table prefix, for the manifest's informational lines. The options, not
-    # home_url() and site_url(): from WP-CLI, which is not on HTTPS, site_url() would turn https
-    # into http. Plugins and themes are not loaded, so a broken one cannot stop the archive; the
-    # values stay empty on failure.
-    # shellcheck disable=SC2016  # PHP code, not shell
-    mapfile -t info < <(cd / && run_as_www_data wp eval --path="${site_root}" --skip-plugins --skip-themes \
-        'echo get_option("home"), "\n", get_option("siteurl"), "\n", $GLOBALS["table_prefix"], "\n";' 2> /dev/null)
+    # The addresses and table prefix, for the manifest's informational lines; empty on failure
+    mapfile -t info < <(site_archive_site_info "${site_root}")
     # The first six lines keep their text and order for importers; the later ones are
     # informational and match what the plugin writes. One value per line: control characters go.
     {
@@ -139,3 +146,61 @@ function build_site_archive() (
     fi
     mv -f "${staging}/archive.zip" "${output}"
 )
+
+
+# ----------------------------------------------------------------
+# Reading an archive (vhost-import.sh)
+
+# Print one value from a manifest.txt (the text after "<key>=" on its first line), or nothing
+# Usage: site_archive_manifest_value <manifest.txt> <key>
+function site_archive_manifest_value() {
+    local manifest="$1" key="$2"
+    sed -n "s/^${key}=//p" "${manifest}" | head -n 1 | tr -d '\r'
+}
+
+# Print a site address (home_url, WP_HOME) without its scheme and trailing slashes. Any path
+# stays: the site's URLs start with this, and the import moves them to the new address with
+# search-replace.
+# Usage: site_address_without_scheme <address>
+function site_address_without_scheme() {
+    local address="$1"
+    if [[ "${address,,}" == https://* ]]; then
+        address="${address:8}"
+    elif [[ "${address,,}" == http://* ]]; then
+        address="${address:7}"
+    fi
+    while [[ "${address}" == */ ]]; do
+        address="${address%/}"
+    done
+    printf '%s\n' "${address}"
+}
+
+# Succeed when a site address has a path: a site in a subfolder (example.com/blog), or WordPress
+# kept in its own folder (siteurl example.com/wp). EngineScript serves each site, and WordPress,
+# at the root of its domain, so such sites are neither exported nor imported.
+# Usage: site_address_has_path <address>
+function site_address_has_path() {
+    [[ "$(site_address_without_scheme "$1")" == */* ]]
+}
+
+# Succeed when a site address uses www (www.example.com)
+# Usage: site_address_uses_www <address>
+function site_address_uses_www() {
+    local host
+    host="$(site_address_without_scheme "$1")"
+    host="${host%%/*}"
+    [[ "${host,,}" == www.* ]]
+}
+
+# Print the domain an imported site is served at: the host of its address, in lowercase, without
+# a port or a leading "www.". EngineScript serves each site at the root of its own domain; a site
+# that used www can keep www.<domain> as its address (Import Domain asks).
+# Usage: site_address_domain <address>
+function site_address_domain() {
+    local host
+    host="$(site_address_without_scheme "$1")"
+    host="${host%%/*}"
+    host="${host%%:*}"
+    host="${host,,}"
+    printf '%s\n' "${host#www.}"
+}

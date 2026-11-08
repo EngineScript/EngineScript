@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 echo "============================================================="
@@ -56,7 +52,8 @@ echo ""
 # Check memory variables
 echo "Memory calculations:"
 echo "Total RAM: ${SERVER_MEMORY_TOTAL_100}MB"
-echo "45% RAM: ${SERVER_MEMORY_TOTAL_45}MB (for InnoDB buffer pool)"
+tuning_load 2> /dev/null
+echo "InnoDB buffer pool (tuning plan, /etc/enginescript/tuning.conf): $(tuning_get MARIADB_BUFFER_POOL_MB)MB"
 echo "80% RAM: ${SERVER_MEMORY_TOTAL_80}MB (for comparison checks)"
 echo ""
 

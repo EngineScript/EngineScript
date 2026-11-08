@@ -7,22 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${TOOLS}" = 1 ]]; then
-    echo "TOOLS script has already run"
-    exit 0
-fi
 
 
 #------------------------------------------------
@@ -33,14 +23,10 @@ fi
 return_to_src
 
 # pngout
-/usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "pngout"
+run_step "pngout" /usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh
 
 # zImageOptimizer
-/usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "zImageOptimizer"
+run_step "zImageOptimizer" /usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
 
 
 #------------------------------------------------
@@ -51,34 +37,20 @@ debug_pause "zImageOptimizer"
 if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Installing Adminer"
-    /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> /tmp/enginescript_install_errors.log
-    print_last_errors
-    debug_pause "Adminer"
+    run_step "Adminer" /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
   else
     echo "Skipping Adminer install"
 fi
 
 # MYSQLTuner
-/usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "MYSQLTuner"
+run_step "MYSQLTuner" /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
 #------------------------------------------------
 # Nginx Tools
 #------------------------------------------------
 
 # Gixy-Next: Nginx configuration security checker
-/usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Gixy-Next"
-
-#------------------------------------------------
-# PHP Tools
-#------------------------------------------------
-
-# OPcache GUI
-#/usr/local/bin/enginescript/scripts/install/tools/php/opcache-gui.sh
-
+run_step "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh
 
 #------------------------------------------------
 # Security Tools
@@ -91,24 +63,16 @@ debug_pause "Gixy-Next"
 #/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
 
 # fail2ban: bans addresses after repeated failed SSH logins
-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "fail2ban"
+run_step "fail2ban" /usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh
 
 # Lynis: security audit
-/usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Lynis"
+run_step "Lynis" /usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh
 
 # Wordfence CLI Malware Scanner
-/usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Wordfence CLI"
+run_step "Wordfence CLI" /usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh
 
 # WPScan
-/usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "WPScan"
+run_step "WPScan" /usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh
 
 
 #------------------------------------------------
@@ -116,9 +80,7 @@ debug_pause "WPScan"
 #------------------------------------------------
 
 # Testssl.sh
-/usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Testssl.sh"
+run_step "Testssl.sh" /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
 
 
 #------------------------------------------------
@@ -135,9 +97,7 @@ if [[ "${BACKUP_S3}" == "1" ]];
     echo "Installing Amazon CLI"
     echo "Please follow the instructions in the script that is about to run."
     sleep 5
-    /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh 2>> /tmp/enginescript_install_errors.log
-    print_last_errors
-    debug_pause "Amazon AWS CLI"
+    run_step "Amazon AWS CLI" /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
   else
     echo "Skipping Amazon CLI install"
 fi
@@ -145,6 +105,4 @@ fi
 # Return to /usr/src
 return_to_src
 
-# Mark the installation as complete
-set_install_state "TOOLS" "1"
 echo "Tools completed successfully. Script done."

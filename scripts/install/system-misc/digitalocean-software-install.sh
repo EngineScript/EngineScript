@@ -7,12 +7,8 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
@@ -21,7 +17,7 @@ run_downloaded_installer() {
     local url="$1" installer status
     installer="$(mktemp)" || return 1
     if curl -fsSL --proto '=https' -o "${installer}" "${url}"; then
-        sudo bash "${installer}"
+        bash "${installer}"
         status=$?
     else
         status=1
@@ -32,12 +28,6 @@ run_downloaded_installer() {
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${DO_CONSOLE}" = 1 ]]; then
-    echo "DO_CONSOLE script has already run"
-    exit 0
-fi
 
 # Check if DigitalOcean Remote Console installation is enabled
 if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" != "1" ]]; then
@@ -100,6 +90,4 @@ else
     echo ""
 fi
 
-# Mark the installation as complete
-set_install_state "DO_CONSOLE" "1"
 echo "DigitalOcean Remote Console completed successfully. Script done."

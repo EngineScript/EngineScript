@@ -7,57 +7,35 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${ADMIN_CONTROL_PANEL}" = 1 ]]; then
-    echo "ADMIN_CONTROL_PANEL script has already run"
-    exit 0
-fi
 
 # Set to 1 by any step that fails. The panel is recorded as installed only when every step
 # succeeded, so a failed step runs again on the next install.
 INSTALL_FAILED=0
 
 # Admin Control Panel
-/usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "Admin Control Panel"
+run_step "Admin Control Panel" /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh || INSTALL_FAILED=1
 
 # Install phpinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "phpinfo"
+run_step "phpinfo" /usr/local/bin/enginescript/scripts/install/tools/frontend/phpinfo-install.sh || INSTALL_FAILED=1
 
 # Install phpSysinfo
-/usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "phpSysinfo"
+run_step "phpSysinfo" /usr/local/bin/enginescript/scripts/install/tools/frontend/phpsysinfo-install.sh || INSTALL_FAILED=1
 
 # Install Tiny File Manager
-/usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "Tiny File Manager"
+run_step "Tiny File Manager" /usr/local/bin/enginescript/scripts/install/tools/frontend/tiny-file-manager-install.sh || INSTALL_FAILED=1
 
 # Install UptimeRobot API
-/usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "UptimeRobot API"
+run_step "UptimeRobot API" /usr/local/bin/enginescript/scripts/install/tools/frontend/uptimerobot-api-install.sh || INSTALL_FAILED=1
 
 # Update configuration files from main credentials file
 echo "Updating configuration files with user credentials..."
-/usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh 2>> /tmp/enginescript_install_errors.log || INSTALL_FAILED=1
-print_last_errors
-debug_pause "Admin Control Panel Configuration"
+run_step "Admin Control Panel Configuration" /usr/local/bin/enginescript/scripts/functions/shared/update-config-files.sh || INSTALL_FAILED=1
 
 # Set permissions for EngineScript frontend directories
 set_enginescript_frontend_permissions
@@ -69,5 +47,3 @@ if [[ "${INSTALL_FAILED}" == "1" ]]; then
     echo "Error: An Admin Control Panel step failed (see the errors above). It will run again on the next install." >&2
     exit 1
 fi
-
-set_install_state "ADMIN_CONTROL_PANEL" "1"

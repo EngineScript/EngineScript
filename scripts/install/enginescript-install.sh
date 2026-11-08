@@ -23,24 +23,8 @@ fi
 # In-case you uploaded the options file using a basic Windows text editor
 dos2unix /home/EngineScript/enginescript-install-options.txt
 
-# Convert line endings
-dos2unix /usr/local/bin/enginescript/*
-
-# Set directory and file permissions to 755
-find /usr/local/bin/enginescript -exec chmod 755 {} \;
-
-# Set ownership
-chown -R root:root /usr/local/bin/enginescript
-
-# Make shell scripts executable
-find /usr/local/bin/enginescript -type f -iname "*.sh" -exec chmod +x {} \;
-
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 # Reboot Warning
 echo -e "\nATTENTION:\n\nThe server needs to reboot at the end of this script.\nEnter the es.menu command after rebooting to continue.\n\nThe script will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
@@ -150,9 +134,7 @@ run_install_step "BLOCK" "/usr/local/bin/enginescript/scripts/install/block/pack
 run_install_step "UBUNTU_PRO" "/usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh" "Ubuntu Pro Setup"
 
 # Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh 2>> /tmp/enginescript_install_errors.log
-print_last_errors
-debug_pause "Update & Upgrade"
+run_step "Update & Upgrade" /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Install Dependencies
 run_install_step "DEPENDS" "/usr/local/bin/enginescript/scripts/install/depends/depends-install.sh" "Install Dependencies"
@@ -165,9 +147,6 @@ run_install_step "ACME" "/usr/local/bin/enginescript/scripts/install/acme/acme-i
 
 # GCC
 run_install_step "GCC" "/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh" "GCC"
-
-# OpenSSL
-run_install_step "OPENSSL" "/usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh" "OpenSSL"
 
 # Swap
 run_install_step "SWAP" "/usr/local/bin/enginescript/scripts/install/swap/swap-install.sh" "Swap"
@@ -189,12 +168,6 @@ if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" = "1" ]]; then
   run_install_step "DO_CONSOLE" "/usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh" "DigitalOcean Remote Console"
 fi
 
-# PCRE
-run_install_step "PCRE" "/usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh" "PCRE"
-
-# zlib
-run_install_step "ZLIB" "/usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh" "zlib"
-
 # liburing
 run_install_step "LIBURING" "/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh" "liburing"
 
@@ -210,7 +183,7 @@ run_install_step "PHP" "/usr/local/bin/enginescript/scripts/install/php/php-inst
 # Redis
 run_install_step "REDIS" "/usr/local/bin/enginescript/scripts/install/redis/redis-install.sh" "Redis"
 
-# Nginx
+# Nginx (the build fetches the OpenSSL, PCRE2, and zlib sources it compiles in)
 run_install_step "NGINX" "/usr/local/bin/enginescript/scripts/install/nginx/nginx-install.sh" "Nginx"
 
 # phpMyAdmin (optional)
@@ -259,14 +232,17 @@ if check_installation_completion "true"; then
     echo "✅ System optimization and tools"
     echo ""
 else
+    # No reboot: it would clear the list of missing steps above, and the install is not done
     echo "⚠️  WARNING: Installation verification detected some incomplete components."
     echo "⚠️  This may indicate errors during installation that need attention."
     echo ""
     echo "RECOMMENDATION:"
     echo "1. Review /var/log/EngineScript/install-error-log.log for any errors"
-    echo "2. Use 'es.debug' command after reboot to generate a diagnostic report"
-    echo "3. Consider re-running the installation script to complete missing components"
+    echo "2. Use the 'es.debug' command to generate a diagnostic report"
+    echo "3. Run 'es.install' again to complete the missing components"
     echo ""
+    echo "The server was not rebooted; it reboots when an install completes."
+    exit 1
 fi
 
 echo "============================================================="

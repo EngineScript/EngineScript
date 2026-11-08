@@ -4,7 +4,121 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-07
+
+### 🔒 SITE TOOLS SECURITY
+
+- **Create Domain and Import Domain run WP-CLI as `www-data`:** downloading and installing WordPress, importing the database, moving the URLs, and installing plugins now run as `www-data` instead of root with `--allow-root`. An imported site brings its own `wp-config.php`, plugins, and theme from another host, and that code ran as root during the import. Backups, cron jobs, and staging copies already ran WP-CLI this way.
+- **es.cache and the cache-clearing steps:** clearing a site's WordPress cache, rewrite rules, and transients, and purging the Nginx Helper cache, also run WP-CLI as `www-data` now, so clearing caches no longer runs every site's code as root.
+- **MariaDB update:** the check that every site still reaches its database runs WP-CLI as `www-data`, so the sites' `wp-config.php` files no longer run as root during the update.
+- **Cloudflare firewall rules:** the UFW rules are made only from a list in which every line is an address range, downloaded over HTTPS, as the Nginx real-IP list already was. Before, the firewall script used whatever the download returned.
+- **Install and update error log:** each step's errors now go to `/var/log/EngineScript/step-errors.log` before they are added to `install-error-log.log`. The file was `/tmp/enginescript_install_errors.log`, which any user could create first, so root's writes to it could fail.
+
+### 🏗️ SITE TOOLS, INSTALL, AND UPDATE CHANGES
+
+- **Create Domain and Import Domain:**
+  - A setup that fails partway is rolled back: everything set up for the domain is removed, as Remove Domain does, so you can fix the problem and run it again. Before, the half-set-up site stayed, and the next try stopped because the domain was already there. Cloudflare's DNS records are left as they are. Import Domain is not rolled back once the site is set up and it asks whether the site works.
+  - A domain that is not on the site list, but has parts of a site on the server (files, a vhost, database credentials, or a certificate), is refused before anything changes. Remove Domain cleans it up (choose to type the domain). This also keeps a rollback from deleting anything that was there before.
+  - A failed certificate, WordPress download, WordPress install, or file copy now stops the setup (and rolls it back). Before, the script carried on without them.
+- **One at a time:** Create Domain, Import Domain, Remove Domain, and staging copies no longer run at the same time as each other; two at once could add the same site twice or give two sites the same Redis database. EngineScript updates and the Nginx, PHP, and MariaDB updates also run one at a time. A second run stops with a message.
+- **phpMyAdmin update:** the new version is downloaded and unpacked beside the installed one, with its `config.inc.php`, and swapped in only when it is complete. Before, the update deleted phpMyAdmin first, so a failed download left the server without it.
+- **Admin tools:** Adminer, and a phpMyAdmin install run again after a failure, are also built beside the installed copy and swapped in. A failed Adminer download no longer leaves an empty or broken `index.php`. The control panel, phpSysInfo, and Tiny File Manager already worked this way; all of them now share one function.
+- **MariaDB Diagnostic:** the InnoDB buffer pool line shows the size the tuning plan sets, instead of 45% of RAM, which is not what EngineScript uses.
+- **EngineScript plugins:** Site Exporter and Site Optimizer are downloaded once per update for all sites, instead of once per site. Each is unpacked beside the plugin's folder and then swapped in. Before, the zip was unpacked over the old folder, which kept files the new version had removed, and a failed unpack could leave a mix of both versions.
+- **Install:**
+  - OpenSSL, PCRE2, and zlib are no longer separate install steps. The Nginx build fetches them, at the versions in `enginescript-variables.txt`, for both installs and updates.
+  - A failed Nginx configuration step (folders, configuration files, tuning, or the Cloudflare IP list) now stops the install.
+  - With `SHOW_ENGINESCRIPT_HEADER=1`, the header is now set before Nginx first starts. Before, it was set after, and showed only after the next reload.
+- **Nginx:** the install and the update now build Nginx with the same script, and write its configuration with the same script, so the two can no longer drift apart.
+- **Random credentials:** passwords, database names and users, table prefixes, and phpMyAdmin's secrets are made when they are needed, instead of six random strings every time any script started. Each one now always has its full length; a short one was rare but possible.
+
+### 🗄️ DATABASE CHECK, REMOVE DOMAIN, AND UPDATES
+
+- **Database Tools:**
+  - "MariaDB-Check Database Optimizer" is now "Check & Repair All Tables". It checks every table, repairs any that need it, and updates the index statistics. It no longer rebuilds every table each time it runs. On InnoDB, which every site uses, a rebuild copies each table and its indexes, which slows sites down while it runs and rarely frees much space.
+  - Rebuilding is its own choice, "Optimize All Tables (rebuilds every table)", which explains the cost and asks before it starts.
+- **Remove Domain:** when the site has local backups, it asks whether to delete them too (the default) or keep them. Kept backups include the site archives that Import Domain can set the site up from again, and the summary says where they are. Copies on Amazon S3 are never touched.
+- **Nginx FastCGI buffers:** every server now uses the same buffers for pages read from PHP: 16 of 32 KB (512 KB), with 256 KB for `fastcgi_busy_buffers_size` and `fastcgi_temp_file_write_size`. Servers with less than 1.4 GB of RAM used half, which did not hold most admin pages and saved less than 2 MB in all. Measured WordPress pages are 95 to 180 KB uncompressed, and nginx allocates the buffers only as a page needs them. Existing servers get the new values with their next Nginx update.
+- **EngineScript update:** the installation check runs once per update. Before, the one-time upgrades and the settings sync each ran it again, so one update printed the same check three times. Run on their own, they still check, quietly.
+
+### 🧹 SCRIPT CLEANUP
+
+- **Shared functions:** the prompts, permissions, Cloudflare, and tuning functions are in their own files, which `enginescript-common.sh` loads. The one-time upgrades are loaded only by the updater.
+- **Cloudflare:** Create Domain, Import Domain, Staging, the Nginx real-IP list, and the firewall rules use one set of Cloudflare functions.
+- **Install steps:** the installer records each completed step; the steps no longer check or record that themselves.
+- **Site list:** scripts read and change the list of sites through shared functions.
+
 ## 2026-11-06
+
+### 🧹 SCRIPT CLEANUP
+
+- **Site pickers:** WP-CLI Doctor, WPScan, the three Wordfence CLI tools, testssl.sh, Domain Logs, and Export Domain now list the server's sites with a Cancel option. They listed every folder in `/var/www/sites`, staging copies included.
+- **Create Domain:**
+  - The list of endings adds `org.uk`, `gov.uk`, `ac.uk`, `net.au`, `org.au`, and `org.nz`, the endings the database names already handled.
+  - A last entry, "Other (type the ending)", takes any ending that is not listed, such as `travel` or `co.in`.
+  - Domain names longer than 63 characters are refused, as DNS requires.
+- **Site list:** `/home/EngineScript/sites-list/sites.sh` now holds only the list of sites. Its template also loaded `enginescript-variables.txt` and the install options, so every script that read the list loaded them a second time, partway through, and drew new random values. An update removes those lines from existing lists once; the sites stay.
+- **Commands:** `es.*` and `ng.*` are commands in `/usr/local/bin`, and the new `enginescript` (the menu) is in `/usr/local/sbin`, since `/usr/local/bin/enginescript` is EngineScript's own folder. The matching aliases in root's `.bashrc` are removed when EngineScript updates; they ran the same scripts.
+- **Nginx:**
+  - The binary is stripped once, when it is linked. The build also stripped it twice more after `make install`, and the update a third time. That strip also changed `nginx.old`, the previous binary kept for a rollback.
+  - The update no longer syncs the HTTP/3 settings twice.
+- **Scripts:**
+  - Scripts are executable in git, so setup, the install, and updates no longer reset every file's mode and line ends. The daily permissions job still does, in case something on the server changes them.
+  - Scripts load their settings and shared functions from one file, `scripts/functions/shared/enginescript-env.sh`.
+  - Package commands use `apt-get` instead of `apt`, whose output is not meant for scripts; the Update menu entries now say `apt-get`.
+  - The control panel's API cache files are no longer executable (664).
+  - The Cloudflare IPv6 check in the Nginx real-IP updater is a plain address-range check; the old one only worked by accident.
+  - The firewall is turned on with `ufw --force enable`.
+  - A Cloudflare firewall rule that fails to add now always shows its warning. Before, only a failed UDP rule did.
+- **Removed:**
+  - The disabled Update OpenSSL menu item and its script. Nginx builds its own OpenSSL.
+  - Unused scripts: `ngxtop.sh`, `opcache-gui.sh`, `alias-mysql-pass.sh`, and `alias-virus-scan.sh`.
+  - The old backup scripts (`daily-database-backup.sh`, `hourly-database-backup.sh`, and `weekly-wp-content-backup.sh`). The backup scheduler replaced their cron jobs, and every update rewrites old crontab lines.
+  - Commented-out old code in the MariaDB, repository, and liburing installers, and unused variables in the backup and variables files.
+
+### 🔒 SITE TOOLS SECURITY FIXES
+
+- **Import Domain:** the database is now decompressed straight into the import. Before, it was unpacked to `/tmp/<domain>_db_import.sql`, which every user on the server, `www-data` included, could read for the length of the import, and which stayed behind when the import stopped.
+- **Cloudflare API key:** Create Domain, Import Domain, and Staging now give curl the Cloudflare account email and Global API key on standard input. They were on curl's command line, where any user on the server, `www-data` included, could read them with `ps` while a call ran.
+- **Create Domain and Import Domain:** the site's file permissions are now set as `www-data`, as the daily permissions job does. Root ran `chmod` over files the site can change, so a link planted by a hacked plugin could make root change a file outside the site.
+- **Adminer and Tiny File Manager:** their installers no longer run `chmod` as root in folders `www-data` owns. Adminer's permissions are set as `www-data`, and Tiny File Manager's are set by the admin tools permission step, which already runs as `www-data`.
+- **WP-CLI install:** no longer creates `/tmp/wp-cli-phar`, which nothing used. It made the folder `www-data`'s, then ran `chmod` on it as root; `/tmp` is open to every user, so a link planted at that name could have led the `chmod` elsewhere.
+- **Yarn repository key:** downloaded over HTTPS only, and the download fails on an HTTP error instead of passing an error page to `gpg`, as every other key download already did.
+
+### 🐛 SITE TOOLS, INSTALL, AND UPDATE FIXES
+
+- **Create Domain and Import Domain:**
+  - Domains with a hyphen (`my-site.com`), a leading digit (`1password.com`), or a two-part ending (`example.co.uk`, `example.com.au`) no longer fail when the database is created. Before, the script stopped after Cloudflare, the vhost, and the certificate were already set up.
+  - Both now name the database the same way: the domain without its ending, with hyphens and dots turned into `_`, then a short hash and a random suffix (`my_site_6849d8a7_Ab3d`). Existing sites keep their database names.
+  - The summary at the end now names the credentials file with its `.txt` and points to the backup folders that exist today.
+  - When they finish, they reload Nginx and PHP-FPM instead of running `es.restart`. Before, setting up a site emptied every other site's caches (Redis, FastCGI, OPcache) and restarted Redis, so every site briefly showed Redis Object Cache's error page. Only cached pages left by an earlier site on the same domain are deleted.
+- **Create Domain:** the WordPress admin username, password, and email from the install options are checked right after you choose to install WordPress, before anything is created. Before, a weak password stopped the script after Cloudflare, the vhost, the certificate, and the database were set up.
+- **Import Domain:**
+  - The site's address and table prefix now come from the archive's `manifest.txt` (`home_url` and `table_prefix`), which EngineScript's exports and backups and the EngineScript Site Exporter plugin write. Before, the address came only from `WP_HOME` or `WP_SITEURL` in `wp-config.php`, which most sites do not define, so most imports from other hosts stopped. Archives without these lines still use `wp-config.php` and the table names in the dump.
+  - A site at `www.example.com` can now move to `example.com`, EngineScript's standard (the default), or keep `www.example.com` as its address. Either way both names are served, and WordPress redirects the other name to the site's address. The domain is checked before anything is created, and it can still be changed at the confirmation step.
+  - A site in a folder (`example.com/blog`), or with WordPress in its own folder (`example.com/wp`), is refused before anything is created. EngineScript only hosts sites at the root of their domain.
+  - URLs written as escaped JSON (`https:\/\/example.com`), which page builders store, are now moved to the new address too. After the URLs are moved, the stored `home` and `siteurl` addresses are set to the new address.
+- **Export Domain:** a site whose address was changed to a folder is refused with an error instead of exported, since Import Domain would refuse it.
+- **Staging:** a staging copy of a site that kept `www` now points to the staging domain. Before, its links and its `WP_HOME` kept `www.<domain>`, so it sent visitors to the live site.
+- **es.restart and es.cache:**
+  - `es.restart` (and Server Tools > Restart Services) now does what `es.help` says: it restarts Nginx and PHP-FPM. It no longer empties every cache or restarts Redis. Redis is started only when it is not running, and Nginx is not restarted when its configuration fails `nginx -t`.
+  - `es.cache` still clears every site's caches, but no longer restarts Nginx, PHP-FPM, and Redis afterwards. It reloads PHP-FPM, which is what clears OPcache; before, its OPcache step only emptied a file cache that is turned off.
+  - Neither command restarts a working Redis anymore, which showed Redis Object Cache's error page on every site while Redis started.
+- **Update Server Tools:** liburing is now updated to the version in `enginescript-variables.txt`; before, the step stopped at "already run". The zlib step was removed: zlib is built into Nginx, and the Nginx update fetches it. The closing list now names fail2ban, Gixy-Next, and Lynis, and no longer names PHP Malware Finder.
+- **Remove Domain:**
+  - You now choose the domain from the server's list of sites instead of typing a name and picking an ending from a short list, which left out endings such as `com.au` and `co.nz`. A domain that is not on the list (a site that was only partly set up) can still be typed in.
+  - It asks you to confirm the exact domain before removing anything.
+  - It now removes the site's certificate from acme.sh. Before, acme.sh kept renewing it and installed it again into `/etc/nginx/ssl/<domain>/`.
+  - It also removes the admin subdomain's logs and the site's cached pages. Exports made with Export Domain are kept, and the summary says where.
+- **Analyze Tables:** it now works. It could not log in to MariaDB before, so it analyzed nothing. It now runs `mariadb-check` as root over the local socket, with no password on the command line, and shows only problems.
+- **EngineScript update:** if fetching the new version from GitHub fails, the update now stops with an error instead of carrying on with the copy from the previous fetch.
+- **Nginx install and update:** a failed source download, Brotli build, or patch now stops the build. Before, only a failed compile did, so Nginx could be built without its patch. An update that stops this way leaves the running Nginx untouched. A patch that does not apply to a new Nginx version now fails instead of waiting for an answer at the terminal.
+- **Install:**
+  - An install step that fails now stops the install, with the step's name and where the errors are. Run `es.install` again after fixing the problem: it carries on from that step. Before, the install carried on, and later steps could fail because of the first one.
+  - PCRE2, zlib, liburing, PHP, and MariaDB no longer mark themselves complete after a failed download, build, repository setup, or configuration.
+  - When the final check finds steps that are not complete, the server is no longer rebooted, so the list of missing steps stays on screen.
+- **Import Domain instructions:** the highlighted and underlined text now shows; the colors it used were never defined.
+- **wp-config.php template:** the commented-out Contact Form 7 setting (`WPCF7_UPLOADS_TMP_DIR`) now points to the site's `html/wp-content/uploads/wpcf7_uploads` folder. It left out `html`, so uncommenting it gave a folder that does not exist. Existing sites keep their copy of the line; add `html/` to the path before uncommenting it there.
 
 ### 📦 FILES BACKUPS ARE NOW IMPORTABLE SITE ARCHIVES
 

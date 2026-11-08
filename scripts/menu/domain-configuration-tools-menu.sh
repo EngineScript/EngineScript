@@ -7,24 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-# Wait for a key before the menu redraws
-pause() {
-  echo ""
-  read -n 1 -s -r -p "Press any key to continue"
-  echo ""
-  echo ""
-}
 
 # One certificate's expiry date and the days left
 show_certificate() {
@@ -41,10 +29,7 @@ show_certificate() {
 # The certificate of every site, and the Cloudflare certificate that origin pulls are checked with
 show_certificates() {
   local SITES=() site
-  if [[ -f /home/EngineScript/sites-list/sites.sh ]]; then
-    # shellcheck source=/dev/null
-    source /home/EngineScript/sites-list/sites.sh
-  fi
+  es_sites
   echo ""
   echo "Site certificates (acme.sh renews them on its own before they expire):"
   [[ "${#SITES[@]}" -eq 0 ]] && echo "  No sites yet."

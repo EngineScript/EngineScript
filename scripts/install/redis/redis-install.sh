@@ -7,25 +7,15 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-source /etc/enginescript/install-state.conf
-if [[ "${REDIS}" = 1 ]]; then
-    echo "REDIS script has already run"
-    exit 0
-fi
-
 # Install Redis (from Redis's repository, packages.redis.io, added by repositories-install.sh)
-if ! apt install -qy redis redis-server redis-tools; then
+if ! apt-get install -qy redis redis-server redis-tools; then
   echo "Error: Installing Redis failed." >&2
   exit 1
 fi
@@ -80,6 +70,4 @@ set_redis_permissions
 # Redis Service Check
 verify_service_running "redis" "Redis"
 
-# Mark the installation as complete
-set_install_state "REDIS" "1"
 echo "Redis completed successfully. Script done."

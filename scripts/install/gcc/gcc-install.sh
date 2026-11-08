@@ -7,22 +7,12 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript Variables
-source /usr/local/bin/enginescript/enginescript-variables.txt || { echo "Error: Failed to source /usr/local/bin/enginescript/enginescript-variables.txt" >&2; exit 1; }
-source /home/EngineScript/enginescript-install-options.txt || { echo "Error: Failed to source /home/EngineScript/enginescript-install-options.txt" >&2; exit 1; }
-
-# Source shared functions library
-source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-common.sh" >&2; exit 1; }
+# EngineScript settings and shared functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
 
 #----------------------------------------------------------------------------------
 # Start Main Script
-
-source /etc/enginescript/install-state.conf
-if [[ "${GCC}" = 1 ]]; then
-    echo "GCC script has already run"
-    exit 0
-fi
 
 # GCC
 
@@ -42,7 +32,7 @@ case "${UBUNTU_VERSION}" in
 esac
 
 for version in "${GCC_VERSIONS[@]}"; do
-  apt install "g++-${version}" "gcc-${version}" -y || { echo "Error: Could not install GCC ${version}." >&2; exit 1; }
+  apt-get install "g++-${version}" "gcc-${version}" -y || { echo "Error: Could not install GCC ${version}." >&2; exit 1; }
 done
 
 # Create new GCC alternatives: the first version gets the higher priority
@@ -53,6 +43,4 @@ for version in "${GCC_VERSIONS[@]}"; do
   priority=$((priority - 10))
 done
 
-# Mark the installation as complete
-set_install_state "GCC" "1"
 echo "GCC completed successfully. Script done."

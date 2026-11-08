@@ -7,11 +7,13 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 SUPPORTED_PHP_VERSIONS=(
   "8.3"
   "8.4"
   "8.5"
 )
+# shellcheck disable=SC2034  # read by the EngineScript functions under test
 PHP_VERSION_OVERRIDE=""
 
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
