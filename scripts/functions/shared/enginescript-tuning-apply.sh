@@ -143,6 +143,7 @@ function apply_mariadb_tuning() {
     [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
     cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
     install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+    install -d -o mysql -g mysql -m 750 /var/lib/mysql-tmp
     if ! /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${staged}" 2>> "${ES_STEP_ERROR_LOG}"; then
         echo "Error: Tuning the new MariaDB configuration failed; kept the current one." >&2
         rm -f "${staged}"

@@ -49,11 +49,6 @@ HIGH_SECURITY_SSL=0
 # Cloudflare does not currently support HTTP/3 for origin fetches. HTTP/3 is not useful until they do.
 INSTALL_HTTP3=0
 
-## Expanded PHP Extensions Support ##
-# Adds the following extensions to the standard PHP configuration:
-# SOAP, SQLite3
-INSTALL_EXPANDED_PHP=0
-
 ## PHP Version Override ##
 # Leave empty to use the default PHP version (currently 8.5)
 # Set to "8.4" or "8.3" to install an older version instead

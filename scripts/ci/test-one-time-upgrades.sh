@@ -109,6 +109,44 @@ SITES=()
 source "${REPO_ROOT}/scripts/functions/cron/sites.sh"
 check "the template only sets an empty SITES" "${#SITES[@]}:$(grep -c '^source' "${REPO_ROOT}/scripts/functions/cron/sites.sh")" "0:0"
 
+echo "migrate_nginx_php_cache_control"
+# The two files as the previous version installed them: the current ones without the fix
+mkdir -p "${WORK}/nginx"
+old_nginx_files() {
+  local globals="${REPO_ROOT}/config/etc/nginx/globals"
+  # shellcheck disable=SC2016  # an Nginx line, matched as text
+  head -n "$(grep -n -x -F 'expires $expires;' "${globals}/map-expires.conf" | cut -d: -f1)" "${globals}/map-expires.conf" > "${WORK}/nginx/map-expires.conf"
+  sed '/^# Keep the Cache-Control that WordPress sends/,/^$/d' "${globals}/php-fpm.conf" > "${WORK}/nginx/php-fpm.conf"
+}
+old_nginx_files
+check "the old files have no fix" "$(cat "${WORK}/nginx/"*.conf | grep -c 'es_php_expires')" "0"
+NGINX_T=0
+RELOADS=0
+nginx() { return "${NGINX_T}"; }
+systemctl() { [[ "$1" == "reload" ]] && RELOADS=$((RELOADS + 1)); return 0; }
+ES_NGINX_GLOBALS="${WORK}/nginx" migrate_nginx_php_cache_control > /dev/null
+check "php-fpm.conf now matches the current file" \
+  "$(diff -q "${WORK}/nginx/php-fpm.conf" "${REPO_ROOT}/config/etc/nginx/globals/php-fpm.conf" > /dev/null && echo same || echo different)" "same"
+check "map-expires.conf now matches the current file" \
+  "$(diff -q "${WORK}/nginx/map-expires.conf" "${REPO_ROOT}/config/etc/nginx/globals/map-expires.conf" > /dev/null && echo same || echo different)" "same"
+check "Nginx reloads once" "${RELOADS}" "1"
+check "no backup files are left" "$(find "${WORK}/nginx" -name '*.pre-cache-control' | wc -l | tr -d ' ')" "0"
+ES_NGINX_GLOBALS="${WORK}/nginx" migrate_nginx_php_cache_control > /dev/null
+check "running it again changes nothing" "$(grep -c 'es_php_expires' "${WORK}/nginx/php-fpm.conf"):${RELOADS}" "1:1"
+old_nginx_files
+cp "${WORK}/nginx/php-fpm.conf" "${WORK}/php-fpm.conf.before"
+NGINX_T=1
+status=0
+ES_NGINX_GLOBALS="${WORK}/nginx" migrate_nginx_php_cache_control > /dev/null 2>&1 || status=$?
+check "a failed nginx -t reports the failure" "${status}" "1"
+check "a failed nginx -t puts php-fpm.conf back" \
+  "$(diff -q "${WORK}/nginx/php-fpm.conf" "${WORK}/php-fpm.conf.before" > /dev/null && echo same || echo different)" "same"
+check "a failed nginx -t puts map-expires.conf back" "$(grep -c 'es_php_expires' "${WORK}/nginx/map-expires.conf")" "0"
+check "a failed nginx -t does not reload Nginx" "${RELOADS}" "1"
+unset -f nginx systemctl
+ES_NGINX_GLOBALS="${WORK}/none" migrate_nginx_php_cache_control
+check "a server without the files is fine" "$?" "0"
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]

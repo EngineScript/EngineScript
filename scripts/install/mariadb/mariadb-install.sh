@@ -106,8 +106,9 @@ fi
 systemctl stop mariadb.service
 cp -rf /usr/local/bin/enginescript/config/etc/mysql/my.cnf /etc/mysql/my.cnf
 
-# Directory for secure_file_priv (my.cnf); MariaDB does not start without it
+# Directories for secure_file_priv and tmpdir (my.cnf); MariaDB does not start without them
 install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+install -d -o mysql -g mysql -m 750 /var/lib/mysql-tmp
 
 # Create Logs
 touch /var/log/mysql/mysql-error.log

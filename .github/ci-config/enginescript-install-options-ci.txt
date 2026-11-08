@@ -49,10 +49,6 @@ ENGINESCRIPT_AUTO_UPDATE=0
 # Disable HTTP/3 for CI testing to reduce complexity
 INSTALL_HTTP3=0
 
-## Expanded PHP Extensions Support ##
-# Enable for testing PHP compilation
-INSTALL_EXPANDED_PHP=1
-
 # Automatically perform lossless compression (Disabled for CI)
 # Disable image optimization in CI
 AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION=0

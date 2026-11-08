@@ -93,6 +93,13 @@ if ! cp -f /usr/local/bin/enginescript/config/etc/php/www.conf "/etc/php/${PHP_V
 fi
 sed -i "s|SEDPHPVER|${PHP_VER}|g" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>> "${ES_STEP_ERROR_LOG}"
 
+# Extensions PHP-FPM does not load: FFI (lets PHP call C libraries directly; no WordPress feature
+# uses it) and readline (interactive terminal input). The command line keeps both, for WP-CLI and
+# other tools. phpdismod records the choice, so package upgrades do not turn them back on.
+if command -v phpdismod > /dev/null 2>&1; then
+  phpdismod -v "${PHP_VER}" -s fpm ffi readline 2>> "${ES_STEP_ERROR_LOG}"
+fi
+
 # Tune PHP Configuration
 apply_php_tuning
 

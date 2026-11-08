@@ -26,16 +26,6 @@ apt-get install -qy "${php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}" || {
   echo "Error: Unable to install one or more packages. Exiting..."
     exit 1
 }
-
-if [[ "$INSTALL_EXPANDED_PHP" == "1" ]]; then
-    mapfile -t expanded_php_packages < <(get_expanded_php_packages_array "${PHP_VER}")
-
-    # Install the packages with error checking
-    apt-get install -qy "${expanded_php_packages[@]}" 2>> "${ES_STEP_ERROR_LOG}" || {
-      echo "Error: Unable to install one or more packages. Exiting..."
-      exit 1
-    }
-fi
 print_last_errors
 debug_pause "PHP Package Installation"
 
