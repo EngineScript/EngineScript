@@ -182,8 +182,9 @@ fi
 
 # 3. Prepare and check the new configuration while MariaDB keeps running
 cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${STAGED_CONFIG}"
-# Directory for secure_file_priv (my.cnf); MariaDB does not start without it
+# Directories for secure_file_priv and tmpdir (my.cnf); MariaDB does not start without them
 install -d -o mysql -g mysql -m 750 /var/lib/mysql-files
+install -d -o mysql -g mysql -m 750 /var/lib/mysql-tmp
 run_step "MariaDB Configuration" /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${STAGED_CONFIG}"
 
 CONFIG_PROBLEM=""

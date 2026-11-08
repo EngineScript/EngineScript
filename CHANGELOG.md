@@ -6,6 +6,15 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-07
 
+### 🔐 NGINX AND MARIADB CONFIGURATION FIXES
+
+- **Logged-in pages keep WordPress's privacy headers:** WordPress marks logged-in pages, wp-admin, wp-login.php, and REST responses for logged-in users `Cache-Control: no-cache, must-revalidate, max-age=0, no-store, private`. Nginx replaced that with just `no-cache`, so a shared cache (such as a Cloudflare "Cache Everything" rule) was allowed to store a logged-in page. Nginx now keeps the Cache-Control that PHP sends, and adds its own only to responses without one, as before.
+- **HSTS no longer asks for preloading:** the `Strict-Transport-Security` header dropped `preload`. Sending it counts as asking browsers to add the domain to their built-in HTTPS list, which also requires `includeSubDomains`, which EngineScript does not send. The two-year `max-age` is unchanged.
+- **PHP sees the visitor's verified address in X-Forwarded-For:** PHP received the request's own `X-Forwarded-For`, which begins with whatever the visitor sent (Cloudflare appends to it), with the real address at the end. Plugins that read its first entry for login limits, comments, or rate limits could be fooled. It is now the same verified address as `REMOTE_ADDR`.
+- **MariaDB temporary files on disk:** MariaDB's on-disk temporary tables and sort files now go to `/var/lib/mysql-tmp` instead of `/tmp`. Ubuntu 26.04 keeps `/tmp` in RAM (up to half of it), which the memory plan does not count, and a large query could fill it.
+- **MariaDB no longer listens on TCP port 3306:** nothing in EngineScript used it (WordPress, phpMyAdmin, Adminer, WP-CLI, and the backups connect over the local socket). Code of your own that connects to `127.0.0.1` must use `localhost` instead.
+- **Existing servers:** the Nginx changes arrive with the next Nginx update, and the MariaDB changes with the next MariaDB update (or a re-tune, followed by a MariaDB restart).
+
 ### 🔒 SITE TOOLS SECURITY
 
 - **Create Domain and Import Domain run WP-CLI as `www-data`:** downloading and installing WordPress, importing the database, moving the URLs, and installing plugins now run as `www-data` instead of root with `--allow-root`. An imported site brings its own `wp-config.php`, plugins, and theme from another host, and that code ran as root during the import. Backups, cron jobs, and staging copies already ran WP-CLI this way.
