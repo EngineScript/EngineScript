@@ -284,30 +284,6 @@ jobs:
             echo "::warning::Failed to fetch NGINX Cache Purge Module version, keeping current version"
           fi
 
-          # NGINX Dynamic TLS Records Patch - Track repository commits
-          echo "::debug::Fetching NGINX Dynamic TLS Records Patch latest commit..."
-          LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(curl -sL --proto '=https' https://api.github.com/repos/nginx-modules/ngx_http_tls_dyn_size/commits/master | jq -r '.sha')
-          echo "::debug::Fetched commit SHA: '$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA'"
-
-          CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA=$(get_current_version "NGINX_DYN_TLS_PATCH_COMMIT_SHA")
-
-          if [[ -n "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" && "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" != "null" && "$CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA" != "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" ]]; then
-            sed -i "s/^NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA\"/" enginescript-variables.txt
-            SOFTWARE_VERSIONS_CHANGED=true
-            echo "::notice::NGINX_DYN_TLS_PATCH_COMMIT_SHA update detected: $CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA -> $LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA"
-
-            # Add to changelog
-            if [[ -z "$CHANGELOG_CONTENT" ]]; then
-              CHANGELOG_CONTENT="| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7} | **${LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7}** |"
-            else
-              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| NGINX_DYN_TLS_PATCH | ${CURRENT_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7} | **${LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA:0:7}** |"
-            fi
-          else
-            if [[ -z "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" || "$LATEST_NGINX_DYN_TLS_PATCH_COMMIT_SHA" == "null" ]]; then
-              echo "::warning::Failed to fetch NGINX Dynamic TLS Records Patch commit SHA, keeping current SHA"
-            fi
-          fi
-
 
           # Font Awesome: the control panel loads it from cdnjs, so the version comes from cdnjs,
           # which lists only what it serves. Stable releases only: x.y.z, no beta or release candidate.
@@ -389,7 +365,6 @@ jobs:
               sed -i \
                 -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
                 -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
-                -e "s/^NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"[^\"]*\"/NGINX_DYN_TLS_PATCH_COMMIT_SHA=\"$(get_current_version NGINX_DYN_TLS_PATCH_COMMIT_SHA)\"/" \
                 -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
                 -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
                 -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \

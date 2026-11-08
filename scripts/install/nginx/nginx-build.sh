@@ -16,7 +16,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #
 # Build and install Nginx from source, for both the install (nginx-install.sh) and the update
 # (nginx-update.sh): download Nginx and its modules, fetch the OpenSSL, zlib, and PCRE2 sources
-# it compiles in (the versions in enginescript-variables.txt), patch, compile, and make install.
+# it compiles in (the versions in enginescript-variables.txt), compile, and make install.
 # The first step that fails stops the build with exit 1. make install replaces /usr/sbin/nginx
 # (keeping the previous binary as nginx.old); a caller that keeps a backup restores it when the
 # build fails.
@@ -26,5 +26,4 @@ run_step "Brotli" /usr/local/bin/enginescript/scripts/install/nginx/nginx-brotli
 run_step "OpenSSL" /usr/local/bin/enginescript/scripts/install/openssl/openssl-install.sh || die "The OpenSSL source download failed."
 run_step "zlib" /usr/local/bin/enginescript/scripts/install/zlib/zlib-install.sh || die "The zlib source download failed."
 run_step "PCRE2" /usr/local/bin/enginescript/scripts/install/pcre/pcre-install.sh || die "The PCRE2 source download failed."
-run_step "Patch Nginx" /usr/local/bin/enginescript/scripts/install/nginx/nginx-patch.sh || die "Patching Nginx failed."
 run_step "Compile Nginx" /usr/local/bin/enginescript/scripts/install/nginx/nginx-compile.sh || die "Nginx failed to compile."
