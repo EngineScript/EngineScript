@@ -412,6 +412,7 @@ case "${ACTION}" in
     # One site change at a time (Remove Domain already holds the lock when it deletes a copy)
     acquire_lock "sites" || exit 1
     ;;
+  *) ;; # Not an action: the usage error below
 esac
 
 case "${ACTION}" in

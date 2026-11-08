@@ -227,8 +227,9 @@ create_backup_directories "${DOMAIN}" || die "Could not create the backup folder
 
 # Site Root, owned by www-data, which runs WP-CLI on the site (wp_site)
 WP_SITE_ROOT="/var/www/sites/${DOMAIN}/html"
-mkdir -p "${WP_SITE_ROOT}" && chown www-data:www-data "/var/www/sites/${DOMAIN}" "${WP_SITE_ROOT}" \
-  || die "Could not create ${WP_SITE_ROOT}."
+if ! { mkdir -p "${WP_SITE_ROOT}" && chown www-data:www-data "/var/www/sites/${DOMAIN}" "${WP_SITE_ROOT}"; }; then
+  die "Could not create ${WP_SITE_ROOT}."
+fi
 cd "${WP_SITE_ROOT}" || die "Failed to change to ${WP_SITE_ROOT}"
 
 if [[ "${INSTALL_WORDPRESS}" == "1" ]]; then

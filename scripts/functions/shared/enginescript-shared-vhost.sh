@@ -124,7 +124,7 @@ remove_site() {
   fi
 
   # Remove MySQL credentials
-  if test -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt"
+  if [[ -f "/home/EngineScript/mysql-credentials/${DOMAIN}.txt" ]]
   then
     echo -e "${BOLD}MySQL Credentials Removal Check: Passed\n\n${NORMAL}Removing MySQL credentials for ${DOMAIN}...\n\n"
     # shellcheck source=/dev/null
@@ -144,7 +144,7 @@ remove_site() {
 
   # Remove Nginx vhosts
   for VHOST in "/etc/nginx/sites-enabled/${DOMAIN}.conf" "/etc/nginx/admin/admin.${DOMAIN}.conf"; do
-    if test -f "${VHOST}"; then
+    if [[ -f "${VHOST}" ]]; then
       echo -e "${BOLD}Nginx Vhost Removal Check: Passed\n\n${NORMAL}Removing ${VHOST}...\n\n"
       rm -rf "${VHOST}"
     else

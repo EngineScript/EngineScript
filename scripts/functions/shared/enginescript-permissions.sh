@@ -48,12 +48,12 @@ function set_www_data_tree() {
 # Set permissions for EngineScript frontend directories and files
 function set_enginescript_frontend_permissions() {
     # Set permissions for /var/www/admin/control-panel (dashboard)
-    if [ -d "/var/www/admin/control-panel" ]; then
+    if [[ -d "/var/www/admin/control-panel" ]]; then
         set_www_data_tree /var/www/admin/control-panel
     fi
 
     # Set permissions for /var/www/admin/tools (phpMyAdmin, TinyFileManager, etc.)
-    if [ -d "/var/www/admin/tools" ]; then
+    if [[ -d "/var/www/admin/tools" ]]; then
         set_www_data_tree /var/www/admin/tools
     fi
 

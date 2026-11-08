@@ -64,6 +64,7 @@ function prompt_yes_no() {
         case "${default_value,,}" in
             "y"|"yes") prompt_suffix=" [Y/n/exit]" ;;
             "n"|"no") prompt_suffix=" [y/N/exit]" ;;
+            *) prompt_suffix=" [y/n/exit]" ;;
         esac
     else
         prompt_suffix=" [y/n/exit]"

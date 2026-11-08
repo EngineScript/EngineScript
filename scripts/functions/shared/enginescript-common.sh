@@ -316,7 +316,7 @@ function clear_nginx_cache() {
 function clear_opcache() {
     echo "Clearing PHP OPcache"
     rm -rf /var/cache/opcache/* || {
-        echo "Error: Failed to clear the OPcache file cache."
+        echo "Error: Failed to clear the OPcache file cache." >&2
     }
     if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
         systemctl reload "php${PHP_VER}-fpm" || {
@@ -701,9 +701,11 @@ function es_site_add() {
         return 0
     fi
     if [[ ! -f "${sites_file}" ]]; then
-        mkdir -p "$(dirname "${sites_file}")" \
-            && cp /usr/local/bin/enginescript/scripts/functions/cron/sites.sh "${sites_file}" \
-            || { echo "Error: Failed to create the site list at ${sites_file}" >&2; return 1; }
+        if ! { mkdir -p "$(dirname "${sites_file}")" \
+            && cp /usr/local/bin/enginescript/scripts/functions/cron/sites.sh "${sites_file}"; }; then
+            echo "Error: Failed to create the site list at ${sites_file}" >&2
+            return 1
+        fi
     fi
     if ! grep -q '^SITES=(' "${sites_file}"; then
         echo "Error: ${sites_file} has no SITES=( line, so ${domain} was not added." >&2
@@ -1852,8 +1854,10 @@ function build_phpmyadmin() {
         return 1
     fi
     # The release's files go straight into the folder
-    (shopt -s dotglob && mv "${dir}/${top}"/* "${dir}/") && rmdir "${dir}/${top}" \
-        || { echo "Error: Failed to unpack phpMyAdmin into ${dir}" >&2; return 1; }
+    if ! { (shopt -s dotglob && mv "${dir}/${top}"/* "${dir}/") && rmdir "${dir}/${top}"; }; then
+        echo "Error: Failed to unpack phpMyAdmin into ${dir}" >&2
+        return 1
+    fi
     mkdir -p "${dir}/tmp"
     if [[ -f "${installed_config}" ]]; then
         cp -p "${installed_config}" "${dir}/config.inc.php" \

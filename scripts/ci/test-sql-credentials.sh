@@ -97,7 +97,9 @@ for length in 2 4 8 16 24 32; do
     fail "es_random ${length} gave '${value}'"
   fi
 done
-if [[ "$(es_random 32)" != "$(es_random 32)" ]]; then
+first_draw="$(es_random 32)"
+second_draw="$(es_random 32)"
+if [[ "${first_draw}" != "${second_draw}" ]]; then
   pass "es_random gives a new string on each call"
 else
   fail "es_random gave the same string twice"
