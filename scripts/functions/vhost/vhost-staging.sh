@@ -187,7 +187,7 @@ create_staging_database() {
   fi
   local user password
   user="$(es_random 16)"
-  password="$(es_random 32)"
+  password="$(es_random 32)" # nosemgrep: codacy.bash.security.hard-coded-password -- generated, not hard-coded
   validate_install_credentials "${user}" "${password}" "${STAGING}" || return 1
   write_credentials_file "${CREDENTIALS_DIR}" "${STAGING}" "${STAGING_DB}" "${user}" "${password}"
   load_staging_credentials || return 1
