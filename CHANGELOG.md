@@ -4,6 +4,22 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-08
+
+### 🔧 UPDATES FOR EXISTING SERVERS
+
+- **fail2ban on existing servers:** servers set up before fail2ban was part of the install get it with this update (a one-time upgrade). It bans an address for an hour after 5 failed SSH logins within 10 minutes. Before, only Update Server Tools installed it on an existing server.
+- **Site vhosts from older versions:** the Nginx update now comments out `ssl_trusted_certificate` in site and admin vhosts (it is only used for OCSP stapling, which is off) and removes the `fastcgi_split_path_info` lines from the admin tools' PHP locations, which had no effect. New vhosts already looked like this.
+- **Old OPcache log rotation removed:** `/etc/logrotate.d/opcache`, left by older versions for a log PHP no longer writes, is deleted.
+- **First update from an older version:** the updater of versions from before November 2026 ran a script that no longer exists, and wrote "No such file or directory" to the error log. An empty stand-in is back in its place.
+- **MariaDB re-tune:** older MariaDB releases cannot grow the buffer pool past the size they started with until they restart, and kept the smaller pool without an error. The re-tune now says so instead of reporting the new size as applied.
+
+### ⚙️ OPTIONS AND DOCUMENTATION
+
+- **High Security SSL no longer turns on FIPS packages:** with an Ubuntu Pro token, `HIGH_SECURITY_SSL=1` also ran `pro enable fips-updates`, which replaces the kernel and needs a reboot. The option now only sets the certificate key size (EC-384). Enable FIPS yourself with `pro enable fips-updates` if you need it; servers that already have it keep it.
+- **Install options:** the comments no longer say the control panel can be reached by the server's IP address (only `admin.<your domain>` works) or that High Security SSL disables TLS 1.1 (Nginx never allows it).
+- **README:** the minimum is 1 GB of RAM, with 2 GB or more recommended. The Brotli and Gzip from origin section lists only features Cloudflare still has, and says that EngineScript turns Automatic HTTPS Rewrites on. The software table adds ngx_brotli, removes Maldet (not installed), and shows the current Font Awesome version; the weekly version check now keeps that table in line with `enginescript-variables.txt` even when a version was changed by hand.
+
 ## 2026-11-07
 
 ### 🔐 NGINX, PHP, MARIADB, AND REDIS CONFIGURATION FIXES

@@ -371,3 +371,15 @@ MAP
         systemctl reload nginx
     fi
 }
+
+# ----------------------------------------------------------------
+# Install fail2ban on servers set up before it was part of the install
+#
+# fail2ban bans an address for an hour after 5 failed SSH logins within 10 minutes. New installs
+# get it in the tools step; existing servers only got it from Update Server Tools. Servers that
+# already have it are left alone.
+function install_fail2ban() {
+    dpkg-query -W -f='${Status}' fail2ban 2> /dev/null | grep -q 'ok installed' && return 0
+    echo "Installing fail2ban (bans addresses after repeated failed SSH logins)..."
+    "${ES_FAIL2BAN_SCRIPT:-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh}"
+}

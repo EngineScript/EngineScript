@@ -46,6 +46,8 @@ ONE_TIME_UPGRADES=(
   remove_site_list_variable_sources
   # Nginx: logged-in pages keep WordPress's Cache-Control (private, no-store)
   migrate_nginx_php_cache_control
+  # SSH: fail2ban on servers set up before it was part of the install
+  install_fail2ban
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

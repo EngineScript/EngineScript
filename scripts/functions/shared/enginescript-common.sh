@@ -1131,6 +1131,17 @@ function migrate_nginx_vhosts() {
                     -e 's|^  access_log .*if=\$es_failed_request;$|  access_log off;|' "${file_path}"
             fi
         fi
+
+        # 2026-11: OCSP stapling is off, so vhosts no longer load the certificate chain for it
+        if grep -q '^  ssl_trusted_certificate ' "${file_path}"; then
+            sed -i 's|^  ssl_trusted_certificate |  # Only used for OCSP stapling (disabled, see sslshared.conf)\n  #ssl_trusted_certificate |' "${file_path}"
+        fi
+
+        # 2026-11: the admin tools' PHP locations check that the script exists (try_files $uri
+        # =404), so no PATH_INFO reaches PHP and fastcgi_split_path_info does nothing
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]] && grep -q '^[[:space:]]*fastcgi_split_path_info ' "${file_path}"; then
+            sed -i '/^[[:space:]]*fastcgi_split_path_info /d' "${file_path}"
+        fi
     done
 }
 
@@ -1367,6 +1378,8 @@ function install_enginescript_cron() {
 function install_enginescript_logrotate() {
     cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
     chmod 644 /etc/logrotate.d/enginescript
+    # Older versions rotated an OPcache log that PHP no longer writes
+    rm -f /etc/logrotate.d/opcache
 }
 
 

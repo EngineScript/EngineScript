@@ -27,7 +27,7 @@ Run EngineScript as the root user on a fresh VPS. Setup removes existing Apache,
 
 - **A Newly Created VPS** *([DigitalOcean](https://m.do.co/c/e57cc8492285) droplet recommended)*
 - **Ubuntu 24.04 or 26.04 LTS (64-bit)** *(choose either when you create the server)*
-- **2 GB RAM**
+- **1 GB RAM minimum, 2 GB or more recommended**
 - **Cloudflare** *(Free or Paid)*
 
 ----------
@@ -86,14 +86,11 @@ Although we do our best to automate this process, there are a few settings that 
 
 #### Brotli and Gzip from Origin
 
-For Cloudflare to support compression from origin, the following features must be disabled:
+Cloudflare passes the server's Brotli or Gzip responses on to visitors as they are, unless a feature changes the page on the way; Cloudflare then compresses that page again itself. These features change pages:
 
 - Email Obfuscation
 - Rocket Loader
-- Server-Side Excludes (SSE)
-- Mirage
-- HTML Minification (JavaScript and CSS can remain enabled)
-- Automatic HTTPS Rewrites
+- Automatic HTTPS Rewrites (EngineScript turns it on, so `http://` links in a page become `https://`; Cloudflare compresses those HTML pages itself)
 
 For more information, see [This is Brotli from Origin](https://blog.cloudflare.com/this-is-brotli-from-origin/).
 
@@ -180,6 +177,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |NGINX MAINLINE|1.31.8|<https://nginx.org/en/download.html>|
 |NGINX CACHE PURGE|3.0.4|<https://github.com/nginx-modules/ngx_cache_purge>|
 |NGINX HEADERS MORE|0.41|<https://github.com/openresty/headers-more-nginx-module>|
+|NGINX BROTLI|Latest|<https://github.com/google/ngx_brotli>|
 |OPENSSL|4.1.0|<https://www.openssl.org/source/>|
 |PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
 |ZLIB|1.3.2|<https://github.com/madler/zlib>|
@@ -190,7 +188,7 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||
-|Font Awesome|7.0.1|<https://github.com/FortAwesome/Font-Awesome>|
+|Font Awesome|7.3.1|<https://github.com/FortAwesome/Font-Awesome>|
 |TinyFileManager|2.6|<https://github.com/prasathmani/tinyfilemanager>|
 |**Database Management**|||
 |ADMINER|||
@@ -214,7 +212,6 @@ EngineScript includes a comprehensive web-based admin control panel accessible a
 |WP-CLI: doctor-command||<https://github.com/wp-cli/doctor-command>|
 |WP-CLI: WP Launch Check||<https://github.com/pantheon-systems/wp_launch_check>|
 |**Security**|||
-|MALDETECT||<https://www.rfxn.com/projects/linux-malware-detect/>|
 |UNCOMPLICATED FIREWALL (UFW)||Bundled with Ubuntu|
 |WORDFENCE CLI||<https://github.com/wordfence/wordfence-cli/releases>|
 |WPSCAN||<https://wpscan.com/>|

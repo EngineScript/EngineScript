@@ -147,6 +147,18 @@ unset -f nginx systemctl
 ES_NGINX_GLOBALS="${WORK}/none" migrate_nginx_php_cache_control
 check "a server without the files is fine" "$?" "0"
 
+echo "install_fail2ban"
+printf '#!/bin/bash\necho run >> "%s/f2b-runs"\n' "${WORK}" > "${WORK}/fail2ban.sh"
+chmod +x "${WORK}/fail2ban.sh"
+F2B_STATUS="unknown ok not-installed"
+dpkg-query() { echo "${F2B_STATUS}"; }
+ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
+check "a server without fail2ban runs the install script" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
+F2B_STATUS="install ok installed"
+ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
+check "a server with fail2ban is left alone" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
+unset -f dpkg-query
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]

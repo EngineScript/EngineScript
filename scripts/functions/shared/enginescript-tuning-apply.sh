@@ -138,7 +138,7 @@ function set_running_oom_score_adj() {
 # innodb_open_files take effect at MariaDB's next restart. The previous file is kept as
 # /etc/mysql/my.cnf.enginescript-previous.
 function apply_mariadb_tuning() {
-    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement refused=0
+    local staged=/etc/mysql/my.cnf.enginescript-new check rc io_max statement refused=0 have want
 
     [[ -e /etc/mysql/my.cnf ]] && command -v mariadbd > /dev/null 2>&1 || return 0
     cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
@@ -186,6 +186,14 @@ function apply_mariadb_tuning() {
             refused=1
         fi
     done
+    # Older MariaDB releases cap a live resize at the buffer pool size they started with
+    # (innodb_buffer_pool_size_max), and keep the smaller pool without an error
+    have="$(mariadb -N -B -e 'SELECT @@innodb_buffer_pool_size' 2> /dev/null)"
+    want=$(( $(tuning_get MARIADB_BUFFER_POOL_MB) * 1048576 ))
+    if [[ "${have}" =~ ^[0-9]+$ ]] && (( have + 67108864 < want )); then
+        echo "Warning: MariaDB kept its buffer pool at $(( have / 1048576 )) MB, the most it allows without a restart." >&2
+        refused=1
+    fi
     set_running_oom_score_adj mariadbd -600
     if (( refused == 0 )); then
         echo "MariaDB: applied the tuning plan (buffer pool $(tuning_get MARIADB_BUFFER_POOL_MB) MB) without a restart."
