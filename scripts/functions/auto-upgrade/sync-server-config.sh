@@ -46,6 +46,11 @@ print_last_errors
 install_enginescript_sysctl 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
+# The systemd journal (capped at 500 MB), fail2ban's settings, and the login message
+install_enginescript_journald 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+install_enginescript_fail2ban_config 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+install_enginescript_motd 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+print_last_errors
 # Transparent Huge Pages: switched off before the services start
 if [[ -f /etc/systemd/system/disable-thp.service ]]; then
   { cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service \

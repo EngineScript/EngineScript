@@ -32,9 +32,6 @@ if [[ "${UBUNTU_PRO_TOKEN}" != "PLACEHOLDER" && -n "${UBUNTU_PRO_TOKEN}" ]]; the
         pro enable esm-infra --assume-yes || echo "ESM Infra already enabled or not available"
         pro enable esm-apps --assume-yes || echo "ESM Apps already enabled or not available"
         
-        # FIPS packages replace the kernel and need a reboot, so they stay an explicit choice:
-        # pro enable fips-updates
-        
         # Show status
         echo ""
         echo "Ubuntu Pro Status:"

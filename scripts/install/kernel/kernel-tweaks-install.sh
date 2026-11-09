@@ -17,4 +17,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Kernel Tweaks
 install_enginescript_sysctl
 
+# The systemd journal, capped at 500 MB
+install_enginescript_journald
+
 echo "Kernel Tweaks completed successfully. Script done."

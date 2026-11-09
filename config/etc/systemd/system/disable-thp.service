@@ -1,9 +1,11 @@
 [Unit]
 Description=Disable Transparent Huge Pages (THP)
 ConditionPathExists=/sys/kernel/mm/transparent_hugepage/enabled
-# Before the services start, so none of them allocates memory while THP is still on (units
-# that are not installed are ignored)
-Before=mariadb.service redis-server.service php8.3-fpm.service php8.4-fpm.service php8.5-fpm.service nginx.service
+# Early in boot, before basic.target, which every ordinary service starts after: none of them
+# (MariaDB, Redis, any PHP-FPM version, Nginx) allocates memory while THP is still on
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+Before=basic.target
 
 [Service]
 Type=oneshot

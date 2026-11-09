@@ -12,11 +12,16 @@ Changes are organized by date, with the most recent changes listed first.
 - **Site vhosts from older versions:** the Nginx update now comments out `ssl_trusted_certificate` in site and admin vhosts (it is only used for OCSP stapling, which is off) and removes the `fastcgi_split_path_info` lines from the admin tools' PHP locations, which had no effect. New vhosts already looked like this.
 - **Old OPcache log rotation removed:** `/etc/logrotate.d/opcache`, left by older versions for a log PHP no longer writes, is deleted.
 - **First update from an older version:** the updater of versions from before November 2026 ran a script that no longer exists, and wrote "No such file or directory" to the error log. An empty stand-in is back in its place.
+- **systemd journal capped at 500 MB:** systemd's default lets it grow to 10% of the disk (up to 4 GB). Nginx, PHP, MariaDB, and Redis write their own log files, so 500 MB holds a few weeks of SSH, cron, and system messages. Existing servers get the cap with this update.
+- **fail2ban doubles the ban for repeat offenders:** an address banned again is banned for 2 hours, then 4, 8, and so on, up to a week; fail2ban now remembers past bans for a week. A first ban is still one hour. Existing servers with fail2ban get the settings with this update.
+- **TCP Fast Open accepted:** the kernel now accepts TCP Fast Open (`net.ipv4.tcp_fastopen = 3`), which Nginx's listeners were already set up for. Cloudflare documents it only toward visitors; the server is ready if it is used toward origins.
+- **Transparent Huge Pages off earlier at boot:** the service now runs before every ordinary service instead of before a list of names, so a future PHP version is covered too.
+- **Login message kept current:** existing servers now get the current login message with each update, instead of keeping the one from their setup.
 - **MariaDB re-tune:** older MariaDB releases cannot grow the buffer pool past the size they started with until they restart, and kept the smaller pool without an error. The re-tune now says so instead of reporting the new size as applied.
 
 ### ⚙️ OPTIONS AND DOCUMENTATION
 
-- **High Security SSL no longer turns on FIPS packages:** with an Ubuntu Pro token, `HIGH_SECURITY_SSL=1` also ran `pro enable fips-updates`, which replaces the kernel and needs a reboot. The option now only sets the certificate key size (EC-384). Enable FIPS yourself with `pro enable fips-updates` if you need it; servers that already have it keep it.
+- **FIPS removed:** EngineScript no longer turns on Ubuntu Pro's FIPS packages (`pro enable fips-updates`), which `HIGH_SECURITY_SSL=1` did with an Ubuntu Pro token. High Security SSL now only sets the certificate key size (EC-384). Servers that already have FIPS keep it.
 - **Install options:** the comments no longer say the control panel can be reached by the server's IP address (only `admin.<your domain>` works) or that High Security SSL disables TLS 1.1 (Nginx never allows it).
 - **README:** the minimum is 1 GB of RAM, with 2 GB or more recommended. The Brotli and Gzip from origin section lists only features Cloudflare still has, and says that EngineScript turns Automatic HTTPS Rewrites on. The software table adds ngx_brotli, removes Maldet (not installed), and shows the current Font Awesome version; the weekly version check now keeps that table in line with `enginescript-variables.txt` even when a version was changed by hand.
 

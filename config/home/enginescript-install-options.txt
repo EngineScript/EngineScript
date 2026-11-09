@@ -212,8 +212,6 @@ PUSHBULLET_TOKEN="PLACEHOLDER"
 
 ## Ubuntu Pro (Optional) ##
 # Enables extra application security updates (ESM Infra and ESM Apps).
-# FIPS-certified packages are not turned on; enable them yourself with "pro enable fips-updates"
-# if you need them (they replace the kernel and need a reboot).
 #
 # Sign up for a free personal-use account at:
 # https://ubuntu.com/pro

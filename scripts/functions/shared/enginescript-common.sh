@@ -1384,6 +1384,40 @@ function install_enginescript_logrotate() {
 
 
 # ----------------------------------------------------------------
+# Cap the systemd journal (config/etc/systemd/journald.conf.d/enginescript.conf); journald shrinks
+# it to the cap when it restarts
+function install_enginescript_journald() {
+    install -d -m 755 /etc/systemd/journald.conf.d
+    cp -f /usr/local/bin/enginescript/config/etc/systemd/journald.conf.d/enginescript.conf /etc/systemd/journald.conf.d/enginescript.conf
+    chmod 644 /etc/systemd/journald.conf.d/enginescript.conf
+    systemctl restart systemd-journald
+}
+
+
+# ----------------------------------------------------------------
+# fail2ban's settings (SSH jail, and how long it remembers past bans), when fail2ban is installed
+function install_enginescript_fail2ban_config() {
+    [[ -d /etc/fail2ban ]] || return 0
+    install -d -m 755 /etc/fail2ban/jail.d /etc/fail2ban/fail2ban.d
+    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/jail.d/enginescript.conf
+    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/fail2ban.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
+    chmod 644 /etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
+    if systemctl is-active --quiet fail2ban; then
+        systemctl restart fail2ban
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# The login message (config/etc/update-motd.d/99-enginescript)
+function install_enginescript_motd() {
+    cp -f /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript
+    chown root:root /etc/update-motd.d/99-enginescript
+    chmod 755 /etc/update-motd.d/99-enginescript
+}
+
+
+# ----------------------------------------------------------------
 # Install EngineScript's kernel settings and apply them
 #
 # Installs config/etc/sysctl.d/60-enginescript.conf (root-only writable) and the kernel TLS
