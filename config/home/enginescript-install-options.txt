@@ -25,7 +25,7 @@
 DEBUG_INSTALL=0
 
 ## Admin Subdomain (Recommended) ##
-# This will add an admin subdomain (example: admin.wordpresstesting.com) to your site, allowing you to access your server's admin control panel directly from any site installed on your server. You can also access it directly via your server's IP address.
+# This will add an admin subdomain (example: admin.wordpresstesting.com) to your site, allowing you to access your server's admin control panel directly from any site installed on your server.
 ADMIN_SUBDOMAIN=1
 
 ## phpMyAdmin (Recommended) ##
@@ -40,7 +40,7 @@ INSTALL_ADMINER=0
 # Controls the SSL certificate key length for all new domains.
 # 0 = Normal security (EC-256, 256-bit ECDSA certificate, fast and secure for most sites)
 # 1 = High security (EC-384, 384-bit ECDSA certificate, stronger encryption, slightly slower, recommended for high-security environments)
-#     Also disables TLS 1.1 in nginx (only TLS 1.2 and TLS 1.3 allowed)
+# Nginx allows TLS 1.2 and TLS 1.3 either way.
 #
 # If unsure, leave as 0. Set to 1 only if you require maximum SSL strength.
 HIGH_SECURITY_SSL=0
@@ -211,7 +211,7 @@ CF_ACCOUNT_EMAIL="PLACEHOLDER"
 PUSHBULLET_TOKEN="PLACEHOLDER"
 
 ## Ubuntu Pro (Optional) ##
-# Enables extra application security updates.
+# Enables extra application security updates (ESM Infra and ESM Apps).
 #
 # Sign up for a free personal-use account at:
 # https://ubuntu.com/pro
@@ -240,7 +240,7 @@ WP_ADMIN_PASSWORD="PLACEHOLDER"
 WP_RECOVERY_EMAIL="PLACEHOLDER"
 
 ## Admin Control Panel Login (Required) ##
-# These credentials secure access to the admin control panel on the server. This control panel can be accessed via your IP or admin.DOMAIN.TLD.
+# These credentials secure access to the admin control panel on the server, at admin.DOMAIN.TLD.
 # All admin tools including phpMyAdmin, file manager, and server management require these credentials.
 ADMIN_CONTROL_PANEL_USERNAME="PLACEHOLDER"
 ADMIN_CONTROL_PANEL_PASSWORD="PLACEHOLDER"

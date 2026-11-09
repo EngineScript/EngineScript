@@ -32,14 +32,6 @@ if [[ "${UBUNTU_PRO_TOKEN}" != "PLACEHOLDER" && -n "${UBUNTU_PRO_TOKEN}" ]]; the
         pro enable esm-infra --assume-yes || echo "ESM Infra already enabled or not available"
         pro enable esm-apps --assume-yes || echo "ESM Apps already enabled or not available"
         
-        # Enable FIPS updates only if high security SSL is enabled
-        if [[ "${HIGH_SECURITY_SSL}" == "1" ]]; then
-            echo "High security SSL enabled. Enabling FIPS compliant cryptographic packages..."
-            pro enable fips-updates --assume-yes || echo "FIPS updates already enabled or not available"
-        else
-            echo "High security SSL not enabled. Skipping FIPS updates (can be enabled manually if needed)."
-        fi
-        
         # Show status
         echo ""
         echo "Ubuntu Pro Status:"

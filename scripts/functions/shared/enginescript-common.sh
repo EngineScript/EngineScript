@@ -1131,6 +1131,17 @@ function migrate_nginx_vhosts() {
                     -e 's|^  access_log .*if=\$es_failed_request;$|  access_log off;|' "${file_path}"
             fi
         fi
+
+        # 2026-11: OCSP stapling is off, so vhosts no longer load the certificate chain for it
+        if grep -q '^  ssl_trusted_certificate ' "${file_path}"; then
+            sed -i 's|^  ssl_trusted_certificate |  # Only used for OCSP stapling (disabled, see sslshared.conf)\n  #ssl_trusted_certificate |' "${file_path}"
+        fi
+
+        # 2026-11: the admin tools' PHP locations check that the script exists (try_files $uri
+        # =404), so no PATH_INFO reaches PHP and fastcgi_split_path_info does nothing
+        if [[ "${file_path}" == /etc/nginx/admin/admin.*.conf ]] && grep -q '^[[:space:]]*fastcgi_split_path_info ' "${file_path}"; then
+            sed -i '/^[[:space:]]*fastcgi_split_path_info /d' "${file_path}"
+        fi
     done
 }
 
@@ -1367,6 +1378,42 @@ function install_enginescript_cron() {
 function install_enginescript_logrotate() {
     cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
     chmod 644 /etc/logrotate.d/enginescript
+    # Older versions rotated an OPcache log that PHP no longer writes
+    rm -f /etc/logrotate.d/opcache
+}
+
+
+# ----------------------------------------------------------------
+# Cap the systemd journal (config/etc/systemd/journald.conf.d/enginescript.conf); journald shrinks
+# it to the cap when it restarts
+function install_enginescript_journald() {
+    install -d -m 755 /etc/systemd/journald.conf.d
+    cp -f /usr/local/bin/enginescript/config/etc/systemd/journald.conf.d/enginescript.conf /etc/systemd/journald.conf.d/enginescript.conf
+    chmod 644 /etc/systemd/journald.conf.d/enginescript.conf
+    systemctl restart systemd-journald
+}
+
+
+# ----------------------------------------------------------------
+# fail2ban's settings (SSH jail, and how long it remembers past bans), when fail2ban is installed
+function install_enginescript_fail2ban_config() {
+    [[ -d /etc/fail2ban ]] || return 0
+    install -d -m 755 /etc/fail2ban/jail.d /etc/fail2ban/fail2ban.d
+    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/jail.d/enginescript.conf
+    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/fail2ban.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
+    chmod 644 /etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
+    if systemctl is-active --quiet fail2ban; then
+        systemctl restart fail2ban
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# The login message (config/etc/update-motd.d/99-enginescript)
+function install_enginescript_motd() {
+    cp -f /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript
+    chown root:root /etc/update-motd.d/99-enginescript
+    chmod 755 /etc/update-motd.d/99-enginescript
 }
 
 

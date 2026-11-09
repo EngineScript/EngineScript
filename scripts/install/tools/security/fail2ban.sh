@@ -19,8 +19,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # python3-systemd lets fail2ban read SSH's log from the systemd journal.
 apt-get install -qy fail2ban python3-systemd
 
-cp -f /usr/local/bin/enginescript/config/etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/jail.d/enginescript.conf
-chmod 644 /etc/fail2ban/jail.d/enginescript.conf
+install_enginescript_fail2ban_config
 
 systemctl enable fail2ban
 systemctl restart fail2ban
