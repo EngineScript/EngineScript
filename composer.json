@@ -44,7 +44,7 @@
         "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpmd/phpmd": "^3.0",
-        "vimeo/psalm": "^6.16",
+        "vimeo/psalm": "^7.0",
         "phpstan/phpstan": "^2.3.1",
         "phpcompatibility/php-compatibility": "^9.3.5",
         "sirbrillig/phpcs-variable-analysis": "^3.0",
