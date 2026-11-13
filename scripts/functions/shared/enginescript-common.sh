@@ -255,10 +255,11 @@ function set_install_state() {
                 print assignment
             }
         }
-    ' "${current_file}" > "${tmp_file}" && chmod 644 "${tmp_file}" && mv -fT "${tmp_file}" "${state_file}" || {
+    ' "${current_file}" > "${tmp_file}" || {
         rm -f "${tmp_file}"
         return 1
     }
+    replace_install_state_file "${tmp_file}" "${state_file}"
 }
 
 
@@ -299,10 +300,17 @@ function initialize_install_state_file() {
         rm -f "${tmp_file}"
         return 0
     fi
-    chmod 644 "${tmp_file}" && mv -fT "${tmp_file}" "${state_file}" || {
-        rm -f "${tmp_file}"
+    replace_install_state_file "${tmp_file}" "${state_file}"
+}
+
+# Move a new install state file into place (mode 644), replacing the file or link at that path.
+# The new file is removed when the move fails.
+# Usage: replace_install_state_file <new file> <state file>
+function replace_install_state_file() {
+    if ! chmod 644 "$1" || ! mv -fT "$1" "$2"; then
+        rm -f "$1"
         return 1
-    }
+    fi
 }
 
 
