@@ -10,6 +10,8 @@
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
+# Source the site archive functions
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-archive.sh" >&2; exit 1; }
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -72,7 +74,8 @@ backup_age() {
 
 # Read a backup file back: a database dump must also end with the line mariadb-dump writes
 # when it finishes, so a dump cut short (a full disk, a stopped backup) is caught. A site
-# archive must name its format and hold a complete dump and a readable files archive.
+# archive must name its format and hold a complete dump and a readable files archive
+# (site_archive_verify).
 check_backup_file() {
   local file="$1" last
   case "${file}" in
@@ -84,10 +87,7 @@ check_backup_file() {
       [[ "${last}" == "-- Dump completed"* ]]
       ;;
     *-site-archive.zip)
-      unzip -p "${file}" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
-      last="$(set -o pipefail; unzip -p "${file}" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
-      [[ "${last}" == "-- Dump completed"* ]] || return 1
-      (set -o pipefail; unzip -p "${file}" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
+      site_archive_verify "${file}"
       ;;
     *)
       gzip -t "${file}" 2> /dev/null

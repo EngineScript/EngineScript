@@ -347,6 +347,10 @@ fi
 WP_CONFIG_PATH="${WP_FILES_SOURCE_PATH}/wp-config.php" # Use the determined source path
 SITE_URL_RAW="$(site_archive_manifest_value "${MANIFEST_PATH}" home_url)"
 SITE_URL_SOURCE="manifest.txt (home_url)"
+# A value that is not an address (other output that strayed into the manifest) is not used
+if ! site_address_is_url "${SITE_URL_RAW}"; then
+    SITE_URL_RAW=""
+fi
 if [[ -z "$SITE_URL_RAW" ]]; then
     SITE_URL_RAW=$(extract_define 'WP_HOME')
     SITE_URL_SOURCE="wp-config.php (WP_HOME)"
@@ -357,11 +361,14 @@ if [[ -z "$SITE_URL_RAW" ]]; then
 fi
 
 if [[ -z "$SITE_URL_RAW" ]]; then
-    die "The archive does not say the site's address: manifest.txt has no home_url, and wp-config.php defines neither WP_HOME nor WP_SITEURL."
+    die "The archive does not say the site's address: manifest.txt has no home_url that is an address (https://...), and wp-config.php defines neither WP_HOME nor WP_SITEURL."
 fi
 
 # The WordPress address (siteurl), which shows WordPress kept in its own folder
 WP_ADDRESS_RAW="$(site_archive_manifest_value "${MANIFEST_PATH}" site_url)"
+if ! site_address_is_url "${WP_ADDRESS_RAW}"; then
+    WP_ADDRESS_RAW=""
+fi
 if [[ -z "$WP_ADDRESS_RAW" ]]; then
     WP_ADDRESS_RAW=$(extract_define 'WP_SITEURL')
 fi

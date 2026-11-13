@@ -61,19 +61,49 @@ lacks() {
   fi
 }
 
-# WP-CLI stand-in, called as run_as_www_data wp ...; WP_FAIL=1 makes the dump fail
+# The process that runs build_site_archive: the ancestor of the calling process whose parent is
+# this script
+builder_pid() {
+  local pid="${BASHPID}" parent
+  while parent="$(ps -o ppid= -p "${pid}" | tr -d ' ')" && [[ -n "${parent}" && "${parent}" != "$$" ]]; do
+    pid="${parent}"
+  done
+  echo "${pid}"
+}
+
+# WP-CLI stand-in, called as run_as_www_data wp ...
+#   WP_FAIL=1        the dump fails
+#   WP_SIGNAL=1      the build is sent SIGTERM while the dump runs
+#   WP_NOISE=1       other output comes before the site's addresses, as from a must-use plugin
+#   WP_HOME_VALUE    the site's address
+#   WP_DB_BYTES      the database's size
 WP_FAIL=0
+WP_SIGNAL=0
+WP_NOISE=0
+WP_HOME_VALUE="https://example.com"
+WP_DB_BYTES=4096
 run_as_www_data() {
   shift
-  case "$1" in
-    db)
-      [[ "${WP_FAIL}" == "1" ]] && return 1
+  case "$1 ${2:-}" in
+    "db size")
+      echo "${WP_DB_BYTES}"
+      ;;
+    "db export")
+      if [[ "${WP_FAIL}" == "1" ]]; then
+        return 1
+      fi
+      if [[ "${WP_SIGNAL}" == "1" ]]; then
+        kill -TERM "$(builder_pid)"
+      fi
       # shellcheck disable=SC2016  # backticks of SQL, not a command
       printf 'CREATE TABLE `wp_options` (id int);\n-- Dump completed on 2026-11-05  1:05:00\n'
       ;;
-    eval)
+    "eval "*)
+      if [[ "${WP_NOISE}" == "1" ]]; then
+        echo "Notice: output from a must-use plugin in /var/www/x.php on line 3"
+      fi
       # A carriage return in a value must not reach the manifest
-      printf 'https://example.com\r\nhttps://example.com\nwp_\n'
+      printf '\nes-home=%s\r\nes-siteurl=https://example.com\nes-prefix=wp_\n' "${WP_HOME_VALUE}"
       ;;
     *)
       echo "Unexpected WP-CLI command in the test: $*" >&2
@@ -166,6 +196,101 @@ holds "it says why" grep -q "Not enough free space" "${WORK}/stderr.txt"
 check "the short space leaves nothing behind" "$(find "${WORK}/out2" -mindepth 1 | wc -l | tr -d ' ')" "0"
 unset -f site_archive_free_kb
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-site-archive.sh"
+
+echo "Free space for the database and the left-out folders"
+# 1 GB free: enough for the small site, not for a 4 GB database
+# shellcheck disable=SC2329  # called by build_site_archive
+site_archive_free_kb() { echo 1048576; }
+WP_DB_BYTES=$((4 * 1024 * 1024 * 1024))
+lacks "the build stops when the database would not fit" build_site_archive "${SITE}" "${OUT2}" 2> "${WORK}/stderr.txt"
+holds "it says the space is short" grep -q "Not enough free space" "${WORK}/stderr.txt"
+WP_DB_BYTES=4096
+# 80 MB free, and 20 MB in wp-content/cache, which is not archived: twice the cache must not count
+# shellcheck disable=SC2329  # called by build_site_archive
+site_archive_free_kb() { echo 81920; }
+dd if=/dev/zero of="${ROOT}/wp-content/cache/page/big.bin" bs=1M count=20 status=none
+holds "a large wp-content/cache does not count against the space" build_site_archive "${SITE}" "${WORK}/out-cache/a.zip"
+rm -f "${ROOT}/wp-content/cache/page/big.bin"
+unset -f site_archive_free_kb
+source "${REPO_ROOT}/scripts/functions/shared/enginescript-site-archive.sh"
+
+echo "Other output around the site's addresses"
+WP_NOISE=1
+build_site_archive "${SITE}" "${WORK}/out-noise/a.zip"
+check "the address is still the site's" "$(unzip -p "${WORK}/out-noise/a.zip" manifest.txt | grep '^home_url=')" "home_url=https://example.com"
+check "the table prefix is still the site's" "$(unzip -p "${WORK}/out-noise/a.zip" manifest.txt | grep '^table_prefix=')" "table_prefix=wp_"
+WP_NOISE=0
+WP_HOME_VALUE="Notice: not an address"
+build_site_archive "${SITE}" "${WORK}/out-bad/a.zip"
+check "a value that is not an address is left empty" "$(unzip -p "${WORK}/out-bad/a.zip" manifest.txt | grep '^home_url=')" "home_url="
+check "the other values stay" "$(unzip -p "${WORK}/out-bad/a.zip" manifest.txt | grep '^site_url=')" "site_url=https://example.com"
+WP_HOME_VALUE="https://example.com"
+while IFS='|' read -r value is_url; do
+  check "'${value}' is an address" "$(site_address_is_url "${value}" && echo yes || echo no)" "${is_url}"
+done << 'EOF'
+https://example.com|yes
+HTTP://Example.com/blog|yes
+example.com|no
+Notice: something in /var/www/x.php|no
+https://example.com extra|no
+|no
+EOF
+
+echo "A build stopped by a signal"
+WP_SIGNAL=1
+lacks "the build stops" build_site_archive "${SITE}" "${WORK}/out-signal/a.zip" 2> /dev/null
+check "the signal leaves nothing behind" "$(find "${WORK}/out-signal" -mindepth 1 | wc -l | tr -d ' ')" "0"
+WP_SIGNAL=0
+
+echo "Staging folders of builds that were killed"
+mkdir -p "${WORK}/out-stale/.site-archive.old/bundle" "${WORK}/out-stale/.site-archive.new"
+touch -d '2 days ago' "${WORK}/out-stale/.site-archive.old"
+build_site_archive "${SITE}" "${WORK}/out-stale/a.zip"
+lacks "one from two days ago is removed" test -e "${WORK}/out-stale/.site-archive.old"
+holds "a recent one, which may be a build in progress, is kept" test -d "${WORK}/out-stale/.site-archive.new"
+
+echo "Reading a backup back (Backup Tools)"
+holds "a whole archive passes" site_archive_verify "${OUT}"
+REZIP="${WORK}/rezip"
+cp -r "${EXTRACT}" "${REZIP}"
+echo "CREATE TABLE cut short" | gzip > "${DUMP/#${EXTRACT}/${REZIP}}"
+(cd "${REZIP}" && zip -0 -r -q "${WORK}/cut-dump.zip" .)
+lacks "a dump without its last line fails" site_archive_verify "${WORK}/cut-dump.zip"
+rm -rf "${REZIP}"
+cp -r "${EXTRACT}" "${REZIP}"
+head -c 20 "${FILES}" > "${FILES/#${EXTRACT}/${REZIP}}"
+(cd "${REZIP}" && zip -0 -r -q "${WORK}/cut-files.zip" .)
+lacks "a files archive cut short fails" site_archive_verify "${WORK}/cut-files.zip"
+rm -rf "${REZIP}"
+cp -r "${EXTRACT}" "${REZIP}"
+echo "format=something-else" > "${REZIP}/manifest.txt"
+(cd "${REZIP}" && zip -0 -r -q "${WORK}/other-format.zip" .)
+lacks "another format fails" site_archive_verify "${WORK}/other-format.zip"
+lacks "a file that is not a ZIP fails" site_archive_verify "${ROOT}/index.php"
+
+echo "Keeping the newest files backups"
+BACKUPS="${WORK}/backups/files"
+# Two wp-content backups from an older version, three site archives, a dated folder a failed run
+# left, one that only holds a killed build's staging folder, and a folder with another name
+for day in 2026-01-04 2026-01-11; do
+  mkdir -p "${BACKUPS}/${day}"
+  echo old > "${BACKUPS}/${day}/${SITE}-wp-content.tar.gz"
+done
+for day in 2026-01-18 2026-01-25 2026-02-01; do
+  mkdir -p "${BACKUPS}/${day}"
+  echo new > "${BACKUPS}/${day}/${SITE}-site-archive.zip"
+done
+mkdir -p "${BACKUPS}/2026-01-20" "${BACKUPS}/2026-02-08/.site-archive.killed/bundle" \
+  "${BACKUPS}/2026-02-01/.site-archive.killed/bundle" "${BACKUPS}/notes"
+site_archive_prune_backups "${BACKUPS}" "${SITE}" 4
+check "four copies are kept, old and new counted together, and the folder with another name" \
+  "$(find "${BACKUPS}" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort | tr '\n' ' ')" \
+  "2026-01-11 2026-01-18 2026-01-25 2026-02-01 notes "
+lacks "a killed build's staging folder is removed from a kept copy" test -e "${BACKUPS}/2026-02-01/.site-archive.killed"
+holds "the kept copy still has its archive" test -f "${BACKUPS}/2026-02-01/${SITE}-site-archive.zip"
+site_archive_prune_backups "${BACKUPS}" "${SITE}" 10
+check "keeping more copies than there are removes nothing" "$(find "${BACKUPS}" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" "5"
+holds "a folder that does not exist is not an error" site_archive_prune_backups "${WORK}/no-such-folder" "${SITE}" 4
 
 echo "A folder without WordPress"
 mkdir -p "${SITE_ARCHIVE_SITES_ROOT}/empty.example/html"

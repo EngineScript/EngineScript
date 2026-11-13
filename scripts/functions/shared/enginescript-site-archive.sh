@@ -42,16 +42,42 @@ function site_archive_free_kb() {
     df -Pk "${folder}" | awk 'NR == 2 {print $4}'
 }
 
+# Succeed when a value is a web address: http:// or https://, without spaces or control characters
+# Usage: site_address_is_url <value>
+function site_address_is_url() {
+    local value="$1"
+    [[ "${value,,}" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]
+}
+
 # Print a site's address (home), WordPress address (siteurl), and table prefix, one per line. The
 # options, not home_url() and site_url(): from WP-CLI, which is not on HTTPS, site_url() would
 # turn https into http. As www-data, without plugins and themes, so a broken one cannot stop it.
-# Prints nothing when WP-CLI fails.
+# Each value is printed on a marked line and checked, so other output on the way (a must-use
+# plugin's, which WP-CLI still loads) cannot be taken for a value: a value that is not an address,
+# or not a table prefix, is printed as an empty line. Prints nothing when WP-CLI fails.
 # Usage: site_archive_site_info <site root>
 function site_archive_site_info() {
-    local site_root="$1"
+    local site_root="$1" output home siteurl prefix
     # shellcheck disable=SC2016  # PHP code, not shell
-    (cd / && run_as_www_data wp eval --path="${site_root}" --skip-plugins --skip-themes \
-        'echo get_option("home"), "\n", get_option("siteurl"), "\n", $GLOBALS["table_prefix"], "\n";' 2> /dev/null)
+    output="$(cd / && run_as_www_data wp eval --path="${site_root}" --skip-plugins --skip-themes \
+        'echo "\nes-home=", get_option("home"), "\nes-siteurl=", get_option("siteurl"), "\nes-prefix=", $GLOBALS["table_prefix"], "\n";' 2> /dev/null)" || return 0
+    home="$(sed -n 's/^es-home=//p' <<< "${output}" | head -n 1 | tr -d '\r')"
+    siteurl="$(sed -n 's/^es-siteurl=//p' <<< "${output}" | head -n 1 | tr -d '\r')"
+    prefix="$(sed -n 's/^es-prefix=//p' <<< "${output}" | head -n 1 | tr -d '\r')"
+    site_address_is_url "${home}" || home=""
+    site_address_is_url "${siteurl}" || siteurl=""
+    [[ "${prefix}" =~ ^[A-Za-z0-9_]+$ ]] || prefix=""
+    printf '%s\n%s\n%s\n' "${home}" "${siteurl}" "${prefix}"
+}
+
+# Print the size of a site's database on disk, in KB, or nothing when WP-CLI cannot tell it
+# Usage: site_archive_database_kb <site root>
+function site_archive_database_kb() {
+    local site_root="$1" bytes
+    bytes="$(cd / && run_as_www_data wp db size --size_format=b --path="${site_root}" 2> /dev/null)" || return 0
+    if [[ "${bytes}" =~ ^[0-9]+$ ]]; then
+        echo $((bytes / 1024))
+    fi
 }
 
 # ----------------------------------------------------------------
@@ -65,7 +91,7 @@ function site_archive_site_info() {
 function build_site_archive() (
     local site="$1" output="$2"
     local site_root="${SITE_ARCHIVE_SITES_ROOT}/${site}/html"
-    local out_dir stamp staging bundle db_name files_name rc site_kb parts_kb free_kb
+    local out_dir stamp staging bundle db_name files_name rc folder left_out_kb site_kb db_kb need_kb parts_kb free_kb
     local -a info=()
     umask 077
 
@@ -80,17 +106,34 @@ function build_site_archive() (
     out_dir="$(dirname "${output}")"
     mkdir -p "${out_dir}" || return 1
 
-    # The parts, and while the ZIP is written a second copy of them, must fit. The site's size on
-    # disk bounds the files part; 256 MB more covers the database. Checked again before the ZIP.
+    # Staging folders that builds stopped without warning (a power cut, kill -9) left here a day
+    # or more ago; a build that ends any other way, a signal included, removes its own
+    find "${out_dir}" -maxdepth 1 -type d -name '.site-archive.*' -mmin +1440 -exec rm -rf {} +
+
+    # The parts, and while the ZIP is written a second copy of them, must fit. The files part is
+    # at most the site's size on disk without the working folders the archive leaves out. The
+    # compressed dump is taken as half the database's size on disk, which is generous (256 MB
+    # when WP-CLI cannot tell the size). Checked again, with the real sizes, before the ZIP.
     site_kb="$(du -sk "${site_root}" | cut -f1)"
+    for folder in cache upgrade temp; do
+        if [[ -d "${site_root}/wp-content/${folder}" ]]; then
+            left_out_kb="$(du -sk "${site_root}/wp-content/${folder}" | cut -f1)"
+            site_kb=$((site_kb - left_out_kb))
+        fi
+    done
+    (( site_kb < 0 )) && site_kb=0
+    db_kb="$(site_archive_database_kb "${site_root}")"
+    need_kb=$((site_kb * 2 + ${db_kb:-262144} + 65536))
     free_kb="$(site_archive_free_kb "${out_dir}")"
-    if (( free_kb < site_kb * 2 + 262144 )); then
-        echo "Not enough free space in ${out_dir} for ${site}'s archive: about $(( (site_kb * 2 + 262144) / 1024 )) MB needed, $((free_kb / 1024)) MB free" >&2
+    if (( free_kb < need_kb )); then
+        echo "Not enough free space in ${out_dir} for ${site}'s archive: about $((need_kb / 1024)) MB needed, $((free_kb / 1024)) MB free" >&2
         return 1
     fi
 
     stamp="$(date +%Y%m%d_%H%M%S)"
     staging="$(mktemp -d "${out_dir}/.site-archive.XXXXXX")" || return 1
+    # Bash also runs this when a signal (a reboot, kill) stops the build, and at once. A trap on
+    # the signals themselves would wait for the command in progress, so there is none.
     # shellcheck disable=SC2064  # expand now: the trap runs after the function's locals are gone
     trap "rm -rf '${staging}'" EXIT
     bundle="${staging}/bundle"
@@ -117,10 +160,11 @@ function build_site_archive() (
         echo "Note: files changed while ${site}'s files were archived." >&2
     fi
 
-    # The addresses and table prefix, for the manifest's informational lines; empty on failure
+    # The addresses and table prefix, for the manifest's informational lines; each is checked by
+    # site_archive_site_info, and empty when WP-CLI could not give it
     mapfile -t info < <(site_archive_site_info "${site_root}")
     # The first six lines keep their text and order for importers; the later ones are
-    # informational and match what the plugin writes. One value per line: control characters go.
+    # informational and match what the plugin writes.
     {
         echo "format=enginescript-site-archive"
         echo "version=1"
@@ -128,9 +172,9 @@ function build_site_archive() (
         echo "created_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         echo "database_path=database/${db_name}"
         echo "files_archive_path=files/${files_name}"
-        echo "home_url=${info[0]:-}" | tr -d '\000-\011\013-\037\177'
-        echo "site_url=${info[1]:-}" | tr -d '\000-\011\013-\037\177'
-        echo "table_prefix=${info[2]:-}" | tr -d '\000-\011\013-\037\177'
+        echo "home_url=${info[0]:-}"
+        echo "site_url=${info[1]:-}"
+        echo "table_prefix=${info[2]:-}"
         echo "wp_config_in_archive=yes"
     } > "${bundle}/manifest.txt" || return 1
 
@@ -146,6 +190,45 @@ function build_site_archive() (
     fi
     mv -f "${staging}/archive.zip" "${output}"
 )
+
+# Succeed when a site archive reads back whole: its manifest names the format, its database dump
+# ends with the line mariadb-dump writes when it finishes (so a dump cut short is caught), and its
+# files archive can be listed to the end.
+# Usage: site_archive_verify <archive .zip>
+function site_archive_verify() {
+    local archive="$1" last
+    unzip -p "${archive}" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
+    last="$(set -o pipefail; unzip -p "${archive}" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
+    [[ "${last}" == "-- Dump completed"* ]] || return 1
+    (set -o pipefail; unzip -p "${archive}" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
+}
+
+# ----------------------------------------------------------------
+# Keep a site's newest files backups
+#
+# The folder holds one dated folder (YYYY-MM-DD) per files backup. Only dated folders that hold a
+# finished archive (a site archive, or the wp-content archive older versions made) count as
+# copies; dated folders without one (left by a failed or interrupted run) are removed, so failed
+# runs never push good backups out. Staging folders of interrupted builds are removed too: the
+# caller holds the backup lock, so no build is writing here. Folders with other names are kept.
+# Usage: site_archive_prune_backups <site's files backup folder> <domain> <copies to keep>
+function site_archive_prune_backups() {
+    local base="$1" site="$2" keep="$3" name excess i
+    local -a complete=()
+    [[ -d "${base}" ]] || return 0
+    find "${base}" -mindepth 2 -maxdepth 2 -type d -name '.site-archive.*' -exec rm -rf {} +
+    while IFS= read -r name; do
+        if [[ -f "${base}/${name}/${site}-site-archive.zip" || -f "${base}/${name}/${site}-wp-content.tar.gz" ]]; then
+            complete+=("${name}")
+        else
+            rm -rf "${base:?}/${name}"
+        fi
+    done < <(find "${base}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort)
+    excess=$((${#complete[@]} - keep))
+    for ((i = 0; i < excess; i++)); do
+        rm -rf "${base:?}/${complete[i]}"
+    done
+}
 
 
 # ----------------------------------------------------------------
