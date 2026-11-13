@@ -214,6 +214,138 @@ assert_installation_completion_passes "check_installation_completion backfills a
 assert_state_value "ADMIN_CONTROL_PANEL" "1"
 assert_state_value "PHPMYADMIN" "1"
 
+# The install state is data: nothing in the file runs, and only the install flags are loaded.
+# Before November 2026 www-data owned the file's folder, so a hacked site could write to it.
+complete_install_state
+PROOF_FILE="${TEST_ASSET_DIR}/ran-as-root"
+# shellcheck disable=SC2034  # must keep its value: the file below tries to set it
+TEST_MODE=0
+{
+  echo "touch '${PROOF_FILE}'"
+  echo "NGINX=0; touch '${PROOF_FILE}'"
+  echo "REDIS=\$(touch '${PROOF_FILE}')"
+  echo "TEST_MODE=1"
+  echo "PHP=2"
+  echo " MARIADB=0"
+  echo "OPENSSL=1"
+} >> "${INSTALL_STATE_FILE}"
+assert_installation_completion_passes "check_installation_completion ignores lines that are not FLAG=0 or FLAG=1"
+if [[ ! -e "${PROOF_FILE}" ]]; then
+  pass "a command in install-state.conf does not run"
+else
+  fail "a command in install-state.conf ran"
+fi
+if [[ "${TEST_MODE}" == "0" ]]; then
+  pass "a variable that is not an install flag is not loaded"
+else
+  fail "install-state.conf set TEST_MODE"
+fi
+if [[ "$(grep -vcE '^[A-Z0-9_]+=[01]$' "${INSTALL_STATE_FILE}" || true)" == "0" ]]; then
+  pass "the lines that are not flags are removed from the file"
+else
+  fail "install-state.conf still has lines that are not flags"
+fi
+assert_state_value "OPENSSL" "1"
+assert_state_value "TEST_MODE" "1"
+load_install_state
+if [[ "${NGINX}${REDIS}${PHP}${MARIADB}" == "1111" ]]; then
+  pass "load_install_state keeps the flags' real values"
+else
+  fail "load_install_state read NGINX REDIS PHP MARIADB as '${NGINX}${REDIS}${PHP}${MARIADB}'"
+fi
+
+# A flag missing from the file is 0, whatever the variable held before
+sed -i '/^NGINX=/d' "${INSTALL_STATE_FILE}"
+# shellcheck disable=SC2034  # reset by load_install_state
+NGINX=1
+load_install_state
+if [[ "${NGINX}" == "0" ]]; then
+  pass "a flag the file does not have is 0"
+else
+  fail "a flag the file does not have kept the value ${NGINX}"
+fi
+if (ENGINESCRIPT_INSTALL_STATE_FILE="${TEST_ASSET_DIR}/missing.conf"; ! load_install_state && [[ "${REPOS}${TOOLS}" == "00" ]]); then
+  pass "without a file, load_install_state fails and every flag is 0"
+else
+  fail "load_install_state without a file"
+fi
+
+# install_has_started: only setup.sh's own flag set is still a new install
+: > "${INSTALL_STATE_FILE}"
+initialize_install_state_file
+set_install_state "ALIAS" "1"
+load_install_state
+if ! install_has_started; then
+  pass "install_has_started: a server with only ALIAS set is a new install"
+else
+  fail "install_has_started counted ALIAS as an install step"
+fi
+set_install_state "REPOS" "1"
+load_install_state
+if install_has_started; then
+  pass "install_has_started: one finished step means the install has started"
+else
+  fail "install_has_started missed a finished step"
+fi
+
+# A link at the state file's path is replaced, never written through
+LINK_DIR="${TEST_ASSET_DIR}/linked"
+mkdir -p "${LINK_DIR}"
+echo "REPOS=1" > "${LINK_DIR}/victim"
+ln -s "${LINK_DIR}/victim" "${LINK_DIR}/install-state.conf"
+(
+  ENGINESCRIPT_INSTALL_STATE_FILE="${LINK_DIR}/install-state.conf"
+  set_install_state "NGINX" "1" && initialize_install_state_file
+)
+if [[ ! -L "${LINK_DIR}/install-state.conf" && "$(cat "${LINK_DIR}/victim")" == "REPOS=1" ]] \
+    && grep -qx "NGINX=1" "${LINK_DIR}/install-state.conf" && grep -qx "REPOS=0" "${LINK_DIR}/install-state.conf"; then
+  pass "a link in place of install-state.conf is replaced, and the file it pointed to is neither read nor changed"
+else
+  fail "install-state.conf written or read through a link"
+fi
+if [[ -z "$(find "${LINK_DIR}" -name '.install-state.*')" ]]; then
+  pass "no temporary state file is left behind"
+else
+  fail "a temporary state file was left behind"
+fi
+
+# set_enginescript_etc_permissions: root takes the folder over. chown is a stand-in that records
+# its calls, so the test also runs without root.
+ETC_DIR="${TEST_ASSET_DIR}/etc-enginescript"
+mkdir -p "${ETC_DIR}"
+echo "REPOS=1" > "${ETC_DIR}/install-state.conf"
+echo "api_key=" > "${ETC_DIR}/uptimerobot.conf"
+echo "secret" > "${TEST_ASSET_DIR}/outside-file"
+chmod 600 "${TEST_ASSET_DIR}/outside-file"
+chmod 666 "${ETC_DIR}/install-state.conf"
+ln -s "${TEST_ASSET_DIR}/outside-file" "${ETC_DIR}/planted-link"
+# shellcheck disable=SC2329  # called by set_enginescript_etc_permissions
+chown() { echo "$*" >> "${TEST_ASSET_DIR}/chown-calls"; }
+ES_ETC_DIR="${ETC_DIR}" set_enginescript_etc_permissions
+unset -f chown
+if [[ ! -e "${ETC_DIR}/planted-link" && ! -L "${ETC_DIR}/planted-link" && "$(stat -c %a "${TEST_ASSET_DIR}/outside-file")" == "600" ]]; then
+  pass "set_enginescript_etc_permissions removes a planted link and leaves its target alone"
+else
+  fail "set_enginescript_etc_permissions kept a planted link, or changed its target"
+fi
+if [[ "$(stat -c %a "${ETC_DIR}")$(stat -c %a "${ETC_DIR}/install-state.conf")$(stat -c %a "${ETC_DIR}/uptimerobot.conf")" == "755644640" ]]; then
+  pass "the folder is 755, the install state 644, and the Uptime Robot key 640"
+else
+  fail "modes are $(stat -c %a "${ETC_DIR}") $(stat -c %a "${ETC_DIR}/install-state.conf") $(stat -c %a "${ETC_DIR}/uptimerobot.conf")"
+fi
+if [[ "$(head -n 1 "${TEST_ASSET_DIR}/chown-calls")" == "root:root ${ETC_DIR}" ]] \
+    && grep -qx -- "-R root:root ${ETC_DIR}" "${TEST_ASSET_DIR}/chown-calls" \
+    && [[ "$(tail -n 1 "${TEST_ASSET_DIR}/chown-calls")" == "root:www-data ${ETC_DIR}/uptimerobot.conf" ]]; then
+  pass "the folder goes to root first, then everything in it; www-data keeps read access to the Uptime Robot key only"
+else
+  fail "chown calls were: $(tr '\n' ';' < "${TEST_ASSET_DIR}/chown-calls")"
+fi
+if ES_ETC_DIR="${TEST_ASSET_DIR}/no-such-folder" set_enginescript_etc_permissions; then
+  pass "set_enginescript_etc_permissions does nothing without the folder"
+else
+  fail "set_enginescript_etc_permissions failed without the folder"
+fi
+
 # run_install_step: a failed step stops the install; a completed step is skipped
 # shellcheck disable=SC2034 # read by debug_pause
 DEBUG_INSTALL=0

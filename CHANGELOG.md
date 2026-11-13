@@ -4,6 +4,20 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-11
+
+### 🔒 SECURITY
+
+- **A hacked site could run commands as root:** `/etc/enginescript` belonged to the web server user, and EngineScript loaded the install state file in it as a script, as root, every day and on every update. Code running in a hacked site could add commands to that file. The folder now belongs to root, and the file is read as data: only the `FLAG=0` and `FLAG=1` lines of the install steps count, and anything else is removed. Existing servers are fixed by the next EngineScript update. If automatic updates are off, run `es.update` now.
+- **Uptime Robot API key:** `/etc/enginescript/uptimerobot.conf` could be read by every user on the server. Only root and the web server (for the control panel) can read it now.
+
+### 🐛 FIXES
+
+- **`es.install` run again on a finished server** marked every one-time upgrade as done without running it, so an upgrade that had failed and was waiting for its retry never ran. A new install now records them before its first step, and running `es.install` again records nothing.
+- **A one-time upgrade that fails is reported:** before, the error went only to `install-error-log.log` and the update looked fine. The update's output and log now name the upgrade, and with a Pushbullet token you get a note, once per failure. It still runs again on the next update.
+- **Cron jobs follow the install options on every update again:** since November 5, switching `AUTOMATIC_LOSSLESS_IMAGE_OPTIMIZATION` on or off changed the scheduled job only when a new version of EngineScript arrived or `es.update` was run by hand. The daily update now checks the cron jobs every time.
+- **journald and fail2ban restart only when their settings change:** every settings sync restarted both, changed or not. A sync that could not finish now says so in the update's output instead of only in the error log.
+
 ## 2026-11-08
 
 ### 🔧 UPDATES FOR EXISTING SERVERS

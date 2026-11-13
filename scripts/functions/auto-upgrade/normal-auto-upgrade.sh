@@ -60,7 +60,28 @@ fi
 # EngineScript must be fully installed (es.update has checked already)
 require_installation_complete "The one-time upgrades"
 
+FAILED_UPGRADES=()
 for upgrade in "${ONE_TIME_UPGRADES[@]}"; do
-  run_once "${upgrade}" 2>> "${ES_STEP_ERROR_LOG}"
+  run_once "${upgrade}" 2>> "${ES_STEP_ERROR_LOG}" || FAILED_UPGRADES+=("${upgrade}")
   print_last_errors
 done
+
+# An upgrade that failed is reported here, in the update's own output and log, and to the admin
+# once: FAILED_UPGRADES_FILE holds the names already reported, so a failure that repeats on every
+# update does not send a note every day.
+FAILED_UPGRADES_FILE="/var/lib/enginescript/upgrades-failed.conf"
+if [[ "${#FAILED_UPGRADES[@]}" -eq 0 ]]; then
+  rm -f "${FAILED_UPGRADES_FILE}"
+  exit 0
+fi
+
+echo ""
+echo "WARNING: These one-time upgrades did not finish: ${FAILED_UPGRADES[*]}"
+echo "Their errors are in /var/log/EngineScript/install-error-log.log. Each runs again on the next EngineScript update."
+echo ""
+if [[ "$(cat "${FAILED_UPGRADES_FILE}" 2> /dev/null)" != "${FAILED_UPGRADES[*]}" ]]; then
+  notify_admin "Server: ${IP_ADDRESS:-}" "EngineScript could not finish these one-time upgrades: ${FAILED_UPGRADES[*]}. The errors are in /var/log/EngineScript/install-error-log.log. Each runs again on the next EngineScript update." || true
+  mkdir -p "$(dirname "${FAILED_UPGRADES_FILE}")"
+  echo "${FAILED_UPGRADES[*]}" > "${FAILED_UPGRADES_FILE}"
+fi
+exit 1

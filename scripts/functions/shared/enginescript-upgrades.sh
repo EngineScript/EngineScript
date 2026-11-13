@@ -19,7 +19,11 @@
 # Its name is recorded in upgrades-done.conf when it succeeds, and it never runs again on that
 # server; one that fails is tried again on the next update. New installs record every one-time
 # upgrade as done, since they start with the current setup. The record is in /var/lib/enginescript,
-# which only root can write to (unlike /etc/enginescript, which the web server user owns).
+# which only root can write to.
+#
+# The record holds the function's name. To change what an upgrade that servers have already run
+# does, add a new function with a new name: editing the old one reaches only the servers that
+# have not run it yet.
 
 # True when the one-time upgrade has already run on this server
 function upgrade_is_done() {

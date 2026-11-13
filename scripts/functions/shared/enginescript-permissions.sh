@@ -57,11 +57,40 @@ function set_enginescript_frontend_permissions() {
         set_www_data_tree /var/www/admin/tools
     fi
 
-    # Set permissions for /etc/enginescript
-    set_www_data_tree /etc/enginescript
+    # /etc/enginescript belongs to root; the control panel only reads its Uptime Robot key there
+    set_enginescript_etc_permissions
 
     # Ensure API cache directory has correct owner and permissions
     set_api_cache_permissions
+}
+
+
+# ----------------------------------------------------------------
+# Set permissions for /etc/enginescript
+#
+# Root keeps the install state and the tuning plan here and reads them on every update and every
+# day, so the folder belongs to root. Owned by www-data, as it was before November 2026, a hacked
+# site could put commands for root into the install state, or swap a file for a link so that root
+# wrote somewhere else. The folder changes hands first: from then on www-data cannot add, swap,
+# or remove anything in it. The control panel (www-data) only reads the Uptime Robot API key.
+# ES_ETC_DIR overrides the folder (for tests).
+function set_enginescript_etc_permissions() {
+    local etc_dir="${ES_ETC_DIR:-/etc/enginescript}"
+
+    if [[ ! -d "${etc_dir}" ]]; then
+        return 0
+    fi
+    chown root:root "${etc_dir}" || return 1
+    chmod 755 "${etc_dir}" || return 1
+    # Links left there while www-data owned the folder
+    find "${etc_dir}" -mindepth 1 -maxdepth 1 -type l -delete
+    # chown -R changes a link itself, never the file it points to
+    chown -R root:root "${etc_dir}" || return 1
+    find "${etc_dir}" -mindepth 1 -maxdepth 1 -type f -exec chmod 644 {} +
+    if [[ -f "${etc_dir}/uptimerobot.conf" ]]; then
+        chown root:www-data "${etc_dir}/uptimerobot.conf"
+        chmod 640 "${etc_dir}/uptimerobot.conf"
+    fi
 }
 
 
