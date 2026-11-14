@@ -28,6 +28,31 @@ EOF
 
 
 # ----------------------------------------------------------------
+# PHP-FPM systemd override: the memory ceiling of the tuning plan (PHP_MEMORY_HIGH_MB and
+# PHP_MEMORY_MAX_MB; see tuning_calculate). Above MemoryHigh the kernel reclaims and swaps
+# PHP-FPM's own memory first; at MemoryMax it kills a worker inside PHP-FPM's group (the
+# master starts another) instead of pushing MariaDB and Redis into swap. systemd applies the
+# limits to the running service at daemon-reload; no restart.
+# Usage: install_php_fpm_service_override <PHP version>
+function install_php_fpm_service_override() {
+    local dir="/etc/systemd/system/php${1}-fpm.service.d" high max new
+
+    command -v systemctl > /dev/null 2>&1 || return 0
+    tuning_load
+    high="$(tuning_get PHP_MEMORY_HIGH_MB)"
+    max="$(tuning_get PHP_MEMORY_MAX_MB)"
+    [[ "${high}" =~ ^[0-9]+$ && "${max}" =~ ^[0-9]+$ ]] || return 0
+    new="$(printf '[Service]\nMemoryHigh=%sM\nMemoryMax=%sM' "${high}" "${max}")"
+    if [[ "$(cat "${dir}/enginescript.conf" 2> /dev/null)" == "${new}" ]]; then
+        return 0
+    fi
+    mkdir -p "${dir}"
+    echo "${new}" > "${dir}/enginescript.conf"
+    systemctl daemon-reload
+}
+
+
+# ----------------------------------------------------------------
 # Load a redis.conf in a throwaway Redis (own socket, no TCP, temporary directory) and stop it.
 # Returns 0 when it answered PING. Its output and log go to the file given as the second argument
 # (Redis prints configuration errors on stderr, not in its log).
@@ -207,8 +232,8 @@ function apply_mariadb_tuning() {
 # Apply the shared tuning plan's Nginx values to the running nginx.conf
 #
 # Patches the FastCGI cache index and disk limit, and the October 2026 tuning (cache inactive
-# 3h with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
-# worker_rlimit_nofile 16384), tests with nginx -t, and reloads; the previous file is restored if
+# 1d with min_free, keepalive_timeout 900s, open_file_cache_errors off, worker_connections 4096,
+# worker_rlimit_nofile 32768), tests with nginx -t, and reloads; the previous file is restored if
 # the test or the reload fails. Other template changes arrive with the next Nginx update.
 function apply_nginx_tuning() {
     local conf=/etc/nginx/nginx.conf backup
@@ -219,13 +244,13 @@ function apply_nginx_tuning() {
     cp -p "${conf}" "${backup}"
     sed -i -E \
         -e "s|keys_zone=EngineScriptWP:[0-9]+m|keys_zone=EngineScriptWP:$(tuning_get NGINX_CACHE_ZONE_MB)m|" \
-        -e "s|(fastcgi_cache_path [^;]*) inactive=[0-9]+[a-z]|\1 inactive=3h|" \
+        -e "s|(fastcgi_cache_path [^;]*) inactive=[0-9]+[a-z]|\1 inactive=1d|" \
         -e "s|(fastcgi_cache_path [^;]*) max_size=[0-9]+m|\1 max_size=$(tuning_get NGINX_CACHE_MAX_MB)m|" \
         -e "/fastcgi_cache_path/{/min_free=/!s| use_temp_path=| min_free=1g use_temp_path=|}" \
         -e "s|^([[:space:]]*)keepalive_timeout [0-9]+s?;|\1keepalive_timeout 900s;|" \
         -e "s|^([[:space:]]*)open_file_cache_errors on;|\1open_file_cache_errors off;|" \
         -e "s|^([[:space:]]*)worker_connections [0-9]+;|\1worker_connections 4096;|" \
-        -e "s|^worker_rlimit_nofile [0-9]+;|worker_rlimit_nofile 16384;|" \
+        -e "s|^worker_rlimit_nofile [0-9]+;|worker_rlimit_nofile 32768;|" \
         "${conf}"
     if cmp -s "${conf}" "${backup}"; then
         rm -f "${backup}"

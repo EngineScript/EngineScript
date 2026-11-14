@@ -126,6 +126,22 @@ INSTALL_DIGITALOCEAN_METRICS_AGENT=0
 # Adds a cron job that pulls the latest EngineScript release and updates your installation to that version.
 ENGINESCRIPT_AUTO_UPDATE=1
 
+## Automatic Software Updates (Recommended) ##
+# Installs new releases of Nginx, PHP, and MariaDB about a day after EngineScript has tested
+# and released them. Each update backs up first, checks that your sites still work, and puts
+# the previous setup back where it can if they do not. With a Pushbullet token (below), you get
+# a note after each update, and when one fails.
+# These need ENGINESCRIPT_AUTO_UPDATE=1. You can always update by hand: es.menu > Update Software
+#
+# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)
+AUTO_UPDATE_NGINX=1
+# PHP: patch releases of the installed version only (for example 8.5.1 to 8.5.2).
+# Switching to a new version (8.5 to 8.6) is never automatic.
+AUTO_UPDATE_PHP=1
+# MariaDB: patch releases of the installed series only (for example 11.8.1 to 11.8.2).
+# Every database is backed up first. MariaDB restarts (a few seconds without a database).
+AUTO_UPDATE_MARIADB=1
+
 # EngineScript Test Mode
 # When enabled, install and update scripts will use the update-software-versions branch instead of the master branch.
 # This allows testing of experimental features and software version updates before they are released to production.

@@ -38,6 +38,11 @@ INSTALL_ADMINER=0
 # Disable auto-updates in CI environment
 ENGINESCRIPT_AUTO_UPDATE=0
 
+# Automatic Software Updates (Disabled for CI)
+AUTO_UPDATE_NGINX=0
+AUTO_UPDATE_PHP=0
+AUTO_UPDATE_MARIADB=0
+
 
 ############################
 # Expanded Server Features #

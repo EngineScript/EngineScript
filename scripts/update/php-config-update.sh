@@ -33,10 +33,11 @@ fi
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Apply the shared tuning plan (enginescript-tuning.sh) to PHP-FPM: worker counts,
+# Apply the shared tuning plan (enginescript-tuning.sh) to PHP-FPM: worker counts, the backlog,
 # memory_limit, and OPcache sizes. The plan is written first if the server has none yet.
 apply_php_tuning() {
   local www="/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ini="/etc/php/${PHP_VER}/fpm/php.ini"
+  local fpm="/etc/php/${PHP_VER}/fpm/php-fpm.conf"
 
   tuning_load
   if [[ -z "$(tuning_get PHP_MAX_CHILDREN)" ]]; then
@@ -48,6 +49,15 @@ apply_php_tuning() {
   sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
   sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
   sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+
+  # The plan's listen backlog. A plan written before it had the key keeps the template's value
+  if [[ -n "$(tuning_get PHP_LISTEN_BACKLOG)" ]]; then
+    sed -i "s|^listen.backlog = .*|listen.backlog = $(tuning_get PHP_LISTEN_BACKLOG)|" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+  fi
+
+  # process.max (all pools together) follows the one pool's pm.max_children, so the fixed
+  # number in the template never caps a large server below its plan
+  sed -i "s|^process.max = .*|process.max = $(tuning_get PHP_MAX_CHILDREN)|" "${fpm}" 2>> "${ES_STEP_ERROR_LOG}"
 
   sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
   sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
@@ -100,6 +110,10 @@ if command -v phpdismod > /dev/null 2>&1; then
   phpdismod -v "${PHP_VER}" -s fpm ffi readline 2>> "${ES_STEP_ERROR_LOG}"
 fi
 
+# PHP-FPM's temporary files (uploads, and the plugin and theme archives WordPress downloads) go
+# to disk (sys_temp_dir and upload_tmp_dir in php.ini): Ubuntu 26.04 keeps /tmp in memory
+install -d -o www-data -g www-data -m 700 /var/lib/php-tmp 2>> "${ES_STEP_ERROR_LOG}"
+
 # Tune PHP Configuration
 apply_php_tuning
 
@@ -110,5 +124,8 @@ if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! "php-fpm${PHP_VER}" -t >
   print_last_errors
   exit 1
 fi
+# PHP-FPM's memory ceiling from the plan (systemd override; applies to the running service)
+install_php_fpm_service_override "${PHP_VER}" 2>> "${ES_STEP_ERROR_LOG}"
+
 print_last_errors
 debug_pause "PHP Configuration Update"

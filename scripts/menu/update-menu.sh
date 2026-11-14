@@ -52,6 +52,7 @@ while true
       "Update MariaDB"
       "Update Nginx"
       "Update PHP"
+      "Update PHP Patch Release"
       "Switch PHP Version"
       "Update Server Tools"
       "Update Ubuntu Distribution (apt-get dist-upgrade)"
@@ -83,6 +84,10 @@ while true
           ;;
         "Update PHP")
           /usr/local/bin/enginescript/scripts/update/php-update.sh
+          break
+          ;;
+        "Update PHP Patch Release")
+          /usr/local/bin/enginescript/scripts/update/php-patch-update.sh
           break
           ;;
         "Switch PHP Version")

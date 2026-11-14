@@ -103,7 +103,7 @@ check "the sites stay" "${SITES[*]}" "example.com example.co.uk"
 ES_SITES_LIST="${WORK}/sites.sh" remove_site_list_variable_sources
 check "running it again changes nothing" "$(grep -c '"example' "${WORK}/sites.sh")" "2"
 ES_SITES_LIST="${WORK}/missing.sh" remove_site_list_variable_sources
-check "a server without a site list is fine" "$?" "0"
+check "a server without a site list is fine, and gets none" "$?:$([[ -e "${WORK}/missing.sh" ]] && echo created || echo absent)" "0:absent"
 SITES=()
 # shellcheck source=/dev/null
 source "${REPO_ROOT}/scripts/functions/cron/sites.sh"
@@ -145,7 +145,7 @@ check "a failed nginx -t puts map-expires.conf back" "$(grep -c 'es_php_expires'
 check "a failed nginx -t does not reload Nginx" "${RELOADS}" "1"
 unset -f nginx systemctl
 ES_NGINX_GLOBALS="${WORK}/none" migrate_nginx_php_cache_control
-check "a server without the files is fine" "$?" "0"
+check "a server without the files is fine, and gets none" "$?:$([[ -e "${WORK}/none" ]] && echo created || echo absent)" "0:absent"
 
 echo "install_fail2ban"
 printf '#!/bin/bash\necho run >> "%s/f2b-runs"\n' "${WORK}" > "${WORK}/fail2ban.sh"
@@ -158,6 +158,72 @@ F2B_STATUS="install ok installed"
 ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
 check "a server with fail2ban is left alone" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
 unset -f dpkg-query
+
+echo "add_auto_update_options"
+NOTES=0
+notify_admin() { NOTES=$((NOTES + 1)); }
+# An options file from before the automatic software updates
+sed '/^## Automatic Software Updates/,/^AUTO_UPDATE_MARIADB=/d' "${REPO_ROOT}/config/home/enginescript-install-options.txt" > "${WORK}/options.txt"
+chmod 600 "${WORK}/options.txt"
+check "the old options file has none of the options" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt")" "0"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "the three options are added, switched on" "$(grep '^AUTO_UPDATE_' "${WORK}/options.txt" | tr '\n' ' ')" "AUTO_UPDATE_NGINX=1 AUTO_UPDATE_PHP=1 AUTO_UPDATE_MARIADB=1 "
+check "they follow ENGINESCRIPT_AUTO_UPDATE" "$(grep -A2 '^ENGINESCRIPT_AUTO_UPDATE=' "${WORK}/options.txt" | tail -n 1)" "## Automatic Software Updates (Recommended) ##"
+check "the file still loads, with every other option" "$(bash -c 'source "$1" && echo "${ENGINESCRIPT_AUTO_UPDATE}${AUTO_UPDATE_PHP}${TEST_MODE}"' _ "${WORK}/options.txt")" "110"
+check "the file keeps its mode" "$(stat -c %a "${WORK}/options.txt")" "600"
+check "the admin gets one note" "${NOTES}" "1"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "running it again changes nothing" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt"):${NOTES}" "3:1"
+sed -i -e '/^AUTO_UPDATE_PHP=/d' -e 's/^AUTO_UPDATE_MARIADB=1/AUTO_UPDATE_MARIADB=0/' "${WORK}/options.txt"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "a missing option is added, and one the admin switched off stays off" "$(grep -c '^AUTO_UPDATE_NGINX=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_PHP=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=0$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=1$' "${WORK}/options.txt")" "1110"
+printf 'DEBUG_INSTALL=0\n' > "${WORK}/short-options.txt"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/short-options.txt" add_auto_update_options > /dev/null
+check "a file without ENGINESCRIPT_AUTO_UPDATE gets them at the end" "$(tail -n 1 "${WORK}/short-options.txt")" "AUTO_UPDATE_MARIADB=1"
+NOTES_BEFORE="${NOTES}"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/missing.txt" add_auto_update_options
+check "a server without an options file is fine, gets none, and sends no note" "$?:$([[ -e "${WORK}/missing.txt" ]] && echo created || echo absent):$((NOTES - NOTES_BEFORE))" "0:absent:0"
+unset -f notify_admin
+
+echo "add_missing_ppas (the weekly job)"
+# shellcheck disable=SC2034  # read by add_missing_ppas
+ENGINESCRIPT_PPAS=("ppa:example/one")
+# shellcheck disable=SC2034
+UBUNTU_VERSION="26.04"
+# shellcheck disable=SC2034
+UBUNTU_CODENAME="resolute"
+PPA_ADDS=0
+APT_FAILS=0
+export ES_APT_RETRY_SECONDS=0
+ppa_is_added() { return 1; }
+add-apt-repository() { PPA_ADDS=$((PPA_ADDS + 1)); }
+# apt-get runs in a command substitution, so its calls are counted in a file
+apt-get() { echo call >> "${WORK}/apt-calls"; (( $(grep -c . "${WORK}/apt-calls") > APT_FAILS )); }
+curl() { printf '%s' "${PPA_STATUS}"; }
+apt_calls() { grep -c . "${WORK}/apt-calls" 2> /dev/null || true; }
+PPA_STATUS=404
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a PPA without packages yet: the log says so, and nothing is added" "$(cat "${WORK}/ppa.txt"):${PPA_ADDS}" \
+  "ppa:example/one still has no packages for Ubuntu 26.04 (resolute); trying again next week.:0"
+PPA_STATUS=000
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "no connection to Launchpad: the log says that, not 'no packages'" \
+  "$(grep -c 'Could not ask Launchpad about ppa:example/one (HTTP status 000' "${WORK}/ppa.txt"):$(grep -c 'no packages' "${WORK}/ppa.txt"):${PPA_ADDS}" "1:0:0"
+PPA_STATUS=503
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a Launchpad error: the same, with its status" "$(grep -c 'HTTP status 503' "${WORK}/ppa.txt"):${PPA_ADDS}" "1:0"
+PPA_STATUS=200
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a PPA with packages is added and apt's lists are refreshed once" "${PPA_ADDS}:$(apt_calls):$(grep -c '^Added ppa:example/one' "${WORK}/ppa.txt")" "1:1:1"
+rm -f "${WORK}/apt-calls"
+APT_FAILS=2
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "apt busy twice: it tries again, without a warning" "$(apt_calls):$(grep -c 'Warning' "${WORK}/ppa.txt")" "3:0"
+rm -f "${WORK}/apt-calls"
+APT_FAILS=99
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "apt busy throughout: six tries, a warning, and the job still succeeds" "$?:$(apt_calls):$(grep -c 'package lists were not refreshed' "${WORK}/ppa.txt")" "0:6:1"
+unset -f ppa_is_added add-apt-repository apt-get curl apt_calls
 
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"

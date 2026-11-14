@@ -16,6 +16,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 # Remove PHP session files older than 6 hours
 find /var/cache/php-sessions -type f -mmin +360 -delete > /dev/null 2>&1
+# Temporary files a stopped PHP worker left behind (PHP removes its own when a request ends)
+find /var/lib/php-tmp -type f -mmin +360 -delete > /dev/null 2>&1
 
 # Remove EngineScript's own leftover temporary files older than 6 hours. systemd-tmpfiles clears
 # the rest of /tmp after 30 days; the services' private temp folders and other programs' files

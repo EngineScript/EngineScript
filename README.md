@@ -139,6 +139,18 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**/var/www/admin/tools**|Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer)|
 |**/var/www/sites/*YOURDOMAIN*/html**|Root directory for your WordPress installation|
 
+### Automatic Updates
+
+With `ENGINESCRIPT_AUTO_UPDATE=1`, a daily job updates EngineScript. The options below it in `es.config` also install new software releases after EngineScript has tested them. Each is on by default, and `0` switches it off:
+
+|Option|What it updates|
+|-|-|
+|**`AUTO_UPDATE_NGINX`**|Rebuilds Nginx when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)|
+|**`AUTO_UPDATE_PHP`**|Patch releases of the installed PHP version (8.5.x). Moving to a new version (8.5 to 8.6) is never automatic.|
+|**`AUTO_UPDATE_MARIADB`**|Patch releases of the installed MariaDB series (11.8.x), after a backup of every database. MariaDB restarts for a few seconds.|
+
+A new release waits a day on each server before it is installed. Each update checks that the sites still work, and the Nginx and MariaDB updates put the previous setup back when they do not. With a Pushbullet token, you get a note after each automatic update, after one that failed, and when a newer PHP version or MariaDB series is supported. A failed update is not tried again automatically; run it from `es.menu` > Update Software. `es.debug` shows the last automatic update of each.
+
 ### EngineScript Commands
 
 |Command|Function|

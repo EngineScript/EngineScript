@@ -72,6 +72,31 @@ check_plan "8 GB, 4 vCPU" 7940 4 163840 "PHP_MAX_CHILDREN=24 MARIADB_MAX_CONNECT
 check_plan "16 GB, 8 vCPU" 16000 8 327680 "PHP_MAX_CHILDREN=48 MARIADB_MAX_CONNECTIONS=78 MARIADB_BUFFER_POOL_MB=6513 REDIS_MAXMEMORY_MB=1600 OPCACHE_MEMORY_MB=1536 OPCACHE_INTERNED_MB=128 OPCACHE_MAX_FILES=320000 MARIADB_ARIA_MB=256 MARIADB_LOG_FILE_MB=1628 NGINX_CACHE_MAX_MB=10240 PHP_START_SERVERS=5 PHP_MIN_SPARE_SERVERS=4 PHP_MAX_SPARE_SERVERS=7"
 check_plan "64 GB, 16 vCPU" 64000 16 655360 "REDIS_MAXMEMORY_MB=2048 MARIADB_LOG_FILE_MB=2048 PHP_MAX_CHILDREN=96"
 
+echo "PHP-FPM memory ceiling: what the other services leave, never below PHP's own share"
+check_plan "1 GB, 1 vCPU" 960 1 25000 "PHP_MEMORY_HIGH_MB=402 PHP_MEMORY_MAX_MB=402"
+check_plan "4 GB, 2 vCPU" 3920 2 81920 "PHP_MEMORY_HIGH_MB=1260 PHP_MEMORY_MAX_MB=1400"
+check_plan "16 GB, 8 vCPU" 16000 8 327680 "PHP_MEMORY_HIGH_MB=5400 PHP_MEMORY_MAX_MB=6001"
+
+echo "PHP-FPM listen backlog: 511 on the smallest server, stepping up to 2048 from 16 GB"
+check_plan "1 GB, 1 vCPU" 960 1 25000 "PHP_LISTEN_BACKLOG=511"
+check_plan "2 GB, 2 vCPU" 1970 2 51200 "PHP_LISTEN_BACKLOG=768"
+check_plan "4 GB, 2 vCPU" 3920 2 81920 "PHP_LISTEN_BACKLOG=1024"
+check_plan "8 GB, 4 vCPU" 7940 4 163840 "PHP_LISTEN_BACKLOG=1536"
+check_plan "16 GB, 8 vCPU" 16000 8 327680 "PHP_LISTEN_BACKLOG=2048"
+check_plan "64 GB, 16 vCPU" 64000 16 655360 "PHP_LISTEN_BACKLOG=2048"
+for spec in "960 1" "1970 2" "3920 2" "7940 4" "16000 8" "64000 32"; do
+  read -r mem cpus <<< "${spec}"
+  eval "$(tuning_calculate "${mem}" "${cpus}" 100000 | sed 's/^/local_/')"
+  # shellcheck disable=SC2154 # local_* come from the eval
+  share=$((local_OPCACHE_MEMORY_MB + local_PHP_MAX_CHILDREN * 70))
+  # shellcheck disable=SC2154 # local_* come from the eval
+  if (( local_PHP_MEMORY_HIGH_MB >= share && local_PHP_MEMORY_MAX_MB >= local_PHP_MEMORY_HIGH_MB && local_PHP_MEMORY_MAX_MB < mem )); then
+    pass "${mem} MB, ${cpus} vCPU: ceiling ${local_PHP_MEMORY_HIGH_MB} / ${local_PHP_MEMORY_MAX_MB} MB covers PHP's share (${share} MB)"
+  else
+    fail "${mem} MB, ${cpus} vCPU: ceiling ${local_PHP_MEMORY_HIGH_MB} / ${local_PHP_MEMORY_MAX_MB} MB against a share of ${share} MB"
+  fi
+done
+
 echo "Every plan stays within memory from 2 GB up (1 GB uses swap for the 3-worker floor)"
 for spec in "1970 1" "1970 2" "3920 2" "7940 4" "16000 8" "32000 16"; do
   read -r mem cpus <<< "${spec}"

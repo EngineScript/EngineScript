@@ -25,6 +25,21 @@ ZLIB_VER="1.3.2"
 ZLIB_NG_VER="2.3.3"
 ZLIB_RS_VER="v0.6.8"
 
+# Automatic Software Updates (servers with the AUTO_UPDATE_* install options on)
+# Parts no server updates automatically for now: nginx, php, mariadb, or all (space-separated)
+AUTO_UPDATE_PAUSED=""
+# Days a new release waits on a server before it is installed (0 = at the next daily run)
+AUTO_UPDATE_DELAY_DAYS=1
+# Raise to make servers rebuild Nginx when the build changed but no version did
+NGINX_BUILD_REV="1"
+# The PHP builds (from the Sury repository) that EngineScript tested, one per supported version.
+# Servers install a PHP patch release only when Sury offers exactly this build.
+PHP_TESTED_BUILDS=(
+  "8.3=8.3.36-1+0~20261021.88"
+  "8.4=8.4.27-1+0~20261021.57"
+  "8.5=8.5.12-1+0~20261021.27"
+)
+
 # EngineScript Plugins
 ES_SE_PLUGIN_VER="2.1.2"
 ES_SO_PLUGIN_VER="2.2.0"

@@ -25,6 +25,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # --benchmark: measure the database disk's write rate again (30 seconds of disk load while
 # sites keep serving), for innodb_io_capacity. Without it, the saved result is reused.
 
+# One re-tune at a time, and none while an update runs: both rewrite the same configuration
+# files and reload the same services (the daily job and the menu can start one at the same
+# time). A re-tune that an update started itself already has the lock.
+if ! acquire_lock "update" 2> /dev/null; then
+  echo "Another EngineScript update or re-tune is running. Waiting for it to finish (up to 30 minutes)..."
+  acquire_lock "update" 1800 || exit 1
+fi
+
 if [[ "${1:-}" == "--benchmark" ]]; then
   tuning_benchmark_disk /var/lib/mysql
 fi
@@ -50,12 +58,33 @@ echo ""
 
 RETUNE_FAILED=0
 
+# True when a running PHP-FPM's listening socket has a different backlog than its pool file.
+# A reload keeps the socket, and with it the old backlog; only a restart opens a new one.
+php_backlog_needs_restart() {
+  local ver="$1" wanted live limit
+  wanted="$(sed -n 's/^listen.backlog = \([0-9][0-9]*\)$/\1/p' "/etc/php/${ver}/fpm/pool.d/www.conf" 2> /dev/null | head -1)"
+  live="$(ss -Hxln 2> /dev/null | awk -v sock="/run/php/php${ver}-fpm.sock" '$5 == sock { print $4 }' | head -1)"
+  # The kernel caps a backlog at net.core.somaxconn, so a larger value never shows on the socket
+  limit="$(cat /proc/sys/net/core/somaxconn 2> /dev/null)"
+  [[ "${wanted}" =~ ^[0-9]+$ && "${limit}" =~ ^[0-9]+$ ]] && (( wanted > limit )) && wanted="${limit}"
+  [[ -n "${wanted}" && -n "${live}" && "${wanted}" != "${live}" ]]
+}
+
 # PHP-FPM: rebuild php.ini, php-fpm.conf, and www.conf for each installed version; a graceful
-# reload starts new workers with them (php-config-update.sh keeps the old files if php-fpm -t fails)
+# reload starts new workers with them (php-config-update.sh keeps the old files if php-fpm -t
+# fails). When the plan changed the listen backlog, PHP-FPM restarts instead, once: after it
+# the socket has the new backlog and later runs reload again
 while IFS= read -r ver; do
   [[ -n "${ver}" ]] || continue
   if /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${ver}"; then
-    if systemctl is-active --quiet "php${ver}-fpm" && ! systemctl reload "php${ver}-fpm"; then
+    if systemctl is-active --quiet "php${ver}-fpm" && php_backlog_needs_restart "${ver}"; then
+      if systemctl restart "php${ver}-fpm"; then
+        echo "PHP ${ver}: applied the tuning plan (restarted once for the new listen backlog)."
+      else
+        echo "Error: PHP ${ver}-FPM did not restart with the new listen backlog." >&2
+        RETUNE_FAILED=1
+      fi
+    elif systemctl is-active --quiet "php${ver}-fpm" && ! systemctl reload "php${ver}-fpm"; then
       echo "Error: PHP ${ver}-FPM did not reload; its new configuration applies at its next restart." >&2
       RETUNE_FAILED=1
     else

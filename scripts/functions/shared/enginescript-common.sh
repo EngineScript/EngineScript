@@ -307,8 +307,9 @@ function initialize_install_state_file() {
 # The new file is removed when the move fails.
 # Usage: replace_install_state_file <new file> <state file>
 function replace_install_state_file() {
-    if ! chmod 644 "$1" || ! mv -fT "$1" "$2"; then
-        rm -f "$1"
+    local new_file="$1" state_file="$2"
+    if ! chmod 644 "${new_file}" || ! mv -fT "${new_file}" "${state_file}"; then
+        rm -f "${new_file}"
         return 1
     fi
 }
@@ -961,12 +962,19 @@ ENGINESCRIPT_PPAS=(
     "ppa:deadsnakes/ppa"
 )
 
-# True when a PPA publishes packages for this server's Ubuntu release (its codename's InRelease)
+# Print the HTTP status of a PPA's package index for this server's Ubuntu release (its
+# codename's InRelease): 200 it has packages, 404 it has none yet, anything else (000 is no
+# connection) the question could not be asked
+function ppa_release_status() {
+    local ppa="$1"
+    curl -s -o /dev/null -w '%{http_code}' -L --proto '=https' --proto-redir '=https' --max-time 20 \
+        "https://ppa.launchpadcontent.net/${ppa#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease"
+}
+
+# True when a PPA publishes packages for this server's Ubuntu release
 function ppa_has_release() {
-    local code
-    code="$(curl -s -o /dev/null -w '%{http_code}' -L --proto '=https' --proto-redir '=https' --max-time 20 \
-        "https://ppa.launchpadcontent.net/${1#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease")"
-    [[ "${code}" == "200" ]]
+    local ppa="$1"
+    [[ "$(ppa_release_status "${ppa}")" == "200" ]]
 }
 
 # True when a PPA is already one of apt's sources
@@ -977,11 +985,15 @@ function ppa_is_added() {
 # Add each of EngineScript's PPAs that is not a source yet and now has packages for this
 # release, then refresh apt's package lists once. Safe to run again.
 function add_missing_ppas() {
-    local ppa added=0
+    local ppa added=0 status attempt output
     for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
         ppa_is_added "${ppa}" && continue
-        if ! ppa_has_release "${ppa}"; then
+        status="$(ppa_release_status "${ppa}")"
+        if [[ "${status}" == "404" ]]; then
             echo "${ppa} still has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}); trying again next week."
+            continue
+        elif [[ "${status}" != "200" ]]; then
+            echo "Warning: Could not ask Launchpad about ${ppa} (HTTP status ${status:-none}; 000 means no connection); trying again next week." >&2
             continue
         fi
         if add-apt-repository -yn "${ppa}"; then
@@ -992,7 +1004,13 @@ function add_missing_ppas() {
         fi
     done
     if [[ "${added}" -eq 1 ]]; then
-        apt-get update -qq
+        # Another apt run (the daily update, unattended upgrades) may hold apt's lock: try for
+        # three minutes before giving up
+        for attempt in 1 2 3 4 5 6; do
+            output="$(apt-get update -qq 2>&1)" && return 0
+            [[ "${attempt}" -lt 6 ]] && sleep "${ES_APT_RETRY_SECONDS:-30}"
+        done
+        echo "Warning: apt's package lists were not refreshed after adding the PPA; the next apt update reads it. apt said: ${output}" >&2
     fi
     return 0
 }
@@ -1072,8 +1090,9 @@ function sync_nginx_http3_config() {
     fi
 
     normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport;" "${http3_enabled}"
+    # No closing semicolon in the pattern: the listeners may carry rcvbuf and sndbuf
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport" "${http3_enabled}"
 
     if shopt -q nullglob; then
         nullglob_was_set=1
@@ -2068,6 +2087,9 @@ ENGINESCRIPT_SETTING_NAMES=(
     "INSTALL_DIGITALOCEAN_REMOTE_CONSOLE"
     "INSTALL_DIGITALOCEAN_METRICS_AGENT"
     "ENGINESCRIPT_AUTO_UPDATE"
+    "AUTO_UPDATE_NGINX"
+    "AUTO_UPDATE_PHP"
+    "AUTO_UPDATE_MARIADB"
     "TEST_MODE"
 )
 ENGINESCRIPT_CREDENTIAL_NAMES=(

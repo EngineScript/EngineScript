@@ -48,6 +48,8 @@ ONE_TIME_UPGRADES=(
   migrate_nginx_php_cache_control
   # SSH: fail2ban on servers set up before it was part of the install
   install_fail2ban
+  # Install options: the automatic software update options, for the admin to see and change
+  add_auto_update_options
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then
