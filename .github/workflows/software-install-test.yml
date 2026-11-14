@@ -21,18 +21,10 @@ name: Software Install Test
       - 'scripts/functions/shared/enginescript-tuning.sh'
       - '.github/ci-config/**'
       - '.github/workflows/software-install-test.yml'
+  # Every pull request: "Install tests" is a required check on master, and a required check
+  # must report on each one. The "changes" job skips the tests when the change is outside
+  # the paths above (keep its list the same as that one).
   pull_request:
-    paths:
-      - 'enginescript-variables.txt'
-      - 'config/etc/php/**'
-      - 'config/etc/mysql/**'
-      - 'scripts/install/mariadb/**'
-      - 'scripts/install/php/**'
-      - 'scripts/update/php-config-update.sh'
-      - 'scripts/functions/shared/enginescript-auto-update.sh'
-      - 'scripts/functions/shared/enginescript-tuning.sh'
-      - '.github/ci-config/**'
-      - '.github/workflows/software-install-test.yml'
   workflow_dispatch:
 
 permissions:
@@ -43,8 +35,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Install test scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - name: Decide whether the install tests apply
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # A push to master and a manual run always test. A pull request tests when it changes
+          # one of these paths, and also when its file list cannot be read.
+          covered=(
+            'enginescript-variables\.txt$'
+            'config/etc/php/'
+            'config/etc/mysql/'
+            'scripts/install/mariadb/'
+            'scripts/install/php/'
+            'scripts/update/php-config-update\.sh$'
+            'scripts/functions/shared/enginescript-auto-update\.sh$'
+            'scripts/functions/shared/enginescript-tuning\.sh$'
+            '\.github/ci-config/'
+            '\.github/workflows/software-install-test\.yml$'
+          )
+          pattern="^($(IFS='|'; echo "${covered[*]}"))"
+          run=true
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename')" || files=""
+            if [[ -n "${files}" ]] && ! grep -qE "${pattern}" <<< "${files}"; then
+              run=false
+            fi
+          fi
+          echo "run=${run}" >> "${GITHUB_OUTPUT}"
+          echo "Install tests apply: ${run}"
+
   php:
     name: PHP Install Test (${{ matrix.ubuntu }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -151,6 +187,8 @@ jobs:
 
   mariadb:
     name: MariaDB Install Test (${{ matrix.ubuntu }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -244,3 +282,25 @@ jobs:
           exit "${failed}"
           EOF
           sudo --preserve-env=MARIADB_VER bash /tmp/mariadb-install-test.sh
+
+  # The one check master requires. Matrix jobs that are skipped report no check of their own,
+  # so the requirement is on this job: it passes when every install test passed or did not apply.
+  result:
+    name: Install tests
+    if: always()
+    needs: [changes, php, mariadb]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every install test passed or did not apply
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results (scope, PHP, MariaDB): ${RESULTS}"
+          for result in ${RESULTS}; do
+            if [[ "${result}" != "success" && "${result}" != "skipped" ]]; then
+              echo "::error::An install test did not pass (${result})"
+              exit 1
+            fi
+          done
