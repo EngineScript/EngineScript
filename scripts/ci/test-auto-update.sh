@@ -42,16 +42,18 @@ fail() {
 
 # Usage: check "<description>" "<actual>" "<expected>"
 check() {
-  if [[ "$2" == "$3" ]]; then
-    pass "$1"
+  local description="$1" actual="$2" expected="$3"
+  if [[ "${actual}" == "${expected}" ]]; then
+    pass "${description}"
   else
-    fail "$1 (expected '$3', got '$2')"
+    fail "${description} (expected '${expected}', got '${actual}')"
   fi
 }
 
 # Prints "due", or "wait" with a reason on stderr left out
 due() {
-  if ES_AUTO_UPDATE_TODAY="$1" auto_update_due "$2" "$3" > /dev/null; then
+  local today="$1" part="$2" release="$3"
+  if ES_AUTO_UPDATE_TODAY="${today}" auto_update_due "${part}" "${release}" > /dev/null; then
     echo "due"
   else
     echo "wait"
@@ -125,8 +127,9 @@ BASE="$(nginx_build_fingerprint)"
 check "it names what is compiled in" "${BASE}" "nginx=1.31.8 openssl=4.1.0 pcre2=10.49 zlib=zlib-1.3.2 headers-more=0.41 cache-purge=3.0.4 http3=0 rev=1"
 # Usage: changes "<assignment>": prints "changed" when the assignment gives another fingerprint
 changes() {
+  local assignment="$1"
   (
-    eval "$1"
+    eval "${assignment}"
     [[ "$(nginx_build_fingerprint)" != "${BASE}" ]] && echo "changed" || echo "same"
   )
 }

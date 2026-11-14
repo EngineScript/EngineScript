@@ -326,9 +326,10 @@ jobs:
           # for Ubuntu 24.04 (noble) and 26.04 (resolute); a build is recorded only when both show
           # it, without the Ubuntu part of the version (+ubuntu26.04~1.gbp...).
           sury_build() {
-            curl -fsSL --proto '=https' --max-time 60 "https://packages.sury.org/php/dists/$1/main/binary-amd64/Packages.gz" |
+            local codename="$1" version="$2"
+            curl -fsSL --proto '=https' --max-time 60 "https://packages.sury.org/php/dists/${codename}/main/binary-amd64/Packages.gz" |
               gzip -dc |
-              awk -v p="php$2-fpm" '$1 == "Package:" { found = ($2 == p) } found && $1 == "Version:" { print $2; exit }' |
+              awk -v p="php${version}-fpm" '$1 == "Package:" { found = ($2 == p) } found && $1 == "Version:" { print $2; exit }' |
               sed 's/+ubuntu.*//'
           }
           mapfile -t PHP_VERSIONS < <(sed -n '/^SUPPORTED_PHP_VERSIONS=(/,/^)/p' enginescript-variables.txt | grep -oE '[0-9]+\.[0-9]+')

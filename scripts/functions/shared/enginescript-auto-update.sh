@@ -52,10 +52,10 @@ function resolve_auto_update_settings() {
 # enginescript-variables.txt names the parts, or "all")
 # Usage: auto_update_paused <nginx|php|mariadb>
 function auto_update_paused() {
-    local name
+    local part="$1" name
 
     for name in ${AUTO_UPDATE_PAUSED//,/ }; do
-        if [[ "${name}" == "$1" || "${name}" == "all" ]]; then
+        if [[ "${name}" == "${part}" || "${name}" == "all" ]]; then
             return 0
         fi
     done
@@ -116,11 +116,11 @@ function auto_update_due() {
 # Record a release whose automatic update failed (see auto_update_due)
 # Usage: auto_update_record_failed <part> "<release>"
 function auto_update_record_failed() {
-    local dir
+    local part="$1" release="$2" dir
     dir="$(auto_update_dir)"
 
     mkdir -p "${dir}" || return 1
-    printf '%s\n' "$2" > "${dir}/$1.failed"
+    printf '%s\n' "${release}" > "${dir}/${part}.failed"
 }
 
 
@@ -128,10 +128,10 @@ function auto_update_record_failed() {
 # Forget a part's waiting and failed releases, after a successful update (automatic or by hand)
 # Usage: auto_update_clear <part>
 function auto_update_clear() {
-    local dir
+    local part="$1" dir
     dir="$(auto_update_dir)"
 
-    rm -f "${dir}/$1.pending" "${dir}/$1.failed"
+    rm -f "${dir}/${part}.pending" "${dir}/${part}.failed"
 }
 
 
@@ -139,11 +139,11 @@ function auto_update_clear() {
 # Record a part's last automatic update, for es.debug
 # Usage: auto_update_record_last <part> <updated|failed> "<description>"
 function auto_update_record_last() {
-    local dir
+    local part="$1" result="$2" description="$3" dir
     dir="$(auto_update_dir)"
 
     mkdir -p "${dir}" || return 1
-    printf '%s %s: %s\n' "$(date -u +%F)" "$2" "$3" > "${dir}/$1.last"
+    printf '%s %s: %s\n' "$(date -u +%F)" "${result}" "${description}" > "${dir}/${part}.last"
 }
 
 
@@ -211,16 +211,16 @@ function nginx_auto_update_target() {
 # (the newest supported PHP version, the MariaDB series EngineScript installs)
 # Usage: auto_update_notice_once <name> "<value>" "<message>"
 function auto_update_notice_once() {
-    local dir
+    local name="$1" value="$2" message="$3" dir
     dir="$(auto_update_dir)"
 
-    if [[ -f "${dir}/$1.notified" && "$(< "${dir}/$1.notified")" == "$2" ]]; then
+    if [[ -f "${dir}/${name}.notified" && "$(< "${dir}/${name}.notified")" == "${value}" ]]; then
         return 0
     fi
-    echo "Notice: $3"
-    notify_admin "Server: ${IP_ADDRESS:-}" "$3" || return 1
+    echo "Notice: ${message}"
+    notify_admin "Server: ${IP_ADDRESS:-}" "${message}" || return 1
     mkdir -p "${dir}" || return 1
-    printf '%s\n' "$2" > "${dir}/$1.notified"
+    printf '%s\n' "${value}" > "${dir}/${name}.notified"
 }
 
 
@@ -277,10 +277,10 @@ function mariadb_newer_series() {
 # enginescript-variables.txt, entries "8.5=8.5.12-1+0~20261021.27"), or nothing
 # Usage: php_tested_build <version>
 function php_tested_build() {
-    local entry
+    local version="$1" entry
 
     for entry in "${PHP_TESTED_BUILDS[@]}"; do
-        if [[ "${entry%%=*}" == "$1" ]]; then
+        if [[ "${entry%%=*}" == "${version}" ]]; then
             echo "${entry#*=}"
             return 0
         fi
@@ -329,11 +329,11 @@ function php_auto_update_target() {
 # (for a one-time note), or nothing
 # Usage: php_newer_version <installed version>
 function php_newer_version() {
-    local newest
+    local installed="$1" newest
     newest="$(printf '%s\n' "${SUPPORTED_PHP_VERSIONS[@]}" | sort -V | tail -n 1)"
 
-    if [[ -n "$1" && -n "${newest}" && "${newest}" != "$1" \
-        && "$(printf '%s\n' "$1" "${newest}" | sort -V | tail -n 1)" == "${newest}" ]]; then
+    if [[ -n "${installed}" && -n "${newest}" && "${newest}" != "${installed}" \
+        && "$(printf '%s\n' "${installed}" "${newest}" | sort -V | tail -n 1)" == "${newest}" ]]; then
         echo "${newest}"
     fi
 }

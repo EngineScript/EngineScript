@@ -410,9 +410,10 @@ function add_auto_update_options() {
             continue
         fi
         case "${name}" in
-            AUTO_UPDATE_NGINX) echo "# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (about 1 second of downtime)" ;;
+            AUTO_UPDATE_NGINX) echo "# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)" ;;
             AUTO_UPDATE_PHP) echo "# PHP: patch releases of the installed version only. Switching to a new version is never automatic." ;;
             AUTO_UPDATE_MARIADB) echo "# MariaDB: patch releases of the installed series only. Every database is backed up first. MariaDB restarts." ;;
+            *) ;;
         esac
         echo "${name}=1"
     done > "${block}"

@@ -145,7 +145,7 @@ With `ENGINESCRIPT_AUTO_UPDATE=1`, a daily job updates EngineScript. The options
 
 |Option|What it updates|
 |-|-|
-|**`AUTO_UPDATE_NGINX`**|Rebuilds Nginx when Nginx, OpenSSL, PCRE2, or zlib has a new release (about 1 second of downtime)|
+|**`AUTO_UPDATE_NGINX`**|Rebuilds Nginx when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)|
 |**`AUTO_UPDATE_PHP`**|Patch releases of the installed PHP version (8.5.x). Moving to a new version (8.5 to 8.6) is never automatic.|
 |**`AUTO_UPDATE_MARIADB`**|Patch releases of the installed MariaDB series (11.8.x), after a backup of every database. MariaDB restarts for a few seconds.|
 

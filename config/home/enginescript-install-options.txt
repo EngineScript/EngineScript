@@ -133,7 +133,7 @@ ENGINESCRIPT_AUTO_UPDATE=1
 # a note after each update, and when one fails.
 # These need ENGINESCRIPT_AUTO_UPDATE=1. You can always update by hand: es.menu > Update Software
 #
-# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (about 1 second of downtime)
+# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)
 AUTO_UPDATE_NGINX=1
 # PHP: patch releases of the installed version only (for example 8.5.1 to 8.5.2).
 # Switching to a new version (8.5 to 8.6) is never automatic.

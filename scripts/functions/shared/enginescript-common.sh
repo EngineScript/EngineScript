@@ -307,8 +307,9 @@ function initialize_install_state_file() {
 # The new file is removed when the move fails.
 # Usage: replace_install_state_file <new file> <state file>
 function replace_install_state_file() {
-    if ! chmod 644 "$1" || ! mv -fT "$1" "$2"; then
-        rm -f "$1"
+    local new_file="$1" state_file="$2"
+    if ! chmod 644 "${new_file}" || ! mv -fT "${new_file}" "${state_file}"; then
+        rm -f "${new_file}"
         return 1
     fi
 }
@@ -965,13 +966,15 @@ ENGINESCRIPT_PPAS=(
 # codename's InRelease): 200 it has packages, 404 it has none yet, anything else (000 is no
 # connection) the question could not be asked
 function ppa_release_status() {
+    local ppa="$1"
     curl -s -o /dev/null -w '%{http_code}' -L --proto '=https' --proto-redir '=https' --max-time 20 \
-        "https://ppa.launchpadcontent.net/${1#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease"
+        "https://ppa.launchpadcontent.net/${ppa#ppa:}/ubuntu/dists/${UBUNTU_CODENAME}/InRelease"
 }
 
 # True when a PPA publishes packages for this server's Ubuntu release
 function ppa_has_release() {
-    [[ "$(ppa_release_status "$1")" == "200" ]]
+    local ppa="$1"
+    [[ "$(ppa_release_status "${ppa}")" == "200" ]]
 }
 
 # True when a PPA is already one of apt's sources
