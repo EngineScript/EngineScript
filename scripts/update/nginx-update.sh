@@ -10,6 +10,9 @@
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
+# The build fingerprint that the automatic updates compare
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -132,7 +135,13 @@ fi
 
 # 2. Download and compile while the running Nginx keeps serving (nginx-build.sh is shared with
 # the install, and fetches the OpenSSL, zlib, and PCRE2 versions in enginescript-variables.txt)
-if ! /usr/local/bin/enginescript/scripts/install/nginx/nginx-build.sh; then
+# The build runs at the lowest CPU and disk priority: the sites' Nginx, PHP, and MariaDB go
+# first, and the build uses what they leave (it takes longer only while the server is busy)
+LOW_PRIORITY=(nice -n 19)
+if command -v ionice > /dev/null 2>&1 && ionice -c 3 true 2> /dev/null; then
+  LOW_PRIORITY+=(ionice -c 3)
+fi
+if ! "${LOW_PRIORITY[@]}" /usr/local/bin/enginescript/scripts/install/nginx/nginx-build.sh; then
   # make install may have replaced the binary before failing; put the previous one back
   restore_previous_binary
   echo "Error: Building Nginx failed. The update stopped before changing any configuration." >&2
@@ -212,3 +221,7 @@ checksec --format=json --file=/usr/sbin/nginx --extended | jq -r
 
 echo "PASSED: Nginx is running."
 set_install_state "NGINX" "1"
+
+# What this Nginx was built from, so the automatic updates know the server is current
+record_nginx_build_fingerprint
+auto_update_clear "nginx"

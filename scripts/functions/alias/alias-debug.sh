@@ -215,6 +215,28 @@ debug_print "Files (site archive) | ${BACKUP_FILES_FREQUENCY}, keep ${BACKUP_FIL
 debug_print "EngineScript configuration | ${BACKUP_CONFIG_FREQUENCY}, keep ${BACKUP_CONFIG_KEEP_DAYS} days" "| EngineScript configuration | \`${BACKUP_CONFIG_FREQUENCY}\`, keep ${BACKUP_CONFIG_KEEP_DAYS} days |"
 debug_print "Amazon S3 | ${BACKUP_S3} (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted})" "| Amazon S3 | \`${BACKUP_S3}\` (configuration: ${BACKUP_S3_INCLUDE_CONFIG}, keep: ${BACKUP_S3_KEEP_DAYS:-not deleted}) |"
 
+# Automatic Software Updates: each part's switch, the last automatic update, and a release that
+# waits or failed (software-auto-update.sh)
+debug_print "\n### Automatic Software Updates\n" "\n### Automatic Software Updates\n"
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh
+resolve_auto_update_settings
+AUTO_UPDATE_STATE_DIR="$(auto_update_dir)"
+debug_print "| Part | Switch | Last automatic update | Waiting | Failed |" "| Part | Switch | Last automatic update | Waiting | Failed |"
+debug_print "|------|--------|-----------------------|---------|--------|" "|------|--------|-----------------------|---------|--------|"
+for auto_part in nginx php mariadb; do
+    auto_setting="AUTO_UPDATE_${auto_part^^}"
+    auto_switch="${!auto_setting}"
+    if auto_update_paused "${auto_part}"; then
+        auto_switch="${auto_switch} (paused by EngineScript)"
+    fi
+    auto_last="$(cat "${AUTO_UPDATE_STATE_DIR}/${auto_part}.last" 2> /dev/null)"
+    # The waiting release, with the day the server first saw it
+    auto_waiting="$(paste -sd' ' "${AUTO_UPDATE_STATE_DIR}/${auto_part}.pending" 2> /dev/null)"
+    auto_failed="$(cat "${AUTO_UPDATE_STATE_DIR}/${auto_part}.failed" 2> /dev/null)"
+    debug_print "${auto_part} | ${auto_switch} | ${auto_last:-none} | ${auto_waiting:-none} | ${auto_failed:-none}" \
+        "| ${auto_part} | \`${auto_switch}\` | ${auto_last:-none} | ${auto_waiting:-none} | ${auto_failed:-none} |"
+done
+
 # Software Versions
 debug_print "\n## Software Versions\n" "\n## Software Versions\n"
 debug_print "| Software | Version |" "| Software | Version |"

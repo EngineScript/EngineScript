@@ -20,6 +20,10 @@
 #   5. PHP-FPM workers: what is left / 70 MB, at most 6 per vCPU, at least 3
 #   6. 75% of any RAM still left goes to the MariaDB buffer pool; the rest stays free for the
 #      Linux file cache
+#   7. PHP-FPM's memory ceiling (the systemd override of its service): the RAM the shares of
+#      the system, Redis, and MariaDB leave, never less than PHP's own share (OPcache plus
+#      70 MB a worker)
+#   8. PHP-FPM's listen backlog (requests that wait for a free worker), by tier: 511 to 2048
 #
 # The plan is saved to /etc/enginescript/tuning.conf. An administrator can override any value in
 # /etc/enginescript/tuning-overrides.conf (same KEY=value format). Both files are read with a
@@ -27,7 +31,7 @@
 # owned /etc/enginescript. ES_TUNING_CONF and ES_TUNING_OVERRIDES override the paths (for tests).
 
 # Bump when the plan's keys or formulas change, so EngineScript updates apply the new plan once
-ES_TUNING_VERSION=1
+ES_TUNING_VERSION=2
 
 
 # ----------------------------------------------------------------
@@ -78,7 +82,7 @@ function tuning_calculate() {
     local mem="$1" cpus="$2" disk="$3"
     local reserve redis opcache interned max_files aria pool_floor table_cache rest workers
     local conns used left pool redo log_buffer tmp memory_limit zone cache_max
-    local start min_spare max_spare
+    local start min_spare max_spare php_share php_max php_high backlog
 
     reserve=$((192 + mem * 5 / 100))
 
@@ -89,6 +93,12 @@ function tuning_calculate() {
         (( redis > 2048 )) && redis=2048
     fi
 
+    # On a 1 GB server the minimums (192 MB OPcache, a 192 MB buffer pool, 3 workers) add up to
+    # about 210 MB more than RAM. That is on paper only, and deliberate: OPcache and the buffer
+    # pool use only the memory they fill, and a worker is counted at 70 MB but measured at 20 to
+    # 48 MB. Measured worst case (a 34-plugin site): about 750 MB in use. Do not shrink OPcache
+    # to make the sum fit: a 23-plugin site needs about 170 MB of it, and a full OPcache stops
+    # caching scripts, which costs far more than the paper overrun. Swap covers the rest.
     if (( mem < 1536 )); then opcache=192; interned=48; max_files=20000
     elif (( mem < 3072 )); then opcache=256; interned=64; max_files=40000
     elif (( mem < 6144 )); then opcache=384; interned=64; max_files=80000
@@ -119,6 +129,30 @@ function tuning_calculate() {
     left=$((mem - used))
     pool="${pool_floor}"
     (( left > 0 )) && pool=$((pool_floor + left * 75 / 100))
+
+    # PHP-FPM's memory ceiling. Workers are counted at 70 MB but may each use memory_limit, so
+    # together they can ask for more than the server has. Without a ceiling the server swaps
+    # MariaDB and Redis out long before the kernel's OOM killer picks a worker. With it, PHP's
+    # own memory is reclaimed and swapped first (MemoryHigh), and a worker is killed inside
+    # PHP-FPM's group when even that is not enough (MemoryMax).
+    php_share=$((opcache + workers * 70))
+    php_max=$((mem - reserve - redis * 125 / 100 - (pool + 160 + aria + conns)))
+    (( php_max < php_share )) && php_max="${php_share}"
+    php_high=$((php_max * 90 / 100))
+    (( php_high < php_share )) && php_high="${php_share}"
+
+    # PHP-FPM's listen backlog: the requests that may wait for a free worker. It is both the
+    # largest burst the server takes without a 502 and the most work it still does for
+    # visitors who have left when it is overloaded. Measured 2026-11-13 with 12 workers and
+    # 1,500 requests at once: 511 answered 521 and was usable again in 43 s; 2048 and 4096
+    # answered all 1,500 and took 125 s. So it grows with the server, like the worker count,
+    # from PHP's default (511) to 2048. The kernel caps it at net.core.somaxconn (4096).
+    if (( mem < 1536 )); then backlog=511
+    elif (( mem < 3072 )); then backlog=768
+    elif (( mem < 6144 )); then backlog=1024
+    elif (( mem < 12288 )); then backlog=1536
+    else backlog=2048
+    fi
 
     redo=$((pool / 4))
     (( redo < 96 )) && redo=96
@@ -155,6 +189,9 @@ PHP_START_SERVERS=${start}
 PHP_MIN_SPARE_SERVERS=${min_spare}
 PHP_MAX_SPARE_SERVERS=${max_spare}
 PHP_MEMORY_LIMIT_MB=${memory_limit}
+PHP_MEMORY_HIGH_MB=${php_high}
+PHP_MEMORY_MAX_MB=${php_max}
+PHP_LISTEN_BACKLOG=${backlog}
 OPCACHE_MEMORY_MB=${opcache}
 OPCACHE_INTERNED_MB=${interned}
 OPCACHE_MAX_FILES=${max_files}

@@ -10,6 +10,9 @@
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
+# The automatic update records (a successful update clears them)
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh" >&2; exit 1; }
+
 
 #----------------------------------------------------------------------------------
 # Start Main Script
@@ -153,8 +156,23 @@ if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.co
   echo "Error: Could not download MariaDB's repository setup script. The update stopped; the MariaDB packages were not changed." >&2
   exit 1
 fi
+# The setup script refuses a version MariaDB does not publish, and then writes no repository
+# list. The previous list is kept until it succeeds: without one, apt would find no newer
+# MariaDB, report the installed one as current, and the update would go on as if it had worked.
+mkdir -p "${ROLLBACK_DIR}/apt-sources"
+cp -p /etc/apt/sources.list.d/mariadb.list /etc/apt/sources.list.d/mariadb.sources "${ROLLBACK_DIR}/apt-sources/" 2> /dev/null
 rm -f /etc/apt/sources.list.d/mariadb.list
-bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"
+if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"; then
+  rm -f "${REPO_SETUP}"
+  # The setup script's reason, shown here (print_last_errors shows it only in debug mode)
+  REPO_SETUP_ERRORS="$(grep -F '[error]' "${ES_STEP_ERROR_LOG}" 2> /dev/null | sed 's/^# \[error\] //' | head -5)"
+  print_last_errors
+  rm -f /etc/apt/sources.list.d/mariadb.list /etc/apt/sources.list.d/mariadb.sources
+  cp -p "${ROLLBACK_DIR}"/apt-sources/mariadb.* /etc/apt/sources.list.d/ 2> /dev/null
+  echo "Error: MariaDB's repository setup failed for MariaDB ${MARIADB_VER}: ${REPO_SETUP_ERRORS:-see /var/log/EngineScript/install-error-log.log}" >&2
+  echo "The update stopped; the MariaDB packages and configuration were not changed." >&2
+  exit 1
+fi
 rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
@@ -231,5 +249,6 @@ echo "PASSED: MariaDB is running with the new configuration."
 run_step "MariaDB Database Upgrade" mariadb-upgrade --force
 
 set_install_state "MARIADB" "1"
+auto_update_clear "mariadb"
 
 mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'

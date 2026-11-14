@@ -1,0 +1,246 @@
+# Installs the PHP builds and the MariaDB release that enginescript-variables.txt names, on both
+# supported Ubuntu releases, with EngineScript's configuration. Servers with the automatic software
+# updates on (AUTO_UPDATE_PHP, AUTO_UPDATE_MARIADB) install exactly these about a day after they
+# reach master, so a version PR must not be merged while this fails. The Nginx build has its own
+# workflow (enginescript-build-test.yml).
+
+name: Software Install Test
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - 'enginescript-variables.txt'
+      - 'config/etc/php/**'
+      - 'config/etc/mysql/**'
+      - 'scripts/install/mariadb/**'
+      - 'scripts/install/php/**'
+      - 'scripts/update/php-config-update.sh'
+      - 'scripts/functions/shared/enginescript-auto-update.sh'
+      - 'scripts/functions/shared/enginescript-tuning.sh'
+      - '.github/ci-config/**'
+      - '.github/workflows/software-install-test.yml'
+  pull_request:
+    paths:
+      - 'enginescript-variables.txt'
+      - 'config/etc/php/**'
+      - 'config/etc/mysql/**'
+      - 'scripts/install/mariadb/**'
+      - 'scripts/install/php/**'
+      - 'scripts/update/php-config-update.sh'
+      - 'scripts/functions/shared/enginescript-auto-update.sh'
+      - 'scripts/functions/shared/enginescript-tuning.sh'
+      - '.github/ci-config/**'
+      - '.github/workflows/software-install-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP Install Test (${{ matrix.ubuntu }})
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.ubuntu }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up EngineScript's files
+        run: |
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript /etc/enginescript
+          sudo cp -r . /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          sudo cp .github/ci-config/enginescript-variables-ci.txt /usr/local/bin/enginescript/enginescript-variables.txt
+
+      - name: Replace the runner's PHP with the Sury repository
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          # The runner image has its own PHP (and PHP repository); EngineScript servers have neither
+          sudo apt-get purge -y 'php*' > /dev/null 2>&1 || true
+          find /etc/apt/sources.list.d/ -type f \( -name '*.list' -o -name '*.sources' \) \
+            -exec grep -lZE 'ondrej/php|packages\.sury\.org/php' {} + | xargs -r -0 sudo rm -f
+          # As on a server (package-block.sh): never Apache
+          printf 'Package: apache2*\nPin: release *\nPin-Priority: -1\n' | sudo tee /etc/apt/preferences.d/apache2-block > /dev/null
+          # As repositories-install.sh adds it
+          curl -fsSL --proto '=https' -o /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+          sudo dpkg -i /tmp/debsuryorg-archive-keyring.deb
+          echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(. /etc/os-release && echo "${VERSION_CODENAME}") main" \
+            | sudo tee /etc/apt/sources.list.d/php.list
+          sudo apt-get update
+
+      - name: Install and configure each supported PHP version
+        run: |
+          cat > /tmp/php-install-test.sh << 'EOF'
+          #!/usr/bin/env bash
+          # Runs as root, with EngineScript's settings and shared functions
+          source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || exit 1
+          source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh || exit 1
+          failed=0
+          for ver in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+            echo "::group::PHP ${ver}"
+            tested="$(php_tested_build "${ver}")"
+            candidate="$(php_build_of "$(apt-cache policy "php${ver}-fpm" | sed -n 's/^ *Candidate: //p')")"
+            echo "Tested build: ${tested:-none}; Sury offers: ${candidate:-none}"
+            if [[ -z "${tested}" || "${candidate}" != "${tested}" ]]; then
+              echo "::error::PHP ${ver}: Sury offers ${candidate:-nothing}, but PHP_TESTED_BUILDS names ${tested:-nothing}. Servers would wait; record the offered build (software-version-check.yml) or check the repository."
+              failed=1
+              echo "::endgroup::"
+              continue
+            fi
+            mapfile -t packages < <(get_php_packages_array "${ver}")
+            if ! DEBIAN_FRONTEND=noninteractive apt-get install -qy -o Dpkg::Options::=--force-confold "${packages[@]}"; then
+              echo "::error::PHP ${ver}: the packages did not install"
+              failed=1
+              echo "::endgroup::"
+              continue
+            fi
+            installed="$(php_build_of "$(dpkg-query -W -f='${Version}' "php${ver}-fpm")")"
+            if [[ "${installed}" != "${tested}" ]]; then
+              echo "::error::PHP ${ver}: installed ${installed}, not the tested ${tested}"
+              failed=1
+            fi
+            # EngineScript's php.ini, php-fpm.conf, and pool, tuned; ends with php-fpm -t
+            if ! /usr/local/bin/enginescript/scripts/update/php-config-update.sh "${ver}"; then
+              echo "::error::PHP ${ver}: EngineScript's configuration failed (php-config-update.sh)"
+              cat "${ES_STEP_ERROR_LOG}" 2> /dev/null
+              failed=1
+            fi
+            mkdir -p /var/cache/opcache /var/cache/php-sessions /var/cache/wsdlcache
+            set_php_permissions
+            systemctl restart "php${ver}-fpm"
+            answered=0
+            for _ in 1 2 3 4 5; do
+              if php_fpm_answers "${ver}"; then
+                answered=1
+                break
+              fi
+              sleep 2
+            done
+            if [[ "${answered}" == "1" ]]; then
+              echo "PHP ${ver}: PHP-FPM runs PHP with EngineScript's configuration"
+            else
+              echo "::error::PHP ${ver}: PHP-FPM does not run PHP with EngineScript's configuration"
+              systemctl status "php${ver}-fpm" --no-pager | tail -20
+              failed=1
+            fi
+            for module in igbinary imagick intl mbstring mysqli redis "Zend OPcache" zip; do
+              if ! "php${ver}" -m | grep -qxF "${module}"; then
+                echo "::error::PHP ${ver}: the ${module} extension is not loaded"
+                failed=1
+              fi
+            done
+            echo "::endgroup::"
+          done
+          exit "${failed}"
+          EOF
+          sudo bash /tmp/php-install-test.sh
+
+  mariadb:
+    name: MariaDB Install Test (${{ matrix.ubuntu }})
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.ubuntu }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up EngineScript's files
+        run: |
+          sudo mkdir -p /usr/local/bin/enginescript /home/EngineScript /var/log/EngineScript /etc/enginescript
+          sudo cp -r . /usr/local/bin/enginescript/
+          sudo cp .github/ci-config/enginescript-install-options-ci.txt /home/EngineScript/enginescript-install-options.txt
+          sudo cp .github/ci-config/enginescript-variables-ci.txt /usr/local/bin/enginescript/enginescript-variables.txt
+
+      - name: Install the exact MARIADB_VER
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          MARIADB_VER="$(grep '^MARIADB_VER=' enginescript-variables.txt | cut -d'"' -f2)"
+          echo "MARIADB_VER=${MARIADB_VER}" >> "${GITHUB_ENV}"
+          # The runner image's MySQL would hold port 3306 and the data directory
+          sudo systemctl stop mysql 2> /dev/null || true
+          sudo apt-get purge -y 'mysql-server*' 'mysql-client*' > /dev/null 2>&1 || true
+          sudo rm -rf /var/lib/mysql /etc/mysql
+          # As mariadb-update.sh does: the setup script is saved before it runs
+          curl -fLsS --proto '=https' -o /tmp/mariadb_repo_setup https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
+          sudo bash /tmp/mariadb_repo_setup --mariadb-server-version="${MARIADB_VER}" --skip-maxscale
+          sudo apt-get update
+          sudo apt-get install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client
+          sudo systemctl start mariadb
+
+      - name: Check the version and EngineScript's configuration
+        run: |
+          cat > /tmp/mariadb-install-test.sh << 'EOF'
+          #!/usr/bin/env bash
+          # Runs as root, with EngineScript's settings and shared functions
+          source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || exit 1
+          source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh || exit 1
+          failed=0
+          installed="$(mariadb_installed_version)"
+          if [[ "${installed}" == "${MARIADB_VER}" ]]; then
+            echo "MariaDB ${installed} is installed"
+          else
+            echo "::error::Installed MariaDB ${installed:-nothing}, not MARIADB_VER ${MARIADB_VER}"
+            failed=1
+          fi
+          # As mariadb-update.sh does: tune a staging copy of EngineScript's my.cnf, check it with
+          # mariadbd, then swap it in and restart
+          staged=/etc/mysql/my.cnf.enginescript-new
+          cp -f /usr/local/bin/enginescript/config/etc/mysql/my.cnf "${staged}"
+          install -d -o mysql -g mysql -m 750 /var/lib/mysql-files /var/lib/mysql-tmp
+          if ! /usr/local/bin/enginescript/scripts/install/mariadb/mariadb-tune.sh "${staged}"; then
+            echo "::error::mariadb-tune.sh failed"
+            exit 1
+          fi
+          check_output="$(mariadbd --defaults-file="${staged}" --help --verbose 2>&1 > /dev/null)"
+          check_rc=$?
+          if [[ "${check_rc}" -ne 0 ]] || grep -q '\[ERROR\]' <<< "${check_output}"; then
+            echo "::error::MariaDB ${installed} rejects EngineScript's configuration:"
+            grep -E '\[(ERROR|Warning)\]' <<< "${check_output}" | head -10
+            exit 1
+          fi
+          echo "MariaDB ${installed} accepts EngineScript's configuration"
+          cp -f "${staged}" /etc/mysql/my.cnf
+          rm -f "${staged}"
+          systemctl daemon-reload
+          if ! systemctl restart mariadb; then
+            echo "::error::MariaDB does not start with EngineScript's configuration"
+            systemctl status mariadb --no-pager | tail -20
+            exit 1
+          fi
+          answer=""
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            answer="$(mariadb --protocol=socket -N -e 'SELECT VERSION()' 2> /dev/null)" && break
+            sleep 3
+          done
+          if [[ "${answer}" == "${MARIADB_VER}-"* ]]; then
+            echo "MariaDB ${MARIADB_VER} runs with EngineScript's configuration (${answer})"
+          else
+            echo "::error::MariaDB does not answer with EngineScript's configuration (got '${answer}')"
+            tail -30 /var/log/mysql/mysql-error.log 2> /dev/null
+            failed=1
+          fi
+          mariadb-upgrade --force > /dev/null || { echo "::error::mariadb-upgrade failed"; failed=1; }
+          exit "${failed}"
+          EOF
+          sudo --preserve-env=MARIADB_VER bash /tmp/mariadb-install-test.sh

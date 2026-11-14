@@ -387,3 +387,56 @@ function install_fail2ban() {
     echo "Installing fail2ban (bans addresses after repeated failed SSH logins)..."
     "${ES_FAIL2BAN_SCRIPT:-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh}"
 }
+
+
+# ----------------------------------------------------------------
+# Add the automatic software update options to the install options file
+#
+# Options files written before AUTO_UPDATE_NGINX, AUTO_UPDATE_PHP, and AUTO_UPDATE_MARIADB
+# existed have none of them, and a missing option is on (resolve_auto_update_settings). Writing
+# them into the file, below ENGINESCRIPT_AUTO_UPDATE, shows the admin that they exist and where
+# to switch them off. A new release waits a day before it is installed, so the note sent here
+# reaches the admin before the first automatic update. Options already in the file are kept.
+function add_auto_update_options() {
+    local options_file="${ENGINESCRIPT_INSTALL_OPTIONS_FILE:-/home/EngineScript/enginescript-install-options.txt}"
+    local name block
+
+    if [[ ! -f "${options_file}" ]]; then
+        return 0
+    fi
+    block="$(mktemp)" || return 1
+    for name in AUTO_UPDATE_NGINX AUTO_UPDATE_PHP AUTO_UPDATE_MARIADB; do
+        if grep -q "^${name}=" "${options_file}"; then
+            continue
+        fi
+        case "${name}" in
+            AUTO_UPDATE_NGINX) echo "# Nginx: rebuilt when Nginx, OpenSSL, PCRE2, or zlib has a new release (about 1 second of downtime)" ;;
+            AUTO_UPDATE_PHP) echo "# PHP: patch releases of the installed version only. Switching to a new version is never automatic." ;;
+            AUTO_UPDATE_MARIADB) echo "# MariaDB: patch releases of the installed series only. Every database is backed up first. MariaDB restarts." ;;
+        esac
+        echo "${name}=1"
+    done > "${block}"
+    if [[ ! -s "${block}" ]]; then
+        rm -f "${block}"
+        return 0
+    fi
+
+    echo "Adding the automatic software update options to ${options_file}..."
+    {
+        echo ""
+        echo "## Automatic Software Updates (Recommended) ##"
+        echo "# Installs new releases of Nginx, PHP, and MariaDB about a day after EngineScript has tested"
+        echo "# and released them. Each update backs up first and checks that your sites still work."
+        echo "# These need ENGINESCRIPT_AUTO_UPDATE=1. 0 = disabled, 1 = enabled"
+        cat "${block}"
+    } > "${block}.new" && mv -f "${block}.new" "${block}" || { rm -f "${block}" "${block}.new"; return 1; }
+
+    if grep -q '^ENGINESCRIPT_AUTO_UPDATE=' "${options_file}"; then
+        sed -i "/^ENGINESCRIPT_AUTO_UPDATE=/r ${block}" "${options_file}" || { rm -f "${block}"; return 1; }
+    else
+        cat "${block}" >> "${options_file}" || { rm -f "${block}"; return 1; }
+    fi
+    rm -f "${block}"
+
+    notify_admin "Server: ${IP_ADDRESS:-}" "EngineScript now installs new Nginx, PHP patch, and MariaDB patch releases automatically, about a day after each is released, with a backup and checks first. To switch any of them off, run es.config and set AUTO_UPDATE_NGINX, AUTO_UPDATE_PHP, or AUTO_UPDATE_MARIADB to 0." || true
+}

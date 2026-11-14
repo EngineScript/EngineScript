@@ -38,6 +38,10 @@ run_step "Nginx Service" /usr/local/bin/enginescript/scripts/install/nginx/nginx
 # Nginx Service Check
 verify_service_running "nginx" "Nginx"
 
+# What this Nginx was built from, so the automatic updates know the server is current
+source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-update.sh || die "Failed to source enginescript-auto-update.sh."
+record_nginx_build_fingerprint
+
 # Nginx Installation Completed
 print_install_banner "Nginx"
 

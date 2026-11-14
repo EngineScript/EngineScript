@@ -1072,8 +1072,9 @@ function sync_nginx_http3_config() {
     fi
 
     normalize_nginx_http3_listen_directives "/etc/nginx/admin/admin.localhost.conf"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport;" "${http3_enabled}"
-    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport;" "${http3_enabled}"
+    # No closing semicolon in the pattern: the listeners may carry rcvbuf and sndbuf
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen 443 default_server quic reuseport" "${http3_enabled}"
+    set_commented_directive_state "/etc/nginx/admin/admin.localhost.conf" "listen \[::\]:443 default_server quic reuseport" "${http3_enabled}"
 
     if shopt -q nullglob; then
         nullglob_was_set=1
@@ -2068,6 +2069,9 @@ ENGINESCRIPT_SETTING_NAMES=(
     "INSTALL_DIGITALOCEAN_REMOTE_CONSOLE"
     "INSTALL_DIGITALOCEAN_METRICS_AGENT"
     "ENGINESCRIPT_AUTO_UPDATE"
+    "AUTO_UPDATE_NGINX"
+    "AUTO_UPDATE_PHP"
+    "AUTO_UPDATE_MARIADB"
     "TEST_MODE"
 )
 ENGINESCRIPT_CREDENTIAL_NAMES=(

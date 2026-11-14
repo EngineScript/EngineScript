@@ -320,6 +320,45 @@ jobs:
             echo "::warning::Failed to fetch TinyFileManager version, keeping current version"
           fi
 
+          # PHP builds from the Sury repository, one per supported PHP version (PHP_TESTED_BUILDS).
+          # Servers with AUTO_UPDATE_PHP=1 install a PHP patch release only when Sury offers exactly
+          # the build recorded here, after this PR's tests have passed. Sury builds the same release
+          # for Ubuntu 24.04 (noble) and 26.04 (resolute); a build is recorded only when both show
+          # it, without the Ubuntu part of the version (+ubuntu26.04~1.gbp...).
+          sury_build() {
+            curl -fsSL --proto '=https' --max-time 60 "https://packages.sury.org/php/dists/$1/main/binary-amd64/Packages.gz" |
+              gzip -dc |
+              awk -v p="php$2-fpm" '$1 == "Package:" { found = ($2 == p) } found && $1 == "Version:" { print $2; exit }' |
+              sed 's/+ubuntu.*//'
+          }
+          mapfile -t PHP_VERSIONS < <(sed -n '/^SUPPORTED_PHP_VERSIONS=(/,/^)/p' enginescript-variables.txt | grep -oE '[0-9]+\.[0-9]+')
+          for php_ver in "${PHP_VERSIONS[@]}"; do
+            build_noble="$(sury_build noble "${php_ver}")"
+            build_resolute="$(sury_build resolute "${php_ver}")"
+            if [[ -z "${build_noble}" || "${build_noble}" != "${build_resolute}" ]]; then
+              echo "::warning::PHP ${php_ver}: Sury shows '${build_noble}' for noble and '${build_resolute}' for resolute; keeping the recorded build"
+              continue
+            fi
+            current_build="$(sed -n "s/^  \"${php_ver//./\\.}=\([^\"]*\)\"$/\1/p" enginescript-variables.txt)"
+            if [[ "${current_build}" == "${build_noble}" ]]; then
+              continue
+            fi
+            for file in enginescript-variables.txt .github/ci-config/enginescript-variables-ci.txt; do
+              if [[ -n "${current_build}" ]]; then
+                sed -i "s|^  \"${php_ver//./\\.}=[^\"]*\"$|  \"${php_ver}=${build_noble}\"|" "${file}"
+              else
+                sed -i "/^PHP_TESTED_BUILDS=(/a\\  \"${php_ver}=${build_noble}\"" "${file}"
+              fi
+            done
+            SOFTWARE_VERSIONS_CHANGED=true
+            echo "::notice::PHP ${php_ver} build: ${current_build:-none} -> ${build_noble}"
+            if [[ -z "$CHANGELOG_CONTENT" ]]; then
+              CHANGELOG_CONTENT="| PHP ${php_ver} (Sury build) | ${current_build:-none} | **${build_noble}** |"
+            else
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}\n| PHP ${php_ver} (Sury build) | ${current_build:-none} | **${build_noble}** |"
+            fi
+          done
+
           # The README's version table, from enginescript-variables.txt. This runs on every check, not
           # only when a version changed here, so a version changed by hand reaches the README too.
           sed -i -E \

@@ -141,7 +141,14 @@ fi
 
 ./configure "${CONFIGURE_ARGS[@]}" || { echo "Error: Nginx configure failed." >&2; exit 1; }
 
-make -j"${CPU_COUNT}" || { echo "Error: Nginx build failed." >&2; exit 1; }
+# One compile job per CPU, but no more than one per 768 MB of memory: on a small server,
+# parallel compiler processes would push the running sites into swap
+BUILD_JOBS="${CPU_COUNT:-1}"
+MEMORY_JOBS=$(( $(tuning_detect_memory_mb) / 768 ))
+(( MEMORY_JOBS < 1 )) && MEMORY_JOBS=1
+(( BUILD_JOBS > MEMORY_JOBS )) && BUILD_JOBS="${MEMORY_JOBS}"
+echo "Compile jobs: ${BUILD_JOBS}"
+make -j"${BUILD_JOBS}" || { echo "Error: Nginx build failed." >&2; exit 1; }
 
 # make install renames the running binary to nginx.old before copying the new one, so a
 # running Nginx keeps serving. The caller (install or update script) restarts it.

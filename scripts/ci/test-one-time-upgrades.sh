@@ -159,6 +159,33 @@ ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
 check "a server with fail2ban is left alone" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
 unset -f dpkg-query
 
+echo "add_auto_update_options"
+NOTES=0
+notify_admin() { NOTES=$((NOTES + 1)); }
+# An options file from before the automatic software updates
+sed '/^## Automatic Software Updates/,/^AUTO_UPDATE_MARIADB=/d' "${REPO_ROOT}/config/home/enginescript-install-options.txt" > "${WORK}/options.txt"
+chmod 600 "${WORK}/options.txt"
+check "the old options file has none of the options" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt")" "0"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "the three options are added, switched on" "$(grep '^AUTO_UPDATE_' "${WORK}/options.txt" | tr '
+' ' ')" "AUTO_UPDATE_NGINX=1 AUTO_UPDATE_PHP=1 AUTO_UPDATE_MARIADB=1 "
+check "they follow ENGINESCRIPT_AUTO_UPDATE" "$(grep -A2 '^ENGINESCRIPT_AUTO_UPDATE=' "${WORK}/options.txt" | tail -n 1)" "## Automatic Software Updates (Recommended) ##"
+check "the file still loads, with every other option" "$(bash -c 'source "$1" && echo "${ENGINESCRIPT_AUTO_UPDATE}${AUTO_UPDATE_PHP}${TEST_MODE}"' _ "${WORK}/options.txt")" "110"
+check "the file keeps its mode" "$(stat -c %a "${WORK}/options.txt")" "600"
+check "the admin gets one note" "${NOTES}" "1"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "running it again changes nothing" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt"):${NOTES}" "3:1"
+sed -i -e '/^AUTO_UPDATE_PHP=/d' -e 's/^AUTO_UPDATE_MARIADB=1/AUTO_UPDATE_MARIADB=0/' "${WORK}/options.txt"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
+check "a missing option is added, and one the admin switched off stays off"   "$(grep -c '^AUTO_UPDATE_NGINX=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_PHP=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=0$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=1$' "${WORK}/options.txt")" "1110"
+printf 'DEBUG_INSTALL=0
+' > "${WORK}/short-options.txt"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/short-options.txt" add_auto_update_options > /dev/null
+check "a file without ENGINESCRIPT_AUTO_UPDATE gets them at the end" "$(tail -n 1 "${WORK}/short-options.txt")" "AUTO_UPDATE_MARIADB=1"
+ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/missing.txt" add_auto_update_options
+check "a server without an options file is fine" "$?" "0"
+unset -f notify_admin
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]

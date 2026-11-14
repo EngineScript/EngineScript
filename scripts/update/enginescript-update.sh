@@ -172,3 +172,21 @@ echo ""
 echo "============================================================="
 echo ""
 echo ""
+
+
+# --------------------------------------------------------
+# Automatic software updates (Nginx, PHP, MariaDB), on scheduled runs only. They follow the
+# versions just fetched and the AUTO_UPDATE_* install options, and have their own log.
+if [[ "${SCHEDULED}" == "1" ]]; then
+    AUTO_UPDATE_LOG="/var/log/EngineScript/cron-software-auto-update.log"
+    if [[ ! -e "${AUTO_UPDATE_LOG}" ]]; then
+        (umask 077 && : > "${AUTO_UPDATE_LOG}")
+    fi
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Started." >> "${AUTO_UPDATE_LOG}"
+    /usr/local/bin/enginescript/scripts/update/software-auto-update.sh >> "${AUTO_UPDATE_LOG}" 2>&1
+    AUTO_UPDATE_STATUS=$?
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Finished with exit status ${AUTO_UPDATE_STATUS}." >> "${AUTO_UPDATE_LOG}"
+    if [[ "${AUTO_UPDATE_STATUS}" -ne 0 ]]; then
+        echo "An automatic software update failed. See ${AUTO_UPDATE_LOG}." >&2
+    fi
+fi
