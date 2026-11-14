@@ -16,7 +16,7 @@ PCRE2_VER="10.49"
 PHP_VER="8.5"
 PHPMYADMIN_VER="5.2.3"
 PNGOUT_VER="20200115"
-ZLIB_VER="1.3.2"
+ZLIB_VER="1.4"
 ZLIB_NG_VER="2.3.3"
 ZLIB_RS_VER="v0.6.8"
 
@@ -30,9 +30,9 @@ NGINX_BUILD_REV="1"
 # The PHP builds (from the Sury repository) that EngineScript tested, one per supported version.
 # Servers install a PHP patch release only when Sury offers exactly this build.
 PHP_TESTED_BUILDS=(
-  "8.3=8.3.36-1+0~20261021.88"
-  "8.4=8.4.27-1+0~20261021.57"
-  "8.5=8.5.12-1+0~20261021.27"
+  "8.3=8.3.36-2+0~deb.sury.org.1"
+  "8.4=8.4.27-2+0~deb.sury.org.1"
+  "8.5=8.5.12-3+0~deb.sury.org.1"
 )
 
 # EngineScript Plugins
