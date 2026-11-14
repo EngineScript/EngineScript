@@ -170,6 +170,7 @@ check "the record wins over the binary's versions" "$(FAKE_NGINX_VER=1.0.0 nginx
 echo "The scripts that keep the fingerprint"
 check "nginx-update.sh records it after its checks pass" "$(sed -n '/^echo "PASSED: Nginx is running."/,$p' "${REPO_ROOT}/scripts/update/nginx-update.sh" | grep -c '^record_nginx_build_fingerprint$')" "1"
 check "nginx-install.sh records it" "$(grep -c '^record_nginx_build_fingerprint$' "${REPO_ROOT}/scripts/install/nginx/nginx-install.sh")" "1"
+# shellcheck disable=SC2016  # ${SCHEDULED} is text to find in the script, not a variable here
 check "only the scheduled EngineScript update starts the automatic updates" \
   "$(grep -B12 'software-auto-update.sh >>' "${REPO_ROOT}/scripts/update/enginescript-update.sh" | grep -c '^if \[\[ "${SCHEDULED}" == "1" \]\]; then$')" "1"
 for script in mariadb-update.sh php-patch-update.sh; do

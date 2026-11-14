@@ -103,7 +103,7 @@ check "the sites stay" "${SITES[*]}" "example.com example.co.uk"
 ES_SITES_LIST="${WORK}/sites.sh" remove_site_list_variable_sources
 check "running it again changes nothing" "$(grep -c '"example' "${WORK}/sites.sh")" "2"
 ES_SITES_LIST="${WORK}/missing.sh" remove_site_list_variable_sources
-check "a server without a site list is fine" "$?" "0"
+check "a server without a site list is fine, and gets none" "$?:$([[ -e "${WORK}/missing.sh" ]] && echo created || echo absent)" "0:absent"
 SITES=()
 # shellcheck source=/dev/null
 source "${REPO_ROOT}/scripts/functions/cron/sites.sh"
@@ -145,7 +145,7 @@ check "a failed nginx -t puts map-expires.conf back" "$(grep -c 'es_php_expires'
 check "a failed nginx -t does not reload Nginx" "${RELOADS}" "1"
 unset -f nginx systemctl
 ES_NGINX_GLOBALS="${WORK}/none" migrate_nginx_php_cache_control
-check "a server without the files is fine" "$?" "0"
+check "a server without the files is fine, and gets none" "$?:$([[ -e "${WORK}/none" ]] && echo created || echo absent)" "0:absent"
 
 echo "install_fail2ban"
 printf '#!/bin/bash\necho run >> "%s/f2b-runs"\n' "${WORK}" > "${WORK}/fail2ban.sh"
@@ -167,8 +167,7 @@ sed '/^## Automatic Software Updates/,/^AUTO_UPDATE_MARIADB=/d' "${REPO_ROOT}/co
 chmod 600 "${WORK}/options.txt"
 check "the old options file has none of the options" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt")" "0"
 ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
-check "the three options are added, switched on" "$(grep '^AUTO_UPDATE_' "${WORK}/options.txt" | tr '
-' ' ')" "AUTO_UPDATE_NGINX=1 AUTO_UPDATE_PHP=1 AUTO_UPDATE_MARIADB=1 "
+check "the three options are added, switched on" "$(grep '^AUTO_UPDATE_' "${WORK}/options.txt" | tr '\n' ' ')" "AUTO_UPDATE_NGINX=1 AUTO_UPDATE_PHP=1 AUTO_UPDATE_MARIADB=1 "
 check "they follow ENGINESCRIPT_AUTO_UPDATE" "$(grep -A2 '^ENGINESCRIPT_AUTO_UPDATE=' "${WORK}/options.txt" | tail -n 1)" "## Automatic Software Updates (Recommended) ##"
 check "the file still loads, with every other option" "$(bash -c 'source "$1" && echo "${ENGINESCRIPT_AUTO_UPDATE}${AUTO_UPDATE_PHP}${TEST_MODE}"' _ "${WORK}/options.txt")" "110"
 check "the file keeps its mode" "$(stat -c %a "${WORK}/options.txt")" "600"
@@ -177,13 +176,13 @@ ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options 
 check "running it again changes nothing" "$(grep -c '^AUTO_UPDATE_' "${WORK}/options.txt"):${NOTES}" "3:1"
 sed -i -e '/^AUTO_UPDATE_PHP=/d' -e 's/^AUTO_UPDATE_MARIADB=1/AUTO_UPDATE_MARIADB=0/' "${WORK}/options.txt"
 ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/options.txt" add_auto_update_options > /dev/null
-check "a missing option is added, and one the admin switched off stays off"   "$(grep -c '^AUTO_UPDATE_NGINX=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_PHP=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=0$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=1$' "${WORK}/options.txt")" "1110"
-printf 'DEBUG_INSTALL=0
-' > "${WORK}/short-options.txt"
+check "a missing option is added, and one the admin switched off stays off" "$(grep -c '^AUTO_UPDATE_NGINX=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_PHP=1$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=0$' "${WORK}/options.txt")$(grep -c '^AUTO_UPDATE_MARIADB=1$' "${WORK}/options.txt")" "1110"
+printf 'DEBUG_INSTALL=0\n' > "${WORK}/short-options.txt"
 ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/short-options.txt" add_auto_update_options > /dev/null
 check "a file without ENGINESCRIPT_AUTO_UPDATE gets them at the end" "$(tail -n 1 "${WORK}/short-options.txt")" "AUTO_UPDATE_MARIADB=1"
+NOTES_BEFORE="${NOTES}"
 ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/missing.txt" add_auto_update_options
-check "a server without an options file is fine" "$?" "0"
+check "a server without an options file is fine, gets none, and sends no note" "$?:$([[ -e "${WORK}/missing.txt" ]] && echo created || echo absent):$((NOTES - NOTES_BEFORE))" "0:absent:0"
 unset -f notify_admin
 
 echo ""

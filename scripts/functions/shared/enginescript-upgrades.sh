@@ -429,7 +429,12 @@ function add_auto_update_options() {
         echo "# and released them. Each update backs up first and checks that your sites still work."
         echo "# These need ENGINESCRIPT_AUTO_UPDATE=1. 0 = disabled, 1 = enabled"
         cat "${block}"
-    } > "${block}.new" && mv -f "${block}.new" "${block}" || { rm -f "${block}" "${block}.new"; return 1; }
+    } > "${block}.new"
+    # shellcheck disable=SC2181  # the status of the block above, which is too long for an if
+    if [[ $? -ne 0 ]] || ! mv -f "${block}.new" "${block}"; then
+        rm -f "${block}" "${block}.new"
+        return 1
+    fi
 
     if grep -q '^ENGINESCRIPT_AUTO_UPDATE=' "${options_file}"; then
         sed -i "/^ENGINESCRIPT_AUTO_UPDATE=/r ${block}" "${options_file}" || { rm -f "${block}"; return 1; }
