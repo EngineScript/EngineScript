@@ -29,6 +29,7 @@ Changes are organized by date, with the most recent changes listed first.
 - **Update PHP Patch Release:** a new entry in `es.menu` > Update Software installs the newest patch release of the installed PHP version by hand. Update PHP and Switch PHP Version are unchanged.
 - **es.debug** shows each part's switch, its last automatic update, and any release waiting or failed.
 - **Nginx builds give way to the sites:** an Nginx update (automatic or from the menu) now compiles at the lowest CPU and disk priority, so Nginx, PHP, and MariaDB go first and the build only takes longer while the server is busy. It also runs no more compile jobs than memory allows (one per 768 MB), so a small server is not pushed into swap.
+- **Nginx updates without a dropped connection:** an Nginx update restarted Nginx at the end, which refused connections for a moment (two failed requests in each test). It now hands the open sockets from the running Nginx to the new one, which is Nginx's own upgrade procedure. Nginx still restarts when its systemd unit changed or the hand-over fails.
 
 ### 🐛 FIXES
 
@@ -43,6 +44,8 @@ Changes are organized by date, with the most recent changes listed first.
 - **PHP-FPM waiting queue sized to the server:** `listen.backlog` (the requests that wait for a free PHP worker) was 4096 on every server. It now comes from the tuning plan: 511 below 1.5 GB of memory, 768 below 3 GB, 1024 below 6 GB, 1536 below 12 GB, and 2048 above. A longer queue takes a larger burst without errors, but an overloaded server keeps working through it for visitors who have already left; in a test with 12 workers the site was usable again after 43 seconds with 511 and after 125 seconds with 4096. Change it with `PHP_LISTEN_BACKLOG` in `/etc/enginescript/tuning-overrides.conf`. Existing servers get it with the next daily update, which restarts PHP-FPM once for it (a reload keeps the old queue); requests in progress at that moment fail.
 - **`Early-Data` header reaches PHP:** Cloudflare marks a request a visitor sent as TLS early data (0-RTT) with `Early-Data: 1`. Nginx replaced that with its own connection's state, so PHP always saw it empty. PHP now gets `1` when either Cloudflare's header or the server's own connection says early data.
 - **HTTP/3 socket buffers:** with `INSTALL_HTTP3=1`, the two QUIC listeners ask for 8 MB receive and send buffers (`rcvbuf=8m sndbuf=8m`) instead of the kernel's default of about 208 KB. Servers without HTTP/3 are unchanged.
+- **Re-tune waits its turn:** the re-tune (daily job, update menu) waits for a running update or another re-tune to finish, for up to 30 minutes. Two at once could rewrite the same configuration file.
+- **Weekly PPA check:** when Launchpad cannot be reached, the weekly job's log says so; it used to say the PPA had no packages yet. After adding a PPA it retries `apt-get update` for three minutes if apt is busy.
 
 ## 2026-11-08
 

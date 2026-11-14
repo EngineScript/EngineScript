@@ -23,7 +23,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-up
 #   3. Apply the new configuration (the running Nginx keeps its loaded configuration)
 #   4. Test the new binary with the new configuration (nginx -t), and check that the PHP-FPM
 #      socket it uses exists
-#   5. Restart Nginx (about one second of downtime)
+#   5. Hand the listening sockets to the new binary (no connection is refused); restart instead
+#      when the systemd unit changed or the hand-over fails
 #   6. Verify that Nginx is running and answering, and that every site that reached PHP before
 #      the update still does
 #   7. On any failure in steps 4 to 6, restore the backup and keep or restart the previous version
@@ -97,6 +98,41 @@ restore_previous_nginx() {
   fi
   set_nginx_permissions
   echo "The failed configuration was kept in ${FAILED_CONFIG_DIR} for troubleshooting."
+}
+
+# Swaps the running Nginx for the new binary without closing its listening sockets, so no
+# connection is refused (a restart refuses them for a moment). Nginx's own procedure: USR2 makes
+# the running master start a new master from /usr/sbin/nginx, which inherits the sockets and
+# reads the new configuration; QUIT then lets the old one finish its requests and exit. systemd
+# follows the new master through /run/nginx.pid. Returns 1 when the new master did not come up:
+# the old one then still runs, and the caller restarts Nginx instead.
+swap_nginx_binary() {
+  local pid_file=/run/nginx.pid old_pid new_pid="" attempt
+  old_pid="$(cat "${pid_file}" 2> /dev/null)"
+  if ! [[ "${old_pid}" =~ ^[0-9]+$ ]] || [[ "$(systemctl show -p MainPID --value nginx)" != "${old_pid}" ]]; then
+    return 1
+  fi
+  kill -s USR2 "${old_pid}" 2> /dev/null || return 1
+  for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    sleep 0.5
+    new_pid="$(cat "${pid_file}" 2> /dev/null)"
+    # The new master has written its PID and has started its workers
+    if [[ "${new_pid}" =~ ^[0-9]+$ && "${new_pid}" != "${old_pid}" ]] && pgrep -P "${new_pid}" > /dev/null 2>&1; then
+      break
+    fi
+    new_pid=""
+  done
+  if [[ -z "${new_pid}" ]]; then
+    echo "The new Nginx did not take over from the running one (attempt ${attempt})." >&2
+    return 1
+  fi
+  kill -s QUIT "${old_pid}" 2> /dev/null
+  # systemd reads the new PID when the old master has exited (it waits for its open requests)
+  for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    [[ "$(systemctl show -p MainPID --value nginx)" == "${new_pid}" ]] && break
+    sleep 0.5
+  done
+  return 0
 }
 
 # One update at a time (the lock is shared with es.update and the other software updates)
@@ -192,9 +228,19 @@ if [[ -z "${PHP_SOCKET}" || ! -S "${PHP_SOCKET}" ]]; then
   exit 1
 fi
 
-# 5. Restart Nginx with the new binary and configuration
+# 5. Put the new binary and configuration into service. A running Nginx is swapped without
+# closing its sockets. It restarts instead when the systemd unit changed (a unit change applies
+# only to a newly started service) or when the swap did not work.
 if [[ "${NGINX_WAS_RUNNING}" == "1" ]]; then
-  systemctl restart nginx
+  if ! cmp -s "${ROLLBACK_DIR}/nginx.service" /etc/systemd/system/nginx.service; then
+    echo "Nginx's systemd unit changed: restarting Nginx."
+    systemctl restart nginx
+  elif swap_nginx_binary; then
+    echo "Nginx now runs the new version; no connection was closed."
+  else
+    echo "Restarting Nginx instead."
+    systemctl restart nginx
+  fi
 else
   systemctl start nginx
 fi

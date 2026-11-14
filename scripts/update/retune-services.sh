@@ -25,6 +25,14 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # --benchmark: measure the database disk's write rate again (30 seconds of disk load while
 # sites keep serving), for innodb_io_capacity. Without it, the saved result is reused.
 
+# One re-tune at a time, and none while an update runs: both rewrite the same configuration
+# files and reload the same services (the daily job and the menu can start one at the same
+# time). A re-tune that an update started itself already has the lock.
+if ! acquire_lock "update" 2> /dev/null; then
+  echo "Another EngineScript update or re-tune is running. Waiting for it to finish (up to 30 minutes)..."
+  acquire_lock "update" 1800 || exit 1
+fi
+
 if [[ "${1:-}" == "--benchmark" ]]; then
   tuning_benchmark_disk /var/lib/mysql
 fi

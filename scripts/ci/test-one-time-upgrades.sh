@@ -185,6 +185,46 @@ ENGINESCRIPT_INSTALL_OPTIONS_FILE="${WORK}/missing.txt" add_auto_update_options
 check "a server without an options file is fine, gets none, and sends no note" "$?:$([[ -e "${WORK}/missing.txt" ]] && echo created || echo absent):$((NOTES - NOTES_BEFORE))" "0:absent:0"
 unset -f notify_admin
 
+echo "add_missing_ppas (the weekly job)"
+# shellcheck disable=SC2034  # read by add_missing_ppas
+ENGINESCRIPT_PPAS=("ppa:example/one")
+# shellcheck disable=SC2034
+UBUNTU_VERSION="26.04"
+# shellcheck disable=SC2034
+UBUNTU_CODENAME="resolute"
+PPA_ADDS=0
+APT_FAILS=0
+export ES_APT_RETRY_SECONDS=0
+ppa_is_added() { return 1; }
+add-apt-repository() { PPA_ADDS=$((PPA_ADDS + 1)); }
+# apt-get runs in a command substitution, so its calls are counted in a file
+apt-get() { echo call >> "${WORK}/apt-calls"; (( $(grep -c . "${WORK}/apt-calls") > APT_FAILS )); }
+curl() { printf '%s' "${PPA_STATUS}"; }
+apt_calls() { grep -c . "${WORK}/apt-calls" 2> /dev/null || true; }
+PPA_STATUS=404
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a PPA without packages yet: the log says so, and nothing is added" "$(cat "${WORK}/ppa.txt"):${PPA_ADDS}" \
+  "ppa:example/one still has no packages for Ubuntu 26.04 (resolute); trying again next week.:0"
+PPA_STATUS=000
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "no connection to Launchpad: the log says that, not 'no packages'" \
+  "$(grep -c 'Could not ask Launchpad about ppa:example/one (HTTP status 000' "${WORK}/ppa.txt"):$(grep -c 'no packages' "${WORK}/ppa.txt"):${PPA_ADDS}" "1:0:0"
+PPA_STATUS=503
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a Launchpad error: the same, with its status" "$(grep -c 'HTTP status 503' "${WORK}/ppa.txt"):${PPA_ADDS}" "1:0"
+PPA_STATUS=200
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "a PPA with packages is added and apt's lists are refreshed once" "${PPA_ADDS}:$(apt_calls):$(grep -c '^Added ppa:example/one' "${WORK}/ppa.txt")" "1:1:1"
+rm -f "${WORK}/apt-calls"
+APT_FAILS=2
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "apt busy twice: it tries again, without a warning" "$(apt_calls):$(grep -c 'Warning' "${WORK}/ppa.txt")" "3:0"
+rm -f "${WORK}/apt-calls"
+APT_FAILS=99
+add_missing_ppas > "${WORK}/ppa.txt" 2>&1
+check "apt busy throughout: six tries, a warning, and the job still succeeds" "$?:$(apt_calls):$(grep -c 'package lists were not refreshed' "${WORK}/ppa.txt")" "0:6:1"
+unset -f ppa_is_added add-apt-repository apt-get curl apt_calls
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]
