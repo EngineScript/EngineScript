@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-14
+
+### 🐛 ADMIN CONTROL PANEL FIXES
+
+- **The control panel stops when PHP cannot save its session:** before, the panel kept answering without its request limit, and every cache-clear button failed with "Invalid or missing CSRF token". It now answers "Session storage unavailable" (503) to every request until PHP can save sessions again, and writes the failure to the panel's security log.
+
 ## 2026-11-11
 
 ### 🔒 SECURITY

@@ -72,6 +72,13 @@ if (session_status() === PHP_SESSION_NONE) {
     }
 }
 
+// Without a session there is no rate limit and no CSRF token, so stop here.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    $securityLogger->write('Session start failed', 'API request refused with 503');
+    $response->error('Session storage unavailable', 503);
+    die();
+}
+
 // Initialize CSRF token if not exists
 if (!$session->has('csrf_token')) {
     try {
@@ -219,9 +226,7 @@ if (!validateCsrfToken($request, $session, $securityLogger)) {
 }
 
 // Dispatch only reads session data; release the lock before slow controller work.
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
+session_write_close();
 
 // The endpoint comes from nginx's rewrite (endpoint=...), or else from an /api/ path.
 $endpoint = $request->query('endpoint');

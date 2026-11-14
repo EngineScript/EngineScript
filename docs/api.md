@@ -49,6 +49,7 @@ Obtain the token from [`GET /csrf-token`](#csrf-token). It is compared in consta
 
 - **Limit**: 100 requests per minute, counted in the session for the client's address (stored as a SHA-256 hash)
 - **Exceeded**: `429` with `{"error": "Rate limit exceeded"}` until the minute is over
+- **No session**: when PHP cannot start a session (for example, an unwritable session directory), every request gets `503` with `{"error": "Session storage unavailable"}`, since neither the limit nor the CSRF token can work without one
 
 ---
 
@@ -382,3 +383,4 @@ Errors are JSON:
 | `405` | Method Not Allowed — wrong HTTP method; the `Allow` header names the right ones |
 | `429` | Too Many Requests — more than 100 requests in a minute |
 | `500` | Internal Server Error — an unexpected failure; details go to the server's log, not the response |
+| `503` | Service Unavailable — PHP could not start a session, so the request was refused |
