@@ -183,7 +183,7 @@ final class UptimeRobotAPI
             $monitors[$index]['lastDayUptime'] = $uptime === null ? null : round($uptime, 2);
         }
 
-        return array_values($monitors);
+        return $monitors;
     }
 
     /**
@@ -199,6 +199,14 @@ final class UptimeRobotAPI
      *
      * The next request is built from the cursor alone, so the API key is only
      * ever sent to the base URL, whatever the link names.
+     *
+     * The cursor comes from the API's response, which Psalm 7 treats as
+     * untrusted. Only digits are accepted (ctype_digit below), and the cursor
+     * goes into the query string of a request to the fixed base URL, so it can
+     * name neither another host nor a local file.
+     *
+     * @psalm-taint-escape ssrf
+     * @psalm-taint-escape file
      */
     private function nextCursor(mixed $nextLink): string|false|null
     {
