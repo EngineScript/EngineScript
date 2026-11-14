@@ -212,7 +212,7 @@ install_enginescript_logrotate
 cd /usr/src || { echo "Error: Failed to change to /usr/src" >&2; exit 1; }
 
 # Create EngineScript Commands
-source "/etc/enginescript/install-state.conf"
+load_install_state
 
 if [[ "${ALIAS:-0}" = 1 ]] && [[ -x "/usr/local/bin/es.config" ]] && [[ -x "/usr/local/bin/es.install" ]] && [[ -x "/usr/local/bin/es.menu" ]];
   then

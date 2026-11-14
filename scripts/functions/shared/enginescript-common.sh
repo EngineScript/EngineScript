@@ -139,13 +139,88 @@ function print_last_errors() {
 
 
 # ----------------------------------------------------------------
-# Normalize and update EngineScript installation state.
+# The install state: /etc/enginescript/install-state.conf holds one FLAG=0 or FLAG=1 line per
+# install step (1 = done). ENGINESCRIPT_INSTALL_STATE_FILE overrides the path (for tests).
+#
+# The file is data. It is read line by line and never sourced, and only the flags below are
+# loaded: before November 2026 the web server user owned its folder, so on a server with a hacked
+# site the file may hold anything.
+ENGINESCRIPT_INSTALL_STATE_FLAGS=(
+    "ALIAS"
+    "REPOS"
+    "REMOVES"
+    "BLOCK"
+    "UBUNTU_PRO"
+    "DEPENDS"
+    "CRON"
+    "ACME"
+    "GCC"
+    "SWAP"
+    "KERNEL_TWEAKS"
+    "THP"
+    "SFL"
+    "NTP"
+    "DO_CONSOLE"
+    "LIBURING"
+    "UFW"
+    "MARIADB"
+    "PHP"
+    "REDIS"
+    "NGINX"
+    "PHPMYADMIN"
+    "ADMIN_CONTROL_PANEL"
+    "WP_CLI"
+    "TOOLS"
+)
+
+# Set every install flag (REPOS, NGINX, ...) to 0 or 1 from install-state.conf. A flag the file
+# does not have is 0, and so is every flag when there is no file (then it returns 1). Lines that
+# are not exactly FLAG=0 or FLAG=1, and flags not in ENGINESCRIPT_INSTALL_STATE_FLAGS, are
+# ignored; when a flag has several lines, the last one counts.
+function load_install_state() {
+    local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
+    local state_flag state_line
+
+    for state_flag in "${ENGINESCRIPT_INSTALL_STATE_FLAGS[@]}"; do
+        printf -v "${state_flag}" '%s' "0"
+    done
+    if [[ ! -f "${state_file}" ]]; then
+        return 1
+    fi
+    while IFS= read -r state_line || [[ -n "${state_line}" ]]; do
+        if [[ ! "${state_line}" =~ ^([A-Z0-9_]+)=([01])$ ]]; then
+            continue
+        fi
+        state_flag="${BASH_REMATCH[1]}"
+        if [[ " ${ENGINESCRIPT_INSTALL_STATE_FLAGS[*]} " == *" ${state_flag} "* ]]; then
+            printf -v "${state_flag}" '%s' "${BASH_REMATCH[2]}"
+        fi
+    done < "${state_file}"
+}
+
+# True once es.install has finished at least one step (ALIAS is setup.sh's own flag). Call
+# load_install_state first.
+function install_has_started() {
+    local state_flag
+    for state_flag in "${ENGINESCRIPT_INSTALL_STATE_FLAGS[@]}"; do
+        if [[ "${state_flag}" != "ALIAS" && "${!state_flag:-0}" == "1" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Set one flag in install-state.conf. The new file is written beside the old one and moved into
+# place, so a link at that path is replaced, never written through. Lines that are not FLAG=0
+# or FLAG=1 are dropped.
+# Usage: set_install_state <FLAG> [0|1]
 function set_install_state() {
     local flag_name="$1"
     local flag_value="${2:-1}"
     local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
     local state_dir
     local tmp_file
+    local current_file="/dev/null"
 
     if [[ ! "${flag_name}" =~ ^[A-Z0-9_]+$ ]]; then
         echo "Error: Invalid install-state flag name: ${flag_name}" >&2
@@ -159,12 +234,14 @@ function set_install_state() {
 
     state_dir="$(dirname "${state_file}")"
     mkdir -p "${state_dir}" || return 1
-    touch "${state_file}" || return 1
-    chmod 644 "${state_file}"
+    if [[ -f "${state_file}" && ! -L "${state_file}" ]]; then
+        current_file="${state_file}"
+    fi
 
-    tmp_file="$(mktemp)" || return 1
+    tmp_file="$(mktemp "${state_dir}/.install-state.XXXXXX")" || return 1
     awk -v key="${flag_name}" -v assignment="${flag_name}=${flag_value}" '
         BEGIN { replaced = 0 }
+        !/^[A-Z0-9_]+=[01]$/ { next }
         $0 ~ "^" key "=" {
             if (replaced == 0) {
                 print assignment
@@ -178,70 +255,62 @@ function set_install_state() {
                 print assignment
             }
         }
-    ' "${state_file}" > "${tmp_file}" || {
+    ' "${current_file}" > "${tmp_file}" || {
         rm -f "${tmp_file}"
         return 1
     }
-
-    cat "${tmp_file}" > "${state_file}" || {
-        rm -f "${tmp_file}"
-        return 1
-    }
-    rm -f "${tmp_file}"
+    replace_install_state_file "${tmp_file}" "${state_file}"
 }
 
 
 # ----------------------------------------------------------------
-# Ensure install-state.conf contains every install flag with a 0/1 value. Flags of steps that no
-# longer exist (OPENSSL, PCRE, ZLIB: the Nginx build fetches those sources) stay in older files,
-# unused.
+# Ensure install-state.conf holds every install flag with a 0 or 1 value, and load the flags
+# (load_install_state). Root takes over /etc/enginescript first (set_enginescript_etc_permissions).
+# Flags of steps that no longer exist (OPENSSL, PCRE, ZLIB: the Nginx build fetches those sources)
+# stay in older files, unused; anything that is not a FLAG=0 or FLAG=1 line is removed. The file is
+# only rewritten when it changes.
 function initialize_install_state_file() {
     local state_file="${ENGINESCRIPT_INSTALL_STATE_FILE:-/etc/enginescript/install-state.conf}"
-    local install_state_flags=(
-        "ALIAS"
-        "REPOS"
-        "REMOVES"
-        "BLOCK"
-        "UBUNTU_PRO"
-        "DEPENDS"
-        "CRON"
-        "ACME"
-        "GCC"
-        "SWAP"
-        "KERNEL_TWEAKS"
-        "THP"
-        "SFL"
-        "NTP"
-        "DO_CONSOLE"
-        "LIBURING"
-        "UFW"
-        "MARIADB"
-        "PHP"
-        "REDIS"
-        "NGINX"
-        "PHPMYADMIN"
-        "ADMIN_CONTROL_PANEL"
-        "WP_CLI"
-        "TOOLS"
-    )
-    local flag_name
-    local current_value
+    local state_dir
+    local tmp_file
+    local state_flag
 
-    mkdir -p "$(dirname "${state_file}")" || return 1
-    touch "${state_file}" || return 1
-    chmod 644 "${state_file}"
+    state_dir="$(dirname "${state_file}")"
+    mkdir -p "${state_dir}" || return 1
+    if [[ "${state_dir}" == "${ES_ETC_DIR:-/etc/enginescript}" ]]; then
+        set_enginescript_etc_permissions || return 1
+    fi
+    load_install_state || true
 
-    for flag_name in "${install_state_flags[@]}"; do
-        current_value="$(
-            awk -F= -v key="${flag_name}" '$1 == key { value = $2; found = 1 } END { if (found == 1) print value }' "${state_file}"
-        )"
-
-        if [[ "${current_value}" != "1" ]]; then
-            current_value="0"
+    tmp_file="$(mktemp "${state_dir}/.install-state.XXXXXX")" || return 1
+    {
+        for state_flag in "${ENGINESCRIPT_INSTALL_STATE_FLAGS[@]}"; do
+            echo "${state_flag}=${!state_flag}"
+        done
+        if [[ -f "${state_file}" && ! -L "${state_file}" ]]; then
+            awk -F= -v known=" ${ENGINESCRIPT_INSTALL_STATE_FLAGS[*]} " \
+                '/^[A-Z0-9_]+=[01]$/ && index(known, " " $1 " ") == 0' "${state_file}"
         fi
+    } > "${tmp_file}" || {
+        rm -f "${tmp_file}"
+        return 1
+    }
 
-        set_install_state "${flag_name}" "${current_value}" || return 1
-    done
+    if [[ -f "${state_file}" && ! -L "${state_file}" ]] && cmp -s "${tmp_file}" "${state_file}"; then
+        rm -f "${tmp_file}"
+        return 0
+    fi
+    replace_install_state_file "${tmp_file}" "${state_file}"
+}
+
+# Move a new install state file into place (mode 644), replacing the file or link at that path.
+# The new file is removed when the move fails.
+# Usage: replace_install_state_file <new file> <state file>
+function replace_install_state_file() {
+    if ! chmod 644 "$1" || ! mv -fT "$1" "$2"; then
+        rm -f "$1"
+        return 1
+    fi
 }
 
 
@@ -1376,8 +1445,8 @@ function install_enginescript_cron() {
 # ----------------------------------------------------------------
 # Install the logrotate rule for scheduled jobs' logs
 function install_enginescript_logrotate() {
-    cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript
-    chmod 644 /etc/logrotate.d/enginescript
+    cp -f /usr/local/bin/enginescript/config/etc/logrotate.d/enginescript /etc/logrotate.d/enginescript || return 1
+    chmod 644 /etc/logrotate.d/enginescript || return 1
     # Older versions rotated an OPcache log that PHP no longer writes
     rm -f /etc/logrotate.d/opcache
 }
@@ -1385,24 +1454,37 @@ function install_enginescript_logrotate() {
 
 # ----------------------------------------------------------------
 # Cap the systemd journal (config/etc/systemd/journald.conf.d/enginescript.conf); journald shrinks
-# it to the cap when it restarts
+# it to the cap when it restarts. journald restarts only when the server's copy of the file
+# differs, so a settings sync that changes nothing leaves it running.
 function install_enginescript_journald() {
+    local source="/usr/local/bin/enginescript/config/etc/systemd/journald.conf.d/enginescript.conf"
+    local target="/etc/systemd/journald.conf.d/enginescript.conf"
+
     install -d -m 755 /etc/systemd/journald.conf.d
-    cp -f /usr/local/bin/enginescript/config/etc/systemd/journald.conf.d/enginescript.conf /etc/systemd/journald.conf.d/enginescript.conf
-    chmod 644 /etc/systemd/journald.conf.d/enginescript.conf
-    systemctl restart systemd-journald
+    if cmp -s "${source}" "${target}"; then
+        return 0
+    fi
+    cp -f "${source}" "${target}" && chmod 644 "${target}" && systemctl restart systemd-journald
 }
 
 
 # ----------------------------------------------------------------
-# fail2ban's settings (SSH jail, and how long it remembers past bans), when fail2ban is installed
+# fail2ban's settings (SSH jail, and how long it remembers past bans), when fail2ban is installed.
+# fail2ban restarts only when one of its two files on the server differs.
 function install_enginescript_fail2ban_config() {
+    local source_dir="/usr/local/bin/enginescript/config/etc/fail2ban"
+    local config changed=0
+
     [[ -d /etc/fail2ban ]] || return 0
     install -d -m 755 /etc/fail2ban/jail.d /etc/fail2ban/fail2ban.d
-    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/jail.d/enginescript.conf
-    cp -f /usr/local/bin/enginescript/config/etc/fail2ban/fail2ban.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
-    chmod 644 /etc/fail2ban/jail.d/enginescript.conf /etc/fail2ban/fail2ban.d/enginescript.conf
-    if systemctl is-active --quiet fail2ban; then
+    for config in jail.d/enginescript.conf fail2ban.d/enginescript.conf; do
+        if cmp -s "${source_dir}/${config}" "/etc/fail2ban/${config}"; then
+            continue
+        fi
+        cp -f "${source_dir}/${config}" "/etc/fail2ban/${config}" && chmod 644 "/etc/fail2ban/${config}" || return 1
+        changed=1
+    done
+    if [[ "${changed}" -eq 1 ]] && systemctl is-active --quiet fail2ban; then
         systemctl restart fail2ban
     fi
 }
@@ -1411,7 +1493,7 @@ function install_enginescript_fail2ban_config() {
 # ----------------------------------------------------------------
 # The login message (config/etc/update-motd.d/99-enginescript)
 function install_enginescript_motd() {
-    cp -f /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript
+    cp -f /usr/local/bin/enginescript/config/etc/update-motd.d/99-enginescript /etc/update-motd.d/99-enginescript || return 1
     chown root:root /etc/update-motd.d/99-enginescript
     chmod 755 /etc/update-motd.d/99-enginescript
 }
@@ -1429,7 +1511,7 @@ function install_enginescript_motd() {
 # nr_open, inotify, the network budget) return to their defaults at the next reboot.
 function install_enginescript_sysctl() {
     local conf=/etc/sysctl.d/60-enginescript.conf
-    cp -f /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf "${conf}"
+    cp -f /usr/local/bin/enginescript/config/etc/sysctl.d/60-enginescript.conf "${conf}" || return 1
     chown root:root "${conf}"
     chmod 644 "${conf}"
 
@@ -1507,10 +1589,9 @@ function check_installation_completion() {
         "TOOLS|Tools"
     )
 
-    # Source the install log if it exists. If it does not exist, every step is incomplete.
-    if [[ -f "$install_log" ]]; then
-        # shellcheck disable=SC1090
-        source "$install_log" 2>/dev/null || true
+    # The flags are read as data (load_install_state), never sourced. Without a file, every
+    # step is incomplete.
+    if load_install_state; then
         install_log_found="true"
     fi
 

@@ -117,9 +117,16 @@ fi
 validate_not_placeholder "WP_ADMIN_USERNAME" "$WP_ADMIN_USERNAME"
 validate_not_placeholder "WP_ADMIN_PASSWORD" "$WP_ADMIN_PASSWORD"
 
-# Install Check
+# Install Check: the install steps' flags, read as data (initialize_install_state_file loads them)
 initialize_install_state_file
-source /etc/enginescript/install-state.conf
+
+# A new server is built to the current setup, so the one-time upgrades for servers installed by
+# earlier versions are recorded as done here, before the first step, and never run. Only a new
+# install records them: es.install run again, to carry on an install or on a finished server,
+# must not mark an upgrade that has not run yet.
+if ! install_has_started; then
+    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh --record-all
+fi
 
 # Repositories
 run_install_step "REPOS" "/usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh" "Install Repositories"
@@ -215,10 +222,6 @@ echo ""
 
 # Verify all components completed successfully
 if check_installation_completion "true"; then
-    # A new server already has the current setup, so the one-time upgrades for servers installed
-    # by earlier versions never need to run here
-    /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh --record-all
-
     echo "🎉 SUCCESS: EngineScript installation completed successfully!"
     echo "🎉 All required core components have been installed and verified."
     echo ""

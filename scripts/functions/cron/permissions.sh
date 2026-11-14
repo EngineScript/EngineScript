@@ -51,6 +51,9 @@ set_redis_permissions
 # /var/log/EngineScript belongs to root, because root writes logs there
 set_enginescript_log_permissions
 
+# /etc/enginescript belongs to root, because root reads the install state and tuning plan there
+set_enginescript_etc_permissions
+
 # Convert line endings
 dos2unix /usr/local/bin/enginescript/*
 

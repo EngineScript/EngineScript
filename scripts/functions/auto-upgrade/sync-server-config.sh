@@ -21,36 +21,42 @@ require_installation_complete "The server settings sync"
 # is kept in /var/lib/enginescript/synced-commit, and only a sync with no errors updates it, so a
 # failed step runs again on the next update. Scheduled updates that fetched nothing new skip the
 # sync; --force (a manual update) always runs it.
+#
+# The cron jobs are the exception: they follow the install options too (image optimization is a
+# job only when its option is on), so they are checked on every update.
 
 SYNCED_COMMIT_FILE="/var/lib/enginescript/synced-commit"
 CURRENT_COMMIT="$(git -C /usr/local/bin/enginescript rev-parse HEAD 2> /dev/null)"
 
-if [[ "${1:-}" != "--force" && -n "${CURRENT_COMMIT}" ]] \
+failed=0
+
+# Cron: replace EngineScript's jobs with the current list. Jobs no longer on it, or switched off
+# in the install options, are removed. The crontab is written only when the list changed.
+install_enginescript_cron 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+print_last_errors
+
+if [[ "${1:-}" != "--force" && "${failed}" -eq 0 && -n "${CURRENT_COMMIT}" ]] \
   && [[ "$(cat "${SYNCED_COMMIT_FILE}" 2> /dev/null)" == "${CURRENT_COMMIT}" ]]; then
   echo "Server settings already match this version of EngineScript."
   exit 0
 fi
-
-failed=0
 
 # Logs: root owns the log folder, and scheduled jobs' logs are rotated
 set_enginescript_log_permissions 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 install_enginescript_logrotate 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
-# Cron: replace EngineScript's jobs with the current list. Jobs no longer on it are removed.
-install_enginescript_cron 2>> "${ES_STEP_ERROR_LOG}" || failed=1
-print_last_errors
-
 # Kernel settings: the audited sysctl file, applied live (a reboot completes the rest)
 install_enginescript_sysctl 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
-# The systemd journal (capped at 500 MB), fail2ban's settings, and the login message
+# The systemd journal (capped at 500 MB), fail2ban's settings, and the login message. journald
+# and fail2ban restart only when their settings changed.
 install_enginescript_journald 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 install_enginescript_fail2ban_config 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 install_enginescript_motd 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
+
 # Transparent Huge Pages: switched off before the services start
 if [[ -f /etc/systemd/system/disable-thp.service ]]; then
   { cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service \
@@ -68,7 +74,11 @@ if tuning_needs_replan; then
   print_last_errors
 fi
 
-if [[ "${failed}" -eq 0 && -n "${CURRENT_COMMIT}" ]]; then
+if [[ "${failed}" -ne 0 ]]; then
+  echo "Some server settings could not be updated. The errors are in /var/log/EngineScript/install-error-log.log, and the next EngineScript update tries again."
+  exit 1
+fi
+if [[ -n "${CURRENT_COMMIT}" ]]; then
   mkdir -p "$(dirname "${SYNCED_COMMIT_FILE}")"
   echo "${CURRENT_COMMIT}" > "${SYNCED_COMMIT_FILE}"
 fi

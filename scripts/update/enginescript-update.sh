@@ -89,11 +89,13 @@ echo ""
 
 
 # --------------------------------------------------------
-# One-time upgrades for servers installed by earlier versions (each runs once per server)
-run_step "Auto-Upgrades" /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh
+# One-time upgrades for servers installed by earlier versions (each runs once per server). One
+# that fails is reported by the script and runs again on the next update; the update carries on.
+run_step "Auto-Upgrades" /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh || true
 
 # Server settings that follow EngineScript's files (cron jobs, logrotate, kernel settings).
 # A scheduled update syncs them only when it fetched a new version; a manual update always does.
+# The cron jobs are checked on every update, since they follow the install options too.
 if [[ "${SCHEDULED}" == "1" ]]; then
     /usr/local/bin/enginescript/scripts/functions/auto-upgrade/sync-server-config.sh 2>> "${ES_STEP_ERROR_LOG}"
 else

@@ -23,8 +23,8 @@
 #
 # The plan is saved to /etc/enginescript/tuning.conf. An administrator can override any value in
 # /etc/enginescript/tuning-overrides.conf (same KEY=value format). Both files are read with a
-# strict parser (KEY=number lines only), never sourced: /etc/enginescript is writable by the web
-# server user. ES_TUNING_CONF and ES_TUNING_OVERRIDES override the paths (for tests).
+# strict parser (KEY=number lines only), never sourced: before November 2026 the web server user
+# owned /etc/enginescript. ES_TUNING_CONF and ES_TUNING_OVERRIDES override the paths (for tests).
 
 # Bump when the plan's keys or formulas change, so EngineScript updates apply the new plan once
 ES_TUNING_VERSION=1

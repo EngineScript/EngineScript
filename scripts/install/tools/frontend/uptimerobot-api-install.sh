@@ -21,8 +21,9 @@ return_to_src
 # Create Uptime Robot configuration file if it doesn't exist
 if [[ ! -f "/etc/enginescript/uptimerobot.conf" ]]; then
     cp /usr/local/bin/enginescript/config/etc/enginescript/uptimerobot.conf /etc/enginescript/uptimerobot.conf
-    chmod 600 /etc/enginescript/uptimerobot.conf
-    chown -R www-data:www-data /etc/enginescript/uptimerobot.conf
+    # Root writes the key; the control panel (www-data) only reads it
+    chown root:www-data /etc/enginescript/uptimerobot.conf
+    chmod 640 /etc/enginescript/uptimerobot.conf
 fi
 
 # Set permissions for the EngineScript frontend
