@@ -4,6 +4,20 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-15
+
+### 🔒 SECURITY
+
+- **Tiny File Manager shows only your sites:** the file manager used to open at `/var/www`, so its login could change the admin control panel and the other admin tools as well as your sites. It now opens at `/var/www/sites`, the folder that holds each site. The change applies at the next `es.update`.
+
+## 2026-11-14
+
+### 🐛 ADMIN CONTROL PANEL FIXES
+
+- **The control panel stops when PHP cannot save its session:** before, the panel kept answering without its request limit, and every cache-clear button failed with "Invalid or missing CSRF token". It now answers "Session storage unavailable" (503) to every request until PHP can save sessions again, and writes the failure to the panel's security log.
+- **UptimeRobot setup instructions:** the dashboard told you to edit `/etc/enginescript/uptimerobot.conf` by hand, which the next update can overwrite. It now says to set `UPTIMEROBOT_API_KEY` with `es.config` and run `es.update`.
+- **Clearer dashboard text:** the warning when Font Awesome cannot load now says that cdnjs.cloudflare.com could not be reached, instead of asking you to rerun the installer; the command list includes `es.sites`; the `es.backup` and `es.restart` descriptions match what they do.
+
 ## 2026-11-11
 
 ### 🔒 SECURITY

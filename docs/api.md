@@ -37,7 +37,7 @@ Obtain the token from [`GET /csrf-token`](#csrf-token). It is compared in consta
 
 **CORS**: None. The API sends no `Access-Control-*` headers: the dashboard calls it from its own origin, and browsers refuse cross-origin reads.
 
-**Methods**: Every `GET` endpoint also answers `HEAD`. Any other method, `OPTIONS` included, gets `405` with an `Allow` header naming the methods the endpoint accepts.
+**Methods**: Every `GET` endpoint also answers `HEAD`. A method the endpoint does not accept, `OPTIONS` included, gets `405` with an `Allow` header naming the methods it accepts. The CSRF token is checked before the endpoint, so a method other than `GET`, `HEAD`, and `OPTIONS` without a valid token gets `403` on every endpoint.
 
 **Endpoint names**: A path with characters other than letters, digits, `/`, `_`, and `-`, or longer than 100 characters, gets `400`; it is refused, never cleaned up.
 
@@ -49,6 +49,7 @@ Obtain the token from [`GET /csrf-token`](#csrf-token). It is compared in consta
 
 - **Limit**: 100 requests per minute, counted in the session for the client's address (stored as a SHA-256 hash)
 - **Exceeded**: `429` with `{"error": "Rate limit exceeded"}` until the minute is over
+- **No session**: when PHP cannot start a session (for example, an unwritable session directory), every request gets `503` with `{"error": "Session storage unavailable"}`, since neither the limit nor the CSRF token can work without one
 
 ---
 
@@ -58,7 +59,7 @@ Every response is JSON with `Cache-Control: no-store`: browsers and proxies keep
 
 Strings are sent as they are, not HTML-escaped: a monitor named `Pete's Shop & Café` arrives as exactly that. Insert values into a page as text (the dashboard uses `textContent`). Bytes that are not valid UTF-8 arrive as `U+FFFD`.
 
-The server caches one thing: UptimeRobot's monitor list, shared by both uptime endpoints for 60 seconds in `/var/cache/enginescript/api/`. Those two endpoints send `X-Cache: HIT` or `X-Cache: MISS`. Every other endpoint reads its data fresh on each request.
+The server caches one thing: UptimeRobot's monitor list, shared by both uptime endpoints for 60 seconds in `/var/cache/enginescript/api/`. When UptimeRobot is configured, those two endpoints send `X-Cache: HIT` or `X-Cache: MISS`. Every other endpoint reads its data fresh on each request.
 
 ---
 
@@ -154,7 +155,7 @@ List the WordPress sites in Nginx's `/etc/nginx/sites-enabled`.
 ]
 ```
 
-A site is listed when its configuration mentions WordPress. `domain` is the first `server_name`. `wp_version` comes from the site's `wp-includes/version.php`, or is `Unknown`. `ssl_status` is `Enabled` when the configuration names an `ssl_certificate`, otherwise `Unknown`. A configuration file that resolves outside `sites-enabled`, or a `version.php` that resolves outside the site's root, is not read.
+A site is listed when its configuration file (any file but `default`) contains `wordpress` or `wp-`. `domain` is the first name of its first `server_name`. `wp_version` comes from the site's `wp-includes/version.php`, or is `Unknown`. `ssl_status` is `Enabled` when the configuration names an `ssl_certificate`, otherwise `Unknown`. A configuration file that resolves outside `sites-enabled`, or a `version.php` that resolves outside the site's root, is not read.
 
 ---
 
@@ -198,7 +199,7 @@ Check the Tiny File Manager integration.
 }
 ```
 
-`version` is `TINYFILEMANAGER_VER` from EngineScript's variables file, or `Unknown`.
+`available` is `true` when `/var/www/admin/tools/tinyfilemanager/tinyfilemanager.php` exists, and `config_exists` when its `config.php` does. `version` is `TINYFILEMANAGER_VER` from EngineScript's variables file, or `Unknown`.
 
 ---
 
@@ -225,7 +226,7 @@ Get a summary of the UptimeRobot account's monitors.
 }
 ```
 
-`overall_status` values: `critical` (a monitor is down or seems down), `healthy` (every active monitor is up; paused and not yet checked monitors are left out), `partial` (some up, others in an unknown state), `unknown` (no active monitors). `paused` counts paused and not yet checked monitors.
+`overall_status` values: `critical` (a monitor is down or seems down), `healthy` (every active monitor is up; paused and not yet checked monitors are left out), `partial` (some up, others in an unknown state), `unknown` (no active monitor is up or down, including when there is no active monitor). `paused` counts paused and not yet checked monitors.
 
 #### Response: Not Configured
 
@@ -275,7 +276,7 @@ Monitor `status` codes: `0` Paused, `1` Not checked yet, `2` Up, `8` Seems down,
 
 When not configured, the answer is as for Uptime Status, with `"monitors": []`.
 
-Both uptime endpoints answer from one read of UptimeRobot's API v3 (all pages of the monitor list, then the statistics). When UptimeRobot cannot be read, both answer `200` with `"enabled": true` and an `error` message (for example after UptimeRobot's limit of 10 requests a minute: `"UptimeRobot request limit reached; try again later"`); the monitors endpoint then also returns `"monitors": []`. A failure is cached for the minute like a result.
+Both uptime endpoints answer from one read of UptimeRobot's API v3 (every page of the monitor list, up to five pages of 200 monitors, then the statistics); a longer list is reported as a failure. When UptimeRobot cannot be read, both answer `200` with `"enabled": true` and an `error` message (for example after UptimeRobot's limit of 10 requests a minute: `"UptimeRobot request limit reached; try again later"`); the monitors endpoint then also returns `"monitors": []`. A failure is cached for the minute like a result.
 
 ---
 
@@ -295,7 +296,7 @@ Clear one or more server caches. Requires the CSRF token.
 | `type` | string | Yes* | Comma-separated cache types: `redis`, `fastcgi`, `opcache` |
 | `types` | array | Yes* | JSON array of cache types: `["redis", "fastcgi"]` |
 
-`type` may be sent as a query parameter or a JSON body field; `types` as a JSON body field. One of them is required.
+`type` may be sent as a query parameter or a JSON body field; `types` as a JSON body field, which is used when both are in the body. One of them is required. Case does not matter, and spaces around each name are ignored.
 
 #### Cache Clear Response
 
@@ -310,7 +311,7 @@ Clear one or more server caches. Requires the CSRF token.
 }
 ```
 
-`success` is `false` when any requested cache failed to clear; each entry in `results` says which. `redis` runs `FLUSHALL`; `fastcgi` deletes the files under Nginx's cache directory, `/var/cache/nginx` (a missing directory counts as cleared); `opcache` resets PHP-FPM's OPcache.
+`success` is `false` when any requested cache failed to clear; each entry in `results` says which. `cleared` lists every valid type that was requested, including one that failed, so read `results` for each cache's outcome. `redis` runs `FLUSHALL`; `fastcgi` deletes the files under Nginx's cache directory, `/var/cache/nginx` (a missing directory counts as cleared); `opcache` resets PHP-FPM's OPcache.
 
 If unknown types are included, they are ignored and a `warnings` field is added:
 
@@ -377,8 +378,9 @@ Errors are JSON:
 | --- | --- |
 | `400` | Bad Request — an invalid endpoint name, or missing or invalid parameters |
 | `401` | Unauthorized — sent by nginx, without valid basic-authentication credentials |
-| `403` | Forbidden — a `POST` without a valid CSRF token |
+| `403` | Forbidden — a method other than `GET`, `HEAD`, or `OPTIONS` without a valid CSRF token |
 | `404` | Not Found — unknown endpoint |
 | `405` | Method Not Allowed — wrong HTTP method; the `Allow` header names the right ones |
 | `429` | Too Many Requests — more than 100 requests in a minute |
 | `500` | Internal Server Error — an unexpected failure; details go to the server's log, not the response |
+| `503` | Service Unavailable — PHP could not start a session, so the request was refused |

@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
+namespace EngineScript\Dashboard\API\Controllers;
 
 /**
  * Tools Controller

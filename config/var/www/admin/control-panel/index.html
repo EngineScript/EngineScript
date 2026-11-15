@@ -178,13 +178,13 @@
                             <!-- Shown in #uptime-monitors when UptimeRobot has no API key -->
                             <template id="uptime-not-configured">
                                 <div class="uptime-status">
-                                    <p><strong>Uptime Robot not configured</strong></p>
+                                    <p><strong>UptimeRobot not configured</strong></p>
                                     <p>To enable website monitoring:</p>
                                     <ol>
                                         <li>Create a free account at <a href="https://uptimerobot.com/" target="_blank" rel="noopener noreferrer">UptimeRobot.com</a></li>
                                         <li>Get your API key from Settings &gt; API Settings</li>
-                                        <li>Configure it using: <code>sudo nano /etc/enginescript/uptimerobot.conf</code></li>
-                                        <li>Add: <code>api_key=your_api_key_here</code></li>
+                                        <li>Run <code>es.config</code> and set <code>UPTIMEROBOT_API_KEY</code> to the key</li>
+                                        <li>Run <code>es.update</code></li>
                                     </ol>
                                 </div>
                             </template>
@@ -202,7 +202,7 @@
                             <div class="commands-grid">
                                 <div class="command-item">
                                     <code>es.backup</code>
-                                    <p>Back up all domains locally and optionally to the cloud</p>
+                                    <p>Back up every site's database and files, and EngineScript's settings (also to S3 when enabled)</p>
                                 </div>
                                 <div class="command-item">
                                     <code>es.cache</code>
@@ -242,7 +242,11 @@
                                 </div>
                                 <div class="command-item">
                                     <code>es.restart</code>
-                                    <p>Restart Nginx and PHP services</p>
+                                    <p>Restart Nginx and PHP-FPM (and start Redis if it is down)</p>
+                                </div>
+                                <div class="command-item">
+                                    <code>es.sites</code>
+                                    <p>List the WordPress sites on the server</p>
                                 </div>
                                 <div class="command-item">
                                     <code>es.update</code>
@@ -358,7 +362,7 @@
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="tool-content">
-                            <h3>Uptime Robot</h3>
+                            <h3>UptimeRobot</h3>
                             <p>Website monitoring and uptime tracking service</p>
                         </div>
                     </a>

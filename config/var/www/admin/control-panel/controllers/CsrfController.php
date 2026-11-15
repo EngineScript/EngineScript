@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
+namespace EngineScript\Dashboard\API\Controllers;
 
 /**
  * CSRF Token Controller
@@ -47,7 +47,7 @@ final class CsrfController extends BaseController
                 'csrf_token' => $csrfToken,
                 'token_name' => '_csrf_token',
             ]);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('CSRF token error', $e->getMessage());
             $this->response->serverError('Unable to retrieve CSRF token');
         }

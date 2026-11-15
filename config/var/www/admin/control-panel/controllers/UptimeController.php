@@ -11,8 +11,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../classes/UptimeRobotAPI.php';
+namespace EngineScript\Dashboard\API\Controllers;
+
+use EngineScript\Dashboard\Classes\UptimeRobotAPI;
 
 /**
  * Uptime Controller
@@ -60,7 +61,7 @@ final class UptimeController extends BaseController
      *
      * @return UptimeRobotAPI|null Returns null if not configured
      */
-    private function getUptimeApi(): ?\UptimeRobotAPI
+    private function getUptimeApi(): ?UptimeRobotAPI
     {
         if ($this->uptimeApi === null) {
             $configPath = '/etc/enginescript/uptimerobot.conf';
@@ -78,7 +79,7 @@ final class UptimeController extends BaseController
     /**
      * The trimmed API key from the parsed configuration, or null when there is none.
      *
-     * A key that trims to '' or '0' counts as none, as the earlier empty() test did.
+     * A key that trims to '' or '0' counts as none.
      * The key is sent in a header, so it must be visible ASCII without spaces.
      */
     private function apiKeyFromConfig(mixed $config): ?string
@@ -89,7 +90,7 @@ final class UptimeController extends BaseController
 
         $apiKey = trim($config['api_key']);
 
-        if ($apiKey === '' || $apiKey === '0' || preg_match('/^[\x21-\x7E]+$/', $apiKey) !== 1) {
+        if ($apiKey === '' || $apiKey === '0' || preg_match('/^[\x21-\x7E]+\z/', $apiKey) !== 1) {
             return null;
         }
 
@@ -145,7 +146,7 @@ final class UptimeController extends BaseController
         try {
             $api = $this->getUptimeApi();
 
-            if (!$api instanceof \UptimeRobotAPI) {
+            if (!$api instanceof UptimeRobotAPI) {
                 $this->response->success([
                     'enabled' => false,
                     'reason' => 'UptimeRobot API not configured',
@@ -161,7 +162,7 @@ final class UptimeController extends BaseController
                 : $format($this->arrayOrNull($data['monitors'] ?? null) ?? []);
 
             $this->respondCached($answer, $result['hit']);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Uptime error', $e->getMessage());
             $this->response->serverError($failureMessage);
         }

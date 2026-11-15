@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
+namespace EngineScript\Dashboard\API\Controllers;
 
 /**
  * File Manager Controller
@@ -43,17 +43,17 @@ final class FileManagerController extends BaseController
     {
         try {
             // Load EngineScript variables to get current version
-            $current_version = $this->getFileManagerVersion();
+            $currentVersion = $this->getFileManagerVersion();
 
             $status = [
                 'available' => file_exists(self::TFM_FILE),
                 'config_exists' => file_exists(self::TFM_CONFIG),
                 'url' => '/tinyfilemanager/tinyfilemanager.php',
-                'version' => $current_version,
+                'version' => $currentVersion,
             ];
 
             $this->response->success($status);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('File manager status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve file manager status');
         }
@@ -66,18 +66,18 @@ final class FileManagerController extends BaseController
      */
     private function getFileManagerVersion(): string
     {
-        $current_version = 'Unknown';
+        $currentVersion = 'Unknown';
 
         if (file_exists(self::VARIABLES_FILE)) {
             $content = file_get_contents(self::VARIABLES_FILE);
             if ($content !== false) {
                 preg_match('/TINYFILEMANAGER_VER="([^"]*)"/', $content, $matches);
                 if (isset($matches[1]) && !empty($matches[1])) {
-                    $current_version = $matches[1];
+                    $currentVersion = $matches[1];
                 }
             }
         }
 
-        return $current_version;
+        return $currentVersion;
     }
 }

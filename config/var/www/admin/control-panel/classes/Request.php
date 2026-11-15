@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace EngineScript\Dashboard\Classes;
+
 /**
  * EngineScript Admin Dashboard - Request Wrapper
  *
@@ -41,8 +43,12 @@ final class Request
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      */
-    public function __construct(?array $server = null, ?array $query = null, ?array $post = null, private ?string $body = null)
-    {
+    public function __construct(
+        ?array $server = null,
+        ?array $query = null,
+        ?array $post = null,
+        private ?string $body = null
+    ) {
         $this->server = $server ?? $_SERVER;
         $this->query = $query ?? $_GET;
         $this->post = $post ?? $_POST;
@@ -74,7 +80,7 @@ final class Request
     {
         $method = strtoupper($this->serverString('REQUEST_METHOD', 'GET'));
 
-        return preg_match('/^[A-Z]+$/', $method) === 1 ? $method : 'GET';
+        return preg_match('/^[A-Z]+\z/', $method) === 1 ? $method : 'GET';
     }
 
     public function header(string $name): ?string
@@ -115,13 +121,13 @@ final class Request
         return $this->body;
     }
 
-    private function serverString(string $key, string $default = ''): string
+    private function serverString(string $key, string $fallback = ''): string
     {
         if (!isset($this->server[$key])) {
-            return $default;
+            return $fallback;
         }
 
-        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $default;
+        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $fallback;
     }
 
     private function scalarInput(mixed $value): ?string
@@ -130,7 +136,8 @@ final class Request
             return null;
         }
 
-        $value = trim((string) $value);
+        // Passed on as sent: each check refuses what it does not accept rather than cleaning it up.
+        $value = (string) $value;
 
         return $value === '' ? null : $value;
     }

@@ -3,6 +3,8 @@
 /**
  * EngineScript Admin Dashboard - Process Runner
  *
+ * @package EngineScript\Dashboard\Classes
+ *
  * Runs already-validated argv arrays for SystemCommand and owns the low-level
  * proc_open pipe lifecycle.
  *
@@ -12,7 +14,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/CommandRunner.php';
+namespace EngineScript\Dashboard\Classes;
 
 final class SystemProcessRunner implements CommandRunner
 {
