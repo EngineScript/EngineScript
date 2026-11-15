@@ -38,6 +38,8 @@ final class UptimeRobotAPI
      */
     public const string DEFAULT_BASE_URL = 'https://api.uptimerobot.com/v3';
 
+    public const string LOG_FILE = '/var/log/EngineScript/enginescript-api.log';
+
     /**
      * Monitors per page (v3's maximum)
      */
@@ -70,10 +72,12 @@ final class UptimeRobotAPI
      *
      * @param string $apiKey UptimeRobot API key
      * @param string $baseUrl API base URL; replaced only by tests
+     * @param string $logFile The error log; replaced only by tests
      */
     public function __construct(
         private readonly string $apiKey,
-        private readonly string $baseUrl = self::DEFAULT_BASE_URL
+        private readonly string $baseUrl = self::DEFAULT_BASE_URL,
+        private readonly string $logFile = self::LOG_FILE
     ) {
     }
 
@@ -340,6 +344,6 @@ final class UptimeRobotAPI
         }
         $log_entry .= "\n";
 
-        error_log($log_entry, 3, '/var/log/EngineScript/enginescript-api.log');
+        error_log($log_entry, 3, $this->logFile);
     }
 }

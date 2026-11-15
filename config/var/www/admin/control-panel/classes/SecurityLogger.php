@@ -17,7 +17,12 @@ require_once __DIR__ . '/Request.php';
 
 final readonly class SecurityLogger
 {
-    public function __construct(private Request $request)
+    public const string LOG_FILE = '/var/log/EngineScript/enginescript-api-security.log';
+
+    /**
+     * @param string $logFile The log file; replaced only by tests
+     */
+    public function __construct(private Request $request, private string $logFile = self::LOG_FILE)
     {
     }
 
@@ -43,9 +48,7 @@ final readonly class SecurityLogger
         $log_entry .= " - User: " . self::sanitize($this->request->authenticatedUser);
         $log_entry .= " - IP: " . $client_ip . "\n";
 
-        // Log to a secure location
-        $log_file = '/var/log/EngineScript/enginescript-api-security.log';
-        error_log($log_entry, 3, $log_file);
+        error_log($log_entry, 3, $this->logFile);
     }
 
     /**
