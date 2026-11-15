@@ -311,7 +311,7 @@ Clear one or more server caches. Requires the CSRF token.
 }
 ```
 
-`success` is `false` when any requested cache failed to clear; each entry in `results` says which. `redis` runs `FLUSHALL`; `fastcgi` deletes the files under Nginx's cache directory, `/var/cache/nginx` (a missing directory counts as cleared); `opcache` resets PHP-FPM's OPcache.
+`success` is `false` when any requested cache failed to clear; each entry in `results` says which. `cleared` lists every valid type that was requested, including one that failed, so read `results` for each cache's outcome. `redis` runs `FLUSHALL`; `fastcgi` deletes the files under Nginx's cache directory, `/var/cache/nginx` (a missing directory counts as cleared); `opcache` resets PHP-FPM's OPcache.
 
 If unknown types are included, they are ignored and a `warnings` field is added:
 
