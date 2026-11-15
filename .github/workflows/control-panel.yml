@@ -90,6 +90,8 @@ jobs:
               config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.php-cs-fixer.dist.php|phpcs.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|.yamllint.yml)
                 relevant=true
                 ;;
+              *)
+                ;;
             esac
           done < <(git diff --name-only "$BASE_SHA...$HEAD_SHA")
           echo "relevant=$relevant" | tee -a "$GITHUB_OUTPUT"
