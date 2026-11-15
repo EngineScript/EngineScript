@@ -70,7 +70,7 @@ function es_private(string $class, string $method, mixed ...$arguments): mixed
     $request = es_test_request();
     $controller = new $class(new Session(), new ApiResponder(), new SecurityLogger($request, sys_get_temp_dir() . '/es-js-render.log'), $request);
 
-    return new ReflectionMethod($class, $method)->invoke($controller, ...$arguments);
+    return (new ReflectionMethod($class, $method))->invoke($controller, ...$arguments);
 }
 
 // Sites: SiteController's own reading of fixture nginx configurations and version.php files

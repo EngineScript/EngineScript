@@ -6,7 +6,7 @@ final class ApiResponderTest extends EsTestCase
 {
     public function testSuccessSendsTheDataAsJsonWithStatus200(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->success(['enabled' => true, 'up' => 3]));
+        $result = $this->respond(static fn() => (new ApiResponder())->success(['enabled' => true, 'up' => 3]));
 
         self::assertSame(200, $result['status']);
         self::assertSame('{"enabled":true,"up":3}', $result['body']);
@@ -14,7 +14,7 @@ final class ApiResponderTest extends EsTestCase
 
     public function testStringsAreSentAsTheyAreNotEscaped(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->success(['name' => "Pete's Shop & Café </script>", 'url' => 'https://a.test/x']));
+        $result = $this->respond(static fn() => (new ApiResponder())->success(['name' => "Pete's Shop & Café </script>", 'url' => 'https://a.test/x']));
 
         self::assertSame("Pete's Shop & Café </script>", $result['json']['name']);
         self::assertStringContainsString('https://a.test/x', $result['body'], 'slashes are not escaped');
@@ -22,7 +22,7 @@ final class ApiResponderTest extends EsTestCase
 
     public function testInvalidUtf8BecomesTheReplacementCharacter(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->success(['name' => "bad \xC3\x28 byte"]));
+        $result = $this->respond(static fn() => (new ApiResponder())->success(['name' => "bad \xC3\x28 byte"]));
 
         self::assertSame("bad \u{FFFD}( byte", $result['json']['name']);
     }
@@ -42,7 +42,7 @@ final class ApiResponderTest extends EsTestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('errors')]
     public function testEachErrorHasItsStatusAndDefaultMessage(string $method, int $status, string $message): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->{$method}());
+        $result = $this->respond(static fn() => (new ApiResponder())->{$method}());
 
         self::assertSame($status, $result['status']);
         self::assertSame(['error' => $message], $result['json']);
@@ -50,7 +50,7 @@ final class ApiResponderTest extends EsTestCase
 
     public function testAnErrorCarriesTheGivenMessageAndCode(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->error('Session storage unavailable', 503));
+        $result = $this->respond(static fn() => (new ApiResponder())->error('Session storage unavailable', 503));
 
         self::assertSame(503, $result['status']);
         self::assertSame(['error' => 'Session storage unavailable'], $result['json']);
@@ -58,7 +58,7 @@ final class ApiResponderTest extends EsTestCase
 
     public function testMethodNotAllowedNamesTheAllowedMethods(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->methodNotAllowed(['get', 'HEAD', 'GET']));
+        $result = $this->respond(static fn() => (new ApiResponder())->methodNotAllowed(['get', 'HEAD', 'GET']));
 
         self::assertSame(405, $result['status']);
         self::assertSame(['error' => 'Method not allowed. Use GET, HEAD.'], $result['json']);
@@ -66,15 +66,15 @@ final class ApiResponderTest extends EsTestCase
 
     public function testMethodNotAllowedDropsMalformedNamesAndFallsBackToGet(): void
     {
-        $result = $this->respond(static fn() => new ApiResponder()->methodNotAllowed(['P0ST', "POST\n"]));
+        $result = $this->respond(static fn() => (new ApiResponder())->methodNotAllowed(['P0ST', "POST\n"]));
 
         self::assertSame(['error' => 'Method not allowed. Use GET.'], $result['json']);
     }
 
     public function testCachedAndSuccessSendTheSameBody(): void
     {
-        $cached = $this->respond(static fn() => new ApiResponder()->cached(['a' => 1], 60));
-        $fresh = $this->respond(static fn() => new ApiResponder()->success(['a' => 1], 60));
+        $cached = $this->respond(static fn() => (new ApiResponder())->cached(['a' => 1], 60));
+        $fresh = $this->respond(static fn() => (new ApiResponder())->success(['a' => 1], 60));
 
         self::assertSame($fresh['body'], $cached['body']);
         self::assertSame(200, $cached['status']);

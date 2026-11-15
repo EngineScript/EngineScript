@@ -33,7 +33,7 @@ final class RequestTest extends EsTestCase
         self::assertSame('PATCH', es_test_request(['REQUEST_METHOD' => 'PATCH'])->method());
         self::assertSame('GET', es_test_request(['REQUEST_METHOD' => "POST\n"])->method());
         self::assertSame('GET', es_test_request(['REQUEST_METHOD' => 'M-SEARCH'])->method());
-        self::assertSame('GET', new Request([], [], [])->method(), 'no method at all');
+        self::assertSame('GET', (new Request([], [], []))->method(), 'no method at all');
     }
 
     public function testHeadersAreReadFromTheirServerKeys(): void
@@ -56,13 +56,13 @@ final class RequestTest extends EsTestCase
         self::assertSame('203.0.113.7', es_test_request()->remoteAddress());
         self::assertSame('2001:db8::1', es_test_request(['REMOTE_ADDR' => '2001:db8::1'])->remoteAddress());
         self::assertSame('invalid', es_test_request(['REMOTE_ADDR' => '203.0.113.7, 10.0.0.1'])->remoteAddress());
-        self::assertSame('unknown', new Request([], [], [])->remoteAddress());
+        self::assertSame('unknown', (new Request([], [], []))->remoteAddress());
     }
 
     public function testAuthenticatedUserComesFromBasicAuthentication(): void
     {
         self::assertSame('admin', es_test_request()->authenticatedUser);
-        self::assertSame('unknown', new Request([], [], [])->authenticatedUser);
+        self::assertSame('unknown', (new Request([], [], []))->authenticatedUser);
     }
 
     public function testBodyAndUriAreReturnedAsGiven(): void

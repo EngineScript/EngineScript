@@ -213,7 +213,7 @@ final class UptimeTest extends EsTestCase
 
     public function testAnUnreachableServerIsAFailure(): void
     {
-        self::assertFalse(new UptimeRobotAPI('two-pages', 'http://127.0.0.1:9/v3', $this->logFile)->getMonitors());
+        self::assertFalse((new UptimeRobotAPI('two-pages', 'http://127.0.0.1:9/v3', $this->logFile))->getMonitors());
         self::assertStringContainsString('cURL request failed', $this->logLines()[0]);
     }
 
