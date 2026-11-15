@@ -18,7 +18,8 @@ final class RoutesTest extends IntegrationTestCase
         self::assertSame(self::shell("mariadb --version | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"), $services['mysql']['version']);
         self::assertSame(self::shell("redis-server --version | grep -oE 'v=[0-9.]+' | cut -d= -f2"), $services['redis']['version']);
         self::assertTrue($services['php']['online']);
-        self::assertStringStartsWith(self::shell("source /usr/local/bin/enginescript/enginescript-variables.txt && printf %s \"\${PHP_VER}\""), $services['php']['version'], 'PHP-FPM answers, at the installed version');
+        // The installed PHP-FPM, which is PHP_VER unless the server was switched (php-update.sh)
+        self::assertStringStartsWith(self::shell('ls /etc/php | sort -V | tail -1') . '.', $services['php']['version'], 'PHP-FPM answers, at the installed version');
     }
 
     public function testASingleStoppedServiceShowsOffline(): void
