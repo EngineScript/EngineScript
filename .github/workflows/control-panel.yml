@@ -32,6 +32,7 @@ name: Control Panel
       - 'phpunit.xml'
       - '.ruff.toml'
       - '.mypy.ini'
+      - 'scripts/functions/shared/site-archive-zip.py'
       - '.yamllint.yml'
   pull_request:
     paths:
@@ -55,6 +56,7 @@ name: Control Panel
       - 'phpunit.xml'
       - '.ruff.toml'
       - '.mypy.ini'
+      - 'scripts/functions/shared/site-archive-zip.py'
       - '.yamllint.yml'
   workflow_dispatch:
 
@@ -175,8 +177,8 @@ jobs:
       - name: Ruff
         if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
         run: |
-          ruff check .github/scripts
-          ruff format --check .github/scripts
+          ruff check .github/scripts scripts/functions/shared/site-archive-zip.py
+          ruff format --check .github/scripts scripts/functions/shared/site-archive-zip.py
 
       - name: mypy (strict)
         if: ${{ !cancelled() && steps.linters.outcome == 'success' }}

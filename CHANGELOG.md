@@ -6,6 +6,13 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-14
 
+### 💾 SITE ARCHIVES NEED HALF THE DISK SPACE
+
+- **One copy on disk while an archive is built:** a files backup, Export Domain, and the backup before a Wordfence CLI remediation used to write the database dump and the files archive to disk, then copy both into the ZIP, so the server needed free space for about twice the archive. The dump and the files archive are now piped straight into the ZIP as they are made (by a small Python script, `site-archive-zip.py`, that uses only Python's standard library), so the archive is the only copy. The free space check asks for one copy now, and in tests a 1 GB site's archive was also built faster.
+- **A failed dump stops the archive at once:** before, the site's files were still archived after the database export failed, which takes long on a large site. The archive now stops when the dump fails.
+- **Same archive format:** the archives are the same as before, so Import Domain, Backup Tools, and the EngineScript Site Exporter plugin read them as they did.
+- **Python:** new installs now install `python3` by name. It was already on every EngineScript server, which needs it for fail2ban and Ubuntu's unattended upgrades.
+
 ### 📦 SITE ARCHIVE FIXES
 
 - **Adding or importing a site backs up only that site:** Create New Domain and Import Domain used to finish by backing up every site on the server, which now means a full site archive of each one. They now back up the new site and EngineScript's configuration. The other sites keep their schedule.

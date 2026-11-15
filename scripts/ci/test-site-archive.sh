@@ -5,7 +5,8 @@
 # build_site_archive must write the archive vhost-import.sh reads (manifest.txt,
 # database/*.sql.gz, files/*.tar.gz in one stored ZIP) for its owner only, leave out what the
 # EngineScript Site Exporter plugin leaves out, and leave nothing behind when it fails. WP-CLI is
-# replaced with a stand-in that prints a small dump and the site's addresses.
+# replaced with a stand-in that prints a small dump and the site's addresses. site-archive-zip.py,
+# which writes the ZIP, is tested on its own too. Needs python3, zip, and unzip.
 
 set -euo pipefail
 
@@ -13,6 +14,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 export SITE_ARCHIVE_SITES_ROOT="${WORK}/sites"
+export SITE_ARCHIVE_ZIP_TOOL="${REPO_ROOT}/scripts/functions/shared/site-archive-zip.py"
 
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-site-archive.sh"
 
@@ -205,7 +207,8 @@ WP_DB_BYTES=$((4 * 1024 * 1024 * 1024))
 lacks "the build stops when the database would not fit" build_site_archive "${SITE}" "${OUT2}" 2> "${WORK}/stderr.txt"
 holds "it says the space is short" grep -q "Not enough free space" "${WORK}/stderr.txt"
 WP_DB_BYTES=4096
-# 80 MB free, and 20 MB in wp-content/cache, which is not archived: twice the cache must not count
+# 80 MB free, and 20 MB in wp-content/cache, which is not archived: the cache must not count
+# (it would push the need past 80 MB)
 # shellcheck disable=SC2329  # called by build_site_archive
 site_archive_free_kb() { echo 81920; }
 dd if=/dev/zero of="${ROOT}/wp-content/cache/page/big.bin" bs=1M count=20 status=none
@@ -291,6 +294,42 @@ holds "the kept copy still has its archive" test -f "${BACKUPS}/2026-02-01/${SIT
 site_archive_prune_backups "${BACKUPS}" "${SITE}" 10
 check "keeping more copies than there are removes nothing" "$(find "${BACKUPS}" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" "5"
 holds "a folder that does not exist is not an error" site_archive_prune_backups "${WORK}/no-such-folder" "${SITE}" 4
+
+echo "The ZIP tool (site-archive-zip.py)"
+TOOL_DIR="${WORK}/tool"
+mkdir -p "${TOOL_DIR}"
+echo "manifest" > "${TOOL_DIR}/manifest.txt"
+echo "0" > "${TOOL_DIR}/ok.status"
+echo "1" > "${TOOL_DIR}/failed.status"
+zip_tool() {
+  timeout 20 python3 -I "${SITE_ARCHIVE_ZIP_TOOL}" "$@" 2> /dev/null
+}
+# A pipe nothing writes to: opening it blocks, so a tool that reached it would hang until the timeout
+mkfifo "${TOOL_DIR}/never.pipe"
+set +e
+zip_tool "${TOOL_DIR}/stopped.zip" "manifest.txt=${TOOL_DIR}/manifest.txt" \
+  "database/x.sql.gz=${TOOL_DIR}/manifest.txt" "files/x.tar.gz=${TOOL_DIR}/never.pipe" \
+  --status "database/x.sql.gz" "${TOOL_DIR}/failed.status" 0
+check "a failed dump stops the archive before the files part is read (exit 3)" "$?" "3"
+lacks "the stopped archive is removed" test -e "${TOOL_DIR}/stopped.zip"
+zip_tool "${TOOL_DIR}/no-status.zip" "a.txt=${TOOL_DIR}/manifest.txt" --status a.txt "${TOOL_DIR}/missing.status" 0
+check "a missing status file stops the archive (exit 3)" "$?" "3"
+zip_tool "${TOOL_DIR}/changed.zip" "a.txt=${TOOL_DIR}/manifest.txt" --status a.txt "${TOOL_DIR}/failed.status" 1
+check "a status up to the highest accepted passes (exit 0)" "$?" "0"
+zip_tool "${TOOL_DIR}/missing-source.zip" "a.txt=${TOOL_DIR}/no-such-file"
+check "a source that cannot be read fails (exit 1)" "$?" "1"
+lacks "and its archive is removed" test -e "${TOOL_DIR}/missing-source.zip"
+zip_tool "${TOOL_DIR}/bad.zip" "no-equals-sign"
+check "an entry without a source is refused (exit 2)" "$?" "2"
+set -e
+zip_tool "${TOOL_DIR}/order.zip" "manifest.txt=${TOOL_DIR}/manifest.txt" "database/a.gz=${TOOL_DIR}/ok.status" \
+  "files/b.gz=${TOOL_DIR}/ok.status"
+check "entries are written in the order given, with one entry per folder" \
+  "$(unzip -Z -1 "${TOOL_DIR}/order.zip" | tr '\n' ' ')" "manifest.txt database/ database/a.gz files/ files/b.gz "
+mkdir -p "${TOOL_DIR}/out"
+unzip -q "${TOOL_DIR}/order.zip" -d "${TOOL_DIR}/out"
+check "unzipped, files and folders are their owner's only" \
+  "$(stat -c '%a' "${TOOL_DIR}/out/manifest.txt" "${TOOL_DIR}/out/database" "${TOOL_DIR}/out/database/a.gz" | tr '\n' ' ')" "600 700 600 "
 
 echo "A folder without WordPress"
 mkdir -p "${SITE_ARCHIVE_SITES_ROOT}/empty.example/html"
