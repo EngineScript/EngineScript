@@ -13,13 +13,15 @@ name: Control Panel
 # - unit test line coverage with a minimum, and the unit suite on every supported PHP version
 # The integration suite (tests/integration) runs on a real EngineScript server, a container of
 # the local server test suite, not here (D-075). Each job files an issue when it fails on master.
+# On a pull request, "changes" runs first and the checks run only when the panel's files changed;
+# "Control Panel checks" runs last and is the one required status check on master (Q-003).
 
 "on":
   push:
     branches:
       - master
     paths:
-      - 'config/var/www/admin/control-panel/**'
+      - 'config/var/www/admin/**'
       - '**/*.md'
       - 'tests/**'
       - '.github/**'
@@ -33,6 +35,7 @@ name: Control Panel
       - '.markdownlint-cli2.jsonc'
       - '.php-cs-fixer.dist.php'
       - 'phpcs.xml'
+      - 'rector.php'
       - 'phpmd.xml'
       - 'phpstan.neon'
       - 'psalm.xml'
@@ -40,29 +43,9 @@ name: Control Panel
       - '.ruff.toml'
       - '.mypy.ini'
       - '.yamllint.yml'
+  # Every pull request: the "changes" job below skips the checks when none of the push paths
+  # changed, so the required check ("Control Panel checks") still reports
   pull_request:
-    paths:
-      - 'config/var/www/admin/control-panel/**'
-      - '**/*.md'
-      - 'tests/**'
-      - '.github/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'eslint.config.mjs'
-      - '.stylelintrc.json'
-      - '.htmlvalidate.json'
-      - '.markdownlint-cli2.jsonc'
-      - '.php-cs-fixer.dist.php'
-      - 'phpcs.xml'
-      - 'phpmd.xml'
-      - 'phpstan.neon'
-      - 'psalm.xml'
-      - 'phpunit.xml'
-      - '.ruff.toml'
-      - '.mypy.ini'
-      - '.yamllint.yml'
   workflow_dispatch:
 
 permissions:
@@ -73,8 +56,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Changed files
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.paths.outputs.relevant }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check whether the panel's files changed
+        id: paths
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # A push is filtered by the trigger's paths, and a manual run checks everything
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          relevant=false
+          while IFS= read -r file; do
+            # The push trigger's paths (test-automation.py keeps the two lists equal)
+            case "$file" in
+              config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.php-cs-fixer.dist.php|phpcs.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|.yamllint.yml)
+                relevant=true
+                ;;
+            esac
+          done < <(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          echo "relevant=$relevant" | tee -a "$GITHUB_OUTPUT"
+
   phpcs:
     name: PHPCS (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -178,6 +201,8 @@ jobs:
 
   phpmd:
     name: PHPMD (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -262,6 +287,8 @@ jobs:
 
   psalm-analysis:
     name: Psalm Static Analysis (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -351,6 +378,8 @@ jobs:
 
   security-check:
     name: Security Scan (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -459,6 +488,8 @@ jobs:
 
   phpstan:
     name: PHPStan (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -537,6 +568,8 @@ jobs:
 
   rector:
     name: Rector (PHP 8.3)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -615,6 +648,8 @@ jobs:
 
   javascript-tests:
     name: JavaScript Tests (Node 24)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -728,6 +763,8 @@ jobs:
 
   lint:
     name: Lint (Node 24)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -893,6 +930,8 @@ jobs:
 
   unit-coverage:
     name: Unit Test Coverage (PHP 8.4)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -1002,6 +1041,8 @@ jobs:
 
   php-version-test:
     name: PHP ${{ matrix.php-version }} (${{ matrix.dependency-versions }} deps)
+    needs: changes
+    if: ${{ needs.changes.outputs.relevant == 'true' }}
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -1103,3 +1144,22 @@ jobs:
         with:
           filename: .github/ISSUE_TEMPLATE/php-version-test-failure.md
           update_existing: false
+
+  control-panel-checks:
+    name: Control Panel checks
+    needs: [changes, phpcs, phpmd, psalm-analysis, security-check, phpstan, rector, javascript-tests, lint, unit-coverage, php-version-test]
+    if: ${{ always() }}
+    runs-on: ubuntu-26.04
+    permissions: {}
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          # The one required status check on master: a job skipped because the panel's files did
+          # not change counts as passed; a failed or cancelled job fails this one
+          echo "$RESULTS"
+          if echo "$RESULTS" | grep -qE '"(failure|cancelled)"'; then
+            exit 1
+          fi

@@ -130,19 +130,51 @@ PARITY_JOBS = (
     "unit-coverage",
     "php-version-test",
 )
+# "changes" decides on a pull request whether the parity jobs run; "control-panel-checks" needs every
+# job and is the one required status check on master (Q-003).
+FIRST_JOB = "changes"
+LAST_JOB = "control-panel-checks"
 
 
-def workflow_jobs() -> dict[str, str]:
+def all_jobs() -> dict[str, str]:
     """Each job of the control panel workflow, with the text of its definition."""
     text = WORKFLOW.read_text(encoding="utf-8").split("\njobs:\n", 1)[1]
     parts = re.split(r"^  ([a-z0-9-]+):\n", text, flags=re.MULTILINE)
     return dict(zip(parts[1::2], parts[2::2], strict=True))
 
 
+def workflow_jobs() -> dict[str, str]:
+    """Return the parity jobs, without the two gate jobs."""
+    return {job: body for job, body in all_jobs().items() if job not in (FIRST_JOB, LAST_JOB)}
+
+
 class WorkflowTests(unittest.TestCase):
     def test_the_jobs_are_the_parity_jobs(self) -> None:
-        self.assertEqual(PARITY_JOBS, tuple(workflow_jobs()))
+        self.assertEqual((FIRST_JOB, *PARITY_JOBS, LAST_JOB), tuple(all_jobs()))
         self.assertNotIn("integration-test", workflow_jobs())
+
+    def test_each_parity_job_runs_only_when_the_panel_changed(self) -> None:
+        for job, body in workflow_jobs().items():
+            with self.subTest(job=job):
+                self.assertIn(f"    needs: {FIRST_JOB}\n", body)
+                self.assertIn("    if: ${{ needs.changes.outputs.relevant == 'true' }}\n", body)
+
+    def test_the_last_job_needs_every_job_and_always_runs(self) -> None:
+        body = all_jobs()[LAST_JOB]
+        self.assertIn(f"    needs: [{', '.join((FIRST_JOB, *PARITY_JOBS))}]\n", body)
+        self.assertIn("    if: ${{ always() }}\n", body)
+        self.assertIn("failure|cancelled", body)
+
+    def test_the_path_check_matches_the_push_paths(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        push = text.split("\n  push:\n", 1)[1].split("\n  pull_request:\n", 1)[0]
+        paths = re.findall(r"^      - '([^']+)'$", push, flags=re.MULTILINE)
+        expected = "|".join(path.replace("/**", "/*").replace("**/", "") for path in paths)
+        case = re.search(r"^              (\S+)\)$", all_jobs()[FIRST_JOB], flags=re.MULTILINE)
+        if case is None:
+            self.fail("the path check has no case patterns")
+        self.assertEqual(expected, case.group(1))
+        self.assertNotIn("paths:", text.split("\n  pull_request:", 1)[1].split("\njobs:\n", 1)[0])
 
     def test_each_job_files_its_own_issue_from_an_existing_template(self) -> None:
         used = []
@@ -166,7 +198,7 @@ class WorkflowTests(unittest.TestCase):
                 self.assertLessEqual(stages, steps)
 
     def test_every_action_is_pinned_to_a_commit(self) -> None:
-        for job, body in workflow_jobs().items():
+        for job, body in all_jobs().items():
             for action in re.findall(r"uses: (\S+)", body):
                 with self.subTest(job=job, action=action):
                     self.assertRegex(action, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
