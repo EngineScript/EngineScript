@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-15
+
+### 🔒 SECURITY
+
+- **Tiny File Manager shows only your sites:** the file manager used to open at `/var/www`, so its login could change the admin control panel and the other admin tools as well as your sites. It now opens at `/var/www/sites`, the folder that holds each site. The change applies at the next `es.update`.
+
 ## 2026-11-14
 
 ### 🐛 ADMIN CONTROL PANEL FIXES

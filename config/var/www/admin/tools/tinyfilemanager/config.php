@@ -43,8 +43,9 @@ $auth_users = [
 $use_auth = true;
 $readonly_users = [];
 
-// Root path for file browsing - restrict to web directories
-$root_path = '/var/www';
+// Root path for file browsing: the WordPress sites only, so a file manager login cannot change
+// the admin control panel or the other admin tools under /var/www/admin
+$root_path = '/var/www/sites';
 
 // Root URL for links (leave blank for auto-detection)
 $root_url = '';

@@ -97,6 +97,28 @@ final class RoutesTest extends IntegrationTestCase
         self::assertSame(self::shell("source /usr/local/bin/enginescript/enginescript-variables.txt && printf %s \"\${TINYFILEMANAGER_VER}\""), $fileManager['version']);
     }
 
+    public function testTheFileManagerShowsTheSitesOnly(): void
+    {
+        $page = '/tinyfilemanager/tinyfilemanager.php';
+        $login = $this->http('GET', $page);
+        self::assertSame(200, $login['status'], 'the login form');
+        self::assertSame(1, preg_match('/name="token" value="([^"]+)"/', $login['body'], $token), 'the login form\'s token');
+
+        $this->http('POST', $page, ['Content-Type' => 'application/x-www-form-urlencoded'], http_build_query([
+            'fm_usr' => self::option('FILEMANAGER_USERNAME'),
+            'fm_pwd' => self::option('FILEMANAGER_PASSWORD'),
+            'token' => html_entity_decode($token[1]),
+        ]));
+        // Without ?p= the file manager answers with a redirect to ?p= (its top level)
+        $response = $this->http('GET', $page . '?p=');
+        self::assertSame(200, $response['status'], 'the top-level listing');
+        $listing = $response['body'];
+
+        self::assertStringContainsString('?p=' . urlencode(self::$domain) . '"', $listing, 'the suite\'s site is listed at the top level');
+        self::assertStringNotContainsString('?p=admin"', $listing, 'the admin site is outside the file manager\'s root');
+        self::assertStringNotContainsString('?p=sites"', $listing, 'the root is /var/www/sites, not /var/www');
+    }
+
     public function testUptimeWithoutAKeyIsNotConfigured(): void
     {
         self::assertSame('PLACEHOLDER', self::option('UPTIMEROBOT_API_KEY'), 'the suite\'s server has no UptimeRobot key');
