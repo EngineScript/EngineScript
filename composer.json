@@ -67,6 +67,7 @@
             "@psalm",
             "@psalm:taint",
             "@phpstan",
+            "@rector",
             "@test"
         ]
     },
