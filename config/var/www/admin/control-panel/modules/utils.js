@@ -15,8 +15,8 @@ export class DashboardUtils {
       .trim()
       .slice(0, 2048); // Limit URL length
 
-    // Use the native URL constructor for spec-compliant, ReDoS-safe validation.
-    // This inherently blocks data:, javascript:, vbscript: and other dangerous schemes.
+    // Use the native URL constructor for spec-compliant, ReDoS-safe parsing; only http: and
+    // https: pass, so javascript:, data:, vbscript: and every other scheme give the fallback.
     try {
       const parsed = new URL(sanitized);
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
