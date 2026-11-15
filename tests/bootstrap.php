@@ -117,4 +117,5 @@ es_test_reset();
 // The dashboard script tests load this file without PHPUnit, to render API responses.
 if (class_exists(\PHPUnit\Framework\TestCase::class)) {
     require_once __DIR__ . '/EsTestCase.php';
+    require_once __DIR__ . '/IntegrationTestCase.php';
 }

@@ -34,9 +34,9 @@ final class RouterTest extends EsTestCase
         $_SESSION['csrf_token'] = str_repeat('a', 64);
 
         foreach (self::ROUTES as $path => $methods) {
-            // Its controller reads /etc/os-release; the integration suite runs it. The 405 test
-            // below shows that the route is registered.
-            if ($path === '/system/info') {
+            // Their controllers read /etc/os-release and /etc/enginescript/uptimerobot.conf; the
+            // integration suite runs them. The 405 test below shows that they are registered.
+            if (in_array($path, ['/system/info', '/monitoring/uptime', '/monitoring/uptime/monitors'], true)) {
                 continue;
             }
 
