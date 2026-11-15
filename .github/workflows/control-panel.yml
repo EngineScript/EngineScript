@@ -1086,7 +1086,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: control-panel-php-version-test
+          name: control-panel-php-version-test-${{ matrix.php-version }}-${{ matrix.dependency-versions }}
           path: ${{ runner.temp }}/es-diagnostics/
           retention-days: 7
           if-no-files-found: warn
