@@ -241,6 +241,14 @@ describe("clearing a cache", () => {
     await goTo("tools");
     const button = $("[data-cache-type=\"redis\"]");
     button.focus();
+    // Browsers take focus away from a disabled button and jsdom does not, so the test records the
+    // focus call that gives it back.
+    let refocused = 0;
+    const focus = button.focus.bind(button);
+    button.focus = () => {
+      refocused += 1;
+      focus();
+    };
     button.click();
 
     assert.equal(button.disabled, true);
@@ -249,6 +257,7 @@ describe("clearing a cache", () => {
 
     assert.equal(button.disabled, false);
     assert.equal(button.getAttribute("aria-busy"), null);
+    assert.equal(refocused, 1, "focus returns to the button");
     assert.equal(page.document.activeElement, button);
     assert.equal(text(".notification-toast"), "Cache cleared successfully");
     assert.ok($(".notification-toast").classList.contains("notification-success"));
@@ -304,6 +313,25 @@ describe("clearing a cache", () => {
     assert.equal(posts, 2);
     assert.equal(page.calls.filter((call) => call.url === "/api/csrf-token").length, 2, "the token was loaded again");
     assert.equal(text(".notification-toast"), "Cache cleared successfully");
+  });
+
+  it("retries only once when the new token is refused too", async () => {
+    let posts = 0;
+    await open({
+      fetch: (call) => {
+        if (call.method === "POST") {
+          posts += 1;
+          return failure("csrf-refused");
+        }
+        return undefined;
+      }
+    });
+    await goTo("tools");
+    $("[data-cache-type=\"redis\"]").click();
+    await settle();
+
+    assert.equal(posts, 2);
+    assert.equal(text(".notification-toast"), "Invalid or missing CSRF token");
   });
 
   it("does not retry any other failure", async () => {
@@ -426,10 +454,11 @@ describe("keyboard", () => {
     await settle();
     assert.equal(page.dashboard.state.getCurrentPage(), "tools");
 
-    press(page.document.body, "1");
-    press(page.document.body, "ArrowLeft");
-    await settle();
-    assert.equal(page.dashboard.state.getCurrentPage(), "tools", "outside the navigation nothing changes");
+    for (const key of ["1", "ArrowLeft", "ArrowRight"]) {
+      press(page.document.body, key);
+      await settle();
+      assert.equal(page.dashboard.state.getCurrentPage(), "tools", `${key} outside the navigation changes nothing`);
+    }
   });
 
   it("leaves F5, Ctrl+R, and modified digits to the browser", async () => {
