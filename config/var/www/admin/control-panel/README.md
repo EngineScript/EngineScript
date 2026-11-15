@@ -1,36 +1,30 @@
 # EngineScript Admin Dashboard
 
-This directory contains the modern admin dashboard for EngineScript server management.
+This directory contains the EngineScript admin dashboard, served at `https://admin.yourdomain.com` behind HTTP basic authentication.
 
 ## Files
 
-- `index.html` - Main dashboard HTML shell with modern, responsive design
-- `dashboard.css` - Modern CSS styling with dark theme and smooth animations
-- `dashboard.js` - Interactive JavaScript for real-time dashboard functionality
-- `fontawesome-check.js` - Frontend dependency health check
+- `index.html` - Dashboard page
+- `dashboard.css` - Styles for the light and dark themes
+- `dashboard.js` - Dashboard script: pages, data loading, cache buttons, keyboard shortcuts
+- `fontawesome-check.js` - Shows a warning when the Font Awesome stylesheet from cdnjs does not load
 - `modules/` - API, state, and utility JavaScript modules
-- `api.php`, `classes/`, `controllers/` - Standalone PHP API
+- `api.php`, `classes/`, `controllers/` - The dashboard's PHP API
 - `favicon.png` - Dashboard favicon
 
 ## Features
 
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Real-time Monitoring**: Live server statistics and service status
-- **Multi-page Dashboard**: Overview, Sites, System, and Tools
-- **Service Management**: Monitor Nginx, PHP, MariaDB, and Redis
-- **WordPress Site Management**: View and manage WordPress installations
-- **Admin Tools**: Quick access to phpMyAdmin, PHPinfo, and other tools
-- **Cache Management**: View and clear Redis, FastCGI, and OPcache caches
+- **Pages**: Overview, Sites, System, and Tools, with light and dark themes
+- **Service status**: Nginx, PHP, MariaDB, and Redis, with their versions, refreshed every five minutes
+- **WordPress sites**: Each site's domain, WordPress version, and SSL status
+- **Uptime**: The UptimeRobot account's monitors, when an UptimeRobot API key is configured
+- **Admin tools**: Links to phpMyAdmin, Adminer (when installed), phpinfo, phpSysInfo, and Tiny File Manager
+- **Caches**: The state of Redis, the FastCGI cache, and OPcache, with buttons to clear each
 
-## API Integration
+## API
 
-The dashboard is designed to work with RESTful API endpoints for real-time data:
-
-- `/api/system/*` - System information and statistics
-- `/api/sites/*` - WordPress site management
-- `/api/services/*` - Service status monitoring
-- `/api/cache/*` - Cache status and clear actions
+The dashboard reads its data from the API under `/api/`. Every endpoint, parameter, and response is described in [`docs/api.md`](../../../../../docs/api.md).
 
 ## Installation
 
-The dashboard is automatically deployed by the EngineScript installation process to `/var/www/admin/control-panel/`.
+EngineScript installs the dashboard to `/var/www/admin/control-panel/` and replaces it on every `es.update`. This `README.md` and `LICENSE` stay in the repository; they are not copied to the server.

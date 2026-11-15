@@ -115,7 +115,7 @@ if [[ -d "$TOOLS_DIR" ]]; then
     TOOLS_COUNT=$(find "$TOOLS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
     if [[ "$TOOLS_COUNT" -gt 0 ]]; then
         echo "✓ Admin tools directory verified: $TOOLS_COUNT tool(s) found in $TOOLS_DIR"
-        echo "  Tools will NOT be affected by this update."
+        echo "  Tools are kept; only Tiny File Manager's EngineScript configuration is refreshed."
     fi
 else
     echo "ℹ Admin tools directory not found. Creating..."
@@ -126,7 +126,8 @@ fi
 # The installer builds the new panel beside the running one and swaps it in only when it is
 # complete: files the new version no longer has go away, and a failed update leaves the
 # running panel as it was. Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer,
-# phpinfo) are stored in /var/www/admin/tools/ and are NOT affected by updates.
+# phpinfo) are stored in /var/www/admin/tools/ and are kept, apart from Tiny File Manager's
+# config.php below.
 run_step "Admin Control Panel Update" /usr/local/bin/enginescript/scripts/install/tools/frontend/admin-control-panel-install.sh
 
 # Tiny File Manager is installed once; its EngineScript configuration follows each update

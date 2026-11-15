@@ -136,7 +136,7 @@ Want to support EngineScript? [Sponsor this project](https://github.com/sponsors
 |**/var/lib/mysql**|MySQL database|
 |**/var/log**|Server logs|
 |**/var/www/admin/control-panel**|EngineScript Admin Dashboard|
-|**/var/www/admin/tools**|Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, Adminer)|
+|**/var/www/admin/tools**|Admin tools (phpMyAdmin, TinyFileManager, phpSysInfo, phpinfo, and Adminer when installed)|
 |**/var/www/sites/*YOURDOMAIN*/html**|Root directory for your WordPress installation|
 
 ### Automatic Updates
@@ -172,12 +172,13 @@ A new release waits a day on each server before it is installed. Each update che
 
 ### Admin Control Panel Features
 
-EngineScript includes a comprehensive web-based admin control panel accessible at `https://admin.yourdomain.com`. The control panel provides:
+EngineScript includes a web-based admin control panel at `https://admin.yourdomain.com`, behind a password. The control panel provides:
 
-- Server monitoring and management tools
-- Uptime monitoring and reporting for all WordPress sites
-- Web-based file management with Tiny File Manager
-- Quick access to common server management tasks and tools
+- The status and versions of Nginx, PHP, MariaDB, and Redis, and the server's operating system and kernel
+- A list of the WordPress sites with their WordPress version and SSL status
+- Your UptimeRobot monitors, when an UptimeRobot API key is set in the install options
+- The state of the Redis, FastCGI, and OPcache caches, with buttons to clear them
+- Links to phpMyAdmin, Adminer (when installed), phpinfo, phpSysInfo, and Tiny File Manager for web-based file management
 
 ### Software EngineScript Utilizes
 

@@ -6,8 +6,8 @@ This directory contains configuration templates for admin tools that are install
 
 ```tree
 /var/www/admin/
-├── control-panel/    # EngineScript Admin Dashboard (updated during es.update)
-└── tools/            # Admin tools (not affected by es.update)
+├── control-panel/    # EngineScript Admin Dashboard (replaced by es.update)
+└── tools/            # Admin tools (kept by es.update; see below)
     ├── adminer/
     ├── phpinfo/
     ├── phpmyadmin/
@@ -17,15 +17,15 @@ This directory contains configuration templates for admin tools that are install
 
 ## Update Behavior
 
-- **Control Panel** (`/var/www/admin/control-panel/`): Replaced during EngineScript updates to ensure users always have the latest dashboard version.
-- **Tools** (`/var/www/admin/tools/`): Not affected by EngineScript updates. Tool configurations persist across updates.
+- **Control Panel** (`/var/www/admin/control-panel/`): Replaced by every `es.update`, so the server always runs the dashboard of the installed EngineScript version.
+- **Tools** (`/var/www/admin/tools/`): Kept by `es.update`, with two exceptions:
+  - every `es.update` copies Tiny File Manager's `config.php` from this directory again, and writes its login from the install options to `/var/lib/enginescript/admin/tinyfilemanager-auth.json`;
+  - a PHP update changes the PHP version in `phpsysinfo.ini`.
 
 ## Tool-Specific Updates
 
-Individual tools can be updated using their respective update commands:
-
-- `es.update.phpmyadmin` - Updates phpMyAdmin
-- Other tools: Re-run the respective install script if needed
+- **phpMyAdmin**: `es.menu` > Update Software > Update Server Tools (when `INSTALL_PHPMYADMIN=1`)
+- **Other tools**: Re-run the respective install script if needed
 
 ## Configuration Files
 
