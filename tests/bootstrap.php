@@ -16,16 +16,23 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\CommandRunner;
+use EngineScript\Dashboard\Classes\Request;
+use EngineScript\Dashboard\Classes\SystemCommand;
+
 const ES_TEST_PANEL = __DIR__ . '/../config/var/www/admin/control-panel';
 
+// As api.php loads them, in dependency order
+require_once ES_TEST_PANEL . '/classes/CommandRunner.php';
+require_once ES_TEST_PANEL . '/classes/SystemProcessRunner.php';
 require_once ES_TEST_PANEL . '/classes/SystemCommand.php';
 require_once ES_TEST_PANEL . '/classes/ApiResponder.php';
 require_once ES_TEST_PANEL . '/classes/Request.php';
-require_once ES_TEST_PANEL . '/classes/RequestGuard.php';
-require_once ES_TEST_PANEL . '/classes/Router.php';
 require_once ES_TEST_PANEL . '/classes/SecurityLogger.php';
 require_once ES_TEST_PANEL . '/classes/Session.php';
+require_once ES_TEST_PANEL . '/classes/RequestGuard.php';
 require_once ES_TEST_PANEL . '/classes/UptimeRobotAPI.php';
+require_once ES_TEST_PANEL . '/classes/Router.php';
 require_once ES_TEST_PANEL . '/controllers/BaseController.php';
 require_once ES_TEST_PANEL . '/controllers/CacheController.php';
 require_once ES_TEST_PANEL . '/controllers/CsrfController.php';

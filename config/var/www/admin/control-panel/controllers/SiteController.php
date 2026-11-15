@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
+namespace EngineScript\Dashboard\API\Controllers;
 
 /**
  * WordPress Sites Controller
@@ -42,12 +42,11 @@ final class SiteController extends BaseController
     {
         try {
             $this->response->success($this->getWordPressSites());
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Sites error', $e->getMessage());
             $this->response->serverError('Unable to retrieve sites');
         }
     }
-
 
     /**
      * Get all WordPress sites from nginx configuration
@@ -63,18 +62,18 @@ final class SiteController extends BaseController
                 return $sites;
             }
 
-            $valid_files = $this->scanNginxConfigs(self::NGINX_SITES_PATH);
-            if ($valid_files === false) {
+            $validFiles = $this->scanNginxConfigs(self::NGINX_SITES_PATH);
+            if ($validFiles === false) {
                 return $sites;
             }
 
-            foreach ($valid_files as $config_real_path) {
-                $site_info = $this->processNginxConfig($config_real_path);
-                if ($site_info !== null) {
-                    $sites[] = $site_info;
+            foreach ($validFiles as $configRealPath) {
+                $siteInfo = $this->processNginxConfig($configRealPath);
+                if ($siteInfo !== null) {
+                    $sites[] = $siteInfo;
                 }
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('WordPress sites enumeration error', $e->getMessage());
         }
 
@@ -84,17 +83,17 @@ final class SiteController extends BaseController
     /**
      * Scan nginx config files in directory
      *
-     * @param string $real_path Directory path
+     * @param string $realPath Directory path
      * @return list<string>|false Array of valid config paths or false on error
      */
-    private function scanNginxConfigs(string $real_path): array|false
+    private function scanNginxConfigs(string $realPath): array|false
     {
-        $files = scandir($real_path);
+        $files = scandir($realPath);
         if ($files === false) {
             return false;
         }
 
-        $valid_files = [];
+        $validFiles = [];
         foreach ($files as $file) {
             if (in_array($file, ['.', '..', 'default'], true)) {
                 continue;
@@ -106,85 +105,85 @@ final class SiteController extends BaseController
                 continue;
             }
 
-            $config_path = $real_path . '/' . $file;
-            if (!is_file($config_path) || !is_readable($config_path)) {
+            $configPath = $realPath . '/' . $file;
+            if (!is_file($configPath) || !is_readable($configPath)) {
                 continue;
             }
 
-            $config_real_path = $this->resolveInside($config_path, $real_path);
-            if ($config_real_path === null) {
-                $this->securityLogger->write('Config file path traversal attempt', $config_path);
+            $configRealPath = $this->resolveInside($configPath, $realPath);
+            if ($configRealPath === null) {
+                $this->securityLogger->write('Config file path traversal attempt', $configPath);
                 continue;
             }
 
-            $valid_files[] = $config_real_path;
+            $validFiles[] = $configRealPath;
         }
 
-        return $valid_files;
+        return $validFiles;
     }
 
     /**
      * Process a single nginx config file
      *
-     * @param string $config_real_path Path to config file
+     * @param string $configRealPath Path to config file
      * @return array<string, string>|null Site info or null if not WordPress
      */
-    private function processNginxConfig($config_real_path): ?array
+    private function processNginxConfig($configRealPath): ?array
     {
-        $config_content = file_get_contents($config_real_path);
-        if ($config_content === false || !$this->isWordPressConfig($config_content)) {
+        $configContent = file_get_contents($configRealPath);
+        if ($configContent === false || !$this->isWordPressConfig($configContent)) {
             return null;
         }
 
-        $domain = $this->extractPrimaryDomain($config_content);
+        $domain = $this->extractPrimaryDomain($configContent);
         if ($domain === '') {
             return null;
         }
 
-        $document_root = $this->extractDocumentRoot($config_content);
-        $wp_version = $this->getWordPressVersion($document_root);
+        $documentRoot = $this->extractDocumentRoot($configContent);
+        $wpVersion = $this->getWordPressVersion($documentRoot);
 
         return [
             'domain' => $domain,
-            'wp_version' => $wp_version,
-            'ssl_status' => str_contains($config_content, 'ssl_certificate') ? 'Enabled' : 'Unknown',
+            'wp_version' => $wpVersion,
+            'ssl_status' => str_contains($configContent, 'ssl_certificate') ? 'Enabled' : 'Unknown',
         ];
     }
 
-    private function isWordPressConfig(string $config_content): bool
+    private function isWordPressConfig(string $configContent): bool
     {
-        return str_contains($config_content, 'wordpress') || str_contains($config_content, 'wp-');
+        return str_contains($configContent, 'wordpress') || str_contains($configContent, 'wp-');
     }
 
-    private function extractPrimaryDomain(string $config_content): string
+    private function extractPrimaryDomain(string $configContent): string
     {
-        if (!preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $config_content, $matches)) {
+        if (!preg_match('/server_name\s+([a-zA-Z0-9.-]+(?:\s+[a-zA-Z0-9.-]+)*)\s*;/', $configContent, $matches)) {
             return '';
         }
 
-        $domain_parts = preg_split('/\s+/', trim($matches[1]));
-        $primary_domain = is_array($domain_parts) ? $domain_parts[0] : '';
+        $domainParts = preg_split('/\s+/', trim($matches[1]));
+        $primaryDomain = is_array($domainParts) ? $domainParts[0] : '';
 
-        $validatedDomain = filter_var($primary_domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+        $validatedDomain = filter_var($primaryDomain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
         if ($validatedDomain === false || $validatedDomain === '0') {
             return '';
         }
 
-        return $primary_domain;
+        return $primaryDomain;
     }
 
-    private function extractDocumentRoot(string $config_content): string
+    private function extractDocumentRoot(string $configContent): string
     {
-        if (!preg_match('/root\s+([^\s;]+)\s*;/', $config_content, $matches)) {
+        if (!preg_match('/root\s+([^\s;]+)\s*;/', $configContent, $matches)) {
             return '';
         }
 
-        $document_root = trim($matches[1]);
-        if (!preg_match('/^\/[a-zA-Z0-9\/_.-]+\z/', $document_root)) {
+        $documentRoot = trim($matches[1]);
+        if (!preg_match('/^\/[a-zA-Z0-9\/_.-]+\z/', $documentRoot)) {
             return '';
         }
 
-        $realDocumentRoot = realpath($document_root);
+        $realDocumentRoot = realpath($documentRoot);
 
         return is_string($realDocumentRoot) ? $realDocumentRoot : '';
     }
@@ -192,19 +191,19 @@ final class SiteController extends BaseController
     /**
      * Get WordPress version from a site's document root
      *
-     * @param string $document_root Document root path
+     * @param string $documentRoot Document root path
      * @return string WordPress version or 'Unknown'
      */
-    private function getWordPressVersion(string $document_root): string
+    private function getWordPressVersion(string $documentRoot): string
     {
         try {
-            $real_version_file = $this->validateWordPressPath($document_root);
-            if ($real_version_file === false) {
+            $realVersionFile = $this->validateWordPressPath($documentRoot);
+            if ($realVersionFile === false) {
                 return 'Unknown';
             }
 
-            return $this->parseWordPressVersion($real_version_file);
-        } catch (Throwable $e) {
+            return $this->parseWordPressVersion($realVersionFile);
+        } catch (\Throwable $e) {
             $this->securityLogger->write('WordPress version detection error', $e->getMessage());
             return 'Unknown';
         }
@@ -213,22 +212,22 @@ final class SiteController extends BaseController
     /**
      * Validate WordPress installation path
      *
-     * @param string $document_root Document root to validate
+     * @param string $documentRoot Document root to validate
      * @return string|false Path to version.php or false if invalid
      */
-    private function validateWordPressPath(string $document_root): false|string
+    private function validateWordPressPath(string $documentRoot): false|string
     {
         // extractDocumentRoot() has resolved the root already.
-        if ($document_root === '') {
+        if ($documentRoot === '') {
             return false;
         }
 
-        $real_version_file = $this->resolveInside($document_root . '/wp-includes/version.php', $document_root);
-        if ($real_version_file === null) {
+        $realVersionFile = $this->resolveInside($documentRoot . '/wp-includes/version.php', $documentRoot);
+        if ($realVersionFile === null) {
             return false;
         }
 
-        return is_readable($real_version_file) ? $real_version_file : false;
+        return is_readable($realVersionFile) ? $realVersionFile : false;
     }
 
     /**
@@ -245,18 +244,20 @@ final class SiteController extends BaseController
     /**
      * Parse WordPress version from version.php file
      *
-     * @param string $real_version_file Path to version.php
+     * @param string $realVersionFile Path to version.php
      * @return string Version string or 'Unknown'
      */
-    private function parseWordPressVersion(string $real_version_file): string
+    private function parseWordPressVersion(string $realVersionFile): string
     {
-        $content = file_get_contents($real_version_file);
+        $content = file_get_contents($realVersionFile);
         if ($content === false) {
             return 'Unknown';
         }
 
         // Look for the WordPress version variable
-        if (preg_match('/\$wp_version\s*=\s*[\'"]([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/', $content, $matches)) {
+        $pattern = '/\$wp_version\s*=\s*[\'"]'
+            . '([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:-[a-zA-Z0-9-]+)?)[\'"]/';
+        if (preg_match($pattern, $content, $matches)) {
             return $matches[1];
         }
 

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\SecurityLogger;
+use EngineScript\Dashboard\Classes\Session;
+
 final class SessionAndLoggerTest extends EsTestCase
 {
     public function testSessionReadsTheSessionData(): void

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\Request;
+
 final class RequestTest extends EsTestCase
 {
     public function testQueryAndFormValuesArePassedOnAsSent(): void

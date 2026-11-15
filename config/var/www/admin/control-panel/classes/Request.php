@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace EngineScript\Dashboard\Classes;
+
 /**
  * EngineScript Admin Dashboard - Request Wrapper
  *
@@ -41,8 +43,12 @@ final class Request
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      */
-    public function __construct(?array $server = null, ?array $query = null, ?array $post = null, private ?string $body = null)
-    {
+    public function __construct(
+        ?array $server = null,
+        ?array $query = null,
+        ?array $post = null,
+        private ?string $body = null
+    ) {
         $this->server = $server ?? $_SERVER;
         $this->query = $query ?? $_GET;
         $this->post = $post ?? $_POST;
@@ -115,13 +121,13 @@ final class Request
         return $this->body;
     }
 
-    private function serverString(string $key, string $default = ''): string
+    private function serverString(string $key, string $fallback = ''): string
     {
         if (!isset($this->server[$key])) {
-            return $default;
+            return $fallback;
         }
 
-        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $default;
+        return is_scalar($this->server[$key]) ? (string) $this->server[$key] : $fallback;
     }
 
     private function scalarInput(mixed $value): ?string

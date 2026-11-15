@@ -11,8 +11,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../classes/SystemCommand.php';
+namespace EngineScript\Dashboard\API\Controllers;
+
+use EngineScript\Dashboard\Classes\SystemCommand;
 
 /**
  * Cache Controller
@@ -82,7 +83,7 @@ final class CacheController extends BaseController
             }
 
             $this->response->success($response);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Cache clear error', $e->getMessage());
             $this->response->serverError('Unable to clear cache');
         }
@@ -125,7 +126,9 @@ final class CacheController extends BaseController
         $invalidTypes = array_values(array_unique($invalidTypes));
 
         if ($validTypes === []) {
-            $this->response->badRequest('No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES));
+            $this->response->badRequest(
+                'No valid cache types provided. Valid types: ' . implode(', ', self::VALID_CACHE_TYPES)
+            );
             return null;
         }
 
@@ -274,7 +277,7 @@ final class CacheController extends BaseController
             ];
 
             $this->response->success($status);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Cache status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve cache status');
         }

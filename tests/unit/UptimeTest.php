@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\API\Controllers\UptimeController;
+use EngineScript\Dashboard\Classes\UptimeRobotAPI;
+
 /**
  * UptimeRobotAPI against a local stand-in for UptimeRobot's API v3 (real HTTP,
  * recorded response shapes), and UptimeController's status mapping. The

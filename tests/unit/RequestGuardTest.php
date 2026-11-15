@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\RequestGuard;
+use EngineScript\Dashboard\Classes\Session;
+
 final class RequestGuardTest extends EsTestCase
 {
     private const string TOKEN = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'; // gitleaks:allow (a test value)

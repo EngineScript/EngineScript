@@ -11,8 +11,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../classes/SystemCommand.php';
+namespace EngineScript\Dashboard\API\Controllers;
+
+use EngineScript\Dashboard\Classes\SystemCommand;
 
 /**
  * System Information Controller
@@ -47,7 +48,7 @@ final class SystemController extends BaseController
             ];
 
             $this->response->success($info);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('System info error', $e->getMessage());
             $this->response->serverError('Unable to retrieve system info');
         }
@@ -62,9 +63,9 @@ final class SystemController extends BaseController
      */
     private function getOsInfo(): string
     {
-        $os_release = parse_ini_file('/etc/os-release');
-        if (is_array($os_release) && !empty($os_release['PRETTY_NAME']) && is_string($os_release['PRETTY_NAME'])) {
-            return $os_release['PRETTY_NAME'];
+        $osRelease = parse_ini_file('/etc/os-release');
+        if (is_array($osRelease) && !empty($osRelease['PRETTY_NAME']) && is_string($osRelease['PRETTY_NAME'])) {
+            return $osRelease['PRETTY_NAME'];
         }
 
         return 'Unknown Linux Distribution';
@@ -84,7 +85,7 @@ final class SystemController extends BaseController
             if ($version !== false && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $version)) {
                 return $version;
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Kernel version error', $e->getMessage());
         }
         return 'Unknown';
@@ -102,14 +103,14 @@ final class SystemController extends BaseController
         try {
             $hostname = gethostname();
             // getNetworkIP() returns a validated address or false.
-            $ip_address = SystemCommand::getNetworkIP();
+            $ipAddress = SystemCommand::getNetworkIP();
 
             return sprintf(
                 '%s (%s)',
                 $hostname === false ? 'Unknown' : $hostname,
-                $ip_address === false ? 'Unknown' : $ip_address
+                $ipAddress === false ? 'Unknown' : $ipAddress
             );
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Network info error', $e->getMessage());
             return 'Unknown (Unknown)';
         }

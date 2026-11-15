@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Request.php';
+namespace EngineScript\Dashboard\Classes;
 
 final readonly class SecurityLogger
 {
@@ -34,21 +34,21 @@ final readonly class SecurityLogger
      */
     public function write(string $event, string $details = ''): void
     {
-        $safe_event = self::sanitize($event);
+        $safeEvent = self::sanitize($event);
 
-        $log_entry = gmdate(DATE_ATOM) . " [SECURITY] " . $safe_event;
+        $logEntry = gmdate(DATE_ATOM) . " [SECURITY] " . $safeEvent;
 
         if ($details !== '' && $details !== '0') {
-            $safe_details = self::sanitize($details);
-            $log_entry .= " - " . $safe_details;
+            $safeDetails = self::sanitize($details);
+            $logEntry .= " - " . $safeDetails;
         }
 
-        $client_ip = $this->request->remoteAddress();
+        $clientIp = $this->request->remoteAddress();
 
-        $log_entry .= " - User: " . self::sanitize($this->request->authenticatedUser);
-        $log_entry .= " - IP: " . $client_ip . "\n";
+        $logEntry .= " - User: " . self::sanitize($this->request->authenticatedUser);
+        $logEntry .= " - IP: " . $clientIp . "\n";
 
-        error_log($log_entry, 3, $this->logFile);
+        error_log($logEntry, 3, $this->logFile);
     }
 
     /**

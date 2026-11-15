@@ -12,14 +12,24 @@
 
 declare(strict_types=1);
 
-// Load core classes
+use EngineScript\Dashboard\Classes\ApiResponder;
+use EngineScript\Dashboard\Classes\Request;
+use EngineScript\Dashboard\Classes\RequestGuard;
+use EngineScript\Dashboard\Classes\Router;
+use EngineScript\Dashboard\Classes\SecurityLogger;
+use EngineScript\Dashboard\Classes\Session;
+
+// Load every class here, in dependency order: the class files do not load each other
+require_once __DIR__ . '/classes/CommandRunner.php';
+require_once __DIR__ . '/classes/SystemProcessRunner.php';
 require_once __DIR__ . '/classes/SystemCommand.php';
 require_once __DIR__ . '/classes/ApiResponder.php';
 require_once __DIR__ . '/classes/Request.php';
-require_once __DIR__ . '/classes/RequestGuard.php';
-require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/classes/SecurityLogger.php';
 require_once __DIR__ . '/classes/Session.php';
+require_once __DIR__ . '/classes/RequestGuard.php';
+require_once __DIR__ . '/classes/UptimeRobotAPI.php';
+require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/controllers/BaseController.php';
 require_once __DIR__ . '/controllers/CacheController.php';
 require_once __DIR__ . '/controllers/CsrfController.php';

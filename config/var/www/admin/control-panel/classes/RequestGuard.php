@@ -11,9 +11,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Request.php';
-require_once __DIR__ . '/SecurityLogger.php';
-require_once __DIR__ . '/Session.php';
+namespace EngineScript\Dashboard\Classes;
 
 final class RequestGuard
 {
@@ -30,11 +28,11 @@ final class RequestGuard
     /**
      * The request count after this request.
      *
-     * @param array<mixed> $rate_limit
+     * @param array<mixed> $rateLimit
      */
-    public static function nextRateLimitCount(array $rate_limit): int
+    public static function nextRateLimitCount(array $rateLimit): int
     {
-        return isset($rate_limit['count']) && is_int($rate_limit['count']) ? $rate_limit['count'] + 1 : 1;
+        return isset($rateLimit['count']) && is_int($rateLimit['count']) ? $rateLimit['count'] + 1 : 1;
     }
 
     /**
@@ -51,12 +49,12 @@ final class RequestGuard
             return true;
         }
 
-        $client_token = self::csrfTokenFromRequest($request, $securityLogger);
-        if ($client_token === false) {
+        $clientToken = self::csrfTokenFromRequest($request, $securityLogger);
+        if ($clientToken === false) {
             return false;
         }
 
-        return self::csrfTokenIsValid($method, $client_token, $session->get('csrf_token'), $securityLogger);
+        return self::csrfTokenIsValid($method, $clientToken, $session->get('csrf_token'), $securityLogger);
     }
 
     public static function isCsrfSafeMethod(string $method): bool
@@ -92,7 +90,7 @@ final class RequestGuard
 
         try {
             return self::csrfTokenFromDecodedBody(json_decode($input, true, 512, JSON_THROW_ON_ERROR));
-        } catch (JsonException) {
+        } catch (\JsonException) {
             $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
             return false;
         }
@@ -109,16 +107,16 @@ final class RequestGuard
 
     public static function csrfTokenIsValid(
         string $method,
-        ?string $client_token,
-        mixed $session_token,
+        ?string $clientToken,
+        mixed $sessionToken,
         SecurityLogger $securityLogger
     ): bool {
-        if (in_array($client_token, [null, '', '0'], true) || !is_string($session_token) || $session_token === '') {
+        if (in_array($clientToken, [null, '', '0'], true) || !is_string($sessionToken) || $sessionToken === '') {
             $securityLogger->write('CSRF token missing', $method . ' request without token');
             return false;
         }
 
-        if (!hash_equals($session_token, $client_token)) {
+        if (!hash_equals($sessionToken, $clientToken)) {
             $securityLogger->write('CSRF token mismatch', 'Invalid token submitted');
             return false;
         }

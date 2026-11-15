@@ -24,8 +24,15 @@ if (
     || $es_fm_login['password_hash'] === ''
 ) {
     http_response_code(503);
-    die('File Manager Error: Credentials not configured. Set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD with "es.config", then run "es.update".');
+    die(
+        'File Manager Error: Credentials not configured. '
+        . 'Set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD with "es.config", then run "es.update".'
+    );
 }
+
+// The settings below are Tiny File Manager's: it includes this file and reads them, so they are
+// not unused, and their names are its own.
+// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 
 // Authentication array: username => password hash
 $auth_users = [

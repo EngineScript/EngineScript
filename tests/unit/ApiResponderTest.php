@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\ApiResponder;
+
 final class ApiResponderTest extends EsTestCase
 {
     public function testSuccessSendsTheDataAsJsonWithStatus200(): void

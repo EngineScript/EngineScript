@@ -5,18 +5,24 @@
  *
  * Maps API paths to controller methods through one route table.
  *
- * @package EngineScript\Dashboard\API
+ * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
  * @security HIGH - Controls all API routing
  */
 
 declare(strict_types=1);
 
-// Ensure response and request helpers are loaded for dispatching
-require_once __DIR__ . '/ApiResponder.php';
-require_once __DIR__ . '/Request.php';
-require_once __DIR__ . '/SecurityLogger.php';
-require_once __DIR__ . '/Session.php';
+namespace EngineScript\Dashboard\Classes;
+
+use EngineScript\Dashboard\API\Controllers\BaseController;
+use EngineScript\Dashboard\API\Controllers\CacheController;
+use EngineScript\Dashboard\API\Controllers\CsrfController;
+use EngineScript\Dashboard\API\Controllers\FileManagerController;
+use EngineScript\Dashboard\API\Controllers\ServiceController;
+use EngineScript\Dashboard\API\Controllers\SiteController;
+use EngineScript\Dashboard\API\Controllers\SystemController;
+use EngineScript\Dashboard\API\Controllers\ToolsController;
+use EngineScript\Dashboard\API\Controllers\UptimeController;
 
 /**
  * API Router
@@ -68,7 +74,7 @@ final readonly class Router
     /**
      * The route table: allowed HTTP methods and handler of each path
      *
-     * @return array{list<string>, Closure(): void}|null
+     * @return array{list<string>, \Closure(): void}|null
      */
     private function route(string $path): ?array
     {

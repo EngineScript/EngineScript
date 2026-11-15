@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\Classes\ApiResponder;
+use EngineScript\Dashboard\Classes\Router;
+use EngineScript\Dashboard\Classes\Session;
+
 final class RouterTest extends EsTestCase
 {
     /** The route table, with the methods each route accepts. */

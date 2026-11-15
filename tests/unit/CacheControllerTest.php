@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\API\Controllers\CacheController;
+
 /**
  * The FastCGI cache's directory checks (is_dir on /var/cache/nginx) and OPcache's
  * state in the running PHP depend on the machine; the integration suite runs them

@@ -6,6 +6,12 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\API\Controllers\BaseController;
+use EngineScript\Dashboard\Classes\ApiResponder;
+use EngineScript\Dashboard\Classes\Request;
+use EngineScript\Dashboard\Classes\SecurityLogger;
+use EngineScript\Dashboard\Classes\Session;
+
 use PHPUnit\Framework\TestCase;
 
 /**

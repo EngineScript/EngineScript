@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\API\Controllers\CsrfController;
+use EngineScript\Dashboard\API\Controllers\ServiceController;
+
 final class ServiceAndCsrfControllerTest extends EsTestCase
 {
     private const array RUNNING = [

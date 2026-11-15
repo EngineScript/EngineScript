@@ -11,8 +11,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../classes/SystemCommand.php';
+namespace EngineScript\Dashboard\API\Controllers;
+
+use EngineScript\Dashboard\Classes\SystemCommand;
 
 /**
  * Service Status Controller
@@ -49,7 +50,7 @@ final class ServiceController extends BaseController
             ];
 
             $this->response->success($services);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Services status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve services status');
         }
@@ -69,7 +70,7 @@ final class ServiceController extends BaseController
                 'version' => $this->getServiceVersion($service),
                 'online' => $online,
             ];
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Service status error', $e->getMessage());
             return $this->createErrorServiceStatus();
         }

@@ -5,12 +5,14 @@
  *
  * Reads the account's monitors from UptimeRobot's API v3.
  *
- * @package EngineScript\Dashboard\API
+ * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
  * @security HIGH - Handles API credentials
  */
 
 declare(strict_types=1);
+
+namespace EngineScript\Dashboard\Classes;
 
 /**
  * UptimeRobot API Client
@@ -183,19 +185,18 @@ final class UptimeRobotAPI
                 continue;
             }
 
-            $uptime = $this->floatOrNull($stats['uptime'] ?? null);
-            $monitors[$index]['lastDayUptime'] = $uptime === null ? null : round($uptime, 2);
+            $monitors[$index]['lastDayUptime'] = $this->percentOrNull($stats['uptime'] ?? null);
         }
 
         return $monitors;
     }
 
     /**
-     * The value as a float when it is a number, otherwise null.
+     * The value rounded to two decimals when it is a number, otherwise null.
      */
-    private function floatOrNull(mixed $value): ?float
+    private function percentOrNull(mixed $value): ?float
     {
-        return is_int($value) || is_float($value) ? (float) $value : null;
+        return is_int($value) || is_float($value) ? round((float) $value, 2) : null;
     }
 
     /**
@@ -218,8 +219,8 @@ final class UptimeRobotAPI
             return null;
         }
 
-        $query = is_string($nextLink) ? parse_url($nextLink, PHP_URL_QUERY) : null;
-        parse_str(is_string($query) ? $query : '', $params);
+        // parse_url() gives null without a query and false for a malformed link: both are no query
+        parse_str(is_string($nextLink) ? (string) parse_url($nextLink, PHP_URL_QUERY) : '', $params);
         $cursor = $this->stringOrNull($params['cursor'] ?? null);
         if ($cursor !== null && ctype_digit($cursor)) {
             return $cursor;
@@ -297,7 +298,7 @@ final class UptimeRobotAPI
 
         try {
             return $this->arrayOrFalse(json_decode($response, true, 512, JSON_THROW_ON_ERROR));
-        } catch (JsonException $e) {
+        } catch (\JsonException $e) {
             $this->logError('Invalid JSON response', ['error' => $e->getMessage()]);
             return false;
         }
@@ -329,21 +330,21 @@ final class UptimeRobotAPI
      */
     private function logError(string $message, array $context): void
     {
-        $safe_context = [];
+        $safeContext = [];
         foreach ($context as $key => $value) {
-            $safe_context[$key] = is_string($value)
+            $safeContext[$key] = is_string($value)
                 ? substr(preg_replace('/[\x00-\x1F\x7F]/', ' ', $value) ?? '', 0, 255)
                 : $value;
         }
 
-        $log_entry = gmdate(DATE_ATOM) . " [UptimeRobotAPI] " . $message;
-        if ($safe_context !== []) {
+        $logEntry = gmdate(DATE_ATOM) . " [UptimeRobotAPI] " . $message;
+        if ($safeContext !== []) {
             // A cURL error text is the one value that could hold invalid UTF-8.
-            $encoded = json_encode($safe_context, JSON_INVALID_UTF8_SUBSTITUTE);
-            $log_entry .= " - " . ($encoded === false ? '[context not encodable]' : $encoded);
+            $encoded = json_encode($safeContext, JSON_INVALID_UTF8_SUBSTITUTE);
+            $logEntry .= " - " . ($encoded === false ? '[context not encodable]' : $encoded);
         }
-        $log_entry .= "\n";
+        $logEntry .= "\n";
 
-        error_log($log_entry, 3, $this->logFile);
+        error_log($logEntry, 3, $this->logFile);
     }
 }
