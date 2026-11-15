@@ -75,9 +75,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', '1');   // Reject uninitialized session IDs
     ini_set('session.use_only_cookies', '1');  // Only use cookies for session ID
 
-    session_start();
-
-    if (!$session->has('_initialized')) {
+    // A failed start leaves no session to regenerate; the check below answers 503
+    if (session_start() && !$session->has('_initialized')) {
         session_regenerate_id(true);
         $session->set('_initialized', true);
     }
