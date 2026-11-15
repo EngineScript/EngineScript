@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-"""Write an EngineScript site archive, a ZIP, from files and pipes.
+"""Write an EngineScript site archive, a ZIP, from files and pipes in the current folder."""
 
-build_site_archive in enginescript-site-archive.sh runs this. The database dump and the files
-archive are piped in as they are made, so neither is written to disk before it is in the ZIP. The
-zip command cannot do that: it can only add files that already exist, which put every part on disk
-twice while an archive was built.
-
-Usage: site-archive-zip.py <output.zip> <entry>=<source>... [--status <entry> <file> <highest>]...
-
-A source is a file or a pipe (/dev/fd/N from the shell). Every entry is stored without
-compression, because the parts are compressed already, and the entry of each folder is written as
-zip -r wrote it. Entries are written in the order given.
-
---status names the file in which the command that feeds an entry leaves its exit status. Once the
-entry has been read to its end, a status above <highest>, or a missing status file, stops the
-archive there, so a failed dump is not followed by archiving all the site's files.
-
-Exit status: 0 the archive is written; 1 it could not be read or written; 2 wrong arguments;
-3 a command that feeds an entry failed. The output file is removed unless the status is 0.
-"""
+# build_site_archive in enginescript-site-archive.sh runs this in its staging folder. The database
+# dump and the files archive are piped in as they are made, so neither is written to disk before
+# it is in the ZIP. The zip command cannot do that: it can only add files that already exist, which
+# put every part on disk twice while an archive was built.
+#
+# Usage: site-archive-zip.py <output.zip> <entry>=<source>... [--status <entry> <file> <highest>]...
+#
+# The output, every source, and every status file are names of files in the current folder; any
+# other path is refused, so the tool reads, writes, and removes nothing outside that folder. A
+# source is a file or a named pipe. Every entry is stored without compression, because the parts
+# are compressed already, and the entry of each folder is written as zip -r wrote it. Entries are
+# written in the order given.
+#
+# --status names the file in which the command that feeds an entry leaves its exit status. Once
+# the entry has been read to its end, a status above <highest>, or a missing status file, stops the
+# archive there, so a failed dump is not followed by archiving all the site's files.
+#
+# Exit status: 0 the archive is written; 1 it could not be read or written; 2 wrong arguments;
+# 3 a command that feeds an entry failed. The output file is removed unless the status is 0.
 
 import argparse
 import shutil
@@ -41,13 +42,42 @@ class SourceFailedError(Exception):
     """The command that feeds an entry did not end well."""
 
 
-def parse_arguments(arguments: list[str]) -> argparse.Namespace:
-    """Read the command line."""
+def local_file(text: str) -> Path:
+    """Return the file of that name in the current folder; refuse a path that leads elsewhere."""
+    name = Path(text).name
+    if name != text or name in {"", ".", ".."}:
+        raise ValueError(f"not the name of a file in the current folder: {text}")
+    return Path(name)
+
+
+def entry_name(text: str) -> str:
+    """Return a name for an entry in the archive; refuse one that would unzip outside its folder."""
+    parts = text.split("/")
+    if not text or text.startswith("/") or "" in parts or ".." in parts or "." in parts:
+        raise ValueError(f"not a relative entry name: {text}")
+    return text
+
+
+def read_entry(text: str) -> tuple[str, Path]:
+    """Split <entry>=<source> into the entry's name and its source."""
+    name, separator, source = text.partition("=")
+    if not separator:
+        raise ValueError(f"not <entry>=<source>: {text}")
+    return entry_name(name), local_file(source)
+
+
+def read_status(name: str, file: str, highest: str) -> tuple[str, Path, int]:
+    """Check one --status: the entry, its status file, and the highest status accepted."""
+    if not highest.isdigit():
+        raise ValueError(f"not a status number: {highest}")
+    return entry_name(name), local_file(file), int(highest)
+
+
+def parse_arguments(arguments: list[str]) -> tuple[Path, list[tuple[str, Path]], dict[str, tuple[Path, int]]]:
+    """Read the command line into the output, the entries in order, and each entry's status check."""
     parser = argparse.ArgumentParser(description="Write an EngineScript site archive from files and pipes.")
-    parser.add_argument("output", type=Path, help="the ZIP to write")
-    parser.add_argument(
-        "entries", nargs="+", metavar="entry=source", help="an entry's name and the file or pipe to read"
-    )
+    parser.add_argument("output", help="the name of the ZIP to write")
+    parser.add_argument("entries", nargs="+", metavar="entry=source", help="an entry's name and its file or pipe")
     parser.add_argument(
         "--status",
         nargs=3,
@@ -57,13 +87,13 @@ def parse_arguments(arguments: list[str]) -> argparse.Namespace:
         help="the file with the exit status of the command that feeds an entry, and the highest status accepted",
     )
     options = parser.parse_args(arguments)
-    for entry in options.entries:
-        if "=" not in entry or entry.startswith("="):
-            parser.error(f"not <entry>=<source>: {entry}")
-    for _name, _file, highest in options.status:
-        if not highest.isdigit():
-            parser.error(f"not a status number: {highest}")
-    return options
+    try:
+        output = local_file(options.output)
+        entries = [read_entry(entry) for entry in options.entries]
+        checks = [read_status(*status) for status in options.status]
+    except ValueError as error:
+        parser.error(str(error))
+    return output, entries, {name: (file, highest) for name, file, highest in checks}
 
 
 def add_folder(archive: zipfile.ZipFile, name: str, written: set[str]) -> None:
@@ -96,32 +126,30 @@ def check_status(name: str, status_file: Path, highest: int) -> None:
         raise SourceFailedError(f"{name}: the command that feeds it ended with status {status}")
 
 
-def write_archive(output: Path, entries: list[str], statuses: dict[str, tuple[Path, int]]) -> None:
+def write_archive(output: Path, entries: list[tuple[str, Path]], statuses: dict[str, tuple[Path, int]]) -> None:
     """Write every entry, in order, checking each feeding command once its entry is read."""
     folders: set[str] = set()
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as archive:
-        for entry in entries:
-            name, source = entry.split("=", 1)
+        for name, source in entries:
             if "/" in name:
                 add_folder(archive, name.rsplit("/", 1)[0] + "/", folders)
-            add_entry(archive, name, Path(source))
+            add_entry(archive, name, source)
             if name in statuses:
                 check_status(name, *statuses[name])
 
 
 def main(arguments: list[str]) -> int:
     """Write the archive; on failure remove what was written and say why."""
-    options = parse_arguments(arguments)
-    statuses = {name: (Path(file), int(highest)) for name, file, highest in options.status}
+    output, entries, statuses = parse_arguments(arguments)
     try:
-        write_archive(options.output, options.entries, statuses)
+        write_archive(output, entries, statuses)
     except SourceFailedError as error:
         print(f"site-archive-zip: {error}", file=sys.stderr)
-        options.output.unlink(missing_ok=True)
+        output.unlink(missing_ok=True)
         return EXIT_SOURCE_FAILED
     except (OSError, zipfile.BadZipFile, zipfile.LargeZipFile) as error:
         print(f"site-archive-zip: {error}", file=sys.stderr)
-        options.output.unlink(missing_ok=True)
+        output.unlink(missing_ok=True)
         return EXIT_IO_ERROR
     return 0
 

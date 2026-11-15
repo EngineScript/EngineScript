@@ -700,18 +700,18 @@ create_robots_txt() {
 # layout, retention, and S3 copy. The server's other sites are left to their schedule: archiving
 # every site here would keep the person at the menu waiting for all of them.
 perform_site_backup() {
-  local SITE_URL="$1" backup="/usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh" failed=0
+  local site_url="$1" backup="/usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh" failed=0
 
   echo ""
-  echo "Backing up ${SITE_URL} and EngineScript's configuration."
+  echo "Backing up ${site_url} and EngineScript's configuration."
   echo ""
 
-  bash "${backup}" site "${SITE_URL}" || failed=1
+  bash "${backup}" site "${site_url}" || failed=1
   bash "${backup}" config || failed=1
   if (( failed == 0 )); then
     echo "Backup: Complete"
   else
-    echo "Warning: The backup after setting up ${SITE_URL} reported errors; see /var/log/EngineScript/enginescript-backup.log. The site itself is set up." >&2
+    echo "Warning: The backup after setting up ${site_url} reported errors; see /var/log/EngineScript/enginescript-backup.log. The site itself is set up." >&2
   fi
   clear
 }

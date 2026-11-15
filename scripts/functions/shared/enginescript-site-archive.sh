@@ -177,13 +177,14 @@ function build_site_archive() (
     (tar -C "${site_root}" -czf - --ignore-case "${SITE_ARCHIVE_TAR_EXCLUDES[@]}" .; echo "$?" > "${staging}/files.status") \
         > "${staging}/files.pipe" &
     SITE_ARCHIVE_JOBS+=" $!"
-    # GNU tar exits with 1 when a file changed while it was read; the archive is still usable
-    python3 -I "${SITE_ARCHIVE_ZIP_TOOL}" "${staging}/archive.zip" \
-        "manifest.txt=${staging}/manifest.txt" \
-        "database/${db_name}=${staging}/database.pipe" \
-        "files/${files_name}=${staging}/files.pipe" \
-        --status "database/${db_name}" "${staging}/database.status" 0 \
-        --status "files/${files_name}" "${staging}/files.status" 1 &
+    # The ZIP tool takes only names of files in its current folder, the staging folder. GNU tar
+    # exits with 1 when a file changed while it was read; the archive is still usable.
+    (cd "${staging}" && exec python3 -I "${SITE_ARCHIVE_ZIP_TOOL}" archive.zip \
+        "manifest.txt=manifest.txt" \
+        "database/${db_name}=database.pipe" \
+        "files/${files_name}=files.pipe" \
+        --status "database/${db_name}" database.status 0 \
+        --status "files/${files_name}" files.status 1) &
     SITE_ARCHIVE_JOBS+=" $!"
     zip_rc=0
     wait "$!" || zip_rc=$?

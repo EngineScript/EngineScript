@@ -301,29 +301,43 @@ mkdir -p "${TOOL_DIR}"
 echo "manifest" > "${TOOL_DIR}/manifest.txt"
 echo "0" > "${TOOL_DIR}/ok.status"
 echo "1" > "${TOOL_DIR}/failed.status"
+echo "outside" > "${WORK}/outside.txt"
+# Run in the tool's folder, as build_site_archive runs it in its staging folder
 zip_tool() {
-  timeout 20 python3 -I "${SITE_ARCHIVE_ZIP_TOOL}" "$@" 2> /dev/null
+  (cd "${TOOL_DIR}" && timeout 20 python3 -I "${SITE_ARCHIVE_ZIP_TOOL}" "$@" 2> /dev/null)
 }
 # A pipe nothing writes to: opening it blocks, so a tool that reached it would hang until the timeout
 mkfifo "${TOOL_DIR}/never.pipe"
 set +e
-zip_tool "${TOOL_DIR}/stopped.zip" "manifest.txt=${TOOL_DIR}/manifest.txt" \
-  "database/x.sql.gz=${TOOL_DIR}/manifest.txt" "files/x.tar.gz=${TOOL_DIR}/never.pipe" \
-  --status "database/x.sql.gz" "${TOOL_DIR}/failed.status" 0
+zip_tool stopped.zip "manifest.txt=manifest.txt" "database/x.sql.gz=manifest.txt" "files/x.tar.gz=never.pipe" \
+  --status "database/x.sql.gz" failed.status 0
 check "a failed dump stops the archive before the files part is read (exit 3)" "$?" "3"
 lacks "the stopped archive is removed" test -e "${TOOL_DIR}/stopped.zip"
-zip_tool "${TOOL_DIR}/no-status.zip" "a.txt=${TOOL_DIR}/manifest.txt" --status a.txt "${TOOL_DIR}/missing.status" 0
+zip_tool no-status.zip "a.txt=manifest.txt" --status a.txt missing.status 0
 check "a missing status file stops the archive (exit 3)" "$?" "3"
-zip_tool "${TOOL_DIR}/changed.zip" "a.txt=${TOOL_DIR}/manifest.txt" --status a.txt "${TOOL_DIR}/failed.status" 1
+zip_tool changed.zip "a.txt=manifest.txt" --status a.txt failed.status 1
 check "a status up to the highest accepted passes (exit 0)" "$?" "0"
-zip_tool "${TOOL_DIR}/missing-source.zip" "a.txt=${TOOL_DIR}/no-such-file"
+zip_tool missing-source.zip "a.txt=no-such-file"
 check "a source that cannot be read fails (exit 1)" "$?" "1"
 lacks "and its archive is removed" test -e "${TOOL_DIR}/missing-source.zip"
-zip_tool "${TOOL_DIR}/bad.zip" "no-equals-sign"
+zip_tool bad.zip "no-equals-sign"
 check "an entry without a source is refused (exit 2)" "$?" "2"
+zip_tool up.zip "a.txt=../outside.txt"
+check "a source in another folder is refused (exit 2)" "$?" "2"
+zip_tool full-path.zip "a.txt=${WORK}/outside.txt"
+check "a source given by its full path is refused (exit 2)" "$?" "2"
+lacks "and nothing is written" test -e "${TOOL_DIR}/full-path.zip"
+zip_tool ../escaped.zip "a.txt=manifest.txt"
+check "an output in another folder is refused (exit 2)" "$?" "2"
+lacks "and it is not written" test -e "${WORK}/escaped.zip"
+zip_tool other-status.zip "a.txt=manifest.txt" --status a.txt ../outside.txt 0
+check "a status file in another folder is refused (exit 2)" "$?" "2"
+zip_tool slip.zip "../a.txt=manifest.txt"
+check "an entry name that would unzip outside its folder is refused (exit 2)" "$?" "2"
+zip_tool rooted.zip "/etc/a.txt=manifest.txt"
+check "an entry name that starts at / is refused (exit 2)" "$?" "2"
 set -e
-zip_tool "${TOOL_DIR}/order.zip" "manifest.txt=${TOOL_DIR}/manifest.txt" "database/a.gz=${TOOL_DIR}/ok.status" \
-  "files/b.gz=${TOOL_DIR}/ok.status"
+zip_tool order.zip "manifest.txt=manifest.txt" "database/a.gz=ok.status" "files/b.gz=ok.status"
 check "entries are written in the order given, with one entry per folder" \
   "$(unzip -Z -1 "${TOOL_DIR}/order.zip" | tr '\n' ' ')" "manifest.txt database/ database/a.gz files/ files/b.gz "
 mkdir -p "${TOOL_DIR}/out"
