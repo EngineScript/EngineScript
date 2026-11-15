@@ -1,12 +1,19 @@
 name: Control Panel
 
-# The checks that the control panel's tooling (package.json, composer.json, and
-# .github/lint-requirements.txt) defines:
-#   node      ESLint, Stylelint, and html-validate on the admin control panel, markdownlint on every
-#             Markdown file, and the JavaScript tests. npm ci also fails when package.json and
-#             package-lock.json disagree (for example a dependency update without its lock file).
-#   composer  static analysis of the control panel's PHP
-#   python    the repository scripts in .github/scripts and the workflow files
+# The control panel's checks, in the job layout of the EngineScript plugin repositories'
+# wp-compatibility-test.yml (D-001, D-071), without their WordPress jobs:
+# - PHPCS with PHPCompatibility, and PHP-CS-Fixer for the PER Coding Style
+# - PHPMD, Psalm with taint analysis, PHPStan, and a Rector dry run
+# - dependency vulnerabilities and a scan of the panel's own PHP for unsafe calls
+# - the JavaScript tests (tests/js), with a no-test check and an intentionally failing control
+# - YAML, workflow, Python, Markdown, JavaScript, CSS, and HTML linting (yamllint, actionlint,
+#   zizmor, Ruff, mypy, markdownlint, ESLint, Stylelint, html-validate), with modern-JavaScript
+#   rules and checks against the supported browsers; the repository script tests and the
+#   deployment check
+# - unit test line coverage with a minimum, and the unit suite on every supported PHP version
+# The integration suite (tests/integration) runs on a real EngineScript server, a container of
+# the local server test suite, not here (D-075). Each job files an issue when it fails on master.
+
 "on":
   push:
     branches:
@@ -66,61 +73,125 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  node:
-    name: Lint and test (Node 24)
+  phpcs:
+    name: PHPCS (PHP 8.3)
     runs-on: ubuntu-26.04
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
-        with:
-          node-version: '24'
-
-      # --ignore-scripts: no package's install scripts run in CI; none of the checks needs them
-      - name: Install npm dependencies
-        id: npm_ci
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # Each check runs even when an earlier one failed, so one run reports every problem
-      - name: ESLint (control panel JavaScript)
-        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
-        run: npm run lint:js
-
-      - name: Stylelint (control panel CSS)
-        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
-        run: npm run lint:css
-
-      - name: html-validate (control panel HTML)
-        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
-        run: npm run lint:html
-
-      - name: markdownlint (Markdown files)
-        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
-        run: npm run lint:md
-
-      - name: JavaScript tests
-        if: ${{ !cancelled() && steps.npm_ci.outcome == 'success' }}
-        run: npm test
-
-  composer:
-    name: PHP static analysis (PHP 8.3)
-    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
     timeout-minutes: 15
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
+        id: checkout_code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
-      # PHP 8.3 is the control panel's minimum version (composer.json's platform)
-      - name: Set up PHP 8.3
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          # 8.3 is the control panel's minimum version (composer.json's platform)
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Verify PHPCS standards
+        id: verify_phpcs_standards
+        run: vendor/bin/phpcs -i
+
+      # PHPCS fails until Phase 16 resolves its findings (missing namespaces, line length; D-076)
+      - name: Run PHPCS
+        id: run_phpcs
+        run: |
+          vendor/bin/phpcs --standard=phpcs.xml
+
+          # Static scanner controls; never execute these PHP fixtures.
+          CONTROL_DIR="$RUNNER_TEMP/es-compat-controls"
+          mkdir -p "$CONTROL_DIR"
+          printf '<?php strlen("control");\n' > "$CONTROL_DIR/compatible.php"
+          printf '<?php each(array());\n' > "$CONTROL_DIR/legacy-incompatible.php"
+          vendor/bin/phpcs --standard=PHPCompatibility --runtime-set testVersion 8.3 "$CONTROL_DIR/compatible.php"
+          if vendor/bin/phpcs --standard=PHPCompatibility --runtime-set testVersion 8.3 "$CONTROL_DIR/legacy-incompatible.php"; then
+            echo '::error::The known legacy-incompatible fixture was missed.'
+            exit 1
+          fi
+
+      # PHP-CS-Fixer checks the PER Coding Style (D-012); it ran in the earlier composer job
+      - name: PHP-CS-Fixer
+        id: php_cs_fixer
+        if: ${{ !cancelled() && steps.install_composer_dependencies.outcome == 'success' }}
+        run: composer cs:check
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            verify_phpcs_standards=${{ steps.verify_phpcs_standards.outcome }}
+            run_phpcs=${{ steps.run_phpcs.outcome }}
+            php_cs_fixer=${{ steps.php_cs_fixer.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-phpcs
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_phpcs_standards.outcome == 'failure' && 'verify_phpcs_standards' || steps.run_phpcs.outcome == 'failure' && 'run_phpcs' || steps.php_cs_fixer.outcome == 'failure' && 'php_cs_fixer' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/phpcs-failure.md
+          update_existing: false
+
+  phpmd:
+    name: PHPMD (PHP 8.3)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        id: setup_php
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
@@ -128,70 +199,623 @@ jobs:
           tools: composer:v2
 
       - name: Install Composer dependencies
-        id: composer_install
+        id: install_composer_dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      # composer check-all also runs PHPCS, PHPMD, Psalm (without taint analysis), and PHPUnit.
-      # They report problems in the control panel's PHP that its open work is fixing (class
-      # names without a namespace, snake_case variables, untyped class constants, and no unit
-      # tests yet); each joins this job once it passes on master.
-      - name: PHP-CS-Fixer
-        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
-        run: composer cs:check
+      - name: Verify phpmd.xml content
+        id: verify_phpmd_xml
+        run: test -s phpmd.xml && grep -q '<ruleset' phpmd.xml
 
-      - name: PHPStan
-        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
-        run: composer phpstan
+      # PHPMD scans config/var/www/admin only, so tests/ is never in its path; it fails until
+      # Phase 16 resolves its naming findings (D-076)
+      - name: Run PHPMD
+        id: run_phpmd
+        run: composer phpmd
 
-      - name: Psalm taint analysis
-        if: ${{ !cancelled() && steps.composer_install.outcome == 'success' }}
-        run: composer psalm:taint
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            verify_phpmd_xml=${{ steps.verify_phpmd_xml.outcome }}
+            run_phpmd=${{ steps.run_phpmd.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
 
-  python:
-    name: Repository scripts and workflows (Python 3.12)
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-phpmd
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_phpmd_xml.outcome == 'failure' && 'verify_phpmd_xml' || steps.run_phpmd.outcome == 'failure' && 'run_phpmd' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/phpmd-failure.md
+          update_existing: false
+
+  psalm-analysis:
+    name: Psalm Static Analysis (PHP 8.3)
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
     timeout-minutes: 15
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
+        id: checkout_code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.12
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Verify Psalm installation
+        id: verify_psalm
+        run: vendor/bin/psalm --version
+
+      - name: Run Psalm
+        id: run_psalm
+        run: composer psalm -- --no-cache
+
+      # It ran in the earlier composer job
+      - name: Run Psalm taint analysis
+        id: run_psalm_taint
+        if: ${{ !cancelled() && steps.install_composer_dependencies.outcome == 'success' }}
+        run: composer psalm:taint
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            verify_psalm=${{ steps.verify_psalm.outcome }}
+            run_psalm=${{ steps.run_psalm.outcome }}
+            run_psalm_taint=${{ steps.run_psalm_taint.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-psalm-analysis
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_psalm.outcome == 'failure' && 'verify_psalm' || steps.run_psalm.outcome == 'failure' && 'run_psalm' || steps.run_psalm_taint.outcome == 'failure' && 'run_psalm_taint' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/psalm-failure.md
+          update_existing: false
+
+  security-check:
+    name: Security Scan (PHP 8.3)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Security Check for known vulnerabilities in dependencies
+        id: security_checker
+        uses: symfonycorp/security-checker-action@258311ef7ac571f1310780ef3d79fc5abef642b5  # v5
+
+      # The control panel's own code: no shell, eval, unserialize, or include of a computed path.
+      # The two allowed uses are the panel's command runner (proc_open with an argv array) and
+      # Request/Session, the one place that reads superglobals. Comment lines are skipped.
+      - name: Control panel security scan
+        id: panel_security_scan
+        run: |
+          PANEL=config/var/www/admin/control-panel
+          status=0
+          if grep -rnE '^[^*/#]*(\b(eval|assert|create_function|shell_exec|system|passthru|popen|pcntl_exec)\s*\(|\bexec\s*\(|`[^`]*\$)' --include='*.php' "$PANEL"; then
+            echo '::error::Shell or code execution outside the command runner.'
+            status=1
+          fi
+          if grep -rnE '^[^*/#]*\bunserialize\s*\(' --include='*.php' "$PANEL"; then
+            echo '::error::unserialize() on panel data.'
+            status=1
+          fi
+          if grep -rnE '^[^*/#]*\b(include|require)(_once)?\s*\(?\s*\$' --include='*.php' "$PANEL"; then
+            echo '::error::An include or require of a computed path.'
+            status=1
+          fi
+          if grep -rnlE '^[^*/#]*proc_open\s*\(' --include='*.php' "$PANEL" | grep -v 'classes/SystemProcessRunner.php$'; then
+            echo '::error::proc_open() outside SystemProcessRunner.'
+            status=1
+          fi
+          if grep -rnlE '^[^*/#]*\$_(GET|POST|REQUEST|COOKIE|SERVER|FILES|SESSION)\b' --include='*.php' "$PANEL" | grep -vE 'classes/(Request|Session)\.php$'; then
+            echo '::error::A superglobal read outside Request or Session.'
+            status=1
+          fi
+          exit "$status"
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            security_checker=${{ steps.security_checker.outcome }}
+            panel_security_scan=${{ steps.panel_security_scan.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-security-check
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.security_checker.outcome == 'failure' && 'security_checker' || steps.panel_security_scan.outcome == 'failure' && 'panel_security_scan' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/security-failure.md
+          update_existing: false
+
+  phpstan:
+    name: PHPStan (PHP 8.3)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # It ran in the earlier composer job
+      - name: Run PHPStan
+        id: run_phpstan
+        run: composer phpstan
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            run_phpstan=${{ steps.run_phpstan.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-phpstan
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_phpstan.outcome == 'failure' && 'run_phpstan' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/phpstan-failure.md
+          update_existing: false
+
+  rector:
+    name: Rector (PHP 8.3)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Fails when any rule would change the code, so modernized code cannot drift back (D-013)
+      - name: Run Rector dry run
+        id: run_rector
+        run: composer rector
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            run_rector=${{ steps.run_rector.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-rector
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_rector.outcome == 'failure' && 'run_rector' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/rector-failure.md
+          update_existing: false
+
+  javascript-tests:
+    name: JavaScript Tests (Node 24)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.3
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          # PHP renders the API responses the tests serve (tests/js/render-api.php)
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Setup Node.js 24
+        id: setup_node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+
+      # --ignore-scripts: no package's install scripts run in CI; none of the checks needs them.
+      # npm ci also fails when package.json and package-lock.json disagree (D-072).
+      - name: Install npm dependencies
+        id: install_npm_dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # It ran in the earlier node job
+      - name: Run JavaScript tests
+        id: run_javascript_tests
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          npm ls jsdom
+          node --test --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/es-diagnostics/javascript-tests.tap" \
+            "tests/js/**/*.test.mjs"
+          # A run that found no tests must not pass.
+          grep -Eq '^# pass [1-9]' "$RUNNER_TEMP/es-diagnostics/javascript-tests.tap"
+          grep -q '^# fail 0$' "$RUNNER_TEMP/es-diagnostics/javascript-tests.tap"
+          # This control must fail because of its assertion.
+          printf '%s\n' \
+            "import assert from 'node:assert/strict';" \
+            "import { test } from 'node:test';" \
+            "test('intentional failure', () => assert.equal(1, 2, 'JavaScript intentional assertion control'));" \
+            > "$RUNNER_TEMP/es-intentional-failure.test.mjs"
+          if node --test "$RUNNER_TEMP/es-intentional-failure.test.mjs" > "$RUNNER_TEMP/es-intentional-failure.txt" 2>&1; then
+            echo '::error::An intentionally failing assertion incorrectly succeeded.'
+            exit 1
+          fi
+          grep -q 'JavaScript intentional assertion control' "$RUNNER_TEMP/es-intentional-failure.txt"
+          echo 'Intentional-assertion control failed as expected.'
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            setup_node=${{ steps.setup_node.outcome }}
+            install_npm_dependencies=${{ steps.install_npm_dependencies.outcome }}
+            run_javascript_tests=${{ steps.run_javascript_tests.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-javascript-tests
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.run_javascript_tests.outcome == 'failure' && 'run_javascript_tests' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.3'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/javascript-test-failure.md
+          update_existing: false
+
+  lint:
+    name: Lint (Node 24)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        id: setup_node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+
+      # --ignore-scripts: no package's install scripts run in CI; none of the checks needs them.
+      # npm ci also fails when package.json and package-lock.json disagree (D-072).
+      - name: Install npm dependencies
+        id: install_npm_dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Setup Python 3.12
+        id: setup_python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
 
       # A virtual environment holds the versions that .github/lint-requirements.txt pins
       - name: Install the pinned linters
-        id: linters
+        id: install_linters
         run: |
           python -m venv "$RUNNER_TEMP/lint-venv"
           "$RUNNER_TEMP/lint-venv/bin/pip" install --disable-pip-version-check --quiet \
             --requirement .github/lint-requirements.txt
           echo "$RUNNER_TEMP/lint-venv/bin" >> "$GITHUB_PATH"
 
+      # Each check runs even when an earlier one failed, so one run reports every problem.
+      # ESLint carries the modern-JavaScript rules (eslint-plugin-unicorn) and checks the shipped
+      # scripts against the supported browsers (eslint-plugin-compat); Stylelint checks the CSS
+      # against them (stylelint-no-unsupported-browser-features).
+      - name: ESLint
+        id: eslint
+        if: ${{ !cancelled() && steps.install_npm_dependencies.outcome == 'success' }}
+        run: npm run lint:js
+
+      - name: Stylelint
+        id: stylelint
+        if: ${{ !cancelled() && steps.install_npm_dependencies.outcome == 'success' }}
+        run: npm run lint:css
+
+      - name: html-validate
+        id: html_validate
+        if: ${{ !cancelled() && steps.install_npm_dependencies.outcome == 'success' }}
+        run: npm run lint:html
+
+      - name: markdownlint
+        id: markdownlint
+        if: ${{ !cancelled() && steps.install_npm_dependencies.outcome == 'success' }}
+        run: npm run lint:md
+
       - name: Ruff
-        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        id: ruff
+        if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: |
           ruff check .github/scripts
           ruff format --check .github/scripts
 
       - name: mypy (strict)
-        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        id: mypy
+        if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: mypy
 
       - name: Repository script tests
+        id: script_tests
         if: ${{ !cancelled() }}
         run: python3 .github/scripts/test-automation.py
 
       - name: Deployed control panel files match the allowlist
+        id: deployment_surface
         if: ${{ !cancelled() }}
         run: python3 .github/scripts/check-deployment-surface.py
 
       - name: yamllint
-        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        id: yamllint
+        if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: |
           # Tracked files only, so installed dependencies are left out
           mapfile -d '' -t YAML_FILES < <(git ls-files -z -- '*.yml' '*.yaml')
@@ -200,9 +824,282 @@ jobs:
       # actionlint's ShellCheck pass is off: on the largest workflows it runs for a very long
       # time, so the shell in run: blocks is not checked here
       - name: actionlint
-        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        id: actionlint
+        if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: actionlint -shellcheck=
 
       - name: zizmor
-        if: ${{ !cancelled() && steps.linters.outcome == 'success' }}
+        id: zizmor
+        if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: zizmor --offline .github/workflows
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_node=${{ steps.setup_node.outcome }}
+            install_npm_dependencies=${{ steps.install_npm_dependencies.outcome }}
+            setup_python=${{ steps.setup_python.outcome }}
+            install_linters=${{ steps.install_linters.outcome }}
+            eslint=${{ steps.eslint.outcome }}
+            stylelint=${{ steps.stylelint.outcome }}
+            html_validate=${{ steps.html_validate.outcome }}
+            markdownlint=${{ steps.markdownlint.outcome }}
+            ruff=${{ steps.ruff.outcome }}
+            mypy=${{ steps.mypy.outcome }}
+            script_tests=${{ steps.script_tests.outcome }}
+            deployment_surface=${{ steps.deployment_surface.outcome }}
+            yamllint=${{ steps.yamllint.outcome }}
+            actionlint=${{ steps.actionlint.outcome }}
+            zizmor=${{ steps.zizmor.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-lint
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.setup_python.outcome == 'failure' && 'setup_python' || steps.install_linters.outcome == 'failure' && 'install_linters' || steps.eslint.outcome == 'failure' && 'eslint' || steps.stylelint.outcome == 'failure' && 'stylelint' || steps.html_validate.outcome == 'failure' && 'html_validate' || steps.markdownlint.outcome == 'failure' && 'markdownlint' || steps.ruff.outcome == 'failure' && 'ruff' || steps.mypy.outcome == 'failure' && 'mypy' || steps.script_tests.outcome == 'failure' && 'script_tests' || steps.deployment_surface.outcome == 'failure' && 'deployment_surface' || steps.yamllint.outcome == 'failure' && 'yamllint' || steps.actionlint.outcome == 'failure' && 'actionlint' || steps.zizmor.outcome == 'failure' && 'zizmor' || 'unknown_or_canceled' }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/lint-failure.md
+          update_existing: false
+
+  unit-coverage:
+    name: Unit Test Coverage (PHP 8.4)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 15
+    env:
+      # The unit suite must cover at least this share of the panel's PHP lines: set a few points
+      # below the measured 50.25 % (503 of 1,001 lines, 2026-11-14). api.php and the controllers
+      # that read the server's files are the integration suite's (tests/integration, D-075).
+      MINIMUM_LINE_COVERAGE: '46'
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.4
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.4'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run unit tests with coverage
+        id: run_unit_tests_with_coverage
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          vendor/bin/phpunit --version
+          vendor/bin/phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite \
+            --coverage-text="$RUNNER_TEMP/es-diagnostics/coverage.txt" \
+            --coverage-clover "$RUNNER_TEMP/es-diagnostics/clover.xml"
+          cat "$RUNNER_TEMP/es-diagnostics/coverage.txt"
+
+      - name: Check line coverage
+        id: check_line_coverage
+        run: |
+          php -r '
+            $xml = simplexml_load_file($argv[1]);
+            $metrics = $xml->project->metrics;
+            $lines = (int) $metrics["statements"];
+            $covered = (int) $metrics["coveredstatements"];
+            if ($lines === 0) {
+                fwrite(STDERR, "::error::The coverage report lists no production lines.\n");
+                exit(1);
+            }
+            $percent = 100 * $covered / $lines;
+            printf("Line coverage: %.2f%% (%d of %d lines); minimum %s%%.\n", $percent, $covered, $lines, $argv[2]);
+            if ($percent < (float) $argv[2]) {
+                fwrite(STDERR, "::error::Unit test line coverage is below the minimum.\n");
+                exit(1);
+            }
+          ' "$RUNNER_TEMP/es-diagnostics/clover.xml" "$MINIMUM_LINE_COVERAGE"
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            run_unit_tests_with_coverage=${{ steps.run_unit_tests_with_coverage.outcome }}
+            check_line_coverage=${{ steps.check_line_coverage.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-unit-coverage
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests_with_coverage.outcome == 'failure' && 'run_unit_tests_with_coverage' || steps.check_line_coverage.outcome == 'failure' && 'check_line_coverage' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.4'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/unit-coverage-failure.md
+          update_existing: false
+
+  php-version-test:
+    name: PHP ${{ matrix.php-version }} (${{ matrix.dependency-versions }} deps)
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files an issue when it fails on master
+    timeout-minutes: 20
+    strategy:
+      # The supported PHP versions, with the locked dependencies, plus the lowest versions
+      # composer.json allows at the minimum PHP version
+      matrix:
+        php-version: ['8.3', '8.4', '8.5']
+        dependency-versions: ['locked']
+        include:
+          - php-version: '8.3'
+            dependency-versions: 'lowest'
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        id: setup_php
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: composer:v2
+
+      - name: PHP syntax check
+        id: php_syntax
+        run: |
+          mapfile -d '' -t PHP_FILES < <(git ls-files -z -- 'config/var/www/admin/*.php' 'tests/*.php')
+          for file in "${PHP_FILES[@]}"; do
+            php -l "$file" > /dev/null || exit 1
+          done
+          echo "${#PHP_FILES[@]} files parse."
+
+      - name: Install Composer dependencies (${{ matrix.dependency-versions }})
+        id: install_composer_dependencies
+        env:
+          DEPENDENCY_VERSIONS: ${{ matrix.dependency-versions }}
+        run: |
+          if [ "$DEPENDENCY_VERSIONS" = 'lowest' ]; then
+            composer update --prefer-lowest --prefer-stable --no-interaction --prefer-dist --no-progress
+          else
+            composer install --no-interaction --prefer-dist --no-progress
+          fi
+
+      - name: Run the unit suite
+        id: run_unit_tests
+        run: vendor/bin/phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php=${{ steps.setup_php.outcome }}
+            php_syntax=${{ steps.php_syntax.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            run_unit_tests=${{ steps.run_unit_tests.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/es-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/es-diagnostics/run.txt"
+          if command -v php > /dev/null; then php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/es-diagnostics/php.txt"; fi
+          if command -v node > /dev/null; then node --version > "$RUNNER_TEMP/es-diagnostics/node.txt"; fi
+          if [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/es-diagnostics/dependencies.txt"
+          fi
+          # Never upload configuration, credentials, or logs; refuse oversized or linked files.
+          find "$RUNNER_TEMP/es-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/es-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: control-panel-php-version-test
+          path: ${{ runner.temp }}/es-diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on failure
+        id: create_issue_on_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.php_syntax.outcome == 'failure' && 'php_syntax' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests.outcome == 'failure' && 'run_unit_tests' || 'unknown_or_canceled' }}
+          PHP_VERSION: '${{ matrix.php-version }}'
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/php-version-test-failure.md
+          update_existing: false

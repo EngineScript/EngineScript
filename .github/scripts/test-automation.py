@@ -9,6 +9,7 @@ import contextlib
 import importlib.util
 import io
 import os
+import re
 import subprocess  # nosec B404
 import tempfile
 import unittest
@@ -110,6 +111,65 @@ class DeploymentSurfaceTests(unittest.TestCase):
             self.skipTest(f"Symbolic links are not available here: {error}")
         with self.assertRaises(ValueError):
             self.verify()
+
+
+REPOSITORY = Path(__file__).resolve().parents[2]
+WORKFLOW = REPOSITORY / ".github" / "workflows" / "control-panel.yml"
+TEMPLATES = REPOSITORY / ".github" / "ISSUE_TEMPLATE"
+# The jobs of the plugin repositories' wp-compatibility-test.yml without their WordPress jobs. The
+# integration suite runs on a real EngineScript server, not in this workflow (D-075).
+PARITY_JOBS = (
+    "phpcs",
+    "phpmd",
+    "psalm-analysis",
+    "security-check",
+    "phpstan",
+    "rector",
+    "javascript-tests",
+    "lint",
+    "unit-coverage",
+    "php-version-test",
+)
+
+
+def workflow_jobs() -> dict[str, str]:
+    """Each job of the control panel workflow, with the text of its definition."""
+    text = WORKFLOW.read_text(encoding="utf-8").split("\njobs:\n", 1)[1]
+    parts = re.split(r"^  ([a-z0-9-]+):\n", text, flags=re.MULTILINE)
+    return dict(zip(parts[1::2], parts[2::2], strict=True))
+
+
+class WorkflowTests(unittest.TestCase):
+    def test_the_jobs_are_the_parity_jobs(self) -> None:
+        self.assertEqual(PARITY_JOBS, tuple(workflow_jobs()))
+        self.assertNotIn("integration-test", workflow_jobs())
+
+    def test_each_job_files_its_own_issue_from_an_existing_template(self) -> None:
+        used = []
+        for job, body in workflow_jobs().items():
+            with self.subTest(job=job):
+                templates = re.findall(r"filename: \.github/ISSUE_TEMPLATE/([a-z0-9-]+\.md)", body)
+                self.assertEqual(1, len(templates), "one issue step per job")
+                self.assertTrue((TEMPLATES / templates[0]).is_file(), templates[0])
+                self.assertIn("issues: write", body)
+                used.extend(templates)
+        self.assertEqual(len(used), len(set(used)), "no template is shared")
+        self.assertEqual(sorted(used), sorted(path.name for path in TEMPLATES.glob("*-failure.md")))
+        self.assertEqual(len(PARITY_JOBS), len(used))
+
+    def test_each_failure_stage_names_a_step_of_its_job(self) -> None:
+        for job, body in workflow_jobs().items():
+            with self.subTest(job=job):
+                stages = set(re.findall(r"steps\.([a-z0-9_]+)\.outcome == 'failure'", body))
+                steps = set(re.findall(r"^        id: ([a-z0-9_]+)$", body, flags=re.MULTILINE))
+                self.assertTrue(stages, "the issue names the failed step")
+                self.assertLessEqual(stages, steps)
+
+    def test_every_action_is_pinned_to_a_commit(self) -> None:
+        for job, body in workflow_jobs().items():
+            for action in re.findall(r"uses: (\S+)", body):
+                with self.subTest(job=job, action=action):
+                    self.assertRegex(action, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
 
 
 if __name__ == "__main__":
