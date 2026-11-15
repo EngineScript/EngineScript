@@ -25,6 +25,7 @@ PANEL_FILES = {
     "classes/ApiResponder.php",
     "classes/CommandRunner.php",
     "classes/Request.php",
+    "classes/RequestGuard.php",
     "classes/Router.php",
     "classes/SecurityLogger.php",
     "classes/Session.php",

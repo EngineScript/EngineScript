@@ -16,6 +16,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/classes/SystemCommand.php';
 require_once __DIR__ . '/classes/ApiResponder.php';
 require_once __DIR__ . '/classes/Request.php';
+require_once __DIR__ . '/classes/RequestGuard.php';
 require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/classes/SecurityLogger.php';
 require_once __DIR__ . '/classes/Session.php';
@@ -91,7 +92,7 @@ if (!$session->has('csrf_token')) {
 }
 $client_ip = $request->remoteAddress();
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
-$rate_limit = rateLimitState($session->get($rate_limit_key));
+$rate_limit = RequestGuard::rateLimitState($session->get($rate_limit_key));
 
 // Reset rate limit counter every minute
 if (isset($rate_limit['reset']) && is_int($rate_limit['reset']) && time() > $rate_limit['reset']) {
@@ -107,120 +108,11 @@ if (isset($rate_limit['count']) && is_int($rate_limit['count']) && $rate_limit['
     die();
 }
 
-$rate_limit['count'] = nextRateLimitCount($rate_limit);
+$rate_limit['count'] = RequestGuard::nextRateLimitCount($rate_limit);
 $session->set($rate_limit_key, $rate_limit);
 
-/**
- * The stored rate-limit state, or a fresh window when nothing usable is stored.
- *
- * @return array<mixed>
- */
-function rateLimitState(mixed $stored): array
-{
-    return is_array($stored) ? $stored : ['count' => 0, 'reset' => time() + 60];
-}
-
-/**
- * The request count after this request.
- *
- * @param array<mixed> $rate_limit
- */
-function nextRateLimitCount(array $rate_limit): int
-{
-    return isset($rate_limit['count']) && is_int($rate_limit['count']) ? $rate_limit['count'] + 1 : 1;
-}
-
-/**
- * Validates the CSRF token for every method but GET, HEAD, and OPTIONS.
- * The token can be sent in the X-CSRF-Token header or a _csrf_token form or JSON field.
- *
- * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
- */
-function validateCsrfToken(Request $request, Session $session, SecurityLogger $securityLogger): bool
-{
-    $method = $request->method();
-
-    if (isCsrfSafeMethod($method)) {
-        return true;
-    }
-
-    $client_token = csrfTokenFromRequest($request, $securityLogger);
-    if ($client_token === false) {
-        return false;
-    }
-
-    return csrfTokenIsValid($method, $client_token, $session->get('csrf_token'), $securityLogger);
-}
-
-function isCsrfSafeMethod(string $method): bool
-{
-    return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
-}
-
-function csrfTokenFromRequest(Request $request, SecurityLogger $securityLogger): string|false|null
-{
-    $headerToken = $request->header('X-CSRF-Token');
-    if ($headerToken !== null) {
-        return $headerToken;
-    }
-
-    $postToken = $request->post('_csrf_token');
-    if ($postToken !== null) {
-        return $postToken;
-    }
-
-    if (!str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
-        return null;
-    }
-
-    return csrfTokenFromJsonBody($request, $securityLogger);
-}
-
-function csrfTokenFromJsonBody(Request $request, SecurityLogger $securityLogger): string|false|null
-{
-    $input = $request->body();
-    if (trim($input) === '') {
-        return null;
-    }
-
-    try {
-        return csrfTokenFromDecodedBody(json_decode($input, true, 512, JSON_THROW_ON_ERROR));
-    } catch (JsonException) {
-        $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
-        return false;
-    }
-}
-
-function csrfTokenFromDecodedBody(mixed $body): ?string
-{
-    if (!is_array($body) || !isset($body['_csrf_token']) || !is_string($body['_csrf_token'])) {
-        return null;
-    }
-
-    return $body['_csrf_token'];
-}
-
-function csrfTokenIsValid(
-    string $method,
-    ?string $client_token,
-    mixed $session_token,
-    SecurityLogger $securityLogger
-): bool {
-    if (in_array($client_token, [null, '', '0'], true) || !is_string($session_token) || $session_token === '') {
-        $securityLogger->write('CSRF token missing', $method . ' request without token');
-        return false;
-    }
-
-    if (!hash_equals($session_token, $client_token)) {
-        $securityLogger->write('CSRF token mismatch', 'Invalid token submitted');
-        return false;
-    }
-
-    return true;
-}
-
 // Validate CSRF token for state-changing requests
-if (!validateCsrfToken($request, $session, $securityLogger)) {
+if (!RequestGuard::validateCsrfToken($request, $session, $securityLogger)) {
     $response->forbidden('Invalid or missing CSRF token');
     die();
 }
