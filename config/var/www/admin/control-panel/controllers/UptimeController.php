@@ -78,7 +78,7 @@ final class UptimeController extends BaseController
     /**
      * The trimmed API key from the parsed configuration, or null when there is none.
      *
-     * A key that trims to '' or '0' counts as none, as the earlier empty() test did.
+     * A key that trims to '' or '0' counts as none.
      * The key is sent in a header, so it must be visible ASCII without spaces.
      */
     private function apiKeyFromConfig(mixed $config): ?string

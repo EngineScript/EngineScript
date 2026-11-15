@@ -49,8 +49,8 @@ abstract class BaseController
 
     /**
      * Server-side cache lifetime in seconds. Only UptimeRobot is cached: it is
-     * an external service with a request limit. The cron sweep removes entries
-     * older than a minute in any case.
+     * an external service with a request limit. An expired entry is replaced on
+     * the next read; es.cache empties the directory.
      */
     private const int CACHE_TTL = 60;
 
@@ -64,8 +64,7 @@ abstract class BaseController
     /**
      * Initialize shared dependencies.
      *
-     * Final, because the router and the batch endpoint build every controller
-     * with these arguments.
+     * Final, because the router builds every controller with these arguments.
      */
     final public function __construct(
         protected Session $session,

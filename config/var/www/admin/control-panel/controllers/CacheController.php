@@ -3,7 +3,7 @@
 /**
  * EngineScript Admin Dashboard - Cache Controller
  *
- * Handles cache clearing operations for Redis, Nginx FastCGI, and OPcache.
+ * Reports and clears the Redis, Nginx FastCGI, and OPcache caches.
  *
  * @package EngineScript\Dashboard\API\Controllers
  * @version 1.0.0
@@ -35,7 +35,8 @@ final class CacheController extends BaseController
     /**
      * Clear specified caches
      *
-     * Clears one or more cache types based on the 'type' query parameter.
+     * Clears one or more cache types named by the 'type' query parameter, or by
+     * the JSON body's 'types' or 'type'.
      * Supported types: redis, fastcgi, opcache
      *
      * Endpoint: POST /cache/clear?type=redis,fastcgi,opcache

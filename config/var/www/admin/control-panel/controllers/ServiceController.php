@@ -31,7 +31,7 @@ final class ServiceController extends BaseController
      * Get status of all services
      *
      * Returns status of nginx, PHP-FPM, MariaDB, and Redis. Not cached: the
-     * commands take about 0.3 s together (measured in Phase 11).
+     * commands take about 0.3 s together (measured on a test server).
      *
      * Endpoint: GET /services/status
      *

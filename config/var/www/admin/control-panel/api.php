@@ -50,7 +50,7 @@ header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';
 
 // No CORS headers: the dashboard calls the API from its own origin.
 
-// Rate limiting (basic implementation) - session functions required for API rate limiting
+// The session holds the CSRF token and the rate-limit count.
 if (session_status() === PHP_SESSION_NONE) {
     session_name('__Host-esp_session');
     // Keep the API's no-store policy instead of PHP's session cache headers.
@@ -131,8 +131,8 @@ function nextRateLimitCount(array $rate_limit): int
 }
 
 /**
- * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
- * Token can be sent via X-CSRF-Token header or _csrf_token body parameter
+ * Validates the CSRF token for every method but GET, HEAD, and OPTIONS.
+ * The token can be sent in the X-CSRF-Token header or a _csrf_token form or JSON field.
  *
  * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
  */
