@@ -101,7 +101,7 @@ final class SiteController extends BaseController
             }
 
             // Validate filename to prevent traversal
-            if (!preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
+            if (!preg_match('/^[a-zA-Z0-9._-]+\z/', $file)) {
                 $this->securityLogger->write('Suspicious nginx config filename', $file);
                 continue;
             }
@@ -180,7 +180,7 @@ final class SiteController extends BaseController
         }
 
         $document_root = trim($matches[1]);
-        if (!preg_match('/^\/[a-zA-Z0-9\/_.-]+$/', $document_root)) {
+        if (!preg_match('/^\/[a-zA-Z0-9\/_.-]+\z/', $document_root)) {
             return '';
         }
 

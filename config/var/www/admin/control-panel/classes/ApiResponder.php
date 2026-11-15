@@ -74,7 +74,7 @@ final class ApiResponder
         $allowedMethods = array_values(array_unique(array_map(strtoupper(...), $allowedMethods)));
         $allowedMethods = array_values(array_filter(
             $allowedMethods,
-            static fn(string $method): bool => preg_match('/^[A-Z]+$/', $method) === 1
+            static fn(string $method): bool => preg_match('/^[A-Z]+\z/', $method) === 1
         ));
         $allowHeader = implode(', ', $allowedMethods ?: ['GET']);
 

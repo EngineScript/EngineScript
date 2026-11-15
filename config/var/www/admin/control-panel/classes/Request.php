@@ -74,7 +74,7 @@ final class Request
     {
         $method = strtoupper($this->serverString('REQUEST_METHOD', 'GET'));
 
-        return preg_match('/^[A-Z]+$/', $method) === 1 ? $method : 'GET';
+        return preg_match('/^[A-Z]+\z/', $method) === 1 ? $method : 'GET';
     }
 
     public function header(string $name): ?string

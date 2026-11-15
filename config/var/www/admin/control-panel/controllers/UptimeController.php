@@ -89,7 +89,7 @@ final class UptimeController extends BaseController
 
         $apiKey = trim($config['api_key']);
 
-        if ($apiKey === '' || $apiKey === '0' || preg_match('/^[\x21-\x7E]+$/', $apiKey) !== 1) {
+        if ($apiKey === '' || $apiKey === '0' || preg_match('/^[\x21-\x7E]+\z/', $apiKey) !== 1) {
             return null;
         }
 
