@@ -89,7 +89,7 @@ class EngineScriptDashboard {
       // Guard: If toggle element not present, nothing to do
       if (!mobileToggle) return;
 
-      if (sidebar && sidebar.classList.contains("mobile-open")
+      if (sidebar?.classList.contains("mobile-open")
         && !sidebar.contains(e.target)
         && !mobileToggle.contains(e.target)) {
         this.closeMobileMenu();

@@ -89,7 +89,7 @@ describe("error states", () => {
     // After the first load, a server that never answers: the request ends only when its time
     // limit aborts it. The uptime card shows the reason; the limit is shortened for the test.
     let hang = false;
-    await open({ fetch: (call) => (hang && call.url === "/api/monitoring/uptime" ? new Promise((resolve, reject) => call.signal.addEventListener("abort", () => reject(call.signal.reason))) : undefined) });
+    await open({ fetch: (call) => (hang && call.url === "/api/monitoring/uptime" ? new Promise((_resolve, reject) => call.signal.addEventListener("abort", () => reject(call.signal.reason))) : undefined) });
     hang = true;
     page.dashboard.api.constructor.REQUEST_TIMEOUT_MS = 50;
     $("#refresh-btn").click();

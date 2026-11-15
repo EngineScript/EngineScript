@@ -12,6 +12,16 @@ const scripts = ["dashboard.js", "modules/api.js", "modules/state.js", "modules/
 const page = new JSDOM(read("index.html")).window.document;
 const router = read("classes/Router.php");
 
+// Patterns that scan the sources. Built from strings: a regex literal with an odd number of quote
+// characters makes Lizard (which Codacy runs) misread the function around it.
+const ROUTE = new RegExp("'(\\/[a-z/-]+)' => \\[\\s*self::(GET|POST)", "g");
+const CREATED_ID = new RegExp("\\.id = \"([^\"]+)\"", "g");
+const ID_LOOKUP = new RegExp("getElementById\\(\"([^\"]+)\"\\)", "g");
+const TEMPLATED_ID_LOOKUP = new RegExp("getElementById\\(`\\$\\{(\\w+)\\}-status`\\)", "g");
+const SELECTOR = new RegExp("querySelector(?:All)?\\(\"([^\"]+)\"\\)", "g");
+const GET_CALL = new RegExp("getApiData\\(\"\\/api(\\/[^\"]+)\"\\)", "g");
+const POST_CALL = new RegExp("postApiData\\(\"\\/api(\\/[^\"]+)\"", "g");
+
 let loaded = null;
 afterEach(() => {
   mock.timers.reset();
@@ -21,14 +31,14 @@ afterEach(() => {
 
 /** Every route in the Router's table, with the methods it allows. */
 const routes = new Map(
-  [...router.matchAll(/'(\/[a-z/-]+)' => \[\s*self::(GET|POST)/g)].map(([, route, kind]) => [route, kind === "GET" ? ["GET", "HEAD"] : ["POST"]])
+  [...router.matchAll(ROUTE)].map(([, route, kind]) => [route, kind === "GET" ? ["GET", "HEAD"] : ["POST"]])
 );
 
 describe("selectors", () => {
   it("every id the scripts look up is in index.html or created by the scripts", () => {
-    const created = new Set([...scripts.matchAll(/\.id = "([^"]+)"/g)].map(([, id]) => id));
-    const ids = new Set([...scripts.matchAll(/getElementById\("([^"]+)"\)/g)].map(([, id]) => id));
-    const templated = [...scripts.matchAll(/getElementById\(`\$\{(\w+)\}-status`\)/g)];
+    const created = new Set([...scripts.matchAll(CREATED_ID)].map(([, id]) => id));
+    const ids = new Set([...scripts.matchAll(ID_LOOKUP)].map(([, id]) => id));
+    const templated = [...scripts.matchAll(TEMPLATED_ID_LOOKUP)];
 
     assert.ok(ids.size > 15, "the scan finds the lookups");
     for (const id of ids) {
@@ -48,7 +58,7 @@ describe("selectors", () => {
       await settle();
     }
 
-    const selectors = new Set([...scripts.matchAll(/querySelector(?:All)?\("([^"]+)"\)/g)].map(([, selector]) => selector));
+    const selectors = new Set([...scripts.matchAll(SELECTOR)].map(([, selector]) => selector));
     assert.ok(selectors.size > 8);
     for (const selector of selectors) {
       assert.ok(loaded.document.querySelector(selector), selector);
@@ -66,8 +76,8 @@ describe("selectors", () => {
 
 describe("endpoints", () => {
   it("every endpoint the scripts call is a route, with the method the Router allows", () => {
-    const gets = [...scripts.matchAll(/getApiData\("\/api(\/[^"]+)"\)/g)].map(([, path]) => path);
-    const posts = [...scripts.matchAll(/postApiData\("\/api(\/[^"]+)"/g)].map(([, path]) => path);
+    const gets = [...scripts.matchAll(GET_CALL)].map(([, path]) => path);
+    const posts = [...scripts.matchAll(POST_CALL)].map(([, path]) => path);
 
     assert.ok(routes.size === 10, "the scan reads the route table");
     assert.ok(gets.length >= 7 && posts.length >= 1);
