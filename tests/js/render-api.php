@@ -84,12 +84,12 @@ function es_private(string $class, string $method, mixed ...$arguments): mixed
 $fixtures = sys_get_temp_dir() . '/es-js-sites-' . bin2hex(random_bytes(4));
 $sites = [];
 foreach (['example.com' => '6.8.3', 'shop.example' => null, 'x"><img src=x onerror=alert(1)>.example' => '6.7'] as $domain => $version) {
-    $root = "{$fixtures}/" . md5($domain) . '/html';
+    $root = "{$fixtures}/" . hash('sha256', $domain) . '/html';
     mkdir("{$root}/wp-includes", 0700, true);
     if ($version !== null) {
         file_put_contents("{$root}/wp-includes/version.php", "<?php\n\$wp_version = '{$version}';\n");
     }
-    $config = "{$fixtures}/" . md5($domain) . '.conf';
+    $config = "{$fixtures}/" . hash('sha256', $domain) . '.conf';
     $ssl = $domain === 'shop.example' ? '' : "  ssl_certificate /etc/nginx/ssl/{$domain}/fullchain.pem;\n";
     file_put_contents($config, "server {\n  server_name {$domain} www.{$domain};\n{$ssl}  root {$root};\n  include /etc/nginx/globals/wp-secure.conf;\n}\n");
     $site = es_private(SiteController::class, 'processNginxConfig', realpath($config));

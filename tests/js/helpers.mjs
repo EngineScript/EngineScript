@@ -74,16 +74,16 @@ const TYPES = { ".css": "text/css", ".js": "text/javascript", ".png": "image/png
 function panelInterceptor(dir, fontAwesome, requested) {
   return requestInterceptor((request) => {
     requested.push(request.url);
-    if (request.url.startsWith("https://cdnjs.cloudflare.com/")) {
+    const { origin, pathname } = new URL(request.url);
+    if (origin === "https://cdnjs.cloudflare.com") {
       if (fontAwesome === "blocked") {
         // A failed load fires the link's error event, as when cdnjs is down or blocked
         return new Response("", { status: 503 });
       }
       return new Response(fontAwesome === "empty" ? "" : FONT_AWESOME_CSS, { headers: { "Content-Type": "text/css" } });
     }
-    const { pathname } = new URL(request.url);
     // Module scripts are imported by the helper; nothing else leaves the panel.
-    if (!request.url.startsWith(BASE) || (pathname.endsWith(".js") && pathname !== "/fontawesome-check.js")) {
+    if (origin !== BASE || (pathname.endsWith(".js") && pathname !== "/fontawesome-check.js")) {
       return new Response("", { status: 404 });
     }
     return new Response(readFileSync(path.join(dir, decodeURIComponent(pathname))), {
