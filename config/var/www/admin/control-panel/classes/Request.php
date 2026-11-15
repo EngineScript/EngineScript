@@ -130,7 +130,8 @@ final class Request
             return null;
         }
 
-        $value = trim((string) $value);
+        // Passed on as sent: each check refuses what it does not accept rather than cleaning it up.
+        $value = (string) $value;
 
         return $value === '' ? null : $value;
     }
