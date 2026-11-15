@@ -20,7 +20,7 @@
     banner.id = WARNING_ID;
     banner.className = "dependency-warning";
     banner.setAttribute("role", "status");
-    banner.textContent = "Warning: Font Awesome icons failed to load. Run the EngineScript installer to configure frontend dependency versions.";
+    banner.textContent = "Warning: The Font Awesome icons could not be loaded from cdnjs.cloudflare.com, so the dashboard shows no icons. Check that this browser can reach cdnjs.cloudflare.com.";
     document.body.prepend(banner);
   };
 

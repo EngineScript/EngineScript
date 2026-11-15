@@ -9,6 +9,8 @@ Changes are organized by date, with the most recent changes listed first.
 ### 🐛 ADMIN CONTROL PANEL FIXES
 
 - **The control panel stops when PHP cannot save its session:** before, the panel kept answering without its request limit, and every cache-clear button failed with "Invalid or missing CSRF token". It now answers "Session storage unavailable" (503) to every request until PHP can save sessions again, and writes the failure to the panel's security log.
+- **UptimeRobot setup instructions:** the dashboard told you to edit `/etc/enginescript/uptimerobot.conf` by hand, which the next update can overwrite. It now says to set `UPTIMEROBOT_API_KEY` with `es.config` and run `es.update`.
+- **Clearer dashboard text:** the warning when Font Awesome cannot load now says that cdnjs.cloudflare.com could not be reached, instead of asking you to rerun the installer; the command list includes `es.sites`; the `es.backup` and `es.restart` descriptions match what they do.
 
 ## 2026-11-11
 

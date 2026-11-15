@@ -1,5 +1,6 @@
-// EngineScript Admin Dashboard - Modern JavaScript
-// Security-hardened version with input validation and XSS prevention
+// EngineScript Admin Dashboard
+// Pages, data loading, cache buttons, and keyboard shortcuts. Values from the API reach the page
+// as text (textContent), and links only through sanitizeUrl.
 
 import { DashboardAPI } from "./modules/api.js?v={ES_DASHBOARD_VER}";
 import { DashboardState } from "./modules/state.js?v={ES_DASHBOARD_VER}";
@@ -456,7 +457,7 @@ class EngineScriptDashboard {
             statusIcon.className = `fas fa-circle ${status.online ? "online" : "offline"}`;
           }
           if (versionSpan && status.version) {
-            // "v" only before a version number, not before "Unknown" or "Not Found"
+            // "v" only before a version number, not before "Unknown" or "Error"
             const version = String(status.version);
             versionSpan.textContent = /^\d/.test(version) ? `v${version}` : version;
           }
@@ -715,7 +716,7 @@ class EngineScriptDashboard {
         "warning",
         "clock",
         "No Monitors Configured",
-        "Add websites to monitor in your Uptime Robot dashboard"
+        "Add websites to monitor in your UptimeRobot account"
       );
       monitorsContainer.replaceChildren();
       monitorsContainer.append(emptyState);
@@ -812,7 +813,6 @@ class EngineScriptDashboard {
     return infoDiv;
   }
 
-  // Cleanup method
   // Tools management methods
   async loadToolsData() {
     await Promise.allSettled([
@@ -1203,7 +1203,7 @@ class EngineScriptDashboard {
       statusDiv.className = "uptime-status";
 
       const message = document.createElement("p");
-      message.textContent = errorMessage || "Error loading uptime monitoring data. Please check your configuration and try again.";
+      message.textContent = errorMessage || "Uptime monitoring data could not be loaded.";
 
       statusDiv.append(message);
       monitorsContainer.replaceChildren(statusDiv);
