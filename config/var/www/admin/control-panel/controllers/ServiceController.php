@@ -11,8 +11,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../classes/SystemCommand.php';
+namespace EngineScript\Dashboard\API\Controllers;
+
+use EngineScript\Dashboard\Classes\SystemCommand;
 
 /**
  * Service Status Controller
@@ -31,7 +32,7 @@ final class ServiceController extends BaseController
      * Get status of all services
      *
      * Returns status of nginx, PHP-FPM, MariaDB, and Redis. Not cached: the
-     * commands take about 0.3 s together (measured in Phase 11).
+     * commands take about 0.3 s together (measured on a test server).
      *
      * Endpoint: GET /services/status
      *
@@ -49,7 +50,7 @@ final class ServiceController extends BaseController
             ];
 
             $this->response->success($services);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Services status error', $e->getMessage());
             $this->response->serverError('Unable to retrieve services status');
         }
@@ -69,7 +70,7 @@ final class ServiceController extends BaseController
                 'version' => $this->getServiceVersion($service),
                 'online' => $online,
             ];
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->securityLogger->write('Service status error', $e->getMessage());
             return $this->createErrorServiceStatus();
         }

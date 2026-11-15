@@ -6,8 +6,9 @@
  * Checks the admin control panel's PHP against the PER Coding Style, which
  * supersedes PSR-12, and against the idioms of the panel's minimum PHP
  * version. `composer cs:check` runs it in check mode; it changes nothing.
- * PER-CS 3.0 is the current revision (2026-10-18); the tool-currency check of
- * each review moves the set when PHP-FIG publishes a newer one.
+ * PHP-FIG has published PER-CS 3.1; PHP-CS-Fixer's newest set is 3.0 (checked
+ * 2026-11-15). The tool-currency check of each review moves the set when
+ * PHP-CS-Fixer adds a newer one.
  */
 
 declare(strict_types=1);

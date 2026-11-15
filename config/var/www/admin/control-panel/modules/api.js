@@ -122,7 +122,7 @@ export class DashboardAPI {
    * @returns {Promise<*>} The decoded JSON
    */
   async getApiData(endpoint) {
-    // Validate endpoint is a relative API path to prevent SSRF
+    // Only this site's API: a relative path under API_PREFIX
     if (!this.isValidEndpoint(endpoint)) {
       throw new Error(`Invalid API endpoint: ${endpoint}`);
     }
@@ -136,7 +136,7 @@ export class DashboardAPI {
   }
 
   async postApiData(endpoint, data = {}) {
-    // Validate endpoint is a relative API path to prevent SSRF
+    // Only this site's API: a relative path under API_PREFIX
     if (!this.isValidEndpoint(endpoint)) {
       console.error("Invalid API endpoint:", endpoint);
       return { error: "Invalid endpoint" };

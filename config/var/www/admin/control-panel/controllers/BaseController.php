@@ -17,13 +17,12 @@
 
 declare(strict_types=1);
 
-// Ensure response/request helper classes are loaded
-require_once __DIR__ . '/../classes/ApiResponder.php';
-require_once __DIR__ . '/../classes/Request.php';
-require_once __DIR__ . '/../classes/SecurityLogger.php';
+namespace EngineScript\Dashboard\API\Controllers;
 
-// Ensure Session wrapper is loaded
-require_once __DIR__ . '/../classes/Session.php';
+use EngineScript\Dashboard\Classes\ApiResponder;
+use EngineScript\Dashboard\Classes\Request;
+use EngineScript\Dashboard\Classes\SecurityLogger;
+use EngineScript\Dashboard\Classes\Session;
 
 /**
  * Abstract Base Controller
@@ -49,8 +48,8 @@ abstract class BaseController
 
     /**
      * Server-side cache lifetime in seconds. Only UptimeRobot is cached: it is
-     * an external service with a request limit. The cron sweep removes entries
-     * older than a minute in any case.
+     * an external service with a request limit. An expired entry is replaced on
+     * the next read; es.cache empties the directory.
      */
     private const int CACHE_TTL = 60;
 
@@ -64,8 +63,7 @@ abstract class BaseController
     /**
      * Initialize shared dependencies.
      *
-     * Final, because the router and the batch endpoint build every controller
-     * with these arguments.
+     * Final, because the router builds every controller with these arguments.
      */
     final public function __construct(
         protected Session $session,
@@ -132,40 +130,49 @@ abstract class BaseController
     /**
      * Get cached data if present and not expired
      *
+     * @SuppressWarnings("PHPMD.ErrorControlOperator") Two requests can find the same entry expired;
+     *                  the one whose unlink comes second has nothing left to remove, and no reason to warn.
+     *
      * @return array<mixed>|null Cached data or null if not found/expired
      */
     private function getCached(string $key): ?array
     {
-        $cache_file = $this->getCacheFilePath($key);
+        $cacheFile = $this->getCacheFilePath($key);
 
-        if (!file_exists($cache_file)) {
+        if (!file_exists($cacheFile)) {
             return null;
         }
 
-        $cache_content = file_get_contents($cache_file);
-        if ($cache_content === false) {
+        $cacheContent = file_get_contents($cacheFile);
+        if ($cacheContent === false) {
             return null;
         }
 
         try {
-            $cache_data = $this->arrayOrNull(json_decode($cache_content, true, 512, JSON_THROW_ON_ERROR));
-        } catch (JsonException) {
+            $cacheData = $this->arrayOrNull(json_decode($cacheContent, true, 512, JSON_THROW_ON_ERROR));
+        } catch (\JsonException) {
             // Corrupt cache entries are ignored and replaced by fresh responses.
             return null;
         }
 
-        if ($cache_data === null || !isset($cache_data['timestamp']) || !is_int($cache_data['timestamp']) || !isset($cache_data['data']) || !is_array($cache_data['data'])) {
+        if (
+            $cacheData === null
+            || !isset($cacheData['timestamp'])
+            || !is_int($cacheData['timestamp'])
+            || !isset($cacheData['data'])
+            || !is_array($cacheData['data'])
+        ) {
             return null;
         }
 
         // Check if cache is still valid
-        if (time() - $cache_data['timestamp'] > self::CACHE_TTL) {
+        if (time() - $cacheData['timestamp'] > self::CACHE_TTL) {
             // Cache expired - remove it
-            @unlink($cache_file);
+            @unlink($cacheFile);
             return null;
         }
 
-        return $cache_data['data'];
+        return $cacheData['data'];
     }
 
     /**
@@ -179,26 +186,26 @@ abstract class BaseController
      */
     private function setCached(string $key, array $data): void
     {
-        $cache_file = $this->getCacheFilePath($key);
-        $cache_data = [
+        $cacheFile = $this->getCacheFilePath($key);
+        $cacheData = [
             'timestamp' => time(),
             'key' => $key,
             'data' => $data,
         ];
 
         try {
-            $encoded = json_encode($cache_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
+            $encoded = json_encode($cacheData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
             return;
         }
 
         // Write to a temporary name and rename it, so a reader never sees a half-written file.
-        $tempFile = $cache_file . '.' . bin2hex(random_bytes(8)) . '.tmp';
+        $tempFile = $cacheFile . '.' . bin2hex(random_bytes(8)) . '.tmp';
         if (file_put_contents($tempFile, $encoded) === false) {
             return;
         }
 
-        if (!rename($tempFile, $cache_file)) {
+        if (!rename($tempFile, $cacheFile)) {
             // The temporary file this method created: a random name in the cache directory
             // nosemgrep: php.lang.security.unlink-use.unlink-use
             unlink($tempFile);
@@ -210,8 +217,8 @@ abstract class BaseController
      */
     private function getCacheFilePath(string $key): string
     {
-        $safe_key = preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) ?? '';
-        return self::CACHE_DIR . $safe_key . '.json';
+        $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) ?? '';
+        return self::CACHE_DIR . $safeKey . '.json';
     }
 
     /**
@@ -233,7 +240,7 @@ abstract class BaseController
 
         try {
             $this->jsonBody = $this->arrayOrNull(json_decode($input, true, 512, JSON_THROW_ON_ERROR)) ?? [];
-        } catch (JsonException) {
+        } catch (\JsonException) {
             $this->jsonBody = [];
         }
 

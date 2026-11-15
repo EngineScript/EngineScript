@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace EngineScript\Dashboard\Classes;
+
 /**
  * EngineScript Admin Dashboard - Session Wrapper
  *
@@ -15,14 +17,14 @@ declare(strict_types=1);
 final class Session
 {
     /**
-     * The value stored under a key, or $default when absent.
+     * The value stored under a key, or $fallback when absent.
      *
      * @SuppressWarnings("PHPMD.Superglobals")
      */
-    public function get(string $key, mixed $default = null): mixed
+    public function get(string $key, mixed $fallback = null): mixed
     {
         // PHP retains this request's data after session_write_close().
-        return $_SESSION[$key] ?? $default;
+        return $_SESSION[$key] ?? $fallback;
     }
 
     /**

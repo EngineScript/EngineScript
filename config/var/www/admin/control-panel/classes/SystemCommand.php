@@ -2,6 +2,8 @@
 
 /**
  * SystemCommand Class
+ *
+ * @package EngineScript\Dashboard\Classes
  * Encapsulates all shell command executions for security, testing, and maintainability
  *
  * Every command runs via proc_open() with array syntax — the OS spawns the
@@ -15,7 +17,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/SystemProcessRunner.php';
+namespace EngineScript\Dashboard\Classes;
 
 final class SystemCommand
 {
@@ -86,6 +88,9 @@ final class SystemCommand
     /**
      * Execute one of the fixed commands via proc_open without shell interpretation.
      *
+     * @SuppressWarnings("PHPMD.BooleanArgumentFlag") The flag chooses the stream to read, as the
+     *                  CommandRunner interface does; nginx -v is the one command that prints to stderr.
+     *
      * @param non-empty-list<string> $argv Command array (binary name from BINARY_PATHS + arguments)
      * @param bool $captureStderr Read stderr instead of stdout (e.g. nginx -v)
      * @return string|false Trimmed output or false on failure
@@ -100,7 +105,9 @@ final class SystemCommand
 
         $timeoutSeconds = self::remainingSeconds();
         if ($timeoutSeconds <= 0) {
-            error_log('[EngineScript] SystemCommand skipped command, request time budget used up: ' . implode(' ', $argv));
+            error_log(
+                '[EngineScript] SystemCommand skipped command, request time budget used up: ' . implode(' ', $argv)
+            );
             return false;
         }
 

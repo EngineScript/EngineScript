@@ -12,13 +12,24 @@
 
 declare(strict_types=1);
 
-// Load core classes
+use EngineScript\Dashboard\Classes\ApiResponder;
+use EngineScript\Dashboard\Classes\Request;
+use EngineScript\Dashboard\Classes\RequestGuard;
+use EngineScript\Dashboard\Classes\Router;
+use EngineScript\Dashboard\Classes\SecurityLogger;
+use EngineScript\Dashboard\Classes\Session;
+
+// Load every class here, in dependency order: the class files do not load each other
+require_once __DIR__ . '/classes/CommandRunner.php';
+require_once __DIR__ . '/classes/SystemProcessRunner.php';
 require_once __DIR__ . '/classes/SystemCommand.php';
 require_once __DIR__ . '/classes/ApiResponder.php';
 require_once __DIR__ . '/classes/Request.php';
-require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/classes/SecurityLogger.php';
 require_once __DIR__ . '/classes/Session.php';
+require_once __DIR__ . '/classes/RequestGuard.php';
+require_once __DIR__ . '/classes/UptimeRobotAPI.php';
+require_once __DIR__ . '/classes/Router.php';
 require_once __DIR__ . '/controllers/BaseController.php';
 require_once __DIR__ . '/controllers/CacheController.php';
 require_once __DIR__ . '/controllers/CsrfController.php';
@@ -50,7 +61,7 @@ header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\';
 
 // No CORS headers: the dashboard calls the API from its own origin.
 
-// Rate limiting (basic implementation) - session functions required for API rate limiting
+// The session holds the CSRF token and the rate-limit count.
 if (session_status() === PHP_SESSION_NONE) {
     session_name('__Host-esp_session');
     // Keep the API's no-store policy instead of PHP's session cache headers.
@@ -64,12 +75,18 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', '1');   // Reject uninitialized session IDs
     ini_set('session.use_only_cookies', '1');  // Only use cookies for session ID
 
-    session_start();
-
-    if (!$session->has('_initialized')) {
+    // A failed start leaves no session to regenerate; the check below answers 503
+    if (session_start() && !$session->has('_initialized')) {
         session_regenerate_id(true);
         $session->set('_initialized', true);
     }
+}
+
+// Without a session there is no rate limit and no CSRF token, so stop here.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    $securityLogger->write('Session start failed', 'API request refused with 503');
+    $response->error('Session storage unavailable', 503);
+    die();
 }
 
 // Initialize CSRF token if not exists
@@ -84,7 +101,7 @@ if (!$session->has('csrf_token')) {
 }
 $client_ip = $request->remoteAddress();
 $rate_limit_key = 'api_rate_' . hash('sha256', $client_ip);
-$rate_limit = rateLimitState($session->get($rate_limit_key));
+$rate_limit = RequestGuard::rateLimitState($session->get($rate_limit_key));
 
 // Reset rate limit counter every minute
 if (isset($rate_limit['reset']) && is_int($rate_limit['reset']) && time() > $rate_limit['reset']) {
@@ -100,128 +117,17 @@ if (isset($rate_limit['count']) && is_int($rate_limit['count']) && $rate_limit['
     die();
 }
 
-$rate_limit['count'] = nextRateLimitCount($rate_limit);
+$rate_limit['count'] = RequestGuard::nextRateLimitCount($rate_limit);
 $session->set($rate_limit_key, $rate_limit);
 
-/**
- * The stored rate-limit state, or a fresh window when nothing usable is stored.
- *
- * @return array<mixed>
- */
-function rateLimitState(mixed $stored): array
-{
-    return is_array($stored) ? $stored : ['count' => 0, 'reset' => time() + 60];
-}
-
-/**
- * The request count after this request.
- *
- * @param array<mixed> $rate_limit
- */
-function nextRateLimitCount(array $rate_limit): int
-{
-    return isset($rate_limit['count']) && is_int($rate_limit['count']) ? $rate_limit['count'] + 1 : 1;
-}
-
-/**
- * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
- * Token can be sent via X-CSRF-Token header or _csrf_token body parameter
- *
- * @return bool True if valid or not required (GET/HEAD/OPTIONS), false if invalid
- */
-function validateCsrfToken(Request $request, Session $session, SecurityLogger $securityLogger): bool
-{
-    $method = $request->method();
-
-    if (isCsrfSafeMethod($method)) {
-        return true;
-    }
-
-    $client_token = csrfTokenFromRequest($request, $securityLogger);
-    if ($client_token === false) {
-        return false;
-    }
-
-    return csrfTokenIsValid($method, $client_token, $session->get('csrf_token'), $securityLogger);
-}
-
-function isCsrfSafeMethod(string $method): bool
-{
-    return in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
-}
-
-function csrfTokenFromRequest(Request $request, SecurityLogger $securityLogger): string|false|null
-{
-    $headerToken = $request->header('X-CSRF-Token');
-    if ($headerToken !== null) {
-        return $headerToken;
-    }
-
-    $postToken = $request->post('_csrf_token');
-    if ($postToken !== null) {
-        return $postToken;
-    }
-
-    if (!str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
-        return null;
-    }
-
-    return csrfTokenFromJsonBody($request, $securityLogger);
-}
-
-function csrfTokenFromJsonBody(Request $request, SecurityLogger $securityLogger): string|false|null
-{
-    $input = $request->body();
-    if (trim($input) === '') {
-        return null;
-    }
-
-    try {
-        return csrfTokenFromDecodedBody(json_decode($input, true, 512, JSON_THROW_ON_ERROR));
-    } catch (JsonException) {
-        $securityLogger->write('CSRF token JSON parse failed', 'Invalid JSON body');
-        return false;
-    }
-}
-
-function csrfTokenFromDecodedBody(mixed $body): ?string
-{
-    if (!is_array($body) || !isset($body['_csrf_token']) || !is_string($body['_csrf_token'])) {
-        return null;
-    }
-
-    return $body['_csrf_token'];
-}
-
-function csrfTokenIsValid(
-    string $method,
-    ?string $client_token,
-    mixed $session_token,
-    SecurityLogger $securityLogger
-): bool {
-    if (in_array($client_token, [null, '', '0'], true) || !is_string($session_token) || $session_token === '') {
-        $securityLogger->write('CSRF token missing', $method . ' request without token');
-        return false;
-    }
-
-    if (!hash_equals($session_token, $client_token)) {
-        $securityLogger->write('CSRF token mismatch', 'Invalid token submitted');
-        return false;
-    }
-
-    return true;
-}
-
 // Validate CSRF token for state-changing requests
-if (!validateCsrfToken($request, $session, $securityLogger)) {
+if (!RequestGuard::validateCsrfToken($request, $session, $securityLogger)) {
     $response->forbidden('Invalid or missing CSRF token');
     die();
 }
 
 // Dispatch only reads session data; release the lock before slow controller work.
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
+session_write_close();
 
 // The endpoint comes from nginx's rewrite (endpoint=...), or else from an /api/ path.
 $endpoint = $request->query('endpoint');

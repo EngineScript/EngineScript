@@ -13,11 +13,16 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Request.php';
+namespace EngineScript\Dashboard\Classes;
 
 final readonly class SecurityLogger
 {
-    public function __construct(private Request $request)
+    public const string LOG_FILE = '/var/log/EngineScript/enginescript-api-security.log';
+
+    /**
+     * @param string $logFile The log file; replaced only by tests
+     */
+    public function __construct(private Request $request, private string $logFile = self::LOG_FILE)
     {
     }
 
@@ -29,23 +34,21 @@ final readonly class SecurityLogger
      */
     public function write(string $event, string $details = ''): void
     {
-        $safe_event = self::sanitize($event);
+        $safeEvent = self::sanitize($event);
 
-        $log_entry = gmdate(DATE_ATOM) . " [SECURITY] " . $safe_event;
+        $logEntry = gmdate(DATE_ATOM) . " [SECURITY] " . $safeEvent;
 
         if ($details !== '' && $details !== '0') {
-            $safe_details = self::sanitize($details);
-            $log_entry .= " - " . $safe_details;
+            $safeDetails = self::sanitize($details);
+            $logEntry .= " - " . $safeDetails;
         }
 
-        $client_ip = $this->request->remoteAddress();
+        $clientIp = $this->request->remoteAddress();
 
-        $log_entry .= " - User: " . self::sanitize($this->request->authenticatedUser);
-        $log_entry .= " - IP: " . $client_ip . "\n";
+        $logEntry .= " - User: " . self::sanitize($this->request->authenticatedUser);
+        $logEntry .= " - IP: " . $clientIp . "\n";
 
-        // Log to a secure location
-        $log_file = '/var/log/EngineScript/enginescript-api-security.log';
-        error_log($log_entry, 3, $log_file);
+        error_log($logEntry, 3, $this->logFile);
     }
 
     /**

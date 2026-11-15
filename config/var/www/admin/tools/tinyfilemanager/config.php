@@ -24,8 +24,15 @@ if (
     || $es_fm_login['password_hash'] === ''
 ) {
     http_response_code(503);
-    die('File Manager Error: Credentials not configured. Set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD with "es.config", then run "es.update".');
+    die(
+        'File Manager Error: Credentials not configured. '
+        . 'Set FILEMANAGER_USERNAME and FILEMANAGER_PASSWORD with "es.config", then run "es.update".'
+    );
 }
+
+// The settings below are Tiny File Manager's: it includes this file and reads them, so they are
+// not unused, and their names are its own.
+// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 
 // Authentication array: username => password hash
 $auth_users = [
@@ -36,8 +43,9 @@ $auth_users = [
 $use_auth = true;
 $readonly_users = [];
 
-// Root path for file browsing - restrict to web directories
-$root_path = '/var/www';
+// Root path for file browsing: the WordPress sites only, so a file manager login cannot change
+// the admin control panel or the other admin tools under /var/www/admin
+$root_path = '/var/www/sites';
 
 // Root URL for links (leave blank for auto-detection)
 $root_url = '';

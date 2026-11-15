@@ -4,7 +4,11 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
-## 2026-11-14
+## 2026-11-15
+
+### 🔒 SECURITY
+
+- **Tiny File Manager shows only your sites:** the file manager used to open at `/var/www`, so its login could change the admin control panel and the other admin tools as well as your sites. It now opens at `/var/www/sites`, the folder that holds each site. The change applies at the next `es.update`.
 
 ### 💾 SITE ARCHIVES NEED HALF THE DISK SPACE
 
@@ -19,6 +23,14 @@ Changes are organized by date, with the most recent changes listed first.
 - **Free space check counts the database:** before building a site archive, the backup checked for room for the site's files only. A site with a large database could pass the check and fill the disk during the dump. The check now includes the database's size. It also no longer counts `wp-content/cache`, `upgrade`, and `temp`, which the archive leaves out, so a large page cache can't stop a backup that would fit.
 - **Site address in the archive is checked:** the site address, WordPress address, and table prefix written to an archive's `manifest.txt` are now read on marked lines and checked. Other output from the site while they were read, such as a must-use plugin's, could have been written in their place, and Import Domain would then have refused the archive. Import Domain also ignores a manifest address that isn't an address and reads `wp-config.php` instead.
 - **Leftover staging folders are removed:** a backup or export stopped by a power cut or `kill -9` left its hidden staging folder (`.site-archive.*`) behind, with up to a full copy of the site. The next files backup removes them from a site's backup folders, and a build removes ones older than a day from the folder it writes to.
+
+## 2026-11-14
+
+### 🐛 ADMIN CONTROL PANEL FIXES
+
+- **The control panel stops when PHP cannot save its session:** before, the panel kept answering without its request limit, and every cache-clear button failed with "Invalid or missing CSRF token". It now answers "Session storage unavailable" (503) to every request until PHP can save sessions again, and writes the failure to the panel's security log.
+- **UptimeRobot setup instructions:** the dashboard told you to edit `/etc/enginescript/uptimerobot.conf` by hand, which the next update can overwrite. It now says to set `UPTIMEROBOT_API_KEY` with `es.config` and run `es.update`.
+- **Clearer dashboard text:** the warning when Font Awesome cannot load now says that cdnjs.cloudflare.com could not be reached, instead of asking you to rerun the installer; the command list includes `es.sites`; the `es.backup` and `es.restart` descriptions match what they do.
 
 ## 2026-11-11
 

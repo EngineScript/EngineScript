@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+namespace EngineScript\Dashboard\Classes;
+
 /**
  * EngineScript Admin Dashboard - Instance API Response Handler
  *
  * Provides injectable response handling for controllers and routing.
  *
- * @package EngineScript\Dashboard\API
+ * @package EngineScript\Dashboard\Classes
  * @version 1.0.0
  * @security HIGH - Handles all API output
  */
@@ -21,7 +23,10 @@ final class ApiResponder
     public const int HTTP_TOO_MANY_REQUESTS = 429;
     public const int HTTP_INTERNAL_ERROR = 500;
 
-    private const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR;
+    private const JSON_FLAGS = JSON_UNESCAPED_SLASHES
+        | JSON_UNESCAPED_UNICODE
+        | JSON_INVALID_UTF8_SUBSTITUTE
+        | JSON_THROW_ON_ERROR;
 
     public function badRequest(string $message = 'Bad request'): void
     {
@@ -74,7 +79,7 @@ final class ApiResponder
         $allowedMethods = array_values(array_unique(array_map(strtoupper(...), $allowedMethods)));
         $allowedMethods = array_values(array_filter(
             $allowedMethods,
-            static fn(string $method): bool => preg_match('/^[A-Z]+$/', $method) === 1
+            static fn(string $method): bool => preg_match('/^[A-Z]+\z/', $method) === 1
         ));
         $allowHeader = implode(', ', $allowedMethods ?: ['GET']);
 
@@ -92,7 +97,7 @@ final class ApiResponder
 
         try {
             echo json_encode($data, self::JSON_FLAGS);
-        } catch (JsonException) {
+        } catch (\JsonException) {
             http_response_code(self::HTTP_INTERNAL_ERROR);
             echo '{"error":"Failed to encode JSON response"}';
         }

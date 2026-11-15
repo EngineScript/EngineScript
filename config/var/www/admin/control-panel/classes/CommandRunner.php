@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+namespace EngineScript\Dashboard\Classes;
+
 /**
  * EngineScript Admin Dashboard - Command Runner
+ *
+ * @package EngineScript\Dashboard\Classes
  *
  * What SystemCommand needs to run one command: SystemProcessRunner on a
  * server, a stand-in in tests (SystemCommand::useRunner()).
