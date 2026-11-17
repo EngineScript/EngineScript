@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-17
+
+### 🐛 FIXES
+
+- **TLS sessions last 6 hours, as set:** Nginx takes the TLS session settings for every site from the default server (`admin.localhost.conf`, the server that refuses unknown hostnames), not from each site's settings. The default server's session timeout was 1 hour, so Cloudflare's TLS sessions to your sites ended after an hour instead of the 6 hours in `sslshared.conf`. The default server now has the same TLS settings as your sites (6-hour sessions, 4 KB TLS records, and the same ciphers and key exchange). The change applies at the next Nginx update.
+
 ## 2026-11-16
 
 ### 🚀 UBUNTU EDGE ARCHIVE (OPTIONAL)
