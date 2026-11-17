@@ -695,19 +695,23 @@ create_robots_txt() {
 
 
 #----------------------------------------------------------------------------------
-# Back up every site, the new one included, and EngineScript's configuration now: the same run
-# as es.backup, so the first backup has the scheduled backups' layout, retention, and S3 copy.
+# Back up the new site (its database, wp-config.php, and site archive) and EngineScript's
+# configuration now, with the backup script, so the first backup has the scheduled backups'
+# layout, retention, and S3 copy. The server's other sites are left to their schedule: archiving
+# every site here would keep the person at the menu waiting for all of them.
 perform_site_backup() {
-  local SITE_URL="$1"
+  local site_url="$1" backup="/usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh" failed=0
 
   echo ""
-  echo "Backup script will now run for all sites on this server."
+  echo "Backing up ${site_url} and EngineScript's configuration."
   echo ""
 
-  if bash /usr/local/bin/enginescript/scripts/functions/backup/enginescript-backup.sh now; then
+  bash "${backup}" site "${site_url}" || failed=1
+  bash "${backup}" config || failed=1
+  if (( failed == 0 )); then
     echo "Backup: Complete"
   else
-    echo "Warning: The backup after setting up ${SITE_URL} reported errors; see /var/log/EngineScript/enginescript-backup.log. The site itself is set up." >&2
+    echo "Warning: The backup after setting up ${site_url} reported errors; see /var/log/EngineScript/enginescript-backup.log. The site itself is set up." >&2
   fi
   clear
 }

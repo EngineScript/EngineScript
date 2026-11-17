@@ -42,6 +42,7 @@ name: Control Panel
       - 'phpunit.xml'
       - '.ruff.toml'
       - '.mypy.ini'
+      - 'scripts/functions/shared/site-archive-zip.py'
       - '.yamllint.yml'
   # Every pull request: the "changes" job below skips the checks when none of the push paths
   # changed, so the required check ("Control Panel checks") still reports
@@ -87,7 +88,7 @@ jobs:
           while IFS= read -r file; do
             # The push trigger's paths (test-automation.py keeps the two lists equal)
             case "$file" in
-              config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.php-cs-fixer.dist.php|phpcs.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|.yamllint.yml)
+              config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.php-cs-fixer.dist.php|phpcs.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|scripts/functions/shared/site-archive-zip.py|.yamllint.yml)
                 relevant=true
                 ;;
               *)
@@ -834,8 +835,8 @@ jobs:
         id: ruff
         if: ${{ !cancelled() && steps.install_linters.outcome == 'success' }}
         run: |
-          ruff check .github/scripts
-          ruff format --check .github/scripts
+          ruff check .github/scripts scripts/functions/shared/site-archive-zip.py
+          ruff format --check .github/scripts scripts/functions/shared/site-archive-zip.py
 
       - name: mypy (strict)
         id: mypy

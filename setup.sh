@@ -79,6 +79,7 @@ core_packages=(
   "needrestart"
   "openssl"
   "pwgen"
+  "python3"
   "sed"
   "software-properties-common"
   "tar"

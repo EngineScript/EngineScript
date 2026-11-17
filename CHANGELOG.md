@@ -10,6 +10,20 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **Tiny File Manager shows only your sites:** the file manager used to open at `/var/www`, so its login could change the admin control panel and the other admin tools as well as your sites. It now opens at `/var/www/sites`, the folder that holds each site. The change applies at the next `es.update`.
 
+### 💾 SITE ARCHIVES NEED HALF THE DISK SPACE
+
+- **One copy on disk while an archive is built:** a files backup, Export Domain, and the backup before a Wordfence CLI remediation used to write the database dump and the files archive to disk, then copy both into the ZIP, so the server needed free space for about twice the archive. The dump and the files archive are now piped straight into the ZIP as they are made (by a small Python script, `site-archive-zip.py`, that uses only Python's standard library), so the archive is the only copy. The free space check asks for one copy now, and in tests a 1 GB site's archive was also built faster.
+- **A failed dump stops the archive at once:** before, the site's files were still archived after the database export failed, which takes long on a large site. The archive now stops when the dump fails.
+- **Same archive format:** the archives are the same as before, so Import Domain, Backup Tools, and the EngineScript Site Exporter plugin read them as they did.
+- **Python:** new installs now install `python3` by name. It was already on every EngineScript server, which needs it for fail2ban and Ubuntu's unattended upgrades.
+
+### 📦 SITE ARCHIVE FIXES
+
+- **Adding or importing a site backs up only that site:** Create New Domain and Import Domain used to finish by backing up every site on the server, which now means a full site archive of each one. They now back up the new site and EngineScript's configuration. The other sites keep their schedule.
+- **Free space check counts the database:** before building a site archive, the backup checked for room for the site's files only. A site with a large database could pass the check and fill the disk during the dump. The check now includes the database's size. It also no longer counts `wp-content/cache`, `upgrade`, and `temp`, which the archive leaves out, so a large page cache can't stop a backup that would fit.
+- **Site address in the archive is checked:** the site address, WordPress address, and table prefix written to an archive's `manifest.txt` are now read on marked lines and checked. Other output from the site while they were read, such as a must-use plugin's, could have been written in their place, and Import Domain would then have refused the archive. Import Domain also ignores a manifest address that isn't an address and reads `wp-config.php` instead.
+- **Leftover staging folders are removed:** a backup or export stopped by a power cut or `kill -9` left its hidden staging folder (`.site-archive.*`) behind, with up to a full copy of the site. The next files backup removes them from a site's backup folders, and a build removes ones older than a day from the folder it writes to.
+
 ## 2026-11-14
 
 ### 🐛 ADMIN CONTROL PANEL FIXES
@@ -235,7 +249,7 @@ Changes are organized by date, with the most recent changes listed first.
 - **Export Domain:**
   - It builds its archive with the same code as the backups.
   - The database is now exported as `www-data` instead of root, so the site's own code never runs as root. The export is also made in one transaction, so a site in use still gives a consistent dump.
-  - The archive can now be read by root only, because it holds `wp-config.php` and the database. A copy downloaded or moved to another server belongs to whoever copies it, and Import Domain reads it as root, so moving it to another server works as before. If you download exports over SFTP as a user other than root, copy the file first with `sudo`.
+  - The archive file itself is now written for root only, because it holds `wp-config.php` and the database. Exports were already protected: `/home/EngineScript`, which holds them, has been readable by root only since 2026-10-23. This adds a second layer. Moving an export to another server works as before: a copy belongs to whoever copies it, and Import Domain reads it as root.
   - A failed export no longer leaves its staging folder behind.
 - **Wordfence CLI remediation:**
   - The backup made before a remediation is now a site archive, which Import Domain can restore. Its database export also runs as `www-data` now.
