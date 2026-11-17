@@ -50,6 +50,8 @@ ONE_TIME_UPGRADES=(
   install_fail2ban
   # Install options: the automatic software update options, for the admin to see and change
   add_auto_update_options
+  # GCC: Ubuntu 26.04 compiles with GCC 15, not the GCC 16 development snapshot
+  migrate_gcc_15_on_ubuntu_26_04
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

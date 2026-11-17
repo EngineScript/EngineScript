@@ -4,6 +4,20 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-16
+
+### 🚀 UBUNTU EDGE ARCHIVE (OPTIONAL)
+
+- **New install option `UBUNTU_PRO_EDGE`:** turns on Canonical's [Ubuntu Edge archive](https://discourse.ubuntu.com/t/how-to-enable-the-edge-archive/91771), a preview of security fixes that have not finished Canonical's testing yet. It needs an Ubuntu Pro token (`UBUNTU_PRO_TOKEN`) and is off by default. With `1`, the archive is added but nothing is installed from it unless you choose a package. With `2`, its updates are installed automatically. `es.install` sets it up during the Ubuntu Pro step; if it cannot, the install shows a warning and carries on without it.
+
+### 🐛 FIXES
+
+- **The install stops early when Ubuntu's package mirror is down:** when `apt-get update` failed, for example while a mirror was partway through an update, setup and `es.install` carried on with apt's old package lists. A later step then failed with "404 Not Found" (often the GCC step, "Could not install GCC"), which did not point to the mirror. `setup.sh` and `es.install` now try `apt-get update` three times, 30 seconds apart. If it still fails, they stop and show apt's errors. `es.install` also updates and upgrades Ubuntu's packages before its first step, so a mirror problem stops the install before anything is changed. Run `es.install` again once the mirror is back; it carries on from where it stopped. "Update Ubuntu Software" in the update menu now reports a failed update too.
+- **Tools reported as installed when they were not:** in the install's Tools step, fail2ban, Lynis, Gixy-Next, Wordfence CLI, MySQLTuner, zImageOptimizer, Testssl.sh, and pngout printed "installed", or nothing, when their download failed. They now report the failure. A tool that fails still does not stop the install: the end of the install lists each tool that was not installed, with the script that installs it, and sends a Pushbullet note when a token is set. If fail2ban was not installed, the next EngineScript update installs it. WPScan no longer says "installed" before it is.
+- **Ubuntu 26.04 compiles with GCC 15:** Ubuntu 26.04's GCC 16 is a development snapshot (`16-20260322`, "experimental"), not a release, and EngineScript compiled Nginx and OpenSSL with it. New installs on 26.04 now use GCC 15, the release Ubuntu builds 26.04 with. Existing 26.04 servers switch to GCC 15 and remove the snapshot at the next EngineScript update, and Nginx is rebuilt with GCC 15 at its next update. Ubuntu 24.04 is unchanged (GCC 14).
+- **MariaDB install could fall back to Ubuntu's MariaDB:** if MariaDB's signing key could not be downloaded, its setup script still reported success, and apt could install Ubuntu's own MariaDB package instead of MariaDB's. The install now stops when apt cannot read the package lists.
+- **The reboot messages at the end of `es.install` crashed** (`boxes: illegal character`, `Segmentation fault`) in tmux, screen, and the Linux console, where the terminal's text-reset code includes a character `boxes` refuses. The same messages in the log viewers are fixed too.
+
 ## 2026-11-15
 
 ### 🔒 SECURITY

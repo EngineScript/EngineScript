@@ -39,6 +39,14 @@ function record_upgrade_done() {
     chmod 644 "${done_file}"
 }
 
+# Remove a one-time upgrade's record, so the next update runs it again. The install uses it when
+# a step that an upgrade repeats did not finish (install_fail2ban after fail2ban failed).
+function forget_upgrade_done() {
+    local done_file="${ENGINESCRIPT_UPGRADES_DONE_FILE:-/var/lib/enginescript/upgrades-done.conf}"
+    upgrade_is_done "$1" || return 0
+    sed -i "/^${1}\$/d" "${done_file}"
+}
+
 # Usage: run_once <function>
 # Run a one-time upgrade unless it has already run, and record it when it succeeds
 function run_once() {
@@ -445,4 +453,21 @@ function add_auto_update_options() {
     rm -f "${block}"
 
     notify_admin "Server: ${IP_ADDRESS:-}" "EngineScript now installs new Nginx, PHP patch, and MariaDB patch releases automatically, about a day after each is released, with a backup and checks first. To switch any of them off, run es.config and set AUTO_UPDATE_NGINX, AUTO_UPDATE_PHP, or AUTO_UPDATE_MARIADB to 0." || true
+}
+
+
+# ----------------------------------------------------------------
+# Compile with GCC 15 on Ubuntu 26.04
+#
+# Ubuntu 26.04's gcc-16 is a development snapshot of GCC 16 (16-20260322, "experimental"), not a
+# release, and servers installed before November 2026 compiled Nginx and OpenSSL with it.
+# gcc-install.sh now sets up GCC 15 alone on 26.04: running it again points the gcc alternative
+# at GCC 15, and the snapshot is removed. Nginx is rebuilt with GCC 15 on its next update.
+function migrate_gcc_15_on_ubuntu_26_04() {
+    [[ "${UBUNTU_VERSION:-}" == "26.04" ]] || return 0
+    dpkg-query -W -f='${Status}' gcc-16 2> /dev/null | grep -q 'ok installed' || return 0
+    echo "Switching the compiler from the GCC 16 development snapshot to GCC 15..."
+    "${ES_GCC_INSTALL_SCRIPT:-/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh}" || return 1
+    apt-get remove --purge -y g++-16 gcc-16 \
+        || echo "Warning: The GCC 16 snapshot could not be removed. GCC 15 compiles from now on." >&2
 }

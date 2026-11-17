@@ -14,6 +14,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
+# The tools are optional: one that fails is listed at the end (run_tool), and the install
+# carries on
+TOOLS_NOT_INSTALLED=()
 
 #------------------------------------------------
 # Media Tools
@@ -23,10 +26,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 return_to_src
 
 # pngout
-run_step "pngout" /usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh
+run_tool "pngout" /usr/local/bin/enginescript/scripts/install/tools/media/pngout.sh
 
 # zImageOptimizer
-run_step "zImageOptimizer" /usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
+run_tool "zImageOptimizer" /usr/local/bin/enginescript/scripts/install/tools/media/zimageoptimizer.sh
 
 
 #------------------------------------------------
@@ -37,20 +40,20 @@ run_step "zImageOptimizer" /usr/local/bin/enginescript/scripts/install/tools/med
 if [[ "${INSTALL_ADMINER}" == "1" ]];
   then
     echo "Installing Adminer"
-    run_step "Adminer" /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
+    run_tool "Adminer" /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
   else
     echo "Skipping Adminer install"
 fi
 
 # MYSQLTuner
-run_step "MYSQLTuner" /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
+run_tool "MYSQLTuner" /usr/local/bin/enginescript/scripts/install/tools/mysql/mysqltuner.sh
 
 #------------------------------------------------
 # Nginx Tools
 #------------------------------------------------
 
 # Gixy-Next: Nginx configuration security checker
-run_step "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh
+run_tool "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh
 
 #------------------------------------------------
 # Security Tools
@@ -63,16 +66,16 @@ run_step "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gix
 #/usr/local/bin/enginescript/scripts/install/tools/security/maldet.sh
 
 # fail2ban: bans addresses after repeated failed SSH logins
-run_step "fail2ban" /usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh
+run_tool "fail2ban" /usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh
 
 # Lynis: security audit
-run_step "Lynis" /usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh
+run_tool "Lynis" /usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh
 
 # Wordfence CLI Malware Scanner
-run_step "Wordfence CLI" /usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh
+run_tool "Wordfence CLI" /usr/local/bin/enginescript/scripts/install/tools/security/wordfence-cli.sh
 
 # WPScan
-run_step "WPScan" /usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh
+run_tool "WPScan" /usr/local/bin/enginescript/scripts/install/tools/security/wpscan.sh
 
 
 #------------------------------------------------
@@ -80,7 +83,7 @@ run_step "WPScan" /usr/local/bin/enginescript/scripts/install/tools/security/wps
 #------------------------------------------------
 
 # Testssl.sh
-run_step "Testssl.sh" /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
+run_tool "Testssl.sh" /usr/local/bin/enginescript/scripts/install/tools/system/testssl-install.sh
 
 
 #------------------------------------------------
@@ -97,7 +100,7 @@ if [[ "${BACKUP_S3}" == "1" ]];
     echo "Installing Amazon CLI"
     echo "Please follow the instructions in the script that is about to run."
     sleep 5
-    run_step "Amazon AWS CLI" /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
+    run_tool "Amazon AWS CLI" /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
   else
     echo "Skipping Amazon CLI install"
 fi
@@ -105,4 +108,14 @@ fi
 # Return to /usr/src
 return_to_src
 
-echo "Tools completed successfully. Script done."
+# List the tools that were not installed. fail2ban protects SSH, so the next EngineScript update
+# tries it again: a new install records the install_fail2ban upgrade as done, and forgetting
+# that record makes the update run it.
+report_tools_not_installed
+if printf '%s\n' "${TOOLS_NOT_INSTALLED[@]}" | grep -q '^fail2ban: '; then
+  source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-upgrades.sh \
+    && forget_upgrade_done install_fail2ban \
+    && echo "The next EngineScript update tries to install fail2ban again."
+fi
+
+echo "Tools completed. Script done."

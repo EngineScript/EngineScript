@@ -384,6 +384,131 @@ else
   pass "run_install_step leaves the flag of a failed step unset, so es.install runs it again"
 fi
 
+# run_required_step: runs every time (no flag) and stops the install when the step fails
+if (run_required_step "Succeeding step" "${STEP_DIR}/succeeds.sh"; echo "continued") > "${STEP_DIR}/out" 2>&1 \
+    && grep -qx "continued" "${STEP_DIR}/out"; then
+  pass "run_required_step continues after a step that succeeds"
+else
+  fail "run_required_step did not continue after a step that succeeds"
+fi
+if (run_required_step "Failing step" "${STEP_DIR}/fails.sh"; echo "continued") > "${STEP_DIR}/out" 2>&1; then
+  fail "run_required_step returned success after a step that failed"
+elif grep -qx "continued" "${STEP_DIR}/out"; then
+  fail "run_required_step carried on after a step that failed"
+elif grep -q "Install step failed: Failing step" "${STEP_DIR}/out"; then
+  pass "run_required_step stops the install and names the step when it fails"
+else
+  fail "run_required_step stopped without naming the failed step"
+fi
+
+# run_tool and report_tools_not_installed: a failed tool is listed, the step carries on, and the
+# list file holds "<name>: <script>"; with no failures the file is removed
+ES_TOOLS_NOT_INSTALLED_FILE="${STEP_DIR}/tools-not-installed.txt"
+TOOLS_NOT_INSTALLED=()
+if (run_tool "Good tool" "${STEP_DIR}/succeeds.sh"; run_tool "Bad tool" "${STEP_DIR}/fails.sh"; echo "continued"; report_tools_not_installed) > "${STEP_DIR}/out" 2>&1 \
+    && grep -qx "continued" "${STEP_DIR}/out"; then
+  pass "run_tool carries on after a tool that fails"
+else
+  fail "run_tool stopped after a tool that failed"
+fi
+if [[ "$(cat "${ES_TOOLS_NOT_INSTALLED_FILE}" 2> /dev/null)" == "Bad tool: ${STEP_DIR}/fails.sh" ]] \
+    && grep -q "These tools were not installed: Bad tool\." "${STEP_DIR}/out"; then
+  pass "report_tools_not_installed lists only the failed tool, on screen and in its file"
+else
+  fail "report_tools_not_installed did not list the failed tool as expected"
+fi
+# shellcheck disable=SC2034 # read by run_tool and report_tools_not_installed
+TOOLS_NOT_INSTALLED=()
+(run_tool "Good tool" "${STEP_DIR}/succeeds.sh"; report_tools_not_installed) > /dev/null 2>&1
+if [[ ! -e "${ES_TOOLS_NOT_INSTALLED_FILE}" ]]; then
+  pass "report_tools_not_installed removes the list when every tool installed"
+else
+  fail "report_tools_not_installed left a list when every tool installed"
+fi
+
+# apt_update_with_retry: tries apt-get update three times, passes --error-on=any, and returns
+# non-zero when every attempt fails. A stub apt-get fails until its count of failures runs out.
+APT_STUB_DIR="${TEST_ASSET_DIR}/apt-stub"
+mkdir -p "${APT_STUB_DIR}"
+cat > "${APT_STUB_DIR}/apt-get" <<'STUB'
+#!/usr/bin/env bash
+echo "$*" >> "${APT_STUB_DIR}/calls"
+failures="$(cat "${APT_STUB_DIR}/failures")"
+if [[ "${failures}" -gt 0 ]]; then
+  echo "$((failures - 1))" > "${APT_STUB_DIR}/failures"
+  exit 100
+fi
+exit 0
+STUB
+chmod +x "${APT_STUB_DIR}/apt-get"
+export APT_STUB_DIR
+
+run_apt_update_stub() {
+  : > "${APT_STUB_DIR}/calls"
+  echo "$1" > "${APT_STUB_DIR}/failures"
+  (PATH="${APT_STUB_DIR}:${PATH}" ES_APT_RETRY_SECONDS=0 apt_update_with_retry) > /dev/null 2>&1
+}
+
+if run_apt_update_stub 2 && [[ "$(wc -l < "${APT_STUB_DIR}/calls")" -eq 3 ]]; then
+  pass "apt_update_with_retry succeeds when a later attempt works"
+else
+  fail "apt_update_with_retry did not retry a failed apt-get update"
+fi
+if grep -q -- "--error-on=any" "${APT_STUB_DIR}/calls"; then
+  pass "apt_update_with_retry counts every failed download as a failure (--error-on=any)"
+else
+  fail "apt_update_with_retry does not pass --error-on=any"
+fi
+if run_apt_update_stub 5; then
+  fail "apt_update_with_retry returned success when every attempt failed"
+elif [[ "$(wc -l < "${APT_STUB_DIR}/calls")" -eq 3 ]]; then
+  pass "apt_update_with_retry gives up with an error after three failed attempts"
+else
+  fail "apt_update_with_retry did not stop after three attempts"
+fi
+
+# enable_ubuntu_edge: off unless UBUNTU_PRO_EDGE is 1 or 2; 2 adds --automatic-updates. The stub
+# apt-get above always succeeds here; a stub pro-enable-edge records its arguments.
+cat > "${APT_STUB_DIR}/pro-enable-edge" <<'STUB'
+#!/usr/bin/env bash
+echo "pro-enable-edge $*" >> "${APT_STUB_DIR}/calls"
+exit "${EDGE_STUB_STATUS:-0}"
+STUB
+chmod +x "${APT_STUB_DIR}/pro-enable-edge"
+
+run_edge_stub() {
+  : > "${APT_STUB_DIR}/calls"
+  echo 0 > "${APT_STUB_DIR}/failures"
+  (PATH="${APT_STUB_DIR}:${PATH}" ES_APT_RETRY_SECONDS=0 UBUNTU_PRO_EDGE="$1" EDGE_STUB_STATUS="${2:-0}" enable_ubuntu_edge) > /dev/null 2>&1
+}
+
+if run_edge_stub 0 && [[ ! -s "${APT_STUB_DIR}/calls" ]]; then
+  pass "enable_ubuntu_edge does nothing when UBUNTU_PRO_EDGE is 0"
+else
+  fail "enable_ubuntu_edge ran with UBUNTU_PRO_EDGE=0"
+fi
+if run_edge_stub 1 && grep -q "install -qy pro-edge" "${APT_STUB_DIR}/calls" \
+    && grep -qx "pro-enable-edge " "${APT_STUB_DIR}/calls"; then
+  pass "enable_ubuntu_edge installs pro-edge and enables Edge without automatic updates for 1"
+else
+  fail "enable_ubuntu_edge did not enable Edge as asked for 1"
+fi
+if run_edge_stub 2 && grep -qx "pro-enable-edge --automatic-updates" "${APT_STUB_DIR}/calls"; then
+  pass "enable_ubuntu_edge turns on automatic updates for 2"
+else
+  fail "enable_ubuntu_edge did not pass --automatic-updates for 2"
+fi
+if run_edge_stub yes || [[ -s "${APT_STUB_DIR}/calls" ]]; then
+  fail "enable_ubuntu_edge accepted a value that is not 0, 1, or 2"
+else
+  pass "enable_ubuntu_edge refuses a value that is not 0, 1, or 2, without touching apt"
+fi
+if run_edge_stub 1 1; then
+  fail "enable_ubuntu_edge returned success when pro-enable-edge failed"
+else
+  pass "enable_ubuntu_edge reports a failed pro-enable-edge"
+fi
+
 # run_step: the command's errors go to the step log and on to the install error log, and its
 # exit status comes back
 printf '#!/usr/bin/env bash\necho "step stderr" >&2\nexit 3\n' > "${STEP_DIR}/noisy.sh"

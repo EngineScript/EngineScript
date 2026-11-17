@@ -15,9 +15,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Start Main Script
 
 # ClamAV Install
-apt-get install -qy clamav --no-install-recommends
+apt-get install -qy clamav --no-install-recommends || { echo "Error: ClamAV could not be installed." >&2; exit 1; }
 
 # Set ClamAV Config
-cp -rf /usr/local/bin/enginescript/config/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf
+cp -rf /usr/local/bin/enginescript/config/etc/clamav/freshclam.conf /etc/clamav/freshclam.conf || { echo "Error: The ClamAV configuration could not be copied." >&2; exit 1; }
 
 print_install_banner "ClamAV Anti-Virus"

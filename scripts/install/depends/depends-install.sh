@@ -14,8 +14,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Update & Upgrade
-/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
+# Update & Upgrade, which also reads the repositories the Repositories step added
+/usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh || exit 1
 
 # Define the packages to install. The packages below exist on every supported Ubuntu release;
 # the ones whose name differs between releases are added after the list. One missing package

@@ -17,5 +17,10 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Update & Upgrade
 # EngineScript replaces some packages' configuration files (for example /etc/redis/redis.conf),
 # so dpkg would ask whether to keep them on an upgrade, and fail without a terminal. Keep them.
-apt-get update --allow-releaseinfo-change -y
-apt-get upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
+# Exits non-zero when either command fails, so a caller can stop instead of installing from
+# stale package lists.
+apt_update_with_retry || exit 1
+apt-get upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold || {
+  echo "Error: apt-get upgrade failed." >&2
+  exit 1
+}

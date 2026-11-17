@@ -128,6 +128,11 @@ if ! install_has_started; then
     /usr/local/bin/enginescript/scripts/functions/auto-upgrade/normal-auto-upgrade.sh --record-all
 fi
 
+# Update & Upgrade, before any other apt step: a package mirror that is down stops the install
+# here, with apt's reason, instead of a later step failing on stale package lists. The
+# Dependencies step updates again once the repositories below are added.
+run_required_step "Update & Upgrade" /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
+
 # Repositories
 run_install_step "REPOS" "/usr/local/bin/enginescript/scripts/install/repositories/repositories-install.sh" "Install Repositories"
 
@@ -139,9 +144,6 @@ run_install_step "BLOCK" "/usr/local/bin/enginescript/scripts/install/block/pack
 
 # Ubuntu Pro Setup
 run_install_step "UBUNTU_PRO" "/usr/local/bin/enginescript/scripts/install/ubuntu-pro/ubuntu-pro-install.sh" "Ubuntu Pro Setup"
-
-# Update & Upgrade
-run_step "Update & Upgrade" /usr/local/bin/enginescript/scripts/functions/enginescript-apt-update.sh
 
 # Install Dependencies
 run_install_step "DEPENDS" "/usr/local/bin/enginescript/scripts/install/depends/depends-install.sh" "Install Dependencies"
@@ -263,4 +265,14 @@ sleep 10
 clear
 
 echo -e "The server is rebooting now...\n\n${NORMAL}After reconnecting, use the ${BOLD}es.menu${NORMAL} command to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2
+
+# The optional tools the Tools step could not install, shown last so they stay on screen when the
+# connection closes; the file is removed, so a later es.install does not show them again
+if [[ -s "${ES_TOOLS_NOT_INSTALLED_FILE}" ]]; then
+  echo -e "${NORMAL}"
+  echo "Warning: These tools were not installed. To install one later, run its script:"
+  sed 's/^/  /' "${ES_TOOLS_NOT_INSTALLED_FILE}"
+  echo "Their errors are in /var/log/EngineScript/install-error-log.log."
+  rm -f "${ES_TOOLS_NOT_INSTALLED_FILE}"
+fi
 shutdown -r now

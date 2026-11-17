@@ -115,6 +115,16 @@ INSTALL_DIGITALOCEAN_REMOTE_CONSOLE=0
 # Recommended: 0 (unless on DigitalOcean)
 INSTALL_DIGITALOCEAN_METRICS_AGENT=0
 
+## Ubuntu Edge Archive (Optional, needs UBUNTU_PRO_TOKEN) ##
+# Token is set lower in this file.
+# Canonical's preview of security fixes that have not finished Canonical's testing yet. They
+# reach the normal Ubuntu updates later, once tested. Set during es.install.
+# https://discourse.ubuntu.com/t/how-to-enable-the-edge-archive/91771
+# 0 = off
+# 1 = add the Edge archive; nothing is installed from it unless you choose a package
+# 2 = add it and install its updates automatically (apt upgrade and unattended upgrades)
+# Recommended: 0
+UBUNTU_PRO_EDGE=0
 
 ########################
 # EngineScript Updates #
