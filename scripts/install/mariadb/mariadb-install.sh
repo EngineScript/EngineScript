@@ -40,8 +40,14 @@ rm -f "${REPO_SETUP}"
 print_last_errors
 debug_pause "MariaDB Repository"
 
-# Install MariaDB
-apt-get update --allow-releaseinfo-change -y 2>> "${ES_STEP_ERROR_LOG}"
+# Install MariaDB. MariaDB's setup script reports a failed signing-key download but still exits 0,
+# and Ubuntu has its own mariadb-server package. apt cannot read MariaDB's repository without the
+# key, so stop when the update fails rather than install Ubuntu's MariaDB.
+if ! apt_update_with_retry 2>> "${ES_STEP_ERROR_LOG}"; then
+  print_last_errors
+  echo "Error: apt could not read the package lists, MariaDB's repository among them. MariaDB was not installed." >&2
+  exit 1
+fi
 if ! DEBIAN_FRONTEND=noninteractive apt-get install -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold mariadb-server mariadb-client -y 2>> "${ES_STEP_ERROR_LOG}"; then
   print_last_errors
   echo "Error: The MariaDB packages could not be installed. Stopping the MariaDB install; see /var/log/EngineScript/install-error-log.log." >&2

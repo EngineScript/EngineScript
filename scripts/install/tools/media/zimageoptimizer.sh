@@ -18,7 +18,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 return_to_src
 
 # Install zImageOptimizer
-git_clone_fresh "https://github.com/zevilz/zImageOptimizer.git" "/usr/local/bin/zimageoptimizer" --depth 1 -b master
+git_clone_fresh "https://github.com/zevilz/zImageOptimizer.git" "/usr/local/bin/zimageoptimizer" --depth 1 -b master \
+  || { echo "Error: zImageOptimizer could not be downloaded from GitHub." >&2; exit 1; }
 find "/usr/local/bin/zimageoptimizer" -exec chmod 755 {} +
 
 # Return to /usr/src

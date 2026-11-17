@@ -21,10 +21,14 @@ if update-alternatives --query gcc > /dev/null 2>&1; then
     update-alternatives --remove-all gcc
 fi
 
-# Each release's default GCC and the next version; the newer one compiles (Nginx, OpenSSL)
+# The GCC versions to install; the first one compiles (Nginx, OpenSSL).
+# 24.04: GCC 14 (a release, from 24.04's updates) and the default GCC 13.
+# 26.04: GCC 15 only. Ubuntu 26.04's gcc-16 is a development snapshot of GCC 16
+# (16-20260322, "experimental"), not a release. Use GCC 16 once a 16.x release reaches 26.04's
+# updates, as GCC 14.2 did for 24.04 (migrate_gcc_15_on_ubuntu_26_04 moved existing servers).
 case "${UBUNTU_VERSION}" in
   24.04) GCC_VERSIONS=(14 13) ;;
-  26.04) GCC_VERSIONS=(16 15) ;;
+  26.04) GCC_VERSIONS=(15) ;;
   *)
     echo "Error: No GCC versions are set for Ubuntu ${UBUNTU_VERSION}." >&2
     exit 1

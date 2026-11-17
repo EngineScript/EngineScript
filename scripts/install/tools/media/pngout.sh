@@ -46,18 +46,22 @@ if [[ "$PNGOUT_DOWNLOADED" == "true" ]]; then
     tar -xzf "$PNGOUT_FILE"
     
     # 64-bit only: setup requires x86_64
-    if [[ -f "/usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout" ]]; then
-        cp "/usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout" /bin
+    PNGOUT_INSTALLED=false
+    if [[ -f "/usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout" ]] \
+        && cp "/usr/src/pngout-${PNGOUT_VER}-linux/amd64/pngout" /bin; then
         echo "pngout installed successfully"
+        PNGOUT_INSTALLED=true
     else
         echo "Warning: 64-bit pngout binary not found in archive"
     fi
-    
+
     # Clean up
     rm -f "$PNGOUT_FILE"
     rm -rf "/usr/src/pngout-${PNGOUT_VER}-linux"
+    [[ "${PNGOUT_INSTALLED}" == "true" ]] || exit 1
 else
     echo "Continuing installation without pngout..."
+    exit 1
 fi
 
 # Return to /usr/src

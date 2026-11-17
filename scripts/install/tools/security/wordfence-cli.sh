@@ -20,8 +20,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 return_to_src
 
 # Install
-download_file "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb"
-apt-get install /usr/src/wordfence.deb -y
+download_file "https://github.com/wordfence/wordfence-cli/releases/latest/download/wordfence.deb" "/usr/src/wordfence.deb" || exit 1
+apt-get install /usr/src/wordfence.deb -y || { echo "Error: Wordfence CLI could not be installed." >&2; exit 1; }
 
 # Make Results Directory
 mkdir -p /home/EngineScript/wordfence-scan-results

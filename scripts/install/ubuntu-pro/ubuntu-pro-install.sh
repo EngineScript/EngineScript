@@ -36,7 +36,12 @@ if [[ "${UBUNTU_PRO_TOKEN}" != "PLACEHOLDER" && -n "${UBUNTU_PRO_TOKEN}" ]]; the
         echo ""
         echo "Ubuntu Pro Status:"
         pro status --format tabular
-        
+
+        # Ubuntu Edge archive (UBUNTU_PRO_EDGE, off by default). The server works without it,
+        # so a failure is reported and the install carries on.
+        echo ""
+        enable_ubuntu_edge || true
+
     else
         echo "❌ Failed to attach Ubuntu Pro subscription"
         echo "Please verify your Ubuntu Pro token is valid"
@@ -46,6 +51,9 @@ if [[ "${UBUNTU_PRO_TOKEN}" != "PLACEHOLDER" && -n "${UBUNTU_PRO_TOKEN}" ]]; the
 else
     echo "No Ubuntu Pro token configured (UBUNTU_PRO_TOKEN=PLACEHOLDER)"
     echo "Skipping Ubuntu Pro setup..."
+    if [[ "${UBUNTU_PRO_EDGE:-0}" != "0" ]]; then
+        echo "Warning: UBUNTU_PRO_EDGE is set, but the Ubuntu Edge archive needs an Ubuntu Pro token. It was not enabled."
+    fi
     echo ""
     echo "To enable Ubuntu Pro:"
     echo "1. Get your token from: https://ubuntu.com/pro"

@@ -18,7 +18,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 return_to_src
 
 # Install Testssl.sh
-git_clone_fresh "https://github.com/testssl/testssl.sh.git" "/usr/local/bin/testssl.sh"
+git_clone_fresh "https://github.com/testssl/testssl.sh.git" "/usr/local/bin/testssl.sh" \
+  || { echo "Error: Testssl.sh could not be downloaded from GitHub." >&2; exit 1; }
 
 # Permissions
 find /usr/local/bin/testssl.sh -exec chmod 755 {} +

@@ -16,6 +16,6 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 # Lynis: a read-only security audit of the server (es.menu > Server Tools)
 # https://cisofy.com/lynis/
-apt-get install -qy lynis
+apt-get install -qy lynis || { echo "Error: Lynis could not be installed." >&2; exit 1; }
 
 print_install_banner "Lynis"

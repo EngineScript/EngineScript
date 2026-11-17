@@ -29,6 +29,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/enginescript-tuning-apply.sh" || return 1
 # /var/log/EngineScript/install-error-log.log and empties this file for the next step.
 ES_STEP_ERROR_LOG="/var/log/EngineScript/step-errors.log"
 
+# The optional tools the install's Tools step could not install (report_tools_not_installed);
+# the installer shows the list at the end and removes the file
+ES_TOOLS_NOT_INSTALLED_FILE="${ES_TOOLS_NOT_INSTALLED_FILE:-/var/log/EngineScript/tools-not-installed.txt}"
+
 
 # ----------------------------------------------------------------
 # Messages: log prints, warn and die print to stderr, and die stops the script. Scripts with a
@@ -982,6 +986,58 @@ function ppa_is_added() {
     grep -rqsF "/${1#ppa:}/ubuntu" /etc/apt/sources.list.d/
 }
 
+# Refresh apt's package lists, trying three times, and return non-zero when they could not be
+# refreshed. A mirror that is down or partway through a sync makes apt-get update fail and keep
+# its old lists; a later apt-get install then asks the mirror for files it no longer serves
+# (404 Not Found). --error-on=any counts every failed download, a transient one too, as a failure.
+function apt_update_with_retry() {
+    local attempt attempts=3
+    for (( attempt = 1; attempt <= attempts; attempt++ )); do
+        apt-get update --allow-releaseinfo-change --error-on=any -y && return 0
+        if [[ "${attempt}" -lt "${attempts}" ]]; then
+            echo "apt-get update failed (attempt ${attempt} of ${attempts}); trying again in ${ES_APT_RETRY_SECONDS:-30} seconds." >&2
+            sleep "${ES_APT_RETRY_SECONDS:-30}"
+        fi
+    done
+    echo "Error: apt could not refresh its package lists after ${attempts} attempts. A package mirror is probably down or partway through an update; apt's errors above name it. Wait a few minutes, then try again." >&2
+    return 1
+}
+
+
+# ----------------------------------------------------------------
+# Enable the Ubuntu Edge archive when UBUNTU_PRO_EDGE is 1 or 2; run it after the Ubuntu Pro
+# subscription is attached. Canonical's own tools set it up: the pro-edge package comes from the
+# Ubuntu Pro (ESM) repositories, so apt reads those first, and pro-enable-edge writes the source.
+# With 1, apt gives Edge a lower priority and installs nothing from it unless asked; with 2
+# (--automatic-updates), apt upgrade and unattended upgrades install its updates too.
+# A failure is reported and returns 1; the caller decides whether to carry on.
+# https://discourse.ubuntu.com/t/how-to-enable-the-edge-archive/91771
+function enable_ubuntu_edge() {
+    local -a edge_args=()
+    case "${UBUNTU_PRO_EDGE:-0}" in
+        0 | "") return 0 ;;
+        1) ;;
+        2) edge_args=(--automatic-updates) ;;
+        *)
+            echo "Warning: UBUNTU_PRO_EDGE is set to \"${UBUNTU_PRO_EDGE}\", not 0, 1, or 2. The Ubuntu Edge archive was not enabled."
+            return 1
+            ;;
+    esac
+    echo "Enabling the Ubuntu Edge archive (UBUNTU_PRO_EDGE=${UBUNTU_PRO_EDGE})..."
+    if ! apt_update_with_retry || ! apt-get install -qy pro-edge || ! pro-enable-edge "${edge_args[@]}"; then
+        echo "Warning: The Ubuntu Edge archive could not be enabled. It needs Ubuntu Pro with ESM Infra or ESM Apps enabled (see: pro status)."
+        return 1
+    fi
+    if [[ "${UBUNTU_PRO_EDGE}" == "2" ]]; then
+        echo "✅ Ubuntu Edge archive enabled: its updates are installed automatically."
+    else
+        echo "✅ Ubuntu Edge archive enabled: nothing is installed from it unless you choose a package."
+        echo "   To see its updates: apt list --upgradable '?origin(^Ubuntu.*Edge\$)'"
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Add each of EngineScript's PPAs that is not a source yet and now has packages for this
 # release, then refresh apt's package lists once. Safe to run again.
 function add_missing_ppas() {
@@ -1914,14 +1970,66 @@ function run_install_step() {
         return 0
     fi
     if ! run_step "${step_desc}" "${script_path}"; then
-        echo "" >&2
-        echo "${BOLD}Install step failed: ${step_desc}${NORMAL}" >&2
-        echo "The install stopped here. The errors are in /var/log/EngineScript/install-error-log.log." >&2
-        echo "Fix the problem, then run es.install again: it carries on from this step." >&2
-        exit 1
+        stop_install_at_step "${step_desc}"
     fi
     set_install_state "${flag_name}" "1" || exit 1
     printf -v "${flag_name}" '%s' "1"
+}
+
+
+# ----------------------------------------------------------------
+# Run an install step that has no flag, so it runs on every es.install, and stop the install
+# when it fails, as run_install_step does.
+# Usage: run_required_step "Step Description" /path/to/script.sh [arguments...]
+function run_required_step() {
+    local step_desc="$1"
+    shift
+    if ! run_step "${step_desc}" "$@"; then
+        stop_install_at_step "${step_desc}"
+    fi
+}
+
+
+# ----------------------------------------------------------------
+# The install's Tools step: a tool that fails does not stop the install. run_tool runs a tool's
+# script and remembers a failure in TOOLS_NOT_INSTALLED (the caller sets it to an empty array);
+# report_tools_not_installed then lists the failed tools on screen, in
+# ES_TOOLS_NOT_INSTALLED_FILE (one "<name>: <script>" line each), and to the admin.
+# Usage: run_tool "Name" /path/to/script.sh
+function run_tool() {
+    run_step "$1" "$2" && return 0
+    TOOLS_NOT_INSTALLED+=("$1: $2")
+    return 0
+}
+
+function report_tools_not_installed() {
+    local entry names=""
+    if [[ "${#TOOLS_NOT_INSTALLED[@]}" -eq 0 ]]; then
+        rm -f "${ES_TOOLS_NOT_INSTALLED_FILE}"
+        return 0
+    fi
+    for entry in "${TOOLS_NOT_INSTALLED[@]}"; do
+        names+="${names:+, }${entry%%: *}"
+    done
+    mkdir -p "$(dirname "${ES_TOOLS_NOT_INSTALLED_FILE}")"
+    printf '%s\n' "${TOOLS_NOT_INSTALLED[@]}" > "${ES_TOOLS_NOT_INSTALLED_FILE}"
+    echo ""
+    echo "Warning: These tools were not installed: ${names}."
+    echo "The install carries on without them. Their errors are in /var/log/EngineScript/install-error-log.log."
+    echo "To install one later, run its script:"
+    printf '  %s\n' "${TOOLS_NOT_INSTALLED[@]}"
+    notify_admin "Server: ${IP_ADDRESS:-}" "EngineScript could not install these tools: ${names}. The errors are in /var/log/EngineScript/install-error-log.log." || true
+}
+
+
+# ----------------------------------------------------------------
+# Stop the install after a failed step, saying where the errors are
+function stop_install_at_step() {
+    echo "" >&2
+    echo "${BOLD:-}Install step failed: $1${NORMAL:-}" >&2
+    echo "The install stopped here. The errors are in /var/log/EngineScript/install-error-log.log." >&2
+    echo "Fix the problem, then run es.install again: it carries on from this step." >&2
+    exit 1
 }
 
 
@@ -2086,6 +2194,7 @@ ENGINESCRIPT_SETTING_NAMES=(
     "ZLIB_IMPLEMENTATION"
     "INSTALL_DIGITALOCEAN_REMOTE_CONSOLE"
     "INSTALL_DIGITALOCEAN_METRICS_AGENT"
+    "UBUNTU_PRO_EDGE"
     "ENGINESCRIPT_AUTO_UPDATE"
     "AUTO_UPDATE_NGINX"
     "AUTO_UPDATE_PHP"

@@ -62,8 +62,25 @@ done
 #----------------------------------------------------------------------------
 # Start Main Script
 
+# Refresh apt's package lists, trying three times, and stop setup if they cannot be refreshed.
+# A mirror that is down or partway through a sync makes apt-get update fail and keep its old
+# lists, and installs from them then fail with 404 Not Found. setup.sh runs before EngineScript is
+# cloned, so this is its own copy of apt_update_with_retry in enginescript-common.sh.
+apt_update_or_stop() {
+  local attempt
+  for attempt in 1 2 3; do
+    apt-get update --allow-releaseinfo-change --error-on=any -y && return 0
+    if [[ "${attempt}" -lt 3 ]]; then
+      echo "apt-get update failed (attempt ${attempt} of 3); trying again in 30 seconds." >&2
+      sleep 30
+    fi
+  done
+  echo "Error: apt could not refresh its package lists after 3 attempts. A package mirror is probably down or partway through an update; apt's errors above name it. Wait a few minutes, then run setup.sh again." >&2
+  exit 1
+}
+
 # Install required packages for the script
-apt-get update --allow-releaseinfo-change -y
+apt_update_or_stop
 
 core_packages=(
   "apt"
@@ -230,7 +247,7 @@ fi
 apt-get remove --purge 'apache2*' 'php7*' 'php8*' -y
 
 # Update & Upgrade
-apt-get update --allow-releaseinfo-change -y
+apt_update_or_stop
 apt-get upgrade -y
 
 # Set time zone
@@ -268,7 +285,7 @@ else
 fi
 
 # Update and upgrade
-apt-get update --allow-releaseinfo-change -y
+apt_update_or_stop
 apt-get upgrade -y
 
 # Remove old downloads

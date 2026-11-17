@@ -16,9 +16,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 
 # MYSQLTuner
 mkdir -p /usr/local/bin/mysqltuner
-download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl" "/usr/local/bin/mysqltuner/mysqltuner.pl"
-download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt" "/usr/local/bin/mysqltuner/basic_passwords.txt"
-download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv" "/usr/local/bin/mysqltuner/vulnerabilities.csv"
+download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl" "/usr/local/bin/mysqltuner/mysqltuner.pl" || exit 1
+download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt" "/usr/local/bin/mysqltuner/basic_passwords.txt" || exit 1
+download_file "https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv" "/usr/local/bin/mysqltuner/vulnerabilities.csv" || exit 1
 chmod +x /usr/local/bin/mysqltuner/mysqltuner.pl
 chmod 644 /usr/local/bin/mysqltuner/vulnerabilities.csv
 

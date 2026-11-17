@@ -225,6 +225,34 @@ add_missing_ppas > "${WORK}/ppa.txt" 2>&1
 check "apt busy throughout: six tries, a warning, and the job still succeeds" "$?:$(apt_calls):$(grep -c 'package lists were not refreshed' "${WORK}/ppa.txt")" "0:6:1"
 unset -f ppa_is_added add-apt-repository apt-get curl apt_calls
 
+echo "migrate_gcc_15_on_ubuntu_26_04"
+printf '#!/bin/bash\necho gcc >> "%s/gcc-calls"\nexit "${GCC_SCRIPT_STATUS:-0}"\n' "${WORK}" > "${WORK}/gcc-install.sh"
+chmod +x "${WORK}/gcc-install.sh"
+export GCC_SCRIPT_STATUS=0
+dpkg-query() { echo "${GCC16_STATUS}"; }
+apt-get() { echo "apt-get $*" >> "${WORK}/gcc-calls"; }
+gcc_calls() { cat "${WORK}/gcc-calls" 2> /dev/null | tr '\n' ';'; }
+# Prints the upgrade's exit status and the commands it ran
+run_gcc_upgrade() {
+  local status=0
+  rm -f "${WORK}/gcc-calls"
+  UBUNTU_VERSION="$1" GCC16_STATUS="$2" ES_GCC_INSTALL_SCRIPT="${WORK}/gcc-install.sh" migrate_gcc_15_on_ubuntu_26_04 > /dev/null 2>&1 || status=$?
+  echo "${status}:$(gcc_calls)"
+}
+check "24.04 keeps its compilers" "$(run_gcc_upgrade 24.04 "install ok installed")" "0:"
+check "26.04 without the GCC 16 snapshot is left alone" "$(run_gcc_upgrade 26.04 "")" "0:"
+check "26.04 with the snapshot: GCC 15 is set up, then the snapshot is removed" "$(run_gcc_upgrade 26.04 "install ok installed")" "0:gcc;apt-get remove --purge -y g++-16 gcc-16;"
+check "a failed GCC 15 setup fails the upgrade and keeps the snapshot" "$(GCC_SCRIPT_STATUS=1 run_gcc_upgrade 26.04 "install ok installed")" "1:gcc;"
+unset -f dpkg-query apt-get gcc_calls run_gcc_upgrade
+
+echo "forget_upgrade_done"
+record_upgrade_done es_test_forget
+record_upgrade_done es_test_forget_keep
+forget_upgrade_done es_test_forget
+check "the upgrade's record is removed, and only that one" "$(upgrade_is_done es_test_forget && echo kept || echo removed):$(upgrade_is_done es_test_forget_keep && echo kept || echo removed)" "removed:kept"
+forget_upgrade_done es_test_forget_missing
+check "forgetting an upgrade that has no record succeeds" "$?" "0"
+
 echo ""
 echo "Passed: ${TESTS_PASSED}, failed: ${TESTS_FAILED}"
 [[ "${TESTS_FAILED}" -eq 0 ]]
