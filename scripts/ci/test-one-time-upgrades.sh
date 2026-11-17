@@ -226,7 +226,11 @@ check "apt busy throughout: six tries, a warning, and the job still succeeds" "$
 unset -f ppa_is_added add-apt-repository apt-get curl apt_calls
 
 echo "migrate_gcc_15_on_ubuntu_26_04"
-printf '#!/bin/bash\necho gcc >> "%s/gcc-calls"\nexit "${GCC_SCRIPT_STATUS:-0}"\n' "${WORK}" > "${WORK}/gcc-install.sh"
+cat > "${WORK}/gcc-install.sh" <<STUB
+#!/bin/bash
+echo gcc >> "${WORK}/gcc-calls"
+exit "\${GCC_SCRIPT_STATUS:-0}"
+STUB
 chmod +x "${WORK}/gcc-install.sh"
 export GCC_SCRIPT_STATUS=0
 dpkg-query() { echo "${GCC16_STATUS}"; }

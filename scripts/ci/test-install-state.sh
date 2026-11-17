@@ -417,6 +417,7 @@ if [[ "$(cat "${ES_TOOLS_NOT_INSTALLED_FILE}" 2> /dev/null)" == "Bad tool: ${STE
 else
   fail "report_tools_not_installed did not list the failed tool as expected"
 fi
+# shellcheck disable=SC2034 # read by run_tool and report_tools_not_installed
 TOOLS_NOT_INSTALLED=()
 (run_tool "Good tool" "${STEP_DIR}/succeeds.sh"; report_tools_not_installed) > /dev/null 2>&1
 if [[ ! -e "${ES_TOOLS_NOT_INSTALLED_FILE}" ]]; then
