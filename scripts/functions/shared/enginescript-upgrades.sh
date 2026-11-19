@@ -59,6 +59,13 @@ function run_once() {
     fi
 }
 
+# Usage: package_is_installed <package>
+# Succeeds when dpkg has the package installed (also when it is held)
+function package_is_installed() {
+    local package="$1"
+    dpkg-query -W -f='${Status}' "${package}" 2> /dev/null | grep -q 'ok installed'
+}
+
 
 # ----------------------------------------------------------------
 # Give existing sites' certificates a reload command.
@@ -201,7 +208,7 @@ function ensure_php_igbinary() {
     local ver failures=0
     while IFS= read -r ver; do
         [[ -n "${ver}" ]] || continue
-        if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
+        if package_is_installed "php${ver}-igbinary"; then
             apt-mark manual "php${ver}-igbinary" > /dev/null
             continue
         fi
@@ -391,7 +398,7 @@ MAP
 # get it in the tools step; existing servers only got it from Update Server Tools. Servers that
 # already have it are left alone.
 function install_fail2ban() {
-    dpkg-query -W -f='${Status}' fail2ban 2> /dev/null | grep -q 'ok installed' && return 0
+    package_is_installed fail2ban && return 0
     echo "Installing fail2ban (bans addresses after repeated failed SSH logins)..."
     "${ES_FAIL2BAN_SCRIPT:-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh}"
 }
@@ -465,7 +472,7 @@ function add_auto_update_options() {
 # at GCC 15, and the snapshot is removed. Nginx is rebuilt with GCC 15 on its next update.
 function migrate_gcc_15_on_ubuntu_26_04() {
     [[ "${UBUNTU_VERSION:-}" == "26.04" ]] || return 0
-    dpkg-query -W -f='${Status}' gcc-16 2> /dev/null | grep -q 'ok installed' || return 0
+    package_is_installed gcc-16 || return 0
     echo "Switching the compiler from the GCC 16 development snapshot to GCC 15..."
     "${ES_GCC_INSTALL_SCRIPT:-/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh}" || return 1
     apt-get remove --purge -y g++-16 gcc-16 \
@@ -532,7 +539,7 @@ function remove_source_built_liburing() {
 # installed it as a recommendation (marked automatic), not when the admin installed it, and
 # autoremove then removes what only it needed.
 function remove_pipx_recommended_packages() {
-    dpkg-query -W -f='${Status}' mkdocs 2> /dev/null | grep -q 'ok installed' || return 0
+    package_is_installed mkdocs || return 0
     apt-mark showauto mkdocs 2> /dev/null | grep -qx 'mkdocs' || return 0
     echo "Removing mkdocs and the packages only it needs (pipx installed them; Gixy-Next does not use them)..."
     apt-get purge -y mkdocs || return 1
@@ -549,7 +556,7 @@ function remove_pipx_recommended_packages() {
 # itself (/etc/modules-load.d/tls.conf). Tested: with ktls-utils purged, Nginx still sends
 # through kernel TLS.
 function remove_ktls_utils() {
-    dpkg-query -W -f='${Status}' ktls-utils 2> /dev/null | grep -q 'ok installed' || return 0
+    package_is_installed ktls-utils || return 0
     echo "Removing ktls-utils (its tlshd service is not used; Nginx's kTLS does not need it)..."
     apt-get purge -y ktls-utils
 }

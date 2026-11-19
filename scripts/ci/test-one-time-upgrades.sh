@@ -19,6 +19,8 @@ source "${REPO_ROOT}/scripts/functions/shared/enginescript-common.sh"
 source "${REPO_ROOT}/scripts/functions/shared/enginescript-upgrades.sh"
 
 TESTS_PASSED=0
+# dpkg-query's status of an installed package
+INSTALLED="install ok installed"
 TESTS_FAILED=0
 
 pass() {
@@ -154,7 +156,7 @@ F2B_STATUS="unknown ok not-installed"
 dpkg-query() { echo "${F2B_STATUS}"; }
 ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
 check "a server without fail2ban runs the install script" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
-F2B_STATUS="install ok installed"
+F2B_STATUS="${INSTALLED}"
 ES_FAIL2BAN_SCRIPT="${WORK}/fail2ban.sh" install_fail2ban > /dev/null
 check "a server with fail2ban is left alone" "$(wc -l < "${WORK}/f2b-runs" | tr -d ' ')" "1"
 unset -f dpkg-query
@@ -243,10 +245,10 @@ run_gcc_upgrade() {
   UBUNTU_VERSION="$1" GCC16_STATUS="$2" ES_GCC_INSTALL_SCRIPT="${WORK}/gcc-install.sh" migrate_gcc_15_on_ubuntu_26_04 > /dev/null 2>&1 || status=$?
   echo "${status}:$(gcc_calls)"
 }
-check "24.04 keeps its compilers" "$(run_gcc_upgrade 24.04 "install ok installed")" "0:"
+check "24.04 keeps its compilers" "$(run_gcc_upgrade 24.04 "${INSTALLED}")" "0:"
 check "26.04 without the GCC 16 snapshot is left alone" "$(run_gcc_upgrade 26.04 "")" "0:"
-check "26.04 with the snapshot: GCC 15 is set up, then the snapshot is removed" "$(run_gcc_upgrade 26.04 "install ok installed")" "0:gcc;apt-get remove --purge -y g++-16 gcc-16;"
-check "a failed GCC 15 setup fails the upgrade and keeps the snapshot" "$(GCC_SCRIPT_STATUS=1 run_gcc_upgrade 26.04 "install ok installed")" "1:gcc;"
+check "26.04 with the snapshot: GCC 15 is set up, then the snapshot is removed" "$(run_gcc_upgrade 26.04 "${INSTALLED}")" "0:gcc;apt-get remove --purge -y g++-16 gcc-16;"
+check "a failed GCC 15 setup fails the upgrade and keeps the snapshot" "$(GCC_SCRIPT_STATUS=1 run_gcc_upgrade 26.04 "${INSTALLED}")" "1:gcc;"
 unset -f dpkg-query apt-get gcc_calls run_gcc_upgrade
 
 echo "remove_source_built_liburing"
@@ -261,7 +263,10 @@ touch "${LR}/usr/lib/liburing.so.2.15" "${LR}/usr/lib/liburing.a" "${LR}/usr/lib
 ln -s liburing.so.2.15 "${LR}/usr/lib/liburing.so.2"
 ln -s liburing.so.2.15 "${LR}/usr/lib/liburing.so"
 # A header a package owns (liburing-dev) is kept
-dpkg-query() { [[ "$1" == "-S" && "$2" == "/usr/include/liburing/io_uring.h" ]]; }
+dpkg-query() {
+  local option="$1" path="$2"
+  [[ "${option}" == "-S" && "${path}" == "/usr/include/liburing/io_uring.h" ]]
+}
 ES_LIBURING_ROOT="${LR}" remove_source_built_liburing > /dev/null
 check "the library, headers, pkg-config files, man pages, and sources are removed" \
   "$(find "${LR}" \( -type f -o -type l \) ! -path '*/x86_64-linux-gnu/*' | sed "s|${LR}||" | grep 'uring' | sort | tr '\n' ' ')" \
@@ -287,8 +292,8 @@ dpkg-query() { echo "${MKDOCS_STATUS}"; }
 apt-mark() { [[ "${MKDOCS_AUTO}" == "auto" ]] && echo "mkdocs"; return 0; }
 apt-get() { echo "apt-get $*" >> "${WORK}/mkdocs-calls"; }
 check "without mkdocs, nothing is removed" "$(run_mkdocs_upgrade "" auto)" "0:"
-check "mkdocs the admin installed is kept" "$(run_mkdocs_upgrade "install ok installed" manual)" "0:"
-check "mkdocs pipx brought in is removed, then what only it needed" "$(run_mkdocs_upgrade "install ok installed" auto)" \
+check "mkdocs the admin installed is kept" "$(run_mkdocs_upgrade "${INSTALLED}" manual)" "0:"
+check "mkdocs pipx brought in is removed, then what only it needed" "$(run_mkdocs_upgrade "${INSTALLED}" auto)" \
   "0:apt-get purge -y mkdocs;apt-get autoremove --purge -y;"
 unset -f dpkg-query apt-mark apt-get run_mkdocs_upgrade
 
@@ -302,7 +307,7 @@ run_ktls_upgrade() {
 dpkg-query() { echo "${KTLS_STATUS}"; }
 apt-get() { echo "apt-get $*" >> "${WORK}/ktls-calls"; }
 check "without ktls-utils, nothing is removed" "$(run_ktls_upgrade "")" "0:"
-check "ktls-utils is purged" "$(run_ktls_upgrade "install ok installed")" "0:apt-get purge -y ktls-utils;"
+check "ktls-utils is purged" "$(run_ktls_upgrade "${INSTALLED}")" "0:apt-get purge -y ktls-utils;"
 unset -f dpkg-query apt-get run_ktls_upgrade
 
 echo "remove_unused_dev_libraries"
@@ -322,8 +327,8 @@ dpkg-query() {
 }
 apt-mark() { echo "apt-mark $*" >> "${WORK}/dev-calls"; touch "${WORK}/dev-marked"; }
 apt-get() {
-  local p list="${DEV_BEFORE}"
-  if [[ "$1" == "-s" ]]; then
+  local option="$1" p list="${DEV_BEFORE}"
+  if [[ "${option}" == "-s" ]]; then
     [[ -f "${WORK}/dev-marked" ]] && list="${DEV_AFTER}"
     for p in ${list}; do echo "Remv ${p} [1.0]"; done
     return 0

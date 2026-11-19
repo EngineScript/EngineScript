@@ -1811,7 +1811,9 @@ function detect_server_location() {
     fi
 
     if [[ -n "${shown_fields}" ]]; then
-        sed 's/^/  /' <<< "${shown_fields}"
+        local -a shown_lines=()
+        mapfile -t shown_lines <<< "${shown_fields}"
+        printf '  %s\n' "${shown_lines[@]}"
     else
         echo "  Unable to retrieve server location (no answer from ipinfo.io)"
     fi
