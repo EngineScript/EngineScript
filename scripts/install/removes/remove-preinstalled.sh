@@ -14,8 +14,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 #----------------------------------------------------------------------------------
 # Start Main Script
 
-# Remove Previous Installations
-apt-get remove --purge 'apache2.*' mysql-client mysql-common mysql-server 'nginx.*' 'php7\.0.*' 'php7\.1.*' 'php7\.2.*' 'php7\.3.*' 'php7\.4.*' 'php8\.0.*' 'php8\.1.*' -y
+# Remove Previous Installations: Apache, MySQL, Ubuntu's Nginx and its modules, and PHP 7.0 to 8.1.
+# Only installed packages are passed to apt (see purge_installed_packages).
+purge_installed_packages 'apache2*' 'mysql-client' 'mysql-common' 'mysql-server' '*nginx*' '*php7.[0-4]*' '*php8.[01]*'
 
 # Cleanup
 run_enginescript_cleanup

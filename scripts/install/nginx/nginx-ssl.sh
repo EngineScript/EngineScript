@@ -19,7 +19,12 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Ignore browser errors related to certificate validity.
 
 # Create Self-Signed SSL Certificate
-openssl req -new -newkey rsa:4096 -sha256 -days 36500 -nodes -x509 \
--keyout /etc/nginx/ssl/localhost/localhost.key -out /etc/nginx/ssl/localhost/localhost.crt \
--subj "/C=US/ST=Florida/L=Orlando/O=EngineScript/CN=localhost" \
--addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+# openssl prints key-generation progress to stderr, which the install shows as errors, so its
+# output is shown only when it fails.
+if ! openssl_output="$(openssl req -new -newkey rsa:4096 -sha256 -days 36500 -nodes -x509 \
+  -keyout /etc/nginx/ssl/localhost/localhost.key -out /etc/nginx/ssl/localhost/localhost.crt \
+  -subj "/C=US/ST=Florida/L=Orlando/O=EngineScript/CN=localhost" \
+  -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>&1)"; then
+  echo "${openssl_output}" >&2
+  echo "Error: Failed to create the self-signed localhost certificate." >&2
+fi

@@ -232,20 +232,6 @@ jobs:
             echo "::warning::Failed to fetch zlib-rs version, keeping current version"
           fi
 
-          # liburing
-          echo "::debug::Fetching liburing version..."
-          LIBURING_API_RESPONSE=$(curl -s https://api.github.com/repos/axboe/liburing/tags)
-          echo "::debug::liburing API Response: $(echo "$LIBURING_API_RESPONSE" | jq -r '.[0:3]')"
-
-          LATEST_LIBURING=$(echo "$LIBURING_API_RESPONSE" | jq -r '.[0].name // empty' | sed 's/liburing-//')
-          echo "::debug::Parsed liburing version: '$LATEST_LIBURING'"
-
-          if [[ -n "$LATEST_LIBURING" && "$LATEST_LIBURING" != "null" ]]; then
-            check_version "LIBURING_VER" "$LATEST_LIBURING"
-          else
-            echo "::warning::Failed to fetch liburing version, keeping current version"
-          fi
-
           # NGINX Headers More Module
           echo "::debug::Fetching NGINX Headers More Module version..."
           NGINX_HEADER_API_RESPONSE=$(curl -s https://api.github.com/repos/openresty/headers-more-nginx-module/tags)
@@ -369,7 +355,6 @@ jobs:
             -e "s#^(\\|OPENSSL[^|]*\\|)[^|]*#\1$(get_current_version OPENSSL_VER)#" \
             -e "s#^(\\|PCRE2[^|]*\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
             -e "s#^(\\|ZLIB[^|]*\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
-            -e "s#^(\\|LIBURING[^|]*\\|)[^|]*#\1$(get_current_version LIBURING_VER)#" \
             -e "s#^(\\|PHPMYADMIN[^|]*\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
             -e "s#^(\\|MARIADB[^|]*\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
             -e "s#^(\\|PLUGIN: EngineScript Site Exporter[^|]*\\|)[^|]*#\1$(get_current_version ES_SE_PLUGIN_VER)#" \
@@ -406,7 +391,6 @@ jobs:
               # Update CI variables file to keep it in sync
               echo "Updating enginescript-variables-ci.txt..."
               sed -i \
-                -e "s/^LIBURING_VER=\"[^\"]*\"/LIBURING_VER=\"$(get_current_version LIBURING_VER)\"/" \
                 -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
                 -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
                 -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \

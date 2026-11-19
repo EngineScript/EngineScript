@@ -244,8 +244,8 @@ if [[ "${ALIAS:-0}" = 1 ]] && [[ -x "/usr/local/bin/es.config" ]] && [[ -x "/usr
     fi
 fi
 
-# Cleanup
-apt-get remove --purge 'apache2*' 'php7*' 'php8*' -y
+# Cleanup: purge any Apache or PHP the image came with (only installed packages are named)
+purge_installed_packages 'apache2*' 'php7*' 'php8*'
 
 # Update & Upgrade
 apt_update_or_stop
@@ -263,9 +263,8 @@ chmod +x /etc/update-motd.d/99-enginescript
 chown root:root /etc/update-motd.d/99-enginescript
 dos2unix /etc/update-motd.d/99-enginescript
 
-# Test MOTD
-run-parts --test /etc/update-motd.d/
-run-parts /etc/update-motd.d/
+# Show the new MOTD (a broken MOTD script shows its error here)
+run-parts /etc/update-motd.d
 
 # HWE kernel. Ubuntu's package name keeps the dot (linux-generic-hwe-24.04); the new kernel is
 # used from the reboot at the end of setup. Both flavours install the same kernel and modules; on

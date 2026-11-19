@@ -22,7 +22,7 @@ if [[ "${INSTALL_ADMINER}" == "1" ]];
     echo "Updating Adminer"
     /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh 2>> "${ES_STEP_ERROR_LOG}"
   else
-    echo "Skipping Adminer update"
+    echo "Adminer: skipped (INSTALL_ADMINER=0)"
 fi
 print_last_errors
 debug_pause "Adminer"
@@ -32,9 +32,6 @@ run_step "fail2ban" /usr/local/bin/enginescript/scripts/install/tools/security/f
 
 # Install or update Gixy-Next
 run_step "Gixy-Next" /usr/local/bin/enginescript/scripts/install/tools/nginx/gixy.sh
-
-# Update liburing to the version in enginescript-variables.txt
-run_step "liburing" /usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh
 
 # Install or update Lynis
 run_step "Lynis" /usr/local/bin/enginescript/scripts/install/tools/security/lynis.sh
@@ -76,7 +73,6 @@ echo "This update includes:"
 echo "  - Adminer (if enabled)"
 echo "  - fail2ban"
 echo "  - Gixy-Next"
-echo "  - liburing"
 echo "  - Lynis"
 echo "  - MYSQLTuner"
 echo "  - phpMyAdmin (if enabled)"

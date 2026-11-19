@@ -125,7 +125,6 @@ expected_flags=(
   "SFL"
   "NTP"
   "DO_CONSOLE"
-  "LIBURING"
   "UFW"
   "MARIADB"
   "PHP"

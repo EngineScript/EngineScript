@@ -235,7 +235,6 @@ EngineScript includes a web-based admin control panel at `https://admin.yourdoma
 |LOCAL BACKUPS||Bash Scripts|
 |AMAZON AWS CLI||<https://aws.amazon.com/cli/>|
 |**Misc Supplemental Software**|||
-|LIBURING|2.15|<https://github.com/axboe/liburing>|
 |MYSQLTUNER||<https://github.com/major/MySQLTuner-perl>|
 
 ## Star History

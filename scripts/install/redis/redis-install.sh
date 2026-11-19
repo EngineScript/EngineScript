@@ -60,7 +60,7 @@ done
 # Finalize Redis Install
 systemctl daemon-reload
 restart_service "redis-server"
-systemctl enable redis-server
+systemctl enable --quiet redis-server
 
 sleep 3
 

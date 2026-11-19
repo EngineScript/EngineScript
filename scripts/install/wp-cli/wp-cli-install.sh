@@ -83,13 +83,16 @@ configure_wp_cli_package_fetching() {
 
 # The packages add commands; WP-CLI works without them, so a package that fails to install (for
 # example one not yet updated for a new WP-CLI) is reported and the install goes on.
+# WP-CLI shows Composer's whole dependency resolution, so that output is shown only on a failure.
 install_wp_cli_package() {
-    local package="$1"
+    local package="$1" output
 
-    if ! "${WP_CLI_BIN}" package install "${package}" --allow-root; then
+    if ! output="$("${WP_CLI_BIN}" package install "${package}" --allow-root 2>&1)"; then
+        echo "${output}" >&2
         echo "Warning: Failed to install WP-CLI package ${package}. WP-CLI works without it; install it later with: wp package install ${package} --allow-root" >&2
         return 1
     fi
+    echo "Installed WP-CLI package ${package}"
 }
 
 mkdir -p ~/.wp-cli/cache

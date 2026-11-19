@@ -249,6 +249,95 @@ check "26.04 with the snapshot: GCC 15 is set up, then the snapshot is removed" 
 check "a failed GCC 15 setup fails the upgrade and keeps the snapshot" "$(GCC_SCRIPT_STATUS=1 run_gcc_upgrade 26.04 "install ok installed")" "1:gcc;"
 unset -f dpkg-query apt-get gcc_calls run_gcc_upgrade
 
+echo "remove_source_built_liburing"
+LR="${WORK}/liburing-root"
+mkdir -p "${LR}/usr/lib/pkgconfig" "${LR}/usr/include/liburing/io_uring" "${LR}/usr/man/man2" "${LR}/usr/man/man3" \
+  "${LR}/usr/man/man7" "${LR}/usr/src/liburing-liburing-2.15" "${LR}/usr/lib/x86_64-linux-gnu"
+touch "${LR}/usr/lib/liburing.so.2.15" "${LR}/usr/lib/liburing.a" "${LR}/usr/lib/liburing-ffi.so.2.15" \
+  "${LR}/usr/lib/pkgconfig/liburing.pc" "${LR}/usr/lib/pkgconfig/zlib.pc" \
+  "${LR}/usr/include/liburing.h" "${LR}/usr/include/liburing/io_uring.h" "${LR}/usr/include/liburing/io_uring/query.h" \
+  "${LR}/usr/man/man2/io_uring_setup.2" "${LR}/usr/man/man3/IO_URING_VERSION_MAJOR.3" "${LR}/usr/man/man3/__io_uring_buf_ring_cq_advance.3" \
+  "${LR}/usr/man/man7/io_uring.7" "${LR}/usr/lib/x86_64-linux-gnu/liburing.so.2.14"
+ln -s liburing.so.2.15 "${LR}/usr/lib/liburing.so.2"
+ln -s liburing.so.2.15 "${LR}/usr/lib/liburing.so"
+# A header a package owns (liburing-dev) is kept
+dpkg-query() { [[ "$1" == "-S" && "$2" == "/usr/include/liburing/io_uring.h" ]]; }
+ES_LIBURING_ROOT="${LR}" remove_source_built_liburing > /dev/null
+check "the library, headers, pkg-config files, man pages, and sources are removed" \
+  "$(find "${LR}" \( -type f -o -type l \) ! -path '*/x86_64-linux-gnu/*' | sed "s|${LR}||" | grep 'uring' | sort | tr '\n' ' ')" \
+  "/usr/include/liburing/io_uring.h "
+check "Ubuntu's liburing and other pkg-config files stay" \
+  "$([[ -f "${LR}/usr/lib/x86_64-linux-gnu/liburing.so.2.14" && -f "${LR}/usr/lib/pkgconfig/zlib.pc" ]] && echo kept || echo removed)" "kept"
+check "the emptied man folders are removed, and the folder with a kept header stays" \
+  "$([[ -e "${LR}/usr/man" ]] && echo man-kept || echo man-removed):$([[ -d "${LR}/usr/include/liburing" ]] && echo include-kept || echo include-removed)" \
+  "man-removed:include-kept"
+ES_LIBURING_ROOT="${LR}" remove_source_built_liburing > /dev/null
+check "running it again succeeds" "$?" "0"
+unset -f dpkg-query
+
+echo "remove_pipx_recommended_packages"
+# Prints the upgrade's exit status and the apt-get commands it ran
+run_mkdocs_upgrade() {
+  local status=0
+  rm -f "${WORK}/mkdocs-calls"
+  MKDOCS_STATUS="$1" MKDOCS_AUTO="$2" remove_pipx_recommended_packages > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/mkdocs-calls")"
+}
+dpkg-query() { echo "${MKDOCS_STATUS}"; }
+apt-mark() { [[ "${MKDOCS_AUTO}" == "auto" ]] && echo "mkdocs"; return 0; }
+apt-get() { echo "apt-get $*" >> "${WORK}/mkdocs-calls"; }
+check "without mkdocs, nothing is removed" "$(run_mkdocs_upgrade "" auto)" "0:"
+check "mkdocs the admin installed is kept" "$(run_mkdocs_upgrade "install ok installed" manual)" "0:"
+check "mkdocs pipx brought in is removed, then what only it needed" "$(run_mkdocs_upgrade "install ok installed" auto)" \
+  "0:apt-get purge -y mkdocs;apt-get autoremove --purge -y;"
+unset -f dpkg-query apt-mark apt-get run_mkdocs_upgrade
+
+echo "remove_ktls_utils"
+run_ktls_upgrade() {
+  local status=0
+  rm -f "${WORK}/ktls-calls"
+  KTLS_STATUS="$1" remove_ktls_utils > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/ktls-calls")"
+}
+dpkg-query() { echo "${KTLS_STATUS}"; }
+apt-get() { echo "apt-get $*" >> "${WORK}/ktls-calls"; }
+check "without ktls-utils, nothing is removed" "$(run_ktls_upgrade "")" "0:"
+check "ktls-utils is purged" "$(run_ktls_upgrade "install ok installed")" "0:apt-get purge -y ktls-utils;"
+unset -f dpkg-query apt-get run_ktls_upgrade
+
+echo "remove_unused_dev_libraries"
+# Prints the upgrade's exit status and the apt-mark and apt-get commands it ran. DEV_INSTALLED
+# is what dpkg-query finds; apt-get -s autoremove lists DEV_BEFORE until apt-mark has run, then
+# DEV_AFTER.
+run_dev_upgrade() {
+  local status=0
+  rm -f "${WORK}/dev-calls" "${WORK}/dev-marked"
+  DEV_INSTALLED="$1" DEV_BEFORE="$2" DEV_AFTER="$3" remove_unused_dev_libraries > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/dev-calls")"
+}
+dpkg-query() {
+  local p
+  for p in ${DEV_INSTALLED}; do echo "ii  ${p}"; done
+  echo "un  libmcrypt-dev"
+}
+apt-mark() { echo "apt-mark $*" >> "${WORK}/dev-calls"; touch "${WORK}/dev-marked"; }
+apt-get() {
+  local p list="${DEV_BEFORE}"
+  if [[ "$1" == "-s" ]]; then
+    [[ -f "${WORK}/dev-marked" ]] && list="${DEV_AFTER}"
+    for p in ${list}; do echo "Remv ${p} [1.0]"; done
+    return 0
+  fi
+  echo "apt-get $*" >> "${WORK}/dev-calls"
+}
+check "without the libraries, nothing is changed" "$(run_dev_upgrade "" "" "")" "0:"
+check "the libraries and what only they needed are purged; a needed one and packages unneeded before stay" \
+  "$(run_dev_upgrade "libssl-dev libjemalloc2" "linux-image-old" "linux-image-old libssl-dev libssl-doc")" \
+  "0:apt-mark auto libssl-dev libjemalloc2;apt-get purge -y libssl-dev libssl-doc;"
+check "when every library is still needed, nothing is purged" \
+  "$(run_dev_upgrade "libjemalloc2" "" "")" "0:apt-mark auto libjemalloc2;"
+unset -f dpkg-query apt-mark apt-get run_dev_upgrade
+
 echo "forget_upgrade_done"
 record_upgrade_done es_test_forget
 record_upgrade_done es_test_forget_keep

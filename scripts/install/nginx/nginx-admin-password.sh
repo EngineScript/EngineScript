@@ -24,3 +24,8 @@ echo "----------------------------------------------------------"
 # The file is replaced, not appended to: nginx uses the first line that names the user, so
 # an appended line would leave an older password in force.
 printf "%s:%s\n" "${ADMIN_CONTROL_PANEL_USERNAME}" "$(openssl passwd -apr1 "${ADMIN_CONTROL_PANEL_PASSWORD}")" > /etc/nginx/restricted-access/.htpasswd
+
+echo "The admin site (control panel and admin tools) asks for this login:"
+echo "  Username: ${ADMIN_CONTROL_PANEL_USERNAME}"
+echo "  Password: ADMIN_CONTROL_PANEL_PASSWORD in the options file (es.config)"
+echo ""

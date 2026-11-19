@@ -117,8 +117,10 @@ install -d -o www-data -g www-data -m 700 /var/lib/php-tmp 2>> "${ES_STEP_ERROR_
 # Tune PHP Configuration
 apply_php_tuning
 
-# Test the new configuration; keep the previous one if it fails
-if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! "php-fpm${PHP_VER}" -t > /dev/null 2>> "${ES_STEP_ERROR_LOG}"; then
+# Test the new configuration; keep the previous one if it fails. A passing test still prints a
+# NOTICE to stderr, so its output is logged only when the test fails.
+if command -v "php-fpm${PHP_VER}" > /dev/null 2>&1 && ! fpm_test_output="$("php-fpm${PHP_VER}" -t 2>&1)"; then
+  echo "${fpm_test_output}" >> "${ES_STEP_ERROR_LOG}"
   echo "Error: php-fpm${PHP_VER} -t failed with the new configuration; restored the previous configuration files." >&2
   restore_php_configs
   print_last_errors

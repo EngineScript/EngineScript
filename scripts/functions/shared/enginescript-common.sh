@@ -123,12 +123,17 @@ function debug_pause() {
 # ----------------------------------------------------------------
 # Print errors from the last script section if any
 function print_last_errors() {
+    # A log of only blank lines (some tools print an empty line to stderr) counts as no errors
+    local has_errors=0
+    if [[ -s "${ES_STEP_ERROR_LOG}" ]] && grep -q '[^[:space:]]' "${ES_STEP_ERROR_LOG}"; then
+        has_errors=1
+    fi
     # Always append errors to persistent log if any
-    if [[ -s "${ES_STEP_ERROR_LOG}" ]]; then
+    if [[ "${has_errors}" -eq 1 ]]; then
         cat "${ES_STEP_ERROR_LOG}" >> /var/log/EngineScript/install-error-log.log
     fi
     # Only show errors to user if debug mode is enabled
-    if [[ "${DEBUG_INSTALL}" == "1" ]] && [[ -s "${ES_STEP_ERROR_LOG}" ]]; then
+    if [[ "${DEBUG_INSTALL}" == "1" ]] && [[ "${has_errors}" -eq 1 ]]; then
         echo -e "\n\n===============================================================\n"
         echo -e "${BOLD}[ERRORS DETECTED IN LAST STEP]${NORMAL}"
         cat "${ES_STEP_ERROR_LOG}"
@@ -165,7 +170,6 @@ ENGINESCRIPT_INSTALL_STATE_FLAGS=(
     "SFL"
     "NTP"
     "DO_CONSOLE"
-    "LIBURING"
     "UFW"
     "MARIADB"
     "PHP"
@@ -1590,6 +1594,8 @@ function install_enginescript_sysctl() {
     chown root:root "${conf}"
     chmod 644 "${conf}"
 
+    # The kernel TLS module is all Nginx's kTLS needs: OpenSSL does the handshake in Nginx and
+    # passes the keys to it. (ktls-utils' tlshd does handshakes for in-kernel users, not Nginx.)
     echo tls > /etc/modules-load.d/tls.conf
     modprobe tls 2> /dev/null || true
 
@@ -1642,11 +1648,10 @@ function check_installation_completion() {
     )
 
     if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE:-0}" = "1" ]]; then
-        installation_steps+=("DO_CONSOLE|DigitalOcean Remote Console")
+        installation_steps+=("DO_CONSOLE|DigitalOcean Agents")
     fi
 
     installation_steps+=(
-        "LIBURING|liburing"
         "UFW|UFW"
         "MARIADB|MariaDB"
         "PHP|PHP"
@@ -1780,8 +1785,9 @@ function require_installation_complete() {
 # Always uses IPv4 with 5-second timeouts
 function detect_server_location() {
     local log_file="/var/log/EngineScript/server-location.log"
+    # -f: an error answer (a rate limit, for one) counts as no answer, not as location data
     local -a curl_opts=(
-        -4s
+        -4sf
         --max-time
         5
         --connect-timeout
@@ -1791,19 +1797,23 @@ function detect_server_location() {
     echo -e "${BOLD}Server Location Info:${NORMAL}"
 
     # Fetch geo data (city, region, country, timezone)
-    local geo_data
+    local geo_data geo_fields="" shown_fields=""
     geo_data=$(curl "${curl_opts[@]}" https://ipinfo.io/geo 2>/dev/null)
 
+    # ipinfo.io sends the JSON either on one line or one field per line, so the "key": "value"
+    # pairs are picked out of it rather than read line by line (a one-line answer used to be
+    # dropped whole, as its line contained "ip:"). Each pair becomes "key: value".
     if [[ -n "${geo_data}" ]]; then
-        # Parse and display geo fields (exclude ip, phone, postal, loc, readme)
-        echo "${geo_data}" | sed -e 's|[{}]||g' -e 's/\(^"\|"\)//g' -e 's|,||g' | grep -Eiv 'ip:|phone|postal|loc|readme' | while IFS= read -r line; do
-            line="${line#"${line%%[![:space:]]*}"}"
-            if [[ -n "${line}" ]]; then
-                echo "  ${line}"
-            fi
-        done
+        geo_fields="$(grep -oE '"[a-z_]+"[[:space:]]*:[[:space:]]*"[^"]*"' <<< "${geo_data}" \
+            | sed -E 's/^"([a-z_]+)"[[:space:]]*:[[:space:]]*"(.*)"$/\1: \2/' \
+            | grep -v '^readme: ' || true)"
+        shown_fields="$(grep -E '^(city|region|country|timezone): ' <<< "${geo_fields}" || true)"
+    fi
+
+    if [[ -n "${shown_fields}" ]]; then
+        sed 's/^/  /' <<< "${shown_fields}"
     else
-        echo "  Unable to retrieve server location (ipinfo.io unreachable)"
+        echo "  Unable to retrieve server location (no answer from ipinfo.io)"
     fi
 
     # Fetch ASN/organization info
@@ -1821,13 +1831,8 @@ function detect_server_location() {
         echo "# EngineScript Server Location - Detected at install time"
         echo "# Date: $(date '+%Y-%m-%d %H:%M:%S')"
         echo ""
-        if [[ -n "${geo_data}" ]]; then
-            echo "${geo_data}" | sed -e 's|[{}]||g' -e 's/\(^"\|"\)//g' -e 's|,||g' | grep -Eiv 'readme' | while IFS= read -r line; do
-                line=$(echo "${line}" | sed 's/^[[:space:]]*//')
-                if [[ -n "${line}" ]]; then
-                    echo "${line}"
-                fi
-            done
+        if [[ -n "${geo_fields}" ]]; then
+            echo "${geo_fields}"
         fi
         echo "ASN: ${SERVER_ASN_ORG:-Unknown}"
     } > "${log_file}" 2>/dev/null || true
@@ -2162,6 +2167,24 @@ function download_and_extract() {
 
 
 # ----------------------------------------------------------------
+# Purge the installed packages whose names match the given patterns (dpkg globs, as for
+# dpkg-query -W). Only installed packages are passed to apt: given a pattern, apt prints a line for
+# every package in the archive that matches it, installed or not.
+# Usage: purge_installed_packages 'apache2*' 'php7.*'
+function purge_installed_packages() {
+    local -a installed=()
+    # Second letter of the status: n = not installed. "rc" (removed, configuration files left) is
+    # kept, so those files are purged too.
+    mapfile -t installed < <(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' "$@" 2> /dev/null \
+        | awk 'substr($1, 2, 1) != "n" { print $2 }')
+    if [[ ${#installed[@]} -eq 0 ]]; then
+        return 0
+    fi
+    apt-get remove --purge -y "${installed[@]}"
+}
+
+
+# ----------------------------------------------------------------
 # Remove Apache and the PHP versions EngineScript no longer supports (7.0 to 8.0), old source
 # downloads in /usr/src, and apt's cached and no longer needed packages. The package names are
 # apt regular expressions, so apt lists every package it checks; that list is not shown.
@@ -2274,7 +2297,8 @@ function print_install_banner() {
 
 
 # ----------------------------------------------------------------
-# Clone a git repository, removing any existing directory first
+# Clone a git repository, removing any existing directory first. The clone is quiet: git writes
+# its progress to stderr, which the install shows as errors. A failed clone still prints why.
 # Usage: git_clone_fresh "https://repo.url" "/destination/path" [extra_args...]
 function git_clone_fresh() {
     local repo_url="$1"
@@ -2282,7 +2306,7 @@ function git_clone_fresh() {
     shift 2
 
     clean_directory "${dest_path}"
-    git clone "$@" "${repo_url}" "${dest_path}"
+    git clone --quiet "$@" "${repo_url}" "${dest_path}"
 }
 
 

@@ -29,11 +29,11 @@ chmod 644 /etc/systemd/system/nginx.service
 
 # Reload systemd and enable nginx
 systemctl daemon-reload
-systemctl enable nginx
+systemctl enable --quiet nginx
 
 # Verify nginx configuration before starting
 echo "Testing nginx configuration..."
-if ! /usr/sbin/nginx -t; then
+if ! /usr/sbin/nginx -t -q; then
     echo "ERROR: Nginx configuration test failed!"
     echo "Please check the configuration and fix any issues before starting nginx."
     exit 1

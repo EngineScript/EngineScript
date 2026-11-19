@@ -42,7 +42,7 @@ if [[ "${INSTALL_ADMINER}" == "1" ]];
     echo "Installing Adminer"
     run_tool "Adminer" /usr/local/bin/enginescript/scripts/install/tools/mysql/adminer.sh
   else
-    echo "Skipping Adminer install"
+    echo "Adminer: skipped (INSTALL_ADMINER=0)"
 fi
 
 # MYSQLTuner

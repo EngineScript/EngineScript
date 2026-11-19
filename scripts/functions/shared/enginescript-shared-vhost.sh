@@ -728,7 +728,7 @@ display_credentials_summary() {
   
   echo ""
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
-  echo "|${BOLD}Backups${NORMAL}:                             |"
+  echo "|${BOLD}Backups${NORMAL}:                                             |"
   echo "-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-"
   echo "For your records:"
   echo "-------------------------------------------------------"
