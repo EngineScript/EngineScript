@@ -4,6 +4,15 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-19
+
+### ⚡ PERFORMANCE
+
+- **8 KB TLS records:** Nginx now packs up to 8 KB of a response into each TLS record, instead of 4 KB (`ssl_buffer_size` in `sslshared.conf` and the default server). We tested 4k, 8k, and 16k on an EngineScript server with a client that connects the way Cloudflare does. Against 4k, 8k served about 5% more requests per second for pages and scripts with about 3% less CPU, and under steady traffic its slowest 1% of requests were about 10% faster. It added no delay on new connections and did not slow small responses that share a connection with a large download. 16k added a network round trip before the first byte on new connections, so it was not chosen.
+- **Less CPU for every page view:** pages from PHP and the FastCGI cache are now compressed with Brotli level 2 instead of 4: 29% less CPU per page for 2% more bytes. Cloudflare does not cache pages and usually compresses them again for visitors (Automatic HTTPS Rewrites, Rocket Loader, Email Obfuscation, and Bot Fight Mode all change pages), so the higher level mostly cost CPU. CSS, JavaScript, fonts, and other static files keep level 4: Cloudflare caches them and passes the server's compression to visitors unchanged.
+
+Both changes apply at the next Nginx update.
+
 ## 2026-11-18
 
 ### 🐛 FIXES
