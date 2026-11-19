@@ -18,7 +18,7 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 cp -rf /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service
 chmod 644 /etc/systemd/system/disable-thp.service
 systemctl daemon-reload
-systemctl enable disable-thp
+systemctl enable --quiet disable-thp
 systemctl start disable-thp
 
 echo "Transparent Huge Pages completed successfully. Script done."

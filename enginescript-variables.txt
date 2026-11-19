@@ -6,7 +6,6 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # Software Versions
-LIBURING_VER="2.15"
 MARIADB_VER="11.8.9"
 NGINX_HEADER_VER="0.41"
 NGINX_PURGE_VER="3.0.4"

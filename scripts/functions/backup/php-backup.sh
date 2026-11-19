@@ -21,7 +21,7 @@ NOW=$(date +%m-%d-%Y-%H)
 PHP_FILE="${NOW}-php.tar.gz"
 
 # Backup PHP Config
-tar -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" /etc/php
+tar -C / -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" etc/php
 
 # Remove Old PHP Backups
 find /home/EngineScript/config-backups/php -type f -mtime +30 -delete

@@ -30,13 +30,20 @@ if ! curl -fLsS --proto '=https' -o "${REPO_SETUP}" https://downloads.mariadb.co
   echo "Error: Could not download MariaDB's repository setup script. MariaDB was not installed." >&2
   exit 1
 fi
-if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"; then
-  rm -f "${REPO_SETUP}"
+# The setup script writes its progress ("# [info] ...") to stderr, which the install would show as
+# errors, so that output is kept only when the script fails.
+REPO_SETUP_OUTPUT="$(mktemp)"
+if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2> "${REPO_SETUP_OUTPUT}"; then
+  cat "${REPO_SETUP_OUTPUT}" >> "${ES_STEP_ERROR_LOG}"
+  rm -f "${REPO_SETUP}" "${REPO_SETUP_OUTPUT}"
   print_last_errors
   echo "Error: MariaDB's repository setup failed. MariaDB was not installed." >&2
   exit 1
 fi
-rm -f "${REPO_SETUP}"
+rm -f "${REPO_SETUP}" "${REPO_SETUP_OUTPUT}"
+# Each run moves the previous repository file aside as mariadb.sources.old_<n>.disabled; the new
+# mariadb.sources replaces it, so the old copies are removed.
+rm -f /etc/apt/sources.list.d/mariadb.sources.old_*.disabled
 print_last_errors
 debug_pause "MariaDB Repository"
 
@@ -137,7 +144,10 @@ systemctl start mariadb.service
 # Check if services are running
 verify_service_running "mariadb" "MariaDB"
 verify_service_running "mysql" "MySQL"
-mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p'
+# MariaDB's settings at install time (about 750 lines) go to a log file, not the screen
+mkdir -p /var/log/EngineScript
+mariadbd --verbose --help 2>/dev/null | sed -n '/^Variables (--variable-name=value)/,$p' > /var/log/EngineScript/mariadb-variables.log
+echo "MariaDB's settings are listed in /var/log/EngineScript/mariadb-variables.log"
 
 print_install_banner "MariaDB" 2
 

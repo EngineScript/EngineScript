@@ -183,7 +183,7 @@ if [[ "${SWITCH_NEEDED}" == "1" ]]; then
         print_last_errors
         rollback_switch "The PHP ${NEW_PHP_VER} configuration failed its test (php-fpm${NEW_PHP_VER} -t)."
     fi
-    systemctl enable "php${NEW_PHP_VER}-fpm" 2>> "${ES_STEP_ERROR_LOG}"
+    systemctl enable --quiet "php${NEW_PHP_VER}-fpm" 2>> "${ES_STEP_ERROR_LOG}"
     systemctl restart "php${NEW_PHP_VER}-fpm" 2>> "${ES_STEP_ERROR_LOG}"
     new_php_ok=0
     for _ in 1 2 3 4 5; do

@@ -4,6 +4,48 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-19
+
+### ⚡ PERFORMANCE
+
+- **8 KB TLS records:** Nginx now packs up to 8 KB of a response into each TLS record, instead of 4 KB (`ssl_buffer_size` in `sslshared.conf` and the default server). We tested 4k, 8k, and 16k on an EngineScript server with a client that connects the way Cloudflare does. Against 4k, 8k served about 5% more requests per second for pages and scripts with about 3% less CPU, and under steady traffic its slowest 1% of requests were about 10% faster. It added no delay on new connections and did not slow small responses that share a connection with a large download. 16k added a network round trip before the first byte on new connections, so it was not chosen.
+- **Less CPU for every page view:** pages from PHP and the FastCGI cache are now compressed with Brotli level 2 instead of 4: 29% less CPU per page for 2% more bytes. Cloudflare does not cache pages and usually compresses them again for visitors (Automatic HTTPS Rewrites, Rocket Loader, Email Obfuscation, and Bot Fight Mode all change pages), so the higher level mostly cost CPU. CSS, JavaScript, fonts, and other static files keep level 4: Cloudflare caches them and passes the server's compression to visitors unchanged.
+
+Both changes apply at the next Nginx update.
+
+## 2026-11-18
+
+### 🐛 FIXES
+
+- **Fewer false errors during `es.install`:** with `DEBUG_INSTALL=1`, the install shows "[ERRORS DETECTED IN LAST STEP]" when a step writes to its error output. Most of those blocks held no error, which made real ones easy to miss. They came from needrestart's report after every package install, download and clone progress, systemd's "Created symlink" lines, tar's "Removing leading '/'", OpenSSL's key-generation dots, MariaDB's repository setup, and the Nginx and PHP-FPM configuration tests. These no longer show as errors, and a block of only blank lines is no longer shown. needrestart no longer runs during `es.install`, so it no longer restarts services such as SSH and the network partway through. The server reboots at the end of the install, which restarts everything once.
+- **Server location shown on every run:** the configuration review at the start of `es.install` sometimes showed only the ASN and no city, region, country, or time zone. This happened when ipinfo.io sent its answer on one line. Both forms of the answer are now read.
+- **liburing is no longer compiled:** EngineScript compiled liburing from source and installed it in `/usr/lib`, but nothing used it. MariaDB uses Ubuntu's own liburing, and Nginx, PHP-FPM, and Redis do not use liburing. New installs and updates no longer compile it. The next EngineScript update removes the compiled copy from existing servers: its library, headers, and man pages, and the `/usr/man` folder it created. Files that belong to an Ubuntu package are left alone.
+- **Gixy-Next no longer brings in 40 unused packages:** installing pipx, which Gixy-Next is installed with, also installed its suggested package mkdocs, a documentation site generator, and about 40 packages it needs (numpy, nltk, pytest, tk, and others), about 80 MB. Gixy-Next does not use them, as pipx gives it its own Python environment. New installs leave them out, and the next EngineScript update removes them from existing servers. mkdocs is kept if you installed it yourself.
+- **ktls-utils is no longer installed:** its only program, tlshd, is a background service that does TLS handshakes for TLS users inside the kernel, such as NFS over TLS. Nginx does not use it. For Nginx's kernel TLS (kTLS), OpenSSL does the handshake inside Nginx and passes the keys to the kernel's TLS module, which EngineScript loads separately. We tested that Nginx still sends through kernel TLS without ktls-utils. New installs leave it out, and the next EngineScript update removes it from existing servers, which stops tlshd.
+- **Fewer unused packages on new installs:** the dependencies step no longer installs:
+  - plocate, whose daily index scanned every file on the server, including your sites and backups
+  - libpam-cgfs, a container module that ran on every SSH login and cron job
+  - netcat-traditional, a netcat that can hand a shell to a remote connection
+  - mcrypt and libmcrypt4, an encryption tool abandoned since 2007
+  - libjemalloc2, unused since Nginx stopped linking it in 2024 (packages that need it still bring it in)
+  - 31 development libraries (`-dev` packages) that nothing compiles against: Nginx compiles with its own copies of OpenSSL, PCRE2, zlib, and Brotli, and PHP comes from packages
+  - autogen, debhelper, and po-debconf (tools for building Debian packages and a rarely used template generator), and libgc1 and librabbitmq4 (libraries nothing uses), and axel (a download tool). The other build tools (autoconf, automake, libtool, bison, re2c, ccache, checkinstall) stay for compiling your own software.
+
+  We tested fresh installs on Ubuntu 24.04 and 26.04 without the development libraries. The package list is now grouped by what uses each package.
+- **Unused development libraries removed from existing servers:** the next EngineScript update removes the development libraries above, libjemalloc2, and the packages only they needed (about 90 to 100 packages). A library that another installed package still needs is kept, and so is anything apt already considered unneeded. Existing servers keep the other packages above. If you compile software against one of the removed libraries, reinstall it with `apt install`.
+- **No OCaml on new installs:** the dependencies step installed two OCaml packages that EngineScript does not use, and they brought in the OCaml compiler and its tools. New installs leave them out. Existing servers keep them; to remove them, run `apt-get purge libbz2-ocaml libbz2-ocaml-dev` and then `apt-get autoremove --purge`.
+
+### ✏️ INSTALL OUTPUT
+
+- **Shorter output:** the install no longer prints about 750 lines of MariaDB settings, which now go to `/var/log/EngineScript/mariadb-variables.log`. WP-CLI's package installs now print one line each instead of Composer's full output, which is shown only when a package fails. `setup.sh` and the Remove Preinstalled Software step no longer list hundreds of packages that are not installed, and `setup.sh` no longer lists the MOTD scripts before showing the MOTD.
+- **Clearer messages:**
+  - The configuration review shows the date as YYYY-MM-DD and the server memory in MB, and labels the CPU type "Architecture".
+  - The Nginx admin login step shows the username the admin site asks for.
+  - The end of the install shows one reboot notice instead of two.
+  - The DigitalOcean step is named "DigitalOcean Agents", as it installs the Metrics Agent as well as the Remote Console agent.
+  - The PCRE2 step says "PCRE2", and a skipped Adminer is labeled as such.
+- **No leftover MariaDB repository files:** each run of the MariaDB repository setup used to leave a `mariadb.sources.old_<n>.disabled` file in `/etc/apt/sources.list.d`. These are now removed.
+
 ## 2026-11-17
 
 ### 🐛 FIXES

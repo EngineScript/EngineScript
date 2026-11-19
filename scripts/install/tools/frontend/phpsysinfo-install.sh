@@ -20,7 +20,7 @@ PSI_DIR="/var/www/admin/tools/phpsysinfo"
 # it in when this succeeds, so a failed clone leaves the installed copy in place)
 build_phpsysinfo() {
     local dir="$1"
-    git clone --depth 1 "https://github.com/phpsysinfo/phpsysinfo.git" "${dir}" \
+    git clone --quiet --depth 1 "https://github.com/phpsysinfo/phpsysinfo.git" "${dir}" \
         || { echo "Error: Failed to clone phpSysInfo from GitHub" >&2; return 1; }
     if [[ ! -f "${dir}/index.php" ]]; then
         echo "Error: The phpSysInfo clone has no index.php" >&2

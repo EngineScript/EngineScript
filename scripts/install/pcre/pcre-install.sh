@@ -20,4 +20,4 @@ return_to_src
 # PCRE
 download_and_extract "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz" "/usr/src/pcre2-${PCRE2_VER}.tar.gz" || { echo "Error: Failed to download/extract PCRE2." >&2; exit 1; }
 
-echo "PCRE completed successfully. Script done."
+echo "PCRE2 completed successfully. Script done."

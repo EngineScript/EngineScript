@@ -54,12 +54,12 @@ if [[ "${FETCHED}" != "1" ]]; then
     echo "Fetching ${ENGINESCRIPT_BRANCH} branch..."
     # Stop when the fetch fails: FETCH_HEAD would still name the previous fetch, which may be the
     # other branch if TEST_MODE changed since. After a successful fetch it names the new commit.
-    if ! git fetch origin "${ENGINESCRIPT_BRANCH}" 2>> "${ES_STEP_ERROR_LOG}"; then
+    if ! git fetch --quiet origin "${ENGINESCRIPT_BRANCH}" 2>> "${ES_STEP_ERROR_LOG}"; then
         print_last_errors
         echo "Error: Could not fetch the ${ENGINESCRIPT_BRANCH} branch from GitHub. EngineScript was not updated." >&2
         exit 1
     fi
-    run_step "EngineScript Git Pull" git checkout -f -B "${ENGINESCRIPT_BRANCH}" FETCH_HEAD || die "Could not switch EngineScript to the fetched ${ENGINESCRIPT_BRANCH} branch. EngineScript was not updated."
+    run_step "EngineScript Git Pull" git checkout --quiet -f -B "${ENGINESCRIPT_BRANCH}" FETCH_HEAD || die "Could not switch EngineScript to the fetched ${ENGINESCRIPT_BRANCH} branch. EngineScript was not updated."
 
     # The checkout has LF line ends (.gitattributes) and executable scripts (their mode in git);
     # the daily permissions job puts them back if something changes them

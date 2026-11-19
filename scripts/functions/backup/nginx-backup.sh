@@ -21,7 +21,7 @@ NOW=$(date +%m-%d-%Y-%H)
 NGINX_FILE="${NOW}-nginx-vhost.conf.gz"
 
 # Backup Nginx Config
-tar -zcf "/home/EngineScript/config-backups/nginx/${NGINX_FILE}" /etc/nginx
+tar -C / -zcf "/home/EngineScript/config-backups/nginx/${NGINX_FILE}" etc/nginx
 
 # Remove Old Nginx Backups
 find /home/EngineScript/config-backups/nginx -type f -mtime +15 -delete

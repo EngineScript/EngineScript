@@ -96,7 +96,7 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   return_to_src
 
   clean_directory "/usr/src/zlib-rs"
-  git clone --branch "${ZLIB_RS_VER}" --depth 1 https://github.com/trifectatechfoundation/zlib-rs.git /usr/src/zlib-rs \
+  git clone --quiet --branch "${ZLIB_RS_VER}" --depth 1 https://github.com/trifectatechfoundation/zlib-rs.git /usr/src/zlib-rs \
     || { echo "Error: Failed to clone zlib-rs ${ZLIB_RS_VER}." >&2; exit 1; }
 
   cd /usr/src/zlib-rs/libz-rs-sys-cdylib || { echo "Error: Failed to change to /usr/src/zlib-rs/libz-rs-sys-cdylib" >&2; exit 1; }

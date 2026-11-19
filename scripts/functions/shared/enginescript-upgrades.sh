@@ -59,6 +59,13 @@ function run_once() {
     fi
 }
 
+# Usage: package_is_installed <package>
+# Succeeds when dpkg has the package installed (also when it is held)
+function package_is_installed() {
+    local package="$1"
+    dpkg-query -W -f='${Status}' "${package}" 2> /dev/null | grep -q 'ok installed'
+}
+
 
 # ----------------------------------------------------------------
 # Give existing sites' certificates a reload command.
@@ -201,7 +208,7 @@ function ensure_php_igbinary() {
     local ver failures=0
     while IFS= read -r ver; do
         [[ -n "${ver}" ]] || continue
-        if dpkg-query -W -f='${Status}' "php${ver}-igbinary" 2> /dev/null | grep -q 'install ok installed'; then
+        if package_is_installed "php${ver}-igbinary"; then
             apt-mark manual "php${ver}-igbinary" > /dev/null
             continue
         fi
@@ -391,7 +398,7 @@ MAP
 # get it in the tools step; existing servers only got it from Update Server Tools. Servers that
 # already have it are left alone.
 function install_fail2ban() {
-    dpkg-query -W -f='${Status}' fail2ban 2> /dev/null | grep -q 'ok installed' && return 0
+    package_is_installed fail2ban && return 0
     echo "Installing fail2ban (bans addresses after repeated failed SSH logins)..."
     "${ES_FAIL2BAN_SCRIPT:-/usr/local/bin/enginescript/scripts/install/tools/security/fail2ban.sh}"
 }
@@ -465,9 +472,126 @@ function add_auto_update_options() {
 # at GCC 15, and the snapshot is removed. Nginx is rebuilt with GCC 15 on its next update.
 function migrate_gcc_15_on_ubuntu_26_04() {
     [[ "${UBUNTU_VERSION:-}" == "26.04" ]] || return 0
-    dpkg-query -W -f='${Status}' gcc-16 2> /dev/null | grep -q 'ok installed' || return 0
+    package_is_installed gcc-16 || return 0
     echo "Switching the compiler from the GCC 16 development snapshot to GCC 15..."
     "${ES_GCC_INSTALL_SCRIPT:-/usr/local/bin/enginescript/scripts/install/gcc/gcc-install.sh}" || return 1
     apt-get remove --purge -y g++-16 gcc-16 \
         || echo "Warning: The GCC 16 snapshot could not be removed. GCC 15 compiles from now on." >&2
+}
+
+
+# ----------------------------------------------------------------
+# Remove the liburing EngineScript compiled from source
+#
+# Older versions compiled liburing and installed it in /usr: the library in /usr/lib, headers in
+# /usr/include, and man pages in /usr/man. Nothing used it. MariaDB loads Ubuntu's liburing2 from
+# /usr/lib/x86_64-linux-gnu, which the loader searches first, and Nginx, PHP-FPM, and Redis do not
+# use liburing. A file a package owns is left alone. While a running program has the library
+# loaded, nothing is removed, and the upgrade runs again on the next update.
+# ES_LIBURING_ROOT puts the paths under another folder (for tests).
+function remove_source_built_liburing() {
+    local root="${ES_LIBURING_ROOT:-}" file dir
+    local -a files=()
+
+    if grep -lsF "${root}/usr/lib/liburing" /proc/[0-9]*/maps > /dev/null 2>&1; then
+        echo "Warning: A running program has the old liburing loaded; it is removed on the next update." >&2
+        return 1
+    fi
+
+    shopt -s nullglob
+    files=(
+        "${root}"/usr/lib/liburing*.so* "${root}"/usr/lib/liburing*.a
+        "${root}"/usr/lib/pkgconfig/liburing*.pc
+        "${root}"/usr/include/liburing.h "${root}"/usr/include/liburing/*.h "${root}"/usr/include/liburing/io_uring/*.h
+        "${root}"/usr/man/man[237]/*[iI][oO]_[uU][rR][iI][nN][gG]*
+    )
+    shopt -u nullglob
+    if [[ ${#files[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    echo "Removing the liburing EngineScript compiled from source (nothing on the server uses it)..."
+    for file in "${files[@]}"; do
+        if dpkg-query -S "${file#"${root}"}" > /dev/null 2>&1; then
+            continue
+        fi
+        rm -f "${file}"
+    done
+    # The folders only liburing used, once empty (rmdir leaves a folder that still has files)
+    for dir in "${root}/usr/include/liburing/io_uring" "${root}/usr/include/liburing" \
+        "${root}"/usr/man/man[237] "${root}/usr/man"; do
+        rmdir "${dir}" 2> /dev/null || true
+    done
+    rm -rf "${root}"/usr/src/liburing-liburing-*
+    if [[ -z "${root}" ]]; then
+        ldconfig
+    fi
+    return 0
+}
+
+
+# ----------------------------------------------------------------
+# Remove the documentation tools pipx brought in
+#
+# The Gixy-Next step installed pipx with its recommended packages: mkdocs, a documentation site
+# generator, and about 40 packages it needs (numpy, nltk, pytest, tk, and others). Gixy-Next does
+# not use them; pipx gives it its own Python environment. mkdocs is removed only when apt
+# installed it as a recommendation (marked automatic), not when the admin installed it, and
+# autoremove then removes what only it needed.
+function remove_pipx_recommended_packages() {
+    package_is_installed mkdocs || return 0
+    apt-mark showauto mkdocs 2> /dev/null | grep -qx 'mkdocs' || return 0
+    echo "Removing mkdocs and the packages only it needs (pipx installed them; Gixy-Next does not use them)..."
+    apt-get purge -y mkdocs || return 1
+    apt-get autoremove --purge -y || return 1
+}
+
+
+# ----------------------------------------------------------------
+# Remove ktls-utils
+#
+# Its only program, tlshd, is a background service that does TLS handshakes for TLS users inside
+# the kernel (NFS over TLS, NVMe over TCP). Nginx's kTLS does not use it: OpenSSL does the
+# handshake inside Nginx and passes the keys to the kernel's tls module, which EngineScript loads
+# itself (/etc/modules-load.d/tls.conf). Tested: with ktls-utils purged, Nginx still sends
+# through kernel TLS.
+function remove_ktls_utils() {
+    package_is_installed ktls-utils || return 0
+    echo "Removing ktls-utils (its tlshd service is not used; Nginx's kTLS does not need it)..."
+    apt-get purge -y ktls-utils
+}
+
+
+# ----------------------------------------------------------------
+# Remove the unused development libraries
+#
+# The dependencies step installed development libraries (-dev) that nothing compiles against:
+# Nginx compiles with its own copies of OpenSSL, PCRE2, zlib, and Brotli, and PHP comes from
+# packages. libjemalloc2 is here too: nothing has used it since Nginx stopped linking it in 2024.
+#
+# Each one that is installed is marked as automatically installed, so apt keeps it while an
+# installed package still needs it (libjemalloc2 for redis-tools on Ubuntu 26.04, for example).
+# Then only the packages that this marking left unneeded are purged: the libraries and what only
+# they needed. Packages that were already unneeded before are left alone.
+UNUSED_DEV_LIBRARIES=(
+    libbsd-dev libbz2-dev libcunit1-dev libcurl4-openssl-dev libelf-dev libev-dev libevent-dev
+    libexpat1-dev libgd-dev libgeoip-dev libgoogle-perftools-dev libjansson-dev libjemalloc-dev
+    libjemalloc2 libmaxminddb-dev libmcrypt-dev libmhash-dev libmnl-dev libopts25-dev libpam0g-dev
+    libpcre2-dev libpcre3-dev libperl-dev libreadline-dev libsodium-dev libssh2-1-dev libssl-dev
+    libtidy-dev libxml2-dev libxslt1-dev uuid-dev zlib1g-dev
+)
+function remove_unused_dev_libraries() {
+    local -a installed=() before=() after=() unneeded=()
+    mapfile -t installed < <(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' "${UNUSED_DEV_LIBRARIES[@]}" 2> /dev/null \
+        | awk '$1 == "ii" { print $2 }')
+    if [[ ${#installed[@]} -eq 0 ]]; then return 0; fi
+
+    mapfile -t before < <(apt-get -s autoremove 2> /dev/null | awk '$1 == "Remv" { print $2 }')
+    apt-mark auto "${installed[@]}" > /dev/null || return 1
+    mapfile -t after < <(apt-get -s autoremove 2> /dev/null | awk '$1 == "Remv" { print $2 }')
+    mapfile -t unneeded < <(comm -13 <(printf '%s\n' "${before[@]}" | sort -u) <(printf '%s\n' "${after[@]}" | sort -u) | grep -v '^$')
+    if [[ ${#unneeded[@]} -eq 0 ]]; then return 0; fi
+
+    echo "Removing ${#unneeded[@]} unused development libraries and the packages only they needed..."
+    apt-get purge -y "${unneeded[@]}"
 }

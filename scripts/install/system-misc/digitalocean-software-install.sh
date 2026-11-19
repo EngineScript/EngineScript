@@ -90,4 +90,4 @@ else
     echo ""
 fi
 
-echo "DigitalOcean Remote Console completed successfully. Script done."
+echo "DigitalOcean Agents completed successfully. Script done."

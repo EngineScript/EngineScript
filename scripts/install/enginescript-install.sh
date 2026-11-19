@@ -26,6 +26,12 @@ dos2unix /home/EngineScript/enginescript-install-options.txt
 # EngineScript settings and shared functions
 source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh || { echo "Error: Failed to source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh" >&2; exit 1; }
 
+# needrestart: apt runs it after every package install, and it restarts services (SSH and the
+# network among them) and writes its report to stderr, which each step shows as errors. The
+# install reboots the server at the end, which restarts everything once, so it is suspended for
+# the install's apt runs (the CI install tests do the same).
+export NEEDRESTART_SUSPEND=1
+
 # Reboot Warning
 echo -e "\nATTENTION:\n\nThe server needs to reboot at the end of this script.\nEnter the es.menu command after rebooting to continue.\n\nThe script will continue in 5 seconds..." | boxes -a c -d shell -p a1l2
 sleep 5
@@ -44,10 +50,10 @@ fi
 # Configuration File Check
 echo -e "${BOLD}\n\n--------------------\nConfiguration Review\n--------------------${NORMAL}"
 echo -e "${BOLD}\nServer Information:${NORMAL}"
-echo "Script Run Date = $DT"
+echo "Date = $(date '+%Y-%m-%d')"
 echo "CPU Count = $CPU_COUNT"
-echo "32bit or 64bit = $BIT_TYPE"
-echo "Server Memory = $SERVER_MEMORY_TOTAL_100"
+echo "Architecture = $BIT_TYPE"
+echo "Server Memory = ${SERVER_MEMORY_TOTAL_100} MB"
 echo "IP Address = $IP_ADDRESS"
 echo "Linux Version = $UBUNTU_TYPE $UBUNTU_VERSION $UBUNTU_CODENAME"
 
@@ -172,13 +178,10 @@ run_install_step "SFL" "/usr/local/bin/enginescript/scripts/install/system-misc/
 # NTP
 run_install_step "NTP" "/usr/local/bin/enginescript/scripts/install/systemd/timesyncd.sh" "NTP"
 
-# DigitalOcean Remote Console (optional)
+# DigitalOcean agents: the Droplet Agent (Remote Console) and, when enabled, the Metrics Agent (optional)
 if [[ "${INSTALL_DIGITALOCEAN_REMOTE_CONSOLE}" = "1" ]]; then
-  run_install_step "DO_CONSOLE" "/usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh" "DigitalOcean Remote Console"
+  run_install_step "DO_CONSOLE" "/usr/local/bin/enginescript/scripts/install/system-misc/digitalocean-software-install.sh" "DigitalOcean Agents"
 fi
-
-# liburing
-run_install_step "LIBURING" "/usr/local/bin/enginescript/scripts/install/liburing/liburing-install.sh" "liburing"
 
 # UFW
 run_install_step "UFW" "/usr/local/bin/enginescript/scripts/install/ufw/ufw-install.sh" "UFW"
@@ -259,12 +262,8 @@ clear
 # Display Install Info
 /usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh
 
-# Reboot Notice
-echo -e "${BOLD}The server needs to reboot.${NORMAL}\n\nEnter the ${BOLD}es.menu${NORMAL} command after rebooting to continue.\n" | boxes -a c -d shell -p a1l2
-sleep 10
-clear
-
-echo -e "The server is rebooting now...\n\n${NORMAL}After reconnecting, use the ${BOLD}es.menu${NORMAL} command to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n\n${BOLD}Bye! Manually reconnect in 30 seconds.\n" | boxes -a c -d shell -p a1l2
+# Reboot Notice: one notice under the install information, which stays on screen
+echo -e "${BOLD}The server reboots in 10 seconds.${NORMAL}\n\nReconnect in about 30 seconds, then use the ${BOLD}es.menu${NORMAL} command to start EngineScript.\nSelect option 1 to create a new vhost configuration on your server.\n" | boxes -a c -d shell -p a1l2
 
 # The optional tools the Tools step could not install, shown last so they stay on screen when the
 # connection closes; the file is removed, so a later es.install does not show them again
@@ -275,4 +274,5 @@ if [[ -s "${ES_TOOLS_NOT_INSTALLED_FILE}" ]]; then
   echo "Their errors are in /var/log/EngineScript/install-error-log.log."
   rm -f "${ES_TOOLS_NOT_INSTALLED_FILE}"
 fi
+sleep 10
 shutdown -r now

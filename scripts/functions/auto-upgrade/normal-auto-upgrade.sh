@@ -52,6 +52,14 @@ ONE_TIME_UPGRADES=(
   add_auto_update_options
   # GCC: Ubuntu 26.04 compiles with GCC 15, not the GCC 16 development snapshot
   migrate_gcc_15_on_ubuntu_26_04
+  # liburing: the copy compiled from source, which nothing used
+  remove_source_built_liburing
+  # Gixy-Next: mkdocs and its packages, which pipx brought in as recommendations
+  remove_pipx_recommended_packages
+  # ktls-utils: its tlshd service is for TLS inside the kernel, which Nginx's kTLS does not use
+  remove_ktls_utils
+  # Development libraries nothing compiles against, and libjemalloc2 (kept while a package needs it)
+  remove_unused_dev_libraries
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then
