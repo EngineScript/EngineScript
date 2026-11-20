@@ -187,17 +187,17 @@ EngineScript includes a web-based admin control panel at `https://admin.yourdoma
 |**Certificate Management**|||
 |ACME.sh||<https://get.acme.sh>|
 |**Web Server**|||
-|NGINX MAINLINE|1.31.8|<https://nginx.org/en/download.html>|
+|NGINX MAINLINE|1.31.9|<https://nginx.org/en/download.html>|
 |NGINX CACHE PURGE|3.0.4|<https://github.com/nginx-modules/ngx_cache_purge>|
-|NGINX HEADERS MORE|0.41|<https://github.com/openresty/headers-more-nginx-module>|
+|NGINX HEADERS MORE|0.42|<https://github.com/openresty/headers-more-nginx-module>|
 |NGINX BROTLI|Latest|<https://github.com/google/ngx_brotli>|
 |OPENSSL|4.1.0|<https://www.openssl.org/source/>|
 |PCRE2|10.49|<https://github.com/PCRE2Project/pcre2/releases>|
-|ZLIB|1.3.2|<https://github.com/madler/zlib>|
+|ZLIB|1.4|<https://github.com/madler/zlib>|
 |**Application Server**|||
 |PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
-|MARIADB|11.8.9|<https://mariadb.org/download/>|
+|MARIADB|11.8.10|<https://mariadb.org/download/>|
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||
