@@ -351,9 +351,20 @@ mkdir -p "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d" "${ES_SYSTEMD_DIR}/php8.4-fpm.
 printf '[Service]\nMemoryHigh=1285M\nMemoryMax=1428M\n' > "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d/enginescript.conf"
 printf '[Service]\nNice=5\n' > "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d/admin.conf"
 tuning_load() { :; }
-tuning_get() { case "$1" in PHP_MEMORY_HIGH_MB) echo 1285 ;; PHP_MEMORY_MAX_MB) echo 1428 ;; esac; }
+tuning_get() {
+  local key="$1"
+  case "${key}" in
+    PHP_MEMORY_HIGH_MB) echo 1285 ;;
+    PHP_MEMORY_MAX_MB) echo 1428 ;;
+    *) return 0 ;;
+  esac
+}
 RELOADS=0
-systemctl() { [[ "$1" == "daemon-reload" ]] && RELOADS=$((RELOADS + 1)); return 0; }
+systemctl() {
+  local command="$1"
+  [[ "${command}" == "daemon-reload" ]] && RELOADS=$((RELOADS + 1))
+  return 0
+}
 status=0
 migrate_php_fpm_oom_policy > /dev/null || status=$?
 check "the override keeps the plan's ceiling and adds OOMPolicy=continue" \
