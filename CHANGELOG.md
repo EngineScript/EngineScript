@@ -4,6 +4,12 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-24
+
+### ⚡ PERFORMANCE
+
+- **1 GB servers run 2 PHP workers instead of 3:** servers with less than 1.5 GB of memory now get 2 PHP-FPM workers, with the same PHP memory limit as before, so each worker has about 105 MB instead of 70. We tested a 1 GB, 1 vCPU server running a WooCommerce shop with 32 plugins. With 3 workers, PHP went over its memory limit 7 times in 16 minutes, and each time a request failed. With 2 workers it never did, the shop served about as many pages (4% fewer to 4% more, depending on traffic), and admin pages were 15% faster. Servers with 1.5 GB or more keep their worker count. The next EngineScript update re-tunes every server once to apply the new plan; only servers under 1.5 GB see a change.
+
 ## 2026-11-20
 
 ### ⚡ PERFORMANCE
