@@ -73,7 +73,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_path', '/');
     ini_set('session.cookie_domain', '');
     ini_set('session.use_strict_mode', '1');   // Reject uninitialized session IDs
-    ini_set('session.use_only_cookies', '1');  // Only use cookies for session ID
+    // Session IDs come only from cookies: php.ini sets session.use_only_cookies = 1, PHP's
+    // default, and PHP 8.4 deprecates changing it at runtime.
 
     // A failed start leaves no session to regenerate; the check below answers 503
     if (session_start() && !$session->has('_initialized')) {
