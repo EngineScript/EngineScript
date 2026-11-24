@@ -93,8 +93,20 @@ function panelInterceptor(dir, fontAwesome, requested) {
 }
 
 const GLOBALS = [
-  "window", "document", "location", "localStorage", "Element", "HTMLElement", "HTMLButtonElement",
-  "Node", "Event", "KeyboardEvent", "MouseEvent", "CustomEvent", "getComputedStyle", "matchMedia"
+  "window",
+  "document",
+  "location",
+  "localStorage",
+  "Element",
+  "HTMLElement",
+  "HTMLButtonElement",
+  "Node",
+  "Event",
+  "KeyboardEvent",
+  "MouseEvent",
+  "CustomEvent",
+  "getComputedStyle",
+  "matchMedia"
 ];
 
 /**

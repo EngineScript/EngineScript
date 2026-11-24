@@ -44,7 +44,9 @@ describe("loading", () => {
     assert.ok(page.dashboard);
     assert.deepEqual(page.errors, []);
     assert.deepEqual(page.calls.map((call) => `${call.method} ${call.url}`).toSorted(), [
-      "GET /api/monitoring/uptime", "GET /api/monitoring/uptime/monitors", "GET /api/services/status"
+      "GET /api/monitoring/uptime",
+      "GET /api/monitoring/uptime/monitors",
+      "GET /api/services/status"
     ]);
     assert.ok($("#loading-screen").classList.contains("es-hidden"));
     assert.ok(!$("#dashboard").classList.contains("es-hidden"));
@@ -146,7 +148,9 @@ describe("navigation", () => {
     const info = rendered("running", "GET /api/system/info");
 
     assert.deepEqual($$("#system-info .info-item").map((item) => [...item.children].map((child) => child.textContent)), [
-      ["OS:", info.os], ["Kernel:", info.kernel], ["Network:", info.network]
+      ["OS:", info.os],
+      ["Kernel:", info.kernel],
+      ["Network:", info.network]
     ]);
   });
 
