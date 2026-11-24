@@ -29,39 +29,43 @@ function es_compress() {
 # Write a file's contents, decompressed, to standard output. The name says how: .zst or .gz.
 # Usage: es_decompress <file>
 function es_decompress() {
-    case "$1" in
-        *.zst) zstd -q -dc -- "$1" ;;
-        *.gz) gzip -dc -- "$1" ;;
-        *) echo "Not a .zst or .gz file: $1" >&2; return 1 ;;
+    local file="$1"
+    case "${file}" in
+        *.zst) zstd -q -dc -- "${file}" ;;
+        *.gz) gzip -dc -- "${file}" ;;
+        *) echo "Not a .zst or .gz file: ${file}" >&2; return 1 ;;
     esac
 }
 
 # Decompress standard input to standard output, for data stored under a name ending in .zst or .gz
 # Usage: <command> | es_decompress_stream <name>
 function es_decompress_stream() {
-    case "$1" in
+    local name="$1"
+    case "${name}" in
         *.zst) zstd -q -dc ;;
         *.gz) gzip -dc ;;
-        *) echo "Not a .zst or .gz name: $1" >&2; return 1 ;;
+        *) echo "Not a .zst or .gz name: ${name}" >&2; return 1 ;;
     esac
 }
 
 # Print the tar option that reads an archive stored under a name ending in .tar.zst or .tar.gz
 # Usage: tar "$(es_tar_read_option <name>)" -tf <file>
 function es_tar_read_option() {
-    case "$1" in
+    local name="$1"
+    case "${name}" in
         *.tar.zst) echo "--zstd" ;;
         *.tar.gz) echo "--gzip" ;;
-        *) echo "Not a .tar.zst or .tar.gz name: $1" >&2; return 1 ;;
+        *) echo "Not a .tar.zst or .tar.gz name: ${name}" >&2; return 1 ;;
     esac
 }
 
 # Succeed when a compressed file reads back whole (.zst or .gz)
 # Usage: es_compressed_file_ok <file>
 function es_compressed_file_ok() {
-    case "$1" in
-        *.zst) zstd -q -t -- "$1" 2> /dev/null ;;
-        *.gz) gzip -t -- "$1" 2> /dev/null ;;
+    local file="$1"
+    case "${file}" in
+        *.zst) zstd -q -t -- "${file}" 2> /dev/null ;;
+        *.gz) gzip -t -- "${file}" 2> /dev/null ;;
         *) return 1 ;;
     esac
 }
