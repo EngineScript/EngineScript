@@ -31,11 +31,13 @@ IMPORT_BASE_DIR="/home/EngineScript/temp/site-import"
 WP_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-root" # Temporary path for extracted files
 WP_FILES_EXTRACTED_PATH="${IMPORT_BASE_DIR}/extracted-files" # Temporary path for nested files archives
 
-# EngineScript combined site archive format (v1)
+# EngineScript combined site archive (enginescript-site-archive.sh describes it)
 # Keep this contract aligned with the EngineScript Site Exporter WordPress plugin:
 #   - The user places exactly one outer .zip file in IMPORT_BASE_DIR.
-#   - The ZIP must contain manifest.txt, database/<dump>.sql.gz, and files/<wordpress-files>.tar.gz.
-#   - This is the only supported import format. Keep the WordPress plugin exporter identical.
+#   - The ZIP must contain manifest.txt, one database/<dump>.sql.zst or .sql.gz, and one
+#     files/<wordpress-files>.tar.zst or .tar.gz. EngineScript writes zstd (format version 2);
+#     the plugin, and EngineScript before 2026-11-20, write gzip (version 1). Either is read.
+#   - This is the only supported import format.
 
 # Note: ALLOWED_DB_CHARSETS is now defined in enginescript-db-credentials.sh
 
@@ -71,15 +73,16 @@ URL_VALIDATION_REGEX="${URL_VALIDATION_REGEX:-$DEFAULT_URL_VALIDATION_REGEX}"
 
 # Refuse an archive with an absolute path or a parent-directory (..) segment in any entry, so
 # extracting it cannot write outside the target folder (Zip Slip). Takes the outer .zip and the
-# files/<site>_files_<timestamp>.tar.gz inside it.
-# Usage: validate_archive_paths <archive.zip|archive.tar.gz>
+# files/<site>_files_<timestamp>.tar.zst (or .tar.gz) inside it.
+# Usage: validate_archive_paths <archive.zip|archive.tar.zst|archive.tar.gz>
 validate_archive_paths() {
-    local archive_file="$1" entry archive_entries
+    local archive_file="$1" entry archive_entries tar_option
 
     if [[ "${archive_file}" == *.zip ]]; then
         archive_entries="$(unzip -Z -1 "${archive_file}")"
     else
-        archive_entries="$(tar -tzf "${archive_file}")"
+        tar_option="$(es_tar_read_option "${archive_file}")" \
+            && archive_entries="$(tar "${tar_option}" -tf "${archive_file}")"
     fi || { echo "FAILED: Could not read archive ${archive_file}"; return 1; }
 
     while IFS= read -r entry; do
@@ -119,10 +122,11 @@ echo "This import process accepts one combined EngineScript site archive:"
 echo ""
 echo "${BOLD}Single Combined Export File (EngineScript Site Exporter format)${NORMAL}"
 echo "   - Use a single .zip file containing both WordPress files and one database dump."
-echo "   - The current EngineScript shell exporter writes:"
+echo "   - EngineScript's own exports and backups contain:"
 echo "       manifest.txt"
-echo "       database/<site>_db_<timestamp>.sql.gz"
-echo "       files/<site>_files_<timestamp>.tar.gz"
+echo "       database/<site>_db_<timestamp>.sql.zst"
+echo "       files/<site>_files_<timestamp>.tar.zst"
+echo "     The plugin, and EngineScript before November 2026, use .sql.gz and .tar.gz. Both work."
 echo "   - ${YELLOW}If you don't have the plugin on your source site:${NORMAL}"
 echo "     1. Download the plugin zip from: ${UNDERLINE}https://github.com/EngineScript/enginescript-site-exporter/releases/latest${NORMAL}"
 echo "     2. In your source WordPress admin area, go to 'Plugins' -> 'Add New' -> 'Upload Plugin'."
@@ -152,7 +156,8 @@ echo "This script will import an existing WordPress site."
 echo "Please ensure the following:"
 echo "  1. Exactly one combined EngineScript site export .zip is placed in:"
 echo "     ${IMPORT_BASE_DIR}"
-echo "  2. The combined .zip contains manifest.txt, database/*.sql.gz, and files/*.tar.gz."
+echo "  2. The combined .zip contains manifest.txt, a database dump (database/*.sql.zst or"
+echo "     *.sql.gz), and the site's files (files/*.tar.zst or *.tar.gz)."
 echo ""
 sleep 1
 
@@ -194,11 +199,12 @@ extract_prefix_from_db() {
     # broadening the previous [a-zA-Z0-9_]+ which would miss prefixes like "my-site_".
     local table_name=""
 
-    # Use zgrep for .gz, grep for .sql.
-    if [[ "$db_file" == *.gz ]]; then
-        grep_cmd="zgrep"
+    # A compressed dump (.sql.zst, .sql.gz) is read through its decompressor; a plain .sql directly
+    if [[ "$db_file" == *.zst || "$db_file" == *.gz ]]; then
+        table_name=$(es_decompress "$db_file" 2> /dev/null | "$grep_cmd" -m 1 -oE "${search_pattern}" | head -n 1)
+    else
+        table_name=$("$grep_cmd" -m 1 -oE "${search_pattern}" "$db_file" | head -n 1)
     fi
-    table_name=$("$grep_cmd" -m 1 -oE "${search_pattern}" "$db_file" | head -n 1)
 
     if [[ -n "$table_name" ]]; then
         # Keep only the quoted/backticked table identifier token (last whitespace-delimited field)
@@ -242,7 +248,7 @@ if [[ "${COMBINED_ARCHIVE_COUNT}" -ne 1 ]]; then
     echo "Please place exactly one EngineScript site export .zip directly in:"
     echo "  ${IMPORT_BASE_DIR}"
     echo ""
-    echo "The archive must contain manifest.txt, database/*.sql.gz, and files/*.tar.gz."
+    echo "The archive must contain manifest.txt, database/*.sql.zst (or .sql.gz), and files/*.tar.zst (or .tar.gz)."
     exit 1
 fi
 
@@ -281,7 +287,8 @@ if ! grep -Fxq "format=enginescript-site-archive" "${MANIFEST_PATH}"; then
     die "manifest.txt does not identify an EngineScript site archive."
 fi
 
-if ! grep -Fxq "version=1" "${MANIFEST_PATH}"; then
+# Version 1 (gzip parts: the plugin, and EngineScript before 2026-11-20) and version 2 (zstd parts)
+if ! grep -Exq "version=[12]" "${MANIFEST_PATH}"; then
     die "Unsupported EngineScript site archive manifest version."
 fi
 
@@ -293,26 +300,27 @@ if [[ ! -d "${WP_EXTRACTED_PATH}/files" ]]; then
     die "files/ directory not found in the combined archive."
 fi
 
-mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/database" -maxdepth 1 -type f -name "*.sql.gz" -print0 | sort -z)
+mapfile -d '' -t DB_SOURCE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/database" -maxdepth 1 -type f \( -name "*.sql.zst" -o -name "*.sql.gz" \) -print0 | sort -z)
 if [[ ${#DB_SOURCE_CANDIDATES[@]} -ne 1 ]]; then
     echo "FAILED: Could not find exactly one compressed database file inside the combined archive."
-    echo "Expected canonical path: database/<dump>.sql.gz"
+    echo "Expected canonical path: database/<dump>.sql.zst (or .sql.gz)"
     exit 1
 fi
 DB_SOURCE_PATH="${DB_SOURCE_CANDIDATES[0]}"
 echo "PASSED: Found database file within combined archive: ${DB_SOURCE_PATH}"
 
-mapfile -d '' -t WP_FILES_ARCHIVE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/files" -maxdepth 1 -type f -name "*.tar.gz" -print0 | sort -z)
+mapfile -d '' -t WP_FILES_ARCHIVE_CANDIDATES < <(find "${WP_EXTRACTED_PATH}/files" -maxdepth 1 -type f \( -name "*.tar.zst" -o -name "*.tar.gz" \) -print0 | sort -z)
 if [[ ${#WP_FILES_ARCHIVE_CANDIDATES[@]} -ne 1 ]]; then
     echo "FAILED: Could not find exactly one WordPress files archive inside the combined archive."
-    echo "Expected canonical path: files/<wordpress-files>.tar.gz"
+    echo "Expected canonical path: files/<wordpress-files>.tar.zst (or .tar.gz)"
     exit 1
 fi
 
 WP_FILES_ARCHIVE_PATH="${WP_FILES_ARCHIVE_CANDIDATES[0]}"
 echo "Extracting WordPress files archive: ${WP_FILES_ARCHIVE_PATH}"
 mkdir -p "${WP_FILES_EXTRACTED_PATH}"
-if ! validate_archive_paths "${WP_FILES_ARCHIVE_PATH}" || ! tar -zxf "${WP_FILES_ARCHIVE_PATH}" -C "${WP_FILES_EXTRACTED_PATH}"; then
+if ! validate_archive_paths "${WP_FILES_ARCHIVE_PATH}" \
+    || ! tar "$(es_tar_read_option "${WP_FILES_ARCHIVE_PATH}")" -xf "${WP_FILES_ARCHIVE_PATH}" -C "${WP_FILES_EXTRACTED_PATH}"; then
     die "Could not extract WordPress files archive."
 fi
 
@@ -633,9 +641,9 @@ run_as_www_data chmod 600 "${TARGET_WP_PATH}/wp-config.php"
 echo "Importing database from ${DB_SOURCE_PATH}..." # DB_SOURCE_PATH is already set
 cd "${TARGET_WP_PATH}" || die "Failed to change to ${TARGET_WP_PATH}"
 
-# Import the database using WP-CLI. The dump (database/*.sql.gz, checked above) is decompressed
-# into the import, with no uncompressed copy on disk for other users to read.
-if ! (set -o pipefail; gunzip -c "${DB_SOURCE_PATH}" | wp_site db import -); then
+# Import the database using WP-CLI. The dump (database/*.sql.zst or .sql.gz, checked above) is
+# decompressed into the import, with no uncompressed copy on disk for other users to read.
+if ! (set -o pipefail; es_decompress "${DB_SOURCE_PATH}" | wp_site db import -); then
     die "Failed to import the database. Please check the database file and credentials."
 fi
 echo "Database imported successfully."

@@ -75,22 +75,22 @@ backup_age() {
 # Read a backup file back: a database dump must also end with the line mariadb-dump writes
 # when it finishes, so a dump cut short (a full disk, a stopped backup) is caught. A site
 # archive must name its format and hold a complete dump and a readable files archive
-# (site_archive_verify).
+# (site_archive_verify). Backups are zstd (.zst); those made before 2026-11-20 are gzip (.gz).
 check_backup_file() {
   local file="$1" last
   case "${file}" in
-    *.tar.gz)
-      tar -tzf "${file}" > /dev/null 2>&1
+    *.tar.zst | *.tar.gz)
+      tar "$(es_tar_read_option "${file}")" -tf "${file}" > /dev/null 2>&1
       ;;
-    *-database.sql.gz)
-      last="$(set -o pipefail; zcat "${file}" 2> /dev/null | tail -n 1)" || return 1
+    *-database.sql.zst | *-database.sql.gz)
+      last="$(set -o pipefail; es_decompress "${file}" 2> /dev/null | tail -n 1)" || return 1
       [[ "${last}" == "-- Dump completed"* ]]
       ;;
     *-site-archive.zip)
       site_archive_verify "${file}"
       ;;
     *)
-      gzip -t "${file}" 2> /dev/null
+      es_compressed_file_ok "${file}"
       ;;
   esac
 }
@@ -104,7 +104,7 @@ check_newest_backup() {
     printf '    %-22s %s\n' "${label}" "none"
     return
   fi
-  for file in "${dir}/${newest}"/*.gz "${dir}/${newest}"/*.zip; do
+  for file in "${dir}/${newest}"/*.zst "${dir}/${newest}"/*.gz "${dir}/${newest}"/*.zip; do
     [[ -f "${file}" ]] || continue
     files=$((files + 1))
     if ! check_backup_file "${file}"; then

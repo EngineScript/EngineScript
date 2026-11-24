@@ -26,6 +26,16 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **The zlib-rs option now builds:** with `ZLIB_IMPLEMENTATION="zlib-rs"`, every Nginx install or update stopped with "The zlib source download failed" after building zlib-rs, and an update left Nginx on the previous version. The zlib-rs library was looked for in the wrong folder. zlib-rs remains experimental.
 
+### 💾 BACKUPS
+
+- **Backups and exports use zstd instead of gzip:** everything EngineScript compresses is now zstd (level 3, on one CPU, so the other CPUs keep serving your sites while a backup runs). On a test server with a 600 MB database under steady traffic, the hourly database backup took 10 seconds instead of 47, and while gzip ran the sites served about a quarter fewer requests. The file was 2% smaller. For the files of a 1.7 GB site, the site archive took about 15 seconds instead of 43; photos do not compress further, so its size is the same. New file names:
+  - hourly and daily database backups: `<site>-database.sql.zst`, and `<site>-wp-config.php.zst` in each daily folder
+  - site archives (Export Domain, the scheduled files backups, the backup before a Wordfence CLI fix): `database/<site>_db_<time>.sql.zst` and `files/<site>_files_<time>.tar.zst` inside the ZIP, which now says `version=2` in its `manifest.txt`
+  - EngineScript's configuration backup: `enginescript-config.tar.zst`; the PHP and Nginx configuration backups: `<date>-php.tar.zst` and `<date>-nginx.tar.zst` (the Nginx one was a gzip archive named `<date>-nginx-vhost.conf.gz`)
+  - the copy of every database taken before a MariaDB update: `all-databases.sql.zst`
+- **Import Domain reads both formats:** archives from the EngineScript Site Exporter plugin stay gzip (PHP cannot write zstd on most hosts), and so do archives and backups made before this update. Import Domain and Backup Tools' Check the Latest Backups read gzip and zstd. An EngineScript server that has not been updated cannot import the new archives: it stops with "Unsupported EngineScript site archive manifest version". Update EngineScript on the server you are moving a site to first.
+- **Existing backups stay as they are:** your gzip backups are kept until their usual retention removes them. When a new zstd backup lands in a folder that already has a gzip one from earlier the same day, the gzip copy is removed. To restore a database backup by hand, use `zstd -dc <file>.sql.zst | mariadb <database>` (or `gunzip -c` for an older `.sql.gz`).
+
 ## 2026-11-19
 
 ### ⚡ PERFORMANCE

@@ -7,19 +7,25 @@
 # License:      GPL v3.0
 #----------------------------------------------------------------------------------
 
-# EngineScript site archive (format version 1)
+# EngineScript site archive
 #
 # One ZIP that holds:
 #   manifest.txt
-#   database/<site>_db_<timestamp>.sql.gz
-#   files/<site>_files_<timestamp>.tar.gz    (the contents of the site's html folder)
-# vhost-import.sh reads it, and the EngineScript Site Exporter WordPress plugin writes the same
-# layout: keep the three in step. The payloads are already compressed, so the ZIP stores them
-# without compressing them again. site-archive-zip.py writes it.
+#   database/<site>_db_<timestamp>.sql.zst
+#   files/<site>_files_<timestamp>.tar.zst   (the contents of the site's html folder)
+# This file writes format version 2: both parts zstd (enginescript-compression.sh). Version 1 has
+# the same layout with gzip parts (.sql.gz, .tar.gz): EngineScript wrote it before 2026-11-20,
+# and the EngineScript Site Exporter WordPress plugin still does, as PHP has no zstd.
+# vhost-import.sh reads both versions; keep the layout in step with the plugin. The payloads are
+# already compressed, so the ZIP stores them without compressing them again. site-archive-zip.py
+# writes it.
 #
 # Site exports (vhost-export.sh), the scheduled files backups (enginescript-backup.sh), and the
 # backup before a Wordfence CLI remediation all build their archives here.
 # Needs run_as_www_data from enginescript-common.sh.
+
+# shellcheck source=scripts/functions/shared/enginescript-compression.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-compression.sh" || return 1
 
 # The folder that holds each site's html folder (changed by the tests)
 SITE_ARCHIVE_SITES_ROOT="${SITE_ARCHIVE_SITES_ROOT:-/var/www/sites}"
@@ -142,17 +148,18 @@ function build_site_archive() (
     # the signals themselves would wait for the command in progress, so there is none.
     # shellcheck disable=SC2064  # expand the folder now, for the same reason
     trap "kill \${SITE_ARCHIVE_JOBS} 2> /dev/null || true; rm -rf '${staging}'" EXIT
-    db_name="${site}_db_${stamp}.sql.gz"
-    files_name="${site}_files_${stamp}.tar.gz"
+    db_name="${site}_db_${stamp}.sql.zst"
+    files_name="${site}_files_${stamp}.tar.zst"
 
     # The addresses and table prefix, for the manifest's informational lines; each is checked by
     # site_archive_site_info, and empty when WP-CLI could not give it
     mapfile -t info < <(site_archive_site_info "${site_root}")
     # The first six lines keep their text and order for importers; the later ones are
-    # informational and match what the plugin writes.
+    # informational and match what the plugin writes. Version 2: an EngineScript server from
+    # before 2026-11-20 refuses it by its version, rather than for a missing .sql.gz.
     {
         echo "format=enginescript-site-archive"
-        echo "version=1"
+        echo "version=2"
         echo "site=${site}"
         echo "created_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         echo "database_path=database/${db_name}"
@@ -171,10 +178,10 @@ function build_site_archive() (
     # As www-data: WP-CLI loads the site's wp-config.php, which the site can change. One
     # transaction, so a site in use still gives a consistent dump.
     (set -o pipefail; cd / && run_as_www_data wp db export - --path="${site_root}" \
-        --single-transaction --quick --add-drop-table | gzip; echo "$?" > "${staging}/database.status") \
+        --single-transaction --quick --add-drop-table | es_compress; echo "$?" > "${staging}/database.status") \
         > "${staging}/database.pipe" &
     SITE_ARCHIVE_JOBS="$!"
-    (tar -C "${site_root}" -czf - --ignore-case "${SITE_ARCHIVE_TAR_EXCLUDES[@]}" .; echo "$?" > "${staging}/files.status") \
+    (tar -C "${site_root}" "${ES_TAR_ZSTD}" -cf - --ignore-case "${SITE_ARCHIVE_TAR_EXCLUDES[@]}" .; echo "$?" > "${staging}/files.status") \
         > "${staging}/files.pipe" &
     SITE_ARCHIVE_JOBS+=" $!"
     # The ZIP tool takes only names of files in its current folder, the staging folder. GNU tar
@@ -219,14 +226,27 @@ function build_site_archive() (
 
 # Succeed when a site archive reads back whole: its manifest names the format, its database dump
 # ends with the line mariadb-dump writes when it finishes (so a dump cut short is caught), and its
-# files archive can be listed to the end.
+# files archive can be listed to the end. Either format version: zstd or gzip parts.
 # Usage: site_archive_verify <archive .zip>
 function site_archive_verify() {
-    local archive="$1" last
+    local archive="$1" last db files
     unzip -p "${archive}" manifest.txt 2> /dev/null | grep -Fxq "format=enginescript-site-archive" || return 1
-    last="$(set -o pipefail; unzip -p "${archive}" 'database/*.sql.gz' 2> /dev/null | zcat 2> /dev/null | tail -n 1)" || return 1
+    db="$(site_archive_entry "${archive}" database '\.sql\.(zst|gz)')" || return 1
+    files="$(site_archive_entry "${archive}" files '\.tar\.(zst|gz)')" || return 1
+    last="$(set -o pipefail; unzip -p "${archive}" "${db}" 2> /dev/null | es_decompress_stream "${db}" 2> /dev/null | tail -n 1)" || return 1
     [[ "${last}" == "-- Dump completed"* ]] || return 1
-    (set -o pipefail; unzip -p "${archive}" 'files/*.tar.gz' 2> /dev/null | tar -tzf - > /dev/null 2>&1)
+    (set -o pipefail; unzip -p "${archive}" "${files}" 2> /dev/null | tar "$(es_tar_read_option "${files}")" -tf - > /dev/null 2>&1)
+}
+
+# Print the one entry of a site archive in a folder whose name ends as given (an extended regular
+# expression), or fail when there is not exactly one
+# Usage: site_archive_entry <archive .zip> <folder> <name ending>
+function site_archive_entry() {
+    local archive="$1" folder="$2" ending="$3"
+    local -a entries=()
+    mapfile -t entries < <(unzip -Z -1 "${archive}" 2> /dev/null | grep -E "^${folder}/[^/]+${ending}$")
+    [[ ${#entries[@]} -eq 1 ]] || return 1
+    printf '%s\n' "${entries[0]}"
 }
 
 # ----------------------------------------------------------------
