@@ -88,18 +88,16 @@ SHOW_ENGINESCRIPT_HEADER=0
 # PHP files in wp-content/uploads are always blocked, whatever this setting is.
 NGINX_BLOCK_UNSAFE_FILES=0
 
-## Experimental: zlib Alternative for Nginx (Optional) ##
-# Select an alternative zlib implementation for Nginx compilation.
-# This replaces the standard zlib with a higher-performance drop-in replacement.
-# Leave empty or set to "standard" to use official zlib (default, stable).
+## zlib Library for Nginx ##
+# The zlib library Nginx is compiled with, used for gzip responses (Brotli is unaffected).
+# A change takes effect the next time Nginx is compiled: es.menu > Update Software > Update Nginx,
+# or the next automatic Nginx update.
 #
 # Options:
-#   ""         = Standard zlib (default)
-#   "zlib-ng"  = zlib-ng (C, high-performance drop-in with --zlib-compat mode)
-#   "zlib-rs"  = zlib-rs (Rust-based, requires cargo/rustc toolchain on the server)
-#
-# WARNING: These are experimental options. If Nginx fails to compile, set this back to "".
-ZLIB_IMPLEMENTATION=""
+#   "zlib-ng"  = zlib-ng (default; about 3 times faster gzip than standard zlib)
+#   ""         = Standard zlib (also "standard")
+#   "zlib-rs"  = zlib-rs (experimental; Rust-based, installs the Rust toolchain on the server)
+ZLIB_IMPLEMENTATION="zlib-ng"
 
 ## DigitalOcean Remote Console ##
 # Install DigitalOcean's Droplet Agent for remote console access

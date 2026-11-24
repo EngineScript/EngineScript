@@ -26,11 +26,11 @@ download_and_extract "https://github.com/madler/zlib/archive/refs/tags/v${ZLIB_V
 
 
 #----------------------------------------------------------------------------------
-# Experimental: zlib-ng preparation
+# zlib-ng preparation (the default for new installs since 2026-11-20)
 
 if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-ng" ]]; then
   echo "============================================================="
-  echo "  Preparing zlib-ng ${ZLIB_NG_VER} (experimental)"
+  echo "  Preparing zlib-ng ${ZLIB_NG_VER}"
   echo "============================================================="
 
   # Return to /usr/src
@@ -112,7 +112,8 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-rs" ]]; then
   rm -rf "${ZLIB_RS_PREFIX}"
   mkdir -p "${ZLIB_RS_PREFIX}/lib" "${ZLIB_RS_PREFIX}/include"
 
-  if ! cp /usr/src/zlib-rs/target/release/libz_rs.a "${ZLIB_RS_PREFIX}/lib/libz.a" \
+  # libz-rs-sys-cdylib is outside zlib-rs's Cargo workspace, so cargo writes to its own target folder
+  if ! cp /usr/src/zlib-rs/libz-rs-sys-cdylib/target/release/libz_rs.a "${ZLIB_RS_PREFIX}/lib/libz.a" \
     || ! cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zlib.h "${ZLIB_RS_PREFIX}/include/" \
     || ! cp /usr/src/zlib-rs/libz-rs-sys-cdylib/include/zconf.h "${ZLIB_RS_PREFIX}/include/"; then
     echo "Error: Failed to install zlib-rs to ${ZLIB_RS_PREFIX}." >&2

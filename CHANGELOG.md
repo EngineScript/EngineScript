@@ -4,6 +4,16 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-20
+
+### ⚡ PERFORMANCE
+
+- **zlib-ng is the default zlib for new installs:** new servers compile Nginx with zlib-ng instead of standard zlib. On an EngineScript server, Nginx with zlib-ng served about 3 times as many gzip responses per second as with standard zlib, with about 65% less CPU per response and slightly smaller files. Brotli is not affected, and Cloudflare asks for Brotli, so the gain is mainly for visitors and tools that reach the server without Brotli support. Existing servers keep their setting. To switch, run `es.config`, set `ZLIB_IMPLEMENTATION="zlib-ng"`, and then run Update Nginx in `es.menu` (or wait for the next automatic Nginx update, which picks up the change).
+
+### 🐛 FIXES
+
+- **The zlib-rs option now builds:** with `ZLIB_IMPLEMENTATION="zlib-rs"`, every Nginx install or update stopped with "The zlib source download failed" after building zlib-rs, and an update left Nginx on the previous version. The zlib-rs library was looked for in the wrong folder. zlib-rs remains experimental.
+
 ## 2026-11-19
 
 ### ⚡ PERFORMANCE
