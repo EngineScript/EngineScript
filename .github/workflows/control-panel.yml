@@ -994,6 +994,33 @@ jobs:
             }
           ' "$RUNNER_TEMP/es-diagnostics/clover.xml" "$MINIMUM_LINE_COVERAGE"
 
+      - name: Upload coverage to Codacy
+        id: upload_coverage
+        # Dependabot's and forks' pull requests get no secrets, so they skip the upload. A failed
+        # upload fails the job on pushes; on a pull request it is reported without blocking it.
+        if: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          # Codacy's coverage reporter, pinned: update the version and the SHA-512 together, from
+          # the release's codacy-coverage-reporter-linux.SHA512SUM file
+          # (https://github.com/codacy/codacy-coverage-reporter/releases). Dependabot does not track it.
+          CODACY_REPORTER_VERSION: '14.1.3'
+          CODACY_REPORTER_SHA512: '73a6c93fc5db509fd0423d6e545759c3f61d8360ee12054e32a9277daab6add0da6c6639248f6ed6c0042366440293ebc0b6144325aef52c5d3d4b230d65eb17'
+          # Codacy analyzes a pull request's head commit, not the merge commit GitHub checks out
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [ -z "$CODACY_PROJECT_TOKEN" ]; then
+            echo "::error::The CODACY_PROJECT_TOKEN secret is not set, so Codacy cannot receive this commit's coverage."
+            exit 1
+          fi
+          reporter="$RUNNER_TEMP/codacy-coverage-reporter"
+          curl --proto '=https' --fail --silent --show-error --location --retry 3 --output "$reporter" \
+            "https://github.com/codacy/codacy-coverage-reporter/releases/download/$CODACY_REPORTER_VERSION/codacy-coverage-reporter-linux"
+          echo "$CODACY_REPORTER_SHA512  $reporter" | sha512sum --check --strict -
+          chmod +x "$reporter"
+          "$reporter" report --commit-uuid "$COMMIT_SHA" -r "$RUNNER_TEMP/es-diagnostics/clover.xml"
+
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
         if: ${{ always() }}
@@ -1005,6 +1032,7 @@ jobs:
             install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
             run_unit_tests_with_coverage=${{ steps.run_unit_tests_with_coverage.outcome }}
             check_line_coverage=${{ steps.check_line_coverage.outcome }}
+            upload_coverage=${{ steps.upload_coverage.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/es-diagnostics"
           printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/es-diagnostics/steps.txt"
@@ -1035,7 +1063,7 @@ jobs:
         uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests_with_coverage.outcome == 'failure' && 'run_unit_tests_with_coverage' || steps.check_line_coverage.outcome == 'failure' && 'check_line_coverage' || 'unknown_or_canceled' }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests_with_coverage.outcome == 'failure' && 'run_unit_tests_with_coverage' || steps.check_line_coverage.outcome == 'failure' && 'check_line_coverage' || steps.upload_coverage.outcome == 'failure' && 'upload_coverage' || 'unknown_or_canceled' }}
           PHP_VERSION: '8.4'
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:

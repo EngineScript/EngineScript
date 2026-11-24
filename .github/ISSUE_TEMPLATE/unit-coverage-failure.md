@@ -21,7 +21,11 @@ dependency installation does not show a problem in the code.
 
 ### What the job checks
 
-The job runs the unit suite with PCOV coverage and the minimum line coverage set in the job (`MINIMUM_LINE_COVERAGE`).
+The job runs the unit suite with PCOV coverage and the minimum line coverage set in the job
+(`MINIMUM_LINE_COVERAGE`), then uploads the coverage report to Codacy. A failure at `upload_coverage`
+means Codacy did not receive the report: check that the `CODACY_PROJECT_TOKEN` secret holds a current
+repository API token from Codacy (the repository's Settings > API tokens; each one expires within a
+year), and read the step's log. The tests and the minimum passed.
 
 ### Next steps
 
