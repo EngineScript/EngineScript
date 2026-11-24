@@ -34,7 +34,8 @@
         "php": ">=8.3",
         "ext-curl": "*",
         "ext-json": "*",
-        "ext-session": "*"
+        "ext-session": "*",
+        "ext-filter": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.5 || ^12.5 || ^13.4",
