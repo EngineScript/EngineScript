@@ -10,6 +10,12 @@ Changes are organized by date, with the most recent changes listed first.
 
 - **1 GB servers run 2 PHP workers instead of 3:** servers with less than 1.5 GB of memory now get 2 PHP-FPM workers, with the same PHP memory limit as before, so each worker has about 105 MB instead of 70. We tested a 1 GB, 1 vCPU server running a WooCommerce shop with 32 plugins. With 3 workers, PHP went over its memory limit 7 times in 16 minutes, and each time a request failed. With 2 workers it never did, the shop served about as many pages (4% fewer to 4% more, depending on traffic), and admin pages were 15% faster. Servers with 1.5 GB or more keep their worker count. The next EngineScript update re-tunes every server once to apply the new plan; only servers under 1.5 GB see a change.
 
+## 2026-11-23
+
+### 🐛 FIXES
+
+- **PHP keeps running when it reaches its memory limit:** EngineScript gives PHP-FPM a memory limit from the server's tuning plan, so PHP cannot push MariaDB and Redis into swap. When PHP still needed more, the kernel killed one PHP worker, as intended, but systemd then stopped all of PHP-FPM, and every site answered 502 until PHP-FPM was started again. Now only that worker's request fails, and PHP-FPM starts a new worker in its place. We saw this on a 1 GB server running a WooCommerce shop under load. Existing servers get the fix at the next EngineScript update, without a PHP restart.
+
 ## 2026-11-20
 
 ### ⚡ PERFORMANCE
