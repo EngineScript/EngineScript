@@ -70,6 +70,27 @@
     <!-- Unused and undefined variables (the plugin repositories get this through WordPress-VIP-Go). -->
     <rule ref="VariableAnalysis"/>
 
+    <!-- Checks that Codacy's EngineScript Main standard also runs, so CI reports them first. -->
+    <!-- Code that runs shell commands or arbitrary PHP: the panel runs commands only through SystemCommand. -->
+    <rule ref="Generic.PHP.BacktickOperator"/>
+    <rule ref="Squiz.PHP.Eval"/>
+    <!-- Functions PHP has deprecated, and $_REQUEST, which mixes query, form, and cookie values. -->
+    <rule ref="Generic.PHP.DeprecatedFunctions"/>
+    <rule ref="Generic.PHP.DisallowRequestSuperglobal"/>
+    <!-- Mistakes: leftover merge markers, a function call in a for loop's test, an executable PHP file,
+         an empty catch block without a comment saying why, and a PHP 4 style constructor. -->
+    <rule ref="Generic.VersionControl.GitMergeConflict"/>
+    <rule ref="Generic.CodeAnalysis.ForLoopWithTestFunctionCall"/>
+    <rule ref="Generic.Files.ExecutableFile"/>
+    <rule ref="Squiz.Commenting.EmptyCatchComment"/>
+    <rule ref="Generic.NamingConventions.ConstructorName"/>
+    <!-- Concatenating two literals on one line; a long string split over lines stays allowed. -->
+    <rule ref="Generic.Strings.UnnecessaryStringConcat">
+        <properties>
+            <property name="allowMultiline" value="true"/>
+        </properties>
+    </rule>
+
     <!-- PHP version compatibility, from the panel's minimum version up. -->
     <rule ref="PHPCompatibility">
         <include-pattern>*\.php$</include-pattern>
