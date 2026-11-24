@@ -1,0 +1,112 @@
+# Weekly check of the Codacy coverage reporter that the unit-coverage jobs download.
+#
+# The five repositories (this one and the four plugin repositories) pin the reporter's version and
+# SHA-512 in a run: step, which Dependabot cannot see. This workflow compares each repository's pin
+# with Codacy's newest release. When a release is at least two weeks old (the Dependabot cooldown
+# the repositories use) and any repository pins an older one, it files an issue, or updates the
+# open one, with the new version and its SHA-512, checked against the downloaded binary.
+
+name: Codacy Coverage Reporter Check
+
+"on":
+  schedule:
+    - cron: '23 6 * * 1'  # Mondays at 06:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  check-reporter:
+    name: Codacy coverage reporter version
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      issues: write  # the job files or updates the update issue
+    timeout-minutes: 10
+    steps:
+      - name: Compare the pinned reporter with Codacy's newest release
+        id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MINIMUM_AGE_DAYS: '14'
+          # Each repository and the workflow that pins the reporter
+          PINS: |
+            EngineScript .github/workflows/control-panel.yml
+            enginescript-site-exporter .github/workflows/wp-compatibility-test.yml
+            enginescript-site-optimizer .github/workflows/wp-compatibility-test.yml
+            free-gift-coupons-bulk-coupons-generator .github/workflows/wp-compatibility-test.yml
+            optimizations-ace-mc .github/workflows/wp-compatibility-test.yml
+        run: |
+          set -euo pipefail
+          release="$(gh api repos/codacy/codacy-coverage-reporter/releases/latest)"
+          latest="$(jq -r '.tag_name' <<< "$release")"
+          published="$(jq -r '.published_at' <<< "$release")"
+          age_days=$(( ( $(date -u +%s) - $(date -u -d "$published" +%s) ) / 86400 ))
+          echo "Newest release: $latest, published ${published%%T*} ($age_days days ago)"
+
+          behind=""
+          while read -r repository path; do
+            [ -n "$repository" ] || continue
+            pinned="$(gh api "repos/EngineScript/$repository/contents/$path" --jq '.content' | base64 -d \
+              | sed -n "s/^ *CODACY_REPORTER_VERSION: '\([^']*\)'.*/\1/p" | head -n 1)"
+            if [ -z "$pinned" ]; then
+              echo "::error::$repository: no CODACY_REPORTER_VERSION in $path"
+              exit 1
+            fi
+            echo "$repository pins $pinned"
+            newest="$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -n 1)"
+            if [ "$pinned" != "$latest" ] && [ "$newest" = "$latest" ]; then
+              behind+="- \`$repository\` (\`$path\`): $pinned"$'\n'
+            fi
+          done <<< "$PINS"
+
+          if [ -z "$behind" ]; then
+            echo "Every repository pins the newest release."
+            exit 0
+          fi
+          if [ "$age_days" -lt "$MINIMUM_AGE_DAYS" ]; then
+            echo "::notice::$latest is $age_days days old; the update waits until it is $MINIMUM_AGE_DAYS days old."
+            exit 0
+          fi
+
+          # The published SHA-512, checked against the binary itself
+          base="https://github.com/codacy/codacy-coverage-reporter/releases/download/$latest"
+          published_sha="$(curl --fail --silent --show-error --location --retry 3 "$base/codacy-coverage-reporter-linux.SHA512SUM" | awk '{print $1}')"
+          curl --fail --silent --show-error --location --retry 3 --output "$RUNNER_TEMP/reporter" "$base/codacy-coverage-reporter-linux"
+          computed_sha="$(sha512sum "$RUNNER_TEMP/reporter" | awk '{print $1}')"
+          if ! [[ "$published_sha" =~ ^[0-9a-f]{128}$ ]] || [ "$published_sha" != "$computed_sha" ]; then
+            echo "::error::The SHA-512 Codacy publishes for $latest does not match its binary."
+            exit 1
+          fi
+
+          delimiter="EOF_$(openssl rand -hex 8)"
+          {
+            echo "update=true"
+            echo "latest=$latest"
+            echo "published=${published%%T*}"
+            echo "sha512=$computed_sha"
+            echo "behind<<$delimiter"
+            printf '%s' "$behind"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: File or update the update issue
+        id: file_issue
+        if: ${{ steps.compare.outputs.update == 'true' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST_VERSION: ${{ steps.compare.outputs.latest }}
+          PUBLISHED: ${{ steps.compare.outputs.published }}
+          SHA512: ${{ steps.compare.outputs.sha512 }}
+          BEHIND: ${{ steps.compare.outputs.behind }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/codacy-reporter-update.md
+          update_existing: true
+          search_existing: open
