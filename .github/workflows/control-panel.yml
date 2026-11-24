@@ -1015,7 +1015,7 @@ jobs:
             exit 1
           fi
           reporter="$RUNNER_TEMP/codacy-coverage-reporter"
-          curl --fail --silent --show-error --location --retry 3 --output "$reporter" \
+          curl --proto '=https' --fail --silent --show-error --location --retry 3 --output "$reporter" \
             "https://github.com/codacy/codacy-coverage-reporter/releases/download/$CODACY_REPORTER_VERSION/codacy-coverage-reporter-linux"
           echo "$CODACY_REPORTER_SHA512  $reporter" | sha512sum --check --strict -
           chmod +x "$reporter"

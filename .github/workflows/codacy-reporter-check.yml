@@ -76,8 +76,8 @@ jobs:
 
           # The published SHA-512, checked against the binary itself
           base="https://github.com/codacy/codacy-coverage-reporter/releases/download/$latest"
-          published_sha="$(curl --fail --silent --show-error --location --retry 3 "$base/codacy-coverage-reporter-linux.SHA512SUM" | awk '{print $1}')"
-          curl --fail --silent --show-error --location --retry 3 --output "$RUNNER_TEMP/reporter" "$base/codacy-coverage-reporter-linux"
+          published_sha="$(curl --proto '=https' --fail --silent --show-error --location --retry 3 "$base/codacy-coverage-reporter-linux.SHA512SUM" | awk '{print $1}')"
+          curl --proto '=https' --fail --silent --show-error --location --retry 3 --output "$RUNNER_TEMP/reporter" "$base/codacy-coverage-reporter-linux"
           computed_sha="$(sha512sum "$RUNNER_TEMP/reporter" | awk '{print $1}')"
           if ! [[ "$published_sha" =~ ^[0-9a-f]{128}$ ]] || [ "$published_sha" != "$computed_sha" ]; then
             echo "::error::The SHA-512 Codacy publishes for $latest does not match its binary."
