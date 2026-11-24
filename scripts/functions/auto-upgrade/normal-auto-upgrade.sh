@@ -60,6 +60,8 @@ ONE_TIME_UPGRADES=(
   remove_ktls_utils
   # Development libraries nothing compiles against, and libjemalloc2 (kept while a package needs it)
   remove_unused_dev_libraries
+  # PHP-FPM: keeps running when the kernel kills a worker at its memory ceiling (OOMPolicy)
+  migrate_php_fpm_oom_policy
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

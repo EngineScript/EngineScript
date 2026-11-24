@@ -595,3 +595,29 @@ function remove_unused_dev_libraries() {
     echo "Removing ${#unneeded[@]} unused development libraries and the packages only they needed..."
     apt-get purge -y "${unneeded[@]}"
 }
+
+
+# ----------------------------------------------------------------
+# PHP-FPM: keep running when a worker is killed at the memory ceiling
+#
+# install_php_fpm_service_override now adds OOMPolicy=continue to the override that holds the
+# tuning plan's memory ceiling: with systemd's default (stop), the kernel killing one worker at
+# MemoryMax stopped all of PHP-FPM. The override is rewritten only on a re-tune, so servers get
+# it here, for each PHP version that has EngineScript's override. daemon-reload applies it to
+# the running service; no restart.
+function migrate_php_fpm_oom_policy() {
+    local systemd_dir="${ES_SYSTEMD_DIR:-/etc/systemd/system}" conf ver failures=0
+    for conf in "${systemd_dir}"/php*-fpm.service.d/enginescript.conf; do
+        [[ -f "${conf}" ]] || continue
+        grep -qx 'OOMPolicy=continue' "${conf}" && continue
+        ver="${conf#"${systemd_dir}"/php}"
+        ver="${ver%%-fpm.service.d/*}"
+        echo "PHP ${ver}: PHP-FPM now keeps running when a worker is killed at its memory limit..."
+        install_php_fpm_service_override "${ver}"
+        if ! grep -qx 'OOMPolicy=continue' "${conf}"; then
+            echo "Error: could not update ${conf}." >&2
+            failures=1
+        fi
+    done
+    return "${failures}"
+}

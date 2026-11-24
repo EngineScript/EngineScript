@@ -31,18 +31,20 @@ EOF
 # PHP-FPM systemd override: the memory ceiling of the tuning plan (PHP_MEMORY_HIGH_MB and
 # PHP_MEMORY_MAX_MB; see tuning_calculate). Above MemoryHigh the kernel reclaims and swaps
 # PHP-FPM's own memory first; at MemoryMax it kills a worker inside PHP-FPM's group (the
-# master starts another) instead of pushing MariaDB and Redis into swap. systemd applies the
-# limits to the running service at daemon-reload; no restart.
+# master starts another) instead of pushing MariaDB and Redis into swap. OOMPolicy=continue
+# keeps it that way: systemd's default (stop) answers that kill by stopping the whole service,
+# every site's PHP with it. systemd applies these to the running service at daemon-reload; no
+# restart.
 # Usage: install_php_fpm_service_override <PHP version>
 function install_php_fpm_service_override() {
-    local dir="/etc/systemd/system/php${1}-fpm.service.d" high max new
+    local dir="${ES_SYSTEMD_DIR:-/etc/systemd/system}/php${1}-fpm.service.d" high max new
 
     command -v systemctl > /dev/null 2>&1 || return 0
     tuning_load
     high="$(tuning_get PHP_MEMORY_HIGH_MB)"
     max="$(tuning_get PHP_MEMORY_MAX_MB)"
     [[ "${high}" =~ ^[0-9]+$ && "${max}" =~ ^[0-9]+$ ]] || return 0
-    new="$(printf '[Service]\nMemoryHigh=%sM\nMemoryMax=%sM' "${high}" "${max}")"
+    new="$(printf '[Service]\nMemoryHigh=%sM\nMemoryMax=%sM\nOOMPolicy=continue' "${high}" "${max}")"
     if [[ "$(cat "${dir}/enginescript.conf" 2> /dev/null)" == "${new}" ]]; then
         return 0
     fi

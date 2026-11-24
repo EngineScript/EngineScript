@@ -343,6 +343,51 @@ check "when every library is still needed, nothing is purged" \
   "$(run_dev_upgrade "libjemalloc2" "" "")" "0:apt-mark auto libjemalloc2;"
 unset -f dpkg-query apt-mark apt-get run_dev_upgrade
 
+echo "migrate_php_fpm_oom_policy"
+# PHP 8.5 has EngineScript's override as earlier versions wrote it; PHP 8.4's folder holds only
+# another drop-in, which is not EngineScript's to change
+export ES_SYSTEMD_DIR="${WORK}/systemd"
+mkdir -p "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d" "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d"
+printf '[Service]\nMemoryHigh=1285M\nMemoryMax=1428M\n' > "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d/enginescript.conf"
+printf '[Service]\nNice=5\n' > "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d/admin.conf"
+tuning_load() { :; }
+tuning_get() {
+  local key="$1"
+  case "${key}" in
+    PHP_MEMORY_HIGH_MB) echo 1285 ;;
+    PHP_MEMORY_MAX_MB) echo 1428 ;;
+    *) return 0 ;;
+  esac
+}
+RELOADS=0
+systemctl() {
+  local command="$1"
+  [[ "${command}" == "daemon-reload" ]] && RELOADS=$((RELOADS + 1))
+  return 0
+}
+status=0
+migrate_php_fpm_oom_policy > /dev/null || status=$?
+check "the override keeps the plan's ceiling and adds OOMPolicy=continue" \
+  "${status}:$(tr '\n' ';' < "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d/enginescript.conf")" \
+  "0:[Service];MemoryHigh=1285M;MemoryMax=1428M;OOMPolicy=continue;"
+check "systemd reloads its units once" "${RELOADS}" "1"
+check "another version's own drop-in is left alone, and gets no override" \
+  "$(cat "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d/admin.conf"):$(ls "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d" | tr '\n' ' ')" \
+  "[Service]
+Nice=5:admin.conf "
+migrate_php_fpm_oom_policy > /dev/null
+check "running it again changes nothing" "${RELOADS}" "1"
+tuning_get() { :; }
+printf '[Service]\nMemoryHigh=1285M\nMemoryMax=1428M\n' > "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d/enginescript.conf"
+status=0
+migrate_php_fpm_oom_policy > /dev/null 2>&1 || status=$?
+check "without a plan to rewrite it from, the upgrade reports failure, so the next update tries again" "${status}" "1"
+rm -rf "${ES_SYSTEMD_DIR}"
+migrate_php_fpm_oom_policy
+check "a server without the override is fine" "$?" "0"
+unset -f tuning_load tuning_get systemctl
+unset ES_SYSTEMD_DIR
+
 echo "forget_upgrade_done"
 record_upgrade_done es_test_forget
 record_upgrade_done es_test_forget_keep
