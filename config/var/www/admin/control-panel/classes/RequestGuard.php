@@ -64,21 +64,15 @@ final class RequestGuard
 
     public static function csrfTokenFromRequest(Request $request, SecurityLogger $securityLogger): string|false|null
     {
-        $headerToken = $request->header('X-CSRF-Token');
-        if ($headerToken !== null) {
-            return $headerToken;
+        // The header first, then the form field; a JSON body only when the request says it is JSON
+        $token = $request->header('X-CSRF-Token') ?? $request->post('_csrf_token');
+        if ($token !== null) {
+            return $token;
         }
 
-        $postToken = $request->post('_csrf_token');
-        if ($postToken !== null) {
-            return $postToken;
-        }
+        $isJson = str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json');
 
-        if (!str_contains(strtolower($request->header('Content-Type') ?? ''), 'application/json')) {
-            return null;
-        }
-
-        return self::csrfTokenFromJsonBody($request, $securityLogger);
+        return $isJson ? self::csrfTokenFromJsonBody($request, $securityLogger) : null;
     }
 
     public static function csrfTokenFromJsonBody(Request $request, SecurityLogger $securityLogger): string|false|null

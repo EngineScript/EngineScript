@@ -27,7 +27,7 @@ if (is_string($log) && $log !== '') {
     ]) . "\n", FILE_APPEND);
 }
 
-function es_monitor(int $id, string $status): array
+function esMonitor(int $id, string $status): array
 {
     return [
         'id' => $id,
@@ -43,7 +43,7 @@ function es_monitor(int $id, string $status): array
     ];
 }
 
-function es_answer(int $status, mixed $body): void
+function esAnswer(int $status, mixed $body): void
 {
     http_response_code($status);
     header('Content-Type: application/json');
@@ -55,35 +55,35 @@ $statsId = preg_match('#^/v3/monitors/(\d+)/stats/uptime$#', (string) $path, $m)
 
 if ($statsId !== null) {
     match (true) {
-        $scenario === 'stats-429' => es_answer(429, ['error' => 'Too many requests']),
-        $statsId === 3 => es_answer(500, ['error' => 'internal']),
-        $statsId === 2 => es_answer(200, ['uptime' => 100]),
-        default => es_answer(200, ['uptime' => 99.98765]),
+        $scenario === 'stats-429' => esAnswer(429, ['error' => 'Too many requests']),
+        $statsId === 3 => esAnswer(500, ['error' => 'internal']),
+        $statsId === 2 => esAnswer(200, ['uptime' => 100]),
+        default => esAnswer(200, ['uptime' => 99.98765]),
     };
     return true;
 }
 
 if ($path !== '/v3/monitors') {
-    es_answer(404, ['error' => 'not found']);
+    esAnswer(404, ['error' => 'not found']);
     return true;
 }
 
 match ($scenario) {
     'two-pages' => $cursor === null
-        ? es_answer(200, [
-            'data' => [es_monitor(1, 'UP'), es_monitor(2, 'DOWN'), ['id' => 'x'], 'junk'],
+        ? esAnswer(200, [
+            'data' => [esMonitor(1, 'UP'), esMonitor(2, 'DOWN'), ['id' => 'x'], 'junk'],
             // Another host in the link: the client must keep its own base URL.
             'nextLink' => 'https://evil.example/v3/monitors?cursor=200&limit=200',
         ])
-        : es_answer(200, ['data' => [es_monitor(3, 'PAUSED')], 'nextLink' => null]),
-    'nine' => es_answer(200, ['data' => array_map(static fn(int $id) => es_monitor($id, 'UP'), range(1, 9)), 'nextLink' => null]),
-    'endless' => es_answer(200, ['data' => [es_monitor((int) ($cursor ?? 0) + 1, 'UP')], 'nextLink' => 'https://api.example/v3/monitors?cursor=' . ((int) ($cursor ?? 0) + 1)]),
-    'bad-cursor' => es_answer(200, ['data' => [es_monitor(1, 'UP')], 'nextLink' => 'https://api.example/v3/monitors?cursor=../etc']),
-    'rate-limited' => es_answer(429, ['error' => 'Too many requests']),
-    'bad-json' => es_answer(200, '{"data": ['),
-    'no-data' => es_answer(200, ['monitors' => []]),
-    'stats-429' => es_answer(200, ['data' => [es_monitor(1, 'UP'), es_monitor(4, 'UP')], 'nextLink' => null]),
-    default => es_answer(401, ['error' => 'unauthorized']),
+        : esAnswer(200, ['data' => [esMonitor(3, 'PAUSED')], 'nextLink' => null]),
+    'nine' => esAnswer(200, ['data' => array_map(static fn(int $id) => esMonitor($id, 'UP'), range(1, 9)), 'nextLink' => null]),
+    'endless' => esAnswer(200, ['data' => [esMonitor((int) ($cursor ?? 0) + 1, 'UP')], 'nextLink' => 'https://api.example/v3/monitors?cursor=' . ((int) ($cursor ?? 0) + 1)]),
+    'bad-cursor' => esAnswer(200, ['data' => [esMonitor(1, 'UP')], 'nextLink' => 'https://api.example/v3/monitors?cursor=../etc']),
+    'rate-limited' => esAnswer(429, ['error' => 'Too many requests']),
+    'bad-json' => esAnswer(200, '{"data": ['),
+    'no-data' => esAnswer(200, ['monitors' => []]),
+    'stats-429' => esAnswer(200, ['data' => [esMonitor(1, 'UP'), esMonitor(4, 'UP')], 'nextLink' => null]),
+    default => esAnswer(401, ['error' => 'unauthorized']),
 };
 
 return true;

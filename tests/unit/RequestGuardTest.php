@@ -51,14 +51,14 @@ final class RequestGuardTest extends EsTestCase
     {
         $_SESSION['csrf_token'] = self::TOKEN;
 
-        self::assertTrue(RequestGuard::validateCsrfToken(es_test_request(), new Session(), $this->logger()));
+        self::assertTrue(RequestGuard::validateCsrfToken(esTestRequest(), new Session(), $this->logger()));
         self::assertSame([], $this->logLines());
     }
 
     public function testTheHeaderTokenIsAccepted(): void
     {
         $_SESSION['csrf_token'] = self::TOKEN;
-        $request = es_test_request(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => self::TOKEN]);
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => self::TOKEN]);
 
         self::assertTrue(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)));
     }
@@ -66,7 +66,7 @@ final class RequestGuardTest extends EsTestCase
     public function testTheFormFieldTokenIsAccepted(): void
     {
         $_SESSION['csrf_token'] = self::TOKEN;
-        $request = es_test_request(['REQUEST_METHOD' => 'POST'], [], ['_csrf_token' => self::TOKEN]);
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST'], [], ['_csrf_token' => self::TOKEN]);
 
         self::assertTrue(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)));
     }
@@ -75,8 +75,8 @@ final class RequestGuardTest extends EsTestCase
     {
         $_SESSION['csrf_token'] = self::TOKEN;
         $body = json_encode(['_csrf_token' => self::TOKEN, 'types' => ['redis']], JSON_THROW_ON_ERROR);
-        $json = es_test_request(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json; charset=utf-8'], [], [], $body);
-        $plain = es_test_request(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'text/plain'], [], [], $body);
+        $json = esTestRequest(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json; charset=utf-8'], [], [], $body);
+        $plain = esTestRequest(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'text/plain'], [], [], $body);
 
         self::assertTrue(RequestGuard::validateCsrfToken($json, new Session(), $this->logger($json)));
         self::assertFalse(RequestGuard::validateCsrfToken($plain, new Session(), $this->logger($plain)));
@@ -84,7 +84,7 @@ final class RequestGuardTest extends EsTestCase
 
     public function testTheHeaderWinsOverTheFormField(): void
     {
-        $request = es_test_request(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => 'from-header'], [], ['_csrf_token' => 'from-form']);
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => 'from-header'], [], ['_csrf_token' => 'from-form']);
 
         self::assertSame('from-header', RequestGuard::csrfTokenFromRequest($request, $this->logger($request)));
     }
@@ -92,7 +92,7 @@ final class RequestGuardTest extends EsTestCase
     public function testAMissingTokenIsRefusedAndLogged(): void
     {
         $_SESSION['csrf_token'] = self::TOKEN;
-        $request = es_test_request(['REQUEST_METHOD' => 'POST']);
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST']);
 
         self::assertFalse(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)));
         self::assertCount(1, $this->logLines());
@@ -102,7 +102,7 @@ final class RequestGuardTest extends EsTestCase
     public function testAWrongTokenIsRefusedAndLogged(): void
     {
         $_SESSION['csrf_token'] = self::TOKEN;
-        $request = es_test_request(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => strrev(self::TOKEN)]);
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => strrev(self::TOKEN)]);
 
         self::assertFalse(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)));
         self::assertStringContainsString('CSRF token mismatch', $this->logLines()[0]);
@@ -113,7 +113,7 @@ final class RequestGuardTest extends EsTestCase
         $_SESSION['csrf_token'] = self::TOKEN;
 
         foreach ([self::TOKEN . "\n", ' ' . self::TOKEN, self::TOKEN . "\x00"] as $sent) {
-            $request = es_test_request(['REQUEST_METHOD' => 'POST'], [], ['_csrf_token' => $sent]);
+            $request = esTestRequest(['REQUEST_METHOD' => 'POST'], [], ['_csrf_token' => $sent]);
             self::assertFalse(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)), json_encode($sent) ?: '');
         }
     }
@@ -122,7 +122,7 @@ final class RequestGuardTest extends EsTestCase
     {
         foreach ([null, '', 42] as $stored) {
             $_SESSION = $stored === null ? [] : ['csrf_token' => $stored];
-            $request = es_test_request(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => self::TOKEN]);
+            $request = esTestRequest(['REQUEST_METHOD' => 'POST', 'HTTP_X_CSRF_TOKEN' => self::TOKEN]);
             self::assertFalse(RequestGuard::validateCsrfToken($request, new Session(), $this->logger($request)));
         }
     }
@@ -136,7 +136,7 @@ final class RequestGuardTest extends EsTestCase
 
     public function testInvalidJsonIsRefusedAndLogged(): void
     {
-        $request = es_test_request(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json'], [], [], '{"_csrf_token":');
+        $request = esTestRequest(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json'], [], [], '{"_csrf_token":');
 
         self::assertFalse(RequestGuard::csrfTokenFromRequest($request, $this->logger($request)));
         self::assertStringContainsString('CSRF token JSON parse failed - Invalid JSON body', $this->logLines()[0]);
@@ -149,7 +149,7 @@ final class RequestGuardTest extends EsTestCase
         self::assertNull(RequestGuard::csrfTokenFromDecodedBody([]));
         self::assertSame('t', RequestGuard::csrfTokenFromDecodedBody(['_csrf_token' => 't']));
 
-        $blank = es_test_request(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json'], [], [], "  \n");
+        $blank = esTestRequest(['REQUEST_METHOD' => 'POST', 'CONTENT_TYPE' => 'application/json'], [], [], "  \n");
         self::assertNull(RequestGuard::csrfTokenFromJsonBody($blank, $this->logger($blank)));
     }
 }

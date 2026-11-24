@@ -43,7 +43,7 @@ $running = [
 /**
  * @return array{status: int, body: string}
  */
-function es_capture(callable $answer): array
+function esCapture(callable $answer): array
 {
     http_response_code(200);
     ob_start();
@@ -58,23 +58,23 @@ function es_capture(callable $answer): array
  * @param array<string, string|false> $answers
  * @return array{status: int, body: string}
  */
-function es_route(string $method, string $path, array $answers, array $session = ['csrf_token' => ES_TEST_TOKEN], array $query = []): array
+function esRoute(string $method, string $path, array $answers, array $session = ['csrf_token' => ES_TEST_TOKEN], array $query = []): array
 {
-    es_test_reset(new EsTestRunner($answers));
+    esTestReset(new EsTestRunner($answers));
     $_SESSION = $session;
-    $request = es_test_request(['REQUEST_METHOD' => $method, 'HTTP_X_CSRF_TOKEN' => ES_TEST_TOKEN], $query);
+    $request = esTestRequest(['REQUEST_METHOD' => $method, 'HTTP_X_CSRF_TOKEN' => ES_TEST_TOKEN], $query);
     $logger = new SecurityLogger($request, sys_get_temp_dir() . '/es-js-render.log');
     $router = new Router(new ApiResponder(), $request, $logger, new Session());
 
-    return es_capture(static fn() => $router->dispatch($path));
+    return esCapture(static fn() => $router->dispatch($path));
 }
 
 /**
  * A controller's private method, called with fixture input.
  */
-function es_private(string $class, string $method, mixed ...$arguments): mixed
+function esPrivate(string $class, string $method, mixed ...$arguments): mixed
 {
-    $request = es_test_request();
+    $request = esTestRequest();
     $controller = new $class(new Session(), new ApiResponder(), new SecurityLogger($request, sys_get_temp_dir() . '/es-js-render.log'), $request);
 
     return (new ReflectionMethod($class, $method))->invoke($controller, ...$arguments);
@@ -92,7 +92,7 @@ foreach (['example.com' => '6.8.3', 'shop.example' => null, 'x"><img src=x onerr
     $config = "{$fixtures}/" . hash('sha256', $domain) . '.conf';
     $ssl = $domain === 'shop.example' ? '' : "  ssl_certificate /etc/nginx/ssl/{$domain}/fullchain.pem;\n";
     file_put_contents($config, "server {\n  server_name {$domain} www.{$domain};\n{$ssl}  root {$root};\n  include /etc/nginx/globals/wp-secure.conf;\n}\n");
-    $site = es_private(SiteController::class, 'processNginxConfig', realpath($config));
+    $site = esPrivate(SiteController::class, 'processNginxConfig', realpath($config));
     if (is_array($site)) {
         $sites[] = $site;
     }
@@ -109,49 +109,49 @@ $monitors = [
 $responder = new ApiResponder();
 $out = [];
 $out['running'] = [
-    'GET /api/csrf-token' => es_route('GET', '/csrf-token', $running),
-    'GET /api/services/status' => es_route('GET', '/services/status', $running),
-    'GET /api/system/info' => es_route('GET', '/system/info', $running),
-    'GET /api/tools/status' => es_route('GET', '/tools/status', $running),
-    'GET /api/tools/filemanager/status' => es_route('GET', '/tools/filemanager/status', $running),
-    'GET /api/cache/status' => es_route('GET', '/cache/status', $running),
-    'GET /api/monitoring/uptime' => es_route('GET', '/monitoring/uptime', $running),
-    'GET /api/monitoring/uptime/monitors' => es_route('GET', '/monitoring/uptime/monitors', $running),
-    'GET /api/sites' => es_capture(static fn() => $responder->success($sites)),
+    'GET /api/csrf-token' => esRoute('GET', '/csrf-token', $running),
+    'GET /api/services/status' => esRoute('GET', '/services/status', $running),
+    'GET /api/system/info' => esRoute('GET', '/system/info', $running),
+    'GET /api/tools/status' => esRoute('GET', '/tools/status', $running),
+    'GET /api/tools/filemanager/status' => esRoute('GET', '/tools/filemanager/status', $running),
+    'GET /api/cache/status' => esRoute('GET', '/cache/status', $running),
+    'GET /api/monitoring/uptime' => esRoute('GET', '/monitoring/uptime', $running),
+    'GET /api/monitoring/uptime/monitors' => esRoute('GET', '/monitoring/uptime/monitors', $running),
+    'GET /api/sites' => esCapture(static fn() => $responder->success($sites)),
 ];
 // Keyed by the types the dashboard sends in its JSON body, joined with commas
 foreach (['redis', 'fastcgi', 'opcache', 'redis,fastcgi,opcache'] as $types) {
-    $out['running']["POST /api/cache/clear {$types}"] = es_route('POST', '/cache/clear', $running, query: ['type' => $types]);
+    $out['running']["POST /api/cache/clear {$types}"] = esRoute('POST', '/cache/clear', $running, query: ['type' => $types]);
 }
 $out['uptime-configured'] = [
-    'GET /api/monitoring/uptime' => es_capture(static fn() => $responder->success(es_private(UptimeController::class, 'calculateOverallStatus', $monitors))),
-    'GET /api/monitoring/uptime/monitors' => es_capture(static fn() => $responder->success(es_private(UptimeController::class, 'formatMonitors', $monitors))),
+    'GET /api/monitoring/uptime' => esCapture(static fn() => $responder->success(esPrivate(UptimeController::class, 'calculateOverallStatus', $monitors))),
+    'GET /api/monitoring/uptime/monitors' => esCapture(static fn() => $responder->success(esPrivate(UptimeController::class, 'formatMonitors', $monitors))),
 ];
 $out['uptime-empty'] = [
-    'GET /api/monitoring/uptime' => es_capture(static fn() => $responder->success(es_private(UptimeController::class, 'calculateOverallStatus', []))),
-    'GET /api/monitoring/uptime/monitors' => es_capture(static fn() => $responder->success(es_private(UptimeController::class, 'formatMonitors', []))),
+    'GET /api/monitoring/uptime' => esCapture(static fn() => $responder->success(esPrivate(UptimeController::class, 'calculateOverallStatus', []))),
+    'GET /api/monitoring/uptime/monitors' => esCapture(static fn() => $responder->success(esPrivate(UptimeController::class, 'formatMonitors', []))),
 ];
 $out['services-stopped'] = [
-    'GET /api/services/status' => es_route('GET', '/services/status', ['systemctl is-active nginx.service' => 'active', 'nginx -v' => 'nginx version: nginx/1.29.3']),
+    'GET /api/services/status' => esRoute('GET', '/services/status', ['systemctl is-active nginx.service' => 'active', 'nginx -v' => 'nginx version: nginx/1.29.3']),
 ];
 $out['no-sites'] = [
-    'GET /api/sites' => es_capture(static fn() => $responder->success([])),
+    'GET /api/sites' => esCapture(static fn() => $responder->success([])),
 ];
 // SiteController cannot produce a domain with markup (its server_name pattern drops it); the
 // dashboard checks each domain again. This is how the API would encode one.
 $out['sites-markup'] = [
-    'GET /api/sites' => es_capture(static fn() => $responder->success([
+    'GET /api/sites' => esCapture(static fn() => $responder->success([
         ['domain' => 'x"><img src=x onerror=alert(1)>.example', 'wp_version' => '<b>6.8</b>', 'ssl_status' => 'Enabled'],
         ['domain' => 'good.example', 'wp_version' => '<b>6.8</b>', 'ssl_status' => 'Unknown'],
     ])),
 ];
 $out['failures'] = [
-    'csrf-missing' => es_route('GET', '/csrf-token', [], []),
-    'csrf-refused' => es_capture(static fn() => $responder->forbidden('Invalid or missing CSRF token')),
-    'rate-limited' => es_capture(static fn() => $responder->rateLimited()),
-    'no-session' => es_capture(static fn() => $responder->error('Session storage unavailable', 503)),
-    'not-found' => es_route('GET', '/no/such/route', $running),
-    'POST /api/cache/clear redis' => es_route('POST', '/cache/clear', ['redis-cli FLUSHALL' => false], query: ['type' => 'redis']),
+    'csrf-missing' => esRoute('GET', '/csrf-token', [], []),
+    'csrf-refused' => esCapture(static fn() => $responder->forbidden('Invalid or missing CSRF token')),
+    'rate-limited' => esCapture(static fn() => $responder->rateLimited()),
+    'no-session' => esCapture(static fn() => $responder->error('Session storage unavailable', 503)),
+    'not-found' => esRoute('GET', '/no/such/route', $running),
+    'POST /api/cache/clear redis' => esRoute('POST', '/cache/clear', ['redis-cli FLUSHALL' => false], query: ['type' => 'redis']),
 ];
 
 echo json_encode($out, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);

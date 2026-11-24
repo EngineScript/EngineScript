@@ -30,7 +30,7 @@ abstract class EsTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runner = es_test_reset();
+        $this->runner = esTestReset();
         $this->logFile = $this->makeTemporaryDirectory() . '/security.log';
     }
 
@@ -41,7 +41,7 @@ abstract class EsTestCase extends TestCase
         }
 
         $this->temporaryDirectories = [];
-        es_test_reset();
+        esTestReset();
         parent::tearDown();
     }
 
@@ -75,7 +75,7 @@ abstract class EsTestCase extends TestCase
 
     protected function logger(?Request $request = null): SecurityLogger
     {
-        return new SecurityLogger($request ?? es_test_request(), $this->logFile);
+        return new SecurityLogger($request ?? esTestRequest(), $this->logFile);
     }
 
     /**
@@ -87,7 +87,7 @@ abstract class EsTestCase extends TestCase
      */
     protected function controller(string $class, ?Request $request = null): BaseController
     {
-        $request ??= es_test_request();
+        $request ??= esTestRequest();
 
         return new $class(new Session(), new ApiResponder(), $this->logger($request), $request);
     }
