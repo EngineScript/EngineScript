@@ -17,11 +17,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Date
 NOW=$(date +%m-%d-%Y-%H)
 
-# Filename
-NGINX_FILE="${NOW}-nginx-vhost.conf.gz"
+# Filename: a zstd tar of /etc/nginx (until 2026-11-20 a gzip tar named <date>-nginx-vhost.conf.gz)
+NGINX_FILE="${NOW}-nginx.tar.zst"
 
 # Backup Nginx Config
-tar -C / -zcf "/home/EngineScript/config-backups/nginx/${NGINX_FILE}" etc/nginx
+tar -C / "${ES_TAR_ZSTD}" -cf "/home/EngineScript/config-backups/nginx/${NGINX_FILE}" etc/nginx
 
-# Remove Old Nginx Backups
+# Remove Old Nginx Backups (either name)
 find /home/EngineScript/config-backups/nginx -type f -mtime +15 -delete

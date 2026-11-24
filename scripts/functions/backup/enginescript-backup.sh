@@ -31,13 +31,15 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-site-ar
 #   site <domain>    one site's database (as a daily backup) and site archive, immediately
 #
 # Layout (the same keys under s3://<bucket>/ when BACKUP_S3=1):
-#   /home/EngineScript/site-backups/<site>/database/hourly/<YYYY-MM-DD-HH>/<site>-database.sql.gz
-#   /home/EngineScript/site-backups/<site>/database/daily/<YYYY-MM-DD>/<site>-database.sql.gz
-#                                                              and <site>-wp-config.php.gz
+#   /home/EngineScript/site-backups/<site>/database/hourly/<YYYY-MM-DD-HH>/<site>-database.sql.zst
+#   /home/EngineScript/site-backups/<site>/database/daily/<YYYY-MM-DD>/<site>-database.sql.zst
+#                                                              and <site>-wp-config.php.zst
 #   /home/EngineScript/site-backups/<site>/files/<YYYY-MM-DD>/<site>-site-archive.zip
 #       (enginescript-site-archive.sh; older versions wrote <site>-wp-content.tar.gz here)
-#   /home/EngineScript/config-backups/enginescript/<YYYY-MM-DD>/enginescript-config.tar.gz
+#   /home/EngineScript/config-backups/enginescript/<YYYY-MM-DD>/enginescript-config.tar.zst
 #   S3 keys: <site>/backups/database/..., <site>/backups/files/..., enginescript-config/<date>/...
+# Everything is zstd (enginescript-compression.sh). Backups made before 2026-11-20 are gzip
+# (.sql.gz, .php.gz, .tar.gz) and stay until their folders age out.
 #
 # Only dated folders are ever removed. Each step is checked; failures are logged to
 # /var/log/EngineScript/enginescript-backup.log and make the script exit with 1.
@@ -128,20 +130,23 @@ backup_databases() {
     fi
     dir="${SITE_BACKUPS}/${site}/database/${kind}/${stamp}"
     mkdir -p "${dir}"
-    file="${dir}/${site}-database.sql.gz"
-    tmp="${dir}/.${site}-database.sql.gz.partial"
-    if (set -o pipefail; cd / && run_as_www_data wp db export - --path="${site_root}" --single-transaction --quick --add-drop-table 2>> "${LOG}" | gzip > "${tmp}"); then
+    file="${dir}/${site}-database.sql.zst"
+    tmp="${dir}/.${site}-database.sql.zst.partial"
+    if (set -o pipefail; cd / && run_as_www_data wp db export - --path="${site_root}" --single-transaction --quick --add-drop-table 2>> "${LOG}" | es_compress > "${tmp}"); then
       mv -f "${tmp}" "${file}"
+      # A gzip copy from earlier the same day or hour (before 2026-11-20): the new one replaces it
+      rm -f "${dir}/${site}-database.sql.gz"
       log "Database backup (${kind}): ${site}, $(du -h "${file}" | cut -f1)"
-      s3_upload "${file}" "${site}/backups/database/${kind}/${stamp}/${site}-database.sql.gz"
+      s3_upload "${file}" "${site}/backups/database/${kind}/${stamp}/${site}-database.sql.zst"
     else
       rm -f "${tmp}"
       record_failure "Database backup (${kind}) failed: ${site}"
     fi
 
     if [[ "${kind}" == "daily" ]]; then
-      if gzip -c "${site_root}/wp-config.php" > "${dir}/${site}-wp-config.php.gz"; then
-        s3_upload "${dir}/${site}-wp-config.php.gz" "${site}/backups/database/daily/${stamp}/${site}-wp-config.php.gz"
+      if es_compress < "${site_root}/wp-config.php" > "${dir}/${site}-wp-config.php.zst"; then
+        rm -f "${dir}/${site}-wp-config.php.gz"
+        s3_upload "${dir}/${site}-wp-config.php.zst" "${site}/backups/database/daily/${stamp}/${site}-wp-config.php.zst"
       else
         record_failure "wp-config.php backup failed: ${site}"
       fi
@@ -186,8 +191,8 @@ backup_files() {
 # acme.sh account and certificates, install state, and root's crontab
 backup_config() {
   local dir="${CONFIG_BACKUPS}/${TODAY}"
-  local file="${dir}/enginescript-config.tar.gz"
-  local tmp="${dir}/.enginescript-config.tar.gz.partial"
+  local file="${dir}/enginescript-config.tar.zst"
+  local tmp="${dir}/.enginescript-config.tar.zst.partial"
   local items=() item
   mkdir -p "${dir}"
   crontab -l > "${dir}/root-crontab.txt" 2> /dev/null || : > "${dir}/root-crontab.txt"
@@ -197,12 +202,13 @@ backup_config() {
       items+=("${item}")
     fi
   done
-  if tar -C / -czf "${tmp}" --exclude='root/.acme.sh/acme.sh.log' "${items[@]}" \
+  if tar -C / "${ES_TAR_ZSTD}" -cf "${tmp}" --exclude='root/.acme.sh/acme.sh.log' "${items[@]}" \
       -C "${dir}" root-crontab.txt 2>> "${LOG}"; then
     mv -f "${tmp}" "${file}"
+    rm -f "${dir}/enginescript-config.tar.gz"
     log "Configuration backup: $(du -h "${file}" | cut -f1)"
     if [[ "${BACKUP_S3_INCLUDE_CONFIG}" == "1" ]]; then
-      s3_upload "${file}" "enginescript-config/${TODAY}/enginescript-config.tar.gz"
+      s3_upload "${file}" "enginescript-config/${TODAY}/enginescript-config.tar.zst"
     fi
   else
     rm -f "${tmp}"

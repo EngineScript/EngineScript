@@ -77,7 +77,7 @@ restore_previous_config() {
     echo "MariaDB is running with the previous configuration." >&2
   else
     echo "CRITICAL: MariaDB does not start with the previous configuration either. Check 'systemctl status mariadb' and /var/log/mysql/mysql-error.log." >&2
-    echo "The databases were saved before the update in ${ROLLBACK_DIR}/all-databases.sql.gz." >&2
+    echo "The databases were saved before the update in ${ROLLBACK_DIR}/all-databases.sql.zst." >&2
   fi
 }
 
@@ -117,7 +117,7 @@ if [[ -n "${DATADIR_KB}" && -n "${FREE_KB}" && "${FREE_KB}" -lt "${DATADIR_KB}" 
   exit 1
 fi
 
-if ! (set -o pipefail; mariadb-dump --all-databases --single-transaction --routines --events --triggers --hex-blob 2>> "${ES_STEP_ERROR_LOG}" | gzip > "${ROLLBACK_DIR}/all-databases.sql.gz"); then
+if ! (set -o pipefail; mariadb-dump --all-databases --single-transaction --routines --events --triggers --hex-blob 2>> "${ES_STEP_ERROR_LOG}" | es_compress > "${ROLLBACK_DIR}/all-databases.sql.zst"); then
   print_last_errors
   echo "Error: Could not back up the databases. The update stopped; nothing was changed." >&2
   exit 1
@@ -127,7 +127,7 @@ if [[ -f "${OVERRIDE_FILE}" ]]; then
   cp -p "${OVERRIDE_FILE}" "${ROLLBACK_DIR}/enginescript-limits.conf"
 fi
 chmod 600 "${ROLLBACK_DIR}"/*
-echo "Database backup: ${ROLLBACK_DIR}/all-databases.sql.gz ($(du -h "${ROLLBACK_DIR}/all-databases.sql.gz" | cut -f1))"
+echo "Database backup: ${ROLLBACK_DIR}/all-databases.sql.zst ($(du -h "${ROLLBACK_DIR}/all-databases.sql.zst" | cut -f1))"
 
 # Older installs replaced /etc/mysql/my.cnf, the MariaDB packages' link to
 # /etc/mysql/mariadb.cnf, with a regular file, and left the untuned template (with SED
@@ -193,7 +193,7 @@ if ! mariadb_is_serving; then
   systemctl start mariadb
   if ! mariadb_is_serving; then
     echo "CRITICAL: MariaDB does not run after the package upgrade (with the previous configuration). Check 'systemctl status mariadb' and /var/log/mysql/mysql-error.log." >&2
-    echo "The databases were saved before the update in ${ROLLBACK_DIR}/all-databases.sql.gz." >&2
+    echo "The databases were saved before the update in ${ROLLBACK_DIR}/all-databases.sql.zst." >&2
     exit 1
   fi
 fi

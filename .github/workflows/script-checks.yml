@@ -83,10 +83,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install zip
+      - name: Install zip and zstd
         if: matrix.test == 'site-archive'
         run: |
-          command -v zip > /dev/null || { sudo apt-get update && sudo apt-get install -y zip unzip; }
+          { command -v zip && command -v unzip && command -v zstd; } > /dev/null \
+            || { sudo apt-get update && sudo apt-get install -y zip unzip zstd; }
 
       - name: Run test-${{ matrix.test }}.sh
         env:

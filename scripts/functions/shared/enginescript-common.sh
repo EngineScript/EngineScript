@@ -21,6 +21,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/enginescript-cloudflare.sh" || return 1
 source "$(dirname "${BASH_SOURCE[0]}")/enginescript-prompts.sh" || return 1
 # shellcheck source=scripts/functions/shared/enginescript-permissions.sh
 source "$(dirname "${BASH_SOURCE[0]}")/enginescript-permissions.sh" || return 1
+# shellcheck source=scripts/functions/shared/enginescript-compression.sh
+source "$(dirname "${BASH_SOURCE[0]}")/enginescript-compression.sh" || return 1
 # shellcheck source=scripts/functions/shared/enginescript-tuning-apply.sh
 source "$(dirname "${BASH_SOURCE[0]}")/enginescript-tuning-apply.sh" || return 1
 

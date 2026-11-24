@@ -2,11 +2,13 @@
 #----------------------------------------------------------------------------------
 # EngineScript CI Test: Site Archive Builder
 #----------------------------------------------------------------------------------
-# build_site_archive must write the archive vhost-import.sh reads (manifest.txt,
-# database/*.sql.gz, files/*.tar.gz in one stored ZIP) for its owner only, leave out what the
+# build_site_archive must write the archive vhost-import.sh reads (manifest.txt version 2,
+# database/*.sql.zst, files/*.tar.zst in one stored ZIP) for its owner only, leave out what the
 # EngineScript Site Exporter plugin leaves out, and leave nothing behind when it fails. WP-CLI is
 # replaced with a stand-in that prints a small dump and the site's addresses. site-archive-zip.py,
-# which writes the ZIP, is tested on its own too. Needs python3, zip, and unzip.
+# which writes the ZIP, is tested on its own too, and so are the compression functions
+# (enginescript-compression.sh), and reading version 1 archives (gzip parts, as the plugin writes
+# them). Needs python3, zip, unzip, zstd, and gzip.
 
 set -euo pipefail
 
@@ -157,12 +159,15 @@ else
   pass "no entry is absolute or leaves the archive"
 fi
 holds "the manifest names the format" grep -Fxq "format=enginescript-site-archive" "${EXTRACT}/manifest.txt"
-holds "the manifest is version 1" grep -Fxq "version=1" "${EXTRACT}/manifest.txt"
-check "one database dump" "$(find "${EXTRACT}/database" -maxdepth 1 -type f -name "*.sql.gz" | wc -l | tr -d ' ')" "1"
-check "one files archive" "$(find "${EXTRACT}/files" -maxdepth 1 -type f -name "*.tar.gz" | wc -l | tr -d ' ')" "1"
-DUMP="$(find "${EXTRACT}/database" -name "*.sql.gz")"
-FILES="$(find "${EXTRACT}/files" -name "*.tar.gz")"
-check "the dump is complete" "$(zcat "${DUMP}" | tail -n 1)" "-- Dump completed on 2026-11-05  1:05:00"
+holds "the manifest is version 2" grep -Fxq "version=2" "${EXTRACT}/manifest.txt"
+check "one database dump, zstd" "$(find "${EXTRACT}/database" -maxdepth 1 -type f -name "*.sql.zst" | wc -l | tr -d ' ')" "1"
+check "one files archive, zstd" "$(find "${EXTRACT}/files" -maxdepth 1 -type f -name "*.tar.zst" | wc -l | tr -d ' ')" "1"
+check "no gzip part" "$(find "${EXTRACT}" -name "*.gz" | wc -l | tr -d ' ')" "0"
+DUMP="$(find "${EXTRACT}/database" -name "*.sql.zst")"
+FILES="$(find "${EXTRACT}/files" -name "*.tar.zst")"
+holds "the dump is a zstd frame" zstd -q -t "${DUMP}"
+holds "the files archive is a zstd frame" zstd -q -t "${FILES}"
+check "the dump is complete" "$(zstd -q -dc "${DUMP}" | tail -n 1)" "-- Dump completed on 2026-11-05  1:05:00"
 
 echo "The manifest"
 check "the first six keys keep their order" "$(head -n 6 "${EXTRACT}/manifest.txt" | cut -d= -f1 | tr '\n' ' ')" \
@@ -174,7 +179,7 @@ check "it records the table prefix" "$(grep '^table_prefix=' "${EXTRACT}/manifes
 check "it has one line per key" "$(wc -l < "${EXTRACT}/manifest.txt" | tr -d ' ')" "10"
 
 echo "The files archive"
-LIST="$(tar -tzf "${FILES}")"
+LIST="$(tar --zstd -tf "${FILES}")"
 for entry in ./wp-config.php ./index.php ./robots.txt ./wp-content/uploads/photo.jpg ./wp-content/cache/ ./wp-content/upgrade/; do
   holds "keeps ${entry}" grep -Fxq -- "${entry}" <<< "${LIST}"
 done
@@ -256,7 +261,7 @@ echo "Reading a backup back (Backup Tools)"
 holds "a whole archive passes" site_archive_verify "${OUT}"
 REZIP="${WORK}/rezip"
 cp -r "${EXTRACT}" "${REZIP}"
-echo "CREATE TABLE cut short" | gzip > "${DUMP/#${EXTRACT}/${REZIP}}"
+echo "CREATE TABLE cut short" | zstd -q > "${DUMP/#${EXTRACT}/${REZIP}}"
 (cd "${REZIP}" && zip -0 -r -q "${WORK}/cut-dump.zip" .)
 lacks "a dump without its last line fails" site_archive_verify "${WORK}/cut-dump.zip"
 rm -rf "${REZIP}"
@@ -270,6 +275,54 @@ echo "format=something-else" > "${REZIP}/manifest.txt"
 (cd "${REZIP}" && zip -0 -r -q "${WORK}/other-format.zip" .)
 lacks "another format fails" site_archive_verify "${WORK}/other-format.zip"
 lacks "a file that is not a ZIP fails" site_archive_verify "${ROOT}/index.php"
+rm -rf "${REZIP}"
+
+echo "Reading a version 1 archive (gzip parts: the plugin, and EngineScript before 2026-11-20)"
+V1="${WORK}/v1"
+mkdir -p "${V1}/database" "${V1}/files" "${WORK}/v1-tree"
+sed 's/^version=2$/version=1/; s/\.sql\.zst$/.sql.gz/; s/\.tar\.zst$/.tar.gz/' "${EXTRACT}/manifest.txt" > "${V1}/manifest.txt"
+V1_DUMP="${V1}/database/$(basename "${DUMP%.zst}").gz"
+V1_FILES="${V1}/files/$(basename "${FILES%.zst}").gz"
+zstd -q -dc "${DUMP}" | gzip > "${V1_DUMP}"
+tar --zstd -xf "${FILES}" -C "${WORK}/v1-tree"
+tar -C "${WORK}/v1-tree" -czf "${V1_FILES}" .
+(cd "${V1}" && zip -0 -r -q "${WORK}/v1.zip" manifest.txt database files)
+holds "a whole version 1 archive passes" site_archive_verify "${WORK}/v1.zip"
+echo "CREATE TABLE cut short" | gzip > "${V1_DUMP}"
+rm -f "${WORK}/v1.zip"
+(cd "${V1}" && zip -0 -r -q "${WORK}/v1.zip" manifest.txt database files)
+lacks "a version 1 dump without its last line fails" site_archive_verify "${WORK}/v1.zip"
+rm -rf "${REZIP}"
+cp -r "${EXTRACT}" "${REZIP}"
+zstd -q -dc "${DUMP}" | gzip > "${REZIP}/database/second.sql.gz"
+(cd "${REZIP}" && zip -0 -r -q "${WORK}/two-dumps.zip" .)
+lacks "an archive with two dumps (one zstd, one gzip) fails" site_archive_verify "${WORK}/two-dumps.zip"
+rm -rf "${REZIP}"
+
+echo "The compression functions (enginescript-compression.sh)"
+printf 'line one\nline two\n' > "${WORK}/plain.txt"
+es_compress < "${WORK}/plain.txt" > "${WORK}/c.zst"
+gzip -c "${WORK}/plain.txt" > "${WORK}/c.gz"
+holds "es_compress writes zstd" zstd -q -t "${WORK}/c.zst"
+check "es_decompress reads .zst back" "$(es_decompress "${WORK}/c.zst" | tr '\n' ' ')" "line one line two "
+check "es_decompress reads .gz back" "$(es_decompress "${WORK}/c.gz" | tr '\n' ' ')" "line one line two "
+check "es_decompress_stream reads a .zst stream" "$(es_decompress_stream x.zst < "${WORK}/c.zst" | head -n 1)" "line one"
+check "es_decompress_stream reads a .gz stream" "$(es_decompress_stream x.gz < "${WORK}/c.gz" | head -n 1)" "line one"
+lacks "es_decompress refuses another name" es_decompress "${WORK}/plain.txt" 2> /dev/null
+lacks "es_decompress_stream refuses another name" es_decompress_stream x.bz2 < "${WORK}/c.gz" 2> /dev/null
+check "es_tar_read_option for .tar.zst" "$(es_tar_read_option a.tar.zst)" "--zstd"
+check "es_tar_read_option for .tar.gz" "$(es_tar_read_option a.tar.gz)" "--gzip"
+lacks "es_tar_read_option refuses another name" es_tar_read_option a.zip 2> /dev/null
+holds "es_compressed_file_ok passes a whole .zst" es_compressed_file_ok "${WORK}/c.zst"
+holds "es_compressed_file_ok passes a whole .gz" es_compressed_file_ok "${WORK}/c.gz"
+head -c 12 "${WORK}/c.zst" > "${WORK}/cut.zst"
+head -c 12 "${WORK}/c.gz" > "${WORK}/cut.gz"
+lacks "es_compressed_file_ok fails a .zst cut short" es_compressed_file_ok "${WORK}/cut.zst"
+lacks "es_compressed_file_ok fails a .gz cut short" es_compressed_file_ok "${WORK}/cut.gz"
+lacks "es_compressed_file_ok fails another name" es_compressed_file_ok "${WORK}/plain.txt"
+tar -C "${WORK}" "${ES_TAR_ZSTD}" -cf "${WORK}/t.tar.zst" plain.txt
+check "ES_TAR_ZSTD writes a zstd tar that reads back" "$(tar --zstd -tf "${WORK}/t.tar.zst")" "plain.txt"
+holds "the zstd tar is a zstd frame" zstd -q -t "${WORK}/t.tar.zst"
 
 echo "Keeping the newest files backups"
 BACKUPS="${WORK}/backups/files"

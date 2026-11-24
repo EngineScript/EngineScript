@@ -17,11 +17,11 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Date
 NOW=$(date +%m-%d-%Y-%H)
 
-# Filename
-PHP_FILE="${NOW}-php.tar.gz"
+# Filename (zstd since 2026-11-20; older backups are .tar.gz)
+PHP_FILE="${NOW}-php.tar.zst"
 
 # Backup PHP Config
-tar -C / -zcf "/home/EngineScript/config-backups/php/${PHP_FILE}" etc/php
+tar -C / "${ES_TAR_ZSTD}" -cf "/home/EngineScript/config-backups/php/${PHP_FILE}" etc/php
 
-# Remove Old PHP Backups
+# Remove Old PHP Backups (either format)
 find /home/EngineScript/config-backups/php -type f -mtime +30 -delete

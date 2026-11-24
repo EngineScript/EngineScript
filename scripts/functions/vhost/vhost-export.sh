@@ -33,8 +33,8 @@ fi
 echo "You selected: ${SELECTED_SITE}"
 
 # --- Build the Archive ---
-# The EngineScript site archive (manifest.txt, database/*.sql.gz, files/*.tar.gz in one ZIP) that
-# vhost-import.sh reads; enginescript-site-archive.sh describes the format.
+# The EngineScript site archive (manifest.txt, database/*.sql.zst, files/*.tar.zst in one ZIP)
+# that vhost-import.sh reads; enginescript-site-archive.sh describes the format.
 EXPORT_BASE_DIR="/home/EngineScript/temp/site-export"
 SITE_EXPORT_DIR="${EXPORT_BASE_DIR}/${SELECTED_SITE}"
 EXPORT_TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
