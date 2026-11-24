@@ -31,7 +31,7 @@
 # owned /etc/enginescript. ES_TUNING_CONF and ES_TUNING_OVERRIDES override the paths (for tests).
 
 # Bump when the plan's keys or formulas change, so EngineScript updates apply the new plan once
-ES_TUNING_VERSION=2
+ES_TUNING_VERSION=3
 
 
 # ----------------------------------------------------------------
@@ -82,7 +82,7 @@ function tuning_calculate() {
     local mem="$1" cpus="$2" disk="$3"
     local reserve redis opcache interned max_files aria pool_floor table_cache rest workers
     local conns used left pool redo log_buffer tmp memory_limit zone cache_max
-    local start min_spare max_spare php_share php_max php_high backlog
+    local start min_spare max_spare php_share php_max php_high backlog ceiling_workers
 
     reserve=$((192 + mem * 5 / 100))
 
@@ -93,8 +93,8 @@ function tuning_calculate() {
         (( redis > 2048 )) && redis=2048
     fi
 
-    # On a 1 GB server the minimums (192 MB OPcache, a 192 MB buffer pool, 3 workers) add up to
-    # about 210 MB more than RAM. That is on paper only, and deliberate: OPcache and the buffer
+    # On a 1 GB server the minimums (192 MB OPcache, a 192 MB buffer pool, 2 workers) add up to
+    # about 140 MB more than RAM. That is on paper only, and deliberate: OPcache and the buffer
     # pool use only the memory they fill, and a worker is counted at 70 MB but measured at 20 to
     # 48 MB. Measured worst case (a 34-plugin site): about 750 MB in use. Do not shrink OPcache
     # to make the sum fit: a 23-plugin site needs about 170 MB of it, and a full OPcache stops
@@ -123,6 +123,11 @@ function tuning_calculate() {
     workers=$((rest / 71))
     (( workers > cpus * 6 )) && workers=$((cpus * 6))
     (( workers < 3 )) && workers=3
+    # Below 1.5 GB, 2 workers: the PHP-FPM ceiling below still counts 3, so each worker
+    # has about 105 MB. Measured 2026-11-24 on a 1 GB shop (32 plugins): with 3 workers PHP-FPM
+    # passed its ceiling 7 times in 16 minutes (a worker killed and its request failed each time);
+    # with 2, never, at the same throughput (-4% to +4%) and with admin pages 15% faster
+    (( mem < 1536 )) && workers=2
     conns=$((workers + 30))
 
     used=$((reserve + redis * 125 / 100 + opcache + pool_floor + 160 + aria + conns + workers * 70))
@@ -134,8 +139,11 @@ function tuning_calculate() {
     # together they can ask for more than the server has. Without a ceiling the server swaps
     # MariaDB and Redis out long before the kernel's OOM killer picks a worker. With it, PHP's
     # own memory is reclaimed and swapped first (MemoryHigh), and a worker is killed inside
-    # PHP-FPM's group when even that is not enough (MemoryMax).
-    php_share=$((opcache + workers * 70))
+    # PHP-FPM's group when even that is not enough (MemoryMax). It counts at least 3 workers, so
+    # the 2 workers of a server under 1.5 GB share the room of 3.
+    ceiling_workers="${workers}"
+    (( ceiling_workers < 3 )) && ceiling_workers=3
+    php_share=$((opcache + ceiling_workers * 70))
     php_max=$((mem - reserve - redis * 125 / 100 - (pool + 160 + aria + conns)))
     (( php_max < php_share )) && php_max="${php_share}"
     php_high=$((php_max * 90 / 100))
