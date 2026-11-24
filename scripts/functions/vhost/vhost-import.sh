@@ -396,6 +396,8 @@ fi
 
 # The address the site's URLs start with; they are moved to the new address below
 ORIGINAL_SITE_URL="$(site_address_without_scheme "${SITE_URL_RAW}")"
+# The domain the site had, kept when [C] Change gives it a new one (for its email addresses)
+ORIGINAL_DOMAIN="$(site_address_domain "${SITE_URL_RAW}")"
 # The domain the site is served at (the host, without www.); it can be changed below
 SITE_URL="$(site_address_domain "${SITE_URL_RAW}")"
 # The host in the site's new address: the domain, or www.<domain> when the import keeps www
@@ -678,6 +680,19 @@ for url_scheme in http https; do
     run_url_search_replace_if_present "${url_scheme}:\\/\\/${ORIGINAL_SITE_URL}" "https:\\/\\/${SITE_HOST}"
 done
 
+# On a new domain, WordPress's own sender address moves with the site: wordpress@<domain> (the
+# From address wp_mail makes from the site's host, without www.), which plugins such as Contact
+# Form 7 save in their settings. Mail from the old domain's address can fail the new domain's SPF
+# and DMARC checks. Other addresses at the old domain may be real mailboxes the owner keeps, so
+# they are not changed; they are listed at the end for the owner to check.
+OLD_DOMAIN_ADDRESSES=""
+if [[ "${ORIGINAL_DOMAIN}" != "${SITE_URL}" ]]; then
+    echo "Moving WordPress's sender address wordpress@${ORIGINAL_DOMAIN} to wordpress@${SITE_URL}..."
+    run_url_search_replace_if_present "wordpress@${ORIGINAL_DOMAIN}" "wordpress@${SITE_URL}"
+    OLD_DOMAIN_ADDRESSES="$(wp_site db export - 2> /dev/null \
+        | grep -oiE "[a-z0-9._%+-]+@${ORIGINAL_DOMAIN//./\\.}\b" | sort -fu | head -n 20 | paste -sd ' ' -)"
+fi
+
 # The stored addresses. wp-config.php defines WP_HOME and WP_SITEURL as the new address, so this
 # keeps the database in step with it, also when the old WordPress address used another host.
 wp_site option update home "${NEW_URL}" --skip-plugins --skip-themes || die "Could not set the site's home address."
@@ -756,6 +771,13 @@ echo "        ${BOLD}ACTION REQUIRED:${NORMAL}"
 echo "        Please open your web browser and thoroughly verify the site functionality."
 echo "        Check pages, posts, images, forms, and plugin features."
 echo ""
+if [[ -n "${OLD_DOMAIN_ADDRESSES}" ]]; then
+    echo "        The site still uses these addresses at its old domain ${ORIGINAL_DOMAIN}:"
+    echo "          ${OLD_DOMAIN_ADDRESSES}"
+    echo "        Keep them if those mailboxes still exist; otherwise change them in WordPress"
+    echo "        (Settings > General, users' profiles, and the settings of forms and shops)."
+    echo ""
+fi
 echo "        If the site is NOT working correctly:"
 echo "          - Answer 'n' to the prompt below."
 echo "          - The script will exit WITHOUT removing temporary import files."
