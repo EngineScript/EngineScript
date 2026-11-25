@@ -106,5 +106,6 @@ testing:
       - any-glob-to-any-file: .ruff.toml
       - any-glob-to-any-file: eslint.config.mjs
       - any-glob-to-any-file: .stylelintrc.json
+      - any-glob-to-any-file: stylelint-browsers.json
       - any-glob-to-any-file: .yamllint.yml
       - any-glob-to-any-file: tslint.json

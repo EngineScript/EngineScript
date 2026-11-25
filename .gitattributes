@@ -44,5 +44,6 @@
 /phpunit.xml export-ignore
 /psalm.xml export-ignore
 /rector.php export-ignore
+/stylelint-browsers.json export-ignore
 /tests export-ignore
 /tslint.json export-ignore

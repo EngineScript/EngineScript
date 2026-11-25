@@ -6,7 +6,8 @@
 # the repository's own files (phpcs.xml, phpmd.xml, eslint.config.mjs, .markdownlint.jsonc,
 # .shellcheckrc, bandit.yml, .stylelintrc.json). phpcs.xml holds only the PHPCS standards Codacy
 # installs; the Control Panel workflow runs phpcs-extra.xml, which adds PHPCSExtra's sniffs, and
-# PHP-CS-Fixer for the PER Coding Style.
+# PHP-CS-Fixer for the PER Coding Style. Likewise .stylelintrc.json holds only stylelint-config-standard;
+# npm run lint:css runs stylelint-browsers.json, which adds stylelint-no-unsupported-browser-features.
 
 exclude_paths:
   # The WordPress configuration template, copied to each site; WordPress's own code style

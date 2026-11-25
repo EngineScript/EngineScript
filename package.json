@@ -7,7 +7,7 @@
     "node": ">=22.22.2"
   },
   "scripts": {
-    "lint:css": "stylelint \"config/var/www/admin/control-panel/**/*.css\"",
+    "lint:css": "stylelint --config stylelint-browsers.json \"config/var/www/admin/control-panel/**/*.css\"",
     "lint:html": "html-validate \"config/var/www/admin/control-panel/**/*.html\"",
     "lint:js": "eslint --max-warnings 0 .",
     "lint:md": "markdownlint-cli2",
