@@ -49,11 +49,12 @@
         "phpstan/phpstan": "^2.3.1",
         "phpcompatibility/php-compatibility": "^9.3.5",
         "sirbrillig/phpcs-variable-analysis": "^3.0",
-        "rector/rector": "^2.6"
+        "rector/rector": "^2.6",
+        "slevomat/coding-standard": "^8.22.1"
     },
     "scripts": {
-        "phpcs": "phpcs --standard=phpcs.xml",
-        "phpcs:fix": "phpcbf --standard=phpcs.xml",
+        "phpcs": "phpcs --standard=phpcs-extra.xml",
+        "phpcs:fix": "phpcbf --standard=phpcs-extra.xml",
         "cs:check": "php-cs-fixer check --config=.php-cs-fixer.dist.php --diff",
         "phpmd": "phpmd analyze config/var/www/admin --no-progress --format text --ruleset phpmd.xml",
         "psalm": "psalm --config=psalm.xml --show-info=true",

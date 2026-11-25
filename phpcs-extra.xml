@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="EngineScript Admin Control Panel Coding Standards with PHPCSExtra">
+    <description>phpcs.xml plus the PHPCSExtra sniffs, which Codacy does not install. Composer and CI run this file.</description>
+
+    <!--
+        PHPCS finds phpcs.xml on its own, and so does Codacy; it never finds this file, so it can use
+        standards Codacy lacks. Name it as the standard to run it, as "composer phpcs" does.
+    -->
+
+    <!-- Files to check (PHPCS reads these only from the ruleset it is given, so they repeat phpcs.xml's) -->
+    <file>config/var/www/admin</file>
+    <file>rector.php</file>
+    <file>.php-cs-fixer.dist.php</file>
+
+    <rule ref="./phpcs.xml"/>
+
+    <!-- Universal sniffs from PHPCSExtra. The collection is not a standard and holds contradictory
+         sniffs, so each one is named. These are the ones WordPress-Core and WordPress-Extra add in
+         the plugin repositories, minus those that only fit WordPress style (long arrays, no short
+         ternary, tab alignment). -->
+    <rule ref="Universal.Arrays.DuplicateArrayKey"/>
+    <rule ref="Universal.Attributes.BracketSpacing"/>
+    <rule ref="Universal.Attributes.DisallowAttributeParentheses"/>
+    <rule ref="Universal.Classes.ModifierKeywordOrder"/>
+    <rule ref="Universal.Classes.RequireAnonClassParentheses"/>
+    <rule ref="Universal.CodeAnalysis.ConstructorDestructorReturn"/>
+    <rule ref="Universal.CodeAnalysis.ForeachUniqueAssignment"/>
+    <rule ref="Universal.CodeAnalysis.NoDoubleNegative"/>
+    <rule ref="Universal.CodeAnalysis.NoEchoSprintf"/>
+    <rule ref="Universal.CodeAnalysis.StaticInFinalClass"/>
+    <rule ref="Universal.Constants.LowercaseClassResolutionKeyword"/>
+    <rule ref="Universal.Constants.ModifierKeywordOrder"/>
+    <rule ref="Universal.Constants.UppercaseMagicConstants"/>
+    <rule ref="Universal.ControlStructures.DisallowLonelyIf"/>
+    <rule ref="Universal.Files.SeparateFunctionsFromOO"/>
+    <rule ref="Universal.Namespaces.DisallowCurlyBraceSyntax"/>
+    <rule ref="Universal.Namespaces.DisallowDeclarationWithoutName"/>
+    <rule ref="Universal.Namespaces.OneDeclarationPerFile"/>
+    <rule ref="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
+    <rule ref="Universal.Operators.DisallowStandalonePostIncrementDecrement"/>
+    <rule ref="Universal.Operators.StrictComparisons"/>
+    <rule ref="Universal.Operators.TypeSeparatorSpacing"/>
+    <rule ref="Universal.PHP.LowercasePHPTag"/>
+    <rule ref="Universal.UseStatements.DisallowMixedGroupUse"/>
+    <rule ref="Universal.UseStatements.KeywordSpacing"/>
+    <rule ref="Universal.UseStatements.LowercaseFunctionConst"/>
+    <rule ref="Universal.UseStatements.NoLeadingBackslash"/>
+    <rule ref="Universal.UseStatements.NoUselessAliases"/>
+    <rule ref="Universal.WhiteSpace.AnonClassKeywordSpacing"/>
+    <rule ref="Universal.WhiteSpace.CommaSpacing"/>
+
+    <!-- PHPCSExtra standards for additional code quality checks -->
+    <rule ref="Modernize"/>
+
+    <rule ref="NormalizedArrays">
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+    </rule>
+
+</ruleset>

@@ -1,0 +1,3 @@
+# Bandit settings: every test runs, none skipped. Codacy's Bandit uses this file when its
+# "Configuration file" setting is on.
+skips: []

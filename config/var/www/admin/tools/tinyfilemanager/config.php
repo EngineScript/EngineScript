@@ -32,7 +32,7 @@ if (
 
 // The settings below are Tiny File Manager's: it includes this file and reads them, so they are
 // not unused, and their names are its own.
-// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable,SlevomatCodingStandard.Variables.UnusedVariable
 
 // Authentication array: username => password hash
 $auth_users = [

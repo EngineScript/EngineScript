@@ -1,0 +1,7 @@
+# ShellCheck settings: every check runs except those disabled here. ShellCheck reads this file, and
+# Codacy's ShellCheck uses it when its "Configuration file" setting is on. CI also passes
+# --severity=warning; this file cannot set a severity, so Codacy reports every level.
+
+# The scripts source their libraries by server path (/usr/local/bin/enginescript/...), which
+# ShellCheck cannot open in a checkout.
+disable=SC1091

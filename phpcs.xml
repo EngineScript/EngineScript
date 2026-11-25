@@ -2,6 +2,13 @@
 <ruleset name="EngineScript Admin Control Panel Coding Standards">
     <description>Coding standards for the admin control panel and the admin tools' configuration: PSR-12, read against the current PER Coding Style, with the plugin repositories' general standards.</description>
 
+    <!--
+        Codacy reads this file (its PHP_CodeSniffer "Configuration file" setting), so it may use only
+        the standards Codacy installs: PHP_CodeSniffer's own, Slevomat, VariableAnalysis, and
+        PHPCompatibility. The PHPCSExtra sniffs (Universal, Modernize, NormalizedArrays), which Codacy
+        does not install, are in phpcs-extra.xml; it includes this file, and composer and CI run it.
+    -->
+
     <!-- Files to check: the panel and the tools' EngineScript configuration -->
     <file>config/var/www/admin</file>
     <file>rector.php</file>
@@ -21,48 +28,6 @@
         reason, and PHP-CS-Fixer's @PER-CS set (.php-cs-fixer.dist.php) checks the PER rule.
     -->
     <rule ref="PSR12"/>
-
-    <!-- Universal sniffs from PHPCSExtra. The collection is not a standard and holds contradictory
-         sniffs, so each one is named. These are the ones WordPress-Core and WordPress-Extra add in
-         the plugin repositories, minus those that only fit WordPress style (long arrays, no short
-         ternary, tab alignment). -->
-    <rule ref="Universal.Arrays.DuplicateArrayKey"/>
-    <rule ref="Universal.Attributes.BracketSpacing"/>
-    <rule ref="Universal.Attributes.DisallowAttributeParentheses"/>
-    <rule ref="Universal.Classes.ModifierKeywordOrder"/>
-    <rule ref="Universal.Classes.RequireAnonClassParentheses"/>
-    <rule ref="Universal.CodeAnalysis.ConstructorDestructorReturn"/>
-    <rule ref="Universal.CodeAnalysis.ForeachUniqueAssignment"/>
-    <rule ref="Universal.CodeAnalysis.NoDoubleNegative"/>
-    <rule ref="Universal.CodeAnalysis.NoEchoSprintf"/>
-    <rule ref="Universal.CodeAnalysis.StaticInFinalClass"/>
-    <rule ref="Universal.Constants.LowercaseClassResolutionKeyword"/>
-    <rule ref="Universal.Constants.ModifierKeywordOrder"/>
-    <rule ref="Universal.Constants.UppercaseMagicConstants"/>
-    <rule ref="Universal.ControlStructures.DisallowLonelyIf"/>
-    <rule ref="Universal.Files.SeparateFunctionsFromOO"/>
-    <rule ref="Universal.Namespaces.DisallowCurlyBraceSyntax"/>
-    <rule ref="Universal.Namespaces.DisallowDeclarationWithoutName"/>
-    <rule ref="Universal.Namespaces.OneDeclarationPerFile"/>
-    <rule ref="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
-    <rule ref="Universal.Operators.DisallowStandalonePostIncrementDecrement"/>
-    <rule ref="Universal.Operators.StrictComparisons"/>
-    <rule ref="Universal.Operators.TypeSeparatorSpacing"/>
-    <rule ref="Universal.PHP.LowercasePHPTag"/>
-    <rule ref="Universal.UseStatements.DisallowMixedGroupUse"/>
-    <rule ref="Universal.UseStatements.KeywordSpacing"/>
-    <rule ref="Universal.UseStatements.LowercaseFunctionConst"/>
-    <rule ref="Universal.UseStatements.NoLeadingBackslash"/>
-    <rule ref="Universal.UseStatements.NoUselessAliases"/>
-    <rule ref="Universal.WhiteSpace.AnonClassKeywordSpacing"/>
-    <rule ref="Universal.WhiteSpace.CommaSpacing"/>
-
-    <!-- PHPCSExtra standards for additional code quality checks -->
-    <rule ref="Modernize"/>
-
-    <rule ref="NormalizedArrays">
-        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
-    </rule>
 
     <!-- Every EngineScript repository writes arrays one way: the short syntax. -->
     <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
@@ -90,6 +55,42 @@
             <property name="allowMultiline" value="true"/>
         </properties>
     </rule>
+    <!-- Leftover TODO comments, Yoda conditions, php_sapi_name() instead of PHP_SAPI, and count()
+         or strlen() in a loop condition. -->
+    <rule ref="Generic.Commenting.Todo"/>
+    <rule ref="Generic.ControlStructures.DisallowYodaConditions"/>
+    <rule ref="Generic.PHP.SAPIUsage"/>
+    <rule ref="Squiz.PHP.DisallowSizeFunctionsInLoops"/>
+    <!-- Layout PSR-12 leaves open: one space after a cast (as @PER-CS has it), include and require
+         written as statements, multi-line assignments and chained calls indented by four spaces,
+         no spaces inside array brackets, and aligned doc comment asterisks. -->
+    <rule ref="Generic.Formatting.SpaceAfterCast"/>
+    <rule ref="PEAR.Files.IncludingFile"/>
+    <rule ref="PEAR.Formatting.MultiLineAssignment"/>
+    <rule ref="PEAR.WhiteSpace.ObjectOperatorIndent"/>
+    <rule ref="Squiz.Arrays.ArrayBracketSpacing"/>
+    <rule ref="Squiz.Commenting.DocCommentAlignment"/>
+
+    <!-- Slevomat checks Codacy runs: arrow functions written "fn($x) => ...", closures that could be
+         static, unused parameters, variables and imports, sorted imports, loose == and != comparisons,
+         a variable assigned only to be returned, and unpacking that stops PHP optimizing a call. -->
+    <rule ref="SlevomatCodingStandard.Functions.ArrowFunctionDeclaration">
+        <properties>
+            <property name="spacesCountAfterKeyword" value="0"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Functions.StaticClosure"/>
+    <rule ref="SlevomatCodingStandard.Functions.UnusedParameter"/>
+    <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
+        <properties>
+            <property name="psr12Compatible" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses"/>
+    <rule ref="SlevomatCodingStandard.Operators.DisallowEqualOperators"/>
+    <rule ref="SlevomatCodingStandard.PHP.OptimizedFunctionsWithoutUnpacking"/>
+    <rule ref="SlevomatCodingStandard.Variables.UnusedVariable"/>
+    <rule ref="SlevomatCodingStandard.Variables.UselessVariable"/>
 
     <!-- PHP version compatibility, from the panel's minimum version up. -->
     <rule ref="PHPCompatibility">
