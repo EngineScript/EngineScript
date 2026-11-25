@@ -21,12 +21,12 @@ dependency installation does not show a problem in the code.
 
 ### What the job checks
 
-The job runs the PHPCS report (`vendor/bin/phpcs --standard=phpcs.xml`), the PHPCompatibility control, and PHP-CS-Fixer (`composer cs:check`, the PER Coding Style).
+The job runs the PHPCS report (`vendor/bin/phpcs --standard=phpcs-extra.xml`: `phpcs.xml`, which Codacy also reads, plus the PHPCSExtra sniffs), the PHPCompatibility control, and PHP-CS-Fixer (`composer cs:check`, the PER Coding Style).
 
 ### Next steps
 
 1. Run `composer phpcs` and `composer cs:check` locally.
-2. Fix each reported line, or record why a rule does not fit this code in `phpcs.xml`.
+2. Fix each reported line, or record why a rule does not fit this code in `phpcs.xml` (a PHPCSExtra rule: `phpcs-extra.xml`).
 3. Until Phase 16 of the control panel review, the known findings (classes without a namespace, line length) make this job fail (`D-076`).
 
 ### Validation

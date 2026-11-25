@@ -1,8 +1,12 @@
 ---
 # Codacy configuration for EngineScript.
 #
-# Only settings Codacy reads are here. Codacy's PHP_CodeSniffer is set (in Codacy's UI) to read
-# phpcs.xml, the file the Control Panel workflow uses; PHP-CS-Fixer checks the PER Coding Style there.
+# Only settings Codacy reads are here. With each tool's "Configuration file" setting on, Codacy's
+# PHP_CodeSniffer, PHP Mess Detector, ESLint, markdownlint, ShellCheck, Bandit, and Stylelint read
+# the repository's own files (phpcs.xml, phpmd.xml, eslint.config.mjs, .markdownlint.jsonc,
+# .shellcheckrc, bandit.yml, .stylelintrc.json). phpcs.xml holds only the PHPCS standards Codacy
+# installs; the Control Panel workflow runs phpcs-extra.xml, which adds PHPCSExtra's sniffs, and
+# PHP-CS-Fixer for the PER Coding Style.
 
 exclude_paths:
   # The WordPress configuration template, copied to each site; WordPress's own code style
