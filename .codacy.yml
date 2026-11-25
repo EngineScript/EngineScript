@@ -5,12 +5,16 @@
 # PHP_CodeSniffer, PHP Mess Detector, ESLint, markdownlint, ShellCheck, Bandit, and Stylelint read
 # the repository's own files (phpcs.xml, phpmd.xml, eslint.config.mjs, .markdownlint.jsonc,
 # .shellcheckrc, bandit.yml, .stylelintrc.json). phpcs.xml holds only the PHPCS standards Codacy
-# installs; the Control Panel workflow runs phpcs-extra.xml, which adds PHPCSExtra's sniffs.
+# installs; the Control Panel workflow runs phpcs-extra.xml, which adds PHPCSExtra's sniffs, and
+# PHP-CS-Fixer for the PER Coding Style.
 
 exclude_paths:
   # The WordPress configuration template, copied to each site; WordPress's own code style
   - 'config/var/www/wordpress/wp-config.php'
   - 'config/var/www/wordpress/**'
+  # The control panel's tests: the Control Panel workflow runs and checks them, and the server suite
+  # runs the integration layer. Their harness runs commands and removes temporary files on purpose
+  - 'tests/**'
 
 engines:
   # TSLint is deprecated and is switched off for this repository in Codacy,
