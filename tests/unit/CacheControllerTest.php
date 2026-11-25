@@ -18,7 +18,7 @@ final class CacheControllerTest extends EsTestCase
     private function clear(array $query = [], string $body = ''): array
     {
         $server = ['REQUEST_METHOD' => 'POST'] + ($body === '' ? [] : ['CONTENT_TYPE' => 'application/json']);
-        $request = es_test_request($server, $query, [], $body);
+        $request = esTestRequest($server, $query, [], $body);
 
         return $this->respond(fn() => $this->controller(CacheController::class, $request)->clear());
     }

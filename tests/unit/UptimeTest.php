@@ -57,7 +57,7 @@ final class UptimeTest extends EsTestCase
         }
 
         if (self::$server === null) {
-            throw new RuntimeException('The UptimeRobot stand-in server did not start.');
+            self::fail('Setup: the UptimeRobot stand-in server did not start.');
         }
     }
 

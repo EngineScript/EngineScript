@@ -26,7 +26,7 @@ const VARIABLES = readFileSync(new URL("../../enginescript-variables.txt", impor
 export const FONTAWESOME_VER = /^FONTAWESOME_VER="([^"]+)"/m.exec(VARIABLES)[1];
 export const BASE = "https://admin.example.test";
 const FONT_AWESOME_URL = `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${FONTAWESOME_VER}/css/all.min.css`;
-const FONT_AWESOME_CSS = ".fas{font-family:\"Font Awesome 7 Free\"}.fa-check:before{content:\"\\f00c\"}";
+const FONT_AWESOME_CSS = String.raw`.fas{font-family:"Font Awesome 7 Free"}.fa-check:before{content:"\f00c"}`;
 
 /** API responses rendered by the panel's PHP: scenario => "METHOD /api/path" => {status, body}. */
 export const responses = JSON.parse(
@@ -216,11 +216,14 @@ export async function loadPage({ api = {}, fetch: answer = null, fontAwesome = "
  * Let pending promises and fetch answers run.
  */
 export async function settle(rounds = 20) {
-  for (let i = 0; i < rounds; i += 1) {
-    await new Promise((resolve) => {
-      setImmediate(resolve);
-    });
+  if (rounds <= 0) {
+    return;
   }
+  // One event-loop turn at a time: each turn lets the answers of the previous one run
+  await new Promise((resolve) => {
+    setImmediate(resolve);
+  });
+  await settle(rounds - 1);
 }
 
 /**

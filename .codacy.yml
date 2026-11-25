@@ -1,14 +1,16 @@
 ---
 # Codacy configuration for EngineScript.
 #
-# Only settings Codacy reads are here. Codacy's PHP_CodeSniffer uses its own default patterns, not
-# phpcs.xml; the repository's PHP standard is checked by the Control Panel workflow (PHPCS with
-# phpcs.xml, PHP-CS-Fixer for the PER Coding Style).
+# Only settings Codacy reads are here. Codacy's PHP_CodeSniffer is set (in Codacy's UI) to read
+# phpcs.xml, the file the Control Panel workflow uses; PHP-CS-Fixer checks the PER Coding Style there.
 
 exclude_paths:
   # The WordPress configuration template, copied to each site; WordPress's own code style
   - 'config/var/www/wordpress/wp-config.php'
   - 'config/var/www/wordpress/**'
+  # The control panel's tests: the Control Panel workflow runs and checks them, and the server suite
+  # runs the integration layer. Their harness runs commands and removes temporary files on purpose
+  - 'tests/**'
 
 engines:
   # TSLint is deprecated and is switched off for this repository in Codacy,

@@ -6,7 +6,7 @@
  * Loads the control panel's classes and controllers, but not api.php, which
  * sends headers, starts a session, and exits. The commands SystemCommand would
  * run go to EsTestRunner, which answers from a script the test sets and records
- * each call; es_test_reset() clears it with the rest of the shared state.
+ * each call; esTestReset() clears it with the rest of the shared state.
  *
  * Code whose behavior depends on real system commands, the files under /etc,
  * /var, and /home, real services, PHP sessions across requests, or nginx is not
@@ -84,7 +84,7 @@ final class EsTestRunner implements CommandRunner
  * Clear the state the panel's code shares between requests: the session data,
  * the request superglobals, the response code, and the command runner.
  */
-function es_test_reset(?EsTestRunner $runner = null): EsTestRunner
+function esTestReset(?EsTestRunner $runner = null): EsTestRunner
 {
     $runner ??= new EsTestRunner();
     SystemCommand::useRunner($runner);
@@ -103,7 +103,7 @@ function es_test_reset(?EsTestRunner $runner = null): EsTestRunner
  * @param array<string, mixed> $query
  * @param array<string, mixed> $post
  */
-function es_test_request(array $server = [], array $query = [], array $post = [], string $body = ''): Request
+function esTestRequest(array $server = [], array $query = [], array $post = [], string $body = ''): Request
 {
     return new Request(
         $server + [
@@ -119,7 +119,7 @@ function es_test_request(array $server = [], array $query = [], array $post = []
     );
 }
 
-es_test_reset();
+esTestReset();
 
 // The dashboard script tests load this file without PHPUnit, to render API responses.
 if (class_exists(\PHPUnit\Framework\TestCase::class)) {

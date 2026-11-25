@@ -8,7 +8,7 @@ final class RequestTest extends EsTestCase
 {
     public function testQueryAndFormValuesArePassedOnAsSent(): void
     {
-        $request = es_test_request([], ['endpoint' => " tools/status\n", 'blank' => ''], ['_csrf_token' => "abc\x00"]);
+        $request = esTestRequest([], ['endpoint' => " tools/status\n", 'blank' => ''], ['_csrf_token' => "abc\x00"]);
 
         self::assertSame(" tools/status\n", $request->query('endpoint'));
         self::assertSame("abc\x00", $request->post('_csrf_token'));
@@ -18,7 +18,7 @@ final class RequestTest extends EsTestCase
 
     public function testNonScalarInputIsRefused(): void
     {
-        $request = es_test_request([], ['endpoint' => ['system', 'info']], ['_csrf_token' => ['x']]);
+        $request = esTestRequest([], ['endpoint' => ['system', 'info']], ['_csrf_token' => ['x']]);
 
         self::assertNull($request->query('endpoint'));
         self::assertNull($request->post('_csrf_token'));
@@ -26,21 +26,21 @@ final class RequestTest extends EsTestCase
 
     public function testScalarInputBecomesAString(): void
     {
-        self::assertSame('7', es_test_request([], ['n' => 7])->query('n'));
+        self::assertSame('7', esTestRequest([], ['n' => 7])->query('n'));
     }
 
     public function testMethodIsUpperCasedAndAnythingOddBecomesGet(): void
     {
-        self::assertSame('POST', es_test_request(['REQUEST_METHOD' => 'post'])->method());
-        self::assertSame('PATCH', es_test_request(['REQUEST_METHOD' => 'PATCH'])->method());
-        self::assertSame('GET', es_test_request(['REQUEST_METHOD' => "POST\n"])->method());
-        self::assertSame('GET', es_test_request(['REQUEST_METHOD' => 'M-SEARCH'])->method());
+        self::assertSame('POST', esTestRequest(['REQUEST_METHOD' => 'post'])->method());
+        self::assertSame('PATCH', esTestRequest(['REQUEST_METHOD' => 'PATCH'])->method());
+        self::assertSame('GET', esTestRequest(['REQUEST_METHOD' => "POST\n"])->method());
+        self::assertSame('GET', esTestRequest(['REQUEST_METHOD' => 'M-SEARCH'])->method());
         self::assertSame('GET', (new Request([], [], []))->method(), 'no method at all');
     }
 
     public function testHeadersAreReadFromTheirServerKeys(): void
     {
-        $request = es_test_request([
+        $request = esTestRequest([
             'HTTP_X_CSRF_TOKEN' => 'token',
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_EMPTY' => '',
@@ -55,21 +55,21 @@ final class RequestTest extends EsTestCase
 
     public function testRemoteAddressMustBeAnIpAddress(): void
     {
-        self::assertSame('203.0.113.7', es_test_request()->remoteAddress());
-        self::assertSame('2001:db8::1', es_test_request(['REMOTE_ADDR' => '2001:db8::1'])->remoteAddress());
-        self::assertSame('invalid', es_test_request(['REMOTE_ADDR' => '203.0.113.7, 10.0.0.1'])->remoteAddress());
+        self::assertSame('203.0.113.7', esTestRequest()->remoteAddress());
+        self::assertSame('2001:db8::1', esTestRequest(['REMOTE_ADDR' => '2001:db8::1'])->remoteAddress());
+        self::assertSame('invalid', esTestRequest(['REMOTE_ADDR' => '203.0.113.7, 10.0.0.1'])->remoteAddress());
         self::assertSame('unknown', (new Request([], [], []))->remoteAddress());
     }
 
     public function testAuthenticatedUserComesFromBasicAuthentication(): void
     {
-        self::assertSame('admin', es_test_request()->authenticatedUser);
+        self::assertSame('admin', esTestRequest()->authenticatedUser);
         self::assertSame('unknown', (new Request([], [], []))->authenticatedUser);
     }
 
     public function testBodyAndUriAreReturnedAsGiven(): void
     {
-        $request = es_test_request(['REQUEST_URI' => '/api/cache/clear?type=redis'], [], [], '{"types":["redis"]}');
+        $request = esTestRequest(['REQUEST_URI' => '/api/cache/clear?type=redis'], [], [], '{"types":["redis"]}');
 
         self::assertSame('{"types":["redis"]}', $request->body());
         self::assertSame('/api/cache/clear?type=redis', $request->uri());

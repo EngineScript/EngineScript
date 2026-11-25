@@ -27,7 +27,7 @@ final class RouterTest extends EsTestCase
      */
     private function dispatch(string $path, string $method = 'GET'): array
     {
-        $request = es_test_request(['REQUEST_METHOD' => $method]);
+        $request = esTestRequest(['REQUEST_METHOD' => $method]);
         $router = new Router(new ApiResponder(), $request, $this->logger($request), new Session());
 
         return $this->respond(static fn() => $router->dispatch($path));
