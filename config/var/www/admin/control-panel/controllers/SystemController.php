@@ -38,6 +38,21 @@ final class SystemController extends BaseController
      * @return void Outputs JSON response
      * @psalm-api
      */
+    /**
+     * The os-release file to read, /etc/os-release unless a test chose another
+     */
+    private static string $osReleaseFile = '/etc/os-release';
+
+    /**
+     * Read the distribution from another os-release file, or from /etc/os-release again for null; for tests
+     *
+     * @psalm-api
+     */
+    public static function useOsReleaseFile(?string $path): void
+    {
+        self::$osReleaseFile = $path ?? '/etc/os-release';
+    }
+
     public function getInfo(): void
     {
         try {
@@ -63,7 +78,7 @@ final class SystemController extends BaseController
      */
     private function getOsInfo(): string
     {
-        $osRelease = parse_ini_file('/etc/os-release');
+        $osRelease = parse_ini_file(self::$osReleaseFile);
         if (is_array($osRelease) && !empty($osRelease['PRETTY_NAME']) && is_string($osRelease['PRETTY_NAME'])) {
             return $osRelease['PRETTY_NAME'];
         }

@@ -54,6 +54,11 @@ abstract class BaseController
     private const int CACHE_TTL = 60;
 
     /**
+     * Directory of the response cache, CACHE_DIR unless a test chose another
+     */
+    private static string $cacheDirectory = self::CACHE_DIR;
+
+    /**
      * Cached decoded JSON request body for state-changing endpoints.
      *
      * @var array<mixed>|null
@@ -65,6 +70,16 @@ abstract class BaseController
      *
      * Final, because the router builds every controller with these arguments.
      */
+    /**
+     * Keep the response cache in another directory, or in CACHE_DIR again for null; for tests
+     *
+     * @psalm-api
+     */
+    public static function useCacheDirectory(?string $directory): void
+    {
+        self::$cacheDirectory = $directory === null ? self::CACHE_DIR : rtrim($directory, '/') . '/';
+    }
+
     final public function __construct(
         protected Session $session,
         protected ApiResponder $response,
@@ -218,7 +233,7 @@ abstract class BaseController
     private function getCacheFilePath(string $key): string
     {
         $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) ?? '';
-        return self::CACHE_DIR . $safeKey . '.json';
+        return self::$cacheDirectory . $safeKey . '.json';
     }
 
     /**

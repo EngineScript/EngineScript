@@ -949,7 +949,7 @@ jobs:
       # The unit suite must cover at least this share of the panel's PHP lines: set a few points
       # below the measured 50.25 % (503 of 1,001 lines, 2026-11-14). api.php and the controllers
       # that read the server's files are the integration suite's (tests/integration, D-075).
-      MINIMUM_LINE_COVERAGE: '46'
+      MINIMUM_LINE_COVERAGE: '66'
     steps:
       - name: Checkout code
         id: checkout_code
