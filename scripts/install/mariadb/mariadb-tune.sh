@@ -38,7 +38,8 @@ Restart=always
 # (-300) before MariaDB, whose loss takes every site down
 OOMScoreAdjust=-600
 
-# Environment variables to prevent startup errors
+# Empty, so systemd does not log them as unset: MariaDB 12.3's unit still reads MYSQLD_OPTS
+# (deprecated there; EngineScript sets nothing in it), and 11.8's also reads _WSREP_NEW_CLUSTER
 Environment="MYSQLD_OPTS="
 Environment="_WSREP_NEW_CLUSTER="
 EOF

@@ -82,14 +82,27 @@ jobs:
             fi
           }
 
-          # MariaDB (11.8 long-term series), from MariaDB's REST API. The releases page this used to
-          # read moved, and its pattern then matched nothing, so MariaDB stopped being updated.
-          LATEST_MARIADB=$(curl -fsSL --proto '=https' https://downloads.mariadb.org/rest-api/mariadb/11.8/ |
-            jq -r '.releases | keys[]' |
-            grep -E '^11\.8\.[0-9]+$' |
-            sort -V |
-            tail -n1)
-          check_version "MARIADB_VER" "$LATEST_MARIADB"
+          # MariaDB, from MariaDB's REST API: the newest release of the series each variable is
+          # on. MARIADB_VER is the series EngineScript installs; MARIADB_PREV_VER (when set) the
+          # previous series, which servers that keep it are still updated to. The series comes from
+          # the variable itself, so moving to a new series is a change to enginescript-variables.txt
+          # only. (The releases page this used to read moved, and its pattern then matched nothing.)
+          latest_mariadb() {
+            local series="$1"
+            curl -fsSL --proto '=https' "https://downloads.mariadb.org/rest-api/mariadb/${series}/" |
+              jq -r '.releases | keys[]' |
+              grep -E "^${series//./\\.}\.[0-9]+$" |
+              sort -V |
+              tail -n1
+          }
+          for mariadb_var in MARIADB_VER MARIADB_PREV_VER; do
+            mariadb_current="$(get_current_version "${mariadb_var}")"
+            if [[ "${mariadb_current}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              check_version "${mariadb_var}" "$(latest_mariadb "${mariadb_current%.*}")"
+            else
+              echo "::debug::${mariadb_var} is '${mariadb_current}': no MariaDB series to check"
+            fi
+          done
 
           # EngineScript Site Exporter Plugin
           echo "::debug::Fetching ES_SE Plugin version..."
@@ -356,7 +369,8 @@ jobs:
             -e "s#^(\\|PCRE2[^|]*\\|)[^|]*#\1$(get_current_version PCRE2_VER)#" \
             -e "s#^(\\|ZLIB[^|]*\\|)[^|]*#\1$(get_current_version ZLIB_VER)#" \
             -e "s#^(\\|PHPMYADMIN[^|]*\\|)[^|]*#\1$(get_current_version PHPMYADMIN_VER)#" \
-            -e "s#^(\\|MARIADB[^|]*\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
+            -e "s#^(\\|MARIADB\\|)[^|]*#\1$(get_current_version MARIADB_VER)#" \
+            -e "s#^(\\|MARIADB PREVIOUS SERIES\\|)[^|]*#\1$(get_current_version MARIADB_PREV_VER)#" \
             -e "s#^(\\|PLUGIN: EngineScript Site Exporter[^|]*\\|)[^|]*#\1$(get_current_version ES_SE_PLUGIN_VER)#" \
             -e "s#^(\\|PLUGIN: EngineScript Site Optimizer[^|]*\\|)[^|]*#\1$(get_current_version ES_SO_PLUGIN_VER)#" \
             -e "s#^(\\|Font Awesome[^|]*\\|)[^|]*#\1$(get_current_version FONTAWESOME_VER)#" \
@@ -392,6 +406,7 @@ jobs:
               echo "Updating enginescript-variables-ci.txt..."
               sed -i \
                 -e "s/^MARIADB_VER=\"[^\"]*\"/MARIADB_VER=\"$(get_current_version MARIADB_VER)\"/" \
+                -e "s/^MARIADB_PREV_VER=\"[^\"]*\"/MARIADB_PREV_VER=\"$(get_current_version MARIADB_PREV_VER)\"/" \
                 -e "s/^NGINX_HEADER_VER=\"[^\"]*\"/NGINX_HEADER_VER=\"$(get_current_version NGINX_HEADER_VER)\"/" \
                 -e "s/^NGINX_PURGE_VER=\"[^\"]*\"/NGINX_PURGE_VER=\"$(get_current_version NGINX_PURGE_VER)\"/" \
                 -e "s/^NGINX_VER=\"[^\"]*\"/NGINX_VER=\"$(get_current_version NGINX_VER)\"/" \

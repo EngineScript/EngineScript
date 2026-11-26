@@ -5,7 +5,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Nginx Mainline](https://img.shields.io/badge/Nginx-Mainline-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white)](https://www.php.net/)
-[![MariaDB](https://img.shields.io/badge/MariaDB-11.8-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-12.3-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![DigitalOcean](https://img.shields.io/badge/DigitalOcean-0080FF?logo=digitalocean&logoColor=white)](https://m.do.co/c/e57cc8492285)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare&logoColor=white)](https://cloudflare.com/)
@@ -147,7 +147,7 @@ With `ENGINESCRIPT_AUTO_UPDATE=1`, a daily job updates EngineScript. The options
 |-|-|
 |**`AUTO_UPDATE_NGINX`**|Rebuilds Nginx when Nginx, OpenSSL, PCRE2, or zlib has a new release (sites keep serving throughout)|
 |**`AUTO_UPDATE_PHP`**|Patch releases of the installed PHP version (8.5.x). Moving to a new version (8.5 to 8.6) is never automatic.|
-|**`AUTO_UPDATE_MARIADB`**|Patch releases of the installed MariaDB series (11.8.x), after a backup of every database. MariaDB restarts for a few seconds.|
+|**`AUTO_UPDATE_MARIADB`**|Patch releases of the installed MariaDB series (12.3.x, or 11.8.x on servers that keep the previous series), after a backup of every database. MariaDB restarts for a few seconds. Moving to a new series (11.8 to 12.3) is never automatic: Update MariaDB in `es.menu` asks.|
 
 A new release waits a day on each server before it is installed. Each update checks that the sites still work, and the Nginx and MariaDB updates put the previous setup back when they do not. With a Pushbullet token, you get a note after each automatic update, after one that failed, and when a newer PHP version or MariaDB series is supported. A failed update is not tried again automatically; run it from `es.menu` > Update Software. `es.debug` shows the last automatic update of each.
 
@@ -197,7 +197,8 @@ EngineScript includes a web-based admin control panel at `https://admin.yourdoma
 |**Application Server**|||
 |PHP|8.5|<https://packages.sury.org/php/>|
 |**Database Server**|||
-|MARIADB|11.8.9|<https://mariadb.org/download/>|
+|MARIADB|12.3.4|<https://mariadb.org/download/>|
+|MARIADB PREVIOUS SERIES|11.8.10|<https://mariadb.org/download/>|
 |**Object Cache**|||
 |REDIS||<https://redis.io/>|
 |**Admin Control Panel**|||

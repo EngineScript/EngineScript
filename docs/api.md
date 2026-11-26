@@ -125,7 +125,7 @@ Get the state and version of Nginx, PHP-FPM, MariaDB, and Redis.
 {
   "nginx": { "version": "1.28.0", "online": true },
   "php":   { "version": "8.5.1", "online": true },
-  "mysql": { "version": "11.8.5", "online": true },
+  "mysql": { "version": "12.3.4", "online": true },
   "redis": { "version": "8.2.3", "online": false }
 }
 ```

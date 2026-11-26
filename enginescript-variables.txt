@@ -6,7 +6,10 @@
 #-#-#-#-#-#-#-#  Edit These At Your Own Risk  #-#-#-#-#-#-#-#
 
 # Software Versions
-MARIADB_VER="11.8.9"
+MARIADB_VER="12.3.4"
+# The previous MariaDB series: servers that still run it get its patch releases (automatic
+# updates, and Update MariaDB when the admin keeps it). Empty: no previous series is updated.
+MARIADB_PREV_VER="11.8.10"
 NGINX_HEADER_VER="0.41"
 NGINX_PURGE_VER="3.0.4"
 NGINX_VER="1.31.8"
