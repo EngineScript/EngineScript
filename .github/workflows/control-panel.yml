@@ -34,7 +34,7 @@ name: Control Panel
       - 'stylelint-browsers.json'
       - '.htmlvalidate.json'
       - '.markdownlint-cli2.jsonc'
-      - '.markdownlint.jsonc'
+      - '.markdownlint.yaml'
       - '.php-cs-fixer.dist.php'
       - 'phpcs.xml'
       - 'phpcs-extra.xml'
@@ -91,7 +91,7 @@ jobs:
           while IFS= read -r file; do
             # The push trigger's paths (test-automation.py keeps the two lists equal)
             case "$file" in
-              config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|stylelint-browsers.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.markdownlint.jsonc|.php-cs-fixer.dist.php|phpcs.xml|phpcs-extra.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|scripts/functions/shared/site-archive-zip.py|.yamllint.yml)
+              config/var/www/admin/*|*.md|tests/*|.github/*|package.json|package-lock.json|composer.json|composer.lock|eslint.config.mjs|.stylelintrc.json|stylelint-browsers.json|.htmlvalidate.json|.markdownlint-cli2.jsonc|.markdownlint.yaml|.php-cs-fixer.dist.php|phpcs.xml|phpcs-extra.xml|rector.php|phpmd.xml|phpstan.neon|psalm.xml|phpunit.xml|.ruff.toml|.mypy.ini|scripts/functions/shared/site-archive-zip.py|.yamllint.yml)
                 relevant=true
                 ;;
               *)

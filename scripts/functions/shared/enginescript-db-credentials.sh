@@ -251,10 +251,12 @@ write_credentials_file() {
   chmod 700 "${credentials_dir}"
   # Create the file with restrictive permissions before writing any sensitive data
   install -m 600 /dev/null "${credentials_file}"
-  echo "DB=\"${database_name}\"" >> "${credentials_file}"
-  echo "USR=\"${database_user}\"" >> "${credentials_file}"
-  echo "PSWD=\"${database_password}\"" >> "${credentials_file}"
-  echo "" >> "${credentials_file}"
+  {
+    echo "DB=\"${database_name}\""
+    echo "USR=\"${database_user}\""
+    echo "PSWD=\"${database_password}\""
+    echo ""
+  } >> "${credentials_file}"
 
   # shellcheck source=/dev/null
   source "${credentials_file}"

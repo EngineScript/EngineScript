@@ -23,10 +23,9 @@ else
     NORMAL=""
 fi
 
-# Use printf to display the information.
-# Double quotes allow variable expansion (${BOLD}, ${NORMAL}).
-# Newlines within the double-quoted string are preserved by printf.
-printf "${BOLD}EngineScript Commands:${NORMAL}
+# Print the information. The text is printf's argument, not its format, so a % or a backslash in it
+# prints as written; double quotes expand ${BOLD} and ${NORMAL} and keep the newlines.
+printf '%s' "${BOLD}EngineScript Commands:${NORMAL}
 --------------------------------
 es.backup       - Backs up every site's database and files and the EngineScript configuration now (and to S3 if enabled)
 es.cache        - Clears FastCGI cache, OPcache, and Redis (server-wide)

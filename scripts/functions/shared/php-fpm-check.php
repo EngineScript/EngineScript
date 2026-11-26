@@ -15,6 +15,9 @@
 
 declare(strict_types=1);
 
+// One command-line script: its helpers and the code that runs them stay in this one file
+// phpcs:disable PSR1.Files.SideEffects
+
 // unpack() format codes below: cspell:ignore Cversion nlength Cpadding Creserved Nstatus
 
 const FCGI_VERSION = 1;
@@ -59,12 +62,14 @@ function fcgiPair(string $name, string $value): string
 function readBytes($stream, int $size): string
 {
     $data = '';
-    while (strlen($data) < $size && !feof($stream)) {
-        $chunk = fread($stream, max(1, $size - strlen($data)));
+    $remaining = $size;
+    while ($remaining > 0 && !feof($stream)) {
+        $chunk = fread($stream, $remaining);
         if ($chunk === false || $chunk === '') {
             break;
         }
         $data .= $chunk;
+        $remaining -= strlen($chunk);
     }
 
     return $data;

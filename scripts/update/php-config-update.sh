@@ -45,24 +45,27 @@ apply_php_tuning() {
     tuning_load
   fi
 
-  sed -i "s|pm.start_servers = .*|pm.start_servers = $(tuning_get PHP_START_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
+  # sed's errors go to the step's error log
+  {
+    sed -i "s|pm.start_servers = .*|pm.start_servers = $(tuning_get PHP_START_SERVERS)|g" "${www}"
+    sed -i "s|pm.min_spare_servers = .*|pm.min_spare_servers = $(tuning_get PHP_MIN_SPARE_SERVERS)|g" "${www}"
+    sed -i "s|pm.max_spare_servers = .*|pm.max_spare_servers = $(tuning_get PHP_MAX_SPARE_SERVERS)|g" "${www}"
+    sed -i "s|pm.max_children = .*|pm.max_children = $(tuning_get PHP_MAX_CHILDREN)|g" "${www}"
 
-  # The plan's listen backlog. A plan written before it had the key keeps the template's value
-  if [[ -n "$(tuning_get PHP_LISTEN_BACKLOG)" ]]; then
-    sed -i "s|^listen.backlog = .*|listen.backlog = $(tuning_get PHP_LISTEN_BACKLOG)|" "${www}" 2>> "${ES_STEP_ERROR_LOG}"
-  fi
+    # The plan's listen backlog. A plan written before it had the key keeps the template's value
+    if [[ -n "$(tuning_get PHP_LISTEN_BACKLOG)" ]]; then
+      sed -i "s|^listen.backlog = .*|listen.backlog = $(tuning_get PHP_LISTEN_BACKLOG)|" "${www}"
+    fi
 
-  # process.max (all pools together) follows the one pool's pm.max_children, so the fixed
-  # number in the template never caps a large server below its plan
-  sed -i "s|^process.max = .*|process.max = $(tuning_get PHP_MAX_CHILDREN)|" "${fpm}" 2>> "${ES_STEP_ERROR_LOG}"
+    # process.max (all pools together) follows the one pool's pm.max_children, so the fixed
+    # number in the template never caps a large server below its plan
+    sed -i "s|^process.max = .*|process.max = $(tuning_get PHP_MAX_CHILDREN)|" "${fpm}"
 
-  sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|SEDOPCACHEMEM|$(tuning_get OPCACHE_MEMORY_MB)M|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
-  sed -i "s|SEDOPCACHEMAXFILES|$(tuning_get OPCACHE_MAX_FILES)|g" "${ini}" 2>> "${ES_STEP_ERROR_LOG}"
+    sed -i "s|SEDPHPMEMLIMIT|$(tuning_get PHP_MEMORY_LIMIT_MB)M|g" "${ini}"
+    sed -i "s|SEDOPCACHEINTBUF|$(tuning_get OPCACHE_INTERNED_MB)|g" "${ini}"
+    sed -i "s|SEDOPCACHEMEM|$(tuning_get OPCACHE_MEMORY_MB)M|g" "${ini}"
+    sed -i "s|SEDOPCACHEMAXFILES|$(tuning_get OPCACHE_MAX_FILES)|g" "${ini}"
+  } 2>> "${ES_STEP_ERROR_LOG}"
 }
 
 # Put back the configuration files saved before this run (used when the new one fails php-fpm -t)

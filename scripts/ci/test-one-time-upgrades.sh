@@ -371,6 +371,7 @@ check "the override keeps the plan's ceiling and adds OOMPolicy=continue" \
   "${status}:$(tr '\n' ';' < "${ES_SYSTEMD_DIR}/php8.5-fpm.service.d/enginescript.conf")" \
   "0:[Service];MemoryHigh=1285M;MemoryMax=1428M;OOMPolicy=continue;"
 check "systemd reloads its units once" "${RELOADS}" "1"
+# shellcheck disable=SC2012  # the test's own drop-in names: plain, and listed in order
 check "another version's own drop-in is left alone, and gets no override" \
   "$(cat "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d/admin.conf"):$(ls "${ES_SYSTEMD_DIR}/php8.4-fpm.service.d" | tr '\n' ' ')" \
   "[Service]

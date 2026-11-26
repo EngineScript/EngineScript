@@ -106,7 +106,7 @@ while true; do
   # Prompt for domain name. Single-character names (x.com, a.io) are valid and must be accepted:
   # see validate_domain_label in enginescript-common.sh.
   while true; do
-    read -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
+    read -r -p "Enter the domain name (e.g., 'wordpresstesting'): " DOMAIN_NAME
     if validate_domain_label "$DOMAIN_NAME"; then
       echo "You entered: ${DOMAIN_NAME}"
       break
@@ -130,7 +130,7 @@ while true; do
   # Any other ending, such as travel or co.in: checked as part of the full domain
   if [[ "${TLD}" == "${OTHER_TLD_CHOICE}" ]]; then
     while true; do
-      read -p "Enter the ending without a leading dot (e.g., 'travel' or 'co.in'): " TLD
+      read -r -p "Enter the ending without a leading dot (e.g., 'travel' or 'co.in'): " TLD
       TLD="${TLD,,}"
       TLD="${TLD#.}"
       if validate_site_domain "${DOMAIN_NAME}.${TLD}"; then

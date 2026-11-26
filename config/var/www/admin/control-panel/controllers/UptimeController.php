@@ -52,6 +52,17 @@ final class UptimeController extends BaseController
     ];
 
     /**
+     * The overall status's count each status code adds to; any other code adds to none
+     */
+    private const array STATUS_TALLIES = [
+        self::STATUS_UP          => 'up',
+        self::STATUS_SEEMS_DOWN  => 'down',
+        self::STATUS_DOWN        => 'down',
+        self::STATUS_PAUSED      => 'paused',
+        self::STATUS_NOT_CHECKED => 'paused',
+    ];
+
+    /**
      * UptimeRobot API instance
      */
     private ?UptimeRobotAPI $uptimeApi = null;
@@ -198,27 +209,18 @@ final class UptimeController extends BaseController
     private function calculateOverallStatus(array $monitors): array
     {
         $total = count($monitors);
-        $upCount = 0;
-        $downCount = 0;
-        $paused = 0;
+        $tallies = ['up' => 0, 'down' => 0, 'paused' => 0];
 
         foreach (array_map($this->statusCode(...), $monitors) as $status) {
-            switch ($status) {
-                case self::STATUS_UP:
-                    ++$upCount;
-                    break;
-                case self::STATUS_SEEMS_DOWN:
-                case self::STATUS_DOWN:
-                    ++$downCount;
-                    break;
-                case self::STATUS_PAUSED:
-                case self::STATUS_NOT_CHECKED:
-                    ++$paused;
-                    break;
-                default:
-                    break;
+            $tally = self::STATUS_TALLIES[$status] ?? null;
+            if ($tally !== null) {
+                ++$tallies[$tally];
             }
         }
+
+        $upCount = $tallies['up'];
+        $downCount = $tallies['down'];
+        $paused = $tallies['paused'];
 
         // Determine overall status; paused and not yet checked monitors do not count against healthy
         $active = $total - $paused;

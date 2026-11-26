@@ -293,6 +293,7 @@ mkdir -p "${LINK_DIR}"
 echo "REPOS=1" > "${LINK_DIR}/victim"
 ln -s "${LINK_DIR}/victim" "${LINK_DIR}/install-state.conf"
 (
+  # shellcheck disable=SC2030  # this subshell's own state file, left behind when it ends
   ENGINESCRIPT_INSTALL_STATE_FILE="${LINK_DIR}/install-state.conf"
   set_install_state "NGINX" "1" && initialize_install_state_file
 )
@@ -318,7 +319,7 @@ echo "secret" > "${TEST_ASSET_DIR}/outside-file"
 chmod 600 "${TEST_ASSET_DIR}/outside-file"
 chmod 666 "${ETC_DIR}/install-state.conf"
 ln -s "${TEST_ASSET_DIR}/outside-file" "${ETC_DIR}/planted-link"
-# shellcheck disable=SC2329  # called by set_enginescript_etc_permissions
+# shellcheck disable=SC2329,SC2032  # called by set_enginescript_etc_permissions, not by find
 chown() { echo "$*" >> "${TEST_ASSET_DIR}/chown-calls"; }
 ES_ETC_DIR="${ETC_DIR}" set_enginescript_etc_permissions
 unset -f chown
@@ -377,6 +378,7 @@ elif grep -qx "continued" "${STEP_DIR}/out"; then
 else
   pass "run_install_step stops the install when a step fails"
 fi
+# shellcheck disable=SC2031  # the subshell above set its own copy on purpose; this is the test's file
 if grep -q "^TEST_STEP_FAILS=1$" "${ENGINESCRIPT_INSTALL_STATE_FILE}"; then
   fail "run_install_step set the flag of a step that failed"
 else
