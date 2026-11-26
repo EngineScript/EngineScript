@@ -240,9 +240,9 @@ function mariadb_installed_version() {
 # the previous series), or nothing when it updates no release of that series
 # Usage: mariadb_series_release <series, such as 11.8>
 function mariadb_series_release() {
-    local release
+    local series="$1" release
     for release in "${MARIADB_VER:-}" "${MARIADB_PREV_VER:-}"; do
-        if [[ -n "${release}" && "${release%.*}" == "$1" ]]; then
+        if [[ -n "${release}" && "${release%.*}" == "${series}" ]]; then
             echo "${release}"
             return 0
         fi
