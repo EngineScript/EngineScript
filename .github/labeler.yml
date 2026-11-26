@@ -101,7 +101,7 @@ testing:
       - any-glob-to-any-file: .php-cs-fixer.dist.php
       - any-glob-to-any-file: .htmlvalidate.json
       - any-glob-to-any-file: .markdownlint-cli2.jsonc
-      - any-glob-to-any-file: .markdownlint.jsonc
+      - any-glob-to-any-file: .markdownlint.yaml
       - any-glob-to-any-file: .mypy.ini
       - any-glob-to-any-file: .ruff.toml
       - any-glob-to-any-file: eslint.config.mjs

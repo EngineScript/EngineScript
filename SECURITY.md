@@ -14,12 +14,11 @@ We release security updates for the latest major version of EngineScript. Please
 If you discover a security vulnerability in EngineScript, please follow these steps:
 
 1. **Do not open a public issue.**
-2. Email us at [peter@visistruct.com](mailto:peter@visistruct.com) with details of the vulnerability.
+2. Report it privately through GitHub: open the repository's [Security tab](https://github.com/EngineScript/EngineScript/security) and choose **Report a vulnerability**. Only you and the maintainers can see the report, and the follow-up happens there.
 3. Include:
    - A clear description of the issue
    - Steps to reproduce (if applicable)
    - Any relevant logs or screenshots
-   - Your contact information for follow-up
 
 We will acknowledge your report within 5 business days and work with you to resolve the issue promptly.
 

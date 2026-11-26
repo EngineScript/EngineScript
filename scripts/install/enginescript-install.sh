@@ -75,7 +75,7 @@ if [[ "${ENGINESCRIPT_AUTO_UPDATE}" = "0" ]]; then
   echo -e "\n${BOLD}WARNING: EngineScript Automatic Updates are DISABLED.${NORMAL}\n"
   echo -e "You will need to manually apply updates to the EngineScript application and configuration files if updates are released in the future."
   while true; do
-    read -p "Would you like to enable automatic updates now? (y/n/exit): " yn_auto_update
+    read -r -p "Would you like to enable automatic updates now? (y/n/exit): " yn_auto_update
     case $yn_auto_update in
       [Yy]* )
         sed -i 's/^ENGINESCRIPT_AUTO_UPDATE=0/ENGINESCRIPT_AUTO_UPDATE=1/' /home/EngineScript/enginescript-install-options.txt

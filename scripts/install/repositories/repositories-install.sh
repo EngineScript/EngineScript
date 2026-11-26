@@ -38,6 +38,7 @@ for ppa in "${ENGINESCRIPT_PPAS[@]}"; do
   if ppa_has_release "${ppa}"; then
     retry_add_ppa "${ppa}"
   else
+    # shellcheck disable=SC2153  # UBUNTU_CODENAME comes from enginescript-variables.txt
     echo "Skipping ${ppa} for now: it has no packages for Ubuntu ${UBUNTU_VERSION} (${UBUNTU_CODENAME}) yet. The weekly maintenance job tries it again."
   fi
 done

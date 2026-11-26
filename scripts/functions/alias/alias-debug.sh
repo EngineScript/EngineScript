@@ -241,6 +241,7 @@ done
 debug_print "\n## Software Versions\n" "\n## Software Versions\n"
 debug_print "| Software | Version |" "| Software | Version |"
 debug_print "|----------|----------|" "|----------|----------|"
+# shellcheck disable=SC2153  # MARIADB_VER comes from enginescript-variables.txt
 debug_print "MariaDB | ${MARIADB_VER}" "| MariaDB | \`${MARIADB_VER}\` |"
 if [[ -n "${MARIADB_PREV_VER:-}" ]]; then
   debug_print "MariaDB (previous series) | ${MARIADB_PREV_VER}" "| MariaDB (previous series) | \`${MARIADB_PREV_VER}\` |"

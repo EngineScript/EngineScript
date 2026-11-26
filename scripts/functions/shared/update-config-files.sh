@@ -45,7 +45,7 @@ update_filemanager_login() {
     rm -f "${login_dir}/tinyfilemanager-auth.php"
 
     if [[ -z "$FILEMANAGER_USERNAME" || "$FILEMANAGER_USERNAME" == "PLACEHOLDER" \
-        || -z "$FILEMANAGER_PASSWORD" || "$FILEMANAGER_PASSWORD" == "PLACEHOLDER" ]]; then
+        || -z "$FILEMANAGER_PASSWORD" || "$FILEMANAGER_PASSWORD" == "PLACEHOLDER" ]]; then # nosemgrep: generic.secrets.gitleaks.hashicorp-tf-password.hashicorp-tf-password -- the template's placeholder, not a password
         echo "ℹ File Manager username or password is PLACEHOLDER or empty - login not written"
         rm -f "$login_file"
         return 0

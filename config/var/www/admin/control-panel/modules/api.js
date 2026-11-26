@@ -154,7 +154,7 @@ export class DashboardAPI {
 
       return await this.readPayload(endpoint, response);
     } catch (error) {
-      console.error(`Error posting to ${endpoint}:`, error);
+      console.error("Error posting to %s:", endpoint, error);
       return { error: error.message };
     }
   }

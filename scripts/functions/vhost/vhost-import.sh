@@ -449,7 +449,7 @@ while true; do
   echo "  DB Charset:  ${DB_CHARSET}"
   echo "-------------------------------------------------------"
   echo ""
-  read -p "Are these details correct? ([Y] Yes / [C] Change / [E] Exit): " confirm_details
+  read -r -p "Are these details correct? ([Y] Yes / [C] Change / [E] Exit): " confirm_details
   case $confirm_details in
     [Yy]* )
       if ! validate_site_domain "${SITE_URL}"; then

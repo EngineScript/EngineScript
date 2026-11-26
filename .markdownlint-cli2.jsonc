@@ -1,5 +1,5 @@
 {
-  // markdownlint-cli2 options. The markdownlint rules are in .markdownlint.jsonc, which
+  // markdownlint-cli2 options. The markdownlint rules are in .markdownlint.yaml, which
   // markdownlint-cli2 reads and Codacy's markdownlint can use as its configuration file.
   //
   // Lint every Markdown file that git does not ignore, so a local run and the

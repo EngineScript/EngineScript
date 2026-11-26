@@ -31,7 +31,7 @@ function prompt_continue() {
     
     while true; do
         echo -e "\n${prompt_text}"
-        if read -t "${timeout_seconds}" -p "> " user_input; then
+        if read -r -t "${timeout_seconds}" -p "> " user_input; then
             case "${user_input,,}" in  # Convert to lowercase
                 ""|"y"|"yes"|"continue")
                     return 0
@@ -72,7 +72,7 @@ function prompt_yes_no() {
     
     while true; do
         echo -e "\n${prompt_text}${prompt_suffix}"
-        if read -t "${timeout_seconds}" -p "> " user_input; then
+        if read -r -t "${timeout_seconds}" -p "> " user_input; then
             # Use default if empty input and default is set
             if [[ -z "$user_input" && -n "$default_value" ]]; then
                 user_input="$default_value"
@@ -127,7 +127,7 @@ function prompt_input() {
     while true; do
         echo -e "\n${prompt_text}${prompt_suffix}" >&2
         echo "Type 'exit' to abort the script." >&2
-        if read -t "${timeout_seconds}" -p "> " user_input; then
+        if read -r -t "${timeout_seconds}" -p "> " user_input; then
             case "${user_input,,}" in
                 "exit"|"quit"|"abort"|"stop")
                     echo -e "\nExiting script as requested." >&2
