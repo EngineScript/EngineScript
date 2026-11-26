@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use EngineScript\Dashboard\API\Controllers\BaseController;
 use EngineScript\Dashboard\API\Controllers\UptimeController;
 use EngineScript\Dashboard\Classes\UptimeRobotAPI;
 
@@ -82,6 +83,12 @@ final class UptimeTest extends EsTestCase
     {
         parent::setUp();
         file_put_contents(self::$requestLog, '');
+    }
+
+    protected function tearDown(): void
+    {
+        BaseController::useCacheDirectory(null);
+        parent::tearDown();
     }
 
     private function api(string $scenario): UptimeRobotAPI
@@ -278,5 +285,63 @@ final class UptimeTest extends EsTestCase
         );
         self::assertSame(-1, $result['monitors'][2]['status']);
         self::assertSame('Unknown', $result['monitors'][2]['status_text']);
+    }
+
+    /**
+     * A controller with $api as its UptimeRobot API (null: none configured), caching in a temporary directory.
+     */
+    private function uptimeController(?UptimeRobotAPI $api): UptimeController
+    {
+        BaseController::useCacheDirectory($this->makeTemporaryDirectory());
+        $controller = $this->controller(UptimeController::class);
+        self::assertInstanceOf(UptimeController::class, $controller);
+        (new ReflectionProperty(UptimeController::class, 'uptimeApi'))->setValue($controller, $api);
+
+        return $controller;
+    }
+
+    public function testWithoutAKeyBothEndpointsReportUptimeDisabled(): void
+    {
+        $controller = $this->uptimeController(null);
+
+        $status = $this->respond(static fn() => $controller->getStatus());
+        $monitors = $this->respond(static fn() => $controller->getMonitors());
+
+        self::assertSame(['enabled' => false, 'reason' => 'UptimeRobot API not configured'], $status['json']);
+        self::assertSame([], $monitors['json']['monitors']);
+    }
+
+    public function testMonitorsComeFromTheApiAndTheNextRequestFromTheCache(): void
+    {
+        $controller = $this->uptimeController($this->api('two-pages'));
+
+        $monitors = $this->respond(static fn() => $controller->getMonitors());
+        $requests = count($this->requests());
+        $status = $this->respond(static fn() => $controller->getStatus());
+
+        self::assertCount(3, $monitors['json']['monitors']);
+        self::assertSame(200, $status['status']);
+        self::assertCount($requests, $this->requests(), 'The second endpoint used the cached monitors.');
+    }
+
+    public function testAFailedOrRateLimitedFetchIsReportedAsAnError(): void
+    {
+        $limited = $this->respond(fn() => $this->uptimeController($this->api('rate-limited'))->getMonitors());
+        $failed = $this->respond(fn() => $this->uptimeController($this->api('wrong-key'))->getStatus());
+
+        self::assertSame('UptimeRobot request limit reached; try again later', $limited['json']['error']);
+        self::assertSame([], $limited['json']['monitors']);
+        self::assertSame('Failed to fetch monitors from UptimeRobot API', $failed['json']['error']);
+    }
+
+    public function testTheKeyMustBeOnePrintableToken(): void
+    {
+        $method = new ReflectionMethod(UptimeController::class, 'apiKeyFromConfig');
+        $controller = $this->controller(UptimeController::class);
+
+        self::assertSame('u123-abc', $method->invoke($controller, ['api_key' => '  u123-abc ']));
+        foreach ([false, [], ['api_key' => 5], ['api_key' => ''], ['api_key' => '0'], ['api_key' => 'two words']] as $config) {
+            self::assertNull($method->invoke($controller, $config));
+        }
     }
 }

@@ -28,6 +28,21 @@ final class SiteController extends BaseController
     private const string NGINX_SITES_PATH = '/etc/nginx/sites-enabled';
 
     /**
+     * Directory of the enabled nginx sites, NGINX_SITES_PATH unless a test chose another
+     */
+    private static string $nginxSitesPath = self::NGINX_SITES_PATH;
+
+    /**
+     * Read the sites from another directory, or from NGINX_SITES_PATH again for null; for tests
+     *
+     * @psalm-api
+     */
+    public static function useNginxSitesPath(?string $path): void
+    {
+        self::$nginxSitesPath = $path ?? self::NGINX_SITES_PATH;
+    }
+
+    /**
      * Get all WordPress sites
      *
      * Scans nginx configuration to find WordPress installations.
@@ -58,11 +73,11 @@ final class SiteController extends BaseController
         $sites = [];
 
         try {
-            if (!is_dir(self::NGINX_SITES_PATH)) {
+            if (!is_dir(self::$nginxSitesPath)) {
                 return $sites;
             }
 
-            $validFiles = $this->scanNginxConfigs(self::NGINX_SITES_PATH);
+            $validFiles = $this->scanNginxConfigs(self::$nginxSitesPath);
             if ($validFiles === false) {
                 return $sites;
             }
@@ -238,7 +253,7 @@ final class SiteController extends BaseController
     {
         $resolved = realpath($path);
 
-        return is_string($resolved) && str_starts_with($resolved, $directory . '/') ? $resolved : null;
+        return is_string($resolved) && str_starts_with($resolved, $directory . DIRECTORY_SEPARATOR) ? $resolved : null;
     }
 
     /**
