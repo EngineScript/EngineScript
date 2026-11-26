@@ -4,6 +4,14 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-26
+
+### 🚀 MARIADB 12.3
+
+- **New servers install MariaDB 12.3:** EngineScript now installs MariaDB 12.3.4 instead of 11.8. 12.3 is MariaDB's new long-term series, supported until June 2029 (11.8 until mid-2028). We tested it on Ubuntu 24.04 and 26.04 with a WordPress site running 28 plugins and a WooCommerce shop. Every EngineScript test passed, and pages, wp-admin, and the shop were as fast as on 11.8. The hourly database backup was 14% faster, importing a database 6% slower. MariaDB uses about 25 MB more memory.
+- **Servers on 11.8 stay on 11.8 until you move them:** existing servers keep MariaDB 11.8 and keep getting its patch releases, now 11.8.10 (automatically with `AUTO_UPDATE_MARIADB=1`). With a Pushbullet token you get one note that 12.3 is available. To move a server to 12.3, run Update MariaDB in `es.menu` and answer yes when it asks; answer no, or press Enter, to stay on 11.8 and install its latest patch release. Every database is backed up before either. A move to 12.3 cannot be undone, except by restoring that backup. The sites stay up during the move: in our tests, at most 4 requests failed while MariaDB restarted.
+- **Before you move a server to 12.3:** in MariaDB 12.3, `CONVERSION` is a reserved word. A plugin or custom code that has a database column named `conversion` and uses it in SQL without backquotes stops working. None of the 28 plugins we tested does. After the move, Update MariaDB removes `galera-4`, which MariaDB 12.3 no longer uses, with the packages only it needed (`pv`, `stunnel4`).
+
 ## 2026-11-24
 
 ### ⚡ PERFORMANCE

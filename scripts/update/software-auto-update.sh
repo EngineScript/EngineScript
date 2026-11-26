@@ -115,11 +115,18 @@ if [[ -n "${INSTALLED_PHP}" ]]; then
   fi
 fi
 
-# MariaDB: a newer patch release of the installed series (mariadb_auto_update_target)
+# MariaDB: a newer patch release of the installed series (mariadb_auto_update_target), which is
+# MARIADB_VER's series or the previous one (MARIADB_PREV_VER)
 NEWER_MARIADB="$(mariadb_newer_series)"
 if [[ -n "${NEWER_MARIADB}" ]]; then
+  INSTALLED_MARIADB="$(mariadb_installed_version)"
+  if [[ -n "$(mariadb_series_release "${INSTALLED_MARIADB%.*}")" ]]; then
+    MARIADB_SERIES_NOTE="It keeps getting MariaDB ${INSTALLED_MARIADB%.*} patch releases, but is not moved to the new series automatically."
+  else
+    MARIADB_SERIES_NOTE="EngineScript no longer updates that series, and does not move it to the new one automatically."
+  fi
   auto_update_notice_once "mariadb-series" "${NEWER_MARIADB%.*}" \
-    "EngineScript now installs MariaDB ${NEWER_MARIADB%.*}. This server runs MariaDB $(mariadb_installed_version), which is not moved to a new series automatically. When you are ready, use es.menu > Update Software > Update MariaDB (every database is backed up first)."
+    "EngineScript now installs MariaDB ${NEWER_MARIADB%.*}. This server runs MariaDB ${INSTALLED_MARIADB}. ${MARIADB_SERIES_NOTE} When you are ready, use es.menu > Update Software > Update MariaDB (every database is backed up first)."
 fi
 if part_is_on "mariadb" "MariaDB"; then
   MARIADB_TARGET="$(mariadb_auto_update_target)"
@@ -128,7 +135,7 @@ if part_is_on "mariadb" "MariaDB"; then
   if [[ -n "${MARIADB_TARGET}" ]] && ! acquire_lock "backup" 2> /dev/null; then
     echo "MariaDB: a backup is running; the update waits for the next day."
   else
-    update_part "mariadb" "MariaDB" mariadb_auto_update_target "MariaDB ${MARIADB_VER}" \
-      /usr/local/bin/enginescript/scripts/update/mariadb-update.sh || exit 1
+    update_part "mariadb" "MariaDB" mariadb_auto_update_target "MariaDB ${MARIADB_TARGET}" \
+      /usr/local/bin/enginescript/scripts/update/mariadb-update.sh --version "${MARIADB_TARGET}" || exit 1
   fi
 fi

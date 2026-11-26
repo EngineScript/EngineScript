@@ -28,6 +28,30 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-auto-up
 #   6. On a failure in steps 3 to 5, restore the previous configuration and restart
 # Package upgrades cannot be rolled back automatically; the dump from step 1 is kept for a
 # manual restore.
+#
+# The release installed: --version <release> (the automatic updates pass it; MARIADB_VER or
+# MARIADB_PREV_VER), otherwise MARIADB_VER. On a server that runs the previous series
+# (MARIADB_PREV_VER's), the admin chooses between moving to MARIADB_VER and staying on that
+# series at MARIADB_PREV_VER. A move to an older series is refused.
+#
+# Usage: mariadb-update.sh [--version <release>]
+
+REQUESTED_VER=""
+# The arguments as given, for the new copy of this script after an EngineScript update
+SCRIPT_ARGS=("$@")
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --version)
+      REQUESTED_VER="${2:-}"
+      [[ -n "${REQUESTED_VER}" ]] || { echo "Error: --version needs a release, such as ${MARIADB_VER}." >&2; exit 2; }
+      shift 2
+      ;;
+    *)
+      echo "Error: unknown option: $1 (usage: mariadb-update.sh [--version <release>])" >&2
+      exit 2
+      ;;
+  esac
+done
 
 ROLLBACK_DIR="/home/EngineScript/config-backups/mariadb/pre-update"
 OVERRIDE_FILE="/etc/systemd/system/mariadb.service.d/enginescript-limits.conf"
@@ -89,11 +113,37 @@ acquire_lock "update" || exit 1
 if [[ "${ES_ENGINESCRIPT_UPDATED:-0}" != "1" ]]; then
     if prompt_yes_no "Do you want to update EngineScript before continuing?\nThis will ensure you have the latest core scripts and variables."; then
         run_step "EngineScript Update" /usr/local/bin/enginescript/scripts/update/enginescript-update.sh
-        ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/mariadb-update.sh "$@"
+        ES_ENGINESCRIPT_UPDATED=1 exec bash /usr/local/bin/enginescript/scripts/update/mariadb-update.sh "${SCRIPT_ARGS[@]}"
     else
         echo "Skipping EngineScript update."
     fi
 fi
+
+# The release to install (chosen after the EngineScript update, which can change both variables)
+INSTALLED_VER="$(mariadb_installed_version)"
+if [[ -n "${REQUESTED_VER}" ]]; then
+  if [[ "${REQUESTED_VER}" != "${MARIADB_VER}" && "${REQUESTED_VER}" != "${MARIADB_PREV_VER:-}" ]]; then
+    echo "Error: EngineScript installs MariaDB ${MARIADB_VER}${MARIADB_PREV_VER:+ (or ${MARIADB_PREV_VER} on servers that keep the ${MARIADB_PREV_VER%.*} series)}, not ${REQUESTED_VER}." >&2
+    exit 1
+  fi
+  TARGET_VER="${REQUESTED_VER}"
+else
+  TARGET_VER="${MARIADB_VER}"
+  if [[ -n "${MARIADB_PREV_VER:-}" && "${INSTALLED_VER%.*}" == "${MARIADB_PREV_VER%.*}" ]]; then
+    echo "This server runs MariaDB ${INSTALLED_VER}. EngineScript installs MariaDB ${MARIADB_VER%.*} on new servers, and still updates the ${MARIADB_PREV_VER%.*} series."
+    echo "Moving to ${MARIADB_VER%.*} cannot be undone except by restoring the database backup this update makes first."
+    if ! prompt_yes_no "Move this server to MariaDB ${MARIADB_VER}? Answer n to stay on MariaDB ${MARIADB_PREV_VER%.*} and install ${MARIADB_PREV_VER}." "n"; then
+      TARGET_VER="${MARIADB_PREV_VER}"
+    fi
+  fi
+fi
+# MariaDB's data files cannot go back to an older series
+if [[ -n "${INSTALLED_VER}" && "${INSTALLED_VER%.*}" != "${TARGET_VER%.*}" \
+  && "$(printf '%s\n' "${INSTALLED_VER%.*}" "${TARGET_VER%.*}" | sort -V | tail -n 1)" == "${INSTALLED_VER%.*}" ]]; then
+  echo "Error: this server runs MariaDB ${INSTALLED_VER}, a newer series than ${TARGET_VER}. MariaDB cannot be moved back to an older series; nothing was changed." >&2
+  exit 1
+fi
+echo "Updating MariaDB ${INSTALLED_VER:-(not installed)} to ${TARGET_VER}."
 
 if ! mariadb_is_serving; then
   echo "Error: MariaDB is not running. Start it and fix any problem before updating, so its databases can be backed up first." >&2
@@ -162,14 +212,14 @@ fi
 mkdir -p "${ROLLBACK_DIR}/apt-sources"
 cp -p /etc/apt/sources.list.d/mariadb.list /etc/apt/sources.list.d/mariadb.sources "${ROLLBACK_DIR}/apt-sources/" 2> /dev/null
 rm -f /etc/apt/sources.list.d/mariadb.list
-if ! bash "${REPO_SETUP}" --mariadb-server-version="${MARIADB_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"; then
+if ! bash "${REPO_SETUP}" --mariadb-server-version="${TARGET_VER}" --skip-maxscale 2>> "${ES_STEP_ERROR_LOG}"; then
   rm -f "${REPO_SETUP}"
   # The setup script's reason, shown here (print_last_errors shows it only in debug mode)
   REPO_SETUP_ERRORS="$(grep -F '[error]' "${ES_STEP_ERROR_LOG}" 2> /dev/null | sed 's/^# \[error\] //' | head -5)"
   print_last_errors
   rm -f /etc/apt/sources.list.d/mariadb.list /etc/apt/sources.list.d/mariadb.sources
   cp -p "${ROLLBACK_DIR}"/apt-sources/mariadb.* /etc/apt/sources.list.d/ 2> /dev/null
-  echo "Error: MariaDB's repository setup failed for MariaDB ${MARIADB_VER}: ${REPO_SETUP_ERRORS:-see /var/log/EngineScript/install-error-log.log}" >&2
+  echo "Error: MariaDB's repository setup failed for MariaDB ${TARGET_VER}: ${REPO_SETUP_ERRORS:-see /var/log/EngineScript/install-error-log.log}" >&2
   echo "The update stopped; the MariaDB packages and configuration were not changed." >&2
   exit 1
 fi
@@ -247,6 +297,17 @@ echo "PASSED: MariaDB is running with the new configuration."
 
 # MariaDB Database Upgrade (system tables for the new version)
 run_step "MariaDB Database Upgrade" mariadb-upgrade --force
+
+# Since MariaDB 12.3 the server packages no longer depend on Galera (cluster use installs
+# mariadb-server-galera). After a move from an older series, galera-4 and the packages only it
+# needed (pv, stunnel4) are left installed; apt removes what nothing depends on any more.
+if dpkg-query -W -f='${Status}' galera-4 2> /dev/null | grep -q 'ok installed' \
+  && ! dpkg-query -W -f='${Status}' mariadb-server-galera 2> /dev/null | grep -q 'ok installed' \
+  && apt-get -s autoremove 2> /dev/null | grep -q '^Remv galera-4 '; then
+  echo "Removing galera-4, which MariaDB ${TARGET_VER%.*} no longer uses..."
+  DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y 2>> "${ES_STEP_ERROR_LOG}"
+  print_last_errors
+fi
 
 set_install_state "MARIADB" "1"
 auto_update_clear "mariadb"

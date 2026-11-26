@@ -32,7 +32,7 @@ $running = [
     'systemctl is-active mariadb.service' => 'active',
     'systemctl is-active redis-server.service' => 'active',
     'nginx -v' => 'nginx version: nginx/1.29.3',
-    'mariadb --version' => 'mariadb from 11.8.3-MariaDB, client 15.2 for debian-linux-gnu (x86_64)',
+    'mariadb --version' => 'mariadb from 12.3.4-MariaDB, client 15.2 for debian-linux-gnu (x86_64)',
     'redis-server --version' => 'Redis server v=8.2.3 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=1',
     'redis-cli INFO memory' => "used_memory:1031336\r\nused_memory_human:1007.16K\r\n",
     'redis-cli FLUSHALL' => 'OK',

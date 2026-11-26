@@ -188,16 +188,26 @@ dpkg-query() { [[ -n "${FAKE_INSTALLED}" ]] && printf '%s' "${FAKE_INSTALLED}"; 
 apt-cache() { [[ -n "${FAKE_CANDIDATE}" ]] && printf 'php8.5-fpm:\n  Installed: %s\n  Candidate: %s\n' "${FAKE_INSTALLED}" "${FAKE_CANDIDATE}"; }
 
 echo "MariaDB"
-MARIADB_VER="11.8.9"
+MARIADB_VER="12.3.4"
+MARIADB_PREV_VER="11.8.10"
 # Usage: mariadb_case <installed package version>: prints "<target>|<newer series>"
 mariadb_case() { FAKE_INSTALLED="$1"; echo "$(mariadb_auto_update_target)|$(mariadb_newer_series)"; }
-check "the installed version is read from the package version" "$(FAKE_INSTALLED="1:11.8.7+maria~ubu2604"; mariadb_installed_version)" "11.8.7"
-check "an older patch release of the series is updated" "$(mariadb_case "1:11.8.7+maria~ubu2604")" "11.8.9|"
-check "the current release is up to date" "$(mariadb_case "1:11.8.9+maria~ubu2404")" "|"
-check "a patch release newer than MARIADB_VER is never downgraded" "$(mariadb_case "1:11.8.10+maria~ubu2604")" "|"
-check "an older series is not updated, and gets a note" "$(mariadb_case "1:11.4.8+maria~ubu2404")" "|11.8.9"
-check "a newer series is not updated, and gets no note" "$(mariadb_case "1:12.2.1+maria~ubu2604")" "|"
+check "the installed version is read from the package version" "$(FAKE_INSTALLED="1:12.3.2+maria~ubu2604"; mariadb_installed_version)" "12.3.2"
+check "the release of MARIADB_VER's series" "$(mariadb_series_release 12.3)" "12.3.4"
+check "the release of the previous series" "$(mariadb_series_release 11.8)" "11.8.10"
+check "no release of another series" "$(mariadb_series_release 11.4)" ""
+check "an older patch release of the series is updated" "$(mariadb_case "1:12.3.2+maria~ubu2604")" "12.3.4|"
+check "the current release is up to date" "$(mariadb_case "1:12.3.4+maria~ubu2404")" "|"
+check "a patch release newer than MARIADB_VER is never downgraded" "$(mariadb_case "1:12.3.5+maria~ubu2604")" "|"
+check "the previous series gets its patch release, and a note about the new series" "$(mariadb_case "1:11.8.9+maria~ubu2604")" "11.8.10|12.3.4"
+check "the previous series at MARIADB_PREV_VER is up to date" "$(mariadb_case "1:11.8.10+maria~ubu2404")" "|12.3.4"
+check "a patch release newer than MARIADB_PREV_VER is never downgraded" "$(mariadb_case "1:11.8.11+maria~ubu2604")" "|12.3.4"
+check "an older series that is not the previous one is not updated, and gets a note" "$(mariadb_case "1:11.4.8+maria~ubu2404")" "|12.3.4"
+check "a newer series is not updated, and gets no note" "$(mariadb_case "1:13.0.1+maria~ubu2604")" "|"
 check "without MariaDB nothing happens" "$(mariadb_case "")" "|"
+MARIADB_PREV_VER=""
+check "without MARIADB_PREV_VER the previous series is not updated" "$(mariadb_case "1:11.8.9+maria~ubu2604")" "|12.3.4"
+MARIADB_PREV_VER="11.8.10"
 
 echo "PHP"
 PHP_TESTED_BUILDS=("8.4=8.4.27-1+0~20261021.57" "8.5=8.5.12-1+0~20261021.27")

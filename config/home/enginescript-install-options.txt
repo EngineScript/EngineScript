@@ -146,7 +146,8 @@ AUTO_UPDATE_NGINX=1
 # PHP: patch releases of the installed version only (for example 8.5.1 to 8.5.2).
 # Switching to a new version (8.5 to 8.6) is never automatic.
 AUTO_UPDATE_PHP=1
-# MariaDB: patch releases of the installed series only (for example 11.8.1 to 11.8.2).
+# MariaDB: patch releases of the installed series only (for example 12.3.4 to 12.3.5, or 11.8.9
+# to 11.8.10 on a server that keeps the previous series). A new series is never automatic.
 # Every database is backed up first. MariaDB restarts (a few seconds without a database).
 AUTO_UPDATE_MARIADB=1
 

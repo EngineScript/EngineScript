@@ -242,6 +242,9 @@ debug_print "\n## Software Versions\n" "\n## Software Versions\n"
 debug_print "| Software | Version |" "| Software | Version |"
 debug_print "|----------|----------|" "|----------|----------|"
 debug_print "MariaDB | ${MARIADB_VER}" "| MariaDB | \`${MARIADB_VER}\` |"
+if [[ -n "${MARIADB_PREV_VER:-}" ]]; then
+  debug_print "MariaDB (previous series) | ${MARIADB_PREV_VER}" "| MariaDB (previous series) | \`${MARIADB_PREV_VER}\` |"
+fi
 debug_print "NGINX | ${NGINX_VER}" "| NGINX | \`${NGINX_VER}\` |"
 debug_print "OpenSSL | ${OPENSSL_VER}" "| OpenSSL | \`${OPENSSL_VER}\` |"
 debug_print "PCRE2 | ${PCRE2_VER}" "| PCRE2 | \`${PCRE2_VER}\` |"

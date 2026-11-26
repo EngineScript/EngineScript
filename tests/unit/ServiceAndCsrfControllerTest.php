@@ -12,7 +12,7 @@ final class ServiceAndCsrfControllerTest extends EsTestCase
         'systemctl is-active mariadb.service' => 'active',
         'systemctl is-active redis-server.service' => 'active',
         'nginx -v' => 'nginx version: nginx/1.29.3',
-        'mariadb --version' => 'mariadb from 11.8.3-MariaDB, client 15.2 for debian-linux-gnu (x86_64)',
+        'mariadb --version' => 'mariadb from 12.3.4-MariaDB, client 15.2 for debian-linux-gnu (x86_64)',
         'redis-server --version' => 'Redis server v=8.2.3 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=1',
     ];
 
@@ -23,7 +23,7 @@ final class ServiceAndCsrfControllerTest extends EsTestCase
 
         self::assertSame(200, $result['status']);
         self::assertSame(['version' => '1.29.3', 'online' => true], $result['json']['nginx']);
-        self::assertSame(['version' => '11.8.3', 'online' => true], $result['json']['mysql']);
+        self::assertSame(['version' => '12.3.4', 'online' => true], $result['json']['mysql']);
         self::assertSame(['version' => '8.2.3', 'online' => true], $result['json']['redis']);
         self::assertSame(['nginx', 'php', 'mysql', 'redis'], array_keys($result['json']));
     }

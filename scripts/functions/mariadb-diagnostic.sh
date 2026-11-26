@@ -77,7 +77,8 @@ if prompt_yes_no "[1/5] Recreate systemd override file with proper environment v
 LimitNOFILE=60556
 LimitMEMLOCK=524288
 
-# Environment variables to prevent startup errors
+# Empty, so systemd does not log them as unset: MariaDB 12.3's unit still reads MYSQLD_OPTS
+# (deprecated there; EngineScript sets nothing in it), and 11.8's also reads _WSREP_NEW_CLUSTER
 Environment="MYSQLD_OPTS="
 Environment="_WSREP_NEW_CLUSTER="
 EOF

@@ -225,7 +225,7 @@ function auto_update_notice_once() {
 
 
 # ----------------------------------------------------------------
-# Print the installed MariaDB server version (11.8.9 from 1:11.8.9+maria~ubu2604), or nothing
+# Print the installed MariaDB server version (12.3.4 from 1:12.3.4+maria~ubu2604), or nothing
 function mariadb_installed_version() {
     local version
     version="$(dpkg-query -W -f='${Version}' mariadb-server 2> /dev/null)"
@@ -236,29 +236,47 @@ function mariadb_installed_version() {
 
 
 # ----------------------------------------------------------------
+# Print the release of a MariaDB series EngineScript updates (MARIADB_VER, or MARIADB_PREV_VER for
+# the previous series), or nothing when it updates no release of that series
+# Usage: mariadb_series_release <series, such as 11.8>
+function mariadb_series_release() {
+    local release
+    for release in "${MARIADB_VER:-}" "${MARIADB_PREV_VER:-}"; do
+        if [[ -n "${release}" && "${release%.*}" == "$1" ]]; then
+            echo "${release}"
+            return 0
+        fi
+    done
+}
+
+
+# ----------------------------------------------------------------
 # Print the MariaDB release to update to, or nothing
 #
-# Only a newer patch release of the installed series (11.8.x): a new series changes how
-# MariaDB behaves and stays a step the admin takes (es.menu > Update Software > Update MariaDB).
-# Nothing is printed when MariaDB is not installed, or newer than MARIADB_VER.
+# Only a newer patch release of the installed series: MARIADB_VER's series, or the previous
+# series in MARIADB_PREV_VER, which servers that still run it keep getting. A new series changes
+# how MariaDB behaves and stays a step the admin takes (es.menu > Update Software > Update MariaDB).
+# Nothing is printed when MariaDB is not installed, when its series is neither of the two, or when
+# it is already at (or newer than) its series' release.
 function mariadb_auto_update_target() {
-    local installed
+    local installed release
     installed="$(mariadb_installed_version)"
+    [[ -n "${installed}" ]] || return 0
+    release="$(mariadb_series_release "${installed%.*}")"
 
-    if [[ -z "${installed}" || -z "${MARIADB_VER:-}" || "${installed}" == "${MARIADB_VER}" ]]; then
+    if [[ -z "${release}" || "${installed}" == "${release}" ]]; then
         return 0
     fi
-    if [[ "${installed%.*}" != "${MARIADB_VER%.*}" ]]; then
-        return 0
-    fi
-    if [[ "$(printf '%s\n' "${installed}" "${MARIADB_VER}" | sort -V | tail -n 1)" == "${MARIADB_VER}" ]]; then
-        echo "${MARIADB_VER}"
+    if [[ "$(printf '%s\n' "${installed}" "${release}" | sort -V | tail -n 1)" == "${release}" ]]; then
+        echo "${release}"
     fi
 }
 
 
 # ----------------------------------------------------------------
-# Print MARIADB_VER when it is a newer series than the installed one (for a one-time note)
+# Print MARIADB_VER when it is a newer series than the installed one (for a one-time note). A
+# server on the previous series gets the note too: it keeps getting patch releases, but moving to
+# the new series is the admin's step.
 function mariadb_newer_series() {
     local installed
     installed="$(mariadb_installed_version)"
