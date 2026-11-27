@@ -43,32 +43,32 @@ if [[ "${ZLIB_IMPLEMENTATION}" == "zlib-ng" ]]; then
 
   download_and_extract "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_NG_VER}.tar.gz" "/usr/src/zlib-ng-${ZLIB_NG_VER}.tar.gz" || { echo "Error: Failed to download/extract zlib-ng." >&2; exit 1; }
 
-  # Create a configure wrapper
+  # Build zlib-ng here, before Nginx, into a folder of its own that only Nginx uses (as zlib-rs
+  # below). The system's zlib (zlib1g, zlib1g-dev) stays installed for everything else.
   #
-  # Nginx's build system calls ./configure with NO arguments in the zlib
-  # source dir. zlib-ng REQUIRES --zlib-compat to produce a standard
-  # zlib-compatible API (libz.a with standard symbol names).
-  # Without it, zlib-ng produces libz-ng.a with zng_ prefixed symbols.
+  # Nginx's --with-zlib cannot build zlib-ng: zlib-ng creates zlib.h when its configure runs,
+  # which Nginx's Makefile does after compiling its own files when it compiles one file at a time
+  # (1 CPU, or under 1.5 GB of memory), so the first file that needs zlib.h failed.
   #
-  # Solution: rename the real configure and create a wrapper that always
-  # passes --zlib-compat.
+  # --zlib-compat gives the standard zlib names (libz.a, deflate), not zlib-ng's own (zng_).
+  # CFLAGS and the libz.a target are what Nginx's --with-zlib-opt=-fPIC build used; zlib-ng's
+  # configure adds -O2, and zlib-ng picks its CPU-specific code when it runs.
+  ZLIB_NG_PREFIX="/opt/zlib-ng"
   cd "/usr/src/zlib-ng-${ZLIB_NG_VER}" || { echo "Error: Failed to change to /usr/src/zlib-ng-${ZLIB_NG_VER}" >&2; exit 1; }
-  mv configure configure.zlib-ng || { echo "Error: zlib-ng has no configure script to wrap." >&2; exit 1; }
-  cat > configure << 'WRAPPER'
-#!/bin/sh
-exec "$(dirname "$0")/configure.zlib-ng" --zlib-compat "$@"
-WRAPPER
-  chmod +x configure
+  CFLAGS="-fPIC" ./configure --zlib-compat --static > /dev/null \
+    || { echo "Error: Failed to configure zlib-ng." >&2; exit 1; }
+  make -j"$(nproc)" libz.a > /dev/null || { echo "Error: Failed to build zlib-ng." >&2; exit 1; }
 
-  # Stub Makefile so nginx's "make distclean" succeeds before configure runs.
-  # Overwritten when ./configure generates the real Makefile.
-  cat > Makefile << 'STUBMAKE'
-.PHONY: distclean clean
-distclean clean:
-	@echo "stub: no-op (pre-configure)"
-STUBMAKE
+  # zlib.h includes zconf.h, which includes zlib_name_mangling.h
+  rm -rf "${ZLIB_NG_PREFIX}"
+  mkdir -p "${ZLIB_NG_PREFIX}/lib" "${ZLIB_NG_PREFIX}/include"
+  if ! cp libz.a "${ZLIB_NG_PREFIX}/lib/libz.a" \
+    || ! cp zlib.h zconf.h zlib_name_mangling.h "${ZLIB_NG_PREFIX}/include/"; then
+    echo "Error: Failed to install zlib-ng to ${ZLIB_NG_PREFIX}." >&2
+    exit 1
+  fi
 
-  echo "zlib-ng ${ZLIB_NG_VER} prepared for Nginx compilation"
+  echo "zlib-ng ${ZLIB_NG_VER} built in ${ZLIB_NG_PREFIX}, for Nginx only"
 fi
 
 

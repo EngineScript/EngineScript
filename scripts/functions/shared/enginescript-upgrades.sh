@@ -573,12 +573,15 @@ function remove_ktls_utils() {
 # installed package still needs it (libjemalloc2 for redis-tools on Ubuntu 26.04, for example).
 # Then only the packages that this marking left unneeded are purged: the libraries and what only
 # they needed. Packages that were already unneeded before are left alone.
+#
+# zlib1g-dev is not on the list: the system's zlib is kept whole for other software (Nginx links
+# its own). Servers that ran this before it was taken off get it back (restore_zlib_dev).
 UNUSED_DEV_LIBRARIES=(
     libbsd-dev libbz2-dev libcunit1-dev libcurl4-openssl-dev libelf-dev libev-dev libevent-dev
     libexpat1-dev libgd-dev libgeoip-dev libgoogle-perftools-dev libjansson-dev libjemalloc-dev
     libjemalloc2 libmaxminddb-dev libmcrypt-dev libmhash-dev libmnl-dev libopts25-dev libpam0g-dev
     libpcre2-dev libpcre3-dev libperl-dev libreadline-dev libsodium-dev libssh2-1-dev libssl-dev
-    libtidy-dev libxml2-dev libxslt1-dev uuid-dev zlib1g-dev
+    libtidy-dev libxml2-dev libxslt1-dev uuid-dev
 )
 function remove_unused_dev_libraries() {
     local -a installed=() before=() after=() unneeded=()
@@ -594,6 +597,19 @@ function remove_unused_dev_libraries() {
 
     echo "Removing ${#unneeded[@]} unused development libraries and the packages only they needed..."
     apt-get purge -y "${unneeded[@]}"
+}
+
+
+# ----------------------------------------------------------------
+# Put the system zlib's headers back
+#
+# remove_unused_dev_libraries removed zlib1g-dev (zlib.h, libz.so for compiling) until
+# 2026-11-27. The system's zlib stays whole for software compiled on the server; Nginx links the
+# zlib ZLIB_IMPLEMENTATION selects, built in its own folder, and does not use it.
+function restore_zlib_dev() {
+    package_is_installed zlib1g-dev && return 0
+    echo "Installing zlib1g-dev (the system zlib's headers, for software compiled on the server)..."
+    apt-get install -y zlib1g-dev
 }
 
 
