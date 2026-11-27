@@ -56,9 +56,10 @@ printf '%s\n' 1 2 3 > "${WORK}/lines"
 # Runs outer.sh in a pseudo-terminal with the given keystrokes. The input stays open a moment so
 # script(1) does not stop the run when its input ends.
 run_tty() {
+  local keys="$1" script="${2:-${WORK}/outer.sh}"
   : > "${WORK}/marks"
   : > "${WORK}/errors.log"
-  { printf '%b' "$1"; sleep 2; } | timeout 30 script -qefc "bash ${2:-${WORK}/outer.sh}" "${WORK}/screen" > /dev/null 2>&1 || true
+  { printf '%b' "${keys}"; sleep 2; } | timeout 30 script -qefc "bash ${script}" "${WORK}/screen" > /dev/null 2>&1 || true
 }
 
 marks() { tr '\n' ' ' < "${WORK}/marks" | sed 's/ $//'; }
