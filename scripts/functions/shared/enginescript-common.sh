@@ -34,6 +34,7 @@ ES_STEP_ERROR_LOG="/var/log/EngineScript/step-errors.log"
 # The optional tools the install's Tools step could not install (report_tools_not_installed);
 # the installer shows the list at the end and removes the file
 ES_TOOLS_NOT_INSTALLED_FILE="${ES_TOOLS_NOT_INSTALLED_FILE:-/var/log/EngineScript/tools-not-installed.txt}"
+ES_TOOLS_NOT_CONFIGURED_FILE="${ES_TOOLS_NOT_CONFIGURED_FILE:-/var/log/EngineScript/tools-not-configured.txt}"
 
 
 # ----------------------------------------------------------------
@@ -2028,6 +2029,32 @@ function report_tools_not_installed() {
     echo "To install one later, run its script:"
     printf '  %s\n' "${TOOLS_NOT_INSTALLED[@]}"
     notify_admin "Server: ${IP_ADDRESS:-}" "EngineScript could not install these tools: ${names}. The errors are in /var/log/EngineScript/install-error-log.log." || true
+}
+
+# The tools the Tools step installed but that are not configured, in TOOLS_NOT_CONFIGURED (the
+# caller sets it to an empty array), one "<name>: <how to configure it>" entry each: listed on
+# screen and in ES_TOOLS_NOT_CONFIGURED_FILE, which the end of the install shows again.
+function report_tools_not_configured() {
+    local entry names=""
+    if [[ "${#TOOLS_NOT_CONFIGURED[@]}" -eq 0 ]]; then
+        rm -f "${ES_TOOLS_NOT_CONFIGURED_FILE}"
+        return 0
+    fi
+    for entry in "${TOOLS_NOT_CONFIGURED[@]}"; do
+        names+="${names:+, }${entry%%: *}"
+    done
+    mkdir -p "$(dirname "${ES_TOOLS_NOT_CONFIGURED_FILE}")"
+    printf '%s\n' "${TOOLS_NOT_CONFIGURED[@]}" > "${ES_TOOLS_NOT_CONFIGURED_FILE}"
+    echo ""
+    echo "Note: These tools are installed, not configured: ${names}."
+    echo "To configure one:"
+    printf '  %s\n' "${TOOLS_NOT_CONFIGURED[@]}"
+}
+
+# True when the AWS CLI is installed but has no access key configured
+function aws_cli_not_configured() {
+    command -v aws > /dev/null 2>&1 || return 1
+    ! aws configure get aws_access_key_id > /dev/null 2>&1
 }
 
 

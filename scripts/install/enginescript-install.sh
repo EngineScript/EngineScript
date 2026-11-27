@@ -274,5 +274,11 @@ if [[ -s "${ES_TOOLS_NOT_INSTALLED_FILE}" ]]; then
   echo "Their errors are in /var/log/EngineScript/install-error-log.log."
   rm -f "${ES_TOOLS_NOT_INSTALLED_FILE}"
 fi
+if [[ -s "${ES_TOOLS_NOT_CONFIGURED_FILE}" ]]; then
+  echo -e "${NORMAL}"
+  echo "Note: These tools are installed, not configured. To configure one:"
+  sed 's/^/  /' "${ES_TOOLS_NOT_CONFIGURED_FILE}"
+  rm -f "${ES_TOOLS_NOT_CONFIGURED_FILE}"
+fi
 sleep 10
 shutdown -r now

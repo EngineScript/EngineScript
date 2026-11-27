@@ -23,6 +23,16 @@ function pause() {
 
 
 # ----------------------------------------------------------------
+# The "> " before an answer, on stdout with the question, when someone types the answer (as
+# read -p shows it). read -p writes it to stderr, which install and update steps send to the
+# error log, so each answered prompt printed an "[ERRORS DETECTED IN LAST STEP]" block of "> ".
+function print_answer_marker() {
+    [[ -t 0 ]] && printf '> '
+    return 0
+}
+
+
+# ----------------------------------------------------------------
 # Enhanced input validation functions
 # Prompts user with timeout and exit options for basic continuation
 function prompt_continue() {
@@ -31,7 +41,8 @@ function prompt_continue() {
     
     while true; do
         echo -e "\n${prompt_text}"
-        if read -r -t "${timeout_seconds}" -p "> " user_input; then
+        print_answer_marker
+        if read -r -t "${timeout_seconds}" user_input; then
             case "${user_input,,}" in  # Convert to lowercase
                 ""|"y"|"yes"|"continue")
                     return 0
@@ -72,7 +83,8 @@ function prompt_yes_no() {
     
     while true; do
         echo -e "\n${prompt_text}${prompt_suffix}"
-        if read -r -t "${timeout_seconds}" -p "> " user_input; then
+        print_answer_marker
+        if read -r -t "${timeout_seconds}" user_input; then
             # Use default if empty input and default is set
             if [[ -z "$user_input" && -n "$default_value" ]]; then
                 user_input="$default_value"
@@ -127,6 +139,7 @@ function prompt_input() {
     while true; do
         echo -e "\n${prompt_text}${prompt_suffix}" >&2
         echo "Type 'exit' to abort the script." >&2
+        # The "> " stays on stderr with the question: stdout carries only the answer
         if read -r -t "${timeout_seconds}" -p "> " user_input; then
             case "${user_input,,}" in
                 "exit"|"quit"|"abort"|"stop")

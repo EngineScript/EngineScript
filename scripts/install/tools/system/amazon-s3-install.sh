@@ -35,39 +35,43 @@ echo "If you haven't already done so, follow these guides before continuing:"
 echo "- User creation: Follow sections 2 and 3: https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/#iam-user"
 echo "- Bucket creation: Follow https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html"
 
-# Continue?
+# The AWS CLI is installed at this point. Skipping its configuration (no, exit, or no answer in
+# time) or a failed 'aws configure' leaves it installed but not configured, which is reported
+# as such: the Tools step checks the configuration after this script (aws_cli_not_configured).
+aws_not_configured() {
+    echo ""
+    echo "Amazon AWS CLI installed, not configured."
+    echo "S3 backups fail until it is. To configure it, run: aws configure"
+    exit 0
+}
+
+# Continue? In a subshell, so "exit" or a timeout skips the configuration instead of ending
+# this script before it can say so.
 echo ""
 echo "When finished, you can continue to the next step."
-if prompt_yes_no "Are you ready to continue with AWS configuration?" "y" 300; then
+if ( prompt_yes_no "Are you ready to continue with AWS configuration?" "y" 300 ); then
     echo "Let's continue with AWS configuration..."
     sleep 1
-    
-    # Run AWS configure with error handling
+
     echo ""
     echo "Starting AWS CLI configuration..."
     echo "You will be prompted for:"
     echo "- AWS Access Key ID"
-    echo "- AWS Secret Access Key" 
+    echo "- AWS Secret Access Key"
     echo "- Default region name (e.g., us-east-1)"
     echo "- Default output format (json recommended)"
     echo ""
-    
+
     if ! aws configure; then
         echo ""
         echo "AWS configuration failed or was canceled."
-        echo "You can run 'aws configure' manually later if needed."
-        echo "Exiting installation script."
-        exit 1
+        aws_not_configured
     fi
-    
+
     echo ""
     echo "AWS configuration completed successfully."
 else
-    echo ""
-    echo "AWS configuration canceled by user."
-    echo "You can run this script again later or configure AWS manually with 'aws configure'."
-    echo "Exiting installation script."
-    exit 0
+    aws_not_configured
 fi
 
 # Test Installation
