@@ -427,6 +427,43 @@ else
   fail "report_tools_not_installed left a list when every tool installed"
 fi
 
+# report_tools_not_configured: an installed tool without its configuration is listed as such, on
+# screen and in its file; with none the file is removed
+ES_TOOLS_NOT_CONFIGURED_FILE="${STEP_DIR}/tools-not-configured.txt"
+TOOLS_NOT_CONFIGURED=("Amazon AWS CLI: aws configure (S3 backups fail until then)")
+report_tools_not_configured > "${STEP_DIR}/out" 2>&1
+if [[ "$(cat "${ES_TOOLS_NOT_CONFIGURED_FILE}" 2> /dev/null)" == "Amazon AWS CLI: aws configure (S3 backups fail until then)" ]] \
+    && grep -q "These tools are installed, not configured: Amazon AWS CLI\." "${STEP_DIR}/out" \
+    && ! grep -q "not installed" "${STEP_DIR}/out"; then
+  pass "report_tools_not_configured lists the tool as installed, not configured"
+else
+  fail "report_tools_not_configured did not list the tool as expected"
+fi
+# shellcheck disable=SC2034 # read by report_tools_not_configured
+TOOLS_NOT_CONFIGURED=()
+report_tools_not_configured > /dev/null 2>&1
+if [[ ! -e "${ES_TOOLS_NOT_CONFIGURED_FILE}" ]]; then
+  pass "report_tools_not_configured removes the list when every tool is configured"
+else
+  fail "report_tools_not_configured left a list when every tool is configured"
+fi
+
+# aws_cli_not_configured: true only for an installed AWS CLI without an access key
+mkdir -p "${STEP_DIR}/awsbin"
+cat > "${STEP_DIR}/awsbin/aws" << 'EOF'
+#!/bin/sh
+[ -n "${AWS_KEY_SET:-}" ] && echo AKIAEXAMPLE && exit 0
+exit 1
+EOF
+chmod +x "${STEP_DIR}/awsbin/aws"
+if ! PATH="${STEP_DIR}/emptybin" aws_cli_not_configured 2> /dev/null \
+    && PATH="${STEP_DIR}/awsbin:${PATH}" aws_cli_not_configured \
+    && ! AWS_KEY_SET=1 PATH="${STEP_DIR}/awsbin:${PATH}" aws_cli_not_configured; then
+  pass "aws_cli_not_configured: false without the CLI, true without a key, false with one"
+else
+  fail "aws_cli_not_configured gave the wrong answer"
+fi
+
 # apt_update_with_retry: tries apt-get update three times, passes --error-on=any, and returns
 # non-zero when every attempt fails. A stub apt-get fails until its count of failures runs out.
 APT_STUB_DIR="${TEST_ASSET_DIR}/apt-stub"

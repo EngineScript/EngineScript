@@ -15,8 +15,9 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # Start Main Script
 
 # The tools are optional: one that fails is listed at the end (run_tool), and the install
-# carries on
+# carries on. One installed without its configuration is listed too (report_tools_not_configured).
 TOOLS_NOT_INSTALLED=()
+TOOLS_NOT_CONFIGURED=()
 
 #------------------------------------------------
 # Media Tools
@@ -101,6 +102,9 @@ if [[ "${BACKUP_S3}" == "1" ]];
     echo "Please follow the instructions in the script that is about to run."
     sleep 5
     run_tool "Amazon AWS CLI" /usr/local/bin/enginescript/scripts/install/tools/system/amazon-s3-install.sh
+    if aws_cli_not_configured; then
+      TOOLS_NOT_CONFIGURED+=("Amazon AWS CLI: aws configure (S3 backups fail until then)")
+    fi
   else
     echo "Skipping Amazon CLI install"
 fi
@@ -112,6 +116,7 @@ return_to_src
 # tries it again: a new install records the install_fail2ban upgrade as done, and forgetting
 # that record makes the update run it.
 report_tools_not_installed
+report_tools_not_configured
 if printf '%s\n' "${TOOLS_NOT_INSTALLED[@]}" | grep -q '^fail2ban: '; then
   source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-upgrades.sh \
     && forget_upgrade_done install_fail2ban \
