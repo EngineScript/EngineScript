@@ -382,6 +382,7 @@ mariadb() {
       echo "${sql}" >> "${WORK}/grant-calls"
       [[ "${sql}" != *userFail000* ]]
       ;;
+    *) echo "unexpected SQL: ${sql}" >> "${WORK}/grant-calls" ;;
   esac
 }
 check "only the existing site user gets SELECT on mysql.table_stats" "$(run_table_stats_upgrade)" \
