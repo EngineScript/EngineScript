@@ -59,10 +59,10 @@ ZLIB_BUILD_TAG=""
 
 case "${ZLIB_IMPLEMENTATION}" in
   zlib-ng)
-    ZLIB_CONFIGURE_FLAGS=(
-      --with-zlib="/usr/src/zlib-ng-${ZLIB_NG_VER}"
-      --with-zlib-opt=-fPIC
-    )
+    # Built by zlib-install.sh (see there for why Nginx's --with-zlib is not used)
+    ZLIB_NG_PREFIX="/opt/zlib-ng"
+    ZLIB_CC_EXTRA="-I${ZLIB_NG_PREFIX}/include"
+    ZLIB_LD_EXTRA="-L${ZLIB_NG_PREFIX}/lib"
     ZLIB_BUILD_TAG="-zlibng"
     echo "Using zlib-ng ${ZLIB_NG_VER} for Nginx compilation"
     ;;
@@ -149,6 +149,13 @@ MEMORY_JOBS=$(( $(tuning_detect_memory_mb) / 768 ))
 (( BUILD_JOBS > MEMORY_JOBS )) && BUILD_JOBS="${MEMORY_JOBS}"
 echo "Compile jobs: ${BUILD_JOBS}"
 make -j"${BUILD_JOBS}" || { echo "Error: Nginx build failed." >&2; exit 1; }
+
+# Nginx links the zlib that ZLIB_IMPLEMENTATION selects into its binary. A libz.so it loads at
+# run time is the system's zlib (zlib1g-dev, kept for other software), so the selection was lost.
+if ldd "nginx-${NGINX_VER}/nginx" 2> /dev/null | grep -q 'libz\.so'; then
+  echo "Error: Nginx was linked with the system zlib, not the zlib ZLIB_IMPLEMENTATION selects." >&2
+  exit 1
+fi
 
 # make install renames the running binary to nginx.old before copying the new one, so a
 # running Nginx keeps serving. The caller (install or update script) restarts it.

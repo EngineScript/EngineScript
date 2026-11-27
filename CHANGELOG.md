@@ -4,6 +4,13 @@ All notable changes to EngineScript will be documented in this file.
 
 Changes are organized by date, with the most recent changes listed first.
 
+## 2026-11-27
+
+### 🐛 FIXES
+
+- **New installs on small servers no longer stop when Nginx compiles:** on a server with 1 CPU, or with less than 1.5 GB of memory, the install stopped at the Nginx step with `fatal error: zlib.h: No such file or directory`. With zlib-ng, the default since 2026-11-20, Nginx compiled its own files before zlib-ng had created its `zlib.h`; servers with more CPUs and memory compile several files at a time, which hid the problem. zlib-ng is now built first, in its own folder (`/opt/zlib-ng`), and only Nginx uses it. If your install stopped at this step, run `git -C /usr/local/bin/enginescript pull` to get the fix, then `es.install`: it carries on from the Nginx step. Servers that chose zlib-ng and have 1 CPU or less than 1.5 GB of memory also had their Nginx updates fail; they now work.
+- **The system zlib's headers are installed again:** the cleanup of unused development libraries on 2026-11-18 removed `zlib1g-dev` (`/usr/include/zlib.h`) from every server. It is back on new installs, and the next EngineScript update installs it again where it was removed, for any software you compile on the server. Nginx does not use it: it links the zlib that `ZLIB_IMPLEMENTATION` selects, and its build now stops if it would load the system zlib instead.
+
 ## 2026-11-26
 
 ### 🚀 MARIADB 12.3

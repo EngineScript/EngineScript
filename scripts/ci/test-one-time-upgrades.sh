@@ -342,6 +342,21 @@ check "the libraries and what only they needed are purged; a needed one and pack
 check "when every library is still needed, nothing is purged" \
   "$(run_dev_upgrade "libjemalloc2" "" "")" "0:apt-mark auto libjemalloc2;"
 unset -f dpkg-query apt-mark apt-get run_dev_upgrade
+check "the system zlib's headers are not among the libraries removed" \
+  "$(printf '%s\n' "${UNUSED_DEV_LIBRARIES[@]}" | grep -cxF zlib1g-dev)" "0"
+
+echo "restore_zlib_dev"
+run_zlib_dev_upgrade() {
+  local status=0
+  rm -f "${WORK}/zlib-calls"
+  ZLIB_DEV_STATUS="$1" restore_zlib_dev > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/zlib-calls")"
+}
+dpkg-query() { echo "${ZLIB_DEV_STATUS}"; }
+apt-get() { echo "apt-get $*" >> "${WORK}/zlib-calls"; }
+check "zlib1g-dev that is installed is left alone" "$(run_zlib_dev_upgrade "${INSTALLED}")" "0:"
+check "zlib1g-dev that was removed is installed again" "$(run_zlib_dev_upgrade "")" "0:apt-get install -y zlib1g-dev;"
+unset -f dpkg-query apt-get run_zlib_dev_upgrade
 
 echo "migrate_php_fpm_oom_policy"
 # PHP 8.5 has EngineScript's override as earlier versions wrote it; PHP 8.4's folder holds only

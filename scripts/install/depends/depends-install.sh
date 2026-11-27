@@ -23,7 +23,8 @@ source /usr/local/bin/enginescript/scripts/functions/shared/enginescript-env.sh 
 # releases are added after the list. One missing package stops the whole install.
 #
 # No development libraries (-dev) beyond the ones below: Nginx compiles with its own copies of
-# OpenSSL, PCRE2, zlib, and Brotli, and PHP comes from packages. Runtime libraries come in as
+# OpenSSL, PCRE2, zlib, and Brotli, and PHP comes from packages. zlib1g-dev stays: the system's
+# zlib is kept whole for other software. Runtime libraries come in as
 # dependencies of the packages that use them.
 packages=(
   # Base system and package management
@@ -54,7 +55,11 @@ packages=(
   "make"
   "perl"                # OpenSSL's Configure
   "pkg-config"
+
+  # The system's zlib, with its headers, for any software compiled on the server. Nginx does not
+  # use it: it links the zlib that ZLIB_IMPLEMENTATION selects, built in its own folder.
   "zlib1g"
+  "zlib1g-dev"
 
   # Build tools for compiling other software on the server. EngineScript's own builds do not use
   # them; they are here for the admin's own compiles.
