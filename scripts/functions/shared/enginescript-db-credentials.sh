@@ -264,6 +264,29 @@ write_credentials_file() {
 
 
 #----------------------------------------------------------------------------------
+# The one privilege a site user has outside its own database: reading mysql.table_stats, each
+# table's row count from ANALYZE TABLE ... PERSISTENT. The MariaDB Health Checks plugin reads it
+# to show and run histograms (its ANALYZE needs only the site's own tables). It lists every
+# site's table names and row counts, no data. The rest of the mysql database stays closed:
+# mysql.column_stats holds real column values (emails, password hashes), and mysql.global_priv
+# every account's password hash.
+#
+# Arguments:
+#   $1 - database user
+#
+# Returns 0 when the privilege was granted.
+#----------------------------------------------------------------------------------
+grant_site_table_stats() {
+  local usr="$1"
+  if [[ ! "${usr}" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: Invalid MariaDB user '${usr}'." >&2
+    return 1
+  fi
+  mariadb -e "GRANT SELECT ON mysql.table_stats TO '${usr}'@'localhost';"
+}
+
+
+#----------------------------------------------------------------------------------
 # Execute the SQL statements for vhost-install credential creation.
 # Uses printf -v for database creation and escape_sql_string_literal for password.
 #
@@ -298,6 +321,10 @@ execute_install_sql() {
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi
+
+  # The site works without it: only the MariaDB Health Checks plugin's histograms need it
+  grant_site_table_stats "${USR}" \
+    || echo "Warning: Could not let '${USR}' read mysql.table_stats; MariaDB Health Checks cannot show histograms." >&2
 }
 
 
@@ -342,9 +369,10 @@ convert_myisam_tables_to_innodb() {
 
 #----------------------------------------------------------------------------------
 # Execute the SQL statements for vhost-import credential creation.
-# Uses charset/collation interpolation. The site user gets privileges on its own database
-# only, as with vhost-install: privileges on the mysql system database would let a site
-# change any account's privileges and reach every other site's database.
+# Uses charset/collation interpolation. The site user gets privileges on its own database,
+# plus reading mysql.table_stats (grant_site_table_stats), as with vhost-install. Wider
+# privileges on the mysql system database would let a site change any account's privileges
+# and reach every other site's database.
 #
 # Arguments:
 #   $1 - DB (database name)
@@ -375,4 +403,8 @@ execute_import_sql() {
     echo "Error: Failed to grant privileges on database '${DB}' to user '${USR}'." >&2
     return 1
   fi
+
+  # The site works without it: only the MariaDB Health Checks plugin's histograms need it
+  grant_site_table_stats "${USR}" \
+    || echo "Warning: Could not let '${USR}' read mysql.table_stats; MariaDB Health Checks cannot show histograms." >&2
 }
