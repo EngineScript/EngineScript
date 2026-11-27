@@ -439,6 +439,7 @@ if [[ "$(cat "${ES_TOOLS_NOT_CONFIGURED_FILE}" 2> /dev/null)" == "Amazon AWS CLI
 else
   fail "report_tools_not_configured did not list the tool as expected"
 fi
+# shellcheck disable=SC2034 # read by report_tools_not_configured
 TOOLS_NOT_CONFIGURED=()
 report_tools_not_configured > /dev/null 2>&1
 if [[ ! -e "${ES_TOOLS_NOT_CONFIGURED_FILE}" ]]; then
@@ -449,7 +450,11 @@ fi
 
 # aws_cli_not_configured: true only for an installed AWS CLI without an access key
 mkdir -p "${STEP_DIR}/awsbin"
-printf '#!/bin/sh\n[ -n "${AWS_KEY_SET:-}" ] && echo AKIAEXAMPLE && exit 0\nexit 1\n' > "${STEP_DIR}/awsbin/aws"
+cat > "${STEP_DIR}/awsbin/aws" << 'EOF'
+#!/bin/sh
+[ -n "${AWS_KEY_SET:-}" ] && echo AKIAEXAMPLE && exit 0
+exit 1
+EOF
 chmod +x "${STEP_DIR}/awsbin/aws"
 if ! PATH="${STEP_DIR}/emptybin" aws_cli_not_configured 2> /dev/null \
     && PATH="${STEP_DIR}/awsbin:${PATH}" aws_cli_not_configured \
