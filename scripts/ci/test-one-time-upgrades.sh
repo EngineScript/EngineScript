@@ -417,7 +417,8 @@ apt-get() {
   [[ "${*: -1}" != "php${SOAP_FAIL}-soap" ]]
 }
 systemctl() {
-  [[ "$1" == "is-active" ]] && return 0
+  local action="$1"
+  [[ "${action}" == "is-active" ]] && return 0
   echo "systemctl $*" >> "${WORK}/soap-calls"
 }
 check "SOAP is installed where it is missing, and that version's PHP-FPM reloaded" "$(run_soap_upgrade "8.4" "")" \
