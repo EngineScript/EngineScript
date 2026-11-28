@@ -395,6 +395,39 @@ check "a server without sites is fine" "$(run_table_stats_upgrade)" "0:"
 unset -f mariadb run_table_stats_upgrade
 unset ES_MYSQL_CREDENTIALS_DIR
 
+echo "ensure_php_soap"
+# PHP 8.4 and 8.5 installed; SOAP_HAVE lists the versions that already have php-soap,
+# SOAP_FAIL the one whose install fails. Prints the exit status, apt-get and systemctl calls.
+run_soap_upgrade() {
+  local status=0
+  rm -f "${WORK}/soap-calls"
+  SOAP_HAVE="$1" SOAP_FAIL="$2" ensure_php_soap > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/soap-calls")"
+}
+get_installed_php_versions() { printf '%s\n' 8.4 8.5; }
+dpkg-query() {
+  local pkg="${*: -1}" ver
+  for ver in ${SOAP_HAVE}; do
+    [[ "${pkg}" == "php${ver}-soap" ]] && echo "install ok installed" && return 0
+  done
+  return 1
+}
+apt-get() {
+  echo "apt-get ${*: -1}" >> "${WORK}/soap-calls"
+  [[ "${*: -1}" != "php${SOAP_FAIL}-soap" ]]
+}
+systemctl() {
+  local action="$1"
+  [[ "${action}" == "is-active" ]] && return 0
+  echo "systemctl $*" >> "${WORK}/soap-calls"
+}
+check "SOAP is installed where it is missing, and that version's PHP-FPM reloaded" "$(run_soap_upgrade "8.4" "")" \
+  "0:apt-get php8.5-soap;systemctl reload php8.5-fpm;"
+check "versions that have SOAP are left alone" "$(run_soap_upgrade "8.4 8.5" "")" "0:"
+check "a failed install is reported, so the next update tries again" "$(run_soap_upgrade "" "8.4")" \
+  "1:apt-get php8.4-soap;apt-get php8.5-soap;systemctl reload php8.5-fpm;"
+unset -f get_installed_php_versions dpkg-query apt-get systemctl run_soap_upgrade
+
 echo "migrate_php_fpm_oom_policy"
 # PHP 8.5 has EngineScript's override as earlier versions wrote it; PHP 8.4's folder holds only
 # another drop-in, which is not EngineScript's to change

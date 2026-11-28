@@ -66,6 +66,8 @@ ONE_TIME_UPGRADES=(
   migrate_php_fpm_oom_policy
   # MariaDB: site users read mysql.table_stats (the MariaDB Health Checks plugin's histograms)
   grant_site_users_table_stats
+  # PHP: the SOAP extension (shipping and payment connectors, Site Health)
+  ensure_php_soap
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then

@@ -51,6 +51,7 @@ install_exec_command "es.backup" "/usr/local/bin/enginescript/scripts/functions/
 install_exec_command "es.cache" "/usr/local/bin/enginescript/scripts/functions/alias/alias-cache.sh"
 install_exec_command "es.config" "nano" "/home/EngineScript/enginescript-install-options.txt"
 install_exec_command "es.debug" "/usr/local/bin/enginescript/scripts/functions/alias/alias-debug.sh"
+install_exec_command "es.debugmode" "/usr/local/bin/enginescript/scripts/functions/alias/alias-debug-mode.sh"
 install_exec_command "es.help" "/usr/local/bin/enginescript/scripts/functions/alias/alias-help.sh"
 install_exec_command "es.images" "/usr/local/bin/enginescript/scripts/functions/cron/optimize-images.sh"
 install_exec_command "es.info" "/usr/local/bin/enginescript/scripts/functions/alias/alias-server-info.sh"

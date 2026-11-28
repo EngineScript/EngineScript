@@ -695,6 +695,53 @@ else
   fail "cloudflare_curl passed this config: $(cat "${STEP_DIR}/curl-config")"
 fi
 
+# set_debug_mode (es.debugmode): switches DEBUG_INSTALL in the options file, sets it with on or
+# off, shows it with status, and leaves the rest of the file as it was
+DEBUG_OPTIONS="${STEP_DIR}/debug-options.txt"
+printf '# Debug\nDEBUG_INSTALL=0\nADMIN_SUBDOMAIN=1\n' > "${DEBUG_OPTIONS}"
+debug_value() { sed -n 's/^DEBUG_INSTALL=//p' "${DEBUG_OPTIONS}"; }
+run_debug_mode() { ENGINESCRIPT_INSTALL_OPTIONS_FILE="${DEBUG_OPTIONS}" set_debug_mode "$@"; }
+out="$(run_debug_mode)"
+if [[ "$(debug_value)" == "1" && "${out}" == "Debug mode is on:"* ]]; then
+  pass "es.debugmode with no argument turns debug mode on when it is off"
+else
+  fail "es.debugmode with no argument left DEBUG_INSTALL=$(debug_value) and said: ${out}"
+fi
+out="$(run_debug_mode)"
+if [[ "$(debug_value)" == "0" && "${out}" == "Debug mode is off:"* ]]; then
+  pass "es.debugmode with no argument turns debug mode off when it is on"
+else
+  fail "es.debugmode with no argument left DEBUG_INSTALL=$(debug_value) and said: ${out}"
+fi
+run_debug_mode on > /dev/null && run_debug_mode on > /dev/null
+on_value="$(debug_value)"
+out="$(run_debug_mode status)"
+status_value="$(debug_value)"
+run_debug_mode off > /dev/null
+if [[ "${on_value}" == "1" && "${status_value}" == "1" && "${out}" == "Debug mode is on:"* && "$(debug_value)" == "0" ]]; then
+  pass "es.debugmode on, status, and off set and show the setting"
+else
+  fail "es.debugmode on/status/off gave ${on_value}/${status_value}/$(debug_value): ${out}"
+fi
+if [[ "$(cat "${DEBUG_OPTIONS}")" == $'# Debug\nDEBUG_INSTALL=0\nADMIN_SUBDOMAIN=1' ]]; then
+  pass "es.debugmode changes only the DEBUG_INSTALL line"
+else
+  fail "es.debugmode changed the file to: $(cat "${DEBUG_OPTIONS}")"
+fi
+printf 'DEBUG_INSTALL="1"\n' > "${DEBUG_OPTIONS}"
+run_debug_mode > /dev/null
+if [[ "$(debug_value)" == "0" ]]; then
+  pass "es.debugmode reads a quoted value"
+else
+  fail "es.debugmode did not switch a quoted DEBUG_INSTALL=\"1\" (now $(debug_value))"
+fi
+if ! run_debug_mode maybe > /dev/null 2>&1 && [[ "$(debug_value)" == "0" ]] \
+  && ! ENGINESCRIPT_INSTALL_OPTIONS_FILE="${STEP_DIR}/missing.txt" set_debug_mode on > /dev/null 2>&1; then
+  pass "es.debugmode refuses an unknown argument and a missing options file"
+else
+  fail "es.debugmode accepted an unknown argument or a missing options file"
+fi
+
 echo ""
 echo "======================================================="
 echo "  RESULTS: ${TESTS_PASSED} passed, ${TESTS_FAILED} failed"

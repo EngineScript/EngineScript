@@ -124,6 +124,45 @@ function debug_pause() {
 
 
 # ----------------------------------------------------------------
+# es.debugmode: turn debug mode (DEBUG_INSTALL in the install options file) on or off, and say
+# which it is now. Debug mode makes es.install, es.update, and the software updates run from
+# es.menu pause after each step and show that step's errors.
+# Usage: set_debug_mode [on|off|status] (no argument switches it)
+function set_debug_mode() {
+    local file="${ENGINESCRIPT_INSTALL_OPTIONS_FILE:-/home/EngineScript/enginescript-install-options.txt}"
+    local current new
+    if [[ ! -f "${file}" ]]; then
+        echo "Error: ${file} was not found." >&2
+        return 1
+    fi
+    current="$(sed -n 's/^DEBUG_INSTALL="\{0,1\}\([0-9]\).*/\1/p' "${file}" | tail -n 1)"
+    [[ "${current}" == "1" ]] || current=0
+    case "${1:-}" in
+        "") new=$((1 - current)) ;;
+        on) new=1 ;;
+        off) new=0 ;;
+        status) new="${current}" ;;
+        *)
+            echo "Usage: es.debugmode [on|off|status] (no argument switches it)" >&2
+            return 1
+            ;;
+    esac
+    if [[ "${new}" != "${current}" ]]; then
+        if grep -q '^DEBUG_INSTALL=' "${file}"; then
+            sed -i "s/^DEBUG_INSTALL=.*/DEBUG_INSTALL=${new}/" "${file}" || return 1
+        else
+            printf '\nDEBUG_INSTALL=%s\n' "${new}" >> "${file}" || return 1
+        fi
+    fi
+    if [[ "${new}" == "1" ]]; then
+        echo "Debug mode is on: es.install, es.update, and the software updates in es.menu pause after each step and show its errors."
+    else
+        echo "Debug mode is off: es.install, es.update, and the software updates in es.menu run without pausing."
+    fi
+}
+
+
+# ----------------------------------------------------------------
 # Print errors from the last script section if any
 function print_last_errors() {
     # A log of only blank lines (some tools print an empty line to stderr) counts as no errors
@@ -2413,6 +2452,9 @@ function get_php_packages_array() {
         "php${target_ver}-mbstring"
         "php${target_ver}-mysql"
         "php${target_ver}-redis"
+        # SOAP: shipping and payment connectors call SOAP APIs (WooCommerce's FedEx rates, for
+        # example), and WordPress's Site Health asks for it
+        "php${target_ver}-soap"
         "php${target_ver}-ssh2"
         "php${target_ver}-xml"
         "php${target_ver}-zip"
