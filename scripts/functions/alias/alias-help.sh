@@ -31,6 +31,7 @@ es.backup       - Backs up every site's database and files and the EngineScript 
 es.cache        - Clears FastCGI cache, OPcache, and Redis (server-wide)
 es.config       - Opens the configuration file in Nano
 es.debug        - Displays debug information for EngineScript
+es.debugmode    - Turns debug mode on or off (pauses after each install and update step); on, off, or status
 es.help         - Displays EngineScript commands and locations
 es.images       - Losslessly compress all images in the WordPress /uploads directory (server-wide)
 es.info         - Displays server information

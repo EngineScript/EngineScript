@@ -57,6 +57,11 @@ install_enginescript_fail2ban_config 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 install_enginescript_motd 2>> "${ES_STEP_ERROR_LOG}" || failed=1
 print_last_errors
 
+# The es.* commands (es.menu, es.debugmode, ...): setup.sh installs them, and a new version can
+# add or change one, so they are written again here
+/usr/local/bin/enginescript/scripts/install/alias/enginescript-alias-install.sh 2>> "${ES_STEP_ERROR_LOG}" || failed=1
+print_last_errors
+
 # Transparent Huge Pages: switched off before the services start
 if [[ -f /etc/systemd/system/disable-thp.service ]]; then
   { cp -f /usr/local/bin/enginescript/config/etc/systemd/system/disable-thp.service /etc/systemd/system/disable-thp.service \

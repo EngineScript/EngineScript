@@ -6,6 +6,11 @@ Changes are organized by date, with the most recent changes listed first.
 
 ## 2026-11-27
 
+### ✨ NEW
+
+- **`es.debugmode` turns debug mode on or off:** debug mode (`DEBUG_INSTALL` in your options file) makes `es.install`, `es.update`, and the software updates in `es.menu` pause after each step and show that step's errors. Instead of editing the options file, run `es.debugmode` to switch it, or `es.debugmode on`, `es.debugmode off`, or `es.debugmode status`. EngineScript updates now also install new `es.` commands on existing servers, which only a new install did before.
+- **PHP's SOAP extension is installed on every server:** shipping and payment plugins that call SOAP APIs, such as WooCommerce's FedEx rates, need it, and WordPress's Site Health lists it as missing. New servers and PHP version switches include it, and the next EngineScript update installs it on existing servers for each installed PHP version, with a PHP-FPM reload (no restart).
+
 ### 🐛 FIXES
 
 - **MariaDB Health Checks can show and run histograms:** the plugin, which EngineScript installs on every site, said "To work with histograms you will need permissions to the mysql.* tables" and hid its "Run histograms" button. It only needs to read one statistics table, `mysql.table_stats`, so each site's database user can now read that table, and nothing else outside its own database. New and imported sites get this when they are set up, and the next EngineScript update adds it for existing sites. The table lists each site's table names and row counts, not their content. Do not grant `mysql.*` as the plugin suggests: that would let every site read every other site's data and every account's password hash.

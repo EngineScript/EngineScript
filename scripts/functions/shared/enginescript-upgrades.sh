@@ -227,6 +227,33 @@ function ensure_php_igbinary() {
 
 
 # ----------------------------------------------------------------
+# Install PHP's SOAP extension on existing installs
+#
+# SOAP is in the standard PHP package list since 2026-11-27 (get_php_packages_array): shipping
+# and payment connectors call SOAP APIs (WooCommerce's FedEx rates, for example), and Site Health
+# asks for it. php.ini already holds its settings, and its WSDL cache folder already exists
+# (php-install.sh, set_php_permissions). This installs it for each installed PHP version and
+# reloads that version's PHP-FPM, so the sites can use it.
+function ensure_php_soap() {
+    local ver failures=0
+    while IFS= read -r ver; do
+        [[ -n "${ver}" ]] || continue
+        package_is_installed "php${ver}-soap" && continue
+        echo "Installing php${ver}-soap..."
+        if apt-get install -y -qq "php${ver}-soap" > /dev/null; then
+            if systemctl is-active --quiet "php${ver}-fpm"; then
+                systemctl reload "php${ver}-fpm"
+            fi
+        else
+            echo "Error: Installing php${ver}-soap failed." >&2
+            failures=1
+        fi
+    done < <(get_installed_php_versions)
+    return "${failures}"
+}
+
+
+# ----------------------------------------------------------------
 # Turn off PHP's session upload progress on existing installs
 #
 # session.upload_progress writes data from any upload request into a PHP session file, a known

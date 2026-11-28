@@ -22,6 +22,7 @@
 # Debug mode will print any errors that each install script encounters.
 # Regardless of whether debug mode is enabled, EngineScript will generate a complete error log at /var/log/EngineScript/install-error-log.log
 # Run the es.debug command to generate a complete server and error log. This is useful when submitting a GitHub issue.
+# es.update and the software updates in es.menu follow this setting too. Turn it on or off at any time with: es.debugmode
 DEBUG_INSTALL=0
 
 ## Admin Subdomain (Recommended) ##
