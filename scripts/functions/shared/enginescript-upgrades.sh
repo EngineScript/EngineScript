@@ -614,6 +614,30 @@ function restore_zlib_dev() {
 
 
 # ----------------------------------------------------------------
+# Let existing site users read mysql.table_stats
+#
+# Site users created from 2026-11-27 can read mysql.table_stats (grant_site_table_stats in
+# enginescript-db-credentials.sh), which the MariaDB Health Checks plugin needs for its
+# histograms. This gives the same one privilege to the users of existing sites: the user named in
+# each site's credentials file, when it exists. Granting it again changes nothing.
+function grant_site_users_table_stats() {
+    local credentials_dir="${ES_MYSQL_CREDENTIALS_DIR:-/home/EngineScript/mysql-credentials}"
+    local file usr failures=0
+    for file in "${credentials_dir}"/*.txt; do
+        [[ -f "${file}" ]] || continue
+        usr="$(sed -n 's/^USR="\(.*\)"$/\1/p' "${file}" | head -n 1)"
+        [[ "${usr}" =~ ^[A-Za-z0-9_]+$ ]] || continue
+        [[ "$(mariadb -N -e "SELECT COUNT(*) FROM mysql.user WHERE User = '${usr}' AND Host = 'localhost';")" == "1" ]] || continue
+        if ! mariadb -e "GRANT SELECT ON mysql.table_stats TO '${usr}'@'localhost';"; then
+            echo "Error: Could not let '${usr}' ($(basename "${file}" .txt)) read mysql.table_stats." >&2
+            failures=$((failures + 1))
+        fi
+    done
+    [[ "${failures}" -eq 0 ]]
+}
+
+
+# ----------------------------------------------------------------
 # PHP-FPM: keep running when a worker is killed at the memory ceiling
 #
 # install_php_fpm_service_override now adds OOMPolicy=continue to the override that holds the

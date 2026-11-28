@@ -68,6 +68,44 @@ assert_file_contains() {
   fi
 }
 
+# A site user's privileges: everything on its own database, SELECT on mysql.table_stats (the
+# MariaDB Health Checks plugin's histograms), and nothing else. Checked in MariaDB's privilege
+# tables and by logging in as the user.
+# Usage: check_site_user_privileges <user> <password> <database>
+check_site_user_privileges() {
+  local usr="$1" pswd="$2" db="$3" grantee got
+  grantee="'${usr}'@'localhost'"
+  got="$(sudo mariadb -N -B -e "SELECT CONCAT(TABLE_SCHEMA, '.', TABLE_NAME, ':', PRIVILEGE_TYPE) FROM information_schema.TABLE_PRIVILEGES WHERE GRANTEE = \"${grantee}\";")"
+  if [[ "${got}" == "mysql.table_stats:SELECT" ]]; then
+    pass "Site user can read mysql.table_stats, and no other table outside its database"
+  else
+    fail "Site user's table privileges are '${got}', expected only mysql.table_stats:SELECT"
+  fi
+  got="$(sudo mariadb -N -B -e "SELECT DISTINCT TABLE_SCHEMA FROM information_schema.SCHEMA_PRIVILEGES WHERE GRANTEE = \"${grantee}\";")"
+  if [[ "${got}" == "${db}" ]]; then
+    pass "Site user has database privileges on its own database only"
+  else
+    fail "Site user has database privileges on '${got//$'\n'/, }', expected '${db}'"
+  fi
+  got="$(sudo mariadb -N -B -e "SELECT PRIVILEGE_TYPE FROM information_schema.USER_PRIVILEGES WHERE GRANTEE = \"${grantee}\";")"
+  if [[ "${got}" == "USAGE" ]]; then
+    pass "Site user has no server-wide privileges"
+  else
+    fail "Site user's server-wide privileges are '${got//$'\n'/, }'"
+  fi
+  if MYSQL_PWD="${pswd}" mariadb -u "${usr}" -N -e "SELECT COUNT(*) FROM mysql.table_stats;" > /dev/null 2>&1; then
+    pass "Site user can read mysql.table_stats"
+  else
+    fail "Site user cannot read mysql.table_stats"
+  fi
+  if MYSQL_PWD="${pswd}" mariadb -u "${usr}" -N -e "SELECT COUNT(*) FROM mysql.column_stats;" > /dev/null 2>&1 \
+    || MYSQL_PWD="${pswd}" mariadb -u "${usr}" -N -e "SELECT COUNT(*) FROM mysql.global_priv;" > /dev/null 2>&1; then
+    fail "Site user can read mysql.column_stats or mysql.global_priv"
+  else
+    pass "Site user cannot read mysql.column_stats (column values) or mysql.global_priv (password hashes)"
+  fi
+}
+
 
 #----------------------------------------------------------------------------------
 # Test 1: vhost-install credential creation methods
@@ -213,6 +251,8 @@ else
   fail "User '${USR}' not found in MariaDB"
 fi
 
+check_site_user_privileges "${USR}" "${PSWD}" "${DB}"
+
 # Clean up temp dir
 rm -rf "${INSTALL_CREDS_DIR}"
 
@@ -318,6 +358,8 @@ else
   fail "User '${USR}' not found in MariaDB"
 fi
 
+check_site_user_privileges "${USR}" "${PSWD}" "${DB}"
+
 # Clean up temp dir
 rm -rf "${IMPORT_CREDS_DIR}"
 
@@ -414,12 +456,15 @@ echo ""
 DB_CREDENTIALS_LIBRARY="${REPO_ROOT}/scripts/functions/shared/enginescript-db-credentials.sh"
 
 # Privileges on mysql.* would let one site change any account's privileges and reach every
-# other site's database. The backticks are MySQL's identifier quotes, matched literally.
+# other site's database. The one exception is SELECT on mysql.table_stats (table names and row
+# counts, no data), for the MariaDB Health Checks plugin. The backticks are MySQL's identifier
+# quotes, matched literally.
 # shellcheck disable=SC2016
-if grep -Eiq 'GRANT[^;]*ON[[:space:]]+`?mysql`?\.' "${DB_CREDENTIALS_LIBRARY}"; then
-  fail "Site database users are granted privileges on the mysql system database"
+if grep -Ei 'GRANT[^;]*ON[[:space:]]+`?mysql`?\.' "${DB_CREDENTIALS_LIBRARY}" \
+  | grep -Eiv 'GRANT SELECT ON mysql\.table_stats TO' | grep -q .; then
+  fail "Site database users are granted privileges on the mysql system database beyond SELECT on mysql.table_stats"
 else
-  pass "Site database users get privileges on their own database only"
+  pass "Site database users get privileges on their own database, and SELECT on mysql.table_stats only"
 fi
 
 echo ""

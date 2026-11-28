@@ -358,6 +358,43 @@ check "zlib1g-dev that is installed is left alone" "$(run_zlib_dev_upgrade "${IN
 check "zlib1g-dev that was removed is installed again" "$(run_zlib_dev_upgrade "")" "0:apt-get install -y zlib1g-dev;"
 unset -f dpkg-query apt-get run_zlib_dev_upgrade
 
+echo "grant_site_users_table_stats"
+# Credentials files: an existing user, one MariaDB does not have, a name that is not a valid
+# user, a file that is not a credentials file, and a user whose GRANT fails (MDB_FAIL)
+export ES_MYSQL_CREDENTIALS_DIR="${WORK}/mysql-credentials"
+mkdir -p "${ES_MYSQL_CREDENTIALS_DIR}"
+printf 'DB="one_db"\nUSR="userOne123"\nPSWD="x"\n' > "${ES_MYSQL_CREDENTIALS_DIR}/one.com.txt"
+printf 'DB="gone_db"\nUSR="userGone456"\nPSWD="x"\n' > "${ES_MYSQL_CREDENTIALS_DIR}/gone.com.txt"
+printf 'DB="bad_db"\nUSR="bad'"'"'; DROP"\nPSWD="x"\n' > "${ES_MYSQL_CREDENTIALS_DIR}/bad.com.txt"
+printf 'USR="userBak789"\n' > "${ES_MYSQL_CREDENTIALS_DIR}/one.com-credentials.bak"
+# Prints the upgrade's exit status and the GRANT statements it sent
+run_table_stats_upgrade() {
+  local status=0
+  rm -f "${WORK}/grant-calls"
+  grant_site_users_table_stats > /dev/null 2>&1 || status=$?
+  echo "${status}:$(tr '\n' ';' 2> /dev/null < "${WORK}/grant-calls")"
+}
+mariadb() {
+  local sql="${*: -1}"
+  case "${sql}" in
+    SELECT\ COUNT*) [[ "${sql}" == *"'userOne123'"* || "${sql}" == *"'userFail000'"* ]] && echo 1 || echo 0 ;;
+    GRANT*)
+      echo "${sql}" >> "${WORK}/grant-calls"
+      [[ "${sql}" != *userFail000* ]]
+      ;;
+    *) echo "unexpected SQL: ${sql}" >> "${WORK}/grant-calls" ;;
+  esac
+}
+check "only the existing site user gets SELECT on mysql.table_stats" "$(run_table_stats_upgrade)" \
+  "0:GRANT SELECT ON mysql.table_stats TO 'userOne123'@'localhost';;"
+printf 'DB="fail_db"\nUSR="userFail000"\nPSWD="x"\n' > "${ES_MYSQL_CREDENTIALS_DIR}/fail.com.txt"
+check "a GRANT that fails is reported, so the next update tries again" "$(run_table_stats_upgrade)" \
+  "1:GRANT SELECT ON mysql.table_stats TO 'userFail000'@'localhost';;GRANT SELECT ON mysql.table_stats TO 'userOne123'@'localhost';;"
+rm -rf "${ES_MYSQL_CREDENTIALS_DIR:?}"/*
+check "a server without sites is fine" "$(run_table_stats_upgrade)" "0:"
+unset -f mariadb run_table_stats_upgrade
+unset ES_MYSQL_CREDENTIALS_DIR
+
 echo "migrate_php_fpm_oom_policy"
 # PHP 8.5 has EngineScript's override as earlier versions wrote it; PHP 8.4's folder holds only
 # another drop-in, which is not EngineScript's to change

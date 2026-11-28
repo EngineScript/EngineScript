@@ -64,6 +64,8 @@ ONE_TIME_UPGRADES=(
   restore_zlib_dev
   # PHP-FPM: keeps running when the kernel kills a worker at its memory ceiling (OOMPolicy)
   migrate_php_fpm_oom_policy
+  # MariaDB: site users read mysql.table_stats (the MariaDB Health Checks plugin's histograms)
+  grant_site_users_table_stats
 )
 
 if [[ "${1:-}" == "--record-all" ]]; then
